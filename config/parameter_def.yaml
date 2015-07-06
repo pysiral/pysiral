@@ -1,0 +1,15 @@
+# Definition file of parameters in pysiral
+
+
+# categorical listing of all parameters with abbreviations, unit and docstr
+parameters:
+
+    # Geophysical parameters
+
+    ice_freeboard:
+      short_name: ifrb
+      unit: meter
+      doc_str: Height of the ice surface above local sea level
+      dtype: float
+      ascii_format: "%6.2f"
+
