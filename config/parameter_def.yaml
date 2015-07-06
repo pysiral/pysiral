@@ -7,9 +7,59 @@ parameters:
     # Geophysical parameters
 
     ice_freeboard:
-      short_name: ifrb
-      unit: meter
-      doc_str: Height of the ice surface above local sea level
-      dtype: float
-      ascii_format: "%6.2f"
+        short_name: ifrb
+        unit: meter
+        level: L2
+        docstr: Elevation of the ice surface above local sea level
+        dtype: float32
+        ascii_format: "%6.2f"
 
+    snow_freeboard:
+        short_name: sfrb
+        level: L2
+        unit: meter
+        docstr: Elevation of the snow surface above local sea level
+        dtype: float32
+        ascii_format: "%6.2f"
+
+    apparent_freeboard:
+        short_name: afrb
+        unit: meter
+        level: L2
+        docstr:
+          Elevation above local sea level from the altimeter range
+          without the geometrical correction for slower wave propagation
+          in the snow layer
+        dtype: float32
+        ascii_format: "%6.2f"
+
+    radar_freeboard:
+        short_name: rfrb
+        unit: meter
+        level: L2
+        docstr:
+          Elevation above local sea level from the altimeter range
+          with the geometrical correction for slower wave propagation
+          in the snow layer
+        dtype: float32
+        ascii_format: "%6.2f"
+
+    freeboard_uncertainty:
+        short_name: frbu
+        unit: meter
+        level: L2
+        docstr:
+          Uncorrelated uncertainty of the freeboard value (to be associated with
+          ice or snow freeboard only)
+        dtype: float32
+        ascii_format: "%6.2f"
+
+    freeboard_bias:
+        short_name: frbb
+        unit: meter
+        level: L2
+        docstr:
+          Correlated bias of the freeboard value (to be associated with
+          ice or snow freeboard only)
+        dtype: float32
+        ascii_format: "%6.2f"
