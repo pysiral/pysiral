@@ -45,16 +45,16 @@ def create_parameter_table():
     data.append(header)
 
     # Add parameters
-    for key in sorted(info.parameter.parameters.keys(branch_mode='only')):
+    for key in sorted(info.parameter.definition.keys(branch_mode='only')):
         entry = [
-            info.parameter.parameters[key].short_name,
+            info.parameter.definition[key].short_name,
             key,
-            info.parameter.parameters[key].level,
-            info.parameter.parameters[key].ascii_format,
-            info.parameter.parameters[key].dtype,
-            info.parameter.parameters[key].unit,
+            info.parameter.definition[key].level,
+            info.parameter.definition[key].ascii_format,
+            info.parameter.definition[key].dtype,
+            info.parameter.definition[key].unit,
             Paragraph(
-                info.parameter.parameters[key].docstr, styles['Normal'])
+                info.parameter.definitios[key].docstr, styles['Normal'])
         ]
         data.append(entry)
 
