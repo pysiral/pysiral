@@ -35,6 +35,7 @@ modes_to_be_added:
 # -----------------------------------------------------------------------------
 
 cryosat2:
+
     long_name: CryoSat-2
     docstr:
         Cryosphere radar altimeter mission of the European Space
