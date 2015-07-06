@@ -33,7 +33,7 @@ class TestDefinitionfiles(unittest.TestCase):
 
     def testParameterIDsAreUnique(self):
         pars = get_parameters()
-        ids = [par.short_name for par in pars.parameter.iterbranches()]
+        ids = [par.short_name for par in pars.definition.iterbranches()]
         ids_unique = list(np.unique(ids))
         self.assertListEqual(sorted(ids), sorted(ids_unique))
 
@@ -41,7 +41,7 @@ class TestDefinitionfiles(unittest.TestCase):
         pars = get_parameters()
         tags = ["short_name", "level", "unit",
                 "docstr", "dtype", "ascii_format"]
-        for par in pars.parameter.iterbranches():
+        for par in pars.definition.iterbranches():
             for tag in tags:
                 msg = tag+" in "+par.branchName()
                 self.assertTrue(type(par[tag]) is str, msg=msg)
