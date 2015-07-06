@@ -47,6 +47,13 @@ class ConfigInfo(object):
                     self._DEFINITION_FILES[key]))
             setattr(self, key, content)
 
+    @property
+    def doc_path(self):
+        return self._return_path("doc")
+
+    def _return_path(self, subfolder):
+        return os.path.join(self.pysiral_local_path, subfolder)
+
 
 def get_yaml_config(filename, output="treedict"):
     """
