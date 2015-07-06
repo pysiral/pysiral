@@ -69,7 +69,7 @@ def get_yaml_config(filename, output="treedict"):
             "treedict" (default): Returns a treedict object
             "dict": Returns a python dictionary
     """
-    with open("filename", 'r') as f:
+    with open(filename, 'r') as f:
         content_dict = yaml.load(f)
 
     if output == "treedict":
