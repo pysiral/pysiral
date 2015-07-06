@@ -1,0 +1,46 @@
+# Definition file of supported radar altimeter missions in pysiral
+---
+
+# -----------------------------------------------------------------------------
+# Overview of radar avalailable radar altimeter mission and radar modes
+# -----------------------------------------------------------------------------
+
+# list of all mission
+# (list item are the valid string tags for adressing the missions)
+missions:
+    - cryosat2
+
+# These missions are includeed in the pysiral concept but support
+# will be added later in the development phase
+missions_to_be_added:
+    - ers1
+    - ers2
+    - envisat
+    - altika
+
+# list of supported radar altimeter modes
+modes:
+    - sar
+    - sin
+
+# Support for LRM data will come later with the integration of
+# EnviSat and the ERS-1/2 mission
+modes_to_be_added:
+    - lrm
+
+
+# -----------------------------------------------------------------------------
+# Definition for each mission
+# (the tag name has to be identical to the one in the mission list)
+# -----------------------------------------------------------------------------
+
+cryosat2:
+    long_name: CryoSat-2
+    docstr:
+        Cryosphere radar altimeter mission of the European Space
+        Agency (ESA)
+    data_period:
+        start: 2011-01-01T00:00:00.00+00
+        stop: null
+    sea_ice_radar_modes: ["sar", "sin"]
+    orbit_max_latitude: 88.0
