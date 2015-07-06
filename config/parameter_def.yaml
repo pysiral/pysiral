@@ -2,7 +2,6 @@
 
 
 # categorical listing of all parameters with abbreviations, unit and docstr
-parameters:
 
 l1b_list:
     - null
@@ -13,6 +12,7 @@ l2_list:
 l2_list:
     - null
 
+definition:
 
     # Geophysical parameters
 
