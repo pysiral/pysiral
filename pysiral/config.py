@@ -39,8 +39,12 @@ class ConfigInfo(object):
 
     def __init__(self):
         """ Read all definition files """
+        self.pysiral_local_path = get_pysiral_local_path()
         for key in self._DEFINITION_FILES.keys():
-            content = get_yaml_config(self._DEFINITION_FILES[key])
+            content = get_yaml_config(
+                os.path.join(
+                    self.pysiral_local_path,
+                    self._DEFINITION_FILES[key]))
             setattr(self, key, content)
 
 
