@@ -29,27 +29,47 @@ class ConfigInfo(object):
 
     # Global variables
     _DEFINITION_FILES = {
-        "mission": os.path.join("config", "mission_def.yaml"),
-        "area": os.path.join("config", "area_def.yaml"),
-        "auxdata": os.path.join("config", "auxdata_def.yaml"),
-        "products": os.path.join("config", "product_def.yaml"),
-        "parameter": os.path.join("config", "parameter_def.yaml"),
-        "local_machine": "local_machine_def.yaml"
+        "mission": "mission_def.yaml",
+        "area": "area_def.yaml",
+        "auxdata": "auxdata_def.yaml",
+        "product": "product_def.yaml",
+        "parameter": "parameter_def.yaml",
     }
+
+    _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
     def __init__(self):
         """ Read all definition files """
+        # Store the main path on this machine
         self.pysiral_local_path = get_pysiral_local_path()
-        for key in self._DEFINITION_FILES.keys():
-            content = get_yaml_config(
-                os.path.join(
-                    self.pysiral_local_path,
-                    self._DEFINITION_FILES[key]))
-            setattr(self, key, content)
+        # read the definition files in the config folder
+        self._read_config_files()
+        # read the local machine definition file
+        self._read_local_machine_file()
 
     @property
     def doc_path(self):
+        """ Returns the local path to the document folder"""
         return self._return_path("doc")
+
+    @property
+    def config_path(self):
+        """ Returns the local path to the document folder"""
+        return self._return_path("config")
+
+    def _read_config_files(self):
+        for key in self._DEFINITION_FILES.keys():
+            content = get_yaml_config(
+                os.path.join(
+                    self.config_path,
+                    self._DEFINITION_FILES[key]))
+            setattr(self, key, content)
+
+    def _read_local_machine_file(self):
+        content = get_yaml_config(
+            os.path.join(
+                self.pysiral_local_path, self._LOCAL_MACHINE_DEF_FILE))
+        setattr(self, "local_machine", content)
 
     def _return_path(self, subfolder):
         return os.path.join(self.pysiral_local_path, subfolder)
