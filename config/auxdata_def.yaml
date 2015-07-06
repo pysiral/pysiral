@@ -1,0 +1,35 @@
+# Definition file of supported auxiliary datasets in pysiral
+---
+
+# Note: path keywords must be set in local_machine_def.yaml
+
+# list of valid auxiliary data types
+auxdata_types:
+    - mean_sea_surface
+    - ice_concentration
+    - ice_type
+    - ice_type_fraction
+    - snow_depth
+    - snow_density
+
+
+# list of mean_sea_surface data products
+mss:
+
+# DTU 10 mean sea surface
+    dtu10mss:
+        type: static
+        frequency: null
+        path: dtu_mss
+        file: DTU10MSS_1min.nc
+        parser_class: !!python/name:module.name mss.DTU1MinGrid
+        docstr: DTU10 mean sea surface (1 minute grid)
+
+# DTU 13 mean sea surface
+    dtu13mss:
+        type: static
+        frequency: null
+        path: dtu_mss
+        file: DTU13MSS_1min.nc
+        parser_class: !!python/name:module.name mss.DTU1MinGrid
+        docstr: DTU13 mean sea surface (1 minute grid)
