@@ -28,13 +28,20 @@ class ConfigInfo(object):
     """
 
     # Global variables
-    _MISSION_DEF_FILE = os.path.join("..", "config", "mission_def.yaml")
-    _AREA_DEF_FILE = os.path.join("..", "config", "area_def.yaml")
-    _AUXDATA_DEF_FILE = os.path.join("..", "config", "auxdata_def.yaml")
-    _PRODUCTS_DEF_FILE = os.path.join("..", "config", "products_def.yaml")
+    _DEFINITION_FILES = {
+        "mission": os.path.join("..", "config", "mission_def.yaml"),
+        "area": os.path.join("..", "config", "area_def.yaml"),
+        "auxdata": os.path.join("..", "config", "auxdata_def.yaml"),
+        "products": os.path.join("..", "config", "products_def.yaml"),
+        "parameters": os.path.join("..", "config", "products_def.yaml"),
+        "local_machine": os.path.join("..", "local_machine_def.yaml"),
+    }
 
     def __init__(self):
-        pass
+        """ Read all definition files """
+        for key in self._DEFINITION_FILES.keys():
+            content = get_yaml_config(self._DEFINITION_FILES[key])
+            setattr(self, key, content)
 
 
 def get_yaml_config(filename, output="treedict"):

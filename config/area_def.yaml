@@ -1,0 +1,19 @@
+# Area definition file
+
+nsidc_stere_north_6k:
+    name: NSIDC Polar Stereographic North
+    id: nsidc_stere_north_6k
+    proj_dict:
+        proj: stere
+        lat_0: 90.0
+        lat_ts: 70.0
+        lon_0: -45.0
+        k: 1
+        x_0: 0
+        y_0: 0
+        a: 6378273.0
+        b: 6356889.449
+        units: m
+    xsize: 1216
+    ysize: 1792
+    area_extent: (-3850000.0, -5350000.0, 3750000.0, 5850000.0)
