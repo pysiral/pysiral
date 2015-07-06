@@ -4,6 +4,16 @@
 # categorical listing of all parameters with abbreviations, unit and docstr
 parameters:
 
+l1b_list:
+    - null
+
+l2_list:
+    - null
+
+l2_list:
+    - null
+
+
     # Geophysical parameters
 
     ice_freeboard:
