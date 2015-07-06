@@ -76,3 +76,10 @@ def get_yaml_config(filename, output="treedict"):
         return TreeDict.fromdict(content_dict, expand_nested=True)
     else:
         return content_dict
+
+
+def get_pysiral_local_path():
+    """ Returns pysiral's main directory for the local machine """
+    directory = os.path.dirname(__file__)
+    directory = os.path.abspath(os.path.join(directory, '..'))
+    return directory
