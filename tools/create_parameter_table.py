@@ -54,7 +54,7 @@ def create_parameter_table():
             info.parameter.definition[key].dtype,
             info.parameter.definition[key].unit,
             Paragraph(
-                info.parameter.definitios[key].docstr, styles['Normal'])
+                info.parameter.definition[key].docstr, styles['Normal'])
         ]
         data.append(entry)
 
