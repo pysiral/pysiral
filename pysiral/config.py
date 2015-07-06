@@ -29,12 +29,12 @@ class ConfigInfo(object):
 
     # Global variables
     _DEFINITION_FILES = {
-        "mission": os.path.join("..", "config", "mission_def.yaml"),
-        "area": os.path.join("..", "config", "area_def.yaml"),
-        "auxdata": os.path.join("..", "config", "auxdata_def.yaml"),
-        "products": os.path.join("..", "config", "products_def.yaml"),
-        "parameters": os.path.join("..", "config", "products_def.yaml"),
-        "local_machine": os.path.join("..", "local_machine_def.yaml"),
+        "mission": os.path.join("config", "mission_def.yaml"),
+        "area": os.path.join("config", "area_def.yaml"),
+        "auxdata": os.path.join("config", "auxdata_def.yaml"),
+        "products": os.path.join("config", "product_def.yaml"),
+        "parameter": os.path.join("config", "parameter_def.yaml"),
+        "local_machine": "local_machine_def.yaml"
     }
 
     def __init__(self):
