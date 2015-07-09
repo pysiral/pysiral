@@ -69,6 +69,153 @@ class CryoSatL1B(L1bData):
         pass
 
 
+class CS2L1bScienceHeader(object):
+    """
+    Parent class for both MPH and SPH header informations
+    """
+
+    def __init__(self):
+        self.unit_dict = {}
+        self.dtype_dict = {}
+        self.field_list = []
+
+    def _add_field(self, tag, value):
+        setattr(self, tag, value)
+
+    def scan_line(self, line):
+        """ Parses a line from the MPH header of the data product file """
+        parser = parse.compile("{tag}={value}")
+        match = parser.parse(line)
+        if match:
+            tag = match["tag"].lower()
+            # clean string expression and get unit of field value
+            value, unit = self._parse_field_line(match["value"])
+            # convert the unit to native data type
+            value, dtype = self._value_convert_dtype(tag, value)
+            # Save to data structure
+            setattr(self, tag, value)
+            self.field_list.append(tag)
+            self.dtype_dict[tag] = dtype
+            self.unit_dict[tag] = unit
+
+    def _parse_field_line(self, value):
+        """ Processes the raw value string of an MPH field """
+        # clear double quotes and extra whitespaces from strings
+        value = value.replace("\"", "").strip()
+        # check if unit is given
+        unit_parser = parse.compile("{value}<{unit}>")
+        unit_match = unit_parser.parse(value)
+        unit = None
+        if unit_match:
+            value = unit_match["value"]
+            unit = unit_match["unit"]
+        # Automatical convert in the unit to the proper data type
+        return value, unit
+
+    def _value_convert_dtype(self, tag, value):
+        """ Convert the value to either integer or float """
+        # TODO: The explicit list for field is not a good solution
+        #       Proper way needed to do this
+        dtype = "str"
+        if tag.upper() in self._INT_LIST:
+            dtype = "int32"
+            value = np.int32(value)
+        if tag.upper() in self._FLOAT_LIST:
+            dtype = "float32"
+            value = np.float32(value)
+        return value, dtype
+
+    def get_by_fieldname(self, fieldname):
+        """
+        Convinience function that returns the value, data type
+        of an MPH records.
+
+        Arguments:
+            fieldname: (str):
+                Name of the MPH field, case insensitive
+
+        Output:
+            value:
+                value of the field in its respective data type
+                None: if invalid field name
+
+            unit: (str)
+                Unit label
+                None: if invalid field name
+                None: if specific unit not given in the mph
+        """
+        if fieldname not in self.field_list:
+            return None, None
+        return getattr(self, fieldname), self.unit_dict[fieldname]
+
+    def __repr__(self):
+        output = ""
+        for field in self.field_list:
+            output += "%s=%s" % (field, getattr(self, field))
+            output += ", unit="+str(self.unit_dict[field])
+            output += ", dtype="+str(self.dtype_dict[field])
+            output += "\n"
+        return output
+
+
+class CS2L1bScienceMPH(CS2L1bScienceHeader):
+    """
+    Container for the Main Product Header of CryoSat-2 L1B science data
+    """
+
+    # Datatypes for automatic conversion
+    # A field that is in here is converted to an 32bit integer
+    _INT_LIST = [
+        "PHASE", "CYCLE",  "REL_ORBIT", "ABS_ORBIT", "SAT_BINARY_TIME",
+        "CLOCK_STEP", "LEAP_SIGN", "LEAP_ERR", "PRODUCT_ERR", "TOT_SIZE",
+        "SPH_SIZE", "NUM_DSD", "DSD_SIZE", "NUM_DATA_SETS", "CRC",
+        "ABS_ORBIT_START", "ABS_ORBIT_STOP", "L0_PROC_FLAG"]
+
+    # A field that is in here is converted to an 32bit float
+    _FLOAT_LIST = [
+        "REL_TIME_ASC_NODE_START", "DELTA_UT1", "X_POSITION", "Y_POSITION",
+        "Z_POSITION", "X_VELOCITY", "Y_VELOCITY", "Z_VELOCITY",
+        "L0_PROCESSING_QUALITY", "L0_PROC_THRESH", "L0_GAPS_FLAG",
+        "L0_GAPS_NUM", "OPEN_OCEAN_PERCENT", "CLOSE_SEA_PERCENT",
+        "CONTINENT_ICE_PERCENT", "LAND_PERCENT", "L1B_PROD_STATUS",
+        "L1B_PROC_FLAG", "L1B_PROCESSING_QUALITY", "L1B_PROC_THRESH",
+        "REL_TIME_ASC_NODE_STOP", "EQUATOR_CROSS_LONG", "START_LAT",
+        "START_LONG", "STOP_LAT", "STOP_LONG"]
+
+    def __init__(self):
+        super(CS2L1bScienceMPH, self).__init__()
+
+    def last_field(self, line):
+        return re.search("CRC=", line)
+
+
+class CS2L1bScienceSPH(CS2L1bScienceHeader):
+    """
+    Container for the Specific Product Header of CryoSat-2 L1B science data
+    """
+
+    # Datatypes for automatic conversion
+    # A field that is in here is converted to an 32bit integer
+    _INT_LIST = ["ABS_ORBIT_START", "ABS_ORBIT_STOP", "L0_PROC_FLAG",
+                 "L0_GAPS_FLAG", "L0_GAPS_NUM", "L1B_PROD_STATUS",
+                 "L1B_PROC_FLAG", ]
+
+    # A field that is in here is converted to an 32bit float
+    _FLOAT_LIST = ["REL_TIME_ASC_NODE_START", "REL_TIME_ASC_NODE_STOP",
+                   "EQUATOR_CROSS_LONG", "START_LAT", "START_LONG",
+                   "STOP_LAT", "STOP_LONG", "L0_PROCESSING_QUALITY",
+                   "L0_PROC_THRESH", "OPEN_OCEAN_PERCENT",
+                   "CLOSE_SEA_PERCENT", "CONTINENT_ICE_PERCENT",
+                   "LAND_PERCENT", "L1B_PROCESSING_QUALITY",
+                   "L1B_PROC_THRESH"]
+
+    def __init__(self):
+        super(CS2L1bScienceSPH, self).__init__()
+
+    def last_field(self, line):
+        return re.search("L1B_PROC_THRESH=", line)
+
+
 def parse_cryosat_l1b_filename(filename):
     """
     Returns the information in the CryoSat-2 l1b filename
