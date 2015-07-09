@@ -109,7 +109,12 @@ class CryoSatL1B(L1bData):
             line_index = +1
 
     def _parse_dsd(self):
-        pass
+        """ Reads the Data Set Descriptors dsd's in the L1b header """
+        self.dsd = CS2L1bScienceDataSetDescriptors()
+        n_dsd_lines = self.dsd.get_num_lines(self.mph.num_dsd)
+        for i in np.arange(n_dsd_lines+1):
+            line = self._fh.readline()
+            self.dsd.parse_line(line)
 
     def _parse_data_blocks(self):
         pass
