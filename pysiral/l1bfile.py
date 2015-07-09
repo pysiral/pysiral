@@ -86,7 +86,7 @@ class CryoSatL1B(L1bData):
         Reads the main product header (mph) of a CryoSat-2 L1b file
         """
         # Save the mph information in its own class
-        self.mph = CS2L1bScienceMPH()
+        self.mph = CS2L1bMainProductHeader()
         self._read_header_lines(self.mph)
 
     def _parse_sph(self):
@@ -94,10 +94,11 @@ class CryoSatL1B(L1bData):
         Reads the main product header (mph) of a CryoSat-2 L1b file
         """
         # Save the mph information in its own class
-        self.sph = CS2L1bScienceSPH()
+        self.sph = CS2L1bSpecificProductHeader()
         self._read_header_lines(self.sph)
 
     def _read_header_lines(self, header):
+        """ Method to read the MPH and SPH headers are identical """
         line_index = 0
         while line_index < 1000:
             line = self._fh.readline()
@@ -114,7 +115,7 @@ class CryoSatL1B(L1bData):
         pass
 
 
-class CS2L1bScienceHeader(object):
+class CS2L1bBaseHeader(object):
     """
     Parent class for both MPH and SPH header informations
     """
@@ -203,7 +204,7 @@ class CS2L1bScienceHeader(object):
         return output
 
 
-class CS2L1bScienceMPH(CS2L1bScienceHeader):
+class CS2L1bMainProductHeader(CS2L1bBaseHeader):
     """
     Container for the Main Product Header of CryoSat-2 L1B science data
     """
@@ -228,13 +229,13 @@ class CS2L1bScienceMPH(CS2L1bScienceHeader):
         "START_LONG", "STOP_LAT", "STOP_LONG"]
 
     def __init__(self):
-        super(CS2L1bScienceMPH, self).__init__()
+        super(CS2L1bMainProductHeader, self).__init__()
 
     def last_field(self, line):
         return re.search("CRC=", line)
 
 
-class CS2L1bScienceSPH(CS2L1bScienceHeader):
+class CS2L1bSpecificProductHeader(CS2L1bBaseHeader):
     """
     Container for the Specific Product Header of CryoSat-2 L1B science data
     """
@@ -255,7 +256,7 @@ class CS2L1bScienceSPH(CS2L1bScienceHeader):
                    "L1B_PROC_THRESH"]
 
     def __init__(self):
-        super(CS2L1bScienceSPH, self).__init__()
+        super(CS2L1bSpecificProductHeader, self).__init__()
 
     def last_field(self, line):
         return re.search("L1B_PROC_THRESH=", line)
