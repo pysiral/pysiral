@@ -31,5 +31,11 @@ def parse_cryosat_l1b():
     l1b.filename = l1b_file
     l1b.parse()
 
+    # Tests
+    print l1b.mph
+    print l1b.sph
+    print l1b.dsd
+
+
 if __name__ == "__main__":
     parse_cryosat_l1b()
