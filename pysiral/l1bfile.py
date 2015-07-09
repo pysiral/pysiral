@@ -6,6 +6,8 @@ Created on Tue Jul 07 14:10:34 2015
 """
 
 import os
+import re
+import numpy as np
 from treedict import TreeDict
 import parse
 from dateutil import parser as dtparser
