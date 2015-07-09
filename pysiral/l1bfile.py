@@ -66,6 +66,49 @@ class CryoSatL1B(L1bData):
         self._xmlh = parse_cryosat_l1b_xml_header(self._filename_header)
 
     def _parse_product_file(self):
+        """
+        Reads the content of *L1B*.DBL files
+            - main product header (mph)
+            - specific product header (sph)
+            - data set descriptors (dsd)
+            - data_block
+        """
+        with open(self._filename_product, "r") as self._fh:
+            self._parse_mph()
+            self._parse_sph()
+            self._parse_dsd()
+            self._parse_data_blocks()
+
+    def _parse_mph(self):
+        """
+        Reads the main product header (mph) of a CryoSat-2 L1b file
+        """
+        # Save the mph information in its own class
+        self.mph = CS2L1bScienceMPH()
+        self._read_header_lines(self.mph)
+
+    def _parse_sph(self):
+        """
+        Reads the main product header (mph) of a CryoSat-2 L1b file
+        """
+        # Save the mph information in its own class
+        self.sph = CS2L1bScienceSPH()
+        self._read_header_lines(self.sph)
+
+    def _read_header_lines(self, header):
+        line_index = 0
+        while line_index < 1000:
+            line = self._fh.readline()
+            header.scan_line(line)
+            # Break if the first SPH field is reached
+            if header.last_field(line):
+                break
+            line_index = +1
+
+    def _parse_dsd(self):
+        pass
+
+    def _parse_data_blocks(self):
         pass
 
 
