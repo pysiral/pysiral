@@ -57,7 +57,8 @@ class FileIOErrorHandler(ErrorHandler):
         self._exception_type = IOError
         self._error_dict = {
             "file_undefined": False,
-            "io_failed": False}
+            "io_failed": False,
+            "format_not_supported": False}
 
     @property
     def file_undefined(self):
@@ -65,9 +66,7 @@ class FileIOErrorHandler(ErrorHandler):
 
     @file_undefined.setter
     def file_undefined(self, value):
-        if type(value) is not 'bool':
-            value = True
-        self._error_dict["file_undefined"] = value
+        self._error_dict["file_undefined"] = self._validate_flag(value)
 
     @property
     def io_failed(self):
@@ -75,6 +74,12 @@ class FileIOErrorHandler(ErrorHandler):
 
     @io_failed.setter
     def io_failed(self, value):
-        if type(value) is not 'bool':
-            value = True
-        self._error_dict["io_failed"] = value
+        self._error_dict["io_failed"] = self._validate_flag(value)
+
+    @property
+    def format_not_supported(self):
+        return self._error_dict["format_not_supported"]
+
+    @format_not_supported.setter
+    def format_not_supported(self, value):
+        self._error_dict["format_not_supported"] = self._validate_flag(value)
