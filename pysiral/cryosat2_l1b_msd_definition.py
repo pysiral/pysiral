@@ -40,71 +40,71 @@ class Cryosat2MSDDef_C(object):
 
         # measurement group
         self.measurement_group = [
-            - {name: td, struct_fmt: "q"}
-            - {name: h0, struct_fmt: "l"}
-            - {name: cor2, struct_fmt: "l"}
-            - {name: lai, struct_fmt: "l"}
-            - {name: fai, struct_fmt: "l"}
-            - {name: agc_ch1, struct_fmt: "l"}
-            - {name: agc_ch2, struct_fmt: "l"}
-            - {name: tr_gain_ch1, struct_fmt: "l"}
-            - {name: tr_gain_ch2, struct_fmt: "l"}
-            - {name: tx_power, struct_fmt: "l"}
-            - {name: dopp_rc, struct_fmt: "l"}
-            - {name: tr_inst_rc, struct_fmt: "l"}
-            - {name: r_inst_rc, struct_fmt: "l"}
-            - {name: tr_inst_gain_c, struct_fmt: "l"}
-            - {name: r_inst_gain_c, struct_fmt: "l"}
-            - {name: int_phase_c, struct_fmt: "l"}
-            - {name: ext_phase_c, struct_fmt: "l"}
-            - {name: noise_pwr, struct_fmt: "l"}
-            - {name: phase_slope_c, struct_fmt: "l"}
-            - {name: spares, struct_fmt: "4b"}
+            mds_def(name="td", fmt="q", size=x),
+            mds_def(name="h0", fmt="l", size=x),
+            mds_def(name="cor2", fmt="l", size=x),
+            mds_def(name="lai", fmt="l", size=x),
+            mds_def(name="fai", fmt="l", size=x),
+            mds_def(name="agc_ch1", fmt="l", size=x),
+            mds_def(name="agc_ch2", fmt="l", size=x),
+            mds_def(name="tr_gain_ch1", fmt="l", size=x),
+            mds_def(name="tr_gain_ch2", fmt="l", size=x),
+            mds_def(name="tx_power", fmt="l", size=x),
+            mds_def(name="dopp_rc", fmt="l", size=x),
+            mds_def(name="tr_inst_rc", fmt="l", size=x),
+            mds_def(name="r_inst_rc", fmt="l", size=x),
+            mds_def(name="tr_inst_gain_c", fmt="l", size=x),
+            mds_def(name="r_inst_gain_c", fmt="l", size=x),
+            mds_def(name="int_phase_c", fmt="l", size=x),
+            mds_def(name="ext_phase_c", fmt="l", size=x),
+            mds_def(name="noise_pwr", fmt="l", size=x),
+            mds_def(name="phase_slope_c", fmt="l", size=x),
+            mds_def(name="spares", fmt="4b", size=x)]
 
         # Geocorrections group
-        geocorrections_group:
-            - {name: dry_c, struct_fmt: "l"}
-            - {name: wet_c, struct_fmt: "l"}
-            - {name: ib_c, struct_fmt: "l"}
-            - {name: dac_c, struct_fmt: "l"}
-            - {name: iono_gim, struct_fmt: "l"}
-            - {name: iono_mod, struct_fmt: "l"}
-            - {name: h_ot, struct_fmt: "l"}
-            - {name: h_lpeot, struct_fmt: "l"}
-            - {name: h_olt, struct_fmt: "l"}
-            - {name: h_set, struct_fmt: "l"}
-            - {name: h_gpt, struct_fmt: "l"}
-            - {name: surf_type, struct_fmt: "L"}
-            - {name: spare1, struct_fmt: "4b"}
-            - {name: corr_status, struct_fmt: "L"}
-            - {name: corr_error, struct_fmt: "L"}
-            - {name: spare2, struct_fmt: "4b"}
+        geocorrections_group = [
+            mds_def(name="dry_c", fmt="l", size=x),
+            mds_def(name="wet_c", fmt="l", size=x),
+            mds_def(name="ib_c", fmt="l", size=x),
+            mds_def(name="dac_c", fmt="l", size=x),
+            mds_def(name="iono_gim", fmt="l", size=x),
+            mds_def(name="iono_mod", fmt="l", size=x),
+            mds_def(name="h_ot", fmt="l", size=x),
+            mds_def(name="h_lpeot", fmt="l", size=x),
+            mds_def(name="h_olt", fmt="l", size=x),
+            mds_def(name="h_set", fmt="l", size=x),
+            mds_def(name="h_gpt", fmt="l", size=x),
+            mds_def(name="surf_type", fmt="L", size=x),
+            mds_def(name="spare1", fmt="4b", size=x),
+            mds_def(name="corr_status", fmt="L", size=x),
+            mds_def(name="corr_error", fmt="L", size=x),
+            mds_def(name="spare2", fmt="4b", size=x)]
 
         # 1Hz Average SAR Waveform group
-        onehz_wavefrom_group:
-            - {name: day_1hz, struct_fmt: "l"}
-            - {name: sec_1hz, struct_fmt: "L"}
-            - {name: micsec_1hz, struct_fmt: "L"}
-            - {name: lat_1hz, struct_fmt: "l"}
-            - {name: lon_1hz, struct_fmt: "l"}
-            - {name: alt_1hz, struct_fmt: "l"}
-            - {name: td_1hz, struct_fmt: "q"}
-            - {name: avg_wfm, struct_fmt: "128I"}
-            - {name: linear_wfm_mult, struct_fmt: "l"}
-            - {name: power2_wfm_mult, struct_fmt: "l"}
-            - {name: num_avg_echoes, struct_fmt: "H"}
-            - {name: flags, struct_fmt: "H"}
+        onehz_wavefrom_group = [
+            mds_def(name="day_1hz", fmt="l", size=x),
+            mds_def(name="sec_1hz", fmt="L", size=x),
+            mds_def(name="micsec_1hz", fmt="L", size=x),
+            mds_def(name="lat_1hz", fmt="l", size=x),
+            mds_def(name="lon_1hz", fmt="l", size=x),
+            mds_def(name="alt_1hz", fmt="l", size=x),
+            mds_def(name="td_1hz", fmt="q", size=x),
+            mds_def(name="avg_wfm", fmt="128I", size=x),
+            mds_def(name="linear_wfm_mult", fmt="l", size=x),
+            mds_def(name="power2_wfm_mult", fmt="l", size=x),
+            mds_def(name="num_avg_echoes", fmt="H", size=x),
+            mds_def(name="flags", fmt="H", size=x)]
 
         # 20 Hz SAR Waveform group
-        sar_waveform_group:
-            - {name: wfm, struct_fmt: "256I"}
-            - {name: linear_wfm_multiplier, struct_fmt: "l"}
-            - {name: power2_wfm_multiplier, struct_fmt: "l"}
-            - {name: num_avg_echoes, struct_fmt: "H"}
-            - {name: flags, struct_fmt: "H"}
-            - {name: beam_sd, struct_fmt: "H"}
-            - {name: beam_centre, struct_fmt: "H"}
-            - {name: beam_amplitude, struct_fmt: "H"}
-            - {name: beam_skew, struct_fmt: "h"}
-            - {name: beam_kurt, struct_fmt: "h"}
-            - {name: beam_spare, struct_fmt: "50b"}
+        sar_waveform_group = [
+            mds_def(name="wfm", fmt="256I", size=x),
+            mds_def(name="linear_wfm_multiplier", fmt="l", size=x),
+            mds_def(name="power2_wfm_multiplier", fmt="l", size=x),
+            mds_def(name="num_avg_echoes", fmt="H", size=x),
+            mds_def(name="flags", fmt="H", size=x),
+            mds_def(name="beam_sd", fmt="H", size=x),
+            mds_def(name="beam_centre", fmt="H", size=x),
+            mds_def(name="beam_amplitude", fmt="H", size=x),
+            mds_def(name="beam_skew", fmt="h", size=x),
+            mds_def(name="beam_kurt", fmt="h", size=x),
+            mds_def(name="beam_spare", fmt="50b", size=x)]
