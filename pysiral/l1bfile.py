@@ -26,7 +26,124 @@ class L1bData(object):
 
 class CryoSatL1B(L1bData):
     """
-    Handles CryoSat L1b Data (Header and Product file)
+
+    Purpose
+    -------
+    Container for CryoSat L1b Science Data including the xml header
+    file (.HDR) and the header/data group file (.DBL). This class
+    inherits all attributes and methods from **L1bData**.
+
+    Applicable Documents
+    --------------------
+    - CRYOSAT Ground Segment, Instrument Processing Facility L1B,
+      Products Specification Format, [PROD-FMT], CS-RS-ACS-GS-5106
+      (issue used: 6.3, Date: 10/02/2015)
+
+    Usage
+    -----
+    After initialisation of the class the filename of a .DBL file
+    has to be supplied. Invoking the ``parse`` method will start
+    the parsing of both the .HDR and .DBL files::
+
+        l1b = CryoSatL1B()
+        l1b.filename = filename
+        l1b.parse()
+
+
+    Header Attributes
+    -----------------
+    Available after ``parse`` method is called. Before that all are of type
+    ``None``
+
+    + xmlh
+        Content of the xml header file (.HDR)
+        The content is currently only saved as a nested OrderedDict
+        object. This may change when the xml header information
+        will be actually used.
+
+    + mph
+        Main Product Header block of the .DBL file. The attribute
+        ``mph`` is of type **CS2L1bBaseHeader**.
+        The mph fields consists of the parameters: name (tag), value,
+        unit and datatype (dtype).
+
+        Accessing fields:
+            Each field can be either accessed directly. Example::
+
+                orbit = l1b.mph.abs_orbit
+
+            or with the `get_by_fieldname` method::
+
+                orbit = l1b.mph.get_by_fieldname("abs_orbit")
+
+            A list of all header field types is accessible in the attribute
+            ``l1b.mph.field_list``.
+
+        Units:
+            The units are stored in a dictionary ``l1b.mph.unit_dict``
+            where the keys are the field names::
+
+                unit = l1b.mph.unit_dict["abs_orbit"]
+
+            If no information on the unit is given in the MPH, the unit is
+            of type ``None`` .
+
+        Daty Types:
+            The data type dictionary is mainly a debug parameter and
+            contains the data types that have been used for converting
+            the raw strings of the header into variables. Currently
+            only types ``int32`` and ``float32`` are used for header
+            number values. The default value is ``str``.
+            The conversion is based on a specific list of data types for
+            each header field. This list is located in the class
+            definitions of **CS2L1bMainProductHeader** and
+            **CS2L1bSpecificProductHeader** in ``pysiral/l1bfile.py``.
+
+            The datatypes can be accessed like the units::
+
+                dtype = l1b.mph.dtype_dict["abs_orbit"]
+
+        Notes:
+            - A quickview of the fields is given by
+              ``print l1b.mph``
+            - by convention all field names are lower case
+            - No unit conversion is done as of yet if the unit contains
+              a scaling (e.g. "10^-2%")
+
+    + sph
+        Specific Product Header block of the .DBL file. The attribute
+        ``sph`` is of type `CS2L1bBaseHeader`. Accessing fields is
+        identical to the main product header (see ``mph``).
+
+    + dsd
+        Data Set Descriptors in the .DBL file as an object of type
+        **CS2L1bScienceDataSetDescriptors**.
+
+        Each DSD in the dbl file is represented as an attribute of ``dsd`` that
+        is of type ``dict``. The keys of the dictionary are given by the
+        field names of each DSD, namely::
+
+            ds_offset
+            ds_tpye
+            ds_size
+            num_dsr
+            filename
+
+       A list of all DSD's is given in the string list ``l1b.dsd.field_list``.
+       The information for each DSD can be accessed by directly calling the
+       dictionary. E.g.::
+
+           tide_file = l1b.dsd.pole_tide_file["filename"]
+
+
+
+    Data Attributes
+    ---------------
+
+
+    Changelog
+    ---------
+
     """
 
     _VALID_BASELINES = ["B001", "C001"]
