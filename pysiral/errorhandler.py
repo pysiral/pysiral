@@ -19,7 +19,7 @@ class ErrorHandler(object):
 
     @raise_on_error.setter
     def raise_on_error(self, value):
-        if type(value) is not 'bool':
+        if type(value) is not bool:
             value = True
         self._raise_on_error = value
 
@@ -30,7 +30,21 @@ class ErrorHandler(object):
         """
         for error_name in self._error_dict.keys():
             if self._error_dict[error_name] and self._raise_on_error:
+                print self._error_dict, self._raise_on_error
                 raise self._exception_type
+
+    def test_errors(self):
+        """ Returns True if any error is True, else False """
+        output = False
+        for error_name in self._error_dict.keys():
+            if self._error_dict[error_name] and self._raise_on_error:
+                output = True
+        return output
+
+    def _validate_flag(self, value):
+        if type(value) is not bool:
+            value = True
+        return value
 
 
 class FileIOErrorHandler(ErrorHandler):
