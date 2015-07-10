@@ -155,9 +155,12 @@ class CryoSatL1B(L1bData):
         self._baseline = None
         self._filename_header = None
         self._filename_product = None
-        self._mph = None
-        self._sph = None
-        self._xmlh = None
+        self.xmlh = None
+        self.mph = None
+        self.sph = None
+        self.dsd = None
+
+
 
     @property
     def filename(self):
