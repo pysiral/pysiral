@@ -5,6 +5,9 @@ Created on Tue Jul 07 14:10:34 2015
 @author: Stefan
 """
 
+from pysiral.errorhandler import FileIOErrorHandler
+from pysiral.config import get_yaml_config, get_pysiral_local_path
+
 import os
 import re
 import numpy as np
@@ -48,6 +51,7 @@ class CryoSatL1B(L1bData):
         l1b = CryoSatL1B()
         l1b.filename = filename
         l1b.parse()
+        status = l1b.get_status()
 
 
     Header Attributes
@@ -149,10 +153,11 @@ class CryoSatL1B(L1bData):
     _VALID_BASELINES = ["C001"]
     _VALID_RADAR_MODES = ["sar"]
 
-    def __init__(self):
+    def __init__(self, raise_on_error=False):
 
         super(CryoSatL1B, self).__init__()
-
+        # Error Handling
+        self._init_error_handling(raise_on_error)
         self._baseline = None
         self._filename_header = None
         self._filename_product = None
@@ -161,29 +166,62 @@ class CryoSatL1B(L1bData):
         self.sph = None
         self.dsd = None
 
-
-
     @property
     def filename(self):
         return self._filename_product
 
     @filename.setter
     def filename(self, filename):
+        """ Save and validate filenames for header and product file """
+        # Test if valid file first
+        self._error.file_undefined = not os.path.isfile(filename)
+        if self._error.file_undefined:
+            return
+        # Split filenames in product and header file
         self._filename_product = filename
         self._filename_header = os.path.splitext(filename)[0]+".HDR"
 
     def parse(self):
         """ Parse the content of the L1B file """
+        # Validate input and either return or raise when input not ok
+        if self._error.test_errors():
+            self._error.validate()
+            return
         # First detect the baseline from the file name
-        self._detect_baseline()
+        self._detect_filetype()
         # Parse the xml header file
-        self._parse_header_file()
+        try:
+            self._parse_header_file()
+        except:
+            self._error.io_failed = True
         # Parse the product file
+        # XXX: Disabled during development
         self._parse_product_file()
+#        try:
+#            self._parse_product_file()
+#        except:
+#            self._error.io_failed = True
+        # Validate the parsing
+        self._error.validate()
 
-    def _detect_baseline(self):
+    def get_status(self):
+        pass
+
+    def _init_error_handling(self, raise_on_error):
+        self._error = FileIOErrorHandler()
+        self._error.raise_on_error = raise_on_error
+        self._error.file_undefined = True
+
+    def _detect_filetype(self):
+        """ Detect and validate the baseline """
         info = parse_cryosat_l1b_filename(self._filename_product)
         self.baseline = info.baseline
+        self.radar_mode = info.radar_mode
+        # Validate
+        if self.baseline not in self._VALID_BASELINES:
+            self._error.format_not_supported = True
+        if self.radar_mode not in self._VALID_RADAR_MODES:
+            self._error.format_not_supported = True
 
     def _parse_header_file(self):
         self._xmlh = parse_cryosat_l1b_xml_header(self._filename_header)
@@ -238,7 +276,11 @@ class CryoSatL1B(L1bData):
             self.dsd.parse_line(line)
 
     def _parse_data_blocks(self):
-        pass
+        """ Read the data blocks """
+        self.mds = CS2L1bMeasurementDataSet()
+        self.mds.baseline = self.baseline
+        self.mds.radar_mode = self.radar_mode
+        self.mds.create_groups()
 
 
 class CS2L1bBaseHeader(object):
@@ -464,6 +506,23 @@ class CS2L1bScienceDataSetDescriptors(object):
                 output += "  %s: %s, unit: %s\n" % (
                     key, str(dsd_dict[key]), str(self.unit_dict[key]))
         return output
+
+
+class CS2L1bMeasurementDataSet():
+
+    def __init__(self):
+        self.baseline = None
+        self.radar_mode = None
+
+    def create_groups(self):
+        # XXX: Quick & Dirty Stuff
+        filename = os.path.join(
+            get_pysiral_local_path(), "pysiral",
+            "filedef", "cryosat2_sar_C001_mds.yaml")
+        definition = get_yaml_config(filename)
+        for field in definition.measurement_group:
+            print field.name
+        raise Exception
 
 
 def parse_cryosat_l1b_filename(filename):
