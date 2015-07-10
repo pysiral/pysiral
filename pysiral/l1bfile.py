@@ -146,7 +146,8 @@ class CryoSatL1B(L1bData):
 
     """
 
-    _VALID_BASELINES = ["B001", "C001"]
+    _VALID_BASELINES = ["C001"]
+    _VALID_RADAR_MODES = ["sar"]
 
     def __init__(self):
 
