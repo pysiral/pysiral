@@ -6,7 +6,7 @@ Created on Tue Jul 07 13:53:17 2015
 """
 
 from pysiral.config import ConfigInfo
-from pysiral.l1bfile import CryoSatL1B
+from pysiral.cryosat2.cryosat2_l1b import CryoSatL1B
 
 import glob
 import os
@@ -32,9 +32,9 @@ def parse_cryosat_l1b():
     l1b.parse()
 
     # Tests
-    print l1b.mph
-    print l1b.sph
-    print l1b.dsd
+#    print l1b.mph
+#    print l1b.sph
+#    print l1b.dsd
 
 
 if __name__ == "__main__":
