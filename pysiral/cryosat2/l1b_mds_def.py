@@ -54,7 +54,7 @@ class OneTenthMicroRadians(Adapter):
         return float(obj)*1e-6
 
 
-class Cryosat2L1bMSDDefinition(object):
+class Cryosat2L1bMDSDefinition(object):
     """ Holds the Definition of L1b MDS records """
 
     def __init__(self):
@@ -196,12 +196,12 @@ class Cryosat2L1bMSDDefinition(object):
         return self.mds
 
 
-def cryosat2_get_msd_def(radar_mode, baseline, n_records):
+def cryosat2_get_mds_def(radar_mode, baseline, n_records):
     # XXX: Testing purposes only, needs functionality
 
-    definition = Cryosat2L1bMSDDefinition()
+    definition = Cryosat2L1bMDSDefinition()
     definition.baseline = baseline
     definition.radar_mode = radar_mode
     definition.n_records = n_records
 
-    return definition.get_msd_parser()
+    return definition.get_mds_parser()

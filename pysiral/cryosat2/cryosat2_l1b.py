@@ -6,7 +6,7 @@ Created on Sun Jul 12 13:51:52 2015
 """
 
 from pysiral.errorhandler import FileIOErrorHandler
-from pysiral.cryosat2.l1b_msd_def import cryosat2_get_msd_def
+from pysiral.cryosat2.l1b_mds_def import cryosat2_get_mds_def
 import os
 import re
 import numpy as np
@@ -14,10 +14,6 @@ from treedict import TreeDict
 import parse
 from dateutil import parser as dtparser
 import xmltodict
-import struct
-from collections import namedtuple
-
-from construct import Struct, UBInt16, UBInt32, SBInt32, Array, Embed
 
 
 class CryoSatL1B(object):
@@ -269,7 +265,7 @@ class CryoSatL1B(object):
         # Set the file pointer
         self._fh.seek(startbyte)
         # Get the parser
-        mds_parser = cryosat2_get_msd_def(
+        mds_parser = cryosat2_get_mds_def(
             self.radar_mode, self.baseline, self.n_msd_records)
         # Parser the binary part of the .DBL file
         self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
