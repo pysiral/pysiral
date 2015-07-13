@@ -63,7 +63,7 @@ class Cryosat2L1bMDSDefinition(object):
         self.radar_mode = None
         self.n_records = 0
 
-    def get_msd_parser(self):
+    def get_mds_parser(self):
 
         self.time_orbit_group = Struct(
             "time_orbit",
