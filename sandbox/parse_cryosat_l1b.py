@@ -56,5 +56,7 @@ def get_wfm_range(window_delay, n_counts):
     return wfm_range
 
 
+def get_tai_time(day, sec, msec):
+    return datetime(2000, 1, 1)+timedelta(day, sec, msec)
 if __name__ == "__main__":
     parse_cryosat_l1b()
