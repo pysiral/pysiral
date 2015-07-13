@@ -269,10 +269,10 @@ class CryoSatL1B(object):
         # Set the file pointer
         self._fh.seek(startbyte)
         # Get the parser
-        msd_parser = cryosat2_get_msd_def(
+        mds_parser = cryosat2_get_msd_def(
             self.radar_mode, self.baseline, self.n_msd_records)
         # Parser the binary part of the .DBL file
-        self.msd = msd_parser.parse(self._fh.read(msd_parser.sizeof()))
+        self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
 
     def _read_header_lines(self, header):
         """ Method to read the MPH and SPH headers are identical """
