@@ -473,6 +473,7 @@ class CS2L1bScienceDataSetDescriptors(object):
 
     def _append_field(self, tag, value):
         """ Adds a field to the current data set descriptor """
+        tag = tag.lower()
         dsd_dict = getattr(self, self._current_dsd)
         dsd_dict[tag] = value
         setattr(self, self._current_dsd, dsd_dict)
@@ -492,12 +493,30 @@ class CS2L1bScienceDataSetDescriptors(object):
             return
         # Check if start of new dsd and create a new one
         if self._is_dsd_start(tag):
+            value = value.lower()
             setattr(self, value, self._DSD_REFDICT.copy())
             self._current_dsd = value
             self.field_list.append(value)
             return
         # save the field
         self._append_field(tag, value)
+
+    def get_by_fieldname(self, fieldname):
+        """
+        Convinience function that returns the dict of an DSD records.
+
+        Arguments:
+            fieldname: (str):
+                Name of the DSD field, case insensitive
+
+        Output:
+            value (dict):
+                DSD dict
+
+        """
+        if fieldname not in self.field_list:
+            return None
+        return getattr(self, fieldname)
 
     def __repr__(self):
         """ String representation of the dsd's """
