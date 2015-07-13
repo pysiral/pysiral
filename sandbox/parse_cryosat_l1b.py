@@ -8,6 +8,9 @@ Created on Tue Jul 07 13:53:17 2015
 from pysiral.config import ConfigInfo
 from pysiral.cryosat2.cryosat2_l1b import CryoSatL1B
 
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 import glob
 import os
 
@@ -31,10 +34,26 @@ def parse_cryosat_l1b():
     l1b.filename = l1b_file
     l1b.parse()
 
-    # Tests
-#    print l1b.mph
-#    print l1b.sph
-#    print l1b.dsd
+    # Get timing informatio
+    timeorbit = l1b.mds[0].time_orbit[0]
+    time_tai = get_tai_time(timeorbit.day, timeorbit.sec, timeorbit.msec)
+    time_utc = tai2utc(time_tai)
+    print time_tai
+
+    # Get Waveform
+    record = l1b.mds[0].waveform[0]
+    measurement = l1b.mds[0].measurement[0]
+    wfm = np.array(record.wfm).astype(np.float32)
+    wfm_power = get_wfm_power(wfm, record.linear_scale, record.power_scale)
+
+    # Calculate range for wavforme
+    wfm_range = get_wfm_range(measurement.window_delay, len(wfm))
+
+    # Plot the figure
+    plt.figure()
+    plt.plot(wfm_range, wfm_power)
+    plt.show()
+
 
 def get_wfm_power(counts, linear_scale, power_scale):
     """ Test function to return the waveform power in Watt """
@@ -58,5 +77,16 @@ def get_wfm_range(window_delay, n_counts):
 
 def get_tai_time(day, sec, msec):
     return datetime(2000, 1, 1)+timedelta(day, sec, msec)
+
+
+def tai2utc(time_tai):
+    fraction_of_day = float(time_tai.seconds)/86400.
+    offset = pysofa.dat(
+        time_tai.year,
+        time_tai.month,
+        time_tai.day,
+        fraction_of_day)
+    print offset
+
 if __name__ == "__main__":
     parse_cryosat_l1b()
