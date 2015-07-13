@@ -179,18 +179,14 @@ def contruct_cryosat_l1b():
         UBInt16("n_beams_before_weighing"),
         Padding(66))
 
-#    print waveform_beam_group.sizeof()
-#    raise Exception
-
     waveform_group = Struct(
         "waveform",
         Array(256, UBInt16("wfm")),
-        SBInt32("linear_wfm_multiplier"),
-        SBInt32("power2_wfm_multiplier"),
+        SBInt32("echo_scale_watts"),
+        SBInt32("echo_scale_power"),
         UBInt16("num_avg_echoes"),
         waveform_flag_group,
         waveform_beam_group)
-    print waveform_group.sizeof()*20
 
     mds_record = Struct(
         "mds_record",
@@ -202,11 +198,13 @@ def contruct_cryosat_l1b():
 
     mds = Array(128, mds_record)
 
+    print mds.sizeof()
+
     with open(l1b_file, "rb") as fh:
         fh.seek(14679)
-        content = mds.parse(fh.read(mds.sizeof()))
+        mds = mds.parse(fh.read(mds.sizeof()))
 
-    print [record.corrections.surface_type for record in content]
+    print [record.corrections.surface_type for record in mds]
 
 
 if __name__ == "__main__":
