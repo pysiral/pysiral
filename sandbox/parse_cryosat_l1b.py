@@ -41,6 +41,20 @@ def get_wfm_power(counts, linear_scale, power_scale):
     return counts*(linear_scale*1e-9)*2.0**(power_scale)
 
 
+def get_wfm_range(window_delay, n_counts):
+    """ Test function to return range for the waveform bins """
+    lightspeed = 299792458.0
+    bandwidth = 320000000.0
+    # The two way delay time give the distance to the central bin
+    central_bin_range = window_delay*lightspeed/2.0
+    # Calculate the offset from the center to the first range bin
+    window_size = (n_counts*lightspeed)/(4.0*bandwidth)
+    first_bin_offset = window_size/2.0
+    # Calculate the range increment for each bin
+    range_increment = np.arange(n_counts)*lightspeed/(4.0*bandwidth)
+    wfm_range = central_bin_range - first_bin_offset + range_increment
+    return wfm_range
+
 
 if __name__ == "__main__":
     parse_cryosat_l1b()
