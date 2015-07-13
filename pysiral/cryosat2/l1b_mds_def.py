@@ -141,8 +141,8 @@ class Cryosat2L1bMDSDefinition(object):
             MilliMeter(SBInt32("altitude_cog")),
             PicoSecond(UBInt64("window_delay")),
             Array(128, UBInt16("wfm")),
-            SBInt32("echo_scale_watts"),
-            SBInt32("echo_scale_power"),
+            SBInt32("linear_scale"),
+            SBInt32("power_scale"),
             UBInt16("num_avg_echoes"),
             UBInt16("flags"))
 
@@ -178,8 +178,8 @@ class Cryosat2L1bMDSDefinition(object):
         self.waveform_group = Struct(
             "waveform",
             Array(256, UBInt16("wfm")),
-            SBInt32("linear_wfm_multiplier"),
-            SBInt32("power2_wfm_multiplier"),
+            SBInt32("linear_scale"),
+            SBInt32("power_scale"),
             UBInt16("num_avg_echoes"),
             self.waveform_flag_group,
             self.waveform_beam_group)
