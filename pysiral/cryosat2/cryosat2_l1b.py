@@ -511,19 +511,6 @@ class CS2L1bScienceDataSetDescriptors(object):
         return output
 
 
-class CS2L1bMeasurementDataSet():
-
-    def __init__(self, baseline, radar_mode):
-        self.baseline = baseline
-        self.radar_mode = radar_mode
-        self.fields = cryosat2_get_msd_def(self.radar_mode, self.baseline)
-
-    def create_groups(self):
-        # XXX: Quick & Dirty Stuff
-        # Get the MSD definition
-        pass
-
-
 def parse_cryosat_l1b_filename(filename):
     """
     Returns the information in the CryoSat-2 l1b filename
