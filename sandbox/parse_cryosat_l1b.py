@@ -36,6 +36,11 @@ def parse_cryosat_l1b():
 #    print l1b.sph
 #    print l1b.dsd
 
+def get_wfm_power(counts, linear_scale, power_scale):
+    """ Test function to return the waveform power in Watt """
+    return counts*(linear_scale*1e-9)*2.0**(power_scale)
+
+
 
 if __name__ == "__main__":
     parse_cryosat_l1b()
