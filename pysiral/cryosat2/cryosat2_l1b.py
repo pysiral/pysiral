@@ -231,7 +231,7 @@ class CryoSatL1B(object):
             self._parse_mph()
             self._parse_sph()
             self._parse_dsd()
-        # with open(self._filename_product, "rb") as self._fh:
+        with open(self._filename_product, "rb") as self._fh:
             self._parse_msd()
 
     def _parse_mph(self):
@@ -257,58 +257,22 @@ class CryoSatL1B(object):
         for i in np.arange(n_dsd_lines+1):
             line = self._fh.readline()
             self.dsd.parse_line(line)
-        self._mds_start_byte = self._fh.tell()
 
     def _parse_msd(self):
         """ Read the data blocks """
-        # Calculate the number of records
-#        mds_description = getattr(self.dsd, self.dsd.field_list[0])
-#        dsd_bytes = int(mds_description["num_dsr"])*
-#        print int(mds_description["ds_offset"])
-#        print int(mds_description["dsr_size"])
-        # Got to beginning of binary part or the file
-        # start_byte = 3784+self.mph.sph_size+(self.mph.num_dsd*self.mph.dsd_size)
-        self._fh.seek(self._mds_start_byte)
-        self.mds = CS2L1bMeasurementDataSet(self.radar_mode, self.baseline)
-        self.mds.create_groups()
-
-        print self._mds_start_byte, self._fh.tell()
-
-        time_orbit_group = Struct(
-            "time_orbit_group",
-            SBInt32("day"),
-            UBInt32("sec"),
-            UBInt32("msec"),
-            UBInt16("uso_corr"),
-            UBInt32("mode_id"),
-            UBInt16("source_sequence_counter"),
-            UBInt32("instrument_configuration"),
-            UBInt32("burst_counter"),
-            SBInt32("measurement_latitude"),
-            SBInt32("measurement_longtitude"),
-            SBInt32("altitude_cog"),
-            SBInt32("altitude_rate"),
-            Array(3, SBInt32("satellite_velocity")),
-            Array(3, SBInt32("real_beam")),
-            Array(3, SBInt32("interferometry_baseline")),
-            UBInt16("star_tracker_usage"),
-            SBInt32("antenna_roll"),
-            SBInt32("antenna_pitch"),
-            SBInt32("antenna_yaw"),
-            UBInt32("fbr_confidence_flag"),
-            UBInt32("spare"))
-
-#        for i in np.arange(20):
-#            chars = self._fh.read(402)
-#            print len(chars), self._fh.tell()
-        time_orbits = Array(10, time_orbit_group)
-        chars = self._fh.read(10*102)
-        a = time_orbits.parse(chars)
-        print a[0]
-#        for i in np.arange(20):
-#            a = time_orbit_group.parse(self._fh.read(102))
-#            print i, self._fh.tell()
-        raise Exception
+        # Just reopened the file in binary mode -
+        # > get start byte and number of data set records
+        l1b_data_set_name = "sir_l1b_"+self.radar_mode
+        data_set_descriptor = self.dsd.get_by_fieldname(l1b_data_set_name)
+        startbyte = int(data_set_descriptor["ds_offset"])
+        self.n_msd_records = int(data_set_descriptor["num_dsr"])
+        # Set the file pointer
+        self._fh.seek(startbyte)
+        # Get the parser
+        msd_parser = cryosat2_get_msd_def(
+            self.radar_mode, self.baseline, self.n_msd_records)
+        # Parser the binary part of the .DBL file
+        self.msd = msd_parser.parse(self._fh.read(msd_parser.sizeof()))
 
     def _read_header_lines(self, header):
         """ Method to read the MPH and SPH headers are identical """
