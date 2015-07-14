@@ -2,6 +2,8 @@
 
 ## Modules in alphabetical order
 
+- construct
+- datetime
 - dateutil
 - glob
 - numpy
