@@ -193,19 +193,18 @@ class CryoSatL1B(object):
         except:
             self._error.io_failed = True
         # Parse the product file
-        try:
-            self._parse_product_file()
-        except:
-            self._error.io_failed = True
-        # Validate the parsing
+        self._parse_product_file()
+#        try:
+#            self._parse_product_file()
+#        except:
+#            self._error.io_failed = True
+#        # Validate the parsing
         # self._error.validate()
 
     def get_status(self):
         return self._error.test_errors()
 
     def post_processing(self, unpack=True, ocog=False):
-
-
         if unpack:
             self._unpack()
 
