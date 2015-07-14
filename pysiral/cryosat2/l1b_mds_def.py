@@ -198,10 +198,14 @@ class Cryosat2L1bMDSDefinition(object):
         self.mds = Array(self.n_records, self.mds_record)
         return self.mds
 
-    def get_multiple_record_groups(self):
-        multiple_record_groups = [
-            "time_orbit", "measurements", "waveform"]
-        return multiple_record_groups
+    def get_multiple_block_groups(self):
+        multiple_block_groups = [
+            "time_orbit", "measurement", "waveform"]
+        return multiple_block_groups
+
+    def get_single_block_groups(self):
+        single_block_groups = ["corrections"]
+        return single_block_groups
 
 
 def cryosat2_get_mds_def(radar_mode, baseline, n_records):
