@@ -8,6 +8,7 @@ Created on Tue Jul 14 14:48:01 2015
 import os
 import parse
 import xmltodict
+import numpy as np
 from treedict import TreeDict
 from dateutil import parser as dtparser
 from datetime import datetime, timedelta
