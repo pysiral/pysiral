@@ -9,7 +9,9 @@ import os
 import glob
 
 from pysiral.config import ConfigInfo
-from pysiral.l1b import L1bConstructor
+from pysiral.l1bdata import L1bConstructor
+
+import matplotlib.pyplot as plt
 
 
 def cryosat2_to_l1bdata():
@@ -29,6 +31,10 @@ def cryosat2_to_l1bdata():
     l1b.mission = "cryosat2"
     l1b.filename = l1b_files[0]
     l1b.construct()
+
+    plt.figure()
+    plt.plot(l1b.time_orbit.longitude, l1b.time_orbit.latitude)
+    plt.show()
 
 if __name__ == "__main__":
     cryosat2_to_l1bdata()
