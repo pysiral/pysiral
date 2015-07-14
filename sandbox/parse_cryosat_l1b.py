@@ -6,7 +6,7 @@ Created on Tue Jul 07 13:53:17 2015
 """
 
 from pysiral.config import ConfigInfo
-from pysiral.cryosat2.cryosat2_l1b import CryoSatL1B
+from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.cryosat2.functions import (
     get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
     get_cryosat2_wfm_range, tai2utc)
@@ -35,6 +35,18 @@ def parse_cryosat_l1b():
     l1b = CryoSatL1B()
     l1b.filename = l1b_file
     l1b.parse()
+
+
+    time_orbit = np.array([[record["time_orbit"]] for record in l1b.mds]).flatten()
+    for i in np.arange(1, 41):
+        t0 = get_tai_datetime_from_timestamp(time_orbit[i-1].tai_timestamp)
+        t1 = get_tai_datetime_from_timestamp(time_orbit[i].tai_timestamp)
+        print t1-t0
+
+    # print len([[subrecord.time_orbit for subrecord in record] for record in l1b.mds])
+    # timeorbits = [timeorbit in subrecord.timeorbit for subrecord in l1b.mds]
+    # print len(timeorbits)
+    raise Exception
 
     # Get timing informatio
     timeorbit = l1b.mds[0].time_orbit[0]
