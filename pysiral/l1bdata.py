@@ -17,7 +17,7 @@ class L1bData(object):
     def __init__(self):
 
         self._waveform_group = None
-        self._orbit_group = None
+        self.time_orbit = L1bTimeOrbit()
         self._geocorrection_group = None
         self._classifier_group = None
 
@@ -65,6 +65,37 @@ class L1bConstructor(L1bData):
         adapter = get_l1b_adapter(self._mission)
         adapter.filename = self.filename
         adapter.construct_l1b(self)
+
+
+class L1bTimeOrbit(object):
+    """ Container for Time and Orbit Information of L1b Data """
+    def __init__(self):
+        self._timestamp = None
+        self._longitude = None
+        self._latitude = None
+        self._altitude = None
+        self._orbit = None
+
+    @property
+    def longitude(self):
+        return self._longitude
+
+    @property
+    def latitude(self):
+        return self._latitude
+
+    @property
+    def altitude(self):
+        return self._altitude
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    def set_position(self, longitude, latitude):
+        # XXX: This is developing stuff
+        self._longitude = longitude
+        self._latitude = latitude
 
 
 class L1bAdapterCryoSat(object):
