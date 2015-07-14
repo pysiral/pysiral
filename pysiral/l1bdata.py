@@ -8,6 +8,7 @@ Created on Tue Jul 07 14:10:34 2015
 import os
 
 from pysiral.cryosat2.l1bfile import CryoSatL1B
+from pysiral.cryosat2.functions import get_structarr_attr
 
 
 class L1bData(object):
@@ -129,7 +130,11 @@ class L1bAdapterCryoSat(object):
         self.cs2l1b.post_processing()
 
     def _transfer_timeorbit(self):
-        pass
+        # Transfer the orbit position
+        longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
+        latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
+        self.l1bdata.time_orbit.set_position(longitude, latitude)
+        # Transfer the timestamp
 
     def _transfer_waveform_collection(self):
         pass
