@@ -35,18 +35,11 @@ def parse_cryosat_l1b():
     l1b = CryoSatL1B()
     l1b.filename = l1b_file
     l1b.parse()
+    l1b.post_processing()
 
-
-    time_orbit = np.array([[record["time_orbit"]] for record in l1b.mds]).flatten()
-    for i in np.arange(1, 41):
-        t0 = get_tai_datetime_from_timestamp(time_orbit[i-1].tai_timestamp)
-        t1 = get_tai_datetime_from_timestamp(time_orbit[i].tai_timestamp)
-        print t1-t0
-
-    # print len([[subrecord.time_orbit for subrecord in record] for record in l1b.mds])
-    # timeorbits = [timeorbit in subrecord.timeorbit for subrecord in l1b.mds]
-    # print len(timeorbits)
-    raise Exception
+    plt.figure()
+    plt.plot(get_struct_field(l1b.corrections, "dry_troposphere"))
+    plt.show()
 
     # Get timing informatio
     timeorbit = l1b.mds[0].time_orbit[0]
@@ -67,6 +60,10 @@ def parse_cryosat_l1b():
     plt.figure()
     plt.plot(wfm_range, wfm_power)
     plt.show()
+
+
+def get_struct_field(struct, field):
+    return np.array([record[field] for record in struct])
 
 if __name__ == "__main__":
     parse_cryosat_l1b()
