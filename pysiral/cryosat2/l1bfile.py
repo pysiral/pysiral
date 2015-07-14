@@ -241,7 +241,7 @@ class CryoSatL1B(object):
             self._parse_sph()
             self._parse_dsd()
         with open(self._filename_product, "rb") as self._fh:
-            self._parse_msd()
+            self._parse_mds()
 
     def _parse_mph(self):
         """
