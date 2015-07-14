@@ -62,6 +62,7 @@ class Cryosat2L1bMDSDefinition(object):
         self.baseline = None
         self.radar_mode = None
         self.n_records = 0
+        self.n_blocks = 20
 
     def get_mds_parser(self):
 
@@ -188,11 +189,11 @@ class Cryosat2L1bMDSDefinition(object):
 
         self.mds_record = Struct(
             "mds_record",
-            Array(20, self.time_orbit_group),
-            Array(20, self.measurement_group),
+            Array(self.n_blocks, self.time_orbit_group),
+            Array(self.n_blocks, self.measurement_group),
             self.corrections_group,
             self.onehz_waveform_group,
-            Array(20, self.waveform_group))
+            Array(self.n_blocks, self.waveform_group))
 
         self.mds = Array(self.n_records, self.mds_record)
         return self.mds
