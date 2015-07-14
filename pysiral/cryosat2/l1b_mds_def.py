@@ -197,6 +197,11 @@ class Cryosat2L1bMDSDefinition(object):
         self.mds = Array(self.n_records, self.mds_record)
         return self.mds
 
+    def get_multiple_record_groups(self):
+        multiple_record_groups = [
+            "time_orbit", "measurements", "waveform"]
+        return multiple_record_groups
+
 
 def cryosat2_get_mds_def(radar_mode, baseline, n_records):
     # XXX: Testing purposes only, needs functionality
@@ -206,4 +211,4 @@ def cryosat2_get_mds_def(radar_mode, baseline, n_records):
     definition.radar_mode = radar_mode
     definition.n_records = n_records
 
-    return definition.get_mds_parser()
+    return definition
