@@ -280,7 +280,7 @@ class CryoSatL1B(object):
         # Get the parser
         self.mds_definition = cryosat2_get_mds_def(
             self._radar_mode, self._baseline, self.n_msd_records)
-        mds_parser = self.mds_definition.get_get_mds_parser()
+        mds_parser = self.mds_definition.get_mds_parser()
         # Parser the binary part of the .DBL file
         self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
 
