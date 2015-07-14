@@ -297,14 +297,18 @@ class CryoSatL1B(object):
 
     def _unpack(self):
         # Unpack the multiple record groups
-        groups = self.mds_definition.get_multiple_record_groups()
+        groups = self.mds_definition.get_multiple_block_groups()
         for group in groups:
             content = np.array(
                 [[record[group]] for record in self.mds]).flatten()
             setattr(self, group, content)
         # Unpack the single record groups and replicate by number of
         # multiple rec
-        groups = self.mds_definition.get_single_record_groups()
+        groups = self.mds_definition.get_single_block_groups()
+        for group in groups:
+            content = np.array([record[group] for record in self.mds])
+            setattr(self, group, np.repeat(
+                content, self.mds_definition.n_blocks))
 
 
 class CS2L1bBaseHeader(object):
