@@ -62,7 +62,7 @@ class L1bConstructor(L1bData):
 
     def construct(self):
         """ Parse the file and construct the L1bData object """
-        adapter = get_l1b_adapter(self._mission)
+        adapter = get_l1b_adapter(self._mission)()
         adapter.filename = self.filename
         adapter.construct_l1b(self)
 
