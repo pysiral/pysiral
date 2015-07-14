@@ -7,13 +7,13 @@ Created on Sun Jul 12 13:51:52 2015
 
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.cryosat2.l1b_mds_def import cryosat2_get_mds_def
+from pysiral.cryosat2.functions import (parse_cryosat_l1b_filename,
+                                        parse_cryosat_l1b_xml_header,
+                                        parse_cryosat2_l1b_header_field)
 import os
 import re
 import numpy as np
-from treedict import TreeDict
 import parse
-from dateutil import parser as dtparser
-import xmltodict
 
 
 class CryoSatL1B(object):
@@ -524,76 +524,3 @@ class CS2L1bScienceDataSetDescriptors(object):
                 output += "  %s: %s, unit: %s\n" % (
                     key, str(dsd_dict[key]), str(self.unit_dict[key]))
         return output
-
-
-def parse_cryosat_l1b_filename(filename):
-    """
-    Returns the information in the CryoSat-2 l1b filename
-    """
-    # Strip path and file extension
-    filename = os.path.basename(filename)
-    filename = os.path.splitext(filename)[0]
-    # Construct the parser
-    parser_str = "CS_{proc_stage}_"
-    parser_str += "{instrument}_"
-    parser_str += "{radar_mode}_"
-    parser_str += "{data_level}_"
-    parser_str += "{start_dt}_"
-    parser_str += "{stop_dt}_"
-    parser_str += "{baseline}"
-    parser = parse.compile(parser_str)
-    # Parse the filename
-    result = parser.parse(filename)
-    # Do some post-editing
-    # - parse is not that smart when it comes to work with date strings
-    # - naming conventions as the rest of pysiral
-    info = TreeDict()
-    info.mission = "cryosat2"
-    info.instrument = result["instrument"].lower()
-    info.radar_mode = result["radar_mode"].lower()
-    info.data_level = "L"+result["data_level"]
-    info.start_dt = dtparser.parse(result["start_dt"])
-    info.stop_dt = dtparser.parse(result["stop_dt"])
-    info.baseline = result["baseline"]
-    return info
-
-
-def parse_cryosat_l1b_xml_header(filename):
-    """
-    Reads the XML header file of a CryoSat-2 L1b Data set
-    and returns the contents as an OrderedDict
-    """
-    with open(filename) as fd:
-        content_odereddict = xmltodict.parse(fd.read())
-    return content_odereddict[u'Earth_Explorer_Header']
-
-
-def parse_cryosat2_l1b_header_field(line):
-    """
-    Parses a line of the CryoSat-2 L1B ascii header and
-    returns tag, value and unit as strings.
-
-    Note: double quotes in string items are removed
-
-    e.g.
-
-    NUM_DSD=+0000000044
-    -> "num_dsd", "+0000000044", None
-
-    DSD_SIZE=+0000000280<bytes>
-    -> "dsd_size", "+0000000280", "bytes"
-    """
-    tag, value, unit = None, None, None
-    parser = parse.compile("{tag}={value}")
-    match = parser.parse(line)
-    if match:
-        tag = match["tag"].lower()
-        value = match["value"]
-        value = value.replace("\"", "").strip()
-        # check if unit is given
-        unit_parser = parse.compile("{value}<{unit}>")
-        unit_match = unit_parser.parse(value)
-        if unit_match:
-            value = unit_match["value"]
-            unit = unit_match["unit"]
-    return tag, value, unit
