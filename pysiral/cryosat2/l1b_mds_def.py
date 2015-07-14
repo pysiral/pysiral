@@ -65,11 +65,15 @@ class Cryosat2L1bMDSDefinition(object):
 
     def get_mds_parser(self):
 
-        self.time_orbit_group = Struct(
-            "time_orbit",
+        self.mdsr_timestamp = Struct(
+            "tai_timestamp",
             SBInt32("day"),
             UBInt32("sec"),
-            UBInt32("msec"),
+            UBInt32("msec"))
+
+        self.time_orbit_group = Struct(
+            "time_orbit",
+            self.mdsr_timestamp,
             UBInt16("uso_corr"),
             UBInt32("mode_id"),
             UBInt16("source_sequence_counter"),
@@ -133,9 +137,7 @@ class Cryosat2L1bMDSDefinition(object):
 
         self.onehz_waveform_group = Struct(
             "avg_waveform",
-            SBInt32("day"),
-            UBInt32("sec"),
-            UBInt32("msec"),
+            self.mdsr_timestamp,
             OneTenthMicroDeg(SBInt32("latitude")),
             OneTenthMicroDeg(SBInt32("longitude")),
             MilliMeter(SBInt32("altitude_cog")),
