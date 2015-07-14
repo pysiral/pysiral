@@ -113,6 +113,15 @@ def get_tai_datetime_from_timestamp(mdsr_timestamp):
         mdsr_timestamp.day, mdsr_timestamp.sec, mdsr_timestamp.msec)
 
 
+def get_structarr_attr(struct_arr, field):
+    """
+    Get all attributes from array of objects that suppor dict notation
+    (e.g. struct_array[:].field <- does not work in python)
+
+    """
+    return np.array([record[field] for record in struct_arr])
+
+
 def parse_cryosat_l1b_filename(filename):
     """
     Returns the information in the CryoSat-2 l1b filename
