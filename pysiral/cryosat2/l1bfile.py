@@ -148,6 +148,7 @@ class CryoSatL1B(object):
         # Error Handling
         self._init_error_handling(raise_on_error)
         self._baseline = None
+        self._radar_mode = None
         self._filename_header = None
         self._filename_product = None
         self.xmlh = None
@@ -170,6 +171,14 @@ class CryoSatL1B(object):
         self._filename_product = filename
         self._filename_header = os.path.splitext(filename)[0]+".HDR"
 
+    @property
+    def baseline(self):
+        return self._baseline
+
+    @property
+    def radar_mode(self):
+        return self._radar_mode
+
     def parse(self):
         """ Parse the content of the L1B file """
         # Validate input and either return or raise when input not ok
@@ -184,17 +193,21 @@ class CryoSatL1B(object):
         except:
             self._error.io_failed = True
         # Parse the product file
-        # XXX: Disabled during development
-        self._parse_product_file()
-#        try:
-#            self._parse_product_file()
-#        except:
-#            self._error.io_failed = True
+        try:
+            self._parse_product_file()
+        except:
+            self._error.io_failed = True
         # Validate the parsing
-        self._error.validate()
+        # self._error.validate()
 
     def get_status(self):
-        pass
+        return self._error.test_errors()
+
+    def post_processing(self, unpack=True, ocog=False):
+
+
+        if unpack:
+            self._unpack()
 
     def _init_error_handling(self, raise_on_error):
         self._error = FileIOErrorHandler()
@@ -204,12 +217,12 @@ class CryoSatL1B(object):
     def _detect_filetype(self):
         """ Detect and validate the baseline """
         info = parse_cryosat_l1b_filename(self._filename_product)
-        self.baseline = info.baseline
-        self.radar_mode = info.radar_mode
+        self._baseline = info.baseline
+        self._radar_mode = info.radar_mode
         # Validate
-        if self.baseline not in self._VALID_BASELINES:
+        if self._baseline not in self._VALID_BASELINES:
             self._error.format_not_supported = True
-        if self.radar_mode not in self._VALID_RADAR_MODES:
+        if self._radar_mode not in self._VALID_RADAR_MODES:
             self._error.format_not_supported = True
 
     def _parse_header_file(self):
@@ -254,19 +267,20 @@ class CryoSatL1B(object):
             line = self._fh.readline()
             self.dsd.parse_line(line)
 
-    def _parse_msd(self):
+    def _parse_mds(self):
         """ Read the data blocks """
         # Just reopened the file in binary mode -
         # > get start byte and number of data set records
-        l1b_data_set_name = "sir_l1b_"+self.radar_mode
+        l1b_data_set_name = "sir_l1b_"+self._radar_mode
         data_set_descriptor = self.dsd.get_by_fieldname(l1b_data_set_name)
         startbyte = int(data_set_descriptor["ds_offset"])
         self.n_msd_records = int(data_set_descriptor["num_dsr"])
         # Set the file pointer
         self._fh.seek(startbyte)
         # Get the parser
-        mds_parser = cryosat2_get_mds_def(
-            self.radar_mode, self.baseline, self.n_msd_records)
+        self.mds_definition = cryosat2_get_mds_def(
+            self._radar_mode, self._baseline, self.n_msd_records)
+        mds_parser = self.mds_definition.get_get_mds_parser()
         # Parser the binary part of the .DBL file
         self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
 
@@ -280,6 +294,17 @@ class CryoSatL1B(object):
             if header.last_field(line):
                 break
             line_index = +1
+
+    def _unpack(self):
+        # Unpack the multiple record groups
+        groups = self.mds_definition.get_multiple_record_groups()
+        for group in groups:
+            content = np.array(
+                [[record[group]] for record in self.mds]).flatten()
+            setattr(self, group, content)
+        # Unpack the single record groups and replicate by number of
+        # multiple rec
+        groups = self.mds_definition.get_single_record_groups()
 
 
 class CS2L1bBaseHeader(object):
