@@ -113,6 +113,10 @@ class L1bTimeOrbit(object):
     def timestamp(self):
         return self._timestamp
 
+    @timestamp.setter
+    def timestamp(self, value):
+        self._timestamp = value
+
     def set_position(self, longitude, latitude):
         # XXX: This is developing stuff
         self._longitude = longitude
