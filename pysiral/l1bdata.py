@@ -9,7 +9,8 @@ import os
 
 from pysiral.helper import parse_datetime_str
 from pysiral.cryosat2.l1bfile import CryoSatL1B
-from pysiral.cryosat2.functions import get_structarr_attr
+from pysiral.cryosat2.functions import (get_structarr_attr, tai2utc,
+                                        get_tai_datetime_from_timestamp)
 
 
 class L1bData(object):
@@ -172,6 +173,11 @@ class L1bAdapterCryoSat(object):
         latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
         self.l1bdata.time_orbit.set_position(longitude, latitude)
         # Transfer the timestamp
+        tai_objects = get_structarr_attr(
+            self.cs2l1b.time_orbit, "tai_timestamp")
+        tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
+        utc_timestamp = tai2utc(tai_timestamp)
+        self.l1bdata.time_orbit.timestamp = utc_timestamp
 
     def _transfer_waveform_collection(self):
         pass
