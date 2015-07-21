@@ -7,6 +7,7 @@ Created on Tue Jul 07 14:10:34 2015
 
 import os
 
+from pysiral.helper import parse_datetime_str
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.cryosat2.functions import get_structarr_attr
 
@@ -17,10 +18,11 @@ class L1bData(object):
     """
     def __init__(self):
 
-        self._waveform_group = None
+        self.info = L1bMetaData()
+        self.waveform = None
         self.time_orbit = L1bTimeOrbit()
-        self._geocorrection_group = None
-        self._classifier_group = None
+        self.correction = None
+        self.classifier = None
 
 
 class L1bConstructor(L1bData):
@@ -32,7 +34,6 @@ class L1bConstructor(L1bData):
     _SUPPORTED_MISSION_LIST = ["cryosat2"]
 
     def __init__(self):
-
         super(L1bConstructor, self).__init__()
         self._mission = None
         self._filename = None
@@ -68,6 +69,26 @@ class L1bConstructor(L1bData):
         adapter.construct_l1b(self)
 
 
+class L1bMetaData(object):
+    """ Container for L1B Metadata information """
+    def __init__(self):
+        self.mission = None
+        self.mission_data_version = None
+        self.radar_mode = None
+        self.orbit = None
+        self.start_time = None
+        self.stop_time = None
+
+    def __repr__(self):
+        field_list = ["mission", "mission_data_version", "radar_mode",
+                      "orbit", "start_time", "stop_time"]
+        output = ""
+        for field in field_list:
+            output += "%s=%s" % (field, getattr(self, field))
+            output += "\n"
+        return output
+
+
 class L1bTimeOrbit(object):
     """ Container for Time and Orbit Information of L1b Data """
     def __init__(self):
@@ -75,7 +96,6 @@ class L1bTimeOrbit(object):
         self._longitude = None
         self._latitude = None
         self._altitude = None
-        self._orbit = None
 
     @property
     def longitude(self):
@@ -103,12 +123,15 @@ class L1bAdapterCryoSat(object):
     """ Converts a CryoSat2 L1b object into a L1bData object """
     def __init__(self):
         self.filename = None
+        self._mission = "cryosat2"
 
     def construct_l1b(self, l1bdata):
         # Store the pointer to the L1bData object
         self.l1bdata = l1bdata
         # Read the CryoSat-2 L1b data file
         self._read_cryosat2l1b()
+        # Transfer Metdata
+        self._transfer_metadata()
         # Transfer the time and orbit data
         self._transfer_timeorbit()
         # Transfer the waveform data
@@ -128,6 +151,16 @@ class L1bAdapterCryoSat(object):
             # TODO: Needs ErrorHandler
             raise IOError()
         self.cs2l1b.post_processing()
+
+    def _transfer_metadata(self):
+        self.l1bdata.info.mission = self._mission
+        self.l1bdata.info.mission_data_version = self.cs2l1b.baseline
+        self.l1bdata.info.radar_mode = self.cs2l1b.radar_mode
+        self.l1bdata.info.orbit = self.cs2l1b.sph.abs_orbit_start
+        self.l1bdata.info.start_time = parse_datetime_str(
+            self.cs2l1b.sph.start_record_tai_time)
+        self.l1bdata.info.stop_time = parse_datetime_str(
+            self.cs2l1b.sph.stop_record_tai_time)
 
     def _transfer_timeorbit(self):
         # Transfer the orbit position
