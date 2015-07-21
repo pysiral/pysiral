@@ -83,9 +83,9 @@ class L1bMetaData(object):
     def __repr__(self):
         field_list = ["mission", "mission_data_version", "radar_mode",
                       "orbit", "start_time", "stop_time"]
-        output = ""
+        output = "pysiral.L1bdata object:\n"
         for field in field_list:
-            output += "%s=%s" % (field, getattr(self, field))
+            output += "%22s: %s" % (field, getattr(self, field))
             output += "\n"
         return output
 
