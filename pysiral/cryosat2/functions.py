@@ -99,7 +99,7 @@ def get_tai_datetime_from_timestamp(mdsr_timestamp):
     Arguments
     ---------
 
-    mdsr_timestamp (object)
+    mdsr_timestamp (object or object list)
         any class object with attributes day, sec, msec
         (attributes must be of type int)
 
@@ -109,8 +109,15 @@ def get_tai_datetime_from_timestamp(mdsr_timestamp):
     datetime object with date and time in TAI
 
     """
-    return datetime(2000, 1, 1)+timedelta(
-        mdsr_timestamp.day, mdsr_timestamp.sec, mdsr_timestamp.msec)
+    timestamps = np.asarray(mdsr_timestamp)
+    output = np.ndarray(shape=(len(timestamps)), dtype=object)
+    for i, timestamp in enumerate(timestamps):
+        output[i] = datetime(2000, 1, 1) + timedelta(
+            timestamp.day, timestamp.sec, timestamp.msec)
+    if len(output) > 0:
+        return output
+    else:
+        return output[0]
 
 
 def get_structarr_attr(struct_arr, field):
