@@ -202,12 +202,18 @@ def parse_cryosat2_l1b_header_field(line):
     return tag, value, unit
 
 
-def tai2utc(time_tai):
+def tai2utc(tai_datetime):
     """
     Converts a datetime object in TAI into UTC
-    XXX: No real functionality here yet, maybe parse leap second list from
-         IETF?: http://www.ietf.org/timezones/data/leap-seconds.list
-    XXX: Not clear yet, whether this function should remain here
+    TODO: No real functionality here yet, maybe parse leap second list from
+          IETF?: http://www.ietf.org/timezones/data/leap-seconds.list
     """
     utc_offset_seconds = 33
-    return time_tai+timedelta(seconds=utc_offset_seconds)
+    tai_times = np.asarray(tai_datetime)
+    output = np.ndarray(shape=(len(tai_times)), dtype=object)
+    for i, tai_time in enumerate(tai_times):
+        output[i] = tai_time+timedelta(seconds=utc_offset_seconds)
+    if len(output) > 0:
+        return output
+    else:
+        return output[0]
