@@ -207,6 +207,7 @@ class CryoSatL1B(object):
     def post_processing(self, unpack=True, ocog=False):
         if unpack:
             self._unpack()
+            self._trim()
 
     def _init_error_handling(self, raise_on_error):
         self._error = FileIOErrorHandler()
@@ -308,6 +309,22 @@ class CryoSatL1B(object):
             content = np.array([record[group] for record in self.mds])
             setattr(self, group, np.repeat(
                 content, self.mds_definition.n_blocks))
+
+    def _trim(self):
+        """
+        Look for empty records at the end of the unpacked records
+        (use source_sequnce counter as identifier)
+        """
+        unpacked_groups = self.mds_definition.get_multiple_block_groups()
+        unpacked_groups.extend(self.mds_definition.get_single_block_groups())
+        ssc = np.array(
+            [record["source_sequence_counter"] for record in self.time_orbit])
+        no_zero_list = np.where(ssc != 0)[0]
+        if len(no_zero_list) == 0:
+            return
+        for group in unpacked_groups:
+            records = getattr(self, group)
+            setattr(self, group, records[no_zero_list])
 
 
 class CS2L1bBaseHeader(object):
