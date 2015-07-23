@@ -62,7 +62,8 @@ class L1bAdapterCryoSat(object):
         # Transfer the orbit position
         longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
         latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
-        self.l1bdata.time_orbit.set_position(longitude, latitude)
+        altitude = get_structarr_attr(self.cs2l1b.time_orbit, "altitude")
+        self.l1bdata.time_orbit.set_position(longitude, latitude, altitude)
         # Transfer the timestamp
         tai_objects = get_structarr_attr(
             self.cs2l1b.time_orbit, "tai_timestamp")
