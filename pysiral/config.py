@@ -57,6 +57,14 @@ class ConfigInfo(object):
         """ Returns the local path to the document folder"""
         return self._return_path("config")
 
+    def get_mission_defaults(self, mission):
+        mission_options = self.mission[mission].options
+        defaults = {}
+        names, options = td_branches(mission_options)
+        for name, option in zip(names, options):
+            defaults[name] = option.default
+        return defaults
+
     def _read_config_files(self):
         for key in self._DEFINITION_FILES.keys():
             content = get_yaml_config(
