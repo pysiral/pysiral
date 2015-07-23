@@ -18,8 +18,8 @@ class L1bData(object):
         self.info = L1bMetaData()
         self.waveform = None
         self.time_orbit = L1bTimeOrbit()
-        self.correction = None
-        self.classifier = None
+        self.correction = L1bRangeCorrections()
+        self.classifier = L1bClassifiers()
 
 
 class L1bConstructor(L1bData):
@@ -149,6 +149,16 @@ class L1bRangeCorrections(object):
 class L1bClassifiers(object):
     """ Containier for parameters that can be used as classifiers """
     def __init__(self):
+        # Make a pre-selection of different classifier types
+        self._list = {
+            "surface_type": [],
+            "warning": [],
+            "error": []}
+
+    def add_parameter(self, name, value, classifier_type):
+        """ Add a parameter for a given classifier type """
+        setattr(self, name, value)
+        self._list[classifier_type].append(name)
 
 
 def get_l1b_adapter(mission):
