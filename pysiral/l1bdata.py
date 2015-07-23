@@ -121,10 +121,11 @@ class L1bTimeOrbit(object):
     def timestamp(self, value):
         self._timestamp = value
 
-    def set_position(self, longitude, latitude):
+    def set_position(self, longitude, latitude, altitude):
         # XXX: This is developing stuff
         self._longitude = longitude
         self._latitude = latitude
+        self._altitude = altitude
 
 
 class L1bRangeCorrections(object):
