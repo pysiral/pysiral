@@ -30,9 +30,11 @@ class L1bConstructor(L1bData):
 
     _SUPPORTED_MISSION_LIST = ["cryosat2"]
 
-    def __init__(self):
+    def __init__(self, config):
         super(L1bConstructor, self).__init__()
+        self._config = config
         self._mission = None
+        self._mission_options = None
         self._filename = None
 
     @property
@@ -46,6 +48,8 @@ class L1bConstructor(L1bData):
         else:
             # XXX: An ErrorHandler is needed here
             raise ValueError("Unsupported mission type")
+        # Get mission default options
+        self._mission_options = self._config.get_mission_defaults(value)
 
     @property
     def filename(self):
@@ -59,9 +63,12 @@ class L1bConstructor(L1bData):
             # XXX: An ErrorHandler is needed here
             raise IOError("Not a valid path")
 
+    def set_mission_option(self, **kwargs):
+        self._mission_options = kwargs
+
     def construct(self):
         """ Parse the file and construct the L1bData object """
-        adapter = get_l1b_adapter(self._mission)()
+        adapter = get_l1b_adapter(self._mission)(self._config)
         adapter.filename = self.filename
         adapter.construct_l1b(self)
 
