@@ -103,3 +103,10 @@ def get_pysiral_local_path():
     directory = os.path.dirname(__file__)
     directory = os.path.abspath(os.path.join(directory, '..'))
     return directory
+
+
+def td_branches(t):
+    """ Convinience function to get only the branches of a treedict object """
+    branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
+    branch_objects = list(t.iterbranches())
+    return branch_names, branch_objects
