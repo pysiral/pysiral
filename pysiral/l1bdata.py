@@ -127,6 +127,27 @@ class L1bTimeOrbit(object):
         self._latitude = latitude
 
 
+class L1bRangeCorrections(object):
+    """ Container for Range Correction Information """
+
+    def __init__(self):
+        self._parameter_list = []
+
+    def set_parameter(self, tag, value):
+        setattr(self, tag, value)
+        self._parameter_list.append(tag)
+
+    @property
+    def list(self):
+        return self._parameter_list
+
+    def get_parameter_by_index(self, index):
+        name = self._parameter_list[index]
+        return getattr(self, name), name
+
+
+class L1bClassifiers(object):
+    """ Containier for parameters that can be used as classifiers """
     def __init__(self):
 
 
