@@ -45,3 +45,12 @@ cryosat2:
         stop: null
     sea_ice_radar_modes: ["sar", "sin"]
     orbit_max_latitude: 88.0
+    options:
+        ionospheric_correction_source:
+            default: ionospheric_gim
+            type: selector
+            options:
+                - ionospheric_gim
+                - ionospheric_mod
+            docstr:
+                Source of Ionospheric Correction
