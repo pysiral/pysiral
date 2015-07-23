@@ -16,7 +16,7 @@ class L1bData(object):
     def __init__(self):
 
         self.info = L1bMetaData()
-        self.waveform = None
+        self.waveform = L1bWaveforms()
         self.time_orbit = L1bTimeOrbit()
         self.correction = L1bRangeCorrections()
         self.classifier = L1bClassifiers()
@@ -159,6 +159,25 @@ class L1bClassifiers(object):
         """ Add a parameter for a given classifier type """
         setattr(self, name, value)
         self._list[classifier_type].append(name)
+
+
+class L1bWaveforms(object):
+    """ Container for Echo Power Waveforms """
+    def __init__(self):
+        self._power = None
+        self._range = None
+
+    @property
+    def power(self):
+        return self._power
+
+    @property
+    def range(self):
+        return self._range
+
+    def add_waveforms(self, power, range):
+        self._power = power
+        self._range = range
 
 
 def get_l1b_adapter(mission):
