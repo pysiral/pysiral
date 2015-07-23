@@ -21,21 +21,23 @@ def cryosat2_to_l1bdata():
     Sandbox script to create an L1BData object from a CryoSat-2 L1b data file
     """
 
-    # Get Path information
-    info = ConfigInfo()
+    # Get Configuration Information
+    config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = info.local_machine.local_l1b_repository.cryosat2.sar
+    l1b_directory = config.local_machine.local_l1b_repository.cryosat2.sar
     l1b_directory = os.path.join(l1b_directory, "2015", "04")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
-    l1b = L1bConstructor()
+    # Read the file
+    l1b = L1bConstructor(config)
     l1b.mission = "cryosat2"
     l1b.filename = l1b_files[0]
     l1b.construct()
 
     # Quick plots
     cryosat2_l1b_orbit_plot(l1b)
+    cryosat2_l1b_corrections_plot(l1b)
 
 
 def cryosat2_l1b_orbit_plot(l1b):
@@ -65,6 +67,30 @@ def cryosat2_l1b_orbit_plot(l1b):
     m.plot(x, y, color="#003e6e", linewidth=2.0)
 
     plt.title("")
+    plt.show(block=False)
+
+
+def cryosat2_l1b_corrections_plot(l1b):
+
+    from matplotlib.ticker import MultipleLocator
+
+    n = len(l1b.correction.list)
+    f, ax = plt.subplots(n, sharex=True, facecolor="white", figsize=(10, 16))
+    for i in np.arange(n):
+        correction, name = l1b.correction.get_parameter_by_index(i)
+        ax[i].plot(correction, lw=2, color="#00ace5")
+        ax[i].set_title(name)
+        ax[i].yaxis.set_minor_locator(MultipleLocator(0.02))
+        ax[i].yaxis.grid(True, which='minor')
+        ax[i].yaxis.set_tick_params(direction='out')
+        ax[i].yaxis.set_ticks_position('left')
+        ax[i].xaxis.set_ticks([])
+
+        spines_to_remove = ["top", "right", "bottom"]
+        for spine in spines_to_remove:
+            ax[i].spines[spine].set_visible(False)
+
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
