@@ -12,6 +12,19 @@ l2_list:
 l2_list:
     - null
 
+# A list of recognized identifiers for geophysical range corrections
+correction_list:
+    - dry_troposphere
+    - wet_troposphere
+    - inverse_barometric
+    - dynamic_atmosphere
+    - ionospheric
+    - ocean_tide_elastic
+    - ocean_tide_long_period
+    - ocean_loading_tide
+    - solid_earth_tide
+    - geocentric_polar_tide
+
 definition:
 
     # Geophysical parameters
