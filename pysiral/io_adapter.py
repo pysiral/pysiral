@@ -5,10 +5,13 @@ Created on Thu Jul 23 15:10:04 2015
 @author: Stefan
 """
 
-from pysiral.cryosat2.functions import (get_structarr_attr, tai2utc,
-                                        get_tai_datetime_from_timestamp)
+from pysiral.cryosat2.functions import (
+    get_structarr_attr, tai2utc, get_tai_datetime_from_timestamp,
+    get_cryosat2_wfm_power, get_cryosat2_wfm_range)
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.helper import parse_datetime_str
+
+import numpy as np
 
 
 class L1bAdapterCryoSat(object):
@@ -68,7 +71,20 @@ class L1bAdapterCryoSat(object):
         self.l1bdata.time_orbit.timestamp = utc_timestamp
 
     def _transfer_waveform_collection(self):
-        pass
+        # Create the numpy arrays for power & range
+        n_records = len(self.cs2l1b.waveform)
+        n_range_bins = len(self.cs2l1b.waveform[0].wfm)
+        echo_power = np.ndarray(shape=(n_records, n_range_bins))
+        echo_range = np.ndarray(shape=(n_records, n_range_bins))
+        # Set the echo power in dB and calculate range
+        for i, record in enumerate(self.cs2l1b.waveform):
+            echo_power[i, :] = get_cryosat2_wfm_power(
+                np.array(record.wfm).astype(np.float32),
+                record.linear_scale, record.power_scale)
+            echo_range[i, :] = get_cryosat2_wfm_range(
+                self.cs2l1b.measurement[i].window_delay, n_range_bins)
+        # Transfer to L1bData
+        self.l1bdata.waveform.add_waveforms(echo_power, echo_range)
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
