@@ -124,69 +124,7 @@ class L1bTimeOrbit(object):
         self._latitude = latitude
 
 
-class L1bAdapterCryoSat(object):
-    """ Converts a CryoSat2 L1b object into a L1bData object """
     def __init__(self):
-        self.filename = None
-        self._mission = "cryosat2"
-
-    def construct_l1b(self, l1bdata):
-        # Store the pointer to the L1bData object
-        self.l1bdata = l1bdata
-        # Read the CryoSat-2 L1b data file
-        self._read_cryosat2l1b()
-        # Transfer Metdata
-        self._transfer_metadata()
-        # Transfer the time and orbit data
-        self._transfer_timeorbit()
-        # Transfer the waveform data
-        self._transfer_waveform_collection()
-        # Transfer the range corrections
-        self._transfer_range_corrections()
-        # Transfer any classifier data
-        self._transfer_classifiers()
-
-    def _read_cryosat2l1b(self):
-        """ Read the L1b file and create a CryoSat-2 native L1b object """
-        self.cs2l1b = CryoSatL1B()
-        self.cs2l1b.filename = self.filename
-        self.cs2l1b.parse()
-        error_status = self.cs2l1b.get_status()
-        if error_status:
-            # TODO: Needs ErrorHandler
-            raise IOError()
-        self.cs2l1b.post_processing()
-
-    def _transfer_metadata(self):
-        self.l1bdata.info.mission = self._mission
-        self.l1bdata.info.mission_data_version = self.cs2l1b.baseline
-        self.l1bdata.info.radar_mode = self.cs2l1b.radar_mode
-        self.l1bdata.info.orbit = self.cs2l1b.sph.abs_orbit_start
-        self.l1bdata.info.start_time = parse_datetime_str(
-            self.cs2l1b.sph.start_record_tai_time)
-        self.l1bdata.info.stop_time = parse_datetime_str(
-            self.cs2l1b.sph.stop_record_tai_time)
-
-    def _transfer_timeorbit(self):
-        # Transfer the orbit position
-        longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
-        latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
-        self.l1bdata.time_orbit.set_position(longitude, latitude)
-        # Transfer the timestamp
-        tai_objects = get_structarr_attr(
-            self.cs2l1b.time_orbit, "tai_timestamp")
-        tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
-        utc_timestamp = tai2utc(tai_timestamp)
-        self.l1bdata.time_orbit.timestamp = utc_timestamp
-
-    def _transfer_waveform_collection(self):
-        pass
-
-    def _transfer_range_corrections(self):
-        pass
-
-    def _transfer_classifiers(self):
-        pass
 
 
 def get_l1b_adapter(mission):
