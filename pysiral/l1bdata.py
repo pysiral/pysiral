@@ -5,12 +5,8 @@ Created on Tue Jul 07 14:10:34 2015
 @author: Stefan
 """
 
+from pysiral.io_adapter import L1bAdapterCryoSat
 import os
-
-from pysiral.helper import parse_datetime_str
-from pysiral.cryosat2.l1bfile import CryoSatL1B
-from pysiral.cryosat2.functions import (get_structarr_attr, tai2utc,
-                                        get_tai_datetime_from_timestamp)
 
 
 class L1bData(object):
