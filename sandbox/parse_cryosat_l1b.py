@@ -41,7 +41,7 @@ def parse_cryosat_l1b():
     plt.plot(get_struct_field(l1b.corrections, "dry_troposphere"))
     plt.show()
 
-    # Get timing informatio
+    # Get timing information
     timeorbit = l1b.mds[0].time_orbit[0]
     time_tai = get_tai_datetime_from_timestamp(timeorbit.tai_timestamp)
     time_utc = tai2utc(time_tai)
