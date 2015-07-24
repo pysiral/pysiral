@@ -9,7 +9,7 @@ from pysiral.io_adapter import L1bAdapterCryoSat
 import os
 
 
-class L1bData(object):
+class Level1bData(object):
     """
     Unified L1b Data Class
     """
@@ -22,7 +22,7 @@ class L1bData(object):
         self.classifier = L1bClassifiers()
 
 
-class L1bConstructor(L1bData):
+class L1bConstructor(Level1bData):
     """
     Class to be used to construct a L1b data object from any mission
     L1b data files
@@ -63,7 +63,7 @@ class L1bConstructor(L1bData):
             # XXX: An ErrorHandler is needed here
             raise IOError("Not a valid path")
 
-    def set_mission_option(self, **kwargs):
+    def set_mission_options(self, **kwargs):
         self._mission_options = kwargs
 
     def construct(self):
