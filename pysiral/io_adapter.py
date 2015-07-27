@@ -10,6 +10,7 @@ from pysiral.cryosat2.functions import (
     get_cryosat2_wfm_power, get_cryosat2_wfm_range)
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.helper import parse_datetime_str
+from pysiral.classifier import OCOGParameter
 
 import numpy as np
 
@@ -114,5 +115,12 @@ class L1bAdapterCryoSat(object):
         for beam_parameter_name in beam_parameter_list:
             recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
             beam_parameter = [rec[beam_parameter_name] for rec in recs]
-            self.l1bdata.classifier.add_parameter(
-                beam_parameter_name, beam_parameter, "surface_type")
+            self.l1b.classifier.add(
+                beam_parameter, beam_parameter_name, "surface_type")
+        # Calculate the OCOG Parameter
+        wfm = np.array(
+            get_structarr_attr(self.cs2l1b.waveform, "wfm"), dtype=np.float32)
+        ocog = OCOGParameter(wfm)
+        self.l1b.classifier.add(ocog.width, "ocog_width", "surface_type")
+        self.l1b.classifier.add(
+            ocog.amplitude, "ocog_amplitude", "surface_type")
