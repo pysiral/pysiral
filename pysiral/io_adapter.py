@@ -100,8 +100,7 @@ class L1bAdapterCryoSat(object):
         self.l1bdata.correction.set_parameter("ionospheric", ionospheric)
 
     def _transfer_classifiers(self):
-        # Add potential surface type classifiers
-
+        # TODO: Add potential surface type classifiers
         # L1b surface type flag word
         self.l1bdata.classifier.add_parameter(
             "l1b_surface_type",
@@ -109,11 +108,9 @@ class L1bAdapterCryoSat(object):
             "surface_type")
         # Add a selection of beam parameters to the list of surface type
         # classifiers
-        beam_parameter_list = ["stack_standard_deviation",
-                               "stack_centre",
-                               "stack_scaled_amplitude",
-                               "stack_skewness",
-                               "stack_kurtosis"]
+        beam_parameter_list = [
+            "stack_standard_deviation", "stack_centre",
+            "stack_scaled_amplitude", "stack_skewness", "stack_kurtosis"]
         for beam_parameter_name in beam_parameter_list:
             recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
             beam_parameter = [rec[beam_parameter_name] for rec in recs]
