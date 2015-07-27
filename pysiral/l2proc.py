@@ -94,7 +94,9 @@ class Level2Processor(object):
         return True
 
     def _range_corrections(self, l1b):
-        pass
+        """ Apply the range corrections """
+        for correction in self._job.config.corrections:
+            l1b.apply_range_correction(correction)
 
     def _classify_surface_types(self, l1b, l2):
         pass
