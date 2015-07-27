@@ -28,7 +28,10 @@ def l2_processing():
     mission_settings = {
         "id": "cryosat2",
         "options": config.get_mission_defaults("cryosat2")}
-    roi_settings = {}
+    roi_settings = {
+        "pyclass": "LowerLatLimit",
+        "options": {
+            "latitude_threshold": -50.0}}
     l2_settings = {
         "corrections": {},
         "surface_type": {},
@@ -48,7 +51,7 @@ def l2_processing():
     # Start the processor
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
-    l2proc.error_tolerance(raise_on_error=True)
+    l2proc.error_handling(raise_on_error=True)
     l2proc.set_l1b_files(l1b_files[0:1])
     l2proc.run()
 
