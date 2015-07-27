@@ -6,6 +6,8 @@ Created on Tue Jul 07 14:10:34 2015
 """
 
 from pysiral.io_adapter import L1bAdapterCryoSat
+
+import numpy as np
 import os
 
 
@@ -20,6 +22,24 @@ class Level1bData(object):
         self.time_orbit = L1bTimeOrbit()
         self.correction = L1bRangeCorrections()
         self.classifier = L1bClassifiers()
+
+    def trim_to_subset(self, subset_list):
+        """
+        Create a subset from an indice list
+        """
+        data_groups = ["time_orbit", "correction", "classifier", "waveform"]
+        for data_group in data_groups:
+            content = getattr(self, data_group)
+            content.set_subset(subset_list)
+        # TODO: Updating Metadata?
+
+    @property
+    def n_records(self):
+        try:
+            n_records = len(self.time_orbit.timestamp)
+        except:
+            n_records = 0
+        return n_records
 
 
 class L1bConstructor(Level1bData):
@@ -121,11 +141,20 @@ class L1bTimeOrbit(object):
     def timestamp(self, value):
         self._timestamp = value
 
+    @property
+    def parameter_list(self):
+        return ["timestamp", "longitude", "latitude", "altitude"]
+
     def set_position(self, longitude, latitude, altitude):
         # XXX: This is developing stuff
         self._longitude = longitude
         self._latitude = latitude
         self._altitude = altitude
+
+    def set_subset(self, subset_list):
+        for parameter in self.parameter_list:
+            data = getattr(self, "_"+parameter)
+            data = data[subset_list]
 
 
 class L1bRangeCorrections(object):
@@ -139,12 +168,17 @@ class L1bRangeCorrections(object):
         self._parameter_list.append(tag)
 
     @property
-    def list(self):
+    def parameter_list(self):
         return self._parameter_list
 
     def get_parameter_by_index(self, index):
         name = self._parameter_list[index]
         return getattr(self, name), name
+
+    def set_subset(self, subset_list):
+        for parameter in self.parameter_list:
+            data = getattr(self, parameter)
+            data = data[subset_list]
 
 
 class L1bClassifiers(object):
@@ -158,8 +192,20 @@ class L1bClassifiers(object):
 
     def add_parameter(self, name, value, classifier_type):
         """ Add a parameter for a given classifier type """
-        setattr(self, name, value)
+        setattr(self, name, np.array(value))
         self._list[classifier_type].append(name)
+
+    @property
+    def parameter_list(self):
+        parameter_list = []
+        for key in self._list.keys():
+            parameter_list.extend(self._list[key])
+        return parameter_list
+
+    def set_subset(self, subset_list):
+        for parameter in self.parameter_list:
+            data = getattr(self, parameter)
+            data = data[subset_list]
 
 
 class L1bWaveforms(object):
@@ -176,9 +222,17 @@ class L1bWaveforms(object):
     def range(self):
         return self._range
 
+    @property
+    def parameter_list(self):
+        return ["power", "range"]
+
     def add_waveforms(self, power, range):
         self._power = power
         self._range = range
+
+    def set_subset(self, subset_list):
+        self._power = self._power[subset_list, :]
+        self._range = self._range[subset_list, :]
 
 
 def get_l1b_adapter(mission):
