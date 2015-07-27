@@ -50,18 +50,19 @@ class Level2Processor(object):
         """ Orbit-wise level2 processing """
         # TODO: Evaluate parallelization
         for l1b_file in self._l1b_files:
-            l1b = self._read_l1b_file(l1b_file)
-            in_roi = self._trim_roi(l1b)
-            if not in_roi:
+            l1b = self._read_l1b_file(l1b_file)        # Read the l1b file
+            in_roi = self._trim_to_roi(l1b)            # region of interest
+            over_ocean = self._trim_land_margins(l1b)  # trim edges (land)
+            if not in_roi or not over_ocean:
                 continue
-            self._range_corrections(l1b)
-            l2 = Level2Data()
-            self._classify_surface_types(l1b, l2)
-            self._retrack_waveforms(l1b, l2)        # -> Elevations
-            self._reference_to_ssh(l2)              # -> Radar Freeboard
+            self._range_corrections(l1b)               # geophys. corrections
+            l2 = Level2Data(l1b)
+            self._classify_surface_types(l1b, l2)      # (sea ice, lead, ...)
+            self._retrack_waveforms(l1b, l2)           # (elevation)
+            self._reference_to_ssh(l2)                 # (ssh, ssa, app frb)
             self._apply_data_quality_filter(l2)
-            self._post_processing(l2)
-            self._create_outputs(l2)
+            self._post_processing(l2)                  # (radar freeboard)
+            self._create_outputs(l2)                   # (plots, files)
             self._add_to_orbit_collection(l2)
 
     def _clean_up(self):
