@@ -8,5 +8,6 @@ Created on Fri Jul 24 16:30:24 2015
 
 class Level2Data(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, l1b):
+
+        self._info = l1b.info
