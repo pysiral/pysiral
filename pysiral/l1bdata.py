@@ -33,6 +33,16 @@ class Level1bData(object):
             content.set_subset(subset_list)
         # TODO: Updating Metadata?
 
+    def apply_range_correction(self, correction):
+        """
+        Apply range correction
+        """
+        range_delta = self.correction.get_parameter_by_name(correction)
+        if range_delta is None:
+            # TODO: raise warning
+            return
+        self.waveform.add_range_delta(range_delta)
+
     @property
     def n_records(self):
         try:
@@ -175,6 +185,12 @@ class L1bRangeCorrections(object):
         name = self._parameter_list[index]
         return getattr(self, name), name
 
+    def get_parameter_by_name(self, name):
+        try:
+            return getattr(self, name)
+        except:
+            return None
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
@@ -226,6 +242,14 @@ class L1bWaveforms(object):
     def parameter_list(self):
         return ["power", "range"]
 
+    @property
+    def n_range_bins(self):
+        return self._get_wfm_shape(1)
+
+    @property
+    def n_records(self):
+        return self._get_wfm_shape(0)
+
     def add_waveforms(self, power, range):
         self._power = power
         self._range = range
@@ -233,6 +257,16 @@ class L1bWaveforms(object):
     def set_subset(self, subset_list):
         self._power = self._power[subset_list, :]
         self._range = self._range[subset_list, :]
+
+    def add_range_delta(self, range_delta):
+        range_delta_reshaped = np.repeat(range_delta, self.n_range_bins)
+        range_delta_reshaped = range_delta_reshaped.reshape(
+            self.n_records, self.n_range_bins)
+        self._range += range_delta_reshaped
+
+    def _get_wfm_shape(self, index):
+        shape = np.shape(self._power)
+        return shape[index]
 
 
 def get_l1b_adapter(mission):
