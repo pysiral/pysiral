@@ -33,7 +33,17 @@ def l2_processing():
         "options": {
             "latitude_threshold": -50.0}}
     l2_settings = {
-        "corrections": {},
+        "corrections": [
+            "dry_troposphere",
+            "wet_troposphere",
+            "inverse_barometric",
+            "dynamic_atmosphere",
+            "ionospheric",
+            "ocean_tide_elastic",
+            "ocean_tide_long_period",
+            "ocean_loading_tide",
+            "solid_earth_tide",
+            "geocentric_polar_tide"],
         "surface_type": {},
         "retracker": {},
         "mss": {},
