@@ -18,7 +18,7 @@ mss:
 
     # DTU 10 mean sea surface
     dtu10mss:
-        pypthon_class: mss.DTU1MinGrid
+        pyclass: DTU1MinGrid
         docstr: DTU10 mean sea surface (1 minute grid)
         type: static
         frequency: null
@@ -33,7 +33,7 @@ mss:
 
     # DTU 13 mean sea surface
     dtu13mss:
-        pypthon_class: mss.DTU1MinGrid
+        pyclass: DTU1MinGrid
         docstr: DTU13 mean sea surface (1 minute grid)
         type: static
         frequency: null
