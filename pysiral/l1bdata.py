@@ -6,6 +6,7 @@ Created on Tue Jul 07 14:10:34 2015
 """
 
 from pysiral.io_adapter import L1bAdapterCryoSat
+from pysiral.surface_type import SurfaceType
 
 import numpy as np
 import os
@@ -22,6 +23,7 @@ class Level1bData(object):
         self.time_orbit = L1bTimeOrbit()
         self.correction = L1bRangeCorrections()
         self.classifier = L1bClassifiers()
+        self.surface_type = SurfaceType()
 
     def trim_to_subset(self, subset_list):
         """
