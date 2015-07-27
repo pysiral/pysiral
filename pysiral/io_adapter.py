@@ -16,6 +16,10 @@ import numpy as np
 
 class L1bAdapterCryoSat(object):
     """ Converts a CryoSat2 L1b object into a L1bData object """
+
+    _SURFACE_TYPE_DICT = {"ocean": 0, "closed_sea": 1,
+                          "land_ice": 2, "land": 3}
+
     def __init__(self, config):
         self.filename = None
         self._config = config
@@ -99,13 +103,15 @@ class L1bAdapterCryoSat(object):
         ionospheric = get_structarr_attr(self.cs2l1b.corrections, key)
         self.l1bdata.correction.set_parameter("ionospheric", ionospheric)
 
-    def _transfer_classifiers(self):
-        # TODO: Add potential surface type classifiers
+    def _transfer_surface_type_data(self):
         # L1b surface type flag word
-        self.l1bdata.classifier.add_parameter(
-            "l1b_surface_type",
-            get_structarr_attr(self.cs2l1b.corrections, "surface_type"),
-            "surface_type")
+        surface_type = get_structarr_attr(
+            self.cs2l1b.corrections, "surface_type")
+        for key in self._SURFACE_TYPE_DICT.keys():
+            flag = surface_type == self._SURFACE_TYPE_DICT[key]
+            self.l1bdata.surface_type.add_flag(flag, key)
+
+    def _transfer_classifiers(self):
         # Add a selection of beam parameters to the list of surface type
         # classifiers
         beam_parameter_list = [
