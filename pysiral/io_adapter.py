@@ -25,8 +25,8 @@ class L1bAdapterCryoSat(object):
         self._config = config
         self._mission = "cryosat2"
 
-    def construct_l1b(self, l1bdata):
-        self.l1bdata = l1bdata                # pointer to L1bData object
+    def construct_l1b(self, l1b):
+        self.l1b = l1b                # pointer to L1bData object
         self._read_cryosat2l1b()              # Read CryoSat-2 L1b data file
         self._transfer_metadata()             # (orbit, radar mode, ..)
         self._transfer_timeorbit()            # (lon, lat, alt, time)
@@ -47,13 +47,13 @@ class L1bAdapterCryoSat(object):
         self.cs2l1b.post_processing()
 
     def _transfer_metadata(self):
-        self.l1bdata.info.mission = self._mission
-        self.l1bdata.info.mission_data_version = self.cs2l1b.baseline
-        self.l1bdata.info.radar_mode = self.cs2l1b.radar_mode
-        self.l1bdata.info.orbit = self.cs2l1b.sph.abs_orbit_start
-        self.l1bdata.info.start_time = parse_datetime_str(
+        self.l1b.info.mission = self._mission
+        self.l1b.info.mission_data_version = self.cs2l1b.baseline
+        self.l1b.info.radar_mode = self.cs2l1b.radar_mode
+        self.l1b.info.orbit = self.cs2l1b.sph.abs_orbit_start
+        self.l1b.info.start_time = parse_datetime_str(
             self.cs2l1b.sph.start_record_tai_time)
-        self.l1bdata.info.stop_time = parse_datetime_str(
+        self.l1b.info.stop_time = parse_datetime_str(
             self.cs2l1b.sph.stop_record_tai_time)
 
     def _transfer_timeorbit(self):
@@ -61,13 +61,13 @@ class L1bAdapterCryoSat(object):
         longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
         latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
         altitude = get_structarr_attr(self.cs2l1b.time_orbit, "altitude")
-        self.l1bdata.time_orbit.set_position(longitude, latitude, altitude)
+        self.l1b.time_orbit.set_position(longitude, latitude, altitude)
         # Transfer the timestamp
         tai_objects = get_structarr_attr(
             self.cs2l1b.time_orbit, "tai_timestamp")
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
         utc_timestamp = tai2utc(tai_timestamp)
-        self.l1bdata.time_orbit.timestamp = utc_timestamp
+        self.l1b.time_orbit.timestamp = utc_timestamp
 
     def _transfer_waveform_collection(self):
         # Create the numpy arrays for power & range
@@ -83,19 +83,19 @@ class L1bAdapterCryoSat(object):
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
         # Transfer to L1bData
-        self.l1bdata.waveform.add_waveforms(echo_power, echo_range)
+        self.l1b.waveform.add_waveforms(echo_power, echo_range)
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
         for key in self.cs2l1b.corrections[0].keys():
             if key in self._config.parameter.correction_list:
-                self.l1bdata.correction.set_parameter(
+                self.l1b.correction.set_parameter(
                     key, get_structarr_attr(self.cs2l1b.corrections, key))
         # CryoSat-2 specific: Two different sources of ionospheric corrections
         options = self._config.get_mission_defaults(self._mission)
         key = options["ionospheric_correction_source"]
         ionospheric = get_structarr_attr(self.cs2l1b.corrections, key)
-        self.l1bdata.correction.set_parameter("ionospheric", ionospheric)
+        self.l1b.correction.set_parameter("ionospheric", ionospheric)
 
     def _transfer_surface_type_data(self):
         # L1b surface type flag word
@@ -103,7 +103,7 @@ class L1bAdapterCryoSat(object):
             self.cs2l1b.corrections, "surface_type")
         for key in self._SURFACE_TYPE_DICT.keys():
             flag = surface_type == self._SURFACE_TYPE_DICT[key]
-            self.l1bdata.surface_type.add_flag(flag, key)
+            self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
         # Add a selection of beam parameters to the list of surface type
