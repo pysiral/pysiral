@@ -208,7 +208,7 @@ class L1bClassifiers(object):
             "warning": [],
             "error": []}
 
-    def add_parameter(self, name, value, classifier_type):
+    def add(self, value, name, classifier_type):
         """ Add a parameter for a given classifier type """
         setattr(self, name, np.array(value))
         self._list[classifier_type].append(name)
