@@ -26,20 +26,14 @@ class L1bAdapterCryoSat(object):
         self._mission = "cryosat2"
 
     def construct_l1b(self, l1bdata):
-        # Store the pointer to the L1bData object
-        self.l1bdata = l1bdata
-        # Read the CryoSat-2 L1b data file
-        self._read_cryosat2l1b()
-        # Transfer Metdata
-        self._transfer_metadata()
-        # Transfer the time and orbit data
-        self._transfer_timeorbit()
-        # Transfer the waveform data
-        self._transfer_waveform_collection()
-        # Transfer the range corrections
-        self._transfer_range_corrections()
-        # Transfer any classifier data
-        self._transfer_classifiers()
+        self.l1bdata = l1bdata                # pointer to L1bData object
+        self._read_cryosat2l1b()              # Read CryoSat-2 L1b data file
+        self._transfer_metadata()             # (orbit, radar mode, ..)
+        self._transfer_timeorbit()            # (lon, lat, alt, time)
+        self._transfer_waveform_collection()  # (power, range)
+        self._transfer_range_corrections()    # (range corrections)
+        self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
+        self._transfer_classifiers()          # (beam parameters, flags, ...)
 
     def _read_cryosat2l1b(self):
         """ Read the L1b file and create a CryoSat-2 native L1b object """
