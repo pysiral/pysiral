@@ -77,10 +77,10 @@ class Level2Processor(object):
         l1b.construct()
         return l1b
 
-    def _trim_roi(self, l1b):
+    def _trim_to_roi(self, l1b):
         """
-        Trims orbit for ice/ocean areas and returns true if data in ROI and
-        false otherwise
+        Trims orbit for ice/ocean areas (excluding land, land ice)
+        and returns true if data in ROI and false otherwise
         """
         classifier = globals()[self._job.roi.pyclass]()
         classifier.set_options(**self._job.roi.options)
@@ -90,7 +90,32 @@ class Level2Processor(object):
             return False
         if len(roi_list) == l1b.n_records:  # Full match (no trimming)
             return True
-        l1b.trim_to_subset(roi_list)    # Partial match (trimming)
+        l1b.trim_to_subset(roi_list)  # Partial match (trimming)
+        return True
+
+    def _trim_land_margins(self, l1b):
+        """
+        Trim land areas at the margins of the orbit data
+
+        points over land surrounded by ocean measurements (e.g. inside the
+        Canadian Archipelago) will be excluded later in the processing
+        """
+        if not l1b.surface_type.has_flag("ocean"):
+            # TODO: Think of method to classify lon/lat point as land/ocean
+            #       (e.g. basemap functionality?) if land flag is not part
+            #       of l1b data set
+            pass
+        # TODO: This assumes that in the initial classification all waveforms
+        #       of relevance are classified as ocean
+        flag = l1b.surface_type.ocean.flag
+        is_ocean_list = np.nonzero(flag)
+        if len(is_ocean_list) == l1b.n_records:  # Nothing to do here
+            return True
+        if len(is_ocean_list) == 0:              # Nothing left to do
+            return False
+        trimmed_list = np.arange(np.amin(is_ocean_list),
+                                 np.amax(is_ocean_list)+1)
+        l1b.trim_to_subset(trimmed_list)
         return True
 
     def _range_corrections(self, l1b):
