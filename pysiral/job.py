@@ -31,5 +31,5 @@ class Level2Job(ProcJob):
     def l2proc_settings(self, config):
         self._add_option_dict("config", config)
 
-    def validate():
+    def validate(self):
         pass
