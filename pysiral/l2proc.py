@@ -18,7 +18,12 @@ class Level2Processor(object):
         self._orbit = []
         self._l1b_files = []
         self._config = None
+        self._initialized = False
         self._error_handler = {"raise_on_error": True}
+
+    @property
+    def orbit(self):
+        return self._orbit
 
     def error_handling(self, **keyw):
         self._error_handler.update(keyw)
@@ -155,4 +160,4 @@ class Level2Processor(object):
         pass
 
     def _add_to_orbit_collection(self, l2):
-        pass
+        self._orbit.append(l2)
