@@ -5,6 +5,19 @@ Created on Mon Jul 27 11:25:04 2015
 @author: Stefan
 """
 import numpy as np
+from treedict import TreeDict
+
+
+class ANDCondition(object):
+
+    def __init__(self):
+        self.flag = None
+
+    def add(self, flag):
+        if self.flag is None:
+            self.flag = flag
+        else:
+            self.flag = np.logical_and(self.flag, flag)
 
 
 class TypeContainer(object):
