@@ -11,6 +11,10 @@ from pysiral.l2proc import Level2Processor
 
 import os
 import glob
+import numpy as np
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 def l2_processing():
@@ -86,5 +90,94 @@ def l2_processing():
     l2proc.set_l1b_files(l1b_files[0:1])
     l2proc.run()
 
+    # Test Plots
+    create_surface_type_plot(l2proc.orbit[0])
+
+
+def create_surface_type_plot(l2):
+
+    from matplotlib.colors import ListedColormap
+
+    # AWI eisblau #00ace5
+    # AWI tiefblau #003e6e
+    # AWI grau 1 #4b4b4d
+    # AWI grau 2 #bcbdbf
+
+    rgb_list = [
+        "#bcbdbf",  # Unkown
+        "#003e6e",  # Ocean
+        "#00ace5",  # Lead
+        "#DDA0DD",  # Polynya
+        "#76FF7A",  # Sea Ice
+        "#4b4b4d",  # Lakes
+        "#FFCC00",  # Land Ice
+        "#826644"   # Land
+        ]
+    cmap = ListedColormap(rgb_list, name='surface_type')
+
+    # Calculate Fractions
+    n = float(l2.surface_type.n_records)
+    flag = l2.surface_type.flag
+    fractions = []
+    labels = [l2.surface_type.name(i) for i in np.arange(8)]
+    for i in np.arange(8):
+        num = len(np.where(flag == i)[0])
+        fractions.append(float(num)/n)
+
+    # Pop fraction = 0
+    pie_fractions = np.array(fractions)
+    pie_labels = np.array(labels)
+    pie_colors = np.array(rgb_list)
+
+    non_zero = np.nonzero(pie_fractions)[0]
+    pie_fractions = pie_fractions[non_zero]
+    pie_labels = pie_labels[non_zero]
+    pie_colors = pie_colors[non_zero]
+
+    plt.figure(facecolor="white")
+
+    plt.subplot2grid((5, 15), (0, 0), colspan=14, rowspan=4)
+    plt.gca().set_aspect(1.0)
+    wedges, texts, autotexts = plt.pie(
+        pie_fractions, labels=pie_labels, colors=pie_colors,
+        autopct='%1.1f%%', startangle=90, labeldistance=1.1, pctdistance=0.75)
+    for wedge in wedges:
+        wedge.set_width(0.5)
+        wedge.set_ec("none")
+
+    plt.subplot2grid((5, 15), (4, 0), colspan=14)
+    ax = plt.gca()
+    im = plt.imshow([flag], aspect=100, interpolation=None,
+                    vmin=-0.5, vmax=7.5, cmap=cmap)
+    ax.xaxis.set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_xlabel("Record #")
+    ax.yaxis.set_ticks([])
+    ax.spines["bottom"].set_position(("data", 0.75))
+
+    spines_to_remove = ["top", "right", "left"]
+    for spine in spines_to_remove:
+        ax.spines[spine].set_visible(False)
+
+    plt.subplot2grid((5, 15), (0, 14), rowspan=4)
+    cbar = plt.colorbar(im, orientation="vertical", cax=plt.gca())
+    cbar_ticks = np.arange(8)
+    cbar.set_ticks(cbar_ticks)
+    cbar.set_ticklabels(labels)
+    cbar.solids.set_edgecolor("1.0")
+    cbar.outline.set_linewidth(5)
+    cbar.outline.set_alpha(0.0)
+    cbar.ax.tick_params('both', length=0.1, which='major', pad=5)
+
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == '__main__':
+
+    mpl.rcParams['font.sans-serif'] = "arial"
+    for target in ["xtick.color", "ytick.color", "axes.edgecolor",
+                   "axes.labelcolor"]:
+        mpl.rcParams[target] = "#4b4b4d"
+
     l2_processing()
