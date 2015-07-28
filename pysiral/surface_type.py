@@ -166,3 +166,74 @@ class SurfaceTypeClassifier(object):
     def has_class(self, name):
         return name in self._classes
 
+
+class RickerTC2014(SurfaceTypeClassifier):
+    """
+    Surface Type classification algorithm from
+
+    Ricker, R., Hendricks, S., Helm, V., Skourup, H., and Davidson, M.:
+    Sensitivity of CryoSat-2 Arctic sea-ice freeboard and thickness on
+    radar-waveform interpretation,
+    The Cryosphere, 8, 1607-1622, doi:10.5194/tc-8-1607-2014, 2014.
+    """
+
+    def __init__(self):
+        super(RickerTC2014, self).__init__()
+        self._classes = ["unkown", "ocean", "lead", "sea_ice"]
+
+    def _classify(self):
+        self._set_unknown_default()
+        self._classify_ocean()
+        self._classify_leads()
+        self._classify_sea_ice()
+
+    def _set_unknown_default(self):
+        flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
+        self._surface_type.add_flag(flag, "unknown")
+
+    def _classify_ocean(self):
+        opt = self._options.ocean
+        l1b = self._classifier
+        ocean = ANDCondition()
+        # Peakiness Thresholds
+        ocean.add(l1b.peakiness >= opt.peakiness_min)
+        ocean.add(l1b.peakiness <= opt.peakiness_max)
+        # Stack Standard Deviation
+        ssd_threshold = opt.stack_standard_deviation_min
+        ocean.add(l1b.stack_standard_deviation >= ssd_threshold)
+        # Ice Concentration
+        # ocean.add(l1b.ice_concentration < opt.ice_concentration_min)
+        # OCOG Width
+        ocean.add(l1b.ocog_width >= opt.ocog_width_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self):
+        opt = self._options.lead
+        l1b = self._classifier
+        lead = ANDCondition()
+        # Stack (Beam) parameters
+        lead.add(l1b.peakiness_l >= opt.peakiness_l_min)
+        lead.add(l1b.peakiness_r >= opt.peakiness_r_min)
+        lead.add(l1b.peakiness >= opt.peakiness_min)
+        lead.add(l1b.stack_kurtosis >= opt.stack_kurtosis_min)
+        ssd_threshold = opt.stack_standard_deviation_max
+        lead.add(l1b.stack_standard_deviation < ssd_threshold)
+        # Ice Concentration
+        # lead.add(l1b.ice_concentration > opt.ice_concentration_max)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self):
+        opt = self._options.sea_ice
+        l1b = self._classifier
+        ice = ANDCondition()
+        # Stack (Beam) parameters
+        ice.add(l1b.peakiness_r <= opt.peakiness_r_max)
+        ice.add(l1b.peakiness_l <= opt.peakiness_l_max)
+        ice.add(l1b.peakiness <= opt.peakiness_max)
+        ice.add(l1b.stack_kurtosis < opt.stack_kurtosis_max)
+        # Ice Concentration
+        # ice.add(l1b.ice_concentration > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
