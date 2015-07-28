@@ -44,7 +44,28 @@ def l2_processing():
             "ocean_loading_tide",
             "solid_earth_tide",
             "geocentric_polar_tide"],
-        "surface_type": {},
+        "surface_type": {
+            "pyclass": "RickerTC2014",
+            "options": {
+                "ocean": {
+                    "peakiness_min": 0.0,
+                    "peakiness_max": 10.0,
+                    "stack_standard_deviation_min": 18.5,
+                    "ice_concentration_min": 5.0,
+                    "ocog_width_min": 38},
+                "lead": {
+                    "peakiness_l_min": 40.0,
+                    "peakiness_r_min": 30.0,
+                    "peakiness_min": 40.0,
+                    "stack_kurtosis_min": 40.0,
+                    "stack_standard_deviation_max": 4.0,
+                    "ice_concentration_min": 70.0},
+                "sea_ice": {
+                    "peakiness_r_max": 15.0,
+                    "peakiness_l_max": 20.0,
+                    "peakiness_max": 30.0,
+                    "stack_kurtosis_max": 8.0,
+                    "ice_concentration_min": 70.0}}},
         "retracker": {},
         "mss": {},
         "filter": {},
