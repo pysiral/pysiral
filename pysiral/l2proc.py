@@ -7,6 +7,7 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.l1bdata import L1bConstructor
 from pysiral.l2data import Level2Data
 from pysiral.roi import *
+from pysiral.surface_type import *
 
 
 class Level2Processor(object):
@@ -57,6 +58,7 @@ class Level2Processor(object):
                 continue
             self._range_corrections(l1b)               # geophys. corrections
             l2 = Level2Data(l1b)
+            # TODO: Get L2 classifiers (ice concentration, ice type)
             self._classify_surface_types(l1b, l2)      # (sea ice, lead, ...)
             self._retrack_waveforms(l1b, l2)           # (elevation)
             self._reference_to_ssh(l2)                 # (ssh, ssa, app frb)
@@ -125,7 +127,17 @@ class Level2Processor(object):
             l1b.apply_range_correction(correction)
 
     def _classify_surface_types(self, l1b, l2):
-        pass
+        """ Run the surface type classificator """
+        surface_type = globals()[self._job.config.surface_type.pyclass]()
+        surface_type.set_options(**self._job.config.surface_type.options)
+        surface_type.set_classifiers(l1b.classifier)
+        # XXX: Not sure if this is usefule
+        # if hasattr(l1b, "surface_type"):
+        #    classifier.set_initial_classification(l1b.surface_type)
+        surface_type.classify()
+        print surface_type
+        print surface_type.result
+        l2.set_surface_type(surface_type.result)
 
     def _retrack_waveforms(self, l1b, l2):
         pass
