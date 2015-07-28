@@ -10,7 +10,7 @@ from pysiral.cryosat2.functions import (
     get_cryosat2_wfm_power, get_cryosat2_wfm_range)
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.helper import parse_datetime_str
-from pysiral.classifier import OCOGParameter
+from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
 
 import numpy as np
 
@@ -27,7 +27,7 @@ class L1bAdapterCryoSat(object):
         self._mission = "cryosat2"
 
     def construct_l1b(self, l1b):
-        self.l1b = l1b                # pointer to L1bData object
+        self.l1b = l1b                        # pointer to L1bData object
         self._read_cryosat2l1b()              # Read CryoSat-2 L1b data file
         self._transfer_metadata()             # (orbit, radar mode, ..)
         self._transfer_timeorbit()            # (lon, lat, alt, time)
@@ -107,20 +107,24 @@ class L1bAdapterCryoSat(object):
             self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
-        # Add a selection of beam parameters to the list of surface type
-        # classifiers
+        # Add L1b beam parameter group
         beam_parameter_list = [
             "stack_standard_deviation", "stack_centre",
             "stack_scaled_amplitude", "stack_skewness", "stack_kurtosis"]
         for beam_parameter_name in beam_parameter_list:
             recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
             beam_parameter = [rec[beam_parameter_name] for rec in recs]
-            self.l1b.classifier.add(
-                beam_parameter, beam_parameter_name, "surface_type")
-        # Calculate the OCOG Parameter
-        wfm = np.array(
-            get_structarr_attr(self.cs2l1b.waveform, "wfm"), dtype=np.float32)
-        ocog = OCOGParameter(wfm)
-        self.l1b.classifier.add(ocog.width, "ocog_width", "surface_type")
-        self.l1b.classifier.add(
-            ocog.amplitude, "ocog_amplitude", "surface_type")
+            self.l1b.classifier.add(beam_parameter, beam_parameter_name)
+        # Calculate Parameters from waveform counts
+        # XXX: This is a legacy of the CS2AWI IDL processor
+        #      Threshold defined for waveform counts not power in dB
+        wfm = get_structarr_attr(self.cs2l1b.waveform, "wfm")
+        # Calculate the OCOG Parameter (CryoSat-2 notation)
+        ocog = CS2OCOGParameter(wfm)
+        self.l1b.classifier.add(ocog.width, "ocog_width")
+        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+        # Calculate the Peakiness (CryoSat-2 notation)
+        pulse = CS2PulsePeakiness(wfm)
+        self.l1b.classifier.add(pulse.peakiness, "peakiness")
+        self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
+        self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
