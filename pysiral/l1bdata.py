@@ -220,6 +220,14 @@ class L1bClassifiers(object):
             parameter_list.extend(self._list[key])
         return parameter_list
 
+    @property
+    def n_records(self):
+        parameter_list = self.parameter_list
+        if len(parameter_list) == 0:
+            return 0
+        else:
+            return len(getattr(self, parameter_list[0]))
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
