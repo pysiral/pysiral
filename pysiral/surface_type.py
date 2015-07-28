@@ -65,6 +65,13 @@ class SurfaceType(object):
         self._surface_type = None
         self._n_records = None
 
+    @property
+    def flag(self):
+        return self._surface_type
+
+    @property
+    def n_records(self):
+        return self._n_records
 
     def name(self, index):
         i = self._SURFACE_TYPE_DICT.values().index(index)
