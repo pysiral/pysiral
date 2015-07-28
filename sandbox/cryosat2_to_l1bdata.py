@@ -76,7 +76,7 @@ def cryosat2_l1b_corrections_plot(l1b):
 
     from matplotlib.ticker import MultipleLocator
 
-    n = len(l1b.correction.list)
+    n = len(l1b.correction.parameter_list)
     f, ax = plt.subplots(n, sharex=True, facecolor="white", figsize=(10, 16))
     for i in np.arange(n):
         correction, name = l1b.correction.get_parameter_by_index(i)
