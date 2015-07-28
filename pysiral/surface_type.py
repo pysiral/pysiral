@@ -139,3 +139,30 @@ class IceType(object):
 
     def __init__(self):
         self._ice_type_flag = None
+
+
+class SurfaceTypeClassifier(object):
+    """ Parent Class for surface type classifiers """
+    def __init__(self):
+        self._surface_type = SurfaceType()
+
+    @property
+    def result(self):
+        return self._surface_type
+
+    def set_options(self, **opt_dict):
+        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+
+    def set_classifiers(self, classifiers):
+        self._classifier = classifiers
+
+    def set_initial_classification(self, surface_type):
+        """ Overwrite classification"""
+        self._surface_type = surface_type
+
+    def classify(self):
+        self._classify()
+
+    def has_class(self, name):
+        return name in self._classes
+
