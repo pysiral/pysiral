@@ -134,8 +134,8 @@ class IceType(object):
     """
     _ICE_TYPE_DICT = {
         "thin_ice": 0,
-        "fyi": 1,
-        "myi": 2}
+        "first_year_ice": 1,
+        "multi_year_ice": 2}
 
     def __init__(self):
         self._ice_type_flag = None
