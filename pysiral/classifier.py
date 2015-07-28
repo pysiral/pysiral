@@ -14,25 +14,25 @@ class BaseClassifier(object):
         pass
 
 
-class OCOGParameter(BaseClassifier):
+class CS2OCOGParameter(BaseClassifier):
     """
-    Calculate OCOG Parameters (Amplitude, Width)
+    Calculate OCOG Parameters (Amplitude, Width) for CryoSat-2 waveform
+    counts.
     Algorithm Source: retrack_ocog.pro from CS2AWI lib
     """
 
-    def __init__(self, wfm):
-        super(OCOGParameter, self).__init__()
-        self._n = np.shape(wfm)[0]
+    def __init__(self, wfm_counts):
+        super(CS2OCOGParameter, self).__init__()
+        self._n = np.shape(wfm_counts)[0]
         self._amplitude = np.ndarray(shape=(self._n))
         self._width = np.ndarray(shape=(self._n))
-        self._calc_parameters(wfm)
+        self._calc_parameters(wfm_counts)
 
-    def _calc_parameters(self, wfm):
+    def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
-            y = wfm[i, :].flatten()
-            noise = np.nanmean(y[0:11])
-            y -= noise
-            y[np.where(y < 0.0)[0]] = 0.0
+            y = wfm_counts[i, :].flatten().astype(np.float32)
+            y -= np.nanmean(y[0:11])  # Remove Noise
+            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             y2 = y**2.0
             self._amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
             self._width[i] = ((y2.sum())**2.0) / (y2**2.0).sum()
