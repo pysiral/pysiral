@@ -50,23 +50,41 @@ class SurfaceType(object):
         - continental ice
         - land
     """
-    _VALID_SURFACE_TYPES = [
-        "ocean", "closed_sea", "land_ice",
-        "sea_ice", "lead", "polynya", "land"]
+    _SURFACE_TYPE_DICT = {
+        "unknown": 0,
+        "ocean": 1,
+        "lead": 2,
+        "polynya": 3,
+        "sea_ice": 4,
+        "closed_sea": 5,
+        "land_ice": 6,
+        "land": 7}
 
     def __init__(self):
         self._surface_type_flags = []
+        self._surface_type = None
         self._n_records = None
+
+
+    def name(self, index):
+        i = self._SURFACE_TYPE_DICT.values().index(index)
+        return self._SURFACE_TYPE_DICT.keys()[i]
 
     def add_flag(self, flag, type_str):
         """ Add a surface type flag """
-        if type_str not in self._VALID_SURFACE_TYPES:
+        if type_str not in self._SURFACE_TYPE_DICT.keys():
             # TODO: Error Handling
             return
         if self._invalid_n_records(len(flag)):
             # TODO: Error Handling
             return
-        setattr(self, type_str, TypeContainer(flag))
+        # Create Flag keyword if necessary
+        if self._surface_type is None:
+            self._n_records = len(flag)
+            self._surface_type = np.zeros(
+                shape=(self._n_records), dtype=np.int8)
+        # Update surface type list
+        self._surface_type[np.where(flag)[0]] = self._get_type_id(type_str)
         self._surface_type_flags.append(type_str)
 
     def has_flag(self, type_str):
@@ -81,15 +99,21 @@ class SurfaceType(object):
         else:                        # New flag has wrong length
             return True
 
+    def _get_type_id(self, name):
+        return self._SURFACE_TYPE_DICT[name]
+
     def __getattr__(self, name):
         """
         Return empty lists for surface type flags that have not been
         set yet
         """
-        if name in self._VALID_SURFACE_TYPES:
-            return TypeContainer(
-                np.zeros(shape=(self._n_records), dtype=np.bool))
-        raise AttributeError("Unkown surface type: %s" % name)
+        if name in self._SURFACE_TYPE_DICT.keys():
+            if self.has_flag(name):
+                type_id = self._get_type_id(name)
+                return TypeContainer(self._surface_type == type_id)
+            else:
+                return TypeContainer(
+                    np.zeros(shape=(self._n_records), dtype=np.bool))
 
 
 class IceType(object):
