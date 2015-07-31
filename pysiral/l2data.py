@@ -14,3 +14,6 @@ class Level2Data(object):
 
     def set_surface_type(self, surface_type):
         self.surface_type = surface_type
+
+    def update_retracked_range(self, retracked_range):
+        pass
