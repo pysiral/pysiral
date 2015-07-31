@@ -70,7 +70,37 @@ def l2_processing():
                     "peakiness_max": 30.0,
                     "stack_kurtosis_max": 8.0,
                     "ice_concentration_min": 70.0}}},
-        "retracker": {},
+        "retracker": {
+            "ocean": {
+                "pyclass": "TFMRA",
+                "options": {
+                    "threshold": 0.5,
+                    "offset": 0.0,
+                    "wfm_oversampling_factor": 10,
+                    "wfm_oversampling_method": "linear",
+                    "wfm_smoothing_window_size": 11,
+                    "first_maximum_normalized_threshold": 0.15,
+                    "first_maximum_local_order": 1}},
+            "lead": {
+                "pyclass": "TFMRA",
+                "options": {
+                    "threshold": 0.5,
+                    "offset": 0.0,
+                    "wfm_oversampling_factor": 10,
+                    "wfm_oversampling_method": "linear",
+                    "wfm_smoothing_window_size": 11,
+                    "first_maximum_normalized_threshold": 0.15,
+                    "first_maximum_local_order": 1}},
+            "sea_ice": {
+                "pyclass": "TFMRA",
+                "options": {
+                    "threshold": 0.5,
+                    "offset": 0.0,
+                    "wfm_oversampling_factor": 10,
+                    "wfm_oversampling_method": "linear",
+                    "wfm_smoothing_window_size": 11,
+                    "first_maximum_normalized_threshold": 0.15,
+                    "first_maximum_local_order": 1}}},
         "mss": {},
         "filter": {},
         "post_processing": {},
