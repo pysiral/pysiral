@@ -4,10 +4,12 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+from pysiral.config import td_branches
 from pysiral.l1bdata import L1bConstructor
 from pysiral.l2data import Level2Data
 from pysiral.roi import *
 from pysiral.surface_type import *
+from pysiral.retracker import *
 
 
 class Level2Processor(object):
@@ -140,12 +142,18 @@ class Level2Processor(object):
         # if hasattr(l1b, "surface_type"):
         #    classifier.set_initial_classification(l1b.surface_type)
         surface_type.classify()
-        print surface_type
-        print surface_type.result
         l2.set_surface_type(surface_type.result)
 
     def _retrack_waveforms(self, l1b, l2):
-        pass
+        """ Do the retracking """
+        # loop over retrackers for each surface type
+        surface_types, retracker_def = td_branches(self._job.config.retracker)
+        for i, surface_type in enumerate(surface_types):
+            retracker = globals()[retracker_def[i].pyclass]()
+            retracker.set_options(**retracker_def[i].options)
+            retracker.set_surface_type(surface_type)
+            retracker.retrack(l1b, l2)
+            l2.update_retracked_range(retracker)
 
     def _reference_to_ssh(self, l2):
         pass
