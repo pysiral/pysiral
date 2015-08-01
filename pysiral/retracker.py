@@ -60,7 +60,7 @@ class BaseRetracker(object):
     def _add_retracked_point(self, range, power, index, **keyw):
         # XXX: Very basic
         if np.isfinite(range):
-            self.status[index] = True
+            self._status[index] = True
             self._range[index] = range
             self._power[index] = power
 
@@ -108,7 +108,7 @@ class TFMRA(BaseRetracker):
         oversampling = self._options.wfm_oversampling_factor
         range_os = np.linspace(
             np.nanmin(range), np.nanmax(range), n*oversampling)
-        interpolator_type = self._option.wfm_oversampling_method
+        interpolator_type = self._options.wfm_oversampling_method
         interpolator = interp1d(range, wfm, kind=interpolator_type)
         wfm_os = interpolator(range_os)
         # Smoothing
