@@ -101,7 +101,13 @@ def l2_processing():
                     "wfm_smoothing_window_size": 11,
                     "first_maximum_normalized_threshold": 0.15,
                     "first_maximum_local_order": 1}}},
-        "mss": config.auxdata.mss.dtu13mss,
+        "ssh": {
+            "mss": config.auxdata.mss.dtu13mss,
+            "ssa": {
+                "pyclass": "SSASmoothedLinear",
+                "options": {
+                    "use_ocean_wfm": False,
+                    "smooth_filter_width_m": 25000.0}}},
         "filter": {},
         "post_processing": {},
         "output": {}}
