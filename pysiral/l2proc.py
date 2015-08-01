@@ -160,7 +160,7 @@ class Level2Processor(object):
         surface_type = globals()[self._job.config.surface_type.pyclass]()
         surface_type.set_options(**self._job.config.surface_type.options)
         surface_type.set_classifiers(l1b.classifier)
-        # XXX: Not sure if this is usefule
+        # XXX: Not sure if this is useful:
         # if hasattr(l1b, "surface_type"):
         #    classifier.set_initial_classification(l1b.surface_type)
         surface_type.classify()
