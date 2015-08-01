@@ -23,7 +23,7 @@ def l2_processing():
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = config.local_machine.local_l1b_repository.cryosat2.sar
+    l1b_directory = config.local_machine.l1b_repository.cryosat2.sar
     l1b_directory = os.path.join(l1b_directory, "2015", "04")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
@@ -101,13 +101,14 @@ def l2_processing():
                     "wfm_smoothing_window_size": 11,
                     "first_maximum_normalized_threshold": 0.15,
                     "first_maximum_local_order": 1}}},
-        "mss": {},
+        "mss": config.auxdata.mss.dtu13mss,
         "filter": {},
         "post_processing": {},
         "output": {}}
 
     # Assemble the job order
     job = Level2Job()
+    job.local_machine_settings(config.local_machine)
     job.mission_settings(mission_settings)
     job.roi_settings(roi_settings)
     job.l2proc_settings(l2_settings)
@@ -121,10 +122,11 @@ def l2_processing():
     l2proc.run()
 
     # Test Plots
-    create_surface_type_plot(l2proc.orbit[0])
+    create_surface_type_plot(l2proc.orbit[0], block=False)
+    create_surface_elevation_plot(l2proc.orbit[0])
 
 
-def create_surface_type_plot(l2):
+def create_surface_type_plot(l2, block=True):
 
     from matplotlib.colors import ListedColormap
 
@@ -200,7 +202,34 @@ def create_surface_type_plot(l2):
     cbar.ax.tick_params('both', length=0.1, which='major', pad=5)
 
     plt.tight_layout()
-    plt.show()
+    plt.show(block=block)
+
+
+def create_surface_elevation_plot(l2, block=True):
+
+    plot_style = {
+        "ocean": {
+            "color": "#003e6e",
+            "sym": "o"},
+        "lead": {
+            "color": "#00ace5",
+            "sym": "s"},
+        "sea_ice": {
+            "color": "#76FF7A",
+            "sym": "h"}}
+
+    plt.figure(facecolor="white")
+    x = np.arange(l2.n_records)
+    for surface_type_name in "ocean", "lead", "sea_ice":
+        type_definition = l2.surface_type.get_by_name(surface_type_name)
+        if len(type_definition.indices) == 0:
+            continue
+        plt.scatter(
+            x[type_definition.indices], l2.elev[type_definition.indices],
+            color=plot_style[surface_type_name]["color"],
+            marker=plot_style[surface_type_name]["sym"])
+    plt.plot(x, l2.mss, color="black")
+    plt.show(block=block)
 
 
 if __name__ == '__main__':
