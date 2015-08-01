@@ -12,6 +12,8 @@ from pysiral.roi import *
 from pysiral.surface_type import *
 from pysiral.retracker import *
 
+import os
+
 
 class Level2Processor(object):
 
@@ -54,6 +56,16 @@ class Level2Processor(object):
         """ Read required auxiliary data sets """
         # TODO: Check if already inizialized
         pass
+
+    def _get_mss(self):
+        settings = self._job.config.mss
+        local_repository = self._job.local_machine.auxdata_repository.static
+        directory = local_repository[settings.local_machine_directory]
+        filename = os.path.join(directory, settings.file)
+        self._mss = globals()[settings.pyclass]()
+        self._mss.set_filename(filename)
+        self._mss.set_roi(self._roi)
+        self._mss.parse()
 
     def _run_processor(self):
         """ Orbit-wise level2 processing """
