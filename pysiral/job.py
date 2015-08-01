@@ -19,6 +19,9 @@ class ProcJob(object):
     def roi_settings(self, config):
         self._add_option_dict("roi", config)
 
+    def local_machine_settings(self, config):
+        self._add_option_dict("local_machine", config)
+
     def _add_option_dict(self, name, opt_dict):
         setattr(self, name, TreeDict.fromdict(opt_dict, expand_nested=True))
 
