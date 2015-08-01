@@ -29,3 +29,9 @@ class LowerLatLimit(ROIBase):
             return np.where(latitude >= self._options.latitude_threshold)[0]
         if self._options.latitude_threshold <= 0.0:  # Southern Hemisphere
             return np.where(latitude <= self._options.latitude_threshold)[0]
+
+    def get_latitude_range(self):
+        if self._options.latitude_threshold > 0.0:  # Northern Hemisphere
+            return [self._options.latitude_threshold, 90.0]
+        if self._options.latitude_threshold <= 0.0:  # Southern Hemisphere
+            return [-90.0, self._options.latitude_threshold]
