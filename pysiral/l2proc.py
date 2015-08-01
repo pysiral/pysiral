@@ -7,6 +7,7 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.config import td_branches
 from pysiral.l1bdata import L1bConstructor
 from pysiral.l2data import Level2Data
+from pysiral.mss import *
 from pysiral.roi import *
 from pysiral.surface_type import *
 from pysiral.retracker import *
@@ -156,7 +157,9 @@ class Level2Processor(object):
             l2.update_retracked_range(retracker)
 
     def _reference_to_ssh(self, l2):
-        pass
+        # first get mss for orbit
+        l2.mss = self._mss.get_track(
+            l2.time_orbit.longitude, l2.time_orbit.latitude)
 
     def _apply_data_quality_filter(self, l2):
         pass
