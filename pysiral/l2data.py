@@ -9,14 +9,32 @@ import numpy as np
 
 class Level2Data(object):
 
+    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb"]
+
     def __init__(self, l1b):
+        # Copy necessary fields form l1b
+        self._n_records = l1b.n_records
         self.info = np.copy(l1b.info)
+        self.time_orbit = l1b.time_orbit
+        # Create Level2 Data Groups
+        self._create_l2_data_items()
 
     def set_surface_type(self, surface_type):
         self.surface_type = surface_type
 
-    def update_retracked_range(self, retracked_range):
-        pass
+    def update_retracked_range(self, retracker):
+        self.elev[retracker.index] = \
+            self.time_orbit.altitude[retracker.index] - \
+            retracker.range[retracker.index]
+
+    def _create_l2_data_items(self):
+        for item in self._L2_DATA_ITEMS:
+            setattr(self, item, L2ElevationArray(shape=(self._n_records)))
+
+    @property
+    def n_records(self):
+        return self._n_records
+
 
 class L2ElevationArray(np.ndarray):
     """
