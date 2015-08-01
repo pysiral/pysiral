@@ -69,7 +69,7 @@ class Level2Processor(object):
         self._roi.set_options(**self._job.roi.options)
 
     def _get_mss(self):
-        settings = self._job.config.mss
+        settings = self._job.config.ssh.mss
         local_repository = self._job.local_machine.auxdata_repository.static
         directory = local_repository[settings.local_machine_directory]
         filename = os.path.join(directory, settings.file)
@@ -178,9 +178,13 @@ class Level2Processor(object):
             l2.update_retracked_range(retracker)
 
     def _reference_to_ssh(self, l2):
-        # first get mss for orbit
-        l2.mss = self._mss.get_track(
-            l2.time_orbit.longitude, l2.time_orbit.latitude)
+        # 1. get mss for orbit
+        l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
+        # 2. get get sea surface anomaly
+        ssa = globals()[self._job.config.ssh.ssa.pyclass]()
+        ssa.set_options(**self._job.config.ssh.ssa.options)
+        ssa.interpolate(l2)
+        l2.ssa, l2.ssa.uncertainty = ssa.result()
 
     def _apply_data_quality_filter(self, l2):
         pass
