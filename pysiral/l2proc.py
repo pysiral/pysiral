@@ -54,8 +54,19 @@ class Level2Processor(object):
 
     def _initialize_processor(self):
         """ Read required auxiliary data sets """
-        # TODO: Check if already inizialized
-        pass
+        if self._initialized:
+            return
+        self._get_roi()
+        # Read the mean surface height auxiliary file
+        self._get_mss()
+        # TODO: Read the ice concentration data
+        # TODO: snow depth information
+        # XXX: Ice Type Information?
+        self.initialized = True
+
+    def _get_roi(self):
+        self._roi = globals()[self._job.roi.pyclass]()
+        self._roi.set_options(**self._job.roi.options)
 
     def _get_mss(self):
         settings = self._job.config.mss
@@ -105,9 +116,7 @@ class Level2Processor(object):
         Trims orbit for ice/ocean areas (excluding land, land ice)
         and returns true if data in ROI and false otherwise
         """
-        classifier = globals()[self._job.roi.pyclass]()
-        classifier.set_options(**self._job.roi.options)
-        roi_list = classifier.get_roi_list(
+        roi_list = self._roi.get_roi_list(
             l1b.time_orbit.longitude, l1b.time_orbit.latitude)
         if len(roi_list) == 0:  # No match
             return False
