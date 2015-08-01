@@ -97,6 +97,14 @@ class SurfaceType(object):
     def has_flag(self, type_str):
         return type_str in self._surface_type_flags
 
+    def get_by_name(self, name):
+        if name in self._SURFACE_TYPE_DICT.keys():
+            type_id = self._get_type_id(name)
+            return TypeContainer(self._surface_type == type_id)
+        else:
+            return TypeContainer(
+                np.zeros(shape=(self._n_records), dtype=np.bool))
+
     def _invalid_n_records(self, n):
         """ Check if flag array has the correct length """
         if self._n_records is None:  # New flag, ok
