@@ -15,7 +15,7 @@ class Level2Data(object):
         # Copy necessary fields form l1b
         self._n_records = l1b.n_records
         self.info = np.copy(l1b.info)
-        self.time_orbit = l1b.time_orbit
+        self.track = l1b.time_orbit
         # Create Level2 Data Groups
         self._create_l2_data_items()
 
@@ -23,8 +23,9 @@ class Level2Data(object):
         self.surface_type = surface_type
 
     def update_retracked_range(self, retracker):
+        # Update only for indices (surface type) supplied by retracker class
         self.elev[retracker.index] = \
-            self.time_orbit.altitude[retracker.index] - \
+            self.track.altitude[retracker.index] - \
             retracker.range[retracker.index]
 
     def _create_l2_data_items(self):
