@@ -6,6 +6,8 @@ Created on Sat Aug 01 17:03:19 2015
 """
 from pysiral.io_tools import ReadNC
 
+from scipy.interpolate import interp1d
+from treedict import TreeDict
 import scipy.ndimage as ndimage
 import numpy as np
 
@@ -72,6 +74,77 @@ class DTU1MinGrid(BaseMSS):
         return mss_track_elevation
 
 
+class SSAInterpolator(object):
+    """
+    Parent class for sea surface anomaly retrieval and interpolation
+    """
+    def __init__(self):
+        pass
+
+    def set_options(self, **opt_dict):
+        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+
+    def interpolate(self, l2):
+        self._value = np.ndarray(shape=(l2.n_records))
+        self._uncertainty = np.ndarray(shape=(l2.n_records))
+        self._interpolate(l2)
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def uncertainty(self):
+        return self._uncertainty
+
+
+class SSASmoothedLinear(SSAInterpolator):
+    """ Default CS2AWI Method """
+
+    def __init__(self):
+        super(SSASmoothedLinear, self).__init__()
+
+    def _interpolate(self, l2):
+        self._linear_interpolation_between_leads(l2)
+        self._calculate_uncertainty()
+        self._smooth_interpolated_ssa()
+
+    def _linear_interpolation_between_leads(self, l2):
+        import matplotlib.pyplot as plt
+        # Use ocean and lead elevations
+        ssh_tiepoints = l2.surface_type.lead.indices
+        if self._options.use_ocean_wfm:
+            ssh_tiepoints.append(l2.surface_type.ocean.indices)
+            ssh_tiepoints = np.sort(ssh_tiepoints)
+        # Interpolate
+        ssa_raw = np.ndarray(shape=(l2.n_records))*np.nan
+        ssa_raw[ssh_tiepoints] = l2.elev[ssh_tiepoints]
+        # Calculate filter width
+        filter_width = self._options.smooth_filter_width_m/300.0
+        filter_width = np.floor(filter_width) // 2 * 2 + 1
+        print filter_width
+
+        x = np.arange(l2.n_records)
+        plt.figure(facecolor="white")
+        plt.scatter(x, ssa_raw)
+        plt.scatter(x, smooth(ssa_raw, filter_width), color="red")
+        plt.show()
+
+
+        raise Exception()
+
+#        x = np.arange(l2.n_records)
+#        interpolator = interp1d(x[ssh], l2.elev[ssh],
+#                                kind='linear', bounds_error=False)
+#        self._value = interpolator(x)
+
+    def _calculate_uncertainty(self):
+        pass
+
+    def _smooth_interpolated_ssa(self):
+        pass
+
+
 def egm2wgs_delta_h(phi):
     aegm = 6378136.460000
     begm = 6356751.806631
@@ -97,3 +170,14 @@ def compute_delta_h(a1, b1, a2, b2, phi):
     sinsqphi = sinsqphi * sinsqphi
     cossqphi = 1.0 - sinsqphi
     return -1.0*(delta_a * cossqphi + delta_b * sinsqphi)
+
+
+def smooth(x, window):
+    """ Numpy implementation of the IDL SMOOTH function """
+    from scipy.ndimage.filters import uniform_filter
+#    return convolve(x, np.ones(window)/window)
+    return uniform_filter(x, size=window)
+#    from astropy.convolution import convolve, Box1DKernel
+#    kernel = Box1DKernel(window)
+#    smoothed = convolve(x, kernel, boundary="extend", normalize_kernel=True)
+#    return smoothed
