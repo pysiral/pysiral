@@ -60,11 +60,18 @@ class L2ElevationArray(np.ndarray):
         self.uncertainty = getattr(obj, 'uncertainty', None)
         self.bias = getattr(obj, 'bias', None)
 
-    def _setattr(self, obj, index):
-        return obj
-
     def __getslice__(self, i, j):
         r = np.ndarray.__getslice__(self, i, j)
         r.uncertainty = r.uncertainty[i:j]
         r.bias = r.bias[i:j]
         return r
+
+    def set_value(self, value):
+#        uncertainty = self.uncertainty
+#        bias = self.bias
+        self[:] = value[:]
+#        setattr(self, "uncertainty", uncertainty)
+#        setattr(self, "bias", bias)
+
+    def set_uncertainty(self, uncertainty):
+        self.uncertainty = uncertainty
