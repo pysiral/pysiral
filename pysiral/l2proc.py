@@ -184,7 +184,11 @@ class Level2Processor(object):
         ssa = globals()[self._job.config.ssh.ssa.pyclass]()
         ssa.set_options(**self._job.config.ssh.ssa.options)
         ssa.interpolate(l2)
-        l2.ssa, l2.ssa.uncertainty = ssa.result()
+        # dedicated setters, else the uncertainty, bias attributes are broken
+        l2.ssa.set_value(ssa.value)
+        l2.ssa.set_uncertainty(ssa.uncertainty)
+        # get apparent freeboard
+        l2.afrb = l2.elev - l2.mss - l2.ssa
 
     def _apply_data_quality_filter(self, l2):
         pass
