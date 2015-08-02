@@ -106,8 +106,10 @@ def l2_processing():
             "ssa": {
                 "pyclass": "SSASmoothedLinear",
                 "options": {
+                    "critical_number_of_tiepoints": 5,
                     "use_ocean_wfm": False,
-                    "smooth_filter_width_m": 25000.0}}},
+                    "smooth_filter_width_m": 25000.0,
+                    "smooth_filter_width_footprint_size": 300.0}}},
         "filter": {},
         "post_processing": {},
         "output": {}}
@@ -225,6 +227,8 @@ def create_surface_elevation_plot(l2, block=True):
             "sym": "h"}}
 
     plt.figure(facecolor="white")
+    # plot elevations
+    plt.subplot(211)
     x = np.arange(l2.n_records)
     for surface_type_name in "ocean", "lead", "sea_ice":
         type_definition = l2.surface_type.get_by_name(surface_type_name)
@@ -234,7 +238,22 @@ def create_surface_elevation_plot(l2, block=True):
             x[type_definition.indices], l2.elev[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"])
-    plt.plot(x, l2.mss, color="black")
+    plt.plot(x, l2.mss, color="black", lw=2)
+    plt.plot(x, l2.mss+l2.ssa, color="violet", lw=2)
+    ssh_tiepoints = l2.surface_type.lead.indices
+    for ssh_tiepoint in ssh_tiepoints:
+        y = [l2.ssa[ssh_tiepoint]+l2.mss[ssh_tiepoint], l2.mss[ssh_tiepoint]]
+        plt.vlines(x[ssh_tiepoint], min(y), max(y))
+    # plot freeboard
+    plt.subplot(212)
+    for surface_type_name in "ocean", "lead", "sea_ice":
+        type_definition = l2.surface_type.get_by_name(surface_type_name)
+        if len(type_definition.indices) == 0:
+            continue
+        plt.scatter(
+            x[type_definition.indices], l2.afrb[type_definition.indices],
+            color=plot_style[surface_type_name]["color"],
+            marker=plot_style[surface_type_name]["sym"])
     plt.show(block=block)
 
 
