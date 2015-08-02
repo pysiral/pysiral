@@ -127,7 +127,7 @@ class SSASmoothedLinear(SSAInterpolator):
         x = np.arange(l2.n_records)
         plt.figure(facecolor="white")
         plt.scatter(x, ssa_raw)
-        plt.scatter(x, smooth(ssa_raw, filter_width), color="red")
+        plt.scatter(x, idl_smooth(ssa_raw, filter_width), color="red")
         plt.show()
 
 
@@ -172,12 +172,33 @@ def compute_delta_h(a1, b1, a2, b2, phi):
     return -1.0*(delta_a * cossqphi + delta_b * sinsqphi)
 
 
-def smooth(x, window):
+def numpy_smooth(x, window):
+    return np.convolve(x, np.ones(window)/window)
+
+
+def scipy_smooth(x, window):
     """ Numpy implementation of the IDL SMOOTH function """
     from scipy.ndimage.filters import uniform_filter
-#    return convolve(x, np.ones(window)/window)
     return uniform_filter(x, size=window)
-#    from astropy.convolution import convolve, Box1DKernel
-#    kernel = Box1DKernel(window)
-#    smoothed = convolve(x, kernel, boundary="extend", normalize_kernel=True)
-#    return smoothed
+
+
+def astropy_smooth(x, window):
+    from astropy.convolution import convolve, Box1DKernel
+    kernel = Box1DKernel(window)
+    smoothed = convolve(x, kernel, boundary="extend", normalize_kernel=True)
+    return smoothed
+
+
+def idl_smooth(x, window):
+    """ Implementation of the IDL smooth(x, window, /EDGGE_TRUNCATE, /NAN)"""
+    smoothed = np.copy(x)*np.nan
+    n = len(x)
+    for i in np.arange(n):
+        kernel_halfsize = np.floor((window-1)/2).astype(int)
+        if (i < kernel_halfsize):
+            kernel_halfsize = i
+        if (n-1-i < kernel_halfsize):
+            kernel_halfsize = n-1-i
+        print kernel_halfsize
+        smoothed[i] = np.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
+    return smoothed
