@@ -218,17 +218,21 @@ def create_surface_elevation_plot(l2, block=True):
     plot_style = {
         "ocean": {
             "color": "#003e6e",
-            "sym": "o"},
+            "sym": "o",
+            "label": "Ocean Waveforms"},
         "lead": {
             "color": "#00ace5",
-            "sym": "s"},
+            "sym": "s",
+            "label": "Lead Waveforms"},
         "sea_ice": {
             "color": "#76FF7A",
-            "sym": "h"}}
+            "sym": "h",
+            "label": "Sea Ice Waveforms"}}
 
     plt.figure(facecolor="white")
     # plot elevations
     plt.subplot(211)
+    ax = plt.gca()
     x = np.arange(l2.n_records)
     for surface_type_name in "ocean", "lead", "sea_ice":
         type_definition = l2.surface_type.get_by_name(surface_type_name)
@@ -238,14 +242,33 @@ def create_surface_elevation_plot(l2, block=True):
             x[type_definition.indices], l2.elev[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"])
-    plt.plot(x, l2.mss, color="black", lw=2)
-    plt.plot(x, l2.mss+l2.ssa, color="violet", lw=2)
+    plt.plot(x, l2.mss, color="black", lw=2, label="Mean Sea Surface (DTU13)")
+    plt.plot(x, l2.mss+l2.ssa, color="violet", lw=2,
+             label="Sea Surface Anomaly")
     ssh_tiepoints = l2.surface_type.lead.indices
     for ssh_tiepoint in ssh_tiepoints:
         y = [l2.ssa[ssh_tiepoint]+l2.mss[ssh_tiepoint], l2.mss[ssh_tiepoint]]
         plt.vlines(x[ssh_tiepoint], min(y), max(y))
+
+    spines_to_remove = ["top", "right"]
+    for spine in spines_to_remove:
+        ax.spines[spine].set_visible(False)
+
+    ax.yaxis.set_tick_params(direction='out')
+    ax.yaxis.set_ticks_position('left')
+    ax.set_ylabel("Elevation (m)")
+    ax.spines["left"].set_position(("axes", -0.01))
+
+    ax.xaxis.set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.spines["bottom"].set_position(("axes", -0.01))
+    ax.set_xlim([0, l2.n_records])
+    plt.legend(frameon=False, loc=1, ncol=2, fontsize="medium")
+
     # plot freeboard
     plt.subplot(212)
+    ax = plt.gca()
+    plt.hlines(0.0, 0, l2.n_records)
     for surface_type_name in "ocean", "lead", "sea_ice":
         type_definition = l2.surface_type.get_by_name(surface_type_name)
         if len(type_definition.indices) == 0:
@@ -253,7 +276,26 @@ def create_surface_elevation_plot(l2, block=True):
         plt.scatter(
             x[type_definition.indices], l2.afrb[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
-            marker=plot_style[surface_type_name]["sym"])
+            marker=plot_style[surface_type_name]["sym"],
+            label=plot_style[surface_type_name]["label"])
+
+    plt.legend(frameon=False, loc=1, ncol=2, fontsize="medium")
+
+    spines_to_remove = ["top", "right"]
+    for spine in spines_to_remove:
+        ax.spines[spine].set_visible(False)
+
+    ax.yaxis.set_tick_params(direction='out')
+    ax.yaxis.set_ticks_position('left')
+    ax.set_ylabel("Apparent Freeboard (m)")
+    ax.set_xlabel("Record #")
+    ax.spines["left"].set_position(("axes", -0.01))
+
+    ax.xaxis.set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.spines["bottom"].set_position(("axes", -0.01))
+    ax.set_ylim([-0.5, 2])
+    ax.set_xlim([0, l2.n_records])
     plt.show(block=block)
 
 
