@@ -247,7 +247,7 @@ def create_surface_elevation_plot(l2, block=True):
              label="Sea Surface Anomaly")
     ssh_tiepoints = l2.surface_type.lead.indices
     for ssh_tiepoint in ssh_tiepoints:
-        y = [l2.ssa[ssh_tiepoint]+l2.mss[ssh_tiepoint], l2.mss[ssh_tiepoint]]
+        y = [l2.mss[ssh_tiepoint], l2.elev[ssh_tiepoint]]
         plt.vlines(x[ssh_tiepoint], min(y), max(y))
 
     spines_to_remove = ["top", "right"]
