@@ -22,6 +22,7 @@ class BaseRetracker(object):
         self._surface_type_id = None
 
     def set_options(self, **opt_dict):
+        # TODO: Create options object
         self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
 
     def set_surface_type(self, surface_type):
