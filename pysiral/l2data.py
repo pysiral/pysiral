@@ -9,7 +9,7 @@ import numpy as np
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb"]
+    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb", "range"]
 
     def __init__(self, l1b):
         # Copy necessary fields form l1b
@@ -24,6 +24,8 @@ class Level2Data(object):
 
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
+        # XXX: should get an overhaul
+        self.range[retracker.index] = retracker.range[retracker.index]
         self.elev[retracker.index] = \
             self.track.altitude[retracker.index] - \
             retracker.range[retracker.index]
