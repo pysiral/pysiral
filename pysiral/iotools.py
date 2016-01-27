@@ -14,9 +14,11 @@ class ReadNC():
     with attributes from file variables
     """
     def __init__(self, filename, verbose=False, autoscale=True):
+        self.parameters = []
         self.verbose = verbose
         self.autoscale = autoscale
         self.filename = filename
+        self.parameters = []
         self.read_globals()
         self.read_content()
 
@@ -33,6 +35,8 @@ class ReadNC():
         for key in f.variables.keys():
             setattr(self, key, np.array(f.variables[key][:]))
             self.keys.append(key)
+            self.parameters.append(key)
             if self.verbose:
                 print key
+        self.parameters = f.variables.keys()
         f.close()
