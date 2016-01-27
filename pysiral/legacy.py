@@ -85,6 +85,41 @@ class SICCIGridFMIPickled(SICCIGrid):
             self.metadata.year, self.metadata.month))
 
 
+class SICCIGridNC(SICCIGrid):
+    """ Grid Parameter based on cs2awi netCDF files """
+
+    def __init__(self, filename, **kwargs):
+        super(SICCIGridNC, self).__init__(filename, **kwargs)
+        self.metadata.source = "sicci netcdf"
+
+    def parse(self):
+        self._log(
+            "Parsing cs2awi grid file: %s" %
+            filename_from_path(self._filename))
+        nc = ReadNC(self._filename)
+        for parameter in nc.parameters:
+            data = np.ma.array(getattr(nc, parameter))
+            data.mask = np.isnan(data)
+            setattr(self, parameter, data)
+            self._register_parameter(parameter)
+            self._log("- found parameter: %s dims:%s" % (
+                parameter, str(np.shape(data))))
+
+        # XXX: dirty hack
+        nan_mask = np.isnan(self.sea_surface_height_anomaly)
+        self.radar_freeboard.mask = nan_mask
+        self.sea_ice_freeboard = self.radar_freeboard
+
+    def _get_metadata(self):
+        basename = file_basename(self._filename)
+        # TODO: do proper parsing
+        strarr = basename.split("_")
+        self.metadata.year = np.int(strarr[4][0:4])
+        self.metadata.month = np.int(strarr[4][4:6])
+        self._log("Year: %g, Month: %2.2g" % (
+            self.metadata.year, self.metadata.month))
+
+
 class SICCIGridCS2AWI(SICCIGrid):
     """ Grid Parameter based on cs2awi netCDF files """
 
