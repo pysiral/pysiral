@@ -6,6 +6,7 @@ Created on Sat Aug 01 17:33:02 2015
 """
 from netCDF4 import Dataset
 import numpy as np
+import os
 
 
 class ReadNC():
@@ -40,3 +41,15 @@ class ReadNC():
                 print key
         self.parameters = f.variables.keys()
         f.close()
+
+
+def file_basename(filename, fullpath=False):
+    """
+    Returns the filename without file extension of a give filename (or path)
+    """
+    strarr = os.path.split(filename)
+    file_name = strarr[-1]
+    basename = file_name.split(".")[0]
+    if fullpath:
+        basename = os.path.join(strarr[0], basename)
+    return basename
