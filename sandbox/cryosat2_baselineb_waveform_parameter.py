@@ -79,6 +79,9 @@ class NCDateNumDef(object):
 
 
 class L1bNCfile(object):
+    """
+    Class to export a L1bdata object into a netcdf file
+    """
 
     def __init__(self):
         self.datagroups = []
@@ -122,11 +125,14 @@ class L1bNCfile(object):
             dgroup = self._rootgrp.createGroup(datagroup)
             content = getattr(self.l1b, datagroup)
             # Create the dimensions
+            # (must be available as OrderedDict in Datagroup Container
             dims = content.dimdict.keys()
             for key in dims:
                 dim = dgroup.createDimension(key, content.dimdict[key])
+            # Now add variables for each parameter in datagroup
             for parameter in content.parameter_list:
                 data = getattr(content, parameter)
+                # Convert datetime objects to number
                 if type(data[0]) is datetime:
                     data = date2num(data, self.time_def.units,
                                     self.time_def.calendar)
