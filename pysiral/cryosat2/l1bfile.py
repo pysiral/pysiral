@@ -313,7 +313,7 @@ class CryoSatL1B(object):
     def _trim(self):
         """
         Look for empty records at the end of the unpacked records
-        (use source_sequnce counter as identifier)
+        (use source_sequence counter as identifier)
         """
         unpacked_groups = self.mds_definition.get_multiple_block_groups()
         unpacked_groups.extend(self.mds_definition.get_single_block_groups())
