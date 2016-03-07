@@ -107,6 +107,10 @@ class L1bConstructor(Level1bData):
 
 class L1bMetaData(object):
     """ Container for L1B Metadata information """
+
+    field_list = ["mission", "mission_data_version", "radar_mode",
+                  "orbit", "start_time", "stop_time"]
+
     def __init__(self):
         self.mission = None
         self.mission_data_version = None
@@ -116,10 +120,9 @@ class L1bMetaData(object):
         self.stop_time = None
 
     def __repr__(self):
-        field_list = ["mission", "mission_data_version", "radar_mode",
-                      "orbit", "start_time", "stop_time"]
+
         output = "pysiral.L1bdata object:\n"
-        for field in field_list:
+        for field in self.field_list:
             output += "%22s: %s" % (field, getattr(self, field))
             output += "\n"
         return output
