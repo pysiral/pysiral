@@ -126,7 +126,9 @@ def get_structarr_attr(struct_arr, field):
     (e.g. struct_array[:].field <- does not work in python)
 
     """
-    return np.array([record[field] for record in struct_arr])
+    dtype = type(struct_arr[0][field])
+    data = np.array([record[field] for record in struct_arr], dtype=dtype)
+    return data
 
 
 def parse_cryosat_l1b_filename(filename):
