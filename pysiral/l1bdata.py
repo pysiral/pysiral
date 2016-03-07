@@ -8,6 +8,7 @@ Created on Tue Jul 07 14:10:34 2015
 from pysiral.io_adapter import L1bAdapterCryoSat
 from pysiral.surface_type import SurfaceType
 
+from collections import OrderedDict
 import numpy as np
 import os
 
@@ -168,6 +169,12 @@ class L1bTimeOrbit(object):
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude"]
 
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records", len(self._timestamp))])
+        return dimdict
+
     def set_position(self, longitude, latitude, altitude):
         # XXX: This is developing stuff
         self._longitude = longitude
@@ -193,6 +200,13 @@ class L1bRangeCorrections(object):
     @property
     def parameter_list(self):
         return self._parameter_list
+
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records",
+                                len(self.get_parameter_by_index(0)))])
+        return dimdict
 
     def get_parameter_by_index(self, index):
         name = self._parameter_list[index]
@@ -239,6 +253,12 @@ class L1bClassifiers(object):
         else:
             return len(getattr(self, parameter_list[0]))
 
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records", self.n_records)])
+        return dimdict
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
@@ -270,6 +290,13 @@ class L1bWaveforms(object):
     @property
     def n_records(self):
         return self._get_wfm_shape(0)
+
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        shape = np.shape(self._power)
+        dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
+        return dimdict
 
     def add_waveforms(self, power, range):
         self._power = power
