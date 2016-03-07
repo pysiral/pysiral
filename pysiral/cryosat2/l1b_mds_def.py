@@ -66,6 +66,15 @@ class Cryosat2L1bMDSDefinition(object):
         self.n_records = 0
         self.n_blocks = 20
 
+    def get_multiple_block_groups(self):
+        multiple_block_groups = [
+            "time_orbit", "measurement", "waveform"]
+        return multiple_block_groups
+
+    def get_single_block_groups(self):
+        single_block_groups = ["corrections"]
+        return single_block_groups
+
 
 class Cryosat2SARBaselineB(Cryosat2L1bMDSDefinition):
 
@@ -353,22 +362,12 @@ class Cryosat2SARBaselineC(Cryosat2L1bMDSDefinition):
         self.mds = Array(self.n_records, self.mds_record)
         return self.mds
 
-    def get_multiple_block_groups(self):
-        multiple_block_groups = [
-            "time_orbit", "measurement", "waveform"]
-        return multiple_block_groups
-
-    def get_single_block_groups(self):
-        single_block_groups = ["corrections"]
-        return single_block_groups
-
 
 def cryosat2_get_mds_def(radar_mode, baseline, n_records):
-    # XXX: Testing purposes only, needs functionality
-
-    definition = Cryosat2L1bMDSDefinition()
-    definition.baseline = baseline
-    definition.radar_mode = radar_mode
+    """ Picks the right parser class for CryoSat2 L1b data """
+    # Get correct definition class
+    mds_class = "Cryosat2{mode}Baseline{baseline}".format(
+        mode=radar_mode.upper(), baseline=baseline[0].upper())
+    definition = globals()[mds_class]()
     definition.n_records = n_records
-
     return definition
