@@ -127,6 +127,14 @@ class L1bMetaData(object):
             output += "\n"
         return output
 
+    @property
+    def attdict(self):
+        """ Return attributes as dictionary (e.g. for netCDF export) """
+        attdict = {}
+        for field in self.field_list:
+            attdict[field] = getattr(self, field)
+        return attdict
+
 
 class L1bTimeOrbit(object):
     """ Container for Time and Orbit Information of L1b Data """
