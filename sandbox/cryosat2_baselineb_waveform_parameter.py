@@ -56,12 +56,22 @@ def cryosat2_baselineb_waveform_parameter():
     wfm_power = nc.groups["waveform"].variables["power"][:]
     wfm_range = nc.groups["waveform"].variables["range"][:]
     altitude = nc.groups["time_orbit"].variables["altitude"][:]
+    ssd = nc.groups["classifier"].variables["stack_standard_deviation"][:]
+    nc.close()
+
+    plt.figure()
+    plt.plot(ssd)
+    plt.show()
 
     # Test plot
     cryosat2_l1b_waveform_plot(wfm_power, wfm_range, altitude)
 
 
 class NCDateNumDef(object):
+    """
+    Holds definition for datetime conversion to numbers and vice versa
+    for netCDF operations
+    """
 
     def __init__(self):
         self.units = "seconds since 1970-01-01"
