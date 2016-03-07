@@ -72,10 +72,11 @@ class L1bAdapterCryoSat(object):
 
     def _transfer_waveform_collection(self):
         # Create the numpy arrays for power & range
+        dtype = np.float32
         n_records = len(self.cs2l1b.waveform)
         n_range_bins = len(self.cs2l1b.waveform[0].wfm)
-        echo_power = np.ndarray(shape=(n_records, n_range_bins))
-        echo_range = np.ndarray(shape=(n_records, n_range_bins))
+        echo_power = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
+        echo_range = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
         # Set the echo power in dB and calculate range
         for i, record in enumerate(self.cs2l1b.waveform):
             echo_power[i, :] = get_cryosat2_wfm_power(
