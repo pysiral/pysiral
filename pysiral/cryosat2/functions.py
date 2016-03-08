@@ -173,37 +173,6 @@ def parse_cryosat_l1b_xml_header(filename):
     return content_odereddict[u'Earth_Explorer_Header']
 
 
-def parse_cryosat2_l1b_header_field(line):
-    """
-    Parses a line of the CryoSat-2 L1B ascii header and
-    returns tag, value and unit as strings.
-
-    Note: double quotes in string items are removed
-
-    e.g.
-
-    NUM_DSD=+0000000044
-    -> "num_dsd", "+0000000044", None
-
-    DSD_SIZE=+0000000280<bytes>
-    -> "dsd_size", "+0000000280", "bytes"
-    """
-    tag, value, unit = None, None, None
-    parser = parse.compile("{tag}={value}")
-    match = parser.parse(line)
-    if match:
-        tag = match["tag"].lower()
-        value = match["value"]
-        value = value.replace("\"", "").strip()
-        # check if unit is given
-        unit_parser = parse.compile("{value}<{unit}>")
-        unit_match = unit_parser.parse(value)
-        if unit_match:
-            value = unit_match["value"]
-            unit = unit_match["unit"]
-    return tag, value, unit
-
-
 def tai2utc(tai_datetime):
     """
     Converts a datetime object in TAI into UTC

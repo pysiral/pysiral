@@ -6,14 +6,13 @@ Created on Sun Jul 12 13:51:52 2015
 """
 
 from pysiral.errorhandler import FileIOErrorHandler
+from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
 from pysiral.cryosat2.l1b_mds_def import cryosat2_get_mds_def
 from pysiral.cryosat2.functions import (parse_cryosat_l1b_filename,
-                                        parse_cryosat_l1b_xml_header,
-                                        parse_cryosat2_l1b_header_field)
+                                        parse_cryosat_l1b_xml_header)
 import os
 import re
 import numpy as np
-import parse
 
 
 class CryoSatL1B(object):
@@ -260,7 +259,7 @@ class CryoSatL1B(object):
 
     def _parse_dsd(self):
         """ Reads the Data Set Descriptors dsd's in the L1b header """
-        self.dsd = CS2L1bScienceDataSetDescriptors()
+        self.dsd = ESAScienceDataSetDescriptors()
         n_dsd_lines = self.dsd.get_num_lines(self.mph.num_dsd)
         for i in np.arange(n_dsd_lines+1):
             line = self._fh.readline()
@@ -326,96 +325,7 @@ class CryoSatL1B(object):
             setattr(self, group, records[no_zero_list])
 
 
-class CS2L1bBaseHeader(object):
-    """
-    Parent class for both MPH and SPH header informations
-    """
-
-    def __init__(self):
-        self.unit_dict = {}
-        self.dtype_dict = {}
-        self.field_list = []
-
-    def _add_field(self, tag, value):
-        setattr(self, tag, value)
-
-    def scan_line(self, line):
-        """ Parses a line from the MPH header of the data product file """
-        parser = parse.compile("{tag}={value}")
-        match = parser.parse(line)
-        if match:
-            tag = match["tag"].lower()
-            # clean string expression and get unit of field value
-            value, unit = self._parse_field_line(match["value"])
-            # convert the unit to native data type
-            value, dtype = self._value_convert_dtype(tag, value)
-            # Save to data structure
-            setattr(self, tag, value)
-            self.field_list.append(tag)
-            self.dtype_dict[tag] = dtype
-            self.unit_dict[tag] = unit
-
-    def _parse_field_line(self, value):
-        """ Processes the raw value string of an MPH field """
-        # clear double quotes and extra whitespaces from strings
-        value = value.replace("\"", "").strip()
-        # check if unit is given
-        unit_parser = parse.compile("{value}<{unit}>")
-        unit_match = unit_parser.parse(value)
-        unit = None
-        if unit_match:
-            value = unit_match["value"]
-            unit = unit_match["unit"]
-        # Automatical convert in the unit to the proper data type
-        return value, unit
-
-    def _value_convert_dtype(self, tag, value):
-        """ Convert the value to either integer or float """
-        # TODO: The explicit list for field is not a good solution
-        #       Proper way needed to do this
-        dtype = "str"
-        if tag.upper() in self._INT_LIST:
-            dtype = "int32"
-            value = np.int32(value)
-        if tag.upper() in self._FLOAT_LIST:
-            dtype = "float32"
-            value = np.float32(value)
-        return value, dtype
-
-    def get_by_fieldname(self, fieldname):
-        """
-        Convinience function that returns the value, data type
-        of an MPH records.
-
-        Arguments:
-            fieldname: (str):
-                Name of the MPH field, case insensitive
-
-        Output:
-            value:
-                value of the field in its respective data type
-                None: if invalid field name
-
-            unit: (str)
-                Unit label
-                None: if invalid field name
-                None: if specific unit not given in the mph
-        """
-        if fieldname not in self.field_list:
-            return None, None
-        return getattr(self, fieldname), self.unit_dict[fieldname]
-
-    def __repr__(self):
-        output = ""
-        for field in self.field_list:
-            output += "%s=%s" % (field, getattr(self, field))
-            output += ", unit="+str(self.unit_dict[field])
-            output += ", dtype="+str(self.dtype_dict[field])
-            output += "\n"
-        return output
-
-
-class CS2L1bMainProductHeader(CS2L1bBaseHeader):
+class CS2L1bMainProductHeader(ESAProductHeader):
     """
     Container for the Main Product Header of CryoSat-2 L1B science data
     """
@@ -446,7 +356,7 @@ class CS2L1bMainProductHeader(CS2L1bBaseHeader):
         return re.search("CRC=", line)
 
 
-class CS2L1bSpecificProductHeader(CS2L1bBaseHeader):
+class CS2L1bSpecificProductHeader(ESAProductHeader):
     """
     Container for the Specific Product Header of CryoSat-2 L1B science data
     """
@@ -471,100 +381,3 @@ class CS2L1bSpecificProductHeader(CS2L1bBaseHeader):
 
     def last_field(self, line):
         return re.search("L1B_PROC_THRESH=", line)
-
-
-class CS2L1bScienceDataSetDescriptors(object):
-    """
-    Container for the Data Set Descriptors (dsd's) in the L1B file
-    For each dsd there is an attribute with its name (dsd_name)
-    that stores the information as a dictionary
-    """
-
-    _DSD_REFDICT = {
-        "ds_type": "",
-        "filename": "",
-        "ds_offset": 0,
-        "ds_size": 0,
-        "num_dsr": 0,
-        "dsr_size": 0
-    }
-
-    _DSD_UNITS = {
-        "ds_type": None,
-        "filename": None,
-        "ds_offset": "bytes",
-        "ds_size": "bytes",
-        "num_dsr": None,
-        "dsr_size": "bytes"
-    }
-
-    # There are 8 lines to read for each DSD records
-    # 7 parameters + 1 empty line
-    _N_RECORDS_PER_DSD = 8
-
-    def __init__(self):
-        self._current_dsd = None
-        self.unit_dict = self._DSD_UNITS
-        self.field_list = []
-
-    def _is_dsd_start(self, tag):
-        """ Checks if the current tag name indicated the start of a new dsd """
-        return tag == "ds_name"
-
-    def _append_field(self, tag, value):
-        """ Adds a field to the current data set descriptor """
-        tag = tag.lower()
-        dsd_dict = getattr(self, self._current_dsd)
-        dsd_dict[tag] = value
-        setattr(self, self._current_dsd, dsd_dict)
-
-    def get_num_lines(self, n_dsd):
-        return n_dsd*self._N_RECORDS_PER_DSD
-
-    def parse_line(self, line):
-        """
-        Parses a given line in the dsd block and addes the content
-        to the dsd object
-        """
-        # Parse the line
-        tag, value, unit = parse_cryosat2_l1b_header_field(line)
-        # Skip empty line
-        if tag is None:
-            return
-        # Check if start of new dsd and create a new one
-        if self._is_dsd_start(tag):
-            value = value.lower()
-            setattr(self, value, self._DSD_REFDICT.copy())
-            self._current_dsd = value
-            self.field_list.append(value)
-            return
-        # save the field
-        self._append_field(tag, value)
-
-    def get_by_fieldname(self, fieldname):
-        """
-        Convinience function that returns the dict of an DSD records.
-
-        Arguments:
-            fieldname: (str):
-                Name of the DSD field, case insensitive
-
-        Output:
-            value (dict):
-                DSD dict
-
-        """
-        if fieldname not in self.field_list:
-            return None
-        return getattr(self, fieldname)
-
-    def __repr__(self):
-        """ String representation of the dsd's """
-        output = ""
-        for field in self.field_list:
-            output += "DSD: %s\n" % (field)
-            dsd_dict = getattr(self, field)
-            for key in dsd_dict.keys():
-                output += "  %s: %s, unit: %s\n" % (
-                    key, str(dsd_dict[key]), str(self.unit_dict[key]))
-        return output
