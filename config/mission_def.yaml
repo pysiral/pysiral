@@ -9,24 +9,25 @@
 # (list item are the valid string tags for adressing the missions)
 missions:
     - cryosat2
+    - envisat
 
 # These missions are includeed in the pysiral concept but support
 # will be added later in the development phase
 missions_to_be_added:
     - ers1
     - ers2
-    - envisat
     - altika
 
 # list of supported radar altimeter modes
 modes:
     - sar
     - sin
+    - lrm
 
 # Support for LRM data will come later with the integration of
 # EnviSat and the ERS-1/2 mission
 modes_to_be_added:
-    - lrm
+    - Null
 
 
 # -----------------------------------------------------------------------------
@@ -54,3 +55,16 @@ cryosat2:
                 - ionospheric_mod
             docstr:
                 Source of Ionospheric Correction
+
+envisat:
+
+    long_name: Envisat
+    docstr:
+        Envisat (Enviromental Satellite) of the European Space
+        Agency (ESA)
+    data_period:
+        start: 2006-01-01T00:00:00.00+00
+        stop: 2012-04-01T00:00:00.00+00
+    sea_ice_radar_modes: ["lrm"]
+    orbit_max_latitude: 82.5
+    options: Null
