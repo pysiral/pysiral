@@ -144,7 +144,6 @@ class CryoSatL1B(object):
 
     def __init__(self, raise_on_error=False):
 
-        super(CryoSatL1B, self).__init__()
         # Error Handling
         self._init_error_handling(raise_on_error)
         self._baseline = None
