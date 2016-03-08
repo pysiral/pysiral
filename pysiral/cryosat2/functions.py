@@ -122,7 +122,7 @@ def get_tai_datetime_from_timestamp(mdsr_timestamp):
 
 def get_structarr_attr(struct_arr, field):
     """
-    Get all attributes from array of objects that suppor dict notation
+    Get all attributes from array of objects that support dict notation
     (e.g. struct_array[:].field <- does not work in python)
 
     """
