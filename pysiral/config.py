@@ -115,6 +115,10 @@ def get_pysiral_local_path():
 
 def td_branches(t):
     """ Convinience function to get only the branches of a treedict object """
-    branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
-    branch_objects = list(t.iterbranches())
+    try:
+        branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
+        branch_objects = list(t.iterbranches())
+    except:
+        branch_names = []
+        branch_objects = []
     return branch_names, branch_objects
