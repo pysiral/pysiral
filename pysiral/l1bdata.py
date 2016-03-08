@@ -5,7 +5,7 @@ Created on Tue Jul 07 14:10:34 2015
 @author: Stefan
 """
 
-from pysiral.io_adapter import L1bAdapterCryoSat
+from pysiral.io_adapter import (L1bAdapterCryoSat, L1bAdapterEnvisat)
 from pysiral.surface_type import SurfaceType
 
 from collections import OrderedDict
@@ -61,7 +61,7 @@ class L1bConstructor(Level1bData):
     L1b data files
     """
 
-    _SUPPORTED_MISSION_LIST = ["cryosat2"]
+    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat"]
 
     def __init__(self, config):
         super(L1bConstructor, self).__init__()
@@ -321,3 +321,5 @@ def get_l1b_adapter(mission):
     """ XXX: Early development state only """
     if mission == "cryosat2":
         return L1bAdapterCryoSat
+    if mission == "envisat":
+        return L1bAdapterEnvisat
