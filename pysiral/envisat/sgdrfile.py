@@ -65,6 +65,10 @@ class Envisat18HzArrays(object):
 
 class EnvisatSGDR(object):
 
+    _DS_NAME = {
+        "ra2": "RA2_DATA_SET_FOR_LEVEL_2",
+        "wfm18hz": "RA2_AVERAGE_WAVEFORMS"}
+
     def __init__(self, raise_on_error=False):
 
         # Error Handling
@@ -75,7 +79,12 @@ class EnvisatSGDR(object):
         self.mph = None
         self.sph = None
         self.dsd = None
-        self.mds = None
+        self.mds_ra2 = None
+        self.mds_wfm18hz = None
+        self.mds_18hz = Envisat18HzArrays()
+        # XXX: nor sure if needed
+        # self.mds_mwr = None
+        # self.mds_wfmburst = None
 
     def parse(self):
         self._validate()
@@ -83,8 +92,12 @@ class EnvisatSGDR(object):
             self._parse_mph()
             self._parse_sph()
             self._parse_dsd()
-        with open(self._filename, "r") as self._fh:
-            self._parse_mds()
+        with open(self._filename, "rb") as self._fh:
+            self._parse_mds("ra2")
+            self._parse_mds("wfm18hz")
+            # XXX: mwr: not necessary?, wfmburst: not in the files?
+            # self._parse_mds("mwr")
+            # self._parse_mds("wfmburst")
 
     @property
     def filename(self):
@@ -123,26 +136,28 @@ class EnvisatSGDR(object):
     def _parse_dsd(self):
         """ Reads the Data Set Descriptors dsd's in the SGDR header """
         self.dsd = ESAScienceDataSetDescriptors()
-        n_dsd_lines = self.dsd.get_num_lines(self.mph.num_dsd)
-        for i in np.arange(n_dsd_lines+1):
+        self.n_dsd_lines = self.dsd.get_num_lines(self.mph.num_dsd)
+        for i in np.arange(self.n_dsd_lines+1):
             line = self._fh.readline()
             self.dsd.parse_line(line)
 
-    def _parse_mds(self):
+    def _parse_mds(self, mds_target):
         """ Read the data blocks """
         # Just reopened the file in binary mode -
         # > get start byte and number of data set records
-        l1b_data_set_name = "RA2_DATA_SET_FOR_LEVEL_2".lower()
+        l1b_data_set_name = self._DS_NAME[mds_target].lower()
         data_set_descriptor = self.dsd.get_by_fieldname(l1b_data_set_name)
         startbyte = int(data_set_descriptor["ds_offset"])
         self.n_msd_records = int(data_set_descriptor["num_dsr"])
         # Set the file pointer
         self._fh.seek(startbyte)
-        # Get the parser
-        self.mds_definition = envisat_get_mds_def(self.n_msd_records)
+        # Get the parser (depending on MDS target)
+        self.mds_definition = envisat_get_mds_def(
+            self.n_msd_records, mds_target)
         mds_parser = self.mds_definition.get_mds_parser()
         # Parser the binary part of the .DBL file
-        self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
+        mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
+        setattr(self, "mds_"+mds_target, mds)
 
     def _read_header_lines(self, header):
         """ Method to read the MPH and SPH headers are identical """
