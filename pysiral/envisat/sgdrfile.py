@@ -2,7 +2,9 @@
 
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.envisat.sgdr_mds_def import envisat_get_mds_def
+from pysiral.envisat.functions import mdsr_timestamp_to_datetime
 from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
+from pysiral.esa.functions import get_structarr_attr
 
 import numpy as np
 import os
@@ -103,6 +105,13 @@ class EnvisatSGDR(object):
         # XXX: Not much functionality here
         return False
 
+    def post_processing(self):
+        """
+        The SGDR data structure needs to be streamlined, so that it
+        is easy to grab the relevant parameters as indiviual arrays
+        """
+        self._reform_18Hz_data()
+
     @property
     def filename(self):
         return self._filename
@@ -173,6 +182,15 @@ class EnvisatSGDR(object):
             if header.last_field(line):
                 break
             line_index = +1
+
+    def _reform_18Hz_data(self):
+        self.mds_18hz.n_records = self.n_dsd_lines
+        # Take the time stamp from the waveform data
+        self.mds_18hz.reform_timestamp(self.mds_wfm18hz)
+        # Transfer the longitude, latitude, altitude informaiton
+        self.mds_18hz.reform_position(self.mds_ra2)
+        # Transfer the waveform information
+        self.mds_18hz.reform_waveform(self.mds_wfm18hz)
 
     def _validate(self):
         pass
