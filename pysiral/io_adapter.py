@@ -6,8 +6,9 @@ Created on Thu Jul 23 15:10:04 2015
 """
 
 from pysiral.cryosat2.functions import (
-    get_structarr_attr, tai2utc, get_tai_datetime_from_timestamp,
+    tai2utc, get_tai_datetime_from_timestamp,
     get_cryosat2_wfm_power, get_cryosat2_wfm_range)
+from pysiral.esa.functions import get_structarr_attr
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.helper import parse_datetime_str
@@ -142,7 +143,7 @@ class L1bAdapterEnvisat(object):
 
     def construct_l1b(self, l1b):
         self.l1b = l1b                        # pointer to L1bData object
-        self._read_envisat_sgdr()             # Read CryoSat-2 L1b data file
+        self._read_envisat_sgdr()             # Read Envisat SGDR data file
         self._transfer_metadata()             # (orbit, radar mode, ..)
         self._transfer_timeorbit()            # (lon, lat, alt, time)
         self._transfer_waveform_collection()  # (power, range)
@@ -173,21 +174,20 @@ class L1bAdapterEnvisat(object):
 #            self.cs2l1b.sph.stop_record_tai_time)
 
     def _transfer_timeorbit(self):
-        pass
-#        # Transfer the orbit position
-#        longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
-#        latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
-#        altitude = get_structarr_attr(self.cs2l1b.time_orbit, "altitude")
-#        self.l1b.time_orbit.set_position(longitude, latitude, altitude)
-#        # Transfer the timestamp
-#        tai_objects = get_structarr_attr(
-#            self.cs2l1b.time_orbit, "tai_timestamp")
-#        tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
-#        utc_timestamp = tai2utc(tai_timestamp)
-#        self.l1b.time_orbit.timestamp = utc_timestamp
+        # Transfer the orbit position
+        self.l1b.time_orbit.set_position(
+            self.sgdr.mds_18hz.longitude,
+            self.sgdr.mds_18hz.latitude,
+            self.sgdr.mds_18hz.altitude)
+        # Transfer the timestamp
+        self.l1b.time_orbit.timestamp = self.sgdr.mds_18hz.timestamp
 
     def _transfer_waveform_collection(self):
-        pass
+        # Transfer to L1bData
+        echo_power = self.sgdr.mds_18hz.power
+        # XXX: Debug purposes only
+        echo_range = echo_power
+        self.l1b.waveform.add_waveforms(echo_power, echo_range)
 #        # Create the numpy arrays for power & range
 #        dtype = np.float32
 #        n_records = len(self.cs2l1b.waveform)
