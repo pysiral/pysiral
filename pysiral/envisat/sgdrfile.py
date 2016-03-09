@@ -9,6 +9,60 @@ import os
 import re
 
 
+class Envisat18HzArrays(object):
+    """ Reforms the grouped SGDR data into continuous arrays """
+
+    def __init__(self):
+        self.registered_parameters = []
+        self.n_records = 0
+        self.n_blocks = 20
+
+    def reform_timestamp(self, mds):
+        """ Creates an array of datetime objects for each 18Hz record """
+        # XXX: Current no microsecond correction
+        timestamp = np.ndarray(shape=(self.n_records), dtype=object)
+        mdsr_timestamp = get_structarr_attr(mds, "utc_timestamp")
+        for i in range(self.n_records):
+            timestamp[i] = mdsr_timestamp_to_datetime(mdsr_timestamp[i])
+        self.timestamp = np.repeat(timestamp, self.n_blocks)
+
+    def reform_position(self, mds):
+        # 0) Get the relevant data blocks
+        time_orbit = get_structarr_attr(mds, "time_orbit")
+        range_block = get_structarr_attr(mds, "range_information")
+        # 1) get the 1Hz data from the time_orbit group
+        longitude = get_structarr_attr(time_orbit, "longitude")
+        latitude = get_structarr_attr(time_orbit, "latitude")
+        altitude = get_structarr_attr(time_orbit, "altitude")
+        # 2) Get the increments
+        lon_inc = get_structarr_attr(range_block, "18hz_longitude_differences")
+        lat_inc = get_structarr_attr(range_block, "18hz_latitude_differences")
+        alt_inc = get_structarr_attr(time_orbit, "18hz_altitude_differences")
+        # 3) Expand the 1Hz position arrays
+        self.longitude = np.repeat(longitude, self.n_blocks)
+        self.latitude = np.repeat(latitude, self.n_blocks)
+        self.altitude = np.repeat(altitude, self.n_blocks)
+        # 4) Apply the increments
+        # XXX: Current version of get_struct_arr returns datatype objects
+        #      for listcontainers => manually set dtype
+        self._apply_18Hz_increment(self.longitude, lon_inc.astype(np.float32))
+        self._apply_18Hz_increment(self.latitude, lat_inc.astype(np.float32))
+        self._apply_18Hz_increment(self.altitude, alt_inc.astype(np.float32))
+
+    def reform_waveform(self, mds):
+        n = self.n_records * self.n_blocks
+        self.power = np.ndarray(shape=(n, 128), dtype=np.float32)
+        for dsd in range(self.n_records):
+            for block in range(self.n_blocks):
+                i = dsd*self.n_blocks + block
+                self.power[i, :] = mds[dsd].wfm[block].average_wfm_if_corr_ku
+
+    def _apply_18Hz_increment(self, data, inc):
+        for i in range(self.n_records):
+            i0, i1 = i*self.n_blocks, (i+1)*self.n_blocks
+            data[i0:i1] += inc[i, :]
+
+
 class EnvisatSGDR(object):
 
     def __init__(self, raise_on_error=False):
