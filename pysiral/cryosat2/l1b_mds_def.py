@@ -5,55 +5,12 @@ Created on Fri Jul 10 21:00:37 2015
 @author=Stefan
 """
 
-from construct import (Struct, Array, Padding, Adapter, Bit, BitStruct,
+from pysiral.units import (OneHundredth, OneHundredthDecibel, OneTenthMicroDeg,
+                           MilliMeter, Micrometer, PicoSecond, MicroWatts,
+                           MicroRadians, OneTenthMicroRadians)
+
+from construct import (Struct, Array, Padding, Bit, BitStruct,
                        SBInt16, UBInt16, SBInt32, UBInt32, SBInt64, UBInt64)
-
-import numpy as np
-
-
-class OneHundredth(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)/100)
-
-
-class OneHundredthDecibel(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)/100)
-
-
-class OneTenthMicroDeg(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-7)
-
-
-class MilliMeter(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-3)
-
-
-class Micrometer(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-6)
-
-
-class PicoSecond(Adapter):
-    def _decode(self, obj, context):
-        return float(obj)*1e-12
-
-
-class MicroWatts(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-6)
-
-
-class MicroRadians(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-6)
-
-
-class OneTenthMicroRadians(Adapter):
-    def _decode(self, obj, context):
-        return np.float32(float(obj)*1e-6)
 
 
 class Cryosat2L1bMDSDefinition(object):
