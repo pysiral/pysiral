@@ -99,6 +99,10 @@ class EnvisatSGDR(object):
             # self._parse_mds("mwr")
             # self._parse_mds("wfmburst")
 
+    def get_status(self):
+        # XXX: Not much functionality here
+        return False
+
     @property
     def filename(self):
         return self._filename
