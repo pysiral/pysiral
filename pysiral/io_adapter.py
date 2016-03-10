@@ -17,11 +17,15 @@ from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
 import numpy as np
 
 
+ESA_SURFACE_TYPE_DICT = {
+    "ocean": 0,
+    "closed_sea": 1,
+    "land_ice": 2,
+    "land": 3}
+
+
 class L1bAdapterCryoSat(object):
     """ Converts a CryoSat2 L1b object into a L1bData object """
-
-    _SURFACE_TYPE_DICT = {"ocean": 0, "closed_sea": 1,
-                          "land_ice": 2, "land": 3}
 
     def __init__(self, config):
         self.filename = None
@@ -105,7 +109,7 @@ class L1bAdapterCryoSat(object):
         # L1b surface type flag word
         surface_type = get_structarr_attr(
             self.cs2l1b.corrections, "surface_type")
-        for key in self._SURFACE_TYPE_DICT.keys():
+        for key in ESA_SURFACE_TYPE_DICT.keys():
             flag = surface_type == self._SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)
 
@@ -188,21 +192,6 @@ class L1bAdapterEnvisat(object):
         # XXX: Debug purposes only
         echo_range = self.sgdr.mds_18hz.range
         self.l1b.waveform.add_waveforms(echo_power, echo_range)
-#        # Create the numpy arrays for power & range
-#        dtype = np.float32
-#        n_records = len(self.cs2l1b.waveform)
-#        n_range_bins = len(self.cs2l1b.waveform[0].wfm)
-#        echo_power = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
-#        echo_range = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
-#        # Set the echo power in dB and calculate range
-#        for i, record in enumerate(self.cs2l1b.waveform):
-#            echo_power[i, :] = get_cryosat2_wfm_power(
-#                np.array(record.wfm).astype(np.float32),
-#                record.linear_scale, record.power_scale)
-#            echo_range[i, :] = get_cryosat2_wfm_range(
-#                self.cs2l1b.measurement[i].window_delay, n_range_bins)
-#        # Transfer to L1bData
-#        self.l1b.waveform.add_waveforms(echo_power, echo_range)
 
     def _transfer_range_corrections(self):
         pass
@@ -218,13 +207,10 @@ class L1bAdapterEnvisat(object):
 #        self.l1b.correction.set_parameter("ionospheric", ionospheric)
 
     def _transfer_surface_type_data(self):
-        pass
-#        # L1b surface type flag word
-#        surface_type = get_structarr_attr(
-#            self.cs2l1b.corrections, "surface_type")
-#        for key in self._SURFACE_TYPE_DICT.keys():
-#            flag = surface_type == self._SURFACE_TYPE_DICT[key]
-#            self.l1b.surface_type.add_flag(flag, key)
+        surface_type = self.sgdr.mds_18hz.surface_type
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
+            self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
         pass
