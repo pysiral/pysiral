@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def get_structarr_attr(struct_arr, field):
+def get_structarr_attr(struct_arr, field, flat=False):
     """
     Get all attributes from array of objects that support dict notation
     (e.g. struct_array[:].field <- does not work in python)
@@ -11,4 +11,6 @@ def get_structarr_attr(struct_arr, field):
     """
     dtype = type(struct_arr[0][field])
     data = np.array([record[field] for record in struct_arr], dtype=dtype)
+    if flat:
+        data = data.flatten()
     return data
