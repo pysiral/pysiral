@@ -5,7 +5,7 @@ from pysiral.units import (OneHundredth, OneHundredthDecibel, MilliMeter,
                            TenPascal, OneTenths, OneThousands, Per256, Per2048,
                            Per8096)
 
-from construct import (Struct, Array, Padding, Bit, BitStruct, SBInt8,
+from construct import (Struct, Array, Padding, Bit, BitStruct, SBInt8, UBInt8,
                        SBInt16, UBInt16, SBInt32, UBInt32)
 
 
@@ -203,12 +203,12 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
             BitStruct("sea_ice_retracking_quality_ku", Array(32, Bit("flag"))),
             OneThousands(UBInt16("1hz_pulse_peakiness_ku")),
             OneThousands(UBInt16("1hz_pulse_peakiness_s")),
-            BitStruct("altimeter_surface_type", Array(16, Bit("flag"))),
-            BitStruct("radiometer_land_ocean", Array(16, Bit("flag"))),
-            BitStruct("mwr_quality_interpolation", Array(16, Bit("flag"))),
-            BitStruct("altimeter_rain", Array(16, Bit("flag"))),
-            BitStruct("interpolation", Array(16, Bit("flag"))),
-            BitStruct("sea_ice", Array(8, Bit("flag"))),
+            UBInt16("altimeter_surface_type"),
+            UBInt16("radiometer_land_ocean"),
+            UBInt16("mwr_quality_interpolation"),
+            UBInt16("altimeter_rain"),
+            UBInt16("interpolation"),
+            UBInt8("sea_ice"),
             BitStruct("membership_01", Array(8, Bit("flag"))),
             BitStruct("membership_02", Array(8, Bit("flag"))),
             BitStruct("membership_03", Array(8, Bit("flag"))),
