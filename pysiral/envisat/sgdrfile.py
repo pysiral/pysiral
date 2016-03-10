@@ -13,84 +13,6 @@ import os
 import re
 
 
-class Envisat18HzArrays(object):
-    """ Reforms the grouped SGDR data into continuous arrays """
-
-    def __init__(self):
-        self.registered_parameters = []
-        self.n_records = 0
-        self.n_blocks = 20
-
-    def reform_timestamp(self, mds):
-        """ Creates an array of datetime objects for each 18Hz record """
-        # XXX: Current no microsecond correction
-        timestamp = np.ndarray(shape=(self.n_records), dtype=object)
-        mdsr_timestamp = get_structarr_attr(mds, "utc_timestamp")
-        for i in range(self.n_records):
-            timestamp[i] = mdsr_timestamp_to_datetime(mdsr_timestamp[i])
-        self.timestamp = np.repeat(timestamp, self.n_blocks)
-
-    def reform_position(self, mds):
-        # 0) Get the relevant data blocks
-        time_orbit = get_structarr_attr(mds, "time_orbit")
-        range_block = get_structarr_attr(mds, "range_information")
-        # 1) get the 1Hz data from the time_orbit group
-        longitude = get_structarr_attr(time_orbit, "longitude")
-        latitude = get_structarr_attr(time_orbit, "latitude")
-        altitude = get_structarr_attr(time_orbit, "altitude")
-        # 2) Get the increments
-        lon_inc = get_structarr_attr(range_block, "18hz_longitude_differences")
-        lat_inc = get_structarr_attr(range_block, "18hz_latitude_differences")
-        alt_inc = get_structarr_attr(time_orbit, "18hz_altitude_differences")
-        # 3) Expand the 1Hz position arrays
-        self.longitude = np.repeat(longitude, self.n_blocks)
-        self.latitude = np.repeat(latitude, self.n_blocks)
-        self.altitude = np.repeat(altitude, self.n_blocks)
-        # 4) Apply the increments
-        # XXX: Current version of get_struct_arr returns datatype objects
-        #      for listcontainers => manually set dtype
-        self._apply_18Hz_increment(self.longitude, lon_inc.astype(np.float32))
-        self._apply_18Hz_increment(self.latitude, lat_inc.astype(np.float32))
-        self._apply_18Hz_increment(self.altitude, alt_inc.astype(np.float32))
-
-    def reform_waveform(self, mds_ra2, mds_wfm18hz):
-        # Relevant field names
-        wfm_tag = "average_wfm_if_corr_ku"
-        tracker_range_tag = "18hz_tracker_range_no_doppler_ku"
-        doppler_tag = "18Hz_ku_range_doppler"
-        slope_tag = "18Hz_ku_range_doppler"
-        # First get the echo power
-        n_range_bins = 128
-        n = self.n_records * self.n_blocks
-        self.power = np.ndarray(shape=(n, n_range_bins), dtype=np.float32)
-        for dsd in range(self.n_records):
-            for block in range(self.n_blocks):
-                i = dsd*self.n_blocks + block
-                self.power[i, :] = mds_wfm18hz[dsd].wfm[block][wfm_tag]
-        # Calculate the window delay for each 18hz waveform
-        range_info = get_structarr_attr(mds_ra2, "range_information")
-        range_corr = get_structarr_attr(mds_ra2, "range_correction")
-        tracker_range = get_structarr_attr(
-            range_info, tracker_range_tag, flat=True)
-        doppler_correction = get_structarr_attr(
-            range_corr, doppler_tag, flat=True)
-        slope_correction = get_structarr_attr(
-            range_corr, slope_tag, flat=True)
-        # Compute the window delay (range to first range bin)
-        # given in meter (not in seconds)
-        # XXX: Add the instrumental range correction for ku?
-        self.window_delay_m = get_envisat_window_delay(
-            tracker_range, doppler_correction, slope_correction)
-        # Compute the range value for each range bin of the 18hz waveform
-        # XXX: Might want to set the range bins automatically
-        self.range = get_envisat_wfm_range(self.window_delay_m, n_range_bins)
-
-    def _apply_18Hz_increment(self, data, inc):
-        for i in range(self.n_records):
-            i0, i1 = i*self.n_blocks, (i+1)*self.n_blocks
-            data[i0:i1] += inc[i, :]
-
-
 class EnvisatSGDR(object):
 
     _DS_NAME = {
@@ -217,6 +139,8 @@ class EnvisatSGDR(object):
         self.mds_18hz.reform_position(self.mds_ra2)
         # Transfer the waveform information
         self.mds_18hz.reform_waveform(self.mds_ra2, self.mds_wfm18hz)
+        # Transfer the land-mask based surface type flags
+        self.mds_18hz.reform_surface_type_flags(self.mds_ra2)
 
     def _validate(self):
         pass
@@ -286,3 +210,90 @@ class EnvisatSpecificProductHeader(ESAProductHeader):
 
     def last_field(self, line):
         return re.search("MWR_SEAFLAG_PERCENT=", line)
+
+
+class Envisat18HzArrays(object):
+    """ Reforms the grouped SGDR data into continuous arrays """
+
+    def __init__(self):
+        self.registered_parameters = []
+        self.n_records = 0
+        self.n_blocks = 20
+
+    def reform_timestamp(self, mds):
+        """ Creates an array of datetime objects for each 18Hz record """
+        # XXX: Current no microsecond correction
+        timestamp = np.ndarray(shape=(self.n_records), dtype=object)
+        mdsr_timestamp = get_structarr_attr(mds, "utc_timestamp")
+        for i in range(self.n_records):
+            timestamp[i] = mdsr_timestamp_to_datetime(mdsr_timestamp[i])
+        self.timestamp = np.repeat(timestamp, self.n_blocks)
+
+    def reform_position(self, mds):
+        # 0) Get the relevant data blocks
+        time_orbit = get_structarr_attr(mds, "time_orbit")
+        range_block = get_structarr_attr(mds, "range_information")
+        # 1) get the 1Hz data from the time_orbit group
+        longitude = get_structarr_attr(time_orbit, "longitude")
+        latitude = get_structarr_attr(time_orbit, "latitude")
+        altitude = get_structarr_attr(time_orbit, "altitude")
+        # 2) Get the increments
+        lon_inc = get_structarr_attr(range_block, "18hz_longitude_differences")
+        lat_inc = get_structarr_attr(range_block, "18hz_latitude_differences")
+        alt_inc = get_structarr_attr(time_orbit, "18hz_altitude_differences")
+        # 3) Expand the 1Hz position arrays
+        self.longitude = np.repeat(longitude, self.n_blocks)
+        self.latitude = np.repeat(latitude, self.n_blocks)
+        self.altitude = np.repeat(altitude, self.n_blocks)
+        # 4) Apply the increments
+        # XXX: Current version of get_struct_arr returns datatype objects
+        #      for listcontainers => manually set dtype
+        self._apply_18Hz_increment(self.longitude, lon_inc.astype(np.float32))
+        self._apply_18Hz_increment(self.latitude, lat_inc.astype(np.float32))
+        self._apply_18Hz_increment(self.altitude, alt_inc.astype(np.float32))
+
+    def reform_waveform(self, mds_ra2, mds_wfm18hz):
+        # Relevant field names
+        wfm_tag = "average_wfm_if_corr_ku"
+        tracker_range_tag = "18hz_tracker_range_no_doppler_ku"
+        doppler_tag = "18Hz_ku_range_doppler"
+        slope_tag = "18Hz_ku_range_doppler"
+        # First get the echo power
+        n_range_bins = 128
+        n = self.n_records * self.n_blocks
+        self.power = np.ndarray(shape=(n, n_range_bins), dtype=np.float32)
+        for dsd in range(self.n_records):
+            for block in range(self.n_blocks):
+                i = dsd*self.n_blocks + block
+                self.power[i, :] = mds_wfm18hz[dsd].wfm[block][wfm_tag]
+        # Calculate the window delay for each 18hz waveform
+        range_info = get_structarr_attr(mds_ra2, "range_information")
+        range_corr = get_structarr_attr(mds_ra2, "range_correction")
+        tracker_range = get_structarr_attr(
+            range_info, tracker_range_tag, flat=True)
+        doppler_correction = get_structarr_attr(
+            range_corr, doppler_tag, flat=True)
+        slope_correction = get_structarr_attr(
+            range_corr, slope_tag, flat=True)
+        # Compute the window delay (range to first range bin)
+        # given in meter (not in seconds)
+        # XXX: Add the instrumental range correction for ku?
+        self.window_delay_m = get_envisat_window_delay(
+            tracker_range, doppler_correction, slope_correction)
+        # Compute the range value for each range bin of the 18hz waveform
+        # XXX: Might want to set the range bins automatically
+        self.range = get_envisat_wfm_range(self.window_delay_m, n_range_bins)
+
+    def reform_surface_type_flags(self, mds):
+        flag = get_structarr_attr(mds, "flag")
+        surface_type = get_structarr_attr(flag, "altimeter_surface_type")
+        radiometer_flag = get_structarr_attr(flag, "radiometer_land_ocean")
+        sea_ice_flag = get_structarr_attr(flag, "sea_ice")
+        self.surface_type = np.repeat(surface_type, self.n_blocks)
+        self.radiometer_flag = np.repeat(radiometer_flag, self.n_blocks)
+        self.sea_ice_flag = np.repeat(sea_ice_flag, self.n_blocks)
+
+    def _apply_18Hz_increment(self, data, inc):
+        for i in range(self.n_records):
+            i0, i1 = i*self.n_blocks, (i+1)*self.n_blocks
+            data[i0:i1] += inc[i, :]
