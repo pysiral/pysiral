@@ -36,13 +36,16 @@ def envisat_to_l1bdata():
     l1b.filename = l1b_files[0]
     l1b.construct()
 
+    # Limit amounts of waveforms to plot => memory error
+    l1b.trim_to_subset(np.arange(2500)+6650)
+
     # Quick plots
-    cryosat2_l1b_orbit_plot(l1b)
-    # cryosat2_l1b_corrections_plot(l1b)
-    cryosat2_l1b_waveform_plot(l1b)
+    envisat_l1b_orbit_plot(l1b)
+    # envisat_l1b_corrections_plot(l1b)
+    envisat_l1b_waveform_plot(l1b)
 
 
-def cryosat2_l1b_orbit_plot(l1b):
+def envisat_l1b_orbit_plot(l1b):
 
     # AWI eisblau #00ace5
     # AWI tiefblau #003e6e
@@ -60,7 +63,7 @@ def cryosat2_l1b_orbit_plot(l1b):
 #    if np.nanmean(l1b.time_orbit.latitude) < 0:
 #        lat_0 *= -1.0
 
-    plt.figure(facecolor="white")
+    plt.figure("Envisat Orbit Quickview", facecolor="white")
     m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='i')
     m.fillcontinents(color='#00ace5', lake_color='#00ace5')
     # draw parallels and meridians.
@@ -74,7 +77,7 @@ def cryosat2_l1b_orbit_plot(l1b):
     plt.show(block=False)
 
 
-def cryosat2_l1b_corrections_plot(l1b):
+def envisat_l1b_corrections_plot(l1b):
 
     from matplotlib.ticker import MultipleLocator
 
@@ -98,24 +101,25 @@ def cryosat2_l1b_corrections_plot(l1b):
     plt.show(block=False)
 
 
-def cryosat2_l1b_waveform_plot(l1b):
+def envisat_l1b_waveform_plot(l1b):
 
-    plt.figure(facecolor="white", figsize=(12, 6))
+    plt.figure("Envisat Waveform Quickview",
+               facecolor="white", figsize=(12, 6))
     ax = plt.gca()
 
-#    image, elevation_range = align_echo_power(
-#        l1b.waveform.power, l1b.waveform.range, l1b.time_orbit.altitude)
-#    image_extent = (0, len(l1b.time_orbit.altitude),
-#                    np.amin(elevation_range), np.amax(elevation_range))
-#
-#    im = ax.imshow(
-#        np.log(image).transpose(), cmap=plt.get_cmap("gnuplot2"),
-#        interpolation='none', origin='lower', extent=image_extent,
-#        aspect=12)
+    image, elevation_range = align_echo_power(
+        l1b.waveform.power, l1b.waveform.range, l1b.time_orbit.altitude)
+    image_extent = (0, len(l1b.time_orbit.altitude),
+                    np.amin(elevation_range), np.amax(elevation_range))
 
-    im = ax.imshow(l1b.waveform.power.transpose(),
-                   cmap=plt.get_cmap("magma"), aspect=12,
-                   vmin=0, vmax=1000)
+    im = ax.imshow(
+        image.transpose(), cmap=plt.get_cmap("magma"),
+        interpolation='none', origin='lower', extent=image_extent,
+        aspect=12, vmin=0, vmax=700)
+
+#    im = ax.imshow(l1b.waveform.power.transpose(),
+#                   cmap=plt.get_cmap("magma"), aspect=12,
+#                   vmin=0, vmax=1000)
 
     ax.yaxis.set_tick_params(direction='out')
     ax.yaxis.set_ticks_position('left')
@@ -128,7 +132,7 @@ def cryosat2_l1b_waveform_plot(l1b):
         ax.spines[spine].set_visible(False)
 
     cb = plt.colorbar(im, orientation="vertical", shrink=0.5)
-    cb.set_label("Echo Power log(dB)")
+    cb.set_label("Echo Power (SGDR Units)")
     plt.tight_layout()
     plt.show()
 
@@ -150,7 +154,8 @@ def align_echo_power(power, range, altitude):
                                 np.amax(elevation)+range_step*0.5,
                                 range_step)
 
-    aligned_power = np.ndarray(shape=(n_records, len(elevation_range)))
+    aligned_power = np.ndarray(shape=(n_records, len(elevation_range)),
+                               dtype=np.float32)
     aligned_power *= np.nan
 
     for i in np.arange(n_records):
