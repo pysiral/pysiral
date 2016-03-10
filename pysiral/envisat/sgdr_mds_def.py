@@ -2,7 +2,8 @@
 
 from pysiral.units import (OneHundredth, OneHundredthDecibel, MilliMeter,
                            MicroDeg, TenMicroDeg, Centimeter, TenThousands,
-                           TenPascal, OneTenths, OneThousands)
+                           TenPascal, OneTenths, OneThousands, Per256, Per2048,
+                           Per8096)
 
 from construct import (Struct, Array, Padding, Bit, BitStruct, SBInt8,
                        SBInt16, UBInt16, SBInt32, UBInt32)
@@ -247,13 +248,13 @@ class EnvisatSGDRMDSWFM18HZ(EnvisatSGDRMDS):
 
         self.waveform_data = Struct(
             "wfm",
-            Array(128, UBInt16("average_wfm_if_corr_ku")),
-            Array(2, UBInt16("central_filters_if_corr_ku")),
-            Array(64, UBInt16("average_wfm_if_corr_s")),
+            Array(128, Per2048(UBInt16("average_wfm_if_corr_ku"))),
+            Array(2, Per2048(UBInt16("central_filters_if_corr_ku"))),
+            Array(64, Per8096(UBInt16("average_wfm_if_corr_s"))),
             Array(2, SBInt16("indexes_of_2_dft_samples")),
-            SBInt16("delta_offset_fft_filter_units"),
+            Per256(SBInt16("delta_offset_fft_filter_units")),
             Padding(18),
-            SBInt16("noise_power_measurement"),
+            Per2048(SBInt16("noise_power_measurement")),
             OneHundredth(SBInt16("agc_of_noise_power_measurement")),
             OneHundredthDecibel(UBInt16("reference_power_value")),
             Padding(10))
