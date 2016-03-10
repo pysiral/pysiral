@@ -2,7 +2,9 @@
 
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.envisat.sgdr_mds_def import envisat_get_mds_def
-from pysiral.envisat.functions import mdsr_timestamp_to_datetime
+from pysiral.envisat.functions import (mdsr_timestamp_to_datetime,
+                                       get_envisat_window_delay,
+                                       get_envisat_wfm_range)
 from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
 from pysiral.esa.functions import get_structarr_attr
 
@@ -51,13 +53,37 @@ class Envisat18HzArrays(object):
         self._apply_18Hz_increment(self.latitude, lat_inc.astype(np.float32))
         self._apply_18Hz_increment(self.altitude, alt_inc.astype(np.float32))
 
-    def reform_waveform(self, mds):
+    def reform_waveform(self, mds_ra2, mds_wfm18hz):
+        # Relevant field names
+        wfm_tag = "average_wfm_if_corr_ku"
+        tracker_range_tag = "18hz_tracker_range_no_doppler_ku"
+        doppler_tag = "18Hz_ku_range_doppler"
+        slope_tag = "18Hz_ku_range_doppler"
+        # First get the echo power
+        n_range_bins = 128
         n = self.n_records * self.n_blocks
-        self.power = np.ndarray(shape=(n, 128), dtype=np.float32)
+        self.power = np.ndarray(shape=(n, n_range_bins), dtype=np.float32)
         for dsd in range(self.n_records):
             for block in range(self.n_blocks):
                 i = dsd*self.n_blocks + block
-                self.power[i, :] = mds[dsd].wfm[block].average_wfm_if_corr_ku
+                self.power[i, :] = mds_wfm18hz[dsd].wfm[block][wfm_tag]
+        # Calculate the window delay for each 18hz waveform
+        range_info = get_structarr_attr(mds_ra2, "range_information")
+        range_corr = get_structarr_attr(mds_ra2, "range_correction")
+        tracker_range = get_structarr_attr(
+            range_info, tracker_range_tag, flat=True)
+        doppler_correction = get_structarr_attr(
+            range_corr, doppler_tag, flat=True)
+        slope_correction = get_structarr_attr(
+            range_corr, slope_tag, flat=True)
+        # Compute the window delay (range to first range bin)
+        # given in meter (not in seconds)
+        # XXX: Add the instrumental range correction for ku?
+        self.window_delay_m = get_envisat_window_delay(
+            tracker_range, doppler_correction, slope_correction)
+        # Compute the range value for each range bin of the 18hz waveform
+        # XXX: Might want to set the range bins automatically
+        self.range = get_envisat_wfm_range(self.window_delay_m, n_range_bins)
 
     def _apply_18Hz_increment(self, data, inc):
         for i in range(self.n_records):
@@ -184,13 +210,13 @@ class EnvisatSGDR(object):
             line_index = +1
 
     def _reform_18Hz_data(self):
-        self.mds_18hz.n_records = self.n_dsd_lines
+        self.mds_18hz.n_records = self.n_msd_records
         # Take the time stamp from the waveform data
         self.mds_18hz.reform_timestamp(self.mds_wfm18hz)
         # Transfer the longitude, latitude, altitude informaiton
         self.mds_18hz.reform_position(self.mds_ra2)
         # Transfer the waveform information
-        self.mds_18hz.reform_waveform(self.mds_wfm18hz)
+        self.mds_18hz.reform_waveform(self.mds_ra2, self.mds_wfm18hz)
 
     def _validate(self):
         pass
