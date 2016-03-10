@@ -72,7 +72,7 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
             Array(20, MilliMeter(SBInt16("18Hz_ku_range_instrumental"))),
             Array(20, MilliMeter(SBInt16("18Hz_s_range_instrumental"))),
             Array(20, MilliMeter(SBInt16("18Hz_ku_range_doppler"))),
-            Array(20, MilliMeter(SBInt16("18Hz_s_range_dopplerr"))),
+            Array(20, MilliMeter(SBInt16("18Hz_s_range_doppler"))),
             Array(20, MilliMeter(SBInt16("18Hz_ku_range_doppler_slope"))),
             Array(20, MilliMeter(SBInt16("18Hz_s_range_doppler_slope"))),
             MilliMeter(SBInt16("dry_troposphere")),
