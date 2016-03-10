@@ -186,7 +186,7 @@ class L1bAdapterEnvisat(object):
         # Transfer to L1bData
         echo_power = self.sgdr.mds_18hz.power
         # XXX: Debug purposes only
-        echo_range = echo_power
+        echo_range = self.sgdr.mds_18hz.range
         self.l1b.waveform.add_waveforms(echo_power, echo_range)
 #        # Create the numpy arrays for power & range
 #        dtype = np.float32
