@@ -185,6 +185,7 @@ class L1bTimeOrbit(object):
         for parameter in self.parameter_list:
             data = getattr(self, "_"+parameter)
             data = data[subset_list]
+            setattr(self,  "_"+parameter, data)
 
 
 class L1bRangeCorrections(object):
