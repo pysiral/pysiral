@@ -115,7 +115,7 @@ def envisat_l1b_waveform_plot(l1b):
     im = ax.imshow(
         image.transpose(), cmap=plt.get_cmap("magma"),
         interpolation='none', origin='lower', extent=image_extent,
-        aspect=12, vmin=0, vmax=700)
+        aspect=12)
 
 #    im = ax.imshow(l1b.waveform.power.transpose(),
 #                   cmap=plt.get_cmap("magma"), aspect=12,
