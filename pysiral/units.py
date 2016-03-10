@@ -83,3 +83,18 @@ class OneThousands(Adapter):
 class TenPascal(Adapter):
     def _decode(self, obj, context):
         return np.float32(float(obj)*1e-1)
+
+
+class Per256(Adapter):
+    def _decode(self, obj, context):
+        return np.float32(float(obj)/256.)
+
+
+class Per2048(Adapter):
+    def _decode(self, obj, context):
+        return np.float32(float(obj)/2048.)
+
+
+class Per8096(Adapter):
+    def _decode(self, obj, context):
+        return np.float32(float(obj)/8096.)
