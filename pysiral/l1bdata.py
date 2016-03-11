@@ -3,6 +3,90 @@
 Created on Tue Jul 07 14:10:34 2015
 
 @author: Stefan
+
+L1bdata is a data container that unifies radar altimeter L1b orbit data
+from different missions. It allows subsetting and merging of adjacent
+orbit segments. L1bdata can be stored as a netCDF file, thus allowing
+faster access to pre-processed subsets of RA orbit data for L2 processing.
+
+The scope of the L1bdata container comprises:
+
+---------
+Metadata:
+---------
+
+- descriptors of RA source data
+- period and geographical location
+- processing history (subsetted, merged)
+- software version
+
+-------------
+Waveform Data
+-------------
+
+- waveform echo power
+  dimension: (n_records, n_range_bins)
+- range for each range bin to the satellite in meters
+  dimension: (n_records, n_range_bins)
+- radar mode flag for each waveform:
+    0: LRM
+    1: SAR
+    2: SIN
+  (this is necessary for merging CryoSat-2 SAR and SIN adjacent orbit segments)
+- summarizing flag from source data
+    0: invalid
+    1: valid
+- optional: Additional named flags
+
+
+----------------------
+Time-Orbit Information
+----------------------
+
+- timestamp in UTC
+- longitude, latitude (of satellite/nadir point)
+- altitude (of satellite above WGS84 reference ellipsoid)
+
+All parameter are of dimension (n_records).
+
+
+-----------------
+Range Corrections
+-----------------
+
+A list of range corrections (usually from RA source data files). The list
+of correction is not predefined, but usally contains range corrections for:
+
+- dry troposphere
+- wet troposphere
+- ionosphere
+- inverse barometric / dynamic atmosphere
+- ocean tide
+- solid earth tide
+- long period tide
+- pole tide
+- tidal loading
+
+All parameter are of dimension (n_records) and of unit meter
+
+
+----------
+Classifier
+----------
+
+A list of optional named parameters that can be used for waveform
+classification in the L2 processor. (e.g. stack parameter from the
+CryoSat-2 l1b files)
+
+All parameter are of dimension (n_records)
+
+
+------------
+Surface Type
+------------
+
+
+
 """
 
 from pysiral.io_adapter import (L1bAdapterCryoSat, L1bAdapterEnvisat)
