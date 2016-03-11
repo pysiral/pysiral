@@ -187,6 +187,8 @@ class L1bAdapterEnvisat(object):
             self.sgdr.mds_18hz.altitude)
         # Transfer the timestamp
         self.l1b.time_orbit.timestamp = self.sgdr.mds_18hz.timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
         # Transfer to L1bData
