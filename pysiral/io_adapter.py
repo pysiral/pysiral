@@ -191,11 +191,12 @@ class L1bAdapterEnvisat(object):
         self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
-        # Transfer to L1bData
-        echo_power = self.sgdr.mds_18hz.power
-        # XXX: Debug purposes only
-        echo_range = self.sgdr.mds_18hz.range
-        self.l1b.waveform.add_waveforms(echo_power, echo_range)
+        """ Transfers the waveform data (power & range for each range bin) """
+        # Transfer the reformed 18Hz waveforms
+        self.l1b.waveform.set_waveform_data(
+            self.sgdr.mds_18hz.power,
+            self.sgdr.mds_18hz.range,
+            self.sgdr.radar_mode)
 
     def _transfer_range_corrections(self):
         pass
