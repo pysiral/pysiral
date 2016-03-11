@@ -400,10 +400,19 @@ class L1bClassifiers(object):
 class L1bWaveforms(object):
     """ Container for Echo Power Waveforms """
 
+    _valid_radar_modes = ["lrm", "sar", "sin"]
+    _parameter_list = ["power", "range", "radar_mode", "is_valid"]
+    _attribute_list = ["echo_power_unit"]
+
     def __init__(self, info):
         self._info = info  # Pointer to Metadate object
+        # Attributes
+        self.echo_power_unit = None
+        # Parameter
         self._power = None
         self._range = None
+        self._radar_mode = None
+        self._is_valid = None
 
     @property
     def power(self):
@@ -414,8 +423,16 @@ class L1bWaveforms(object):
         return self._range
 
     @property
+    def radar_mode(self):
+        return self._radar_mode
+
+    @property
+    def is_valid(self):
+        return self._is_valid
+
+    @property
     def parameter_list(self):
-        return ["power", "range"]
+        return self._parameter_list
 
     @property
     def n_range_bins(self):
@@ -432,14 +449,39 @@ class L1bWaveforms(object):
         dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
         return dimdict
 
-    def add_waveforms(self, power, range):
+    def set_waveform_data(self, power, range, radar_mode):
+        # Validate input
+        if power.shape != range.shape:
+            raise ValueError("power and range must be of same shape",
+                             power.shape, range.shape)
+        if len(power.shape) != 2:
+            raise ValueError("power and range arrays must be of dimension" +
+                             " (n_records, n_bins)")
+        # Validate number of records
         self._info.check_n_records(power.shape[0])
+        # Assign values
         self._power = power
         self._range = range
+        # Create radar mode arrays
+        if type(radar_mode) is str and radar_mode in self._valid_radar_modes:
+            self._radar_mode = np.repeat(radar_mode, self.n_records)
+        else:
+            raise ValueError("Invalid radar_mode: ", radar_mode)
+        # Set valid flag (assumed to be valid for all waveforms)
+        # Flag can be set separately using the set_valid_flag method
+        if self._is_valid is None:
+            self._is_valid = np.ones(shape=(self.n_records), dtype=bool)
+
+    def set_valid_flag(self, valid_flag):
+        # Validate number of records
+        self._info.check_n_records(len(valid_flag))
+        self._is_valid = valid_flag
 
     def set_subset(self, subset_list):
         self._power = self._power[subset_list, :]
         self._range = self._range[subset_list, :]
+        self._radar_mode = self._radar_mode[subset_list]
+        self._is_valid = self._is_valid[subset_list]
 
     def add_range_delta(self, range_delta):
         range_delta_reshaped = np.repeat(range_delta, self.n_range_bins)
