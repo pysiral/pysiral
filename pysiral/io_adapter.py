@@ -17,6 +17,7 @@ from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
 import numpy as np
 
 
+
 ESA_SURFACE_TYPE_DICT = {
     "ocean": 0,
     "closed_sea": 1,
@@ -167,17 +168,18 @@ class L1bAdapterEnvisat(object):
         self.sgdr.post_processing()
 
     def _transfer_metadata(self):
-        pass
-#        self.l1b.info.mission = self._mission
-#        self.l1b.info.mission_data_version = self.cs2l1b.baseline
-#        self.l1b.info.radar_mode = self.cs2l1b.radar_mode
-#        self.l1b.info.orbit = self.cs2l1b.sph.abs_orbit_start
-#        self.l1b.info.start_time = parse_datetime_str(
-#            self.cs2l1b.sph.start_record_tai_time)
-#        self.l1b.info.stop_time = parse_datetime_str(
-#            self.cs2l1b.sph.stop_record_tai_time)
+        """ Extract essential metadata information from SGDR file """
+        info = self.l1b.info
+        sgdr = self.sgdr
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_version", "final v9.3p5")
+        info.set_attribute("orbit", sgdr.mph.abs_orbit)
+        info.set_attribute("cycle", sgdr.mph.cycle)
+        info.set_attribute("cycle", sgdr.mph.cycle)
+        info.set_attribute("mission_data_source", sgdr.mph.product)
 
     def _transfer_timeorbit(self):
+        """ Extracts the time/orbit data group from the SGDR data """
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(
             self.sgdr.mds_18hz.longitude,
