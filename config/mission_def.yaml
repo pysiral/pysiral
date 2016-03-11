@@ -49,6 +49,7 @@ cryosat2:
     options:
         ionospheric_correction_source:
             default: ionospheric_gim
+            target: ionosphere
             type: selector
             options:
                 - ionospheric_gim
@@ -59,12 +60,60 @@ cryosat2:
 envisat:
 
     long_name: Envisat
+
     docstr:
         Envisat (Enviromental Satellite) of the European Space
         Agency (ESA)
+
     data_period:
         start: 2006-01-01T00:00:00.00+00
         stop: 2012-04-01T00:00:00.00+00
+
     sea_ice_radar_modes: ["lrm"]
+
     orbit_max_latitude: 82.5
-    options: Null
+
+    options:
+
+        geophysical_corrections:
+
+            ionospheric_correction_source:
+                default: model_ionosphere_ku
+                target: ionosphere
+                type: selector
+                options:
+                    - ra2_ionosphere_ku
+                    - doris_ionosphere_ku
+                    - model_ionosphere_ku
+                docstr:
+                    Source of Ionospheric Correction in SGDR data
+
+            wet_tropospheric_correction_source:
+                default: wet_troposphere_model
+                target: wet_troposphere
+                type: selector
+                options:
+                    - wet_troposphere_model
+                    - wet_troposphere_mwr
+                docstr:
+                    Source of wet tropospheric correction in SGDR data
+
+            tide_loading_source:
+                default: ocean_loading_tide_1
+                target: ocean_loading_tide
+                type: selector
+                options:
+                    - ocean_loading_tide_1
+                    - ocean_loading_tide_2
+                docstr:
+                    Source of tide loading correction in SGDR data
+
+            total_geocentric_ocean_tide_source:
+                default: total_geocentric_ocean_tide_1
+                target: total_geocentric_ocean_tide
+                type: selector
+                options:
+                    - total_geocentric_ocean_tide_1
+                    - total_geocentric_ocean_tide_2
+                docstr:
+                    Source of total geocentric ocean tide correction in SGDR data
