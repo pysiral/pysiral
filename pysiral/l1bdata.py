@@ -120,9 +120,7 @@ class Level1bData(object):
         self.info.set_attribute("n_records", len(subset_list))
 
     def apply_range_correction(self, correction):
-        """
-        Apply range correction
-        """
+        """  Apply range correction """
         range_delta = self.correction.get_parameter_by_name(correction)
         if range_delta is None:
             # TODO: raise warning
@@ -208,7 +206,10 @@ class L1bConstructor(Level1bData):
 
 
 class L1bMetaData(object):
-    """ Container for L1B Metadata information """
+    """
+    Container for L1B Metadata information
+    (see property attribute_list for a list of attributes)
+    """
 
     field_list = ["mission", "mission_data_version", "radar_mode",
                   "orbit", "start_time", "stop_time"]
