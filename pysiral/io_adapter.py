@@ -199,17 +199,22 @@ class L1bAdapterEnvisat(object):
             self.sgdr.radar_mode)
 
     def _transfer_range_corrections(self):
-        pass
-#        # Transfer all the correction in the list
-#        for key in self.cs2l1b.corrections[0].keys():
-#            if key in self._config.parameter.correction_list:
-#                self.l1b.correction.set_parameter(
-#                    key, get_structarr_attr(self.cs2l1b.corrections, key))
-#        # CryoSat-2 specific: Two different sources of ionospheric corrections
-#        options = self._config.get_mission_defaults(self._mission)
-#        key = options["ionospheric_correction_source"]
-#        ionospheric = get_structarr_attr(self.cs2l1b.corrections, key)
-#        self.l1b.correction.set_parameter("ionospheric", ionospheric)
+        # Transfer all the correction in the list
+        mds = self.sgdr.mds_18hz
+        for correction_name in mds.sgdr_geophysical_correction_list:
+            if correction_name not in self._config.parameter.correction_list:
+                continue
+            self.l1b.correction.set_parameter(
+                    correction_name, getattr(mds, correction_name))
+        # Envisat specific: There are several options for sources
+        #   of geophysical correction in the SGDR files. Selct those
+        #   specified in the mission defaults
+        #   (see config/mission_def.yaml)
+        mission_defaults = self._config.get_mission_options(self._mission)
+        correction_options = mission_defaults.geophysical_corrections
+        for option in correction_options.iterbranches():
+            self.l1b.correction.set_parameter(
+                    option.target, getattr(mds, option.default))
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.mds_18hz.surface_type
