@@ -41,7 +41,7 @@ def envisat_to_l1bdata():
 
     # Quick plots
     envisat_l1b_orbit_plot(l1b)
-    # envisat_l1b_corrections_plot(l1b)
+    envisat_l1b_corrections_plot(l1b)
     envisat_l1b_waveform_plot(l1b)
 
 
@@ -79,7 +79,7 @@ def envisat_l1b_orbit_plot(l1b):
 
 def envisat_l1b_corrections_plot(l1b):
 
-    from matplotlib.ticker import MultipleLocator
+    # from matplotlib.ticker import MultipleLocator
 
     n = len(l1b.correction.parameter_list)
     f, ax = plt.subplots(n, sharex=True, facecolor="white", figsize=(10, 16))
@@ -87,7 +87,7 @@ def envisat_l1b_corrections_plot(l1b):
         correction, name = l1b.correction.get_parameter_by_index(i)
         ax[i].plot(correction, lw=2, color="#00ace5")
         ax[i].set_title(name)
-        ax[i].yaxis.set_minor_locator(MultipleLocator(0.02))
+        # ax[i].yaxis.set_minor_locator(MultipleLocator(0.02))
         ax[i].yaxis.grid(True, which='minor')
         ax[i].yaxis.set_tick_params(direction='out')
         ax[i].yaxis.set_ticks_position('left')
