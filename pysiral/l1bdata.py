@@ -129,6 +129,12 @@ class Level1bData(object):
             return
         self.waveform.add_range_delta(range_delta)
 
+    def extract_subset(self, subset_list):
+        """ Same as trim_to_subset, except returns a new l1bdata instance """
+        l1b = np.copy(self)
+        l1b.trim_to_subset(subset_list)
+        return l1b
+
     @property
     def n_records(self):
         try:
