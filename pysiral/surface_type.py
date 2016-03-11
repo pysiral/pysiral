@@ -43,10 +43,12 @@ class SurfaceType(object):
     Container for surface type information.
 
     Possible classifications (Adapted from CryoSat-2 conventions)
-        - open ocean
+        - unknown
+        - ocean
         - closed sea/lakes
         - lead
         - large lead/polynya
+        - sea ice (general sea ice class, not to be confused with ice type)
         - continental ice
         - land
     """
@@ -139,11 +141,13 @@ class IceType(object):
         - young thin ice
         - first year ice
         - multi year ice
+        - wet ice
     """
     _ICE_TYPE_DICT = {
         "thin_ice": 0,
         "first_year_ice": 1,
-        "multi_year_ice": 2}
+        "multi_year_ice": 2,
+        "wet_ice": 3}
 
     def __init__(self):
         self._ice_type_flag = None
