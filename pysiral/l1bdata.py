@@ -135,6 +135,18 @@ class Level1bData(object):
         l1b.trim_to_subset(subset_list)
         return l1b
 
+    def update_data_limit_attributes(self):
+        """
+        Set latitude/longitude and timestamp limits in the metadata container
+        """
+        info = self.info
+        info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
+        info.set_attribute("lat_max", np.nanmax(self.time_orbit.latitude))
+        info.set_attribute("lon_min", np.nanmin(self.time_orbit.longitude))
+        info.set_attribute("lon_max", np.nanmax(self.time_orbit.longitude))
+        info.set_attribute("start_time", self.time_orbit.timestamp[0])
+        info.set_attribute("stop_time", self.time_orbit.timestamp[-1])
+
     @property
     def n_records(self):
         try:
