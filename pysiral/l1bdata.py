@@ -391,10 +391,14 @@ class L1bClassifiers(object):
         dimdict = OrderedDict([("n_records", self.n_records)])
         return dimdict
 
+    def has_parameter(self, parameter_name):
+        return parameter_name in self.parameter_list
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
             data = data[subset_list]
+            setattr(self, parameter, data)
 
 
 class L1bWaveforms(object):
