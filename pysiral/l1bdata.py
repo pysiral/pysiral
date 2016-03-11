@@ -110,14 +110,14 @@ class Level1bData(object):
         self.surface_type = SurfaceType()
 
     def trim_to_subset(self, subset_list):
-        """
-        Create a subset from an indice list
-        """
+        """ Create a subset from an indix list """
         data_groups = ["time_orbit", "correction", "classifier", "waveform"]
         for data_group in data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
-        # TODO: Updating Metadata?
+        self.update_data_limit_attributes()
+        self.info.set_attribute("is_orbit_subset", True)
+        self.info.set_attribute("n_records", len(subset_list))
 
     def apply_range_correction(self, correction):
         """
