@@ -147,11 +147,7 @@ class Level1bData(object):
 
     @property
     def n_records(self):
-        try:
-            n_records = len(self.time_orbit.timestamp)
-        except:
-            n_records = 0
-        return n_records
+        return self.info.n_records
 
 
 class L1bConstructor(Level1bData):
@@ -239,6 +235,18 @@ class L1bMetaData(object):
         return attdict
 
 
+    def check_n_records(self, n_records):
+        # First time a data set is set: Store number of records as reference
+        if self.n_records == -1:
+            self.n_records = n_records
+        else:  # n_records exists: verify consistenty
+            if n_records == self.n_records:  # all good
+                pass
+            else:  # raise Erro
+                raise ValueError("n_records mismatch, len must be: ",
+                                 str(self.n_records))
+
+
 class L1bTimeOrbit(object):
     """ Container for Time and Orbit Information of L1b Data """
     def __init__(self, info):
@@ -280,7 +288,11 @@ class L1bTimeOrbit(object):
         return dimdict
 
     def set_position(self, longitude, latitude, altitude):
-        # XXX: This is developing stuff
+        # Check dimensions
+        self._info.check_n_records(len(longitude))
+        self._info.check_n_records(len(latitude))
+        self._info.check_n_records(len(altitude))
+        # All fine => set values
         self._longitude = longitude
         self._latitude = latitude
         self._altitude = altitude
@@ -300,6 +312,7 @@ class L1bRangeCorrections(object):
         self._parameter_list = []
 
     def set_parameter(self, tag, value):
+        self._info.check_n_records(len(value))
         setattr(self, tag, value)
         self._parameter_list.append(tag)
 
@@ -409,6 +422,7 @@ class L1bWaveforms(object):
         return dimdict
 
     def add_waveforms(self, power, range):
+        self._info.check_n_records(power.shape[0])
         self._power = power
         self._range = range
 
