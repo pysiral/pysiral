@@ -207,19 +207,22 @@ class L1bMetaData(object):
     (see property attribute_list for a list of attributes)
     """
 
-    field_list = ["mission", "mission_data_version", "radar_mode",
-                  "orbit", "start_time", "stop_time"]
+    _attribute_list = [
+        "mission", "mission_data_version", "mission_data_source",
+        "n_records", "orbit", "cycle", "is_orbit_subset", "is_merged_orbit",
+        "start_time", "stop_time", "subset_region_name",
+        "lat_min", "lat_max", "lon_min", "lon_max", "pysiral_version"]
 
     def __init__(self):
-        self.mission = None
-        self.mission_data_version = None
-        self.radar_mode = None
-        self.orbit = None
-        self.start_time = None
-        self.stop_time = None
+        # Init all fields
+        for field in self.attribute_list:
+            setattr(self, field, None)
+        # Set some fields to False (instead of none)
+        self.is_orbit_subset = False
+        self.is_merged_orbit = False
+        self.n_records = -1
 
     def __repr__(self):
-
         output = "pysiral.L1bdata object:\n"
         for field in self.field_list:
             output += "%22s: %s" % (field, getattr(self, field))
@@ -227,13 +230,21 @@ class L1bMetaData(object):
         return output
 
     @property
+    def attribute_list(self):
+        return self._attribute_list
+
+    @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
         attdict = {}
-        for field in self.field_list:
+        for field in self.attribute_list:
             attdict[field] = getattr(self, field)
         return attdict
 
+    def set_attribute(self, tag, value):
+        if tag not in self.attribute_list:
+            raise ValueError("Unknown attribute: ", tag)
+        setattr(self, tag, value)
 
     def check_n_records(self, n_records):
         # First time a data set is set: Store number of records as reference
