@@ -102,12 +102,11 @@ class Level1bData(object):
     Unified L1b Data Class
     """
     def __init__(self):
-
         self.info = L1bMetaData()
-        self.waveform = L1bWaveforms()
-        self.time_orbit = L1bTimeOrbit()
-        self.correction = L1bRangeCorrections()
-        self.classifier = L1bClassifiers()
+        self.waveform = L1bWaveforms(self.info)
+        self.time_orbit = L1bTimeOrbit(self.info)
+        self.correction = L1bRangeCorrections(self.info)
+        self.classifier = L1bClassifiers(self.info)
         self.surface_type = SurfaceType()
 
     def trim_to_subset(self, subset_list):
@@ -223,7 +222,8 @@ class L1bMetaData(object):
 
 class L1bTimeOrbit(object):
     """ Container for Time and Orbit Information of L1b Data """
-    def __init__(self):
+    def __init__(self, info):
+        self._info = info  # Pointer to metadata container
         self._timestamp = None
         self._longitude = None
         self._latitude = None
@@ -247,6 +247,7 @@ class L1bTimeOrbit(object):
 
     @timestamp.setter
     def timestamp(self, value):
+        self._info.check_n_records(len(value))
         self._timestamp = value
 
     @property
@@ -275,7 +276,8 @@ class L1bTimeOrbit(object):
 class L1bRangeCorrections(object):
     """ Container for Range Correction Information """
 
-    def __init__(self):
+    def __init__(self, info):
+        self._info = info  # Pointer to Metadate object
         self._parameter_list = []
 
     def set_parameter(self, tag, value):
@@ -311,7 +313,9 @@ class L1bRangeCorrections(object):
 
 class L1bClassifiers(object):
     """ Containier for parameters that can be used as classifiers """
-    def __init__(self):
+
+    def __init__(self, info):
+        self._info = info  # Pointer to Metadate object
         # Make a pre-selection of different classifier types
         self._list = {
             "surface_type": [],
@@ -352,7 +356,9 @@ class L1bClassifiers(object):
 
 class L1bWaveforms(object):
     """ Container for Echo Power Waveforms """
-    def __init__(self):
+
+    def __init__(self, info):
+        self._info = info  # Pointer to Metadate object
         self._power = None
         self._range = None
 
