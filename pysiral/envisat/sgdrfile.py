@@ -135,12 +135,15 @@ class EnvisatSGDR(object):
         self.mds_18hz.n_records = self.n_msd_records
         # Take the time stamp from the waveform data
         self.mds_18hz.reform_timestamp(self.mds_wfm18hz)
-        # Transfer the longitude, latitude, altitude informaiton
+        # Reform the longitude, latitude, altitude informaiton
         self.mds_18hz.reform_position(self.mds_ra2)
-        # Transfer the waveform information
+        # Reform the waveform information
         self.mds_18hz.reform_waveform(self.mds_ra2, self.mds_wfm18hz)
-        # Transfer the land-mask based surface type flags
+        # Reform the land-mask based surface type flags
         self.mds_18hz.reform_surface_type_flags(self.mds_ra2)
+        # Reform the geophysical range corrections
+        # (instrumental range corrections are applied in _reform_waveform)
+        self.mds_18hz.reform_geophysical_corrections(self.mds_ra2)
 
     def _validate(self):
         pass
@@ -292,6 +295,36 @@ class Envisat18HzArrays(object):
         self.surface_type = np.repeat(surface_type, self.n_blocks)
         self.radiometer_flag = np.repeat(radiometer_flag, self.n_blocks)
         self.sea_ice_flag = np.repeat(sea_ice_flag, self.n_blocks)
+
+    def reform_geophysical_corrections(self, mds):
+        self.sgdr_geophysical_correction_list = []
+        # Select a list of corrections for Ku-Band only
+        geophysical_corrections = {
+            "range_correction": [
+                "dry_troposphere",
+                "inverse_barometric",
+                "wet_troposphere_model",
+                "wet_troposphere_mwr",
+                "ra2_ionosphere_ku",
+                "doris_ionosphere_ku",
+                "model_ionosphere_ku",
+                "sea_state_bias_ku"],
+            "geophysical_information": [
+                "total_geocentric_ocean_tide_1",
+                "total_geocentric_ocean_tide_2",
+                "ocean_tide_long_period",
+                "ocean_loading_tide_1",
+                "ocean_loading_tide_2",
+                "solid_earth_tide",
+                "geocentric_polar_tide"]}
+        # Automatically extract the corrections and replicate 1Hz => 18 Hz
+        for key in geophysical_corrections.keys():
+            mds_group = get_structarr_attr(mds, key)
+            for correction_name in geophysical_corrections[key]:
+                correction = get_structarr_attr(mds_group, correction_name)
+                setattr(self, correction_name,
+                        np.repeat(correction, self.n_blocks))
+                self.sgdr_geophysical_correction_list.append(correction_name)
 
     def _apply_18Hz_increment(self, data, inc):
         for i in range(self.n_records):
