@@ -499,7 +499,7 @@ class L1bWaveforms(object):
 
 
 def get_l1b_adapter(mission):
-    """ XXX: Early development state only """
+    """ Select and returns the correct IO Adapter for the specified mission """
     if mission == "cryosat2":
         return L1bAdapterCryoSat
     if mission == "envisat":
