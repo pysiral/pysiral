@@ -16,13 +16,16 @@ class ROIBase(object):
         self._options = None
 
     def set_options(self, **opt_dict):
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        options = self.default
+        options.update(opt_dict)
+        self._options = TreeDict.fromdict(options, expand_nested=True)
 
 
 class LowerLatLimit(ROIBase):
     """ Lower Latitude Treshold """
     def __init__(self):
         super(LowerLatLimit, self).__init__()
+        self.default = {"latitude_threshold": 60.0}
 
     def get_roi_list(self, longitude, latitude):
         if self._options.latitude_threshold > 0.0:  # Northern Hemisphere
