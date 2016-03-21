@@ -76,6 +76,8 @@ class L1bAdapterCryoSat(object):
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
         utc_timestamp = tai2utc(tai_timestamp)
         self.l1b.time_orbit.timestamp = utc_timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
         # Create the numpy arrays for power & range
@@ -85,6 +87,7 @@ class L1bAdapterCryoSat(object):
         echo_power = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
         echo_range = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
         # Set the echo power in dB and calculate range
+        # XXX: This might need to be switchable
         for i, record in enumerate(self.cs2l1b.waveform):
             echo_power[i, :] = get_cryosat2_wfm_power(
                 np.array(record.wfm).astype(np.float32),
@@ -92,7 +95,8 @@ class L1bAdapterCryoSat(object):
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
         # Transfer to L1bData
-        self.l1b.waveform.add_waveforms(echo_power, echo_range)
+        self.l1b.waveform.set_waveform_data(
+            echo_power, echo_range, self.cs2l1b.radar_mode)
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
@@ -111,7 +115,7 @@ class L1bAdapterCryoSat(object):
         surface_type = get_structarr_attr(
             self.cs2l1b.corrections, "surface_type")
         for key in ESA_SURFACE_TYPE_DICT.keys():
-            flag = surface_type == self._SURFACE_TYPE_DICT[key]
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
