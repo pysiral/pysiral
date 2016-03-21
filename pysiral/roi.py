@@ -38,3 +38,18 @@ class LowerLatLimit(ROIBase):
             return [self._options.latitude_threshold, 90.0]
         if self._options.latitude_threshold <= 0.0:  # Southern Hemisphere
             return [-90.0, self._options.latitude_threshold]
+
+
+class LatitudeLongitudeBox(ROIBase):
+    """ Box defined by latitude and longitude range """
+    def __init__(self):
+        super(LatitudeLongitudeBox, self).__init__()
+        self.default = {"lat_range": [-91, 90], "lon_range": [-181, 181]}
+
+    def get_roi_list(self, longitude, latitude):
+        in_lon = np.logical_and(longitude >= self._options.lon_range[0],
+                                longitude <= self._options.lon_range[1])
+        in_lat = np.logical_and(latitude >= self._options.lat_range[0],
+                                latitude <= self._options.lat_range[1])
+        in_roi = np.where(np.logical_and(in_lon, in_lat))[0]
+        return in_roi
