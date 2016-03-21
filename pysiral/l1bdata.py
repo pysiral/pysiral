@@ -134,6 +134,17 @@ class Level1bData(object):
         l1b.trim_to_subset(subset_list)
         return l1b
 
+    def extract_region_of_interest(self, roi):
+        """ Extracts data for a given region of interest definition """
+        subset_list = roi.get_roi_list(self.time_orbit.longitude,
+                                       self.time_orbit.latitude)
+        if len(subset_list) > 0:
+            l1b = copy.copy(self)
+            l1b.trim_to_subset(subset_list)
+        else:
+            l1b = Level1bData()
+        return l1b
+
     def update_data_limit_attributes(self):
         """
         Set latitude/longitude and timestamp limits in the metadata container
