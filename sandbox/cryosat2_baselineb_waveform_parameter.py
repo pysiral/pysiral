@@ -28,7 +28,7 @@ def cryosat2_baselineb_waveform_parameter():
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = r"G:\altim\data\altimetry\cryosat2\baseline-b\SIR_SAR_L1"
+    l1b_directory = r"D:\awi\altim\data\altimetry\cryosat2\baseline-b\SIR_SAR_L1"
     l1b_directory = os.path.join(l1b_directory, "2013", "12")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
