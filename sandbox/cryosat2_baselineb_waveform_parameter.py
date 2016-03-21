@@ -111,12 +111,12 @@ class L1bNCfile(object):
         Create the root group and add l1b metadata as global attributes
         """
         self._rootgrp = Dataset(self.filename, "w")
-        for key in self.l1b.info.attdict.keys():
-            content = self.l1b.info.attdict[key]
-            if type(content) is datetime:
-                content = date2num(content, self.time_def.units,
-                                   self.time_def.calendar)
-            self._rootgrp.setncattr(key, content)
+        # Save the l1b info data group as global attributes
+        attdict = self.l1b.info.attdict
+        self._convert_datetime_attributes(attdict)
+        self._convert_bool_attributes(attdict)
+        self._convert_nonetype_attributes(attdict)
+        self._set_global_attributes(attdict)
 
     def _populate_data_groups(self):
         for datagroup in self.datagroups:
@@ -136,6 +136,9 @@ class L1bNCfile(object):
                 if type(data[0]) is datetime:
                     data = date2num(data, self.time_def.units,
                                     self.time_def.calendar)
+                # Convert bool objects to integer
+                if data.dtype.str == "|b1":
+                    data = np.int8(data)
                 dimensions = tuple(dims[0:len(data.shape)])
                 print " "+parameter, dimensions, data.dtype.str
                 var = dgroup.createVariable(
@@ -144,6 +147,46 @@ class L1bNCfile(object):
 
     def _write_to_file(self):
         self._rootgrp.close()
+
+    def _convert_datetime_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type datetime.datetime by a double
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is datetime:
+                attdict[key] = date2num(
+                    content, self.time_def.units, self.time_def.calendar)
+
+    def _convert_bool_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is bool:
+                attdict[key] = int(content)
+
+    def _convert_nonetype_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if content is None:
+                attdict[key] = ""
+
+    def _set_global_attributes(self, attdict):
+        """ Save l1b.info dictionary as global attributes """
+        for key in attdict.keys():
+            print key, type(attdict[key])
+            self._rootgrp.setncattr(key, attdict[key])
 
 
 def cryosat2_l1b_waveform_plot(wfm_power, wfm_range, altitude):
