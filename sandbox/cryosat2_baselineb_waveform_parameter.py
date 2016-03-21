@@ -128,7 +128,7 @@ class L1bNCfile(object):
             # (must be available as OrderedDict in Datagroup Container
             dims = content.dimdict.keys()
             for key in dims:
-                dim = dgroup.createDimension(key, content.dimdict[key])
+                dgroup.createDimension(key, content.dimdict[key])
             # Now add variables for each parameter in datagroup
             for parameter in content.parameter_list:
                 data = getattr(content, parameter)
