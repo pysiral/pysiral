@@ -39,8 +39,8 @@ def grid_visualization_presentation():
 #    print imarr.dtype
 #    stop
 
-    # template_image = Image.new("RGBA", (1535, 768), (0, 0, 0, 255))
-    template_image = Image.new("RGBA", (1024, 512), (0, 0, 0, 255))
+    template_image = Image.new("RGBA", (1535, 768), (0, 0, 0, 255))
+    # template_image = Image.new("RGBA", (1024, 512), (0, 0, 0, 255))
     shading_image_array = np.array(template_image)
     for i in range(256):
         shading_image_array[i, :, :] = [255-i, 255-i, 255-i, 255]
@@ -61,18 +61,18 @@ def grid_visualization_presentation():
     lat_0 = 80
     lon_0 = 0
 
-    plt.figure("Grid Data Visualization", facecolor="white")
-    h = 6500.
-#    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
-#                satellite_height=h*1000., resolution='l')
-    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
-                resolution='l')
+    plt.figure("Grid Data Visualization", facecolor="#4b4b4d")
+    h = 5000.
+    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
+                satellite_height=h*1000., resolution='l')
+#    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
+#                resolution='l')
     m.drawmapboundary(fill_color='#003e6e')
     m.fillcontinents(color='#4b4b4d', lake_color='#4b4b4d')
     coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=1.0)
     plt.gca().add_collection(coastlines)
     # draw parallels and meridians.
-    im = m.warpimage("temp.png", scale=1.0, zorder=100, alpha=0.55)
+    im = m.warpimage("temp.png", scale=1.0, zorder=100, alpha=0.4)
     # cmBlueMarble(m, basesize="10800x5400", scale=1.0)
     m.drawparallels(np.arange(-90., 120., 15.), **grid_keyw)
     m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
