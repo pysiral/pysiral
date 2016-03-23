@@ -31,7 +31,7 @@ from matplotlib.image import pil_to_array
 
 def grid_visualization_presentation():
 
-    # create_background_image()
+    create_background_image()
     grid = get_grid()
     create_map(grid)
 
@@ -62,7 +62,7 @@ def create_background_image():
     m.fillcontinents(color='#4b4b4d', lake_color='#4b4b4d')
     coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.05)
     plt.gca().add_collection(coastlines)
-    plt.savefig("temp.png", dpi=300)
+    plt.savefig("temp.png", dpi=600)
     plt.close()
 
     background = Image.open("temp.png")
@@ -102,16 +102,18 @@ def create_map(grid):
     lon_0 = 0
     h = 6000.
     grid_keyw = {"dashes": (None, None), "color": "#bcbdbf",
-                 "linewidth": 0.1, "latmax": 85, "zorder": 120}
-    plt.figure("Grid Data Visualization",  figsize=(8, 8),
-               dpi=150, facecolor="#4b4b4b")
-    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
-                satellite_height=h*1000., resolution='l')
-#    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
-#                resolution='l')
+                 "linewidth": 0.1, "latmax": 84, "zorder": 120}
+#    wm = plt.get_current_fig_manager()
+#    wm.
+    figure = plt.figure("Grid Data Visualization",  figsize=(12, 12),
+               facecolor="#4b4b4b")
+#    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
+#                satellite_height=h*1000., resolution='l')
+    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
+                resolution='l')
     m.warpimage("temp2.png", scale=1.0, zorder=100)
     x, y = m(grid.pcolor.longitude, grid.pcolor.latitude)
-    data = getattr(grid, "background_thickness")
+    data = getattr(grid, "cs2_thickness")
     dataMask = np.isnan(data)
     data = np.ma.masked_where(dataMask, data)
     m.pcolor(x, y, data, cmap=plt.get_cmap("plasma"), vmin=0, vmax=5,
@@ -119,7 +121,59 @@ def create_map(grid):
 
     m.drawparallels(np.arange(-90., 120., 15.), **grid_keyw)
     m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
+
+    plt.savefig("temp3.png", dpi=300, facecolor=figure.get_facecolor(),
+                bbox_inches="tight")
+
+    figure_buffer = Image.open("temp3.png")
+    width = int(0.6*figure_buffer.size[0])
+    height = int(0.6*figure_buffer.size[1])
+
+    xoff = int(0.2*figure_buffer.size[0])
+    yoff = int(0.1*figure_buffer.size[1])
+    print xoff, width
+    print yoff, height
+    x1, x2 = xoff, xoff+width
+    y1, y2 = yoff, yoff+height
+
+    figure_buffer = np.array(figure_buffer)
+    cropped_figure = figure_buffer[y1:y2, x1:x2, :]
+
+    import matplotlib.patches as patches
+
+    plt.figure(figsize=(12, 12), facecolor="#4b4b4b")
+    ax = plt.gca()
+    im = ax.imshow(cropped_figure)
+#    patch = patches.Circle((400, 400), radius=400, transform=ax.transData)
+
+    pad = int(0.1*width)
+    x, y = pad, pad
+    dx, dy = width - 2*pad, height-2*pad
+    patch = patches.FancyBboxPatch(
+        [x, y], dx, dy,
+        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
+    im.set_clip_path(patch)
+    plt.axis('off')
     plt.show()
+
+
+def fig2data(fig):
+    """
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels
+           and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    # draw the renderer
+    fig.canvas.draw()
+    # Get the RGBA buffer from the figure
+    w, h = fig.canvas.get_width_height()
+    buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
+    buf.shape = (w, h, 4)
+    # canvas.tostring_argb give pixmap in ARGB mode.
+    # Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll(buf, 3, axis=2)
+    return buf
 
 
 def get_diffuse_highlighted_image(lon_0, lat_0, size,
