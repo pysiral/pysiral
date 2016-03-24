@@ -269,7 +269,7 @@ class CryoSatL1B(object):
         """ Read the data blocks """
         # Just reopened the file in binary mode -
         # > get start byte and number of data set records
-        l1b_data_set_name = "sir_l1b_"+self._radar_mode
+        l1b_data_set_name = self._get_l1b_data_set_name()
         data_set_descriptor = self.dsd.get_by_fieldname(l1b_data_set_name)
         startbyte = int(data_set_descriptor["ds_offset"])
         self.n_msd_records = int(data_set_descriptor["num_dsr"])
@@ -281,6 +281,12 @@ class CryoSatL1B(object):
         mds_parser = self.mds_definition.get_mds_parser()
         # Parser the binary part of the .DBL file
         self.mds = mds_parser.parse(self._fh.read(mds_parser.sizeof()))
+
+    def _get_l1b_data_set_name(self):
+        radar_mode = self._radar_mode
+        if radar_mode == "sin":
+            radar_mode = "sarin"
+        return "sir_l1b_"+radar_mode
 
     def _read_header_lines(self, header):
         """ Method to read the MPH and SPH headers are identical """
