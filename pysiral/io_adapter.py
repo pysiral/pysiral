@@ -16,8 +16,6 @@ from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
 
 import numpy as np
 
-
-
 ESA_SURFACE_TYPE_DICT = {
     "ocean": 0,
     "closed_sea": 1,
