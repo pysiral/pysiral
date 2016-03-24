@@ -236,7 +236,7 @@ class L1bMetaData(object):
 
     def __repr__(self):
         output = "pysiral.L1bdata object:\n"
-        for field in self.field_list:
+        for field in self._attribute_list:
             output += "%22s: %s" % (field, getattr(self, field))
             output += "\n"
         return output
