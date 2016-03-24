@@ -9,9 +9,12 @@ Created on Mon Mar 21 20:20:08 2016
 """
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from matplotlib.ticker import MultipleLocator
 from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import os
 from PIL import Image
@@ -31,7 +34,7 @@ from matplotlib.image import pil_to_array
 
 def grid_visualization_presentation():
 
-    create_background_image()
+    # create_background_image()
     grid = get_grid()
     create_map(grid)
 
@@ -44,8 +47,9 @@ def get_grid():
         "ellps": "WGS84",
         "datum": "WGS84",
         "units": "m"}
-    nc_file = os.path.join(r"D:\awi\product\optimal_interp\v1",
-                           r"cs2_smos_ice_thickness_20150302_20150308.nc")
+    nc_file = os.path.join(
+        r"G:\altim\product\altimetry\cs2awi\baseline-b\grid",
+        r"cs2awi_nh_201503.nc")
     grid = ReadNC(nc_file)
     grid.pcolor = GeoPcolorGrid(grid.longitude, grid.latitude)
     grid.pcolor.calc_from_proj(**projection)
@@ -62,7 +66,7 @@ def create_background_image():
     m.fillcontinents(color='#4b4b4d', lake_color='#4b4b4d')
     coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.05)
     plt.gca().add_collection(coastlines)
-    plt.savefig("temp.png", dpi=600)
+    plt.savefig("temp.png", dpi=1200)
     plt.close()
 
     background = Image.open("temp.png")
@@ -79,7 +83,7 @@ def create_background_image():
 
     foreground = Image.fromarray(foreground_array)
     background.paste(foreground, (0, 0), foreground)
-    background.save('temp2.png', 'PNG')
+    background.save('temp2.png', 'PNG', facecolor="#000000")
 
 
 def get_foreground_array(size, cutoff=0.5, color=[0, 0, 0], alpha_ref=150):
@@ -98,7 +102,7 @@ def get_foreground_array(size, cutoff=0.5, color=[0, 0, 0], alpha_ref=150):
 
 
 def create_map(grid):
-    lat_0 = 80
+    lat_0 = 75
     lon_0 = 0
     h = 6000.
     grid_keyw = {"dashes": (None, None), "color": "#bcbdbf",
@@ -106,14 +110,14 @@ def create_map(grid):
 #    wm = plt.get_current_fig_manager()
 #    wm.
     figure = plt.figure("Grid Data Visualization",  figsize=(12, 12),
-               facecolor="#4b4b4b")
+                        facecolor="#000000")
 #    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
 #                satellite_height=h*1000., resolution='l')
     m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
                 resolution='l')
     m.warpimage("temp2.png", scale=1.0, zorder=100)
     x, y = m(grid.pcolor.longitude, grid.pcolor.latitude)
-    data = getattr(grid, "cs2_thickness")
+    data = getattr(grid, "sea_ice_thickness")
     dataMask = np.isnan(data)
     data = np.ma.masked_where(dataMask, data)
     m.pcolor(x, y, data, cmap=plt.get_cmap("plasma"), vmin=0, vmax=5,
@@ -126,13 +130,13 @@ def create_map(grid):
                 bbox_inches="tight")
 
     figure_buffer = Image.open("temp3.png")
-    width = int(0.6*figure_buffer.size[0])
-    height = int(0.6*figure_buffer.size[1])
-
-    xoff = int(0.2*figure_buffer.size[0])
-    yoff = int(0.1*figure_buffer.size[1])
-    print xoff, width
-    print yoff, height
+    width_fract, height_fract = 0.60, 0.60
+    width = int(width_fract*figure_buffer.size[0])
+    height = int(height_fract*figure_buffer.size[1])
+    xpad, ypad = 0.40*(1.-width_fract), 0.5*(1.-height_fract)
+    ypad -= 0.4*(1.-height_fract)
+    xoff = int(xpad*figure_buffer.size[0])
+    yoff = int(ypad*figure_buffer.size[1])
     x1, x2 = xoff, xoff+width
     y1, y2 = yoff, yoff+height
 
@@ -142,6 +146,8 @@ def create_map(grid):
     import matplotlib.patches as patches
 
     plt.figure(figsize=(12, 12), facecolor="#4b4b4b")
+    plt.gca().set_position([0, 0, 1, 1])
+
     ax = plt.gca()
     im = ax.imshow(cropped_figure)
 #    patch = patches.Circle((400, 400), radius=400, transform=ax.transData)
@@ -152,8 +158,49 @@ def create_map(grid):
     patch = patches.FancyBboxPatch(
         [x, y], dx, dy,
         boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
-    im.set_clip_path(patch)
+    # im.set_clip_path(patch)
+
+    plt.annotate("CryoSat-2", (0.05, 0.92), xycoords="axes fraction",
+                 color="#bcbdbf", fontsize=32)
+    plt.annotate("March 2015", (0.05, 0.88), xycoords="axes fraction",
+                 color="#bcbdbf", fontsize=24)
     plt.axis('off')
+
+
+    sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
+                               norm=plt.Normalize(vmin=0, vmax=5))
+    # fake up the array of the scalar mappable. Urgh...
+    sm._A = []
+    ax = plt.gca()
+    cb_ax_kwargs = {'loc': 3,
+                    'bbox_to_anchor': (0.05, 0.83, 1, 1),
+                    'width': "30%",
+                    'height': "2%",
+                    'bbox_transform': ax.transAxes,
+                    'borderpad': 0}
+    ticks = MultipleLocator(1)
+    axins = inset_axes(ax, **cb_ax_kwargs)
+    cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
+    cl = plt.getp(cb.ax, 'xmajorticklabels')
+    plt.setp(cl, fontsize=22, color="#bcbdbf")
+    cb.set_label("Sea Ice Thickness (m)", fontsize=22, color="#bcbdbf")
+    cb.outline.set_linewidth(0.2)
+    cb.outline.set_alpha(0.0)
+    for t in cb.ax.get_yticklines():
+        t.set_color("1.0")
+    cb.ax.tick_params('both', length=0.1, which='major', pad=10)
+    plt.sca(ax)
+
+    # Add the plane marker at the last point.
+    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+    logo = np.array(Image.open('AWI_Logo_Weiss_RGB.png'))
+    im = OffsetImage(logo, zoom=0.20, resample=True, alpha=0.75)
+    ab = AnnotationBbox(im, (0.95, 0.89), xycoords='axes fraction',
+                        frameon=False, box_alignment=(1, 0))
+    # Get the axes object from the basemap and add the AnnotationBbox artist
+    plt.gca().add_artist(ab)
+
+
     plt.show()
 
 
@@ -211,7 +258,7 @@ def get_diffuse_intensity(r0, r1, k=1.0, b=1, n=4):
     intensity = k*np.cos(b*angle)**n
     if intensity < 0:
         intensity = 0
-    return intensity# , angle
+    return intensity  # , angle
 
 
 def get_landcoastlines(basemap, color="0.0", linewidth=1):
@@ -285,4 +332,8 @@ def angle_between(v1, v2):
 
 
 if __name__ == "__main__":
+    mpl.rcParams['font.sans-serif'] = "arial"
+    for target in ["xtick.color", "ytick.color", "axes.edgecolor",
+                   "axes.labelcolor"]:
+        mpl.rcParams[target] = "#4b4b4d"
     grid_visualization_presentation()

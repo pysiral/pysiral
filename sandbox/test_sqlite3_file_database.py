@@ -17,16 +17,20 @@ Filenaming: "pysiral_l1bdata_inventory.db"
 Main rows that need to be in the database
 
 Table: SOURCE_FILES
-Year	           Year of start time (int)
-Month            Month of start time (int)
-Week             Week number of start time (int)
-Day              Day of start time (int)
+filename         serves also as unique identifier (str)
+year	           Year of start time (int)
+month            Month of start time (int)
+week             Week number of start time (int)
+day              Day of start time (int)
+orbit            orbit number (int)
+cycle            cycle number (int)
 day_overlap      flag that indicating data coverage on the next day (bool)
 region_id        id for region (see table REGION) (int)
 radar_mode_id    id for radar mode (see table RADAR_MODE) (int)
 mission_id       id for mission (see table MISSION) (int)
 version          version id of altimeter source data (str)
 path             relative link to file (str)
+
 
 
 Table: REGION
