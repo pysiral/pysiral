@@ -26,14 +26,14 @@ def cryosat2_to_l1bdata():
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = config.local_machine.local_l1b_repository.cryosat2.sar
-    l1b_directory = os.path.join(l1b_directory, "2015", "04")
+    l1b_directory = config.local_machine.l1b_repository.cryosat2.sin
+    l1b_directory = os.path.join(l1b_directory, "2015", "03")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
     # Read the file
     l1b = L1bConstructor(config)
     l1b.mission = "cryosat2"
-    l1b.filename = l1b_files[0]
+    l1b.filename = l1b_files[3]
     l1b.construct()
 
     # Quick plots
@@ -67,6 +67,7 @@ def cryosat2_l1b_orbit_plot(l1b):
 
     x, y = m(l1b.time_orbit.longitude, l1b.time_orbit.latitude)
     m.plot(x, y, color="#003e6e", linewidth=2.0)
+    m.scatter(x[0], y[0], color="#003e6e")
 
     plt.title("")
     plt.show(block=False)
@@ -107,9 +108,9 @@ def cryosat2_l1b_waveform_plot(l1b):
                     np.amin(elevation_range), np.amax(elevation_range))
 
     im = ax.imshow(
-        np.log(image).transpose(), cmap=plt.get_cmap("gnuplot2"),
+        np.log(image).transpose(), cmap=plt.get_cmap("magma"),
         interpolation='none', origin='lower', extent=image_extent,
-        aspect=12)
+        aspect=1)
 
     ax.yaxis.set_tick_params(direction='out')
     ax.yaxis.set_ticks_position('left')
