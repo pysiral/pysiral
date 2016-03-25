@@ -83,10 +83,10 @@ class SurfaceType(object):
         """ Add a surface type flag """
         if type_str not in self._SURFACE_TYPE_DICT.keys():
             # TODO: Error Handling
-            return
+            raise("surface type str %s unknown" % type_str)
         if self._invalid_n_records(len(flag)):
-            # TODO: Error Handling
-            return
+            raise("invalid number of records: %g (must be %g)" % (
+                len(flag), self._n_records))
         # Create Flag keyword if necessary
         if self._surface_type is None:
             self._n_records = len(flag)
@@ -106,6 +106,10 @@ class SurfaceType(object):
         else:
             return TypeContainer(
                 np.zeros(shape=(self._n_records), dtype=np.bool))
+
+    def set_subset(self, subset_list):
+        self._surface_type = self._surface_type[subset_list]
+        self._n_records = len(subset_list)
 
     def _invalid_n_records(self, n):
         """ Check if flag array has the correct length """

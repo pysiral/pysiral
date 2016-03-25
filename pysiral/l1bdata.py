@@ -112,7 +112,8 @@ class Level1bData(object):
 
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
-        data_groups = ["time_orbit", "correction", "classifier", "waveform"]
+        data_groups = ["time_orbit", "correction", "classifier",
+                       "waveform", "surface_type"]
         for data_group in data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
