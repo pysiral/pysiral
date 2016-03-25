@@ -119,18 +119,22 @@ class SurfaceType(object):
     def _get_type_id(self, name):
         return self._SURFACE_TYPE_DICT[name]
 
-    def __getattr__(self, name):
-        """
-        Return empty lists for surface type flags that have not been
-        set yet
-        """
-        if name in self._SURFACE_TYPE_DICT.keys():
-            if self.has_flag(name):
-                type_id = self._get_type_id(name)
-                return TypeContainer(self._surface_type == type_id)
-            else:
-                return TypeContainer(
-                    np.zeros(shape=(self._n_records), dtype=np.bool))
+#    def __getattr__(self, name):
+#        """
+#        Return empty lists for surface type flags that have not been
+#        set yet
+#        """
+#        print name
+#        if name in self._SURFACE_TYPE_DICT.keys():
+#            if self.has_flag(name):
+#                type_id = self._get_type_id(name)
+#                return TypeContainer(self._surface_type == type_id)
+#            else:
+#                return TypeContainer(
+#                    np.zeros(shape=(self._n_records), dtype=np.bool))
+#        # Fix of deepcopy bug
+#        if name in ["__getnewargs_ex__", "__deepcopy__"]:
+#            raise AttributeError("%r has no attribute %r" % (type(self), name))
 
 
 class IceType(object):

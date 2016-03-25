@@ -130,7 +130,7 @@ class Level1bData(object):
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-        l1b = copy.copy(self)
+        l1b = copy.deepcopy(self)
         l1b.trim_to_subset(subset_list)
         return l1b
 
