@@ -6,20 +6,25 @@ Created on Thu Jul 23 15:10:04 2015
 """
 
 from pysiral.cryosat2.functions import (
-    get_structarr_attr, tai2utc, get_tai_datetime_from_timestamp,
+    tai2utc, get_tai_datetime_from_timestamp,
     get_cryosat2_wfm_power, get_cryosat2_wfm_range)
+from pysiral.esa.functions import get_structarr_attr
 from pysiral.cryosat2.l1bfile import CryoSatL1B
+from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.helper import parse_datetime_str
 from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
 
 import numpy as np
 
+ESA_SURFACE_TYPE_DICT = {
+    "ocean": 0,
+    "closed_sea": 1,
+    "land_ice": 2,
+    "land": 3}
+
 
 class L1bAdapterCryoSat(object):
     """ Converts a CryoSat2 L1b object into a L1bData object """
-
-    _SURFACE_TYPE_DICT = {"ocean": 0, "closed_sea": 1,
-                          "land_ice": 2, "land": 3}
 
     def __init__(self, config):
         self.filename = None
@@ -69,14 +74,18 @@ class L1bAdapterCryoSat(object):
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
         utc_timestamp = tai2utc(tai_timestamp)
         self.l1b.time_orbit.timestamp = utc_timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
         # Create the numpy arrays for power & range
+        dtype = np.float32
         n_records = len(self.cs2l1b.waveform)
         n_range_bins = len(self.cs2l1b.waveform[0].wfm)
-        echo_power = np.ndarray(shape=(n_records, n_range_bins))
-        echo_range = np.ndarray(shape=(n_records, n_range_bins))
+        echo_power = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
+        echo_range = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
         # Set the echo power in dB and calculate range
+        # XXX: This might need to be switchable
         for i, record in enumerate(self.cs2l1b.waveform):
             echo_power[i, :] = get_cryosat2_wfm_power(
                 np.array(record.wfm).astype(np.float32),
@@ -84,7 +93,8 @@ class L1bAdapterCryoSat(object):
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
         # Transfer to L1bData
-        self.l1b.waveform.add_waveforms(echo_power, echo_range)
+        self.l1b.waveform.set_waveform_data(
+            echo_power, echo_range, self.cs2l1b.radar_mode)
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
@@ -102,8 +112,8 @@ class L1bAdapterCryoSat(object):
         # L1b surface type flag word
         surface_type = get_structarr_attr(
             self.cs2l1b.corrections, "surface_type")
-        for key in self._SURFACE_TYPE_DICT.keys():
-            flag = surface_type == self._SURFACE_TYPE_DICT[key]
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
@@ -128,3 +138,112 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+
+
+class L1bAdapterEnvisat(object):
+    """ Converts a Envisat SGDR object into a L1bData object """
+
+    def __init__(self, config):
+        self.filename = None
+        self._config = config
+        self._mission = "envisat"
+
+    def construct_l1b(self, l1b):
+        self.l1b = l1b                        # pointer to L1bData object
+        self._read_envisat_sgdr()             # Read Envisat SGDR data file
+        self._transfer_metadata()             # (orbit, radar mode, ..)
+        self._transfer_timeorbit()            # (lon, lat, alt, time)
+        self._transfer_waveform_collection()  # (power, range)
+        self._transfer_range_corrections()    # (range corrections)
+        self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
+        self._transfer_classifiers()          # (beam parameters, flags, ...)
+
+    def _read_envisat_sgdr(self):
+        """ Read the L1b file and create a CryoSat-2 native L1b object """
+        self.sgdr = EnvisatSGDR()
+        self.sgdr.filename = self.filename
+        self.sgdr.parse()
+        error_status = self.sgdr.get_status()
+        if error_status:
+            # TODO: Needs ErrorHandler
+            raise IOError()
+        self.sgdr.post_processing()
+
+    def _transfer_metadata(self):
+        """ Extract essential metadata information from SGDR file """
+        info = self.l1b.info
+        sgdr = self.sgdr
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_version", "final v9.3p5")
+        info.set_attribute("orbit", sgdr.mph.abs_orbit)
+        info.set_attribute("cycle", sgdr.mph.cycle)
+        info.set_attribute("cycle", sgdr.mph.cycle)
+        info.set_attribute("mission_data_source", sgdr.mph.product)
+
+    def _transfer_timeorbit(self):
+        """ Extracts the time/orbit data group from the SGDR data """
+        # Transfer the orbit position
+        self.l1b.time_orbit.set_position(
+            self.sgdr.mds_18hz.longitude,
+            self.sgdr.mds_18hz.latitude,
+            self.sgdr.mds_18hz.altitude)
+        # Transfer the timestamp
+        self.l1b.time_orbit.timestamp = self.sgdr.mds_18hz.timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
+
+    def _transfer_waveform_collection(self):
+        """ Transfers the waveform data (power & range for each range bin) """
+        # Transfer the reformed 18Hz waveforms
+        self.l1b.waveform.set_waveform_data(
+            self.sgdr.mds_18hz.power,
+            self.sgdr.mds_18hz.range,
+            self.sgdr.radar_mode)
+
+    def _transfer_range_corrections(self):
+        # Transfer all the correction in the list
+        mds = self.sgdr.mds_18hz
+        for correction_name in mds.sgdr_geophysical_correction_list:
+            if correction_name not in self._config.parameter.correction_list:
+                continue
+            self.l1b.correction.set_parameter(
+                    correction_name, getattr(mds, correction_name))
+        # Envisat specific: There are several options for sources
+        #   of geophysical correction in the SGDR files. Selct those
+        #   specified in the mission defaults
+        #   (see config/mission_def.yaml)
+        mission_defaults = self._config.get_mission_options(self._mission)
+        correction_options = mission_defaults.geophysical_corrections
+        for option in correction_options.iterbranches():
+            self.l1b.correction.set_parameter(
+                    option.target, getattr(mds, option.default))
+
+    def _transfer_surface_type_data(self):
+        surface_type = self.sgdr.mds_18hz.surface_type
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
+            self.l1b.surface_type.add_flag(flag, key)
+
+    def _transfer_classifiers(self):
+        pass
+#        # Add L1b beam parameter group
+#        beam_parameter_list = [
+#            "stack_standard_deviation", "stack_centre",
+#            "stack_scaled_amplitude", "stack_skewness", "stack_kurtosis"]
+#        for beam_parameter_name in beam_parameter_list:
+#            recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
+#            beam_parameter = [rec[beam_parameter_name] for rec in recs]
+#            self.l1b.classifier.add(beam_parameter, beam_parameter_name)
+#        # Calculate Parameters from waveform counts
+#        # XXX: This is a legacy of the CS2AWI IDL processor
+#        #      Threshold defined for waveform counts not power in dB
+#        wfm = get_structarr_attr(self.cs2l1b.waveform, "wfm")
+#        # Calculate the OCOG Parameter (CryoSat-2 notation)
+#        ocog = CS2OCOGParameter(wfm)
+#        self.l1b.classifier.add(ocog.width, "ocog_width")
+#        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+#        # Calculate the Peakiness (CryoSat-2 notation)
+#        pulse = CS2PulsePeakiness(wfm)
+#        self.l1b.classifier.add(pulse.peakiness, "peakiness")
+#        self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
+#        self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")

@@ -7,7 +7,7 @@
 level2:
     orbit_default:
         type: track
-        format: hdf5
+        format: nc
         filename_template: "{mission}{baseline}_{orbit}_{startdt}_{stopdt}_pysiral{pysiral_version}_l2.hdf"
         parameter_list:
             - timestamp

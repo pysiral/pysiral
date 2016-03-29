@@ -43,10 +43,12 @@ class SurfaceType(object):
     Container for surface type information.
 
     Possible classifications (Adapted from CryoSat-2 conventions)
-        - open ocean
+        - unknown
+        - ocean
         - closed sea/lakes
         - lead
         - large lead/polynya
+        - sea ice (general sea ice class, not to be confused with ice type)
         - continental ice
         - land
     """
@@ -81,10 +83,10 @@ class SurfaceType(object):
         """ Add a surface type flag """
         if type_str not in self._SURFACE_TYPE_DICT.keys():
             # TODO: Error Handling
-            return
+            raise("surface type str %s unknown" % type_str)
         if self._invalid_n_records(len(flag)):
-            # TODO: Error Handling
-            return
+            raise("invalid number of records: %g (must be %g)" % (
+                len(flag), self._n_records))
         # Create Flag keyword if necessary
         if self._surface_type is None:
             self._n_records = len(flag)
@@ -105,6 +107,10 @@ class SurfaceType(object):
             return TypeContainer(
                 np.zeros(shape=(self._n_records), dtype=np.bool))
 
+    def set_subset(self, subset_list):
+        self._surface_type = self._surface_type[subset_list]
+        self._n_records = len(subset_list)
+
     def _invalid_n_records(self, n):
         """ Check if flag array has the correct length """
         if self._n_records is None:  # New flag, ok
@@ -117,18 +123,22 @@ class SurfaceType(object):
     def _get_type_id(self, name):
         return self._SURFACE_TYPE_DICT[name]
 
-    def __getattr__(self, name):
-        """
-        Return empty lists for surface type flags that have not been
-        set yet
-        """
-        if name in self._SURFACE_TYPE_DICT.keys():
-            if self.has_flag(name):
-                type_id = self._get_type_id(name)
-                return TypeContainer(self._surface_type == type_id)
-            else:
-                return TypeContainer(
-                    np.zeros(shape=(self._n_records), dtype=np.bool))
+#    def __getattr__(self, name):
+#        """
+#        Return empty lists for surface type flags that have not been
+#        set yet
+#        """
+#        print name
+#        if name in self._SURFACE_TYPE_DICT.keys():
+#            if self.has_flag(name):
+#                type_id = self._get_type_id(name)
+#                return TypeContainer(self._surface_type == type_id)
+#            else:
+#                return TypeContainer(
+#                    np.zeros(shape=(self._n_records), dtype=np.bool))
+#        # Fix of deepcopy bug
+#        if name in ["__getnewargs_ex__", "__deepcopy__"]:
+#            raise AttributeError("%r has no attribute %r" % (type(self), name))
 
 
 class IceType(object):
@@ -139,11 +149,13 @@ class IceType(object):
         - young thin ice
         - first year ice
         - multi year ice
+        - wet ice
     """
     _ICE_TYPE_DICT = {
         "thin_ice": 0,
         "first_year_ice": 1,
-        "multi_year_ice": 2}
+        "multi_year_ice": 2,
+        "wet_ice": 3}
 
     def __init__(self):
         self._ice_type_flag = None
