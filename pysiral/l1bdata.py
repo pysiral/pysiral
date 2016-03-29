@@ -168,6 +168,12 @@ class L1bTimeOrbit(object):
             data = getattr(self, "_"+parameter)
             data = data[subset_list]
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
 
 class L1bRangeCorrections(object):
     """ Container for Range Correction Information """
