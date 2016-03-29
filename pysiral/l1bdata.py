@@ -285,7 +285,6 @@ class L1bWaveforms(object):
         shape = np.shape(self._power)
         return shape[index]
 
-
 def get_l1b_adapter(mission):
     """ XXX: Early development state only """
     if mission == "cryosat2":
