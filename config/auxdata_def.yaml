@@ -22,7 +22,7 @@ mss:
         docstr: DTU10 mean sea surface (1 minute grid)
         type: static
         frequency: null
-        local_machine_directory: dtu_mss
+        local_machine_directory: dtu10
         file: DTU10MSS_1min.nc
         source:
             transfer: ftp
@@ -37,7 +37,7 @@ mss:
         docstr: DTU13 mean sea surface (1 minute grid)
         type: static
         frequency: null
-        local_machine_directory: dtu_mss
+        local_machine_directory: dtu13
         file: DTU13MSS_1min.nc
         source:
             transfer: ftp
