@@ -27,6 +27,8 @@ def l2_processing():
     l1b_directory = os.path.join(l1b_directory, "2015", "04")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
+    print l1b_files[0]
+
     # Simulate the jobconfig
     # This has to come from the job configuration file
     mission_settings = {
@@ -41,7 +43,6 @@ def l2_processing():
             "dry_troposphere",
             "wet_troposphere",
             "inverse_barometric",
-            "dynamic_atmosphere",
             "ionospheric",
             "ocean_tide_elastic",
             "ocean_tide_long_period",
@@ -128,6 +129,10 @@ def l2_processing():
     l2proc.error_handling(raise_on_error=True)
     l2proc.set_l1b_files(l1b_files[0:1])
     l2proc.run()
+
+#    with open(r"D:\pysiral_tfmra_test.dat", "w") as fh:
+#        for elevation in l2proc.orbit[0].elev:
+#            fh.write("%14.5f\n" % elevation)
 
     # Test Plots
     create_surface_type_plot(l2proc.orbit[0], block=False)
@@ -287,7 +292,7 @@ def create_surface_elevation_plot(l2, block=True):
 
     ax.yaxis.set_tick_params(direction='out')
     ax.yaxis.set_ticks_position('left')
-    ax.set_ylabel("Apparent Freeboard (m)")
+    ax.set_ylabel("Radar Freeboard (m)")
     ax.set_xlabel("Record #")
     ax.spines["left"].set_position(("axes", -0.01))
 
