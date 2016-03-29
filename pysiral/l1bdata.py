@@ -275,6 +275,7 @@ class L1bWaveforms(object):
         self._range = self._range[subset_list, :]
 
     def add_range_delta(self, range_delta):
+        # XXX: Should range delta needs to be reshaped?
         range_delta_reshaped = np.repeat(range_delta, self.n_range_bins)
         range_delta_reshaped = range_delta_reshaped.reshape(
             self.n_records, self.n_range_bins)
