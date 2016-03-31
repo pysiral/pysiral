@@ -388,6 +388,7 @@ class CryoSat2FileListAllModes(object):
         self.month = None
         self.pattern = ".DBL"
         self._list = deque([])
+        self._sorted_list = None
 
     def search(self):
         self._search_specific_mode_files("sar")
@@ -396,7 +397,7 @@ class CryoSat2FileListAllModes(object):
 
     @property
     def sorted_list(self):
-        return [item[0] for item in self._list]
+        return [item[0] for item in self._sorted_list]
 
     def _search_specific_mode_files(self, mode):
         search_toplevel_folder = self._get_toplevel_search_folder(mode)
@@ -421,11 +422,13 @@ class CryoSat2FileListAllModes(object):
         return folder
 
     def _get_list_item(self, filename, dirpath):
-        return [os.path.join(dirpath, filename), filename.split("_")[6]]
+        return (os.path.join(dirpath, filename), filename.split("_")[6])
 
     def _sort_mixed_mode_file_list(self):
         log.info("Sorting files")
-        self._list = sorted(self._list, key=itemgetter(1))
+        dtypes = [('path', object), ('start_time', object)]
+        self._sorted_list = np.array(self._list, dtype=dtypes)
+        self._sorted_list.sort(order='start_time')
         log.info("... done")
 
 
