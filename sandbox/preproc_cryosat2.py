@@ -95,7 +95,7 @@ def preproc_cryosat2():
     n = len(cryosat2_files.sorted_list)
     l1bdata_stack = []
     for i, cryosat2_l1b_file in enumerate(cryosat2_files.sorted_list):
-        if i < 15:
+        if i < 20:
             continue
         # Parse the current file and split into polar ocean segments
         log.info("Parsing file %g of %g: %s" % (i+1, n, cryosat2_l1b_file))
@@ -306,6 +306,85 @@ def rle(inarray):
 def concatenate_and_export_stack_files(l1bdata_stack):
     log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
     debug_stack_export_orbit_plot(l1bdata_stack)
+    # Concatenate the files
+#    l1b_merged = l1bdata_stack[0]
+#    l1bdata_stack.pop(0)
+#    for orbit_segment in l1bdata_stack:
+#        orbit_segment.reduce_sin_waveform_bin_count_to_sar()
+#        l1b_merged.append(orbit_segment)
+#    stop
+#    config = ConfigInfo()
+#    export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
+#    validate_folder(export_folder)
+#    config = ConfigInfo()
+#    ncfile = L1bNCfile()
+#    ncfile.l1b = l1b_merged
+#    ncfile.config = config
+#    ncfile.output_folder = export_folder
+#    ncfile.filename = export_filename
+#    ncfile.export()
+
+
+def l1bnc_filenaming(l1b, config):
+    """
+    Returns the standard export folder and filename of a level-1b netCDF
+    data file
+
+    Export Folder
+    -------------
+
+    Based on the ``l1bdata`` file for the specific mission in
+    ``local_machine_def.yaml`` in the pysiral main directory
+    with sub-folders for year, month
+
+    Filename
+    --------
+
+    Default l1bdata filename in pysiral::
+
+        l1bdat_v$VERS_$REG_$MISSION_$ORBIT_$YYYYMMDDHHMISS_$YYYYMMDDHHMISS.nc
+
+    :$VERS: l1bdata version [00 (beta)]
+    :$REG: region [north | south]
+    :$MISSION: mission short name [cryosat2 | envisat | ers1 | ...]
+    :$ORBIT: orbit/cylce number [ 00026000 ]
+    :$YYYYMMDDHHMISS: start and end time
+
+    """
+    # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
+    export_folder = config.local_machine.l1b_repository[l1b.mission].l1bdata
+    yyyy, mm = "04g" % l1b.start_time.year, "02g" % l1b.start_time.month
+    export_folder = os.path.join(export_folder, yyyy, mm)
+    # construct filename from
+    export_filename = "l1bdata_v{version:02g}_{region}_{mission}_" + \
+                      "{orbit:06g}_{startdt:%Y-%m-%d %H:%M:%S}_" + \
+                      "{startdt:%Y-%m-%d %H:%M:%S}.nc"
+    export_filename.format(
+        version=0, region=l1b.region, mission=l1b.mission, orbit=l1b.orbit,
+        startdt=l1b.start_time, stopdt=l1b.stop_time)
+    return export_folder, export_filename
+
+
+def validate_folder(folder):
+    """
+    Check if folder str is a existing folder, creates the folder if ``folder``
+    does not exist and is of valid notation
+    Returns status flag (True: valid and existing, False: invalid)
+    """
+    if os.path.exists(folder):
+        # Existing folder -> Valid
+        return True
+    if os.path.isabs(folder):
+        # Valid notation, try to create folder
+        try:
+            os.mkdir(folder)
+        except:
+            # Failed to create folder -> Invalid
+            return False
+        # Folder created -> Valid
+        return True
+    # not existing, not valid notation -> Invalid
+    return False
 
 
 def debug_stack_orbit_plot(l1b_stack, l1b_segments):
