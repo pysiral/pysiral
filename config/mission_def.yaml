@@ -56,6 +56,11 @@ cryosat2:
                 - ionospheric_mod
             docstr:
                 Source of Ionospheric Correction
+    preproc:
+        options:
+            polar_threshold: 50.0
+            max_connected_files_timedelta_seconds: 10
+            max_inner_nonocean_segment_nrecords: 1000
 
 envisat:
 

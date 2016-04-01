@@ -178,3 +178,25 @@ def file_basename(filename, fullpath=False):
     if fullpath:
         basename = os.path.join(strarr[0], basename)
     return basename
+
+
+def validate_folder(folder):
+    """
+    Check if folder str is a existing folder, creates the folder if ``folder``
+    does not exist and is of valid notation
+    Returns status flag (True: valid and existing, False: invalid)
+    """
+    if os.path.exists(folder):
+        # Existing folder -> Valid
+        return True
+    if os.path.isabs(folder):
+        # Valid notation, try to create folder
+        try:
+            os.mkdir(folder)
+        except:
+            # Failed to create folder -> Invalid
+            return False
+        # Folder created -> Valid
+        return True
+    # not existing, not valid notation -> Invalid
+    return False
