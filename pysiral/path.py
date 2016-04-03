@@ -57,7 +57,3 @@ def filename_from_path(path):
 
 def folder_from_filename(filename):
     return os.path.split(filename)[0]
-
-
-def filename_from_path(path):
-    return os.path.split(path)[1]
