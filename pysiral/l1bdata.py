@@ -158,6 +158,45 @@ class Level1bData(object):
         info.set_attribute("start_time", self.time_orbit.timestamp[0])
         info.set_attribute("stop_time", self.time_orbit.timestamp[-1])
 
+    def reduce_waveform_bin_count(self, target_count, maxloc=0.4):
+        """
+        Reduce the bin count of waveform power and range arrays.
+        (e.g. for merging CryoSat-2 SAR [256 bins] and SIN [1024 bins])
+
+        Creates a subset and updates the l1b.waveform container
+
+        Arguments
+        ---------
+        target_count (int)
+            target number of waveform bins
+            (needs to be smaller than full waveform bin count)
+
+        Keywords
+        --------
+        maxloc (float, default=0.4)
+            preferred location of the maximum of the waveform in the subset
+        """
+        # Extract original waveform
+        orig_power, orig_range = self.waveform.power, self.waveform.range
+        n_records, n_bins = orig_power.shape
+        # Get the bin with the waveform maximum
+        max_index = np.argmax(orig_power, axis=1)
+        # Compute number of leading and trailing bins
+        lead_bins = int(maxloc*target_count)
+        trail_bins = target_count-lead_bins
+        # Get the start/stop indeces for each waveform
+        start, stop = max_index - lead_bins, max_index + trail_bins
+        # Create new arrays
+        rebin_shape = (n_records, target_count)
+        power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
+        range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+        # Extract the waveform with reduced bin count
+        for i in np.arange(n_records):
+            power[i, :] = orig_power[i, start[i]:stop[i]]
+            range[i, :] = orig_range[i, start[i]:stop[i]]
+        # Push to waveform container
+        self.waveform.set_waveform_data(power, range, self.info.radar_mode)
+
     @property
     def n_records(self):
         return self.info.n_records
