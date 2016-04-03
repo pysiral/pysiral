@@ -77,6 +77,7 @@ def preproc_cryosat2():
 
     """ Start the CryoSat-2 pre-processor """
     job = CryoSat2PreProcJob()
+    job.config = config
     job.log = log
     job.files = cryosat2_files.sorted_list
     job.merge_and_export_polar_ocean_subsets()
