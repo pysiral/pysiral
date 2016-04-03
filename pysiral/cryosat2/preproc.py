@@ -9,6 +9,7 @@ from pysiral.l1bdata import L1bConstructor
 from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.path import validate_directory
+from pysiral.output import (l1bnc_filenaming, L1bDataNC)
 
 import numpy as np
 
@@ -151,15 +152,16 @@ class CryoSat2PreProcJob(object):
         Test if a CryoSat-2 l1b file has data over ocean in either Arctic
         of Antartic
         """
+        log = self.log
         # 1) test if either minimum or maximum latitude is in polar regions
         lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
         polar_threshold = self.options.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
-        # log.info("... is_in_polar_region: %s" % str(is_polar))
+        log.info("... is_in_polar_region: %s" % str(is_polar))
         # 2) test if there is any ocean data at all
         ocean = l1b.surface_type.get_by_name("ocean")
         has_ocean = ocean.num > 0
-        # log.info("... has_ocean: %s" % str(has_ocean))
+        log.info("... has_ocean: %s" % str(has_ocean))
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean
 
@@ -186,22 +188,25 @@ class CryoSat2PreProcJob(object):
         # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
         debug_stack_export_orbit_plot(l1bdata_stack)
         # Concatenate the files
-    #    l1b_merged = l1bdata_stack[0]
-    #    l1bdata_stack.pop(0)
-    #    for orbit_segment in l1bdata_stack:
-    #        orbit_segment.reduce_sin_waveform_bin_count_to_sar()
-    #        l1b_merged.append(orbit_segment)
-    #    stop
-    #    config = ConfigInfo()
-    #    export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
-    #    validate_folder(export_folder)
-    #    config = ConfigInfo()
-    #    ncfile = L1bNCfile()
-    #    ncfile.l1b = l1b_merged
-    #    ncfile.config = config
-    #    ncfile.output_folder = export_folder
-    #    ncfile.filename = export_filename
-    #    ncfile.export()
+        l1b_merged = l1bdata_stack[0]
+        l1bdata_stack.pop(0)
+        for orbit_segment in l1bdata_stack:
+            # Rebin
+            if orbit_segment.info.radar_mode == "sin":
+                orbit_segment.reduce_waveform_bin_count(256)
+            l1b_merged.append(orbit_segment)
+        stop
+        # Prepare data export
+        config = self.config
+        export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
+        validate_directory(export_folder)
+        # Export the data object
+        ncfile = L1bDataNC()
+        ncfile.l1b = l1b_merged
+        ncfile.config = config
+        ncfile.output_folder = export_folder
+        ncfile.filename = export_filename
+        ncfile.export()
 
     def _get_default_options(self):
         self.options = self.config.mission.cryosat2.preproc.options
