@@ -2,16 +2,26 @@ import os
 import glob
 
 
-def validate_directory(dir):
+def validate_directory(folder):
     """
-    Tests if given directory exists and creates directory if not
-
-    Arguments:
-        dir: str
-            Path to the directory
+    Check if folder str is a existing folder, creates the folder if ``folder``
+    does not exist and is of valid notation
+    Returns status flag (True: valid and existing, False: invalid)
     """
-    if not os.path.isdir(dir):
-        os.mkdir(dir)
+    if os.path.exists(folder):
+        # Existing folder -> Valid
+        return True
+    if os.path.isabs(folder):
+        # Valid notation, try to create folder
+        try:
+            os.mkdir(folder)
+        except:
+            # Failed to create folder -> Invalid
+            return False
+        # Folder created -> Valid
+        return True
+    # not existing, not valid notation -> Invalid
+    return False
 
 
 def file_basename(filename, fullpath=False):

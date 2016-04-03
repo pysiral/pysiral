@@ -8,6 +8,7 @@ Created on Thu Mar 31 20:52:32 2016
 from pysiral.l1bdata import L1bConstructor
 from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
+from pysiral.path import validate_directory
 
 import numpy as np
 
