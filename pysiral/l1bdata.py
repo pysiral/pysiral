@@ -439,11 +439,11 @@ class L1bWaveforms(object):
 
     @property
     def power(self):
-        return self._power
+        return np.copy(self._power)
 
     @property
     def range(self):
-        return self._range
+        return np.copy(self._range)
 
     @property
     def radar_mode(self):
