@@ -1,6 +1,7 @@
 import numpy as np
 from pyproj import Proj
 
+from matplotlib.collections import LineCollection
 
 class GeoPcolorGrid():
 
@@ -40,3 +41,14 @@ class GeoPcolorGrid():
         yp[self.n, self.m] = y[self.n-1, self.m-1] - dy
 
         self.longitude, self.latitude = p(xp, yp, inverse=True)
+
+
+def get_landcoastlines(basemap, color="0.0", linewidth=1):
+    landpolygons = np.where(np.array(basemap.coastpolygontypes) == 1)[0]
+    landsegs = []
+    for index in landpolygons:
+        landsegs.append(basemap.coastsegs[index])
+    landcoastlines = LineCollection(landsegs, antialiaseds=(1,))
+    landcoastlines.set_color(color)
+    landcoastlines.set_linewidth(linewidth)
+    return landcoastlines
