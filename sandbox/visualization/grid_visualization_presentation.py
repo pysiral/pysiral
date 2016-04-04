@@ -64,8 +64,8 @@ def create_background_image():
                 llcrnrlon=-180, urcrnrlon=180, resolution='i')
     m.drawmapboundary(color="none", fill_color='#003e6e')
     m.fillcontinents(color='#4b4b4d', lake_color='#4b4b4d')
-    coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.05)
-    plt.gca().add_collection(coastlines)
+#    coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.05)
+#    plt.gca().add_collection(coastlines)
     plt.savefig("temp.png", dpi=1200)
     plt.close()
 
