@@ -110,14 +110,16 @@ def test_visualization_arctic():
     x, y = pad, pad
     dx, dy = width - 2*pad, height-2*pad
 
-    patch = patches.FancyBboxPatch(
-        [x, y], dx, dy,
-        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
+#    patch = patches.FancyBboxPatch(
+#        [x, y], dx, dy,
+#        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
+    patch = patches.Circle((width/2, height/2), radius=width/2,
+                           transform=ax.transData)
     im.set_clip_path(patch)
 
-    plt.annotate("CryoSat-2", (0.05, 0.92), xycoords="axes fraction",
+    plt.annotate("CryoSat-2", (0.04, 0.93), xycoords="axes fraction",
                  color=fontcolor, fontsize=32)
-    plt.annotate("March 2015", (0.05, 0.88), xycoords="axes fraction",
+    plt.annotate("March 2015", (0.04, 0.89), xycoords="axes fraction",
                  color=fontcolor, fontsize=24)
     plt.axis('off')
 
@@ -127,7 +129,7 @@ def test_visualization_arctic():
     sm._A = []
     ax = plt.gca()
     cb_ax_kwargs = {'loc': 3,
-                    'bbox_to_anchor': (0.05, 0.83, 1, 1),
+                    'bbox_to_anchor': (0.04, 0.84, 1, 1),
                     'width': "30%",
                     'height': "2%",
                     'bbox_transform': ax.transAxes,
@@ -357,6 +359,6 @@ if __name__ == "__main__":
     for target in ["xtick.color", "ytick.color", "axes.edgecolor",
                    "axes.labelcolor"]:
         mpl.rcParams[target] = "#4b4b4d"
-    test_background_image_generation()
+    # test_background_image_generation()
     test_visualization_arctic()
     # test_visualization_antarctic()
