@@ -31,134 +31,438 @@ def test_background_image_generation():
     log = stdout_logger("test-background-image-generation")
     mapbackground_folder = get_map_background_folder()
 
-#    # Create a dark themed background with phong shading
-#    background = BasemapWarpimageBackground()
-#    background.log = log
-#    background.color = NSICDBackgroundColorScheme()
-#    background.shader = SpherePhongShading(60, -45)
-#    background.folder = mapbackground_folder
-#    background.filename = "basemap-background-north-dark.png"
-#    background.export_to_png()
-
-    # Create a light themed background with
+    # Create a dark themed background with phong shading
     background = BasemapWarpimageBackground()
     background.log = log
-    background.color = AWILightBackgroundColorScheme()
-    background.shader = SpherePhongShading(75, 0)
-    background.shader.phong_wet = PhongSettings(1.0, 0.2, 0.1, 5)
-    background.shader.phong_dry = PhongSettings(0.4, 0.4, 0.3, 5)
+    background.color = NSICDBackgroundColorScheme()
+    background.shader = SpherePhongShading(60, -45)
     background.folder = mapbackground_folder
-    background.filename = "basemap-background-north-light.png"
+    background.filename = "basemap-background-north-dark.png"
     background.export_to_png()
+
+#    # Create a light themed background with
+#    background = BasemapWarpimageBackground()
+#    background.log = log
+#    background.color = AWILightBackgroundColorScheme()
+#    background.shader = SpherePhongShading(90, 0)
+#    background.shader.phong_wet = PhongSettings(1.0, 0.2, 0.1, 5)
+#    background.shader.phong_dry = PhongSettings(0.4, 0.4, 0.3, 5)
+#    background.folder = mapbackground_folder
+#    background.filename = "basemap-background-north-light.png"
+#    background.export_to_png()
 
 
 def test_visualization_arctic():
-    lat_0 = 75
-    lon_0 = 0
-    fontcolor = "#4b4b4b"
-    grid_keyw = {"dashes": (None, None), "color": fontcolor,
-                 "linewidth": 0.1, "latmax": 84, "zorder": 120}
-#    wm = plt.get_current_fig_manager()
-#    wm.
-    figure = plt.figure("Grid Data Visualization",  figsize=(12, 12),
-                        facecolor="#ffffff")
-    #    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
-#                satellite_height=h*1000., resolution='l')
-    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
-                resolution='l')
-    m.warpimage(r"mapbackground\basemap-background-north-light.png",
-                scale=1.0, zorder=100)
-    m.drawmapboundary(color="#ffffff", fill_color="none", linewidth=2.0,
-                      zorder=300)
-#    x, y = m(grid.pcolor.longitude, grid.pcolor.latitude)
-#    data = getattr(grid, "sea_ice_thickness")
-#    dataMask = np.isnan(data)
-#    data = np.ma.masked_where(dataMask, data)
-#    m.pcolor(x, y, data, cmap=plt.get_cmap("plasma"), vmin=0, vmax=5,
-#             zorder=110)
 
-#    m.drawparallels(np.arange(-90., 120., 15.), **grid_keyw)
-#    m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
+    # projection needed for pcolor grid calculation
+    # needs to be saved in NC file in the future
+    projection = {
+        "proj": "laea",
+        "lat_0": -90.0,
+        "lon_0": 0.0,
+        "ellps": "WGS84",
+        "datum": "WGS84",
+        "units": "m"}
+    # Quick and dirty read the netcdf file
+    filename = os.path.join(
+        r"E:\awi\altim\product\optimal_interp\v3",
+        r"cs2_smos_ice_thickness_20151221_20151227.nc")
+    ncdata = NCMaskedGridData(filename)
 
-    plt.savefig("temp3.png", dpi=300, facecolor=figure.get_facecolor(),
-                bbox_inches="tight")
+    # Extract parameter and merge with metadata
+    data = GridMapParameter()
+    data.set_grid(ncdata.longitude, ncdata.latitude)
+    data.set_parameter(ncdata.analysis_thickness, "sea_ice_thickness")
+    data.set_projection(**projection)
 
-    figure_buffer = Image.open("temp3.png")
-    width_fract, height_fract = 0.60, 0.60
-    width = int(width_fract*figure_buffer.size[0])
-    height = int(height_fract*figure_buffer.size[1])
-    xpad, ypad = 0.40*(1.-width_fract), 0.5*(1.-height_fract)
-    ypad -= 0.4*(1.-height_fract)
-    xoff = int(xpad*figure_buffer.size[0])
-    yoff = int(ypad*figure_buffer.size[1])
-    x1, x2 = xoff, xoff+width
-    y1, y2 = yoff, yoff+height
-
-    figure_buffer = np.array(figure_buffer)
-    cropped_figure = figure_buffer[y1:y2, x1:x2, :]
-
-    import matplotlib.patches as patches
-
-    plt.figure(figsize=(12, 12), facecolor="#ffffff")
-    plt.gca().set_position([0, 0, 1, 1])
-
-    ax = plt.gca()
-    im = ax.imshow(cropped_figure)
-#    patch = patches.Circle((400, 400), radius=400, transform=ax.transData)
-
-    pad = int(0.15*width)
-    x, y = pad, pad
-    dx, dy = width - 2*pad, height-2*pad
-
-#    patch = patches.FancyBboxPatch(
-#        [x, y], dx, dy,
-#        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
-    patch = patches.Circle((width/2, height/2), radius=width/2,
-                           transform=ax.transData)
-    im.set_clip_path(patch)
-
-    plt.annotate("CryoSat-2", (0.04, 0.93), xycoords="axes fraction",
-                 color=fontcolor, fontsize=32)
-    plt.annotate("March 2015", (0.04, 0.89), xycoords="axes fraction",
-                 color=fontcolor, fontsize=24)
-    plt.axis('off')
-
-    sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
-                               norm=plt.Normalize(vmin=0, vmax=5))
-    # fake up the array of the scalar mappable. Urgh...
-    sm._A = []
-    ax = plt.gca()
-    cb_ax_kwargs = {'loc': 3,
-                    'bbox_to_anchor': (0.04, 0.84, 1, 1),
-                    'width': "30%",
-                    'height': "2%",
-                    'bbox_transform': ax.transAxes,
-                    'borderpad': 0}
-    ticks = MultipleLocator(1)
-    axins = inset_axes(ax, **cb_ax_kwargs)
-    cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
-    cl = plt.getp(cb.ax, 'xmajorticklabels')
-    plt.setp(cl, fontsize=22, color=fontcolor)
-    cb.set_label("Sea Ice Thickness (m)", fontsize=22, color=fontcolor)
-    cb.outline.set_linewidth(0.2)
-    cb.outline.set_alpha(0.0)
-    for t in cb.ax.get_yticklines():
-        t.set_color("1.0")
-    cb.ax.tick_params('both', length=0.1, which='major', pad=10)
-    plt.sca(ax)
-    # Add the plane marker at the last point.
-    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-    logo = np.array(Image.open('AWI_Logo_Blau_RGB.png'))
-    im = OffsetImage(logo, zoom=0.20, resample=True, alpha=0.75)
-    ab = AnnotationBbox(im, (0.95, 0.89), xycoords='axes fraction',
-                        frameon=False, box_alignment=(1, 0))
-    # Get the axes object from the basemap and add the AnnotationBbox artist
-    plt.gca().add_artist(ab)
-    plt.show()
+    # Create the map
+    output = os.path.join(
+        r"E:\awi\altim\product\optimal_interp\v3\visuals",
+        r"cs2_smos_ice_thickness_20151221_20151227_analysis_thickness.png")
+    gridmap = ArcticGridMap()
+    gridmap.data = data
+    gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
+    gridmap.label.period = "2015-12-21 till 2015-12-27"
+    gridmap.save2png(output)
 
 
 def test_visualization_antarctic():
     pass
+
+
+class NCMaskedGridData(object):
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.parse()
+
+    def parse(self):
+        from pysiral.iotools import ReadNC
+        nc = ReadNC(self.filename)
+        for parameter in nc.parameters:
+            data = np.ma.array(getattr(nc, parameter))
+            data.mask = np.isnan(data)
+            setattr(self, parameter, data)
+
+
+class GridMapParameter():
+    """
+    Contains data, pcolor grid calculation capability, colormap definition
+    and standardized parameter naming
+    """
+
+    def __init__(self):
+        from pysiral.config import get_parameter_definitions
+        self._parameter_definitions = get_parameter_definitions()
+        self._projection = None
+        self.latitude = None
+        self.longitude = None
+        self.grid = None
+        self.pgrid = None
+        self.pardef = None
+
+    def set_grid(self, longitude, latitude):
+        self.longitude = longitude
+        self.latitude = latitude
+
+    def set_parameter(self, grid, parameter_name):
+        self.grid = grid
+        self.pardef = self._parameter_definitions[parameter_name]
+
+    def set_projection(self, **projection):
+        from pysiral.maptools import GeoPcolorGrid
+        self.pgrid = GeoPcolorGrid(self.longitude, self.latitude)
+        self.pgrid.calc_from_proj(**projection)
+
+
+class ArcticGridMap(object):
+
+    def __init__(self):
+        self.output = None
+        self.temp_file = get_temp_png_filename()
+        self.data = None
+        self.style = GridMapAWIStyle()
+        self.label = GridMapLabels()
+
+    @property
+    def projection(self):
+        return {"projection": "ortho", "lon_0": 0, "lat_0": 75,
+                "resolution": "l"}
+
+    def save2png(self, output):
+        self.output = output
+        # 1. Create Orthographic map with data plot
+        self._create_orthographic_map()
+        # 2. Crop and clip Orthographic map, add labels, save
+        self._crop_orthographic_map()
+        # Remove tempory fils
+        self._clean_up()
+
+    def _create_orthographic_map(self):
+        # switch off interactive plotting
+        plt.ioff()
+        figure = plt.figure(**self.style.figure.keyw)
+        m = Basemap(**self.projection)
+        # load the (shaded) background
+        filename = self.style.background.get_filename("north")
+        m.warpimage(filename, **self.style.background.keyw)
+        # coastline
+        coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.5)
+        plt.gca().add_collection(coastlines, zorder=120)
+        # Plot the data as pcolor grid
+        data = self.data
+        x, y = m(data.pgrid.longitude, data.pgrid.latitude)
+        cmap = plt.get_cmap(data.pardef.cmap.name)
+        vmin, vmax = data.pardef.cmap.vmin, data.pardef.cmap.vmax
+        m.pcolor(x, y, data.grid, cmap=cmap, vmin=vmin, vmax=vmax, zorder=110)
+        # Draw the grid
+        # XXX: Skip for noe
+        plt.savefig(self.temp_file, dpi=600, facecolor=figure.get_facecolor(),
+                    bbox_inches="tight")
+        plt.close(figure)
+
+    def _crop_orthographic_map(self):
+        fontcolor = "#bcbdbf"
+        # Read the temporary files
+        # (only this works, else the image size is capped by screen resolution
+        # TODO: try with plt.ioff()
+        image = Image.open(self.temp_file)
+        imarr = np.array(image)
+        # crop the full orthographic image, do not change projections
+        x1, x2, y1, y2 = self.style.crop.get_crop_region(image.size)
+        cropped_image = imarr[y1:y2, x1:x2, :]
+        # Create a new figure
+        figure = plt.figure(**self.style.figure.keyw)
+        ax = plt.gca()
+        ax.set_position([0, 0, 1, 1])
+        # Display cropped image
+        im = ax.imshow(cropped_image)
+        # clip the image
+        if self.style.clip.is_active:
+            patch = self.style.clip.get_patch(x1, x2, y1, y2, ax)
+            im.set_clip_path(patch)
+        # Add labels
+        plt.annotate(self.label.title, (0.04, 0.93), xycoords="axes fraction",
+                     color=fontcolor, fontsize=32)
+        plt.annotate(self.label.period, (0.04, 0.89), xycoords="axes fraction",
+                     color=fontcolor, fontsize=24)
+        plt.axis('off')
+        # Add colorbar
+        vmin, vmax = self.data.pardef.cmap.vmin, self.data.pardef.cmap.vmax
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
+                                   norm=plt.Normalize(vmin=vmin, vmax=vmax))
+        sm._A = []
+        ax = plt.gca()
+        cb_ax_kwargs = {
+            'loc': 3, 'bbox_to_anchor': (0.04, 0.84, 1, 1),
+            'width': "30%", 'height': "2%", 'bbox_transform': ax.transAxes,
+            'borderpad': 0}
+        ticks = MultipleLocator(1)
+        axins = inset_axes(ax, **cb_ax_kwargs)
+        cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
+        cl = plt.getp(cb.ax, 'xmajorticklabels')
+        plt.setp(cl, fontsize=22, color=fontcolor)
+        parameter_label = self.data.pardef.label
+        cb.set_label(parameter_label, fontsize=22, color=fontcolor)
+        cb.outline.set_linewidth(0.2)
+        cb.outline.set_alpha(0.0)
+        for t in cb.ax.get_yticklines():
+            t.set_color("1.0")
+        cb.ax.tick_params('both', length=0.1, which='major', pad=10)
+        plt.sca(ax)
+
+        # Add the plane marker at the last point.
+        from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+        logo_filename = self.style.logo.get_filename()
+        logo = np.array(Image.open(logo_filename))
+        im = OffsetImage(logo, **self.style.logo.keyw)
+        ab = AnnotationBbox(im, (0.95, 0.89), xycoords='axes fraction',
+                            frameon=False, box_alignment=(1, 0))
+        ax.add_artist(ab)
+        # Now save the map
+        plt.savefig(self.output, dpi=600, facecolor=figure.get_facecolor(),
+                    bbox_inches="tight", pad_inches=0.1)
+        plt.close(figure)
+
+    def _clean_up(self):
+        print self.temp_file
+        # os.remove(self.temp_file)
+
+
+class GridMapAWIStyle(object):
+
+    def __init__(self):
+        self.figure = BasemapStyleDef()
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#000000")
+        self.mapboundary = BasemapStyleDef()
+        self.grid = BasemapGridDef()
+        self.crop = BasemapOrthoCrop()
+        self.clip = BasemapImageClip()
+        self.background = GridMapBackground()
+        self.logo = GridMapLogo()
+
+
+class GridMapLabels(object):
+
+    def __init__(self):
+        self.title = ""
+        self.period = ""
+        self.copyright = ""
+
+
+class GridMapBackground(object):
+
+    def __init__(self):
+        self.hemispere = "north"
+        self.tag = "dark"
+        self.keyw = {"scale": 1.0, "zorder": 100}
+
+    def get_filename(self, hemisphere):
+        filename = os.path.join(
+            "mapbackground",
+            "basemap-background-{hemisphere}-{tag}.png".format(
+                hemisphere=self.hemispere, tag=self.tag))
+        return filename
+
+
+class GridMapLogo(object):
+
+    def __init__(self):
+        self.is_active = True
+        self.tag = "awi-white"
+        self.keyw = {"zoom": 1.0, "resample": True, "alpha": 0.75}
+
+    def get_filename(self):
+        filename = os.path.join(
+            "logo", "logo-{tag}.png".format(tag=self.tag))
+        return filename
+
+
+class BasemapStyleDef(object):
+
+    def __init__(self):
+        self.is_active = True
+        self.keyw = {}
+
+    def set_keyw(self, **keyw):
+        self.keyw = keyw
+        for key in keyw.keys():
+            setattr(self, key, keyw[key])
+
+
+class BasemapGridDef(object):
+
+    def __init__(self):
+        self.is_active = True
+        self.parallels = []
+        self.meridians = []
+        self.keyw = []
+
+    def add_grid(self, parallels, meridians, **keyw):
+        self.parallels.append(parallels)
+        self.meridians.append(meridians)
+        self.keyw.append(keyw)
+
+    def get_grids(self):
+        return [self.parallels, self.meridians, self.keyw]
+
+
+class BasemapOrthoCrop(object):
+
+    def __init__(self):
+        self.width_fract = 0.60
+        self.height_fract = 0.60
+        self.xpad_fact = 0.40
+        self.ypad_fact = 0.50
+        self.size = (0, 0)
+
+    def get_crop_region(self, orig_size):
+        self.size = orig_size
+        self.width = int(self.width_fract*self.size[0])
+        self.height = int(self.height_fract*self.size[1])
+        xpad, ypad = 0.40*(1.-self.width_fract), 0.5*(1.-self.height_fract)
+        ypad -= 0.4*(1.-self.height_fract)
+        xoff = int(xpad*self.size[0])
+        yoff = int(ypad*self.size[1])
+        x1, x2 = xoff, xoff+self.width
+        y1, y2 = yoff, yoff+self.height
+        return x1, x2, y1, y2
+
+
+class BasemapImageClip(object):
+
+    def __init__(self):
+        self.is_active = False
+
+    def get_patch(self, x1, x2, y1, y2, ax):
+        import matplotlib.patches as patches
+        width, height = x2-x1, y2-y1
+        patch = patches.Circle((width/2, height/2), radius=width/2,
+                               transform=ax.transData)
+        return patch
+
+#    lat_0 = 75
+#    lon_0 = 0
+#    fontcolor = "#4b4b4b"
+#    grid_keyw = {"dashes": (None, None), "color": fontcolor,
+#                 "linewidth": 0.1, "latmax": 84, "zorder": 120}
+##    wm = plt.get_current_fig_manager()
+##    wm.
+#    figure = plt.figure("Grid Data Visualization",  figsize=(12, 12),
+#                        facecolor="#ffffff")
+#    #    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
+##                satellite_height=h*1000., resolution='l')
+#    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
+#                resolution='l')
+#    m.warpimage(r"mapbackground\basemap-background-north-light.png",
+#                scale=1.0, zorder=100)
+#    m.drawmapboundary(color="#ffffff", fill_color="none", linewidth=2.0,
+#                      zorder=300)
+##    x, y = m(grid.pcolor.longitude, grid.pcolor.latitude)
+##    data = getattr(grid, "sea_ice_thickness")
+##    dataMask = np.isnan(data)
+##    data = np.ma.masked_where(dataMask, data)
+##    m.pcolor(x, y, data, cmap=plt.get_cmap("plasma"), vmin=0, vmax=5,
+##             zorder=110)
+#
+##    m.drawparallels(np.arange(-90., 120., 15.), **grid_keyw)
+##    m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
+#
+#    plt.savefig("temp3.png", dpi=300, facecolor=figure.get_facecolor(),
+#                bbox_inches="tight")
+#
+#    figure_buffer = Image.open("temp3.png")
+#    width_fract, height_fract = 0.60, 0.60
+#    width = int(width_fract*figure_buffer.size[0])
+#    height = int(height_fract*figure_buffer.size[1])
+#    xpad, ypad = 0.40*(1.-width_fract), 0.5*(1.-height_fract)
+#    ypad -= 0.4*(1.-height_fract)
+#    xoff = int(xpad*figure_buffer.size[0])
+#    yoff = int(ypad*figure_buffer.size[1])
+#    x1, x2 = xoff, xoff+width
+#    y1, y2 = yoff, yoff+height
+#
+#    figure_buffer = np.array(figure_buffer)
+#    cropped_figure = figure_buffer[y1:y2, x1:x2, :]
+#
+#    import matplotlib.patches as patches
+#
+#    plt.figure(figsize=(12, 12), facecolor="#ffffff")
+#    plt.gca().set_position([0, 0, 1, 1])
+#
+#    ax = plt.gca()
+#    im = ax.imshow(cropped_figure)
+##    patch = patches.Circle((400, 400), radius=400, transform=ax.transData)
+#
+#    pad = int(0.15*width)
+#    x, y = pad, pad
+#    dx, dy = width - 2*pad, height-2*pad
+#
+##    patch = patches.FancyBboxPatch(
+##        [x, y], dx, dy,
+##        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
+#    patch = patches.Circle((width/2, height/2), radius=width/2,
+#                           transform=ax.transData)
+#    im.set_clip_path(patch)
+#
+#    plt.annotate("CryoSat-2", (0.04, 0.93), xycoords="axes fraction",
+#                 color=fontcolor, fontsize=32)
+#    plt.annotate("March 2015", (0.04, 0.89), xycoords="axes fraction",
+#                 color=fontcolor, fontsize=24)
+#    plt.axis('off')
+#
+#    sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
+#                               norm=plt.Normalize(vmin=0, vmax=5))
+#    # fake up the array of the scalar mappable. Urgh...
+#    sm._A = []
+#    ax = plt.gca()
+#    cb_ax_kwargs = {'loc': 3,
+#                    'bbox_to_anchor': (0.04, 0.84, 1, 1),
+#                    'width': "30%",
+#                    'height': "2%",
+#                    'bbox_transform': ax.transAxes,
+#                    'borderpad': 0}
+#    ticks = MultipleLocator(1)
+#    axins = inset_axes(ax, **cb_ax_kwargs)
+#    cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
+#    cl = plt.getp(cb.ax, 'xmajorticklabels')
+#    plt.setp(cl, fontsize=22, color=fontcolor)
+#    cb.set_label("Sea Ice Thickness (m)", fontsize=22, color=fontcolor)
+#    cb.outline.set_linewidth(0.2)
+#    cb.outline.set_alpha(0.0)
+#    for t in cb.ax.get_yticklines():
+#        t.set_color("1.0")
+#    cb.ax.tick_params('both', length=0.1, which='major', pad=10)
+#    plt.sca(ax)
+#    # Add the plane marker at the last point.
+#    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+#    logo = np.array(Image.open('AWI_Logo_Blau_RGB.png'))
+#    im = OffsetImage(logo, zoom=0.20, resample=True, alpha=0.75)
+#    ab = AnnotationBbox(im, (0.95, 0.89), xycoords='axes fraction',
+#                        frameon=False, box_alignment=(1, 0))
+#    # Get the axes object from the basemap and add the AnnotationBbox artist
+#    plt.gca().add_artist(ab)
+#    plt.show()
 
 
 class BasemapWarpimageBackground(object):
@@ -185,8 +489,7 @@ class BasemapWarpimageBackground(object):
         self._clean_up_temp_file()
 
     def _get_temp_file(self):
-        self._temp_plain_background_map = os.path.join(
-            tempfile.tempdir, str(uuid.uuid4())+".png")
+        self._temp_plain_background_map = get_temp_png_filename()
         self.log.info("Create temp file: %s" % self._temp_plain_background_map)
 
     def _create_plain_background_map(self):
@@ -252,8 +555,8 @@ class SpherePhongShading(BackgroundShader):
         # Nadir point of assumed illumination point
         self.lat0 = lat0 * -1.0  # Accounts for array orientation
         self.lon0 = lon0
-        self.phong_wet = PhongSettings(0.1, 0.5, 0.6, 35)
-        self.phong_dry = PhongSettings(0.3, 0.6, 0.15, 5)
+        self.phong_wet = PhongSettings(0.0, 0.2, 1.0, 30)
+        self.phong_dry = PhongSettings(0.1, 0.1, 1.0, 5)
         self.shader = ShaderSettings([0, 0, 0, 0])
         self.imsize = None
         self.landmask_resolution = "i"
@@ -279,8 +582,8 @@ class SpherePhongShading(BackgroundShader):
         is_land = self._get_landmask()
         intensity[is_land] = intensity_dry[is_land]
         # Make sure intensity <= 1
-        is_too_high = np.where(intensity > 1.)
-        intensity[is_too_high] = 0.999
+#        is_too_high = np.where(intensity > 1.)
+#        intensity[is_too_high] = 0.999
         is_too_low = np.where(intensity < 0.)
         intensity[is_too_low] = 0.
         # Create an image object [0-1] with intensity as alpha channel
@@ -349,16 +652,31 @@ class ShaderSettings(object):
         self.start_rgba = tuple(rgba)
 
 
+def get_temp_png_filename():
+    return os.path.join(tempfile.tempdir, str(uuid.uuid4())+".png")
+
+
 def get_map_background_folder():
     return os.path.join(os.path.abspath(
         folder_from_filename(__file__)), "mapbackground")
 
+
+def get_landcoastlines(basemap, color="0.0", linewidth=1):
+    from matplotlib.collections import LineCollection
+    landpolygons = np.where(np.array(basemap.coastpolygontypes) == 1)[0]
+    landsegs = []
+    for index in landpolygons:
+        landsegs.append(basemap.coastsegs[index])
+    landcoastlines = LineCollection(landsegs, antialiaseds=(1,))
+    landcoastlines.set_color(color)
+    landcoastlines.set_linewidth(linewidth)
+    return landcoastlines
 
 if __name__ == "__main__":
     mpl.rcParams['font.sans-serif'] = "arial"
     for target in ["xtick.color", "ytick.color", "axes.edgecolor",
                    "axes.labelcolor"]:
         mpl.rcParams[target] = "#4b4b4d"
-    # test_background_image_generation()
+    test_background_image_generation()
     test_visualization_arctic()
     # test_visualization_antarctic()
