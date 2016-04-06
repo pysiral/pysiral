@@ -556,7 +556,7 @@ class SpherePhongShading(BackgroundShader):
         self.lat0 = lat0 * -1.0  # Accounts for array orientation
         self.lon0 = lon0
         self.phong_wet = PhongSettings(0.0, 0.2, 1.0, 30)
-        self.phong_dry = PhongSettings(0.1, 0.5, 0.9, 5)
+        self.phong_dry = PhongSettings(0.1, 0.6, 0.4, 5)
         self.shader = ShaderSettings([0, 0, 0, 0])
         self.imsize = None
         self.landmask_resolution = "i"
