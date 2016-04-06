@@ -117,6 +117,11 @@ def get_pysiral_local_path():
     return directory
 
 
+def get_parameter_definitions():
+    config = ConfigInfo()
+    return config.parameter.definition
+
+
 def td_branches(t):
     """ Convinience function to get only the branches of a treedict object """
     try:
