@@ -167,8 +167,8 @@ class ArcticGridMap(object):
         filename = self.style.background.get_filename("north")
         m.warpimage(filename, **self.style.background.keyw)
         # coastline
-        coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.5)
-        plt.gca().add_collection(coastlines, zorder=120)
+        coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.1)
+        plt.gca().add_collection(coastlines)
         # Plot the data as pcolor grid
         data = self.data
         x, y = m(data.pgrid.longitude, data.pgrid.latitude)
@@ -556,7 +556,7 @@ class SpherePhongShading(BackgroundShader):
         self.lat0 = lat0 * -1.0  # Accounts for array orientation
         self.lon0 = lon0
         self.phong_wet = PhongSettings(0.0, 0.2, 1.0, 30)
-        self.phong_dry = PhongSettings(0.1, 0.1, 1.0, 5)
+        self.phong_dry = PhongSettings(0.1, 0.5, 0.9, 5)
         self.shader = ShaderSettings([0, 0, 0, 0])
         self.imsize = None
         self.landmask_resolution = "i"
@@ -667,7 +667,7 @@ def get_landcoastlines(basemap, color="0.0", linewidth=1):
     landsegs = []
     for index in landpolygons:
         landsegs.append(basemap.coastsegs[index])
-    landcoastlines = LineCollection(landsegs, antialiaseds=(1,))
+    landcoastlines = LineCollection(landsegs, antialiaseds=(1,), zorder=120)
     landcoastlines.set_color(color)
     landcoastlines.set_linewidth(linewidth)
     return landcoastlines
