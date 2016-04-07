@@ -10,7 +10,6 @@ Sandbox for a more operational version of the visualization part of pysiral
 from pysiral.path import folder_from_filename
 from pysiral.logging import stdout_logger
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.ticker import MultipleLocator
@@ -46,7 +45,7 @@ def test_background_image_generation():
     background.color = AWILightBackgroundColorScheme()
     background.shader = SpherePhongShading(90, 0)
     background.shader.phong_wet = PhongSettings(1.0, 0.0, 0.0, 5)
-    background.shader.phong_dry = PhongSettings(0.3, 0.5, 0.6, 5)
+    background.shader.phong_dry = PhongSettings(0.3, 0.7, 0.4, 10)
     background.folder = mapbackground_folder
     background.filename = "basemap-background-north-light.png"
     background.export_to_png()
@@ -76,15 +75,15 @@ def test_visualization_arctic():
     data.set_projection(**projection)
 
     # Create the map
-    output = os.path.join(
-        r"testdata",
-        r"cs2smos_20160208_20160214_analysis_thickness_dark.png")
-    gridmap = ArcticGridPresentationMap()
-    gridmap.style = GridMapAWIDarkStyle()
-    gridmap.data = data
-    gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
-    gridmap.label.period = "Feb. 08 till Feb 14., 2016"
-    gridmap.save2png(output)
+#    output = os.path.join(
+#        r"testdata",
+#        r"cs2smos_20160208_20160214_analysis_thickness_dark.png")
+#    gridmap = ArcticGridPresentationMap()
+#    gridmap.style = GridMapAWIDarkStyle()
+#    gridmap.data = data
+#    gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
+#    gridmap.label.period = "Feb. 08 till Feb. 14, 2016"
+#    gridmap.save2png(output)
 
     # Light style map
     output = os.path.join(
@@ -94,7 +93,7 @@ def test_visualization_arctic():
     gridmap.style = GridMapAWILightStyle()
     gridmap.data = data
     gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
-    gridmap.label.period = "Feb. 08 till Feb 14., 2016"
+    gridmap.label.period = "Feb. 08 till Feb. 14, 2016"
     gridmap.save2png(output)
 
 
@@ -431,109 +430,6 @@ class BasemapImageClip(object):
         patch = patches.Circle((width/2, height/2), radius=width/2,
                                transform=ax.transData)
         return patch
-
-#    lat_0 = 75
-#    lon_0 = 0
-#    fontcolor = "#4b4b4b"
-#    grid_keyw = {"dashes": (None, None), "color": fontcolor,
-#                 "linewidth": 0.1, "latmax": 84, "zorder": 120}
-##    wm = plt.get_current_fig_manager()
-##    wm.
-#    figure = plt.figure("Grid Data Visualization",  figsize=(12, 12),
-#                        facecolor="#ffffff")
-#    #    m = Basemap(projection='nsper', lon_0=lon_0, lat_0=lat_0,
-##                satellite_height=h*1000., resolution='l')
-#    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0,
-#                resolution='l')
-#    m.warpimage(r"mapbackground\basemap-background-north-light.png",
-#                scale=1.0, zorder=100)
-#    m.drawmapboundary(color="#ffffff", fill_color="none", linewidth=2.0,
-#                      zorder=300)
-##    x, y = m(grid.pcolor.longitude, grid.pcolor.latitude)
-##    data = getattr(grid, "sea_ice_thickness")
-##    dataMask = np.isnan(data)
-##    data = np.ma.masked_where(dataMask, data)
-##    m.pcolor(x, y, data, cmap=plt.get_cmap("plasma"), vmin=0, vmax=5,
-##             zorder=110)
-#
-##    m.drawparallels(np.arange(-90., 120., 15.), **grid_keyw)
-##    m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
-#
-#    plt.savefig("temp3.png", dpi=300, facecolor=figure.get_facecolor(),
-#                bbox_inches="tight")
-#
-#    figure_buffer = Image.open("temp3.png")
-#    width_fract, height_fract = 0.60, 0.60
-#    width = int(width_fract*figure_buffer.size[0])
-#    height = int(height_fract*figure_buffer.size[1])
-#    xpad, ypad = 0.40*(1.-width_fract), 0.5*(1.-height_fract)
-#    ypad -= 0.4*(1.-height_fract)
-#    xoff = int(xpad*figure_buffer.size[0])
-#    yoff = int(ypad*figure_buffer.size[1])
-#    x1, x2 = xoff, xoff+width
-#    y1, y2 = yoff, yoff+height
-#
-#    figure_buffer = np.array(figure_buffer)
-#    cropped_figure = figure_buffer[y1:y2, x1:x2, :]
-#
-#    import matplotlib.patches as patches
-#
-#    plt.figure(figsize=(12, 12), facecolor="#ffffff")
-#    plt.gca().set_position([0, 0, 1, 1])
-#
-#    ax = plt.gca()
-#    im = ax.imshow(cropped_figure)
-##    patch = patches.Circle((400, 400), radius=400, transform=ax.transData)
-#
-#    pad = int(0.15*width)
-#    x, y = pad, pad
-#    dx, dy = width - 2*pad, height-2*pad
-#
-##    patch = patches.FancyBboxPatch(
-##        [x, y], dx, dy,
-##        boxstyle=patches.BoxStyle("Round", pad=pad), transform=ax.transData)
-#    patch = patches.Circle((width/2, height/2), radius=width/2,
-#                           transform=ax.transData)
-#    im.set_clip_path(patch)
-#
-#    plt.annotate("CryoSat-2", (0.04, 0.93), xycoords="axes fraction",
-#                 color=fontcolor, fontsize=32)
-#    plt.annotate("March 2015", (0.04, 0.89), xycoords="axes fraction",
-#                 color=fontcolor, fontsize=24)
-#    plt.axis('off')
-#
-#    sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
-#                               norm=plt.Normalize(vmin=0, vmax=5))
-#    # fake up the array of the scalar mappable. Urgh...
-#    sm._A = []
-#    ax = plt.gca()
-#    cb_ax_kwargs = {'loc': 3,
-#                    'bbox_to_anchor': (0.04, 0.84, 1, 1),
-#                    'width': "30%",
-#                    'height': "2%",
-#                    'bbox_transform': ax.transAxes,
-#                    'borderpad': 0}
-#    ticks = MultipleLocator(1)
-#    axins = inset_axes(ax, **cb_ax_kwargs)
-#    cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
-#    cl = plt.getp(cb.ax, 'xmajorticklabels')
-#    plt.setp(cl, fontsize=22, color=fontcolor)
-#    cb.set_label("Sea Ice Thickness (m)", fontsize=22, color=fontcolor)
-#    cb.outline.set_linewidth(0.2)
-#    cb.outline.set_alpha(0.0)
-#    for t in cb.ax.get_yticklines():
-#        t.set_color("1.0")
-#    cb.ax.tick_params('both', length=0.1, which='major', pad=10)
-#    plt.sca(ax)
-#    # Add the plane marker at the last point.
-#    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-#    logo = np.array(Image.open('AWI_Logo_Blau_RGB.png'))
-#    im = OffsetImage(logo, zoom=0.20, resample=True, alpha=0.75)
-#    ab = AnnotationBbox(im, (0.95, 0.89), xycoords='axes fraction',
-#                        frameon=False, box_alignment=(1, 0))
-#    # Get the axes object from the basemap and add the AnnotationBbox artist
-#    plt.gca().add_artist(ab)
-#    plt.show()
 
 
 class BasemapWarpimageBackground(object):
