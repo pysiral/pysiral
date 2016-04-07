@@ -227,3 +227,7 @@ pip-log.txt
 .mr.developer.cfg
 *.pickle
 sandbox/visualization/temp3.png
+sandbox/visualization/font/NeoSansW1G-Italic.otf
+sandbox/visualization/font/NeoSansW1G-Medium.otf
+sandbox/visualization/font/NeoSansW1G-MediumItalic.otf
+sandbox/visualization/font/NeoSansW1G-Regular.otf
