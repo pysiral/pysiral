@@ -56,9 +56,9 @@ class ArcticGridPresentationMap(object):
         # Plot the data as pcolor grid
         data = self.data
         x, y = m(data.pgrid.longitude, data.pgrid.latitude)
-        cmap = plt.get_cmap(data.pardef.cmap.name)
-        vmin, vmax = data.pardef.cmap.vmin, data.pardef.cmap.vmax
-        m.pcolor(x, y, data.grid, cmap=cmap, vmin=vmin, vmax=vmax, zorder=110)
+        cmap = data.get_cmap()
+        m.pcolor(x, y, data.grid, cmap=plt.get_cmap(cmap.name),
+                 vmin=cmap.vmin, vmax=cmap.vmax, zorder=110)
         # Draw the grid
         # XXX: Skip for noe
         plt.savefig(self.temp_file, dpi=600, facecolor=figure.get_facecolor(),
@@ -91,15 +91,16 @@ class ArcticGridPresentationMap(object):
         plt.annotate(self.label.period, (0.04, 0.89), xycoords="axes fraction",
                      **self.style.font.period)
         # Add colorbar
-        vmin, vmax = self.data.pardef.cmap.vmin, self.data.pardef.cmap.vmax
-        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
-                                   norm=plt.Normalize(vmin=vmin, vmax=vmax))
+        cmap = self.data.get_cmap()
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap(cmap.name),
+                                   norm=plt.Normalize(vmin=cmap.vmin,
+                                                      vmax=cmap.vmax))
         sm._A = []
         cb_ax_kwargs = {
             'loc': 3, 'bbox_to_anchor': (0.04, 0.84, 1, 1),
             'width': "30%", 'height': "2%", 'bbox_transform': ax.transAxes,
             'borderpad': 0}
-        ticks = MultipleLocator(1)
+        ticks = MultipleLocator(cmap.step)
         axins = inset_axes(ax, **cb_ax_kwargs)
         cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
         cl = plt.getp(cb.ax, 'xmajorticklabels')
