@@ -57,3 +57,7 @@ def filename_from_path(path):
 
 def folder_from_filename(filename):
     return os.path.split(filename)[0]
+
+
+def get_module_folder(module):
+    return os.path.dirname(os.path.realpath(module))
