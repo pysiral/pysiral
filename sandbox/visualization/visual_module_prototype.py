@@ -46,7 +46,7 @@ def test_background_image_generation():
     background.color = AWILightBackgroundColorScheme()
     background.shader = SpherePhongShading(90, 0)
     background.shader.phong_wet = PhongSettings(1.0, 0.0, 0.0, 5)
-    background.shader.phong_dry = PhongSettings(0.4, 0.4, 0.3, 5)
+    background.shader.phong_dry = PhongSettings(0.3, 0.5, 0.6, 5)
     background.folder = mapbackground_folder
     background.filename = "basemap-background-north-light.png"
     background.export_to_png()
@@ -133,6 +133,9 @@ class GridMapParameter():
         self.pgrid = None
         self.pardef = None
 
+    def get_label(self):
+        return self.pardef.label+" ("+self.pardef.unit+")"
+
     def set_grid(self, longitude, latitude):
         self.longitude = longitude
         self.latitude = latitude
@@ -179,8 +182,9 @@ class ArcticGridPresentationMap(object):
         filename = self.style.background.get_filename("north")
         m.warpimage(filename, **self.style.background.keyw)
         # coastline
-        coastlines = get_landcoastlines(m, color="#bcbdbf", linewidth=0.1)
-        plt.gca().add_collection(coastlines)
+        if self.style.coastlines.is_active:
+            coastlines = get_landcoastlines(m, **self.style.coastlines.keyw)
+            plt.gca().add_collection(coastlines)
         # Plot the data as pcolor grid
         data = self.data
         x, y = m(data.pgrid.longitude, data.pgrid.latitude)
@@ -232,7 +236,7 @@ class ArcticGridPresentationMap(object):
         cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
         cl = plt.getp(cb.ax, 'xmajorticklabels')
         plt.setp(cl, **self.style.font.label)
-        parameter_label = self.data.pardef.label
+        parameter_label = self.data.get_label()
         cb.set_label(parameter_label, **self.style.font.label)
         cb.outline.set_linewidth(0.2)
         cb.outline.set_alpha(0.0)
@@ -265,6 +269,7 @@ class GridMapAWIStyle(object):
         self.figure = BasemapStyleDef()
         self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
         self.mapboundary = BasemapStyleDef()
+        self.coastlines = BasemapStyleDef()
         self.grid = BasemapGridDef()
         self.crop = BasemapOrthoCrop()
         self.clip = BasemapImageClip()
@@ -278,6 +283,8 @@ class GridMapAWIDarkStyle(GridMapAWIStyle):
     def __init__(self):
         super(GridMapAWIDarkStyle, self).__init__()
         self.figure.set_keyw(figsize=(12, 12), facecolor="#000000")
+        self.coastlines.is_active = True
+        self.coastlines.set_keyw(color="#bcbdbf", linewidth=0.1)
 
 
 class GridMapAWILightStyle(GridMapAWIStyle):
@@ -365,7 +372,7 @@ class GridMapLogo(object):
 class BasemapStyleDef(object):
 
     def __init__(self):
-        self.is_active = True
+        self.is_active = False
         self.keyw = {}
 
     def set_keyw(self, **keyw):
