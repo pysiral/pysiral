@@ -5,6 +5,8 @@ Created on Thu Apr 07 16:21:42 2016
 @author: shendric
 """
 
+from pysiral.path import get_module_folder
+
 import os
 
 
@@ -64,7 +66,8 @@ class GridMapFontProp(object):
     def get_custom_font(self, fontsize=20):
         import matplotlib.font_manager as fm
         # See if AWI font does exist
-        font_path = os.path.join("font", "NeoSansW1G-Regular.otf")
+        folder = get_module_folder(__file__)
+        font_path = os.path.join(folder, "font", "NeoSansW1G-Regular.otf")
         # Fall back to OpenSans if AWI font not installed
         if not os.path.isfile(font_path):
             font_path = os.path.join("font", "OpenSans-Regular.ttf")
