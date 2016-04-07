@@ -4,25 +4,8 @@ Created on Thu Apr 07 16:19:41 2016
 
 @author: shendric
 """
-import numpy as np
 
 
-class NCMaskedGridData(object):
-
-    def __init__(self, filename):
-        self.filename = filename
-        self.parse()
-
-    def parse(self):
-        from pysiral.iotools import ReadNC
-        nc = ReadNC(self.filename)
-        for parameter in nc.parameters:
-            data = np.ma.array(getattr(nc, parameter))
-            data.mask = np.isnan(data)
-            setattr(self, parameter, data)
-
-
-class GridMapParameter():
     """
     Contains data, pcolor grid calculation capability, colormap definition
     and standardized parameter naming
