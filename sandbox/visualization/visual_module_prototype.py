@@ -31,25 +31,25 @@ def test_background_image_generation():
     log = stdout_logger("test-background-image-generation")
     mapbackground_folder = get_map_background_folder()
 
-    # Create a dark themed background with phong shading
-    background = BasemapWarpimageBackground()
-    background.log = log
-    background.color = NSICDBackgroundColorScheme()
-    background.shader = SpherePhongShading(60, -45)
-    background.folder = mapbackground_folder
-    background.filename = "basemap-background-north-dark.png"
-    background.export_to_png()
-
-#    # Create a light themed background with
+#    # Create a dark themed background with phong shading
 #    background = BasemapWarpimageBackground()
 #    background.log = log
-#    background.color = AWILightBackgroundColorScheme()
-#    background.shader = SpherePhongShading(90, 0)
-#    background.shader.phong_wet = PhongSettings(1.0, 0.2, 0.1, 5)
-#    background.shader.phong_dry = PhongSettings(0.4, 0.4, 0.3, 5)
+#    background.color = NSICDBackgroundColorScheme()
+#    background.shader = SpherePhongShading(60, -45)
 #    background.folder = mapbackground_folder
-#    background.filename = "basemap-background-north-light.png"
+#    background.filename = "basemap-background-north-dark.png"
 #    background.export_to_png()
+
+    # Create a light themed background with
+    background = BasemapWarpimageBackground()
+    background.log = log
+    background.color = AWILightBackgroundColorScheme()
+    background.shader = SpherePhongShading(90, 0)
+    background.shader.phong_wet = PhongSettings(1.0, 0.0, 0.0, 5)
+    background.shader.phong_dry = PhongSettings(0.4, 0.4, 0.3, 5)
+    background.folder = mapbackground_folder
+    background.filename = "basemap-background-north-light.png"
+    background.export_to_png()
 
 
 def test_visualization_arctic():
@@ -65,8 +65,8 @@ def test_visualization_arctic():
         "units": "m"}
     # Quick and dirty read the netcdf file
     filename = os.path.join(
-        r"E:\awi\altim\product\optimal_interp\v3",
-        r"cs2_smos_ice_thickness_20151221_20151227.nc")
+        r"testdata",
+        r"cs2_smos_ice_thickness_20160208_20160214.nc")
     ncdata = NCMaskedGridData(filename)
 
     # Extract parameter and merge with metadata
@@ -77,12 +77,24 @@ def test_visualization_arctic():
 
     # Create the map
     output = os.path.join(
-        r"E:\awi\altim\product\optimal_interp\v3\visuals",
-        r"cs2_smos_ice_thickness_20151221_20151227_analysis_thickness.png")
-    gridmap = ArcticGridMap()
+        r"testdata",
+        r"cs2smos_20160208_20160214_analysis_thickness_dark.png")
+    gridmap = ArcticGridPresentationMap()
+    gridmap.style = GridMapAWIDarkStyle()
     gridmap.data = data
     gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
-    gridmap.label.period = "2015-12-21 till 2015-12-27"
+    gridmap.label.period = "Feb. 08 till Feb 14., 2016"
+    gridmap.save2png(output)
+
+    # Light style map
+    output = os.path.join(
+        r"testdata",
+        r"cs2smos_20160208_20160214_analysis_thickness_light.png")
+    gridmap = ArcticGridPresentationMap()
+    gridmap.style = GridMapAWILightStyle()
+    gridmap.data = data
+    gridmap.label.title = "CryoSat-2 - SMOS (OI Analysis)"
+    gridmap.label.period = "Feb. 08 till Feb 14., 2016"
     gridmap.save2png(output)
 
 
@@ -135,7 +147,7 @@ class GridMapParameter():
         self.pgrid.calc_from_proj(**projection)
 
 
-class ArcticGridMap(object):
+class ArcticGridPresentationMap(object):
 
     def __init__(self):
         self.output = None
@@ -182,7 +194,6 @@ class ArcticGridMap(object):
         plt.close(figure)
 
     def _crop_orthographic_map(self):
-        fontcolor = "#bcbdbf"
         # Read the temporary files
         # (only this works, else the image size is capped by screen resolution
         # TODO: try with plt.ioff()
@@ -194,25 +205,24 @@ class ArcticGridMap(object):
         # Create a new figure
         figure = plt.figure(**self.style.figure.keyw)
         ax = plt.gca()
-        ax.set_position([0, 0, 1, 1])
         # Display cropped image
+        plt.axis('off')
         im = ax.imshow(cropped_image)
+        ax.set_position([0, 0, 1, 1])
         # clip the image
         if self.style.clip.is_active:
             patch = self.style.clip.get_patch(x1, x2, y1, y2, ax)
             im.set_clip_path(patch)
         # Add labels
         plt.annotate(self.label.title, (0.04, 0.93), xycoords="axes fraction",
-                     color=fontcolor, fontsize=32)
+                     **self.style.font.title)
         plt.annotate(self.label.period, (0.04, 0.89), xycoords="axes fraction",
-                     color=fontcolor, fontsize=24)
-        plt.axis('off')
+                     **self.style.font.period)
         # Add colorbar
         vmin, vmax = self.data.pardef.cmap.vmin, self.data.pardef.cmap.vmax
         sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("plasma"),
                                    norm=plt.Normalize(vmin=vmin, vmax=vmax))
         sm._A = []
-        ax = plt.gca()
         cb_ax_kwargs = {
             'loc': 3, 'bbox_to_anchor': (0.04, 0.84, 1, 1),
             'width': "30%", 'height': "2%", 'bbox_transform': ax.transAxes,
@@ -221,9 +231,9 @@ class ArcticGridMap(object):
         axins = inset_axes(ax, **cb_ax_kwargs)
         cb = plt.colorbar(sm, cax=axins, ticks=ticks, orientation="horizontal")
         cl = plt.getp(cb.ax, 'xmajorticklabels')
-        plt.setp(cl, fontsize=22, color=fontcolor)
+        plt.setp(cl, **self.style.font.label)
         parameter_label = self.data.pardef.label
-        cb.set_label(parameter_label, fontsize=22, color=fontcolor)
+        cb.set_label(parameter_label, **self.style.font.label)
         cb.outline.set_linewidth(0.2)
         cb.outline.set_alpha(0.0)
         for t in cb.ax.get_yticklines():
@@ -240,26 +250,45 @@ class ArcticGridMap(object):
                             frameon=False, box_alignment=(1, 0))
         ax.add_artist(ab)
         # Now save the map
-        plt.savefig(self.output, dpi=600, facecolor=figure.get_facecolor(),
-                    bbox_inches="tight", pad_inches=0.1)
+        plt.savefig(self.output, dpi=self.style.dpi,
+                    facecolor=figure.get_facecolor())
         plt.close(figure)
 
     def _clean_up(self):
-        print self.temp_file
-        # os.remove(self.temp_file)
+        os.remove(self.temp_file)
 
 
 class GridMapAWIStyle(object):
 
     def __init__(self):
+        self.dpi = 300
         self.figure = BasemapStyleDef()
-        self.figure.set_keyw(figsize=(12, 12), facecolor="#000000")
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
         self.mapboundary = BasemapStyleDef()
         self.grid = BasemapGridDef()
         self.crop = BasemapOrthoCrop()
         self.clip = BasemapImageClip()
         self.background = GridMapBackground()
         self.logo = GridMapLogo()
+        self.font = GridMapFontProp()
+
+
+class GridMapAWIDarkStyle(GridMapAWIStyle):
+
+    def __init__(self):
+        super(GridMapAWIDarkStyle, self).__init__()
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#000000")
+
+
+class GridMapAWILightStyle(GridMapAWIStyle):
+
+    def __init__(self):
+        super(GridMapAWILightStyle, self).__init__()
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
+        self.font.set_color("#4b4b4b")
+        self.logo.tag = "awi-blue"
+        self.background.tag = "light"
+        self.clip.is_active = True
 
 
 class GridMapLabels(object):
@@ -268,6 +297,41 @@ class GridMapLabels(object):
         self.title = ""
         self.period = ""
         self.copyright = ""
+
+
+class GridMapFontProp(object):
+
+    def __init__(self):
+        self.color = "#bcbdbf"
+        self.label = {
+            "color": self.color,
+            "fontproperties": self.get_custom_font(fontsize=22)}
+        self.period = {
+            "color": self.color,
+            "fontproperties": self.get_custom_font(fontsize=22)}
+        self.title = {
+            "color": self.color,
+            "fontproperties": self.get_custom_font(fontsize=32)}
+        self.copyright = {
+            "fontsize": 18, "color": self.color,
+            "fontproperties": self.get_custom_font(fontsize=18)}
+
+    def get_custom_font(self, fontsize=20):
+        import matplotlib.font_manager as fm
+        # See if AWI font does exist
+        font_path = os.path.join("font", "NeoSansW1G-Regular.otf")
+        # Fall back to OpenSans if AWI font not installed
+        if not os.path.isfile(font_path):
+            font_path = os.path.join("font", "OpenSans-Regular.ttf")
+        prop = fm.FontProperties(fname=font_path, size=fontsize)
+        return prop
+
+    def set_color(self, color):
+        self.color = color
+        for target in ["label", "period", "title", "copyright"]:
+            prop = getattr(self, target)
+            prop["color"] = color
+            setattr(self, target, prop)
 
 
 class GridMapBackground(object):
@@ -290,7 +354,7 @@ class GridMapLogo(object):
     def __init__(self):
         self.is_active = True
         self.tag = "awi-white"
-        self.keyw = {"zoom": 1.0, "resample": True, "alpha": 0.75}
+        self.keyw = {"zoom": 0.8, "resample": True, "alpha": 0.75}
 
     def get_filename(self):
         filename = os.path.join(
@@ -538,8 +602,10 @@ class AWILightBackgroundColorScheme(BackgroundColorScheme):
     def __init__(self):
         super(AWILightBackgroundColorScheme, self).__init__()
         self.mapboundary["fill_color"] = "#ffffff"
-        self.continent["color"] = "#00ace5"
-        self.continent["lake_color"] = "#00ace5"
+        self.continent["color"] = "#bcbdbf"
+        self.continent["lake_color"] = "#bcbdbf"
+#        self.continent["color"] = "#00ace5"
+#        self.continent["lake_color"] = "#00ace5"
 
 
 class BackgroundShader(object):
@@ -555,7 +621,7 @@ class SpherePhongShading(BackgroundShader):
         # Nadir point of assumed illumination point
         self.lat0 = lat0 * -1.0  # Accounts for array orientation
         self.lon0 = lon0
-        self.phong_wet = PhongSettings(0.0, 0.2, 1.0, 30)
+        self.phong_wet = PhongSettings(0.0, 0.5, 0.5, 20)
         self.phong_dry = PhongSettings(0.1, 0.6, 0.4, 5)
         self.shader = ShaderSettings([0, 0, 0, 0])
         self.imsize = None
@@ -582,8 +648,8 @@ class SpherePhongShading(BackgroundShader):
         is_land = self._get_landmask()
         intensity[is_land] = intensity_dry[is_land]
         # Make sure intensity <= 1
-#        is_too_high = np.where(intensity > 1.)
-#        intensity[is_too_high] = 0.999
+        is_too_high = np.where(intensity > 1.)
+        intensity[is_too_high] = 0.999
         is_too_low = np.where(intensity < 0.)
         intensity[is_too_low] = 0.
         # Create an image object [0-1] with intensity as alpha channel
@@ -673,10 +739,6 @@ def get_landcoastlines(basemap, color="0.0", linewidth=1):
     return landcoastlines
 
 if __name__ == "__main__":
-    mpl.rcParams['font.sans-serif'] = "arial"
-    for target in ["xtick.color", "ytick.color", "axes.edgecolor",
-                   "axes.labelcolor"]:
-        mpl.rcParams[target] = "#4b4b4d"
     test_background_image_generation()
     test_visualization_arctic()
     # test_visualization_antarctic()
