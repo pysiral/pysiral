@@ -90,8 +90,9 @@ class GridMapBackground(object):
         self.keyw = {"scale": 1.0, "zorder": 100}
 
     def get_filename(self, hemisphere):
+        folder = get_module_folder(__file__)
         filename = os.path.join(
-            "mapbackground",
+            folder, "mapbackground",
             "basemap-background-{hemisphere}-{tag}.png".format(
                 hemisphere=self.hemispere, tag=self.tag))
         return filename
@@ -105,8 +106,9 @@ class GridMapLogo(object):
         self.keyw = {"zoom": 0.8, "resample": True, "alpha": 0.75}
 
     def get_filename(self):
+        folder = get_module_folder(__file__)
         filename = os.path.join(
-            "logo", "logo-{tag}.png".format(tag=self.tag))
+            folder, "logo", "logo-{tag}.png".format(tag=self.tag))
         return filename
 
 
