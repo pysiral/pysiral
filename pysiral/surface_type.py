@@ -6,6 +6,7 @@ Created on Mon Jul 27 11:25:04 2015
 """
 import numpy as np
 from treedict import TreeDict
+from collections import OrderedDict
 
 
 class ANDCondition(object):
@@ -73,7 +74,22 @@ class SurfaceType(object):
 
     @property
     def n_records(self):
-        return self._n_records
+        if self._surface_type is None:
+            n_records = 0
+        else:
+            n_records = len(self._surface_type)
+        self._n_records = n_records
+        return n_records
+
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records", self.n_records)])
+        return dimdict
+
+    @property
+    def parameter_list(self):
+        return ["flag"]
 
     def name(self, index):
         i = self._SURFACE_TYPE_DICT.values().index(index)
