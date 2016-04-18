@@ -83,7 +83,7 @@ class L1bDataNC(object):
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
                 dimensions = tuple(dims[0:len(data.shape)])
-                print " "+parameter, dimensions, data.dtype.str
+                print " "+parameter, dimensions, data.dtype.str, data.shape
                 var = dgroup.createVariable(
                     parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
@@ -128,7 +128,6 @@ class L1bDataNC(object):
     def _set_global_attributes(self, attdict):
         """ Save l1b.info dictionary as global attributes """
         for key in attdict.keys():
-            print key, type(attdict[key])
             self._rootgrp.setncattr(key, attdict[key])
 
 
