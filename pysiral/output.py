@@ -36,23 +36,23 @@ class L1bDataNC(object):
 
     def export(self):
         self._validate()
-        self._create_filename()
         self._create_root_group()
         self._populate_data_groups()
         self._write_to_file()
 
     def _validate(self):
-        pass
+        if self.filename is None:
+            self._create_filename()
+        self.path = os.path.join(self.output_folder, self.filename)
 
     def _create_filename(self):
-        basename = file_basename(self.l1b.filename)
-        self.filename = os.path.join(self.output_folder, basename+".nc")
+        self.filename = file_basename(self.l1b.filename)+"nc"
 
     def _create_root_group(self):
         """
         Create the root group and add l1b metadata as global attributes
         """
-        self._rootgrp = Dataset(self.filename, "w")
+        self._rootgrp = Dataset(self.path, "w")
         # Save the l1b info data group as global attributes
         attdict = self.l1b.info.attdict
         self._convert_datetime_attributes(attdict)
