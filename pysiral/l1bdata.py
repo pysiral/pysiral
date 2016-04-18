@@ -430,10 +430,14 @@ class L1bRangeCorrections(object):
         return self._parameter_list
 
     @property
+    def n_records(self):
+        parameter, name = self.get_parameter_by_index(0)
+        return len(parameter)
+
+    @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records",
-                                len(self.get_parameter_by_index(0)))])
+        dimdict = OrderedDict([("n_records", self.n_records)])
         return dimdict
 
     def get_parameter_by_index(self, index):
