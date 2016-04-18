@@ -31,8 +31,8 @@ class CryoSat2PreProcJob(object):
             return
         l1bdata_stack = []
         for i, cryosat2_l1b_file in enumerate(self.files):
-            if i < 20:
-                continue
+#            if i < 20:
+#                continue
             # Parse the current file and split into polar ocean segments
             log.info("Parsing file %g of %g: %s" % (
                 i+1, n, cryosat2_l1b_file))
@@ -44,7 +44,7 @@ class CryoSat2PreProcJob(object):
                 continue
             log.info("%g polar ocean data segments" % len(l1b_segments))
             # XXX: Debug
-            debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
+            # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
             # Loop over segments and check connectivity
             for l1b_segment in l1b_segments:
                 if not self.l1b_is_connected_to_stack(
@@ -186,7 +186,7 @@ class CryoSat2PreProcJob(object):
 
     def concatenate_and_export_stack_files(self, l1bdata_stack):
         # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
-        debug_stack_export_orbit_plot(l1bdata_stack)
+        # debug_stack_export_orbit_plot(l1bdata_stack)
         # Concatenate the files
         l1b_merged = l1bdata_stack[0]
         l1bdata_stack.pop(0)
@@ -195,7 +195,7 @@ class CryoSat2PreProcJob(object):
             if orbit_segment.info.radar_mode == "sin":
                 orbit_segment.reduce_waveform_bin_count(256)
             l1b_merged.append(orbit_segment)
-        stop
+        # stop
         # Prepare data export
         config = self.config
         export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
