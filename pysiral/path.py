@@ -14,7 +14,7 @@ def validate_directory(folder):
     if os.path.isabs(folder):
         # Valid notation, try to create folder
         try:
-            os.mkdir(folder)
+            os.makedirs(folder)
         except:
             # Failed to create folder -> Invalid
             return False
