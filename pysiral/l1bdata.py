@@ -102,6 +102,9 @@ class Level1bData(object):
     """
     Unified L1b Data Class
     """
+    data_groups = ["time_orbit", "correction", "classifier",
+                   "waveform", "surface_type"]
+
     def __init__(self):
         self.info = L1bMetaData()
         self.waveform = L1bWaveforms(self.info)
@@ -110,11 +113,20 @@ class Level1bData(object):
         self.classifier = L1bClassifiers(self.info)
         self.surface_type = SurfaceType()
 
+    def append(self, l1b_annex):
+        """ Appends another l1b object to this one """
+        # XXX: Needs tests
+        for data_group in self.data_groups:
+            this_data_group = getattr(self, data_group)
+            annex_data_group = getattr(l1b_annex, data_group)
+            this_data_group.append(annex_data_group)
+        self.update_data_limit_attributes()
+        self.info.set_attribute("is_merged_orbit", True)
+        self.info.set_attribute("n_records", len(self.time_orbit.timestamp))
+
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
-        data_groups = ["time_orbit", "correction", "classifier",
-                       "waveform", "surface_type"]
-        for data_group in data_groups:
+        for data_group in self.data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
         self.update_data_limit_attributes()
@@ -360,6 +372,13 @@ class L1bTimeOrbit(object):
         self._latitude = latitude
         self._altitude = altitude
 
+    def append(self, annex):
+        for parameter in self.parameter_list:
+            this_data = getattr(self, "_"+parameter)
+            annex_data = getattr(self, parameter)
+            this_data = np.append(this_data, annex_data)
+            setattr(self,  "_"+parameter, this_data)
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, "_"+parameter)
@@ -406,6 +425,13 @@ class L1bRangeCorrections(object):
         except:
             return None
 
+    def append(self, annex):
+        for parameter in self.parameter_list:
+            this_data = getattr(self, parameter)
+            annex_data = getattr(annex, parameter)
+            this_data = np.append(this_data, annex_data)
+            setattr(self, parameter, this_data)
+
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
@@ -451,6 +477,13 @@ class L1bClassifiers(object):
 
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
+
+    def append(self, annex):
+        for parameter in self.parameter_list:
+            this_data = getattr(self, parameter)
+            annex_data = getattr(annex, parameter)
+            np.append(this_data, annex_data)
+            setattr(self, parameter, this_data)
 
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
@@ -538,6 +571,12 @@ class L1bWaveforms(object):
         # Validate number of records
         self._info.check_n_records(len(valid_flag))
         self._is_valid = valid_flag
+
+    def append(self, annex):
+        self._power = np.concatenate((self._power, annex.power), axis=0)
+        self._range = np.concatenate((self._range, annex.range), axis=0)
+        self._radar_mode = np.append(self._radar_mode, annex.radar_mode)
+        self._is_valid = np.append(self._is_valid, annex.is_valid)
 
     def set_subset(self, subset_list):
         self._power = self._power[subset_list, :]
