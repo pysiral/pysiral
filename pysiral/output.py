@@ -142,7 +142,7 @@ def l1bnc_filenaming(l1b, config):
 
     Based on the ``l1bdata`` file for the specific mission in
     ``local_machine_def.yaml`` in the pysiral main directory
-    with sub-folders for year, month
+    with sub-folders for hemisphere, year, month
 
     Filename
     --------
@@ -160,13 +160,16 @@ def l1bnc_filenaming(l1b, config):
     """
     # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
     export_folder = config.local_machine.l1b_repository[l1b.mission].l1bdata
-    yyyy, mm = "04g" % l1b.start_time.year, "02g" % l1b.start_time.month
-    export_folder = os.path.join(export_folder, yyyy, mm)
+    yyyy = "%04g" % l1b.info.start_time.year
+    mm = "%02g" % l1b.info.start_time.month
+    hemisphere = l1b.info.hemisphere
+    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
     # construct filename from
     export_filename = "l1bdata_v{version:02g}_{region}_{mission}_" + \
-                      "{orbit:06g}_{startdt:%Y-%m-%d %H:%M:%S}_" + \
-                      "{startdt:%Y-%m-%d %H:%M:%S}.nc"
-    export_filename.format(
-        version=0, region=l1b.region, mission=l1b.mission, orbit=l1b.orbit,
-        startdt=l1b.start_time, stopdt=l1b.stop_time)
+                      "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
+                      "{startdt:%Y%m%dT%H%M%S}.nc"
+    export_filename = export_filename.format(
+        version=0, region=hemisphere, mission=l1b.info.mission,
+        orbit=l1b.info.orbit, startdt=l1b.info.start_time,
+        stopdt=l1b.info.stop_time)
     return export_folder, export_filename
