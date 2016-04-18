@@ -25,7 +25,8 @@ class L1bDataNC(object):
     """
 
     def __init__(self):
-        self.datagroups = []
+        self.datagroups = ["waveform", "surface_type", "time_orbit",
+                           "classifier", "correction"]
         self.output_folder = None
         self.l1b = None
         self.filename = None
