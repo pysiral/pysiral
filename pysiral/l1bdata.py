@@ -202,6 +202,18 @@ class Level1bData(object):
         rebin_shape = (n_records, target_count)
         power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
         range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+        # Validity check
+        overflow = np.where(stop > n_bins)[0]
+        if len(overflow) > 0:
+            offset = n_bins - stop[overflow]
+            stop[overflow] += offset
+            start[overflow] += offset
+
+        underflow = np.where(start < 0)[0]
+        if len(underflow) > 0:
+            offset = start[underflow]
+            stop[underflow] -= offset
+            start[underflow] -= offset
         # Extract the waveform with reduced bin count
         for i in np.arange(n_records):
             power[i, :] = orig_power[i, start[i]:stop[i]]
