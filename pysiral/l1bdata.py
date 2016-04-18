@@ -417,7 +417,7 @@ class L1bRangeCorrections(object):
     """ Container for Range Correction Information """
 
     def __init__(self, info):
-        self._info = info  # Pointer to Metadate object
+        self._info = info  # Pointer to Metadata object
         self._parameter_list = []
 
     def set_parameter(self, tag, value):
