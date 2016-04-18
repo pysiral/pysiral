@@ -185,10 +185,13 @@ class CryoSat2PreProcJob(object):
         return is_connected
 
     def concatenate_and_export_stack_files(self, l1bdata_stack):
+        log = self.log
         # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
         # debug_stack_export_orbit_plot(l1bdata_stack)
         # Concatenate the files
         l1b_merged = l1bdata_stack[0]
+        if l1b_merged.info.radar_mode == "sin":
+            l1b_merged.reduce_waveform_bin_count(256)
         l1bdata_stack.pop(0)
         for orbit_segment in l1bdata_stack:
             # Rebin
@@ -199,6 +202,8 @@ class CryoSat2PreProcJob(object):
         # Prepare data export
         config = self.config
         export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
+        log.info("Create file: %s" % export_filename)
+        log.info("Folder: %s" % export_folder)
         validate_directory(export_folder)
         # Export the data object
         ncfile = L1bDataNC()
