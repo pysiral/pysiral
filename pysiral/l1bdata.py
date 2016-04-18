@@ -305,6 +305,15 @@ class L1bMetaData(object):
             attdict[field] = getattr(self, field)
         return attdict
 
+    @property
+    def hemisphere(self):
+        hemisphere = "global"
+        if self.lat_min > 0. and self.lat_max > 0.:
+            hemisphere = "north"
+        if self.lat_min < 0. and self.lat_max < 0.0:
+            hemisphere = "south"
+        return hemisphere
+
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
