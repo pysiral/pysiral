@@ -5,6 +5,7 @@ from pysiral.path import file_basename
 
 from netCDF4 import Dataset, date2num
 from datetime import datetime
+import numpy as np
 import os
 
 
