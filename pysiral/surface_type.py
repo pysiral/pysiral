@@ -107,6 +107,9 @@ class SurfaceType(object):
             return TypeContainer(
                 np.zeros(shape=(self._n_records), dtype=np.bool))
 
+    def append(self, annex):
+        self._surface_type = np.append(self._surface_type, annex.flag)
+
     def set_subset(self, subset_list):
         self._surface_type = self._surface_type[subset_list]
         self._n_records = len(subset_list)
