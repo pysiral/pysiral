@@ -5,7 +5,7 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 from pysiral.config import td_branches
-from pysiral.l1bdata import L1bConstructor
+from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.mss import *
 from pysiral.roi import *
@@ -83,10 +83,10 @@ class Level2Processor(object):
         # TODO: Evaluate parallelization
         for l1b_file in self._l1b_files:
             l1b = self._read_l1b_file(l1b_file)        # Read the l1b file
-            in_roi = self._trim_to_roi(l1b)            # region of interest
-            over_ocean = self._trim_land_margins(l1b)  # trim edges (land)
-            if not in_roi or not over_ocean:
-                continue
+#            in_roi = self._trim_to_roi(l1b)            # region of interest
+#            over_ocean = self._trim_land_margins(l1b)  # trim edges (land)
+#            if not in_roi or not over_ocean:
+#                continue
             self._range_corrections(l1b)               # geophys. corrections
             l2 = Level2Data(l1b)
             # TODO: Get L2 classifiers (ice concentration, ice type)
@@ -104,11 +104,8 @@ class Level2Processor(object):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file """
-        l1b = L1bConstructor(self._config)
-        l1b.mission = self._job.mission.id
-        l1b.set_mission_options(**self._job.mission.options)
-        l1b.filename = l1b_file
-        l1b.construct()
+        l1b = L1bdataNCFile(l1b_file)
+        l1b.parse()
         return l1b
 
     def _trim_to_roi(self, l1b):
