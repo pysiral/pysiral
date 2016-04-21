@@ -52,3 +52,13 @@ def rle(inarray):
         z = np.diff(np.append(-1, i))        # run lengths
         p = np.cumsum(np.append(0, z))[:-1]  # positions
         return(z, p, ia[i])
+
+
+def month_iterator(start_year, start_month, end_year, end_month):
+    """ returns an iterator over months """
+    from dateutil.rrule import rrule, MONTHLY
+    from datetime import datetime
+    start = datetime(start_year, start_month, 1)
+    end = datetime(end_year, end_month, 1)
+    return ((d.year, d.month) for d in rrule(MONTHLY,
+            dtstart=start, until=end))
