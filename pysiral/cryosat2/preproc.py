@@ -5,13 +5,48 @@ Created on Thu Mar 31 20:52:32 2016
 @author: Stefan
 """
 
+from pysiral.cryosat2.iotools import CryoSat2FileListAllModes
 from pysiral.l1bdata import L1bConstructor
 from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.path import validate_directory
 from pysiral.output import (l1bnc_filenaming, L1bDataNC)
+from pysiral.logging import stdout_logger
 
 import numpy as np
+
+
+class CryoSat2PreProc(object):
+
+    def __init__(self):
+        self.month = None
+        self.year = None
+
+    def execute(self):
+
+        """ Get the logging instance """
+        log = stdout_logger("cryosat2-preproc")
+
+        """ Get the configuration data for handling CryoSat-2 data """
+        config = ConfigInfo()
+        cryosat_l1b_repository = config.local_machine.l1b_repository.cryosat2
+
+        """ Get the list of files (SAR and SIN in chronological order) """
+        # for the case of this test only for one month of data
+        cryosat2_files = CryoSat2FileListAllModes()
+        cryosat2_files.log = log
+        cryosat2_files.folder_sar = cryosat_l1b_repository.sar
+        cryosat2_files.folder_sin = cryosat_l1b_repository.sin
+        cryosat2_files.year = self.year
+        cryosat2_files.month = self.month
+        cryosat2_files.search()
+
+        """ Start the CryoSat-2 pre-processor """
+        job = CryoSat2PreProcJob()
+        job.config = config
+        job.log = log
+        job.files = cryosat2_files.sorted_list
+        job.merge_and_export_polar_ocean_subsets()
 
 
 class CryoSat2PreProcJob(object):
