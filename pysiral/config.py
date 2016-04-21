@@ -73,6 +73,10 @@ class ConfigInfo(object):
         mission_options = self.mission[mission].options
         return mission_options
 
+    def get_mission_info(self, mission):
+        mission_info = self.mission[mission]
+        return mission_info
+
     def _read_config_files(self):
         for key in self._DEFINITION_FILES.keys():
             content = get_yaml_config(
