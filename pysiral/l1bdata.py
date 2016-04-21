@@ -92,6 +92,7 @@ Surface Type
 from pysiral.io_adapter import (L1bAdapterCryoSat, L1bAdapterEnvisat)
 from pysiral.surface_type import SurfaceType
 
+from netCDF4 import Dataset, num2date
 from collections import OrderedDict
 import numpy as np
 import copy
@@ -275,6 +276,40 @@ class L1bConstructor(Level1bData):
         adapter = get_l1b_adapter(self._mission)(self._config)
         adapter.filename = self.filename
         adapter.construct_l1b(self)
+
+
+class L1bdataNCFile(Level1bData):
+
+    def __init__(self, filename):
+
+        super(L1bdataNCFile, self).__init__()
+        self.filename = filename
+        self.nc = None
+
+    def parse(self):
+        """ populated the L1b data container from the l1bdata netcdf file """
+        self.nc = Dataset(self.filename, "r")
+        self._import_metadata()
+        self._import_timeorbit()
+        self._import_waveforms()
+        self._import_corrections()
+        self._import_surface_type()
+        self._import_classifier()
+        self.nc.close()
+
+    def _import_metadata(self):
+        stop
+        pass
+    def _import_timeorbit(self):
+        pass
+    def _import_waveforms(self):
+        pass
+    def _import_corrections(self):
+        pass
+    def _import_surface_type(self):
+        pass
+    def _import_classifier(self):
+        pass
 
 
 class L1bMetaData(object):
