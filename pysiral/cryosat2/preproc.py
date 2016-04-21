@@ -100,6 +100,8 @@ class CryoSat2PreProcJob(object):
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
+        if first_ocean_index is None or last_ocean_index is None:
+            return None
         n = l1b.info.n_records-1
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
