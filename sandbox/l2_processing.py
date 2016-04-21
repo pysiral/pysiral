@@ -23,9 +23,9 @@ def l2_processing():
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = config.local_machine.l1b_repository.cryosat2.sar
-    l1b_directory = os.path.join(l1b_directory, "2015", "04")
-    l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
+    l1b_directory = config.local_machine.l1b_repository.cryosat2.l1bdata
+    l1b_directory = os.path.join(l1b_directory, "north", "2015", "03")
+    l1b_files = glob.glob(os.path.join(l1b_directory, "*.nc"))
 
     print l1b_files[0]
 
@@ -103,7 +103,7 @@ def l2_processing():
                     "first_maximum_normalized_threshold": 0.15,
                     "first_maximum_local_order": 1}}},
         "ssh": {
-            "mss": config.auxdata.mss.dtu13mss,
+            "mss": config.auxdata.mss.dtu13,
             "ssa": {
                 "pyclass": "SSASmoothedLinear",
                 "options": {
