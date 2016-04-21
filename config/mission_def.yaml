@@ -72,7 +72,7 @@ envisat:
 
     data_period:
         start: 2006-01-01T00:00:00.00+00
-        stop: 2012-04-01T00:00:00.00+00
+        stop: 2012-03-31T23:59:59.99+00
 
     sea_ice_radar_modes: ["lrm"]
 
