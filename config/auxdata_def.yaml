@@ -17,11 +17,11 @@ auxdata_types:
 mss:
 
     # DTU 10 mean sea surface
-    dtu10mss:
+    dtu10:
         pyclass: DTU1MinGrid
         docstr: DTU10 mean sea surface (1 minute grid)
-        type: static
-        frequency: null
+        type: mean_sea_surface
+        frequency: static
         local_machine_directory: dtu10
         file: DTU10MSS_1min.nc
         source:
@@ -32,11 +32,11 @@ mss:
 
 
     # DTU 13 mean sea surface
-    dtu13mss:
+    dtu13:
         pyclass: DTU1MinGrid
         docstr: DTU13 mean sea surface (1 minute grid)
-        type: static
-        frequency: null
+        type: mean_sea_surface
+        frequency: static
         local_machine_directory: dtu13
         file: DTU13MSS_1min.nc
         source:
