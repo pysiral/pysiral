@@ -57,6 +57,10 @@ class ConfigInfo(object):
         """ Returns the local path to the document folder"""
         return self._return_path("config")
 
+    @property
+    def mission_ids(self):
+        return self.mission.missions
+
     def get_mission_defaults(self, mission):
         mission_options = self.mission[mission].options
         defaults = {}
