@@ -70,23 +70,28 @@ def validate_year_month_list(year_month_list, label):
 
 def get_l1bpreproc_argparser():
     """ Handle command line arguments """
-
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('-m', action='store', dest='mission_id',
-                        help='pysiral recognized mission id', required=True)
-
-    parser.add_argument('-start', action='store', dest='start_date',
-                        nargs='+', type=int, required=True,
-                        help='start date as year and month (-t0 yyyy mm)')
-
-    parser.add_argument('-stop', action='store', dest='stop_date',
-                        nargs='+', type=int,  required=True,
-                        help='start date as year and month (-t0 yyyy mm)')
-
-    parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                        action="store_true")
-    parser.add_argument('--version', action='version', version='%(prog)s 0.1a')
+    # Mission id string: cryosat2, envisat, ...
+    parser.add_argument(
+        '-m', action='store', dest='mission_id',
+        help='pysiral recognized mission id', required=True)
+    # Start month as list: [yyyy, mm]
+    parser.add_argument(
+        '-start', action='store', dest='start_date',
+        nargs='+', type=int, required=True,
+        help='start date as year and month (-t0 yyyy mm)')
+    # Stop month as list: [yyyy, mm]
+    parser.add_argument(
+        '-stop', action='store', dest='stop_date',
+        nargs='+', type=int,  required=True,
+        help='start date as year and month (-t0 yyyy mm)')
+    # Show debug statements
+    parser.add_argument(
+        "-v", "--verbose", help="increase output verbosity",
+        action="store_true")
+    # show preprocessor version
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s 0.1a')
 
     return parser
 
