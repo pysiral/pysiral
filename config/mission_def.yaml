@@ -42,7 +42,7 @@ cryosat2:
         Cryosphere radar altimeter mission of the European Space
         Agency (ESA)
     data_period:
-        start: 2011-01-01T00:00:00.00+00
+        start: 2010-11-01T00:00:00.00+00
         stop: null
     sea_ice_radar_modes: ["sar", "sin"]
     orbit_max_latitude: 88.0
