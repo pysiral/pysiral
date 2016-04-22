@@ -43,13 +43,14 @@ class BaseRetracker(object):
             return False
         # Loop over each waveform of given surface type
         for index in self._index:
+            print index
             self._retrack(l1b.waveform.range[index, :],
                           l1b.waveform.power[index, :],
                           index)
         return True
 
     def _set_surface_type_indices(self, l2):
-        surface_type = getattr(l2.surface_type, self._surface_type_id)
+        surface_type = l2.surface_type.get_by_name(self._surface_type_id)
         self._index = surface_type.indices
 
     def _create_default_properties(self, n_records):
