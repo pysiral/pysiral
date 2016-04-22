@@ -91,6 +91,10 @@ class SurfaceType(object):
     def parameter_list(self):
         return ["flag"]
 
+    @property
+    def lead(self):
+        return self.get_by_name("lead")
+
     def name(self, index):
         i = self._SURFACE_TYPE_DICT.values().index(index)
         return self._SURFACE_TYPE_DICT.keys()[i]
