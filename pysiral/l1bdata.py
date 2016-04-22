@@ -431,7 +431,7 @@ class L1bTimeOrbit(object):
     def append(self, annex):
         for parameter in self.parameter_list:
             this_data = getattr(self, "_"+parameter)
-            annex_data = getattr(self, parameter)
+            annex_data = getattr(annex, parameter)
             this_data = np.append(this_data, annex_data)
             setattr(self,  "_"+parameter, this_data)
 
@@ -496,6 +496,7 @@ class L1bRangeCorrections(object):
         for parameter in self.parameter_list:
             data = getattr(self, parameter)
             data = data[subset_list]
+            setattr(self, parameter, data)
 
 
 class L1bClassifiers(object):
@@ -542,7 +543,7 @@ class L1bClassifiers(object):
         for parameter in self.parameter_list:
             this_data = getattr(self, parameter)
             annex_data = getattr(annex, parameter)
-            np.append(this_data, annex_data)
+            this_data = np.append(this_data, annex_data)
             setattr(self, parameter, this_data)
 
     def set_subset(self, subset_list):
