@@ -66,8 +66,6 @@ class CryoSat2PreProcJob(object):
             return
         l1bdata_stack = []
         for i, cryosat2_l1b_file in enumerate(self.files):
-#            if i < 20:
-#                continue
             # Parse the current file and split into polar ocean segments
             log.info("Parsing file %g of %g: %s" % (
                 i+1, n, cryosat2_l1b_file))
@@ -75,9 +73,9 @@ class CryoSat2PreProcJob(object):
                 cryosat2_l1b_file, self.config)
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info("no polar ocean data, skipping ...")
+                log.info(". no polar ocean data, skipping")
                 continue
-            log.info("%g polar ocean data segments" % len(l1b_segments))
+            log.info(". %g polar ocean data segments" % len(l1b_segments))
             # XXX: Debug
             # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
             # Loop over segments and check connectivity
@@ -85,7 +83,7 @@ class CryoSat2PreProcJob(object):
                 if not self.l1b_is_connected_to_stack(
                         l1b_segment, l1bdata_stack):
                     # => break criterium, save existing stack and start over
-                    log.info("segement unconnected, exporting current stack")
+                    log.info(". segment unconnected, exporting current stack")
                     self.concatenate_and_export_stack_files(l1bdata_stack)
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -106,6 +104,7 @@ class CryoSat2PreProcJob(object):
         l1b.mission = "cryosat2"
         l1b.filename = filename
         l1b.construct()
+
         # Extract relevant segments over ocean
         l1b_list = self.extract_polar_ocean_segments(l1b)
         return l1b_list
@@ -124,14 +123,14 @@ class CryoSat2PreProcJob(object):
 
         # 2) Trim l1b data to polar region (known that list won't be emtpy)
         #    CryoSat-2 specific: l1b data does not cover both polar regions
-        log.info("... trim to polar ocean subset")
+        log.info(". trimming to polar ocean subset")
         polar_threshold = self.options.polar_threshold
         is_polar = np.abs(l1b.time_orbit.latitude) >= polar_threshold
         polar_subset = np.where(is_polar)[0]
         l1b.trim_to_subset(polar_subset)
 
         # 3) Trim l1b data from the first to the last ocean data record
-        log.info("... trim outer non-ocean regions")
+        log.info(". trim outer non-ocean regions")
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -141,18 +140,18 @@ class CryoSat2PreProcJob(object):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            log.info("... ocean subset [%g:%g]" % (
+            log.info(". ocean subset [%g:%g]" % (
                  first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         # 4) Identify larger landmasses and split orbit into segments
         #    if necessary
-        log.info("... test for inner larger landmasses")
+        log.info(". test for inner larger landmasses")
         ocean = l1b.surface_type.get_by_name("ocean")
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        log.info("... number of landmasses: %g" % len(landseg_index))
+        log.info(". number of landmasses: %g" % len(landseg_index))
         if len(landseg_index) == 0:
             # no land segements, return single segment
             return [l1b]
@@ -160,7 +159,7 @@ class CryoSat2PreProcJob(object):
         large_landsegs_index = np.where(
             segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        log.info("... number of large landmasses: %g" % len(
+        log.info(". number of large landmasses: %g" % len(
             large_landsegs_index))
         if len(large_landsegs_index) == 0:
             # no large land segments, return single segment
@@ -174,11 +173,11 @@ class CryoSat2PreProcJob(object):
         for index in large_landsegs_index:
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
-            log.debug("... ocean segment: [%g:%g]" % (start_index, stop_index))
+            log.debug(". ocean segment: [%g:%g]" % (start_index, stop_index))
             l1b_segments.append(l1b.extract_subset(subset_list))
             start_index = segments_start[index+1]
         # extract the last subset
-        log.debug("... ocean segment: [%g:%g]" % (
+        log.debug(". ocean segment: [%g:%g]" % (
             start_index, len(ocean.flag)-1))
         last_subset_list = np.arange(start_index, len(ocean.flag))
         l1b_segments.append(l1b.extract_subset(last_subset_list))
@@ -194,11 +193,11 @@ class CryoSat2PreProcJob(object):
         lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
         polar_threshold = self.options.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
-        log.info("... is_in_polar_region: %s" % str(is_polar))
+        log.info(". is_in_polar_region: %s" % str(is_polar))
         # 2) test if there is any ocean data at all
         ocean = l1b.surface_type.get_by_name("ocean")
         has_ocean = ocean.num > 0
-        log.info("... has_ocean: %s" % str(has_ocean))
+        log.info(". has_ocean: %s" % str(has_ocean))
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean
 
@@ -239,8 +238,8 @@ class CryoSat2PreProcJob(object):
         # Prepare data export
         config = self.config
         export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
-        log.info("Create file: %s" % export_filename)
-        log.info("Folder: %s" % export_folder)
+        log.info("Creating l1bdata netCDF: %s" % export_filename)
+        log.info(". in folder: %s" % export_folder)
         validate_directory(export_folder)
         # Export the data object
         ncfile = L1bDataNC()
