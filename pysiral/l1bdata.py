@@ -91,6 +91,8 @@ Surface Type
 
 from pysiral.io_adapter import (L1bAdapterCryoSat, L1bAdapterEnvisat)
 from pysiral.surface_type import SurfaceType
+from pysiral.output import NCDateNumDef
+from pysiral.config import RadarModes
 
 from netCDF4 import Dataset, num2date
 from collections import OrderedDict
@@ -285,6 +287,7 @@ class L1bdataNCFile(Level1bData):
         super(L1bdataNCFile, self).__init__()
         self.filename = filename
         self.nc = None
+        self.time_def = NCDateNumDef()
 
     def parse(self):
         """ populated the L1b data container from the l1bdata netcdf file """
@@ -298,18 +301,88 @@ class L1bdataNCFile(Level1bData):
         self.nc.close()
 
     def _import_metadata(self):
-        stop
-        pass
+        """
+        transfers l1b metadata attributes
+        (stored as global attributes in l1bdata netCDF files)
+        """
+        for attribute_name in self.nc.ncattrs():
+            attribute_value = getattr(self.nc, attribute_name)
+            # Convert timestamps back to datetime objects
+            if attribute_name in ["start_time", "stop_time"]:
+                attribute_value = num2date(
+                    attribute_value, self.time_def.units,
+                    calendar=self.time_def.calendar)
+            # Convert flags (integers back to bool)
+            if attribute_name in ["is_orbit_subset", "is_merged_orbit"]:
+                attribute_value = bool(attribute_value)
+            self.info.set_attribute(attribute_name, attribute_value)
+
     def _import_timeorbit(self):
-        pass
+        """
+        transfers l1b timeorbit group
+        (timeorbit datagroup in l1bdata netCDF files)
+        """
+        # Get the datagroup
+        datagroup = self.nc.groups["time_orbit"]
+        # Set satellite position data (measurement is nadir)
+        self.time_orbit.set_position(
+            datagroup.variables["longitude"][:],
+            datagroup.variables["latitude"][:],
+            datagroup.variables["altitude"][:])
+        # Convert the timestamp to datetimes
+        self.time_orbit.timestamp = num2date(
+             datagroup.variables["timestamp"][:],
+             self.time_def.units,
+             calendar=self.time_def.calendar)
+
     def _import_waveforms(self):
-        pass
+        """
+        transfers l1b waveform group
+        (waveform datagroup in l1bdata netCDF files)
+        """
+        # Get the datagroup
+        datagroup = self.nc.groups["waveform"]
+        # Set waveform (measurement is nadir)
+        self.waveform.set_waveform_data(
+            datagroup.variables["power"][:],
+            datagroup.variables["range"][:],
+            datagroup.variables["radar_mode"][:])
+        # Set the valid flag
+        is_valid = datagroup.variables["is_valid"][:].astype(bool)
+        self.waveform.set_valid_flag(is_valid)
+
     def _import_corrections(self):
-        pass
+        """
+        transfers l1b corrections group
+        (waveform corrections in l1bdata netCDF files)
+        """
+        # Get the datagroup
+        datagroup = self.nc.groups["correction"]
+        # Loop over parameters
+        for key in datagroup.variables.keys():
+            variable = np.array(datagroup.variables[key][:])
+            self.correction.set_parameter(key, variable)
+
     def _import_surface_type(self):
-        pass
+        """
+        transfers l1b surface_type group
+        (waveform corrections in l1bdata netCDF files)
+        """
+        # Get the datagroup
+        datagroup = self.nc.groups["surface_type"]
+        self.surface_type.set_flag(datagroup.variables["flag"][:])
+
     def _import_classifier(self):
-        pass
+        """
+        transfers l1b corrections group
+        (waveform corrections in l1bdata netCDF files)
+        """
+        # Get the datagroup
+        datagroup = self.nc.groups["classifier"]
+        # Loop over parameters
+        for key in datagroup.variables.keys():
+            variable = np.array(datagroup.variables[key][:])
+            self.classifier.add(variable, key)
 
 
 class L1bMetaData(object):
