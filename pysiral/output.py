@@ -34,6 +34,7 @@ class L1bDataNC(object):
         self.zlib = False
         self.time_def = NCDateNumDef()
         self._rootgrp = None
+        self.verbose = False
 
     def export(self):
         self._validate()
@@ -63,7 +64,8 @@ class L1bDataNC(object):
 
     def _populate_data_groups(self):
         for datagroup in self.datagroups:
-            print datagroup.upper()
+            if self.verbose:
+                print datagroup.upper()
             # Create the datagroup
             dgroup = self._rootgrp.createGroup(datagroup)
             content = getattr(self.l1b, datagroup)
@@ -83,7 +85,8 @@ class L1bDataNC(object):
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
                 dimensions = tuple(dims[0:len(data.shape)])
-                print " "+parameter, dimensions, data.dtype.str, data.shape
+                if self.verbose:
+                    print " "+parameter, dimensions, data.dtype.str, data.shape
                 var = dgroup.createVariable(
                     parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
