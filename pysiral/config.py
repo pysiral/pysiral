@@ -95,6 +95,20 @@ class ConfigInfo(object):
         return os.path.join(self.pysiral_local_path, subfolder)
 
 
+class RadarModes(object):
+
+    flag_dict = {"lrm": 0, "sar": 1, "sin": 2}
+
+    def __init__(self):
+        pass
+
+    def get_flag(self, mode_name):
+        try:
+            return self.flag_dict[mode_name]
+        except:
+            return None
+
+
 def get_yaml_config(filename, output="treedict"):
     """
     Parses the contents of a configuration file in .yaml format
@@ -139,3 +153,4 @@ def td_branches(t):
         branch_names = []
         branch_objects = []
     return branch_names, branch_objects
+
