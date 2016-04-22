@@ -44,3 +44,17 @@ mss:
             server: ftp.space.dtu.dk
             pwdfile: null
             link: /pub/DTU13/1_MIN/DTU13MSS_1min.nc
+
+    # DTU 15 mean sea surface
+    dtu15:
+        pyclass: DTU1MinGrid
+        docstr: DTU15 mean sea surface (1 minute grid)
+        type: mean_sea_surface
+        frequency: static
+        local_machine_directory: dtu15
+        file: DTU15MSS_1min.nc
+        source:
+            transfer: ftp
+            server: ftp.space.dtu.dk
+            pwdfile: null
+            link: /pub/DTU15/1_MIN/DTU15MSS_1min.nc
