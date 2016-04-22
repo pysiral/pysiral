@@ -122,18 +122,17 @@ class TFMRA(BaseRetracker):
         return y/norm, norm
 
     def _get_first_maxima_index(self, y, noise_level):
-        from scipy import signal
         # Get the main maximum first
-        absolute_maximum_index = np.nanargmax(y)
+        absolute_maximum_index = np.argmax(y)
         # Find relative maxima before the absolute maximum
-        order = self._options.first_maximum_local_order
-        peaks = signal.argrelmax(y[0:absolute_maximum_index], order=order)[0]
+        peaks = findpeaks(y[0:absolute_maximum_index])
         # Check if relative maximum are above the required threshold
         threshold = self._options.first_maximum_normalized_threshold
         leading_maxima = np.where(y[peaks] >= threshold + noise_level)[0]
         # Identify the first maximum
         first_maximum_index = absolute_maximum_index
         if len(leading_maxima) > 0:
+            # first_maximum_index = leading_maxima[0]
             first_maximum_index = peaks[leading_maxima[0]]
         return first_maximum_index
 
