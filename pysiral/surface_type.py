@@ -99,6 +99,9 @@ class SurfaceType(object):
         i = self._SURFACE_TYPE_DICT.values().index(index)
         return self._SURFACE_TYPE_DICT.keys()[i]
 
+    def set_flag(self, flag):
+        self._surface_type = flag
+
     def add_flag(self, flag, type_str):
         """ Add a surface type flag """
         if type_str not in self._SURFACE_TYPE_DICT.keys():
