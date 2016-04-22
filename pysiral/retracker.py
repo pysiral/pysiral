@@ -5,9 +5,10 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
+from pysiral.helper import SimpleTimer
 from treedict import TreeDict
 import numpy as np
-
+import time
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
@@ -42,11 +43,10 @@ class BaseRetracker(object):
         if len(self._index) == 0:
             return False
         # Loop over each waveform of given surface type
-        for index in self._index:
-            print index
-            self._retrack(l1b.waveform.range[index, :],
-                          l1b.waveform.power[index, :],
-                          index)
+        start = time.time()
+        self._retrack(l1b.waveform.range, l1b.waveform.power, self._index)
+        print "retracking %s in %g seconds" % (self._surface_type_id,
+                                               time.time()-start)
         return True
 
     def _set_surface_type_indices(self, l2):
@@ -88,21 +88,22 @@ class TFMRA(BaseRetracker):
         # None so far
         pass
 
-    def _retrack(self, range, wfm, index):
-        # Echo oversampling & filtering
-        x, y = self._filter_waveform(range, wfm)
-        # Normalize filtered waveform
-        y, norm = self._normalize_wfm(y)
-        # Get noise level in normalized units
-        oversampling = self._options.wfm_oversampling_factor
-        noise_level = wfm_get_noise_level(wfm, oversampling)
-        # Find first maxima
-        first_maximum_index = self._get_first_maxima_index(y, noise_level)
-        # Get track point
-        tfmra_range, tfmra_power = self._get_retracker_range(
-            x, y, first_maximum_index, norm)
-        # Mandatory return function
-        self._add_retracked_point(tfmra_range, tfmra_power, index)
+    def _retrack(self, range, wfm, index_list):
+        for index in index_list:
+            # Echo oversampling & filtering
+            x, y = self._filter_waveform(range[index, :], wfm[index, :])
+            # Normalize filtered waveform
+            y, norm = self._normalize_wfm(y)
+            # Get noise level in normalized units
+            oversampling = self._options.wfm_oversampling_factor
+            noise_level = wfm_get_noise_level(wfm, oversampling)
+            # Find first maxima
+            first_maximum_index = self._get_first_maxima_index(y, noise_level)
+            # Get track point
+            tfmra_range, tfmra_power = self._get_retracker_range(
+                x, y, first_maximum_index, norm)
+            # Mandatory return function
+            self._add_retracked_point(tfmra_range, tfmra_power, index)
 
     def _filter_waveform(self, range, wfm):
         n = len(range)
