@@ -191,6 +191,7 @@ class SurfaceTypeClassifier(object):
     """ Parent Class for surface type classifiers """
     def __init__(self):
         self._surface_type = SurfaceType()
+        self._l1b_surface_type = None
 
     @property
     def result(self):
@@ -201,6 +202,9 @@ class SurfaceTypeClassifier(object):
 
     def set_classifiers(self, classifiers):
         self._classifier = classifiers
+
+    def set_l1b_surface_type(self, l1b_surface_type):
+        self._l1b_surface_type = l1b_surface_type
 
     def set_initial_classification(self, surface_type):
         """ Overwrite classification"""
@@ -225,13 +229,14 @@ class RickerTC2014(SurfaceTypeClassifier):
 
     def __init__(self):
         super(RickerTC2014, self).__init__()
-        self._classes = ["unkown", "ocean", "lead", "sea_ice"]
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
         self._set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
+        self._set_land_mask()
 
     def _set_unknown_default(self):
         flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
@@ -283,3 +288,7 @@ class RickerTC2014(SurfaceTypeClassifier):
         # ice.add(l1b.ice_concentration > opt.ice_concentration_min)
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def _set_land_mask(self):
+        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
+        self._surface_type.add_flag(l1b_land_mask.flag, "land")
