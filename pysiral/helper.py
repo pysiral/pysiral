@@ -7,6 +7,7 @@ Created on Tue Jul 21 18:04:43 2015
 
 from dateutil import parser as dtparser
 import numpy as np
+import time
 
 
 def parse_datetime_str(dtstr):
@@ -62,3 +63,34 @@ def month_iterator(start_year, start_month, end_year, end_month):
     end = datetime(end_year, end_month, 1)
     return ((d.year, d.month) for d in rrule(MONTHLY,
             dtstart=start, until=end))
+
+
+class SimpleTimer(object):
+
+    def __init__(self, name=''):
+        self.name = name
+        self.start = time.time()
+        self.last_event = time.time()
+
+    @property
+    def elapsed(self):
+        return time.time() - self.last_event
+
+    @property
+    def total(self):
+        return time.time() - self.start
+
+    def checkpoint(self, name=''):
+        print '{timer} {checkpoint} took {elapsed} seconds'.format(
+            timer=self.name,
+            checkpoint=name,
+            elapsed=self.elapsed,
+        ).strip()
+        self.last_event = time.time()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        print '%s completed in %.8f seconds' % (self.name, self.total)
+        pass
