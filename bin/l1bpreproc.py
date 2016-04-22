@@ -96,7 +96,14 @@ def get_l1bpreproc_argparser():
     return parser
 
 
-def
+def get_mission_preprocessor(mission_id):
+
+    from pysiral.cryosat2.preproc import CryoSat2PreProc
+
+    if mission_id == "cryosat2":
+        return CryoSat2PreProc
+    print "error: mission %s currently not supported" % mission_id
+    sys.exit(1)
 
 
 if __name__ == "__main__":
