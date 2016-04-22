@@ -27,8 +27,6 @@ def l2_processing():
     l1b_directory = os.path.join(l1b_directory, "north", "2015", "03")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.nc"))
 
-    print l1b_files[0]
-
     # Simulate the jobconfig
     # This has to come from the job configuration file
     mission_settings = {
@@ -36,8 +34,9 @@ def l2_processing():
         "options": config.get_mission_defaults("cryosat2")}
     roi_settings = {
         "pyclass": "LowerLatLimit",
+        "hemisphere": "north",
         "options": {
-            "latitude_threshold": -50.0}}
+            "latitude_threshold": 50.0}}
     l2_settings = {
         "corrections": [
             "dry_troposphere",
@@ -103,7 +102,7 @@ def l2_processing():
                     "first_maximum_normalized_threshold": 0.15,
                     "first_maximum_local_order": 1}}},
         "ssh": {
-            "mss": config.auxdata.mss.dtu13,
+            "mss": config.auxdata.mss.dtu15,
             "ssa": {
                 "pyclass": "SSASmoothedLinear",
                 "options": {
