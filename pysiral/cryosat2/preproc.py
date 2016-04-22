@@ -127,7 +127,8 @@ class CryoSat2PreProcJob(object):
         polar_threshold = self.options.polar_threshold
         is_polar = np.abs(l1b.time_orbit.latitude) >= polar_threshold
         polar_subset = np.where(is_polar)[0]
-        l1b.trim_to_subset(polar_subset)
+        if len(polar_subset) != l1b.n_records:
+            l1b.trim_to_subset(polar_subset)
 
         # 3) Trim l1b data from the first to the last ocean data record
         log.info(". trim outer non-ocean regions")
