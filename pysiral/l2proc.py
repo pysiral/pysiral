@@ -12,9 +12,12 @@ from pysiral.mss import *
 from pysiral.roi import *
 from pysiral.surface_type import *
 from pysiral.retracker import *
+from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 
 from collections import deque
+import numpy as np
+import time
 import os
 
 
@@ -290,8 +293,23 @@ class Level2Processor(DefaultLoggingClass):
         # get apparent freeboard
         l2.afrb = l2.elev - l2.mss - l2.ssa
 
-    def _apply_data_quality_filter(self, l2):
-        pass
+    def _apply_freeboard_filter(self, l2):
+        freeboard_filters = self._job.config.filter.freeboard
+        names, filters = td_branches(freeboard_filters)
+        for name, filter_def in zip(names, filters):
+            frbfilter = get_filter(filter_def.pyclass)
+            frbfilter.set_options(**filter_def.options)
+            frbfilter.apply_filter(l2, "afrb")
+            if frbfilter.flag.num == 0:
+                continue
+            self.log.info(". filter message: %s has flagged %g waveforms" % (
+                filter_def.pyclass, frbfilter.flag.num))
+            # Set surface type flag (contains invalid)
+            l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
+            # Remove invalid elevations / freeboards
+            l2.range[frbfilter.flag.indices] = np.nan
+            l2.elev[frbfilter.flag.indices] = np.nan
+            l2.afrb[frbfilter.flag.indices] = np.nan
 
     def _post_processing(self, l2):
         pass
