@@ -154,3 +154,7 @@ def td_branches(t):
         branch_objects = []
     return branch_names, branch_objects
 
+
+def options_from_dictionary(**opt_dict):
+    """ Function for converting option dictionary in Treedict """
+    return TreeDict.fromdict(opt_dict, expand_nested=True)
