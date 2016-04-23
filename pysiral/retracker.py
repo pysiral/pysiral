@@ -5,10 +5,8 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
-from pysiral.helper import SimpleTimer
 from treedict import TreeDict
 import numpy as np
-import time
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
@@ -20,15 +18,15 @@ class BaseRetracker(object):
     """
 
     def __init__(self):
-        self._surface_type_id = None
+        self._indices = None
 
     def set_options(self, **opt_dict):
         # TODO: Create options object
         self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
 
-    def set_surface_type(self, surface_type):
+    def set_indices(self, indices):
         # TODO: Validation
-        self._surface_type_id = surface_type
+        self._indices = indices
 
     def retrack(self, l1b, l2):
         # Initialize the retracked range with an NaN array
@@ -38,33 +36,20 @@ class BaseRetracker(object):
         # data arrays (All retracker must have this method)
         self._create_retracker_properties(l1b.n_records)
         # Set the indices for the given surface type
-        self._set_surface_type_indices(l2)
         # Check if there is something to do
-        if len(self._index) == 0:
+        if self._indices is None:
+            self._indices = np.arange(l1b.n_records)
+        if len(self._indices) == 0:
             return False
         # Loop over each waveform of given surface type
-        start = time.time()
-        self._retrack(l1b.waveform.range, l1b.waveform.power, self._index)
-        print "retracking %s in %g seconds" % (self._surface_type_id,
-                                               time.time()-start)
+        self._retrack(l1b.waveform.range, l1b.waveform.power, self._indices)
         return True
-
-    def _set_surface_type_indices(self, l2):
-        surface_type = l2.surface_type.get_by_name(self._surface_type_id)
-        self._index = surface_type.indices
 
     def _create_default_properties(self, n_records):
         # XXX: Currently only range and status (true: ok)
         self._range = np.ndarray(shape=(n_records))*np.nan
         self._power = np.ndarray(shape=(n_records))*np.nan
         self._status = np.zeros(shape=(n_records), dtype=np.bool)
-
-    def _add_retracked_point(self, range, power, index, **keyw):
-        # XXX: Very basic
-        if np.isfinite(range):
-            self._status[index] = True
-            self._range[index] = range
-            self._power[index] = power
 
     @property
     def range(self):
@@ -75,8 +60,8 @@ class BaseRetracker(object):
         return self._power
 
     @property
-    def index(self):
-        return self._index
+    def indices(self):
+        return self._indices
 
 
 class TFMRA(BaseRetracker):
@@ -103,7 +88,8 @@ class TFMRA(BaseRetracker):
             tfmra_range, tfmra_power = self._get_retracker_range(
                 x, y, first_maximum_index, norm)
             # Mandatory return function
-            self._add_retracked_point(tfmra_range, tfmra_power, index)
+            self._range[index] = tfmra_range
+            self._power[index] = tfmra_power
 
     def _filter_waveform(self, range, wfm):
         n = len(range)
