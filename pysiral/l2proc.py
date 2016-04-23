@@ -12,6 +12,7 @@ from pysiral.mss import *
 from pysiral.roi import *
 from pysiral.surface_type import *
 from pysiral.retracker import *
+from pysiral.validator import get_validator
 
 from collections import deque
 import os
@@ -241,6 +242,21 @@ class Level2Processor(DefaultLoggingClass):
         surface_type.set_l1b_surface_type(l1b.surface_type)
         surface_type.classify()
         l2.set_surface_type(surface_type.result)
+
+    def _validate_surface_types(self, l2):
+        """ Loop over stack of surface type validators """
+        surface_type_validators = self._job.config.validator.surface_type
+        names, validators = td_branches(surface_type_validators)
+        error_states = []
+        error_messages = []
+        for name, validator_def in zip(names, validators):
+            validator = get_validator(validator_def.pyclass)
+            validator.set_options(**validator_def.options)
+            state, message = validator.validate(l2)
+            error_states.append(state)
+            error_messages.append(message)
+        error_status = True in error_states
+        return error_status, error_messages
 
     def _retrack_waveforms(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
