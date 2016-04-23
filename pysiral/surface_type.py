@@ -4,39 +4,14 @@ Created on Mon Jul 27 11:25:04 2015
 
 @author: Stefan
 """
+
+from pysiral.flag import FlagContainer, ANDCondition
+
 import numpy as np
 from treedict import TreeDict
 from collections import OrderedDict
 
 
-class ANDCondition(object):
-
-    def __init__(self):
-        self.flag = None
-
-    def add(self, flag):
-        if self.flag is None:
-            self.flag = flag
-        else:
-            self.flag = np.logical_and(self.flag, flag)
-
-
-class TypeContainer(object):
-
-    def __init__(self, flag):
-        self._flag = flag
-
-    @property
-    def indices(self):
-        return np.where(self._flag)[0]
-
-    @property
-    def flag(self):
-        return self._flag
-
-    @property
-    def num(self):
-        return len(self.indices)
 
 
 class SurfaceType(object):
@@ -125,9 +100,9 @@ class SurfaceType(object):
     def get_by_name(self, name):
         if name in self._SURFACE_TYPE_DICT.keys():
             type_id = self._get_type_id(name)
-            return TypeContainer(self._surface_type == type_id)
+            return FlagContainer(self._surface_type == type_id)
         else:
-            return TypeContainer(
+            return FlagContainer(
                 np.zeros(shape=(self._n_records), dtype=np.bool))
 
     def append(self, annex):
