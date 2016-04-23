@@ -36,7 +36,8 @@ class SurfaceType(object):
         "sea_ice": 4,
         "closed_sea": 5,
         "land_ice": 6,
-        "land": 7}
+        "land": 7,
+        "invalid": 8}
 
     def __init__(self):
         self._surface_type_flags = []
