@@ -13,6 +13,7 @@ from pysiral.roi import *
 from pysiral.surface_type import *
 from pysiral.retracker import *
 
+from collections import deque
 import os
 
 
@@ -22,7 +23,7 @@ class Level2Processor(DefaultLoggingClass):
 
         super(Level2Processor, self).__init__("Level2Processor")
         self._job = job
-        self._orbit = []
+        self._orbit = deque()
         self._l1b_files = []
         self._config = None
         self._initialized = False
