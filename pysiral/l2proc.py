@@ -60,22 +60,50 @@ class Level2Processor(DefaultLoggingClass):
 
 # %% Level2Processor: house keeping methods
 
+    def _clean_up(self):
+        """ Make sure to deallocate memory """
+        pass
 
 # %% Level2Processor: initialization
 
     def _initialize_processor(self):
         """ Read required auxiliary data sets """
+
+        # Instance can be reused
         if self._initialized:
             return
+
+        self.log.info("Initializing processor")
+
+        self.log.info("Processor Options - range corrections:")
+        for correction in self._job.config.corrections:
+            self.log.info("- %s" % correction)
+        self.log.info("Processor Options - surface type classificator: %s" % (
+            self._job.config.surface_type.pyclass))
+        self.log.info("Processor Options - lead interpolator: %s" % (
+            self._job.config.ssh.ssa.pyclass))
+
+        # Set the region of interest option
+        # (required for MSS subsetting)
         self._get_roi()
+
         # Read the mean surface height auxiliary file
         self._get_mss()
+
         # TODO: Read the ice concentration data
+        #       getter function, only reloads if necessary
+
         # TODO: snow depth information
-        # XXX: Ice Type Information?
+        #       requires getter (only reload data if necessary)
+
+        # TODO: Ice Type Information?
+        #       same as SIC -> getter function
+
         self.initialized = True
+        self.log.info("Initializing done")
 
     def _get_roi(self):
+        self.log.info("Setting ROI type: %s" % self._job.roi.pyclass)
         self._roi = globals()[self._job.roi.pyclass]()
         self._roi.set_options(**self._job.roi.options)
 
@@ -84,6 +112,8 @@ class Level2Processor(DefaultLoggingClass):
         local_repository = self._job.local_machine.auxdata_repository.static
         directory = local_repository[settings.local_machine_directory]
         filename = os.path.join(directory, settings.file)
+        self.log.info("Loading mss (%s) file: %s" % (
+            settings.pyclass, filename))
         self._mss = globals()[settings.pyclass]()
         self._mss.set_filename(filename)
         self._mss.set_roi(self._roi)
@@ -94,29 +124,66 @@ class Level2Processor(DefaultLoggingClass):
     def _run_processor(self):
         """ Orbit-wise level2 processing """
         # TODO: Evaluate parallelization
-        for l1b_file in self._l1b_files:
-            l1b = self._read_l1b_file(l1b_file)        # Read the l1b file
-#            in_roi = self._trim_to_roi(l1b)            # region of interest
-#            over_ocean = self._trim_land_margins(l1b)  # trim edges (land)
-#            if not in_roi or not over_ocean:
-#                continue
-            self._range_corrections(l1b)               # geophys. corrections
+        self.log.info("Start Orbit Processing")
+
+        # loop over l1bdata preprocessed orbits
+        for i, l1b_file in enumerate(self._l1b_files):
+
+            # Log the current position in the file stack
+            self.log.info("l1b orbit file %g of %g (%.2f%%)" % (
+                i+1, len(self._l1b_files),
+                float(i+1)/float(len(self._l1b_files))*100.))
+
+            # Read the the level 1b file (l1bdata netCDF is required)
+            l1b = self._read_l1b_file(l1b_file)
+
+            # File subsetting
+            # XXX: This is obsolete due to pre-processing, keep for later?
+            # in_roi = self._trim_to_roi(l1b)
+            # over_ocean = self._trim_land_margins(l1b)
+            # if not in_roi or not over_ocean:
+            #     continue
+
+            # Apply the geophysical range corrections on the waveform range
+            # bins in the l1b data container
+            self._apply_range_corrections(l1b)
+
+            # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
-            # TODO: Get L2 classifiers (ice concentration, ice type)
-            self._classify_surface_types(l1b, l2)      # (sea ice, lead, ...)
-            self._retrack_waveforms(l1b, l2)           # (elevation)
-            self._reference_to_ssh(l2)                 # (ssh, ssa, app frb)
-            self._apply_data_quality_filter(l2)
-            self._post_processing(l2)                  # (radar freeboard)
-            self._create_outputs(l2)                   # (plots, files)
+
+            # Surface type classification (ocean, ice, lead, ...)
+            # (ice type classification comes later)
+            # TODO: Add L2 classifiers (ice concentration, ice type)
+            self._classify_surface_types(l1b, l2)
+
+            # Validate surface type classification
+            # yes/no decision on continuing with orbit
+            error_status, error_messages = self._validate_surface_types(l2)
+            if error_status:
+                for error_message in error_messages:
+                    self.log.info(". validator message: "+error_message)
+                self.log.info(". skip file")
+                continue
+
+            # Get elevation by retracking of different surface types
+            # adds parameter elevation to l2
+            self._retrack_waveforms(l1b, l2)
+
+            # Compute the sea surface anomaly (from mss and lead tie points)
+            # adds parameter ssh, ssa, afrb to l2
+            self._reference_to_ssh(l2)
+
+            # Apply freeboard filter
+            self._apply_freeboard_filter(l2)
+
+            # self._apply_data_quality_filter(l2)
+            # self._post_processing(l2)
+            # self._create_outputs(l2)
             self._add_to_orbit_collection(l2)
 
-    def _clean_up(self):
-        """ Make sure to deallocate memory """
-        pass
-
     def _read_l1b_file(self, l1b_file):
-        """ Read a L1b data file """
+        """ Read a L1b data file (l1bdata netCDF) """
+        self.log.info(". Parsing l1bdata file: %s" % l1b_file)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         return l1b
@@ -160,7 +227,7 @@ class Level2Processor(DefaultLoggingClass):
         l1b.trim_to_subset(trimmed_list)
         return True
 
-    def _range_corrections(self, l1b):
+    def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
         for correction in self._job.config.corrections:
             l1b.apply_range_correction(correction)
@@ -175,15 +242,23 @@ class Level2Processor(DefaultLoggingClass):
         l2.set_surface_type(surface_type.result)
 
     def _retrack_waveforms(self, l1b, l2):
-        """ Do the retracking """
+        """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
         surface_types, retracker_def = td_branches(self._job.config.retracker)
         for i, surface_type in enumerate(surface_types):
+            surface_type_flag = l2.surface_type.get_by_name(surface_type)
+            if surface_type_flag.num == 0:
+                self.log.info(". no waveforms of type %s" % surface_type)
+                continue
+            timestamp = time.time()
             retracker = globals()[retracker_def[i].pyclass]()
             retracker.set_options(**retracker_def[i].options)
-            retracker.set_surface_type(surface_type)
+            retracker.set_indices(surface_type_flag.indices)
             retracker.retrack(l1b, l2)
             l2.update_retracked_range(retracker)
+            self.log.info(". Retrack class %s with %s in %.3f seconds" % (
+                surface_type, retracker_def[i].pyclass,
+                time.time()-timestamp))
 
     def _reference_to_ssh(self, l2):
         # 1. get mss for orbit
