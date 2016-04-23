@@ -110,7 +110,19 @@ def l2_processing():
                     "use_ocean_wfm": False,
                     "smooth_filter_width_m": 25000.0,
                     "smooth_filter_width_footprint_size": 300.0}}},
-        "filter": {},
+        "filter": {
+            "freeboard": {
+                "frb_minmax": {
+                    "pyclass": "FreeboardValidRange",
+                    "options": {
+                        "valid_minimum_point_value": -0.5,
+                        "valid_maximum_point_value": 2.5}}}},
+        "validator": {
+            "surface_type": {
+                "n_leads": {
+                    "pyclass": "LeadFixedMinimumNumber",
+                    "options": {"minimum_n_leads": 3}},
+                }},
         "post_processing": {},
         "output": {}}
 
@@ -126,7 +138,7 @@ def l2_processing():
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
     l2proc.error_handling(raise_on_error=True)
-    l2proc.set_l1b_files(l1b_files[0:1])
+    l2proc.set_l1b_files(l1b_files[0:2])
     l2proc.run()
 
 #    with open(r"D:\pysiral_tfmra_test.dat", "w") as fh:
@@ -155,7 +167,8 @@ def create_surface_type_plot(l2, block=True):
         "#76FF7A",  # Sea Ice
         "#4b4b4d",  # Lakes
         "#FFCC00",  # Land Ice
-        "#826644"   # Land
+        "#826644",  # Land
+        "#FF1700"   # invalid
         ]
     cmap = ListedColormap(rgb_list, name='surface_type')
 
@@ -163,8 +176,8 @@ def create_surface_type_plot(l2, block=True):
     n = float(l2.surface_type.n_records)
     flag = l2.surface_type.flag
     fractions = []
-    labels = [l2.surface_type.name(i) for i in np.arange(8)]
-    for i in np.arange(8):
+    labels = [l2.surface_type.name(i) for i in np.arange(9)]
+    for i in np.arange(9):
         num = len(np.where(flag == i)[0])
         fractions.append(float(num)/n)
 
@@ -191,8 +204,8 @@ def create_surface_type_plot(l2, block=True):
 
     plt.subplot2grid((5, 15), (4, 0), colspan=14)
     ax = plt.gca()
-    im = plt.imshow([flag], aspect=100, interpolation=None,
-                    vmin=-0.5, vmax=7.5, cmap=cmap)
+    im = plt.imshow([flag], aspect=500, interpolation=None,
+                    vmin=-0.5, vmax=8.5, cmap=cmap)
     ax.xaxis.set_tick_params(direction='out')
     ax.xaxis.set_ticks_position('bottom')
     ax.set_xlabel("Record #")
@@ -205,7 +218,7 @@ def create_surface_type_plot(l2, block=True):
 
     plt.subplot2grid((5, 15), (0, 14), rowspan=4)
     cbar = plt.colorbar(im, orientation="vertical", cax=plt.gca())
-    cbar_ticks = np.arange(8)
+    cbar_ticks = np.arange(9)
     cbar.set_ticks(cbar_ticks)
     cbar.set_ticklabels(labels)
     cbar.solids.set_edgecolor("1.0")
@@ -246,7 +259,7 @@ def create_surface_elevation_plot(l2, block=True):
             x[type_definition.indices], l2.elev[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"])
-    plt.plot(x, l2.mss, color="black", lw=2, label="Mean Sea Surface (DTU13)")
+    plt.plot(x, l2.mss, color="black", lw=2, label="Mean Sea Surface (DTU15)")
     plt.plot(x, l2.mss+l2.ssa, color="violet", lw=2,
              label="Sea Surface Anomaly")
     ssh_tiepoints = l2.surface_type.lead.indices
@@ -298,7 +311,7 @@ def create_surface_elevation_plot(l2, block=True):
     ax.xaxis.set_tick_params(direction='out')
     ax.xaxis.set_ticks_position('bottom')
     ax.spines["bottom"].set_position(("axes", -0.01))
-    ax.set_ylim([-0.5, 2])
+    # ax.set_ylim([-0.5, 2])
     ax.set_xlim([0, l2.n_records])
     plt.show(block=block)
 
