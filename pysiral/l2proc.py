@@ -28,9 +28,13 @@ class Level2Processor(DefaultLoggingClass):
         self._initialized = False
         self._error_handler = {"raise_on_error": True}
 
+# %% Level2Processor: class properties
+
     @property
     def orbit(self):
         return self._orbit
+
+# %% Level2Processor: public methods
 
     def error_handling(self, **keyw):
         self._error_handler.update(keyw)
@@ -53,6 +57,11 @@ class Level2Processor(DefaultLoggingClass):
 
     def grid_orbit_collection(self, grid_definitions):
         pass
+
+# %% Level2Processor: house keeping methods
+
+
+# %% Level2Processor: initialization
 
     def _initialize_processor(self):
         """ Read required auxiliary data sets """
@@ -79,6 +88,8 @@ class Level2Processor(DefaultLoggingClass):
         self._mss.set_filename(filename)
         self._mss.set_roi(self._roi)
         self._mss.parse()
+
+# %% Level2Processor: orbit processing
 
     def _run_processor(self):
         """ Orbit-wise level2 processing """
