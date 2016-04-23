@@ -7,6 +7,7 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.config import td_branches
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
+from pysiral.logging import DefaultLoggingClass
 from pysiral.mss import *
 from pysiral.roi import *
 from pysiral.surface_type import *
@@ -15,10 +16,11 @@ from pysiral.retracker import *
 import os
 
 
-class Level2Processor(object):
+class Level2Processor(DefaultLoggingClass):
 
     def __init__(self, job):
 
+        super(Level2Processor, self).__init__("Level2Processor")
         self._job = job
         self._orbit = []
         self._l1b_files = []
