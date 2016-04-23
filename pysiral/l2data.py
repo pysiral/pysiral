@@ -25,10 +25,9 @@ class Level2Data(object):
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
         # XXX: should get an overhaul
-        self.range[retracker.index] = retracker.range[retracker.index]
-        self.elev[retracker.index] = \
-            self.track.altitude[retracker.index] - \
-            retracker.range[retracker.index]
+        ii = retracker.indices
+        self.range[ii] = retracker.range[ii]
+        self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
