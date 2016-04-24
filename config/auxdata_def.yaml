@@ -20,8 +20,9 @@ mss:
     dtu10:
         pyclass: DTU1MinGrid
         docstr: DTU10 mean sea surface (1 minute grid)
-        local_machine_directory: dtu10
+        local_directory: dtu10
         file: DTU10MSS_1min.nc
+        options: null
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
@@ -34,8 +35,9 @@ mss:
     dtu13:
         pyclass: DTU1MinGrid
         docstr: DTU13 mean sea surface (1 minute grid)
-        local_machine_directory: dtu13
+        local_directory: dtu13
         file: DTU13MSS_1min.nc
+        options: null
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
@@ -47,8 +49,9 @@ mss:
     dtu15:
         pyclass: DTU1MinGrid
         docstr: DTU15 mean sea surface (1 minute grid)
-        local_machine_directory: dtu15
+        local_repository: dtu15
         file: DTU15MSS_1min.nc
+        options: null
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
@@ -63,7 +66,11 @@ snow:
     warren99:
         pyclass: Warren99
         docstr: Warren99 snow depth and density climatology
-        local_machine_directory: none
+        local_repository: null
+        options:
+            fyi_correction_factor: 0.5
+            valid_snow_depth_range: [0, 0.6]
+        local_machine_repository: none
         source: None
 
 # List of sea ice concentration products
@@ -73,8 +80,36 @@ sic:
     osisaf:
         pyclass: OsiSafSIC
         docstrs: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
-        filenaming: "ice_conc_{hemisphere}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_machine_directory: osisaf
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_repository: osisaf
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 760
+                    n_lines: 1120
+                    dx: 10000
+                    dy: 10000
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
         subfolders:
             - year
             - month
@@ -92,8 +127,36 @@ sitype:
     osisaf:
         pyclass: OsiSafSIType
         docstrs: OSI-SAF Global Sea Ice Type (OSI-403-b)
-        filenaming: "ice_type_{hemisphere}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_machine_directory: osisaf
+        filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_repository: osisaf
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 760
+                    n_lines: 1120
+                    dx: 10000
+                    dy: 10000
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
         subfolders:
             - year
             - month
