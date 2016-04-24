@@ -287,3 +287,7 @@ def fill_nan(y):
     if valid1 != len(y)-1:
         result[valid1+1:len(y)+1] = y[valid1]
     return result
+
+
+def get_l2_ssh_class(name):
+    return globals()[name]()

@@ -241,3 +241,7 @@ def findpeaks(data, spacing=1, limit=None):
     if limit is not None:
         ind = ind[data[ind] > limit]
     return ind
+
+
+def get_retracker_class(name):
+    return globals()[name]()

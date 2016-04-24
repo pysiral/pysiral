@@ -53,3 +53,8 @@ class LatitudeLongitudeBox(ROIBase):
                                 latitude <= self._options.lat_range[1])
         in_roi = np.where(np.logical_and(in_lon, in_lat))[0]
         return in_roi
+
+
+def get_roi_class(name):
+    return globals()[name]()
+
