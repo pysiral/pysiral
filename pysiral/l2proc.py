@@ -83,20 +83,25 @@ class Level2Processor(DefaultLoggingClass):
 
         self.log.info("Initializing processor")
 
-        self.log.info("Processor Options - range corrections:")
+        self.log.info("Processor Settings - range correction list:")
         for correction in self._job.config.corrections:
-            self.log.info("- %s" % correction)
-        self.log.info("Processor Options - surface type classificator: %s" % (
+            self.log.info(". %s" % correction)
+        self.log.info("Processor Settings - surface type classificator: %s" % (
             self._job.config.surface_type.pyclass))
-        self.log.info("Processor Options - lead interpolator: %s" % (
-            self._job.config.ssh.ssa.pyclass))
+        self.log.info("Processor Settings - lead interpolator: %s" % (
+            self._job.config.ssa.pyclass))
 
         # Set the region of interest option
         # (required for MSS subsetting)
-        self._get_roi()
+        self._set_roi()
+
+        # Load static background field
 
         # Read the mean surface height auxiliary file
-        self._get_mss()
+        self._set_mss()
+
+        # Handler for dynamic data sets (sea ice concentration, ...)
+        # need to be called with timestamps and positions
 
         # TODO: Read the ice concentration data
         #       getter function, only reloads if necessary
@@ -115,7 +120,8 @@ class Level2Processor(DefaultLoggingClass):
         self._roi = get_roi_class(self._job.roi.pyclass)
         self._roi.set_options(**self._job.roi.options)
 
-    def _get_mss(self):
+    def _set_mss(self):
+        """ Loading the mss product file from a static file """
         settings = self._job.config.auxdata.mss
         local_repository = self._job.local_machine.auxdata_repository.mss
         directory = local_repository[settings.local_machine_directory]
