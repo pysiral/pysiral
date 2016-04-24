@@ -8,10 +8,13 @@ from pysiral.config import td_branches
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
-from pysiral.mss import *
-from pysiral.roi import *
-from pysiral.surface_type import *
-from pysiral.retracker import *
+from pysiral.sic import get_l2_sic_handler
+from pysiral.sitype import get_l2_sitype_handler
+from pysiral.snow import get_l2_snow_handler
+from pysiral.mss import get_l2_ssh_class
+from pysiral.roi import get_roi_class
+from pysiral.surface_type import get_surface_type_class
+from pysiral.retracker import get_retracker_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 
@@ -107,9 +110,9 @@ class Level2Processor(DefaultLoggingClass):
         self.initialized = True
         self.log.info("Initializing done")
 
-    def _get_roi(self):
-        self.log.info("Setting ROI type: %s" % self._job.roi.pyclass)
-        self._roi = globals()[self._job.roi.pyclass]()
+    def _set_roi(self):
+        self.log.info("Processor Settings - ROI: %s" % self._job.roi.pyclass)
+        self._roi = get_roi_class(self._job.roi.pyclass)
         self._roi.set_options(**self._job.roi.options)
 
     def _get_mss(self):
@@ -271,7 +274,7 @@ class Level2Processor(DefaultLoggingClass):
                 self.log.info(". no waveforms of type %s" % surface_type)
                 continue
             timestamp = time.time()
-            retracker = globals()[retracker_def[i].pyclass]()
+            retracker = get_retracker_class(retracker_def[i].pyclass)
             retracker.set_options(**retracker_def[i].options)
             retracker.set_indices(surface_type_flag.indices)
             retracker.retrack(l1b, l2)
@@ -284,7 +287,7 @@ class Level2Processor(DefaultLoggingClass):
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
         # 2. get get sea surface anomaly
-        ssa = globals()[self._job.config.ssa.pyclass]()
+        ssa = get_l2_ssh_class(self._job.config.ssa.pyclass)
         ssa.set_options(**self._job.config.ssa.options)
         ssa.interpolate(l2)
         # dedicated setters, else the uncertainty, bias attributes are broken
