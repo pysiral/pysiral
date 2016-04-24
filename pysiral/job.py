@@ -50,10 +50,10 @@ class Level2Job(ProcJob):
         - Transfer relevant content of auxdata_def.yaml into configuration
           structure
         """
-
         auxtypes, auxinfos = td_branches(self.config.auxdata)
         for auxtype, auxinfo in zip(auxtypes, auxinfos):
-            self.log.info("Setting for %s: %s" % (auxtype, auxinfo.name))
+            self.log.info("Validating setting for %s: %s" % (
+                auxtype, auxinfo.name))
             # Locate auxdata setting in config/auxdata_def.yaml
             try:
                 pysiral_def = self.pysiral_def.auxdata[auxtype][auxinfo.name]
