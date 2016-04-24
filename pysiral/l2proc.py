@@ -301,10 +301,16 @@ class Level2Processor(DefaultLoggingClass):
         l2.sic.set_value(sic)
 
     def _classify_surface_types(self, l1b, l2):
-        """ Run the surface type classificator """
-        surface_type = globals()[self._job.config.surface_type.pyclass]()
+        """ Run the surface type classification """
+        pyclass = self._job.config.surface_type.pyclass
+        surface_type = get_surface_type_class(pyclass)
         surface_type.set_options(**self._job.config.surface_type.options)
-        surface_type.set_classifiers(l1b.classifier)
+        # Add all classifiers from l1bdata
+        for classifier_name in l1b.classifier.parameter_list:
+            classifier = getattr(l1b.classifier, classifier_name)
+            surface_type.add_classifiers(classifier, classifier_name)
+        # add sea ice concentration
+        surface_type.add_classifiers(l2.sic, "sic")
         surface_type.set_l1b_surface_type(l1b.surface_type)
         surface_type.classify()
         l2.set_surface_type(surface_type.result)

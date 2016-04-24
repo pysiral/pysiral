@@ -163,11 +163,29 @@ class IceType(object):
         self._ice_type_flag = None
 
 
+class ClassifierContainer(object):
+
+    def __init__(self):
+        self.parameter_list = []
+        self._n_records = None
+
+    def add_parameter(self, parameter, parameter_name):
+        setattr(self, parameter_name, parameter)
+        self.parameter_list.append(parameter_name)
+        if self._n_records is None:
+            self._n_records = len(parameter)
+
+    @property
+    def n_records(self):
+        return self._n_records
+
+
 class SurfaceTypeClassifier(object):
     """ Parent Class for surface type classifiers """
     def __init__(self):
         self._surface_type = SurfaceType()
         self._l1b_surface_type = None
+        self._classifier = ClassifierContainer()
 
     @property
     def result(self):
@@ -176,8 +194,8 @@ class SurfaceTypeClassifier(object):
     def set_options(self, **opt_dict):
         self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
 
-    def set_classifiers(self, classifiers):
-        self._classifier = classifiers
+    def add_classifiers(self, classifier, name):
+        self._classifier.add_parameter(classifier, name)
 
     def set_l1b_surface_type(self, l1b_surface_type):
         self._l1b_surface_type = l1b_surface_type
@@ -220,51 +238,55 @@ class RickerTC2014(SurfaceTypeClassifier):
 
     def _classify_ocean(self):
         opt = self._options.ocean
-        l1b = self._classifier
+        parameter = self._classifier
         ocean = ANDCondition()
         # Peakiness Thresholds
-        ocean.add(l1b.peakiness >= opt.peakiness_min)
-        ocean.add(l1b.peakiness <= opt.peakiness_max)
+        ocean.add(parameter.peakiness >= opt.peakiness_min)
+        ocean.add(parameter.peakiness <= opt.peakiness_max)
         # Stack Standard Deviation
         ssd_threshold = opt.stack_standard_deviation_min
-        ocean.add(l1b.stack_standard_deviation >= ssd_threshold)
+        ocean.add(parameter.stack_standard_deviation >= ssd_threshold)
         # Ice Concentration
-        # ocean.add(l1b.ice_concentration < opt.ice_concentration_min)
+        ocean.add(parameter.sic < opt.ice_concentration_min)
         # OCOG Width
-        ocean.add(l1b.ocog_width >= opt.ocog_width_min)
+        ocean.add(parameter.ocog_width >= opt.ocog_width_min)
         # Done, add flag
         self._surface_type.add_flag(ocean.flag, "ocean")
 
     def _classify_leads(self):
         opt = self._options.lead
-        l1b = self._classifier
+        parameter = self._classifier
         lead = ANDCondition()
         # Stack (Beam) parameters
-        lead.add(l1b.peakiness_l >= opt.peakiness_l_min)
-        lead.add(l1b.peakiness_r >= opt.peakiness_r_min)
-        lead.add(l1b.peakiness >= opt.peakiness_min)
-        lead.add(l1b.stack_kurtosis >= opt.stack_kurtosis_min)
+        lead.add(parameter.peakiness_l >= opt.peakiness_l_min)
+        lead.add(parameter.peakiness_r >= opt.peakiness_r_min)
+        lead.add(parameter.peakiness >= opt.peakiness_min)
+        lead.add(parameter.stack_kurtosis >= opt.stack_kurtosis_min)
         ssd_threshold = opt.stack_standard_deviation_max
-        lead.add(l1b.stack_standard_deviation < ssd_threshold)
+        lead.add(parameter.stack_standard_deviation < ssd_threshold)
         # Ice Concentration
-        # lead.add(l1b.ice_concentration > opt.ice_concentration_max)
+        lead.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
     def _classify_sea_ice(self):
         opt = self._options.sea_ice
-        l1b = self._classifier
+        parameter = self._classifier
         ice = ANDCondition()
         # Stack (Beam) parameters
-        ice.add(l1b.peakiness_r <= opt.peakiness_r_max)
-        ice.add(l1b.peakiness_l <= opt.peakiness_l_max)
-        ice.add(l1b.peakiness <= opt.peakiness_max)
-        ice.add(l1b.stack_kurtosis < opt.stack_kurtosis_max)
+        ice.add(parameter.peakiness_r <= opt.peakiness_r_max)
+        ice.add(parameter.peakiness_l <= opt.peakiness_l_max)
+        ice.add(parameter.peakiness <= opt.peakiness_max)
+        ice.add(parameter.stack_kurtosis < opt.stack_kurtosis_max)
         # Ice Concentration
-        # ice.add(l1b.ice_concentration > opt.ice_concentration_min)
+        ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
     def _set_land_mask(self):
         l1b_land_mask = self._l1b_surface_type.get_by_name("land")
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
+
+
+def get_surface_type_class(name):
+    return globals()[name]()
