@@ -9,7 +9,11 @@ import numpy as np
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb", "range"]
+    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb", "range", "sic",
+                      "sitype", "snow_depth", "snow_dens", "ice_dens",
+                      "sit"]
+
+    _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
     def __init__(self, l1b):
         # Copy necessary fields form l1b
