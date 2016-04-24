@@ -62,5 +62,11 @@ class Level2Job(ProcJob):
                     auxinfo.name, auxtype)
                 self.log.error(msg)
                 sys.exit(1)
+            # Repace local machine directory placeholder with actual directory
+            auxdata_def = self.pysiral_def.local_machine.auxdata_repository
+            auxdata_id = pysiral_def.local_repository
+            if auxdata_id is not None:
+                local_repository = auxdata_def[auxtype][auxdata_id]
+                pysiral_def.local_repository = local_repository
             # Expand the settings with information on location of files, ...
             self.config.auxdata[auxtype].update(pysiral_def)
