@@ -195,10 +195,14 @@ class Level2Processor(DefaultLoggingClass):
 
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
+            # TODO: move to level1bData class
             self._apply_range_corrections(l1b)
 
             # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
+
+            # Add sea ice concentration (can be used as classifier)
+            self._get_sea_ice_concentration(l2)
 
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
@@ -222,6 +226,12 @@ class Level2Processor(DefaultLoggingClass):
             # adds parameter ssh, ssa, afrb to l2
             self._reference_to_ssh(l2)
 
+            # Get sea ice type (may be required for geometrical corrcetion)
+            self._get_sea_ice_type(l2)
+
+            # Get snow depth & density
+            self._get_snow_parameters(l2)
+
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
 
@@ -235,6 +245,7 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info(". Parsing l1bdata file: %s" % l1b_file)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
+        l1b.info.subset_region_name = self._job.roi.hemisphere
         return l1b
 
     def _trim_to_roi(self, l1b):
@@ -280,6 +291,14 @@ class Level2Processor(DefaultLoggingClass):
         """ Apply the range corrections """
         for correction in self._job.config.corrections:
             l1b.apply_range_correction(correction)
+
+    def _get_sea_ice_concentration(self, l2):
+        """ Get sea ice concentration along track from auxdata """
+        sic, msg = self._sic.get_along_track_sic(l2)
+        if not msg == "":
+            self.log.info(". "+msg)
+        # Add to l2data
+        l2.sic.set_value(sic)
 
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classificator """
@@ -336,6 +355,23 @@ class Level2Processor(DefaultLoggingClass):
         l2.ssa.set_uncertainty(ssa.uncertainty)
         # get apparent freeboard
         l2.afrb = l2.elev - l2.mss - l2.ssa
+
+    def _get_sea_ice_type(self, l2):
+        """ Get sea ice concentration along track from auxdata """
+        sitype, msg = self._sitype.get_along_track_sitype(l2)
+        if not msg == "":
+            self.log.info(". "+msg)
+        # Add to l2data
+        l2.sitype.set_value(sitype)
+
+    def _get_snow_parameters(self, l2):
+        """ Get snow depth and density """
+        snow_depth, snow_dens, msg = self._snow.get_along_track_snow(l2)
+        if not msg == "":
+            self.log.info(". "+msg)
+        # Add to l2data
+        l2.snow_depth.set_value(snow_depth)
+        l2.snow_dens.set_value(snow_dens)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
