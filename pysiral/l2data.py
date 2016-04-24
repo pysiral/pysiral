@@ -41,6 +41,15 @@ class Level2Data(object):
     def n_records(self):
         return self._n_records
 
+    @property
+    def hemisphere(self):
+        return self.info.subset_region_name
+
+    @property
+    def hemisphere_code(self):
+        return self._HEMISPHERE_CODES[self.hemisphere]
+
+
 
 class L2ElevationArray(np.ndarray):
     """
