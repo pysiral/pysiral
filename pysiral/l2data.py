@@ -18,7 +18,7 @@ class Level2Data(object):
     def __init__(self, l1b):
         # Copy necessary fields form l1b
         self._n_records = l1b.n_records
-        self.info = np.copy(l1b.info)
+        self.info = l1b.info
         self.track = l1b.time_orbit
         # Create Level2 Data Groups
         self._create_l2_data_items()
