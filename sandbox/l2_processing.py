@@ -50,7 +50,9 @@ def l2_processing():
                 "options": {}},
             "snow": {
                 "name": "warren99",
-                "options": {"fyi_correction_factor": 0.5}}},
+                "options": {
+                    "fyi_correction_factor": 0.5,
+                    "valid_snow_depth_range": [0, 0.6]}}},
         "corrections": [
             "dry_troposphere",
             "wet_troposphere",
@@ -149,7 +151,7 @@ def l2_processing():
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
     l2proc.error_handling(raise_on_error=True)
-    l2proc.set_l1b_files(l1b_files[0:2])
+    l2proc.set_l1b_files(l1b_files[0:5])
     l2proc.run()
 
 #    with open(r"D:\pysiral_tfmra_test.dat", "w") as fh:
@@ -157,8 +159,9 @@ def l2_processing():
 #            fh.write("%14.5f\n" % elevation)
 
     # Test Plots
-    create_surface_type_plot(l2proc.orbit[0], block=False)
-    create_surface_elevation_plot(l2proc.orbit[0])
+    create_orbit_map(l2proc.orbit[1], block=False)
+    create_surface_type_plot(l2proc.orbit[1], block=False)
+    create_surface_elevation_plot(l2proc.orbit[1])
 
 
 def create_surface_type_plot(l2, block=True):
@@ -326,6 +329,35 @@ def create_surface_elevation_plot(l2, block=True):
     ax.set_xlim([0, l2.n_records])
     plt.show(block=block)
 
+
+def create_orbit_map(l2, block=True):
+
+    from mpl_toolkits.basemap import Basemap
+    import matplotlib.pyplot as plt
+
+    grid_keyw = {"dashes": (None, None), "color": "#bcbdbf",
+                 "linewidth": 0.5, "latmax": 88}
+
+    gridb_keyw = {"dashes": (None, None), "color": "#003e6e",
+                  "linewidth": 2, "latmax": 88}
+
+    lon_0 = l2.info.lon_max
+    lat_0 = l2.info.lat_max
+
+    plt.figure("l2 Debug Map", facecolor="#ffffff")
+    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='l')
+    m.fillcontinents(color='#00ace5', lake_color='#00ace5')
+
+    # draw parallels and meridians.
+    m.drawparallels(np.arange(-90., 120., 10.), **grid_keyw)
+    m.drawparallels(np.arange(-50., 51., 100.), **gridb_keyw)
+    m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
+
+    x, y = m(l2.track.longitude, l2.track.latitude)
+    m.plot(x, y, color="#003e6e", linewidth=2.0, zorder=100)
+    m.scatter(x[0], y[0], s=50, color="#003e6e", zorder=100)
+
+    plt.show(block=block)
 
 if __name__ == '__main__':
 
