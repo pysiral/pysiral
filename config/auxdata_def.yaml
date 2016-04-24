@@ -20,14 +20,13 @@ mss:
     dtu10:
         pyclass: DTU1MinGrid
         docstr: DTU10 mean sea surface (1 minute grid)
-        type: mean_sea_surface
-        frequency: static
         local_machine_directory: dtu10
         file: DTU10MSS_1min.nc
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
             pwdfile: null
+            type: static
             link: /pub/DTU10/1_MIN/DTU10MSS_1min.nc
 
 
@@ -35,26 +34,72 @@ mss:
     dtu13:
         pyclass: DTU1MinGrid
         docstr: DTU13 mean sea surface (1 minute grid)
-        type: mean_sea_surface
-        frequency: static
         local_machine_directory: dtu13
         file: DTU13MSS_1min.nc
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
             pwdfile: null
+            type: static
             link: /pub/DTU13/1_MIN/DTU13MSS_1min.nc
 
     # DTU 15 mean sea surface
     dtu15:
         pyclass: DTU1MinGrid
         docstr: DTU15 mean sea surface (1 minute grid)
-        type: mean_sea_surface
-        frequency: static
         local_machine_directory: dtu15
         file: DTU15MSS_1min.nc
         source:
             transfer: ftp
             server: ftp.space.dtu.dk
             pwdfile: null
+            type: static
             link: /pub/DTU15/1_MIN/DTU15MSS_1min.nc
+
+# List of snow depth (density products)
+snow:
+
+    # Warren99 snow climatology
+    warren99:
+        pyclass: Warren99
+        docstr: Warren99 snow depth and density climatology
+        local_machine_directory: none
+        source: None
+
+# List of sea ice concentration products
+sic:
+
+    # OSI-SAf
+    osisaf:
+        pyclass: OsiSafSIC
+        docstrs: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
+        filenaming: "ice_conc_{hemisphere}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_machine_directory: osisaf
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: "/archive/ice/conc/{year}/{month}/ice_conc*polstere*.nc"
+
+# List of sea ice type products
+sitype:
+
+    # OSI-SAf
+    osisaf:
+        pyclass: OsiSafSIType
+        docstrs: OSI-SAF Global Sea Ice Type (OSI-403-b)
+        filenaming: "ice_type_{hemisphere}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_machine_directory: osisaf
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"

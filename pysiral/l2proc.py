@@ -113,8 +113,8 @@ class Level2Processor(DefaultLoggingClass):
         self._roi.set_options(**self._job.roi.options)
 
     def _get_mss(self):
-        settings = self._job.config.ssh.mss
-        local_repository = self._job.local_machine.auxdata_repository.static
+        settings = self._job.config.auxdata.mss
+        local_repository = self._job.local_machine.auxdata_repository.mss
         directory = local_repository[settings.local_machine_directory]
         filename = os.path.join(directory, settings.file)
         self.log.info("Loading mss (%s) file: %s" % (
@@ -284,8 +284,8 @@ class Level2Processor(DefaultLoggingClass):
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
         # 2. get get sea surface anomaly
-        ssa = globals()[self._job.config.ssh.ssa.pyclass]()
-        ssa.set_options(**self._job.config.ssh.ssa.options)
+        ssa = globals()[self._job.config.ssa.pyclass]()
+        ssa.set_options(**self._job.config.ssa.options)
         ssa.interpolate(l2)
         # dedicated setters, else the uncertainty, bias attributes are broken
         l2.ssa.set_value(ssa.value)

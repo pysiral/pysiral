@@ -38,6 +38,19 @@ def l2_processing():
         "options": {
             "latitude_threshold": 50.0}}
     l2_settings = {
+        "auxdata": {
+            "mss": {
+                "name": "dtu15",
+                "options": {}},
+            "sic": {
+                "name": "osisaf",
+                "options": {}},
+            "sitype": {
+                "name": "osisaf",
+                "options": {}},
+            "snow": {
+                "name": "warren99",
+                "options": {"fyi_correction_factor": 0.5}}},
         "corrections": [
             "dry_troposphere",
             "wet_troposphere",
@@ -101,15 +114,13 @@ def l2_processing():
                     "wfm_smoothing_window_size": 11,
                     "first_maximum_normalized_threshold": 0.15,
                     "first_maximum_local_order": 1}}},
-        "ssh": {
-            "mss": config.auxdata.mss.dtu15,
-            "ssa": {
-                "pyclass": "SSASmoothedLinear",
-                "options": {
-                    "critical_number_of_tiepoints": 5,
-                    "use_ocean_wfm": False,
-                    "smooth_filter_width_m": 25000.0,
-                    "smooth_filter_width_footprint_size": 300.0}}},
+        "ssa": {
+            "pyclass": "SSASmoothedLinear",
+            "options": {
+                "critical_number_of_tiepoints": 5,
+                "use_ocean_wfm": False,
+                "smooth_filter_width_m": 25000.0,
+                "smooth_filter_width_footprint_size": 300.0}},
         "filter": {
             "freeboard": {
                 "frb_minmax": {
