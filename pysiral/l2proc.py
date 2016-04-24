@@ -103,15 +103,16 @@ class Level2Processor(DefaultLoggingClass):
         # Handler for dynamic data sets (sea ice concentration, ...)
         # need to be called with timestamps and positions
 
-        # TODO: Read the ice concentration data
-        #       getter function, only reloads if necessary
+        # Sea ice concentration data handler
+        self._set_sic_handler()
 
-        # TODO: snow depth information
-        #       requires getter (only reload data if necessary)
+        # sea ice type data handler (needs to be before snow)
+        self._set_sitype_handler()
 
-        # TODO: Ice Type Information?
-        #       same as SIC -> getter function
+        # snow data handler (needs to provide snow depth and density)
+        self._set_snow_handler()
 
+        # All done
         self.initialized = True
         self.log.info("Initializing done")
 
@@ -123,15 +124,49 @@ class Level2Processor(DefaultLoggingClass):
     def _set_mss(self):
         """ Loading the mss product file from a static file """
         settings = self._job.config.auxdata.mss
-        local_repository = self._job.local_machine.auxdata_repository.mss
-        directory = local_repository[settings.local_machine_directory]
-        filename = os.path.join(directory, settings.file)
-        self.log.info("Loading mss (%s) file: %s" % (
-            settings.pyclass, filename))
-        self._mss = globals()[settings.pyclass]()
+        filename = os.path.join(settings.local_repository, settings.file)
+        self.log.info("Processor Settings - MSS: %s" % settings.pyclass)
+        self.log.info(". loading roi subset from: %s" % filename)
+        self._mss = get_l2_ssh_class(settings.pyclass)
         self._mss.set_filename(filename)
         self._mss.set_roi(self._roi)
         self._mss.parse()
+
+    def _set_sic_handler(self):
+        """ Set the sea ice concentration handler """
+        settings = self._job.config.auxdata.sic
+        self._sic = get_l2_sic_handler(settings.pyclass)
+        if settings.options is not None:
+            self._sic.set_options(**settings.options)
+        self._sic.set_local_repository(settings.local_repository)
+        self._sic.set_filenaming(settings.filenaming)
+        self._sic.set_subfolders(settings.subfolders)
+        self.log.info("Processor Settings - SIC handler: %s" % (
+            settings.pyclass))
+
+    def _set_sitype_handler(self):
+        """ Set the sea ice type handler """
+        settings = self._job.config.auxdata.sitype
+        self._sitype = get_l2_sitype_handler(settings.pyclass)
+        if settings.options is not None:
+            self._sitype.set_options(**settings.options)
+        self._sitype.set_local_repository(settings.local_repository)
+        self._sitype.set_filenaming(settings.filenaming)
+        self._sitype.set_subfolders(settings.subfolders)
+        self.log.info("Processor Settings - SIType handler: %s" % (
+            settings.pyclass))
+
+    def _set_snow_handler(self):
+        """ Set the snow (depth and density) handler """
+        settings = self._job.config.auxdata.snow
+        self._snow = get_l2_snow_handler(settings.pyclass)
+        if settings.options is not None:
+            self._snow.set_options(**settings.options)
+        self._snow.set_local_repository(settings.local_repository)
+        self._snow.set_filenaming(settings.filenaming)
+        self._snow.set_subfolders(settings.subfolders)
+        self.log.info("Processor Settings - Snow handler: %s" % (
+            settings.pyclass))
 
 # %% Level2Processor: orbit processing
 
