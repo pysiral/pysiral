@@ -52,7 +52,10 @@ def l2_processing():
                 "name": "warren99",
                 "options": {
                     "fyi_correction_factor": 0.5,
-                    "valid_snow_depth_range": [0, 0.6]}}},
+                    "smooth_snow_depth": True,
+                    "smooth_filter_width_m": 25000.0,
+                    "valid_snow_depth_range": [0, 0.6],
+                    "invalid_replace": "nan"}}},
         "corrections": [
             "dry_troposphere",
             "wet_troposphere",
