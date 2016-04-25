@@ -71,6 +71,10 @@ class SurfaceType(object):
     def lead(self):
         return self.get_by_name("lead")
 
+    @property
+    def sea_ice(self):
+        return self.get_by_name("sea_ice")
+
     def name(self, index):
         i = self._SURFACE_TYPE_DICT.values().index(index)
         return self._SURFACE_TYPE_DICT.keys()[i]
