@@ -18,6 +18,7 @@ from pysiral.retracker import get_retracker_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
+from pysiral.sit import get_sit_algorithm
 
 from collections import deque
 import numpy as np
@@ -239,9 +240,15 @@ class Level2Processor(DefaultLoggingClass):
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
 
-            # self._apply_data_quality_filter(l2)
-            # self._post_processing(l2)
+            # Convert to thickness
+            self._convert_freeboard_to_thickness(l2)
+
+            # Filter thickness
+            self._apply_thickness_filter(l2)
+
             # self._create_outputs(l2)
+
+            # Add data to orbit stack
             self._add_to_orbit_collection(l2)
 
     def _read_l1b_file(self, l1b_file):
@@ -407,6 +414,30 @@ class Level2Processor(DefaultLoggingClass):
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
             l2.frb[frbfilter.flag.indices] = np.nan
+
+    def _convert_freeboard_to_thickness(self, l2):
+        frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
+        frb2sit.set_options(**self._job.config.sit.options)
+        sit, msg = frb2sit.get_thickness(l2)
+        if not msg == "":
+            self.log.info(". "+msg)
+        l2.sit.set_value(sit)
+
+    def _apply_thickness_filter(self, l2):
+        thickness_filters = self._job.config.filter.thickness
+        names, filters = td_branches(thickness_filters)
+        for name, filter_def in zip(names, filters):
+            sitfilter = get_filter(filter_def.pyclass)
+            sitfilter.set_options(**filter_def.options)
+            sitfilter.apply_filter(l2, "sit")
+            if sitfilter.flag.num == 0:
+                continue
+            self.log.info(". filter message: %s has flagged %g waveforms" % (
+                filter_def.pyclass, sitfilter.flag.num))
+            # Set surface type flag (contains invalid)
+            l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
+            # Remove invalid elevations / freeboards
+            l2.frb[sitfilter.flag.indices] = np.nan
 
     def _post_processing(self, l2):
         pass
