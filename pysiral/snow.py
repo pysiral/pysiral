@@ -5,6 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 from pysiral.config import options_from_dictionary
+from pysiral.filter import idl_smooth
 
 from pyproj import Proj
 import numpy as np
@@ -89,26 +90,27 @@ class Warren99(SnowBaseClass):
         # Apply ice_type (myi_fraction correction)
         scaling = l2.sitype * self._options.fyi_correction_factor + 0.5
         snow_depth *= scaling
+        # Smooth snow depth (if applicable)
+        if self._options.smooth_snow_depth:
+            filter_width = self._options.smooth_filter_width_m
+            # Convert filter width to index
+            filter_width /= l2.footprint_spacing
+            # Round to odd number
+            filter_width = np.floor(filter_width) // 2 * 2 + 1
+            snow_depth = idl_smooth(snow_depth, filter_width)
         return snow_depth, snow_density, ""
 
     def _get_warren99_fit(self, l2):
         # get projection coordinates
+        month = l2.track.timestamp[0].month
         l2x, l2y = self._p(l2.track.longitude, l2.track.latitude)
         # convert to degrees of arc
         l2x = l2x/(self.earth_radius * np.pi/180.0)
         l2y = l2y/(self.earth_radius * np.pi/180.0)
-        # get snow depth fit coefs -> cm
-        sd = self._get_sd_coefs(l2.track.timestamp[0].month)
-        snow_depth = sd[0] + sd[1]*l2x + sd[2]*l2y + \
-            sd[3]*l2x*l2y + sd[4]*l2x*l2x + sd[5]*l2y*l2y
-        snow_depth *= 0.01
-        # get snow water equivalent coefs
-        swe = self._get_swe_coefs(l2.track.timestamp[0].month)
-        snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + \
-            swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
-        snow_water_equivalent *= 0.01
-        # Convert sd and swe to snow density
-        snow_density = snow_water_equivalent/snow_depth*self.water_density
+        # Get W99 snow depth
+        snow_depth = self._get_snow_depth(month, l2x, l2y)
+        # Get W99 snow density
+        snow_density = self._get_snow_density(snow_depth, month, l2x, l2y)
         return snow_depth, snow_density
 
     def _get_sd_coefs(self, month):
@@ -116,6 +118,23 @@ class Warren99(SnowBaseClass):
 
     def _get_swe_coefs(self, month):
         return self.swe_coefs[month-1, 0:6]
+
+    def _get_snow_depth(self, month, l2x, l2y):
+        sd = self._get_sd_coefs(month)
+        snow_depth = sd[0] + sd[1]*l2x + sd[2]*l2y + \
+            sd[3]*l2x*l2y + sd[4]*l2x*l2x + sd[5]*l2y*l2y
+        snow_depth *= 0.01
+        return snow_depth
+
+    def _get_snow_density(self, snow_depth, month, l2x, l2y):
+        # get snow water equivalent coefs
+        swe = self._get_swe_coefs(month)
+        snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + \
+            swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
+        snow_water_equivalent *= 0.01
+        # Convert sd and swe to snow density
+        snow_density = snow_water_equivalent/snow_depth*self.water_density
+        return snow_density
 
 
 def get_l2_snow_handler(name):
