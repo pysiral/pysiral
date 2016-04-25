@@ -26,14 +26,14 @@ class FilterBaseClass(object):
 
 # %% Filter for Level2Processor
 
-class FreeboardValidRange(FilterBaseClass):
+class L2ParameterValidRange(FilterBaseClass):
     """
     Filters freeboard outliers by simple min/max thresholding
     Requires l2 data container and target (either: "afrb", "rfrb")
     """
 
     def __init__(self):
-        super(FreeboardValidRange, self).__init__()
+        super(L2ParameterValidRange, self).__init__()
 
     def _apply_filter(self, l2, target):
         freeboard = getattr(l2, target)
