@@ -5,7 +5,7 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 import numpy as np
-
+from geopy.distance import great_circle
 
 class Level2Data(object):
 
@@ -49,6 +49,12 @@ class Level2Data(object):
     def hemisphere_code(self):
         return self._HEMISPHERE_CODES[self.hemisphere]
 
+    @property
+    def footprint_spacing(self):
+        spacing = great_circle(
+            (self.track.latitude[1], self.track.longitude[1]),
+            (self.track.latitude[0], self.track.longitude[0])).meters
+        return spacing
 
 
 class L2ElevationArray(np.ndarray):
