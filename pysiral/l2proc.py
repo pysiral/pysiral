@@ -17,6 +17,7 @@ from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
+from pysiral.frb import get_frb_algorithm
 
 from collections import deque
 import numpy as np
@@ -232,6 +233,9 @@ class Level2Processor(DefaultLoggingClass):
             # Get snow depth & density
             self._get_snow_parameters(l2)
 
+            # get radar(-derived) from altimeter freeboard
+            self._get_radar_derived_freeboard(l2)
+
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
 
@@ -359,7 +363,7 @@ class Level2Processor(DefaultLoggingClass):
         # dedicated setters, else the uncertainty, bias attributes are broken
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
-        # get apparent freeboard
+        # altimeter freeboard (from radar altimeter w/o corrections)
         l2.afrb = l2.elev - l2.mss - l2.ssa
 
     def _get_sea_ice_type(self, l2):
@@ -378,6 +382,15 @@ class Level2Processor(DefaultLoggingClass):
         # Add to l2data
         l2.snow_depth.set_value(snow_depth)
         l2.snow_dens.set_value(snow_dens)
+
+    def _get_radar_derived_freeboard(self, l2):
+        """ Convert the altimeter freeboard in radar freeboard """
+        frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
+        frbgeocorr.set_options(**self._job.config.frb.options)
+        rfrb, msg = frbgeocorr.get_freeboard(l2)
+        if not msg == "":
+            self.log.info(". "+msg)
+        l2.rfrb.set_value(rfrb)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
