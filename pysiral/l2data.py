@@ -9,7 +9,7 @@ from geopy.distance import great_circle
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "rfrb", "range", "sic",
+    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "frb", "range", "sic",
                       "sitype", "snow_depth", "snow_dens", "ice_dens",
                       "sit"]
 
