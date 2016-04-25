@@ -123,6 +123,10 @@ def l2_processing():
                 "use_ocean_wfm": False,
                 "smooth_filter_width_m": 25000.0,
                 "smooth_filter_width_footprint_size": 300.0}},
+        "frb": {
+            "pyclass": "SnowGeometricCorrection",
+            "options": {
+                "vacuum_light_speed_reduction": 0.22}},
         "filter": {
             "freeboard": {
                 "frb_minmax": {
