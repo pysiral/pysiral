@@ -57,7 +57,7 @@ class Level2Processor(DefaultLoggingClass):
     def run(self):
         """ Run the processor """
         self._initialize_processor()
-        self._run_processor()
+        self._l2_processing_of_orbit_files()
         self._clean_up()
 
     def purge(self):
@@ -171,7 +171,7 @@ class Level2Processor(DefaultLoggingClass):
 
 # %% Level2Processor: orbit processing
 
-    def _run_processor(self):
+    def _l2_processing_of_orbit_files(self):
         """ Orbit-wise level2 processing """
         # TODO: Evaluate parallelization
         self.log.info("Start Orbit Processing")
@@ -221,11 +221,11 @@ class Level2Processor(DefaultLoggingClass):
 
             # Get elevation by retracking of different surface types
             # adds parameter elevation to l2
-            self._retrack_waveforms(l1b, l2)
+            self._waveform_range_retracking(l1b, l2)
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
-            self._reference_to_ssh(l2)
+            self._estimate_ssh_and_radar_freeboard(l2)
 
             # Get sea ice type (may be required for geometrical corrcetion)
             self._get_sea_ice_type(l2)
@@ -234,7 +234,7 @@ class Level2Processor(DefaultLoggingClass):
             self._get_snow_parameters(l2)
 
             # get radar(-derived) from altimeter freeboard
-            self._get_radar_derived_freeboard(l2)
+            self._get_freeboard_from_radar_freeboard(l2)
 
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
@@ -334,7 +334,7 @@ class Level2Processor(DefaultLoggingClass):
         error_status = True in error_states
         return error_status, error_messages
 
-    def _retrack_waveforms(self, l1b, l2):
+    def _waveform_range_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
         surface_types, retracker_def = td_branches(self._job.config.retracker)
@@ -353,7 +353,7 @@ class Level2Processor(DefaultLoggingClass):
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
 
-    def _reference_to_ssh(self, l2):
+    def _estimate_ssh_and_radar_freeboard(self, l2):
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
         # 2. get get sea surface anomaly
@@ -383,14 +383,14 @@ class Level2Processor(DefaultLoggingClass):
         l2.snow_depth.set_value(snow_depth)
         l2.snow_dens.set_value(snow_dens)
 
-    def _get_radar_derived_freeboard(self, l2):
+    def _get_freeboard_from_radar_freeboard(self, l2):
         """ Convert the altimeter freeboard in radar freeboard """
         frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
         frbgeocorr.set_options(**self._job.config.frb.options)
-        rfrb, msg = frbgeocorr.get_freeboard(l2)
+        frb, msg = frbgeocorr.get_freeboard(l2)
         if not msg == "":
             self.log.info(". "+msg)
-        l2.rfrb.set_value(rfrb)
+        l2.frb.set_value(frb)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
@@ -406,7 +406,7 @@ class Level2Processor(DefaultLoggingClass):
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
-            l2.rfrb[frbfilter.flag.indices] = np.nan
+            l2.frb[frbfilter.flag.indices] = np.nan
 
     def _post_processing(self, l2):
         pass
