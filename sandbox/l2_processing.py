@@ -309,7 +309,7 @@ def create_surface_elevation_plot(l2, block=True):
         if len(type_definition.indices) == 0:
             continue
         plt.scatter(
-            x[type_definition.indices], l2.afrb[type_definition.indices],
+            x[type_definition.indices], l2.rfrb[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"],
             label=plot_style[surface_type_name]["label"])
