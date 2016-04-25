@@ -406,9 +406,7 @@ class Level2Processor(DefaultLoggingClass):
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
-            l2.range[frbfilter.flag.indices] = np.nan
-            l2.elev[frbfilter.flag.indices] = np.nan
-            l2.afrb[frbfilter.flag.indices] = np.nan
+            l2.rfrb[frbfilter.flag.indices] = np.nan
 
     def _post_processing(self, l2):
         pass
