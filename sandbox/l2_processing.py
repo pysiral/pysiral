@@ -130,13 +130,25 @@ def l2_processing():
             "pyclass": "SnowGeometricCorrection",
             "options": {
                 "vacuum_light_speed_reduction": 0.22}},
+        "sit": {
+            "pyclass": "SeaIceFreeboardDefault",
+            "options": {
+                "water_density": 1024.0,
+                "fyi_density": 916.7,
+                "myi_density": 882.0}},
         "filter": {
             "freeboard": {
-                "frb_minmax": {
-                    "pyclass": "FreeboardValidRange",
+                "frb_valid_range": {
+                    "pyclass": "L2ParameterValidRange",
+                    "options": {
+                        "valid_minimum_point_value": -0.25,
+                        "valid_maximum_point_value": 2.25}}},
+            "thickness": {
+                "frb_valid_range": {
+                    "pyclass": "L2ParameterValidRange",
                     "options": {
                         "valid_minimum_point_value": -0.5,
-                        "valid_maximum_point_value": 2.5}}}},
+                        "valid_maximum_point_value": 10.5}}}},
         "validator": {
             "surface_type": {
                 "n_leads": {
