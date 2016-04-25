@@ -324,7 +324,7 @@ def create_surface_elevation_plot(l2, block=True):
         if len(type_definition.indices) == 0:
             continue
         plt.scatter(
-            x[type_definition.indices], l2.rfrb[type_definition.indices],
+            x[type_definition.indices], l2.sit[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"],
             label=plot_style[surface_type_name]["label"])
@@ -377,6 +377,7 @@ def create_orbit_map(l2, block=True):
     m.scatter(x[0], y[0], s=50, color="#003e6e", zorder=100)
 
     plt.show(block=block)
+
 
 if __name__ == '__main__':
 
