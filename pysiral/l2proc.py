@@ -87,7 +87,7 @@ class Level2Processor(DefaultLoggingClass):
 
         self.log.info("Processor Settings - range correction list:")
         for correction in self._job.config.corrections:
-            self.log.info(". %s" % correction)
+            self.log.info("- %s" % correction)
         self.log.info("Processor Settings - surface type classificator: %s" % (
             self._job.config.surface_type.pyclass))
         self.log.info("Processor Settings - lead interpolator: %s" % (
@@ -128,7 +128,7 @@ class Level2Processor(DefaultLoggingClass):
         settings = self._job.config.auxdata.mss
         filename = os.path.join(settings.local_repository, settings.file)
         self.log.info("Processor Settings - MSS: %s" % settings.pyclass)
-        self.log.info(". loading roi subset from: %s" % filename)
+        self.log.info("- loading roi subset from: %s" % filename)
         self._mss = get_l2_ssh_class(settings.pyclass)
         self._mss.set_filename(filename)
         self._mss.set_roi(self._roi)
@@ -181,7 +181,7 @@ class Level2Processor(DefaultLoggingClass):
         for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
-            self.log.info("l1b orbit file %g of %g (%.2f%%)" % (
+            self.log.info("+ l1b orbit file %g of %g (%.2f%%)" % (
                 i+1, len(self._l1b_files),
                 float(i+1)/float(len(self._l1b_files))*100.))
 
@@ -216,8 +216,8 @@ class Level2Processor(DefaultLoggingClass):
             error_status, error_messages = self._validate_surface_types(l2)
             if error_status:
                 for error_message in error_messages:
-                    self.log.info(". validator message: "+error_message)
-                self.log.info(". skip file")
+                    self.log.info("- validator message: "+error_message)
+                self.log.info("- skip file")
                 continue
 
             # Get elevation by retracking of different surface types
@@ -246,14 +246,15 @@ class Level2Processor(DefaultLoggingClass):
             # Filter thickness
             self._apply_thickness_filter(l2)
 
-            # self._create_outputs(l2)
+            # Create output files
+            self._create_l2_outputs(l2)
 
             # Add data to orbit stack
             self._add_to_orbit_collection(l2)
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        self.log.info(". Parsing l1bdata file: %s" % l1b_file)
+        self.log.info("- Parsing l1bdata file: %s" % l1b_file)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         l1b.info.subset_region_name = self._job.roi.hemisphere
@@ -307,7 +308,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Get sea ice concentration along track from auxdata """
         sic, msg = self._sic.get_along_track_sic(l2)
         if not msg == "":
-            self.log.info(". "+msg)
+            self.log.info("- "+msg)
         # Add to l2data
         l2.sic.set_value(sic)
 
@@ -348,7 +349,7 @@ class Level2Processor(DefaultLoggingClass):
         for i, surface_type in enumerate(surface_types):
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
-                self.log.info(". no waveforms of type %s" % surface_type)
+                self.log.info("- no waveforms of type %s" % surface_type)
                 continue
             timestamp = time.time()
             retracker = get_retracker_class(retracker_def[i].pyclass)
@@ -356,7 +357,7 @@ class Level2Processor(DefaultLoggingClass):
             retracker.set_indices(surface_type_flag.indices)
             retracker.retrack(l1b, l2)
             l2.update_retracked_range(retracker)
-            self.log.info(". Retrack class %s with %s in %.3f seconds" % (
+            self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
 
@@ -377,7 +378,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Get sea ice concentration along track from auxdata """
         sitype, msg = self._sitype.get_along_track_sitype(l2)
         if not msg == "":
-            self.log.info(". "+msg)
+            self.log.info("- "+msg)
         # Add to l2data
         l2.sitype.set_value(sitype)
 
@@ -385,7 +386,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Get snow depth and density """
         snow_depth, snow_dens, msg = self._snow.get_along_track_snow(l2)
         if not msg == "":
-            self.log.info(". "+msg)
+            self.log.info("- "+msg)
         # Add to l2data
         l2.snow_depth.set_value(snow_depth)
         l2.snow_dens.set_value(snow_dens)
@@ -396,7 +397,7 @@ class Level2Processor(DefaultLoggingClass):
         frbgeocorr.set_options(**self._job.config.frb.options)
         frb, msg = frbgeocorr.get_freeboard(l2)
         if not msg == "":
-            self.log.info(". "+msg)
+            self.log.info("- "+msg)
         l2.frb.set_value(frb)
 
     def _apply_freeboard_filter(self, l2):
@@ -408,7 +409,7 @@ class Level2Processor(DefaultLoggingClass):
             frbfilter.apply_filter(l2, "afrb")
             if frbfilter.flag.num == 0:
                 continue
-            self.log.info(". filter message: %s has flagged %g waveforms" % (
+            self.log.info("- Filter message: %s has flagged %g waveforms" % (
                 filter_def.pyclass, frbfilter.flag.num))
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
@@ -432,7 +433,7 @@ class Level2Processor(DefaultLoggingClass):
             sitfilter.apply_filter(l2, "sit")
             if sitfilter.flag.num == 0:
                 continue
-            self.log.info(". filter message: %s has flagged %g waveforms" % (
+            self.log.info("- Filter message: %s has flagged %g waveforms" % (
                 filter_def.pyclass, sitfilter.flag.num))
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
