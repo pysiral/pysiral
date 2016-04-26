@@ -19,6 +19,7 @@ from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
+from pysiral.output import get_output_class
 
 from collections import deque
 import numpy as np
@@ -441,11 +442,15 @@ class Level2Processor(DefaultLoggingClass):
             # Remove invalid elevations / freeboards
             l2.frb[sitfilter.flag.indices] = np.nan
 
-    def _post_processing(self, l2):
-        pass
-
-    def _create_outputs(self, l2):
-        pass
+    def _create_l2_outputs(self, l2):
+        output_ids, output_defs = td_branches(self._job.config.output)
+        for output_id, output_def in zip(output_ids, output_defs):
+            output = get_output_class(output_def.pyclass)
+            output.set_options(**output_def.options)
+            output.set_export_path(output_def.path)
+            output.write_to_file(l2)
+            self.log.info("- Write %s data file: %s" % (
+                output_id, output.path))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
