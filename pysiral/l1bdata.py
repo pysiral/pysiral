@@ -434,6 +434,14 @@ class L1bMetaData(object):
             hemisphere = "south"
         return hemisphere
 
+    @property
+    def year(self):
+        return "%04g" % self.start_time.year
+
+    @property
+    def month(self):
+        return "%02g" % self.start_time.month
+
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
