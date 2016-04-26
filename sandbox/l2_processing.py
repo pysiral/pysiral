@@ -38,6 +38,7 @@ def l2_processing():
         "options": {
             "latitude_threshold": 50.0}}
     l2_settings = {
+        "run_tag": "pysiral-alpha-test",
         "auxdata": {
             "mss": {
                 "name": "dtu15",
@@ -156,7 +157,27 @@ def l2_processing():
                     "options": {"minimum_n_leads": 3}},
                 }},
         "post_processing": {},
-        "output": {}}
+        "output": {
+            "l2i": {
+                "pyclass": "L2iDataNC",
+                "path": "",
+                "options": {
+                    "subfolders": ["year", "month"],
+                    "parameter": [
+                        "timestamp",
+                        "longitude",
+                        "latitude",
+                        "surface_type",
+                        "elevation",
+                        "mean_sea_surface",
+                        "sea_surface_anomaly",
+                        "radar_freeboard",
+                        "freeboard",
+                        "sea_ice_type",
+                        "snow_depth",
+                        "snow_density",
+                        "ice_density",
+                        "sea_ice_thickness"]}}}}
 
     # Assemble the job order
     job = Level2Job()
@@ -170,7 +191,7 @@ def l2_processing():
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
     l2proc.error_handling(raise_on_error=True)
-    l2proc.set_l1b_files(l1b_files[0:5])
+    l2proc.set_l1b_files(l1b_files[:])
     l2proc.run()
 
 #    with open(r"D:\pysiral_tfmra_test.dat", "w") as fh:
