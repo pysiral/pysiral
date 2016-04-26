@@ -8,7 +8,9 @@ Created on Fri Jul 24 14:04:11 2015
 from pysiral.logging import DefaultLoggingClass
 from pysiral.config import td_branches, ConfigInfo
 from treedict import TreeDict
+from datetime import datetime
 import sys
+import os
 
 
 class ProcJob(DefaultLoggingClass):
@@ -42,6 +44,8 @@ class Level2Job(ProcJob):
     def validate(self):
         self.log.info("validate and expand auxdata")
         self._validate_and_expand_auxdata()
+        self._validate_and_create_output_directory()
+        self.log.info("create output directory")
 
     def _validate_and_expand_auxdata(self):
         """
@@ -70,3 +74,15 @@ class Level2Job(ProcJob):
                 pysiral_def.local_repository = local_repository
             # Expand the settings with information on location of files, ...
             self.config.auxdata[auxtype].update(pysiral_def)
+
+    def _validate_and_create_output_directory(self):
+        output_ids, output_defs = td_branches(self.config.output)
+        export_path = self.pysiral_def.local_machine.product_repository
+        export_path = os.path.join(export_path, self.config.run_tag)
+        time = datetime.now()
+        tstamp = time.strftime("%Y%m%dT%H%M%S")
+        for output_id, output_def in zip(output_ids, output_defs):
+            product_export_path = os.path.join(export_path, tstamp, output_id)
+            self.config.output[output_id].path = product_export_path
+            self.log.info("Exporting %s data in directory %s" % (
+                output_id, product_export_path))
