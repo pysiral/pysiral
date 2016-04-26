@@ -18,8 +18,8 @@ class L2ThicknessAlgorithmBaseClass(object):
         self._options = options_from_dictionary(**opt_dict)
 
     def get_thickness(self, l2):
-        thickness, msg = self._get_thickness(l2)
-        return thickness, msg
+        sit, ice_dens, msg = self._get_thickness(l2)
+        return sit, ice_dens, msg
 
 
 class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
@@ -40,7 +40,7 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         # Classical sea ice freeboard to thickness c
         sit[sea_ice] = l2.frb[sea_ice] * (rho_w)/(rho_w - rho_i[sea_ice]) + \
             l2.snow_depth[sea_ice] * (rho_s[sea_ice])/(rho_w - rho_i[sea_ice])
-        return sit, ""
+        return sit, rho_i, ""
 
     def _get_rho_i(self, myi_fraction):
         """ sea ice density scaled between fyi and myi by myi_fraction """

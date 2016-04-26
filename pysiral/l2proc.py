@@ -419,10 +419,11 @@ class Level2Processor(DefaultLoggingClass):
     def _convert_freeboard_to_thickness(self, l2):
         frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
         frb2sit.set_options(**self._job.config.sit.options)
-        sit, msg = frb2sit.get_thickness(l2)
+        sit, ice_dens, msg = frb2sit.get_thickness(l2)
         if not msg == "":
-            self.log.info(". "+msg)
+            self.log.info("- "+msg)
         l2.sit.set_value(sit)
+        l2.ice_dens.set_value(ice_dens)
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self._job.config.filter.thickness
