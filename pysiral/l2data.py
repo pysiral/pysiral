@@ -6,6 +6,8 @@ Created on Fri Jul 24 16:30:24 2015
 """
 import numpy as np
 from geopy.distance import great_circle
+from collections import OrderedDict
+
 
 class Level2Data(object):
 
@@ -14,6 +16,22 @@ class Level2Data(object):
                       "sit"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
+
+    _PARAMETER_CATALOG = {
+        "timestamp": "timestamp",
+        "longitude": "longitude",
+        "latitude": "latitude",
+        "surface_type": "surface_type_flag",
+        "elevation": "elev",
+        "mean_sea_surface": "mss",
+        "sea_surface_anomaly": "ssa",
+        "radar_freeboard": "afrb",
+        "freeboard": "frb",
+        "sea_ice_type": "sitype",
+        "snow_depth": "snow_depth",
+        "snow_density": "snow_dens",
+        "ice_density": "ice_dens",
+        "sea_ice_thickness": "sit"}
 
     def __init__(self, l1b):
         # Copy necessary fields form l1b
@@ -32,6 +50,11 @@ class Level2Data(object):
         ii = retracker.indices
         self.range[ii] = retracker.range[ii]
         self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
+
+    def get_parameter_by_name(self, parameter_name):
+        source = self._PARAMETER_CATALOG[parameter_name]
+        parameter = getattr(self, source)
+        return parameter
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
@@ -55,6 +78,28 @@ class Level2Data(object):
             (self.track.latitude[1], self.track.longitude[1]),
             (self.track.latitude[0], self.track.longitude[0])).meters
         return spacing
+
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records", self.n_records)])
+        return dimdict
+
+    @property
+    def timestamp(self):
+        return self.track.timestamp
+
+    @property
+    def longitude(self):
+        return self.track.longitude
+
+    @property
+    def latitude(self):
+        return self.track.latitude
+
+    @property
+    def surface_type_flag(self):
+        return self.surface_type.flag
 
 
 class L2ElevationArray(np.ndarray):
