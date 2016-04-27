@@ -137,6 +137,8 @@ class EnvisatSGDR(object):
         self.mds_18hz.reform_timestamp(self.mds_wfm18hz)
         # Reform the longitude, latitude, altitude informaiton
         self.mds_18hz.reform_position(self.mds_ra2)
+        # Retrieve flag data
+        self.mds_18hz.reform_flags(self.mds_ra2)
         # Reform the waveform information
         self.mds_18hz.reform_waveform(self.mds_ra2, self.mds_wfm18hz)
         # Reform the land-mask based surface type flags
@@ -325,6 +327,24 @@ class Envisat18HzArrays(object):
                 setattr(self, correction_name,
                         np.repeat(correction, self.n_blocks))
                 self.sgdr_geophysical_correction_list.append(correction_name)
+
+    def reform_flags(self, mds):
+        # This is neede for Envisat waveform filtering
+        time_orbit = get_structarr_attr(mds, "time_orbit")
+        mcd = get_structarr_attr(time_orbit, "measurement_confidence_data")
+        self.flag_packet_length_error = np.repeat(np.array(
+            [record.flag[0] for record in mcd], dtype=bool), self.n_blocks)
+        self.flag_obdh_invalid = np.repeat(np.array(
+            [record.flag[1] for record in mcd], dtype=bool), self.n_blocks)
+        self.flag_agc_fault = np.repeat(np.array(
+            [record.flag[4] for record in mcd], dtype=bool), self.n_blocks)
+        self.flag_rx_delay_fault = np.repeat(np.array(
+            [record.flag[5] for record in mcd], dtype=bool), self.n_blocks)
+        self.flag_waveform_fault = np.repeat(np.array(
+            [record.flag[6] for record in mcd], dtype=bool), self.n_blocks)
+        flags = get_structarr_attr(mds, "flag")
+        self.ku_chirp_band_id = np.repeat(get_structarr_attr(
+            flags, "average_ku_chirp_band"), self.n_blocks)
 
     def _apply_18Hz_increment(self, data, inc):
         for i in range(self.n_records):

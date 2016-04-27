@@ -194,11 +194,22 @@ class L1bAdapterEnvisat(object):
 
     def _transfer_waveform_collection(self):
         """ Transfers the waveform data (power & range for each range bin) """
+        from pysiral.flag import ANDCondition
         # Transfer the reformed 18Hz waveforms
         self.l1b.waveform.set_waveform_data(
             self.sgdr.mds_18hz.power,
             self.sgdr.mds_18hz.range,
             self.sgdr.radar_mode)
+        # This is from SICCI-1 processor, check of mcd flags
+        valid = ANDCondition()
+        valid.add(np.logical_not(self.sgdr.mds_18hz.flag_packet_length_error))
+        valid.add(np.logical_not(self.sgdr.mds_18hz.flag_obdh_invalid))
+        valid.add(np.logical_not(self.sgdr.mds_18hz.flag_agc_fault))
+        valid.add(np.logical_not(self.sgdr.mds_18hz.flag_rx_delay_fault))
+        valid.add(np.logical_not(self.sgdr.mds_18hz.flag_waveform_fault))
+        # ku_chirp_band_id (0 -> 320Mhz)
+        valid.add(self.sgdr.mds_18hz.ku_chirp_band_id == 0)
+        self.l1b.waveform.set_valid_flag(valid.flag)
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
@@ -226,24 +237,3 @@ class L1bAdapterEnvisat(object):
 
     def _transfer_classifiers(self):
         pass
-#        # Add L1b beam parameter group
-#        beam_parameter_list = [
-#            "stack_standard_deviation", "stack_centre",
-#            "stack_scaled_amplitude", "stack_skewness", "stack_kurtosis"]
-#        for beam_parameter_name in beam_parameter_list:
-#            recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
-#            beam_parameter = [rec[beam_parameter_name] for rec in recs]
-#            self.l1b.classifier.add(beam_parameter, beam_parameter_name)
-#        # Calculate Parameters from waveform counts
-#        # XXX: This is a legacy of the CS2AWI IDL processor
-#        #      Threshold defined for waveform counts not power in dB
-#        wfm = get_structarr_attr(self.cs2l1b.waveform, "wfm")
-#        # Calculate the OCOG Parameter (CryoSat-2 notation)
-#        ocog = CS2OCOGParameter(wfm)
-#        self.l1b.classifier.add(ocog.width, "ocog_width")
-#        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
-#        # Calculate the Peakiness (CryoSat-2 notation)
-#        pulse = CS2PulsePeakiness(wfm)
-#        self.l1b.classifier.add(pulse.peakiness, "peakiness")
-#        self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
-#        self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")

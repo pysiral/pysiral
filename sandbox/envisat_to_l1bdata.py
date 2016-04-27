@@ -27,7 +27,7 @@ def envisat_to_l1bdata():
 
     # Get an L1B SAR file
     l1b_directory = config.local_machine.l1b_repository.envisat.sgdr
-    l1b_directory = os.path.join(l1b_directory, "2012", "03")
+    l1b_directory = os.path.join(l1b_directory, "2011", "03")
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.N1"))
 
     # Read the file
