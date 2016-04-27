@@ -38,7 +38,7 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
             MicroDeg(SBInt32("longitude")),
             UBInt32("source_packet_counter"),
             UBInt32("instrument_mode_id"),
-            UBInt32("measurement_confidence_data"),
+            BitStruct("measurement_confidence_data", Array(32, Bit("flag"))),
             MilliMeter(UBInt32("altitude")),
             Array(20, MilliMeter(SBInt16("18hz_altitude_differences"))),
             MilliMeter(SBInt16("instantaneous_altitude_rate")),
