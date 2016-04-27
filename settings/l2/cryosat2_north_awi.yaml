@@ -3,14 +3,14 @@ mission:
     id: cryosat2
     
 # Regions Settings (for file selection and potential subsetting
-roi_settings:
+roi:
     pyclass: LowerLatLimit
     hemisphere: north
     options:
         latitude_threshold: 50.0
 
 # Settings of Level-2 orbit processing
-l2_settings:
+level2:
 
     # Sources of ancillary datasets
     # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
@@ -152,7 +152,8 @@ l2_settings:
         surface_type: 
             n_leads: 
                 pyclass: LeadFixedMinimumNumber
-                options: minimum_n_leads: 3
+                options: 
+                    minimum_n_leads: 3
             
     # Post-Processing (tbd if needed)            
     post_processing: null
