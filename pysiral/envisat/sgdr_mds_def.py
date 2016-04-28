@@ -118,7 +118,7 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
             Padding(4),
             OneHundredthDecibel(SBInt16("ocean_sigma_corr_ku")),
             OneHundredthDecibel(SBInt16("ocean_sigma_corr_s")),
-            OneHundredthDecibel(SBInt16("sd_18hz_cean_sigma_ku")),
+            OneHundredthDecibel(SBInt16("sd_18hz_ocean_sigma_ku")),
             OneHundredthDecibel(SBInt16("sd_18hz_ocean_sigma_s")),
             UBInt16("n_valid_18hz_ocean_sigma_ku"),
             UBInt16("n_valid_18hz_ocean_sigma_s"),
