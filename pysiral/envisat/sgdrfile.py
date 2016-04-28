@@ -367,8 +367,8 @@ class Envisat18HzArrays(object):
             flags, "average_ku_chirp_band"), self.n_blocks)
         # This needed for surface type classifiation
         backscatter = get_structarr_attr(mds, "backscatter")
-        self.sea_ice_backscatter = get_structarr_attr(
-            backscatter, "18hz_sea_ice_sigma_ku", flat=True)
+        self.sea_ice_backscatter = np.array(get_structarr_attr(
+            backscatter, "18hz_sea_ice_sigma_ku", flat=True), dtype=np.float32)
 
     def _apply_18Hz_increment(self, data, inc):
         for i in range(self.n_records):
