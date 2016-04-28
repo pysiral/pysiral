@@ -5,16 +5,19 @@ Created on Fri Jul 24 14:09:32 2015
 @author: Stefan
 """
 
-from pysiral.config import ConfigInfo
+from pysiral.config import ConfigInfo, get_yaml_config
 from pysiral.job import Level2Job
 from pysiral.l2proc import Level2Processor
 
 import os
 import glob
 import numpy as np
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import argparse
+import sys
 
 
 def l2_processing():
@@ -22,186 +25,89 @@ def l2_processing():
     # Get configuration
     config = ConfigInfo()
 
-    # Get an L1B SAR file
-    l1b_directory = config.local_machine.l1b_repository.cryosat2.l1bdata
-    l1b_directory = os.path.join(l1b_directory, "north", "2015", "03")
-    l1b_files = glob.glob(os.path.join(l1b_directory, "*.nc"))
+    """ get the pysiral configuration info """
+    config = ConfigInfo()
 
-    # Simulate the jobconfig
-    # This has to come from the job configuration file
-    mission_settings = {
-        "id": "cryosat2",
-        "options": config.get_mission_defaults("cryosat2")}
-    roi_settings = {
-        "pyclass": "LowerLatLimit",
-        "hemisphere": "north",
-        "options": {
-            "latitude_threshold": 50.0}}
-    l2_settings = {
-        "run_tag": "pysiral-alpha-test",
-        "auxdata": {
-            "mss": {
-                "name": "dtu15",
-                "options": {}},
-            "sic": {
-                "name": "osisaf",
-                "options": {}},
-            "sitype": {
-                "name": "osisaf",
-                "options": {}},
-            "snow": {
-                "name": "warren99",
-                "options": {
-                    "fyi_correction_factor": 0.5,
-                    "smooth_snow_depth": True,
-                    "smooth_filter_width_m": 25000.0,
-                    "valid_snow_depth_range": [0, 0.6],
-                    "invalid_replace": "nan"}}},
-        "corrections": [
-            "dry_troposphere",
-            "wet_troposphere",
-            "inverse_barometric",
-            "ionospheric",
-            "ocean_tide_elastic",
-            "ocean_tide_long_period",
-            "ocean_loading_tide",
-            "solid_earth_tide",
-            "geocentric_polar_tide"],
-        "surface_type": {
-            "pyclass": "RickerTC2014",
-            "options": {
-                "ocean": {
-                    "peakiness_min": 0.0,
-                    "peakiness_max": 10.0,
-                    "stack_standard_deviation_min": 18.5,
-                    "ice_concentration_min": 5.0,
-                    "ocog_width_min": 38},
-                "lead": {
-                    "peakiness_l_min": 40.0,
-                    "peakiness_r_min": 30.0,
-                    "peakiness_min": 40.0,
-                    "stack_kurtosis_min": 40.0,
-                    "stack_standard_deviation_max": 4.0,
-                    "ice_concentration_min": 70.0},
-                "sea_ice": {
-                    "peakiness_r_max": 15.0,
-                    "peakiness_l_max": 20.0,
-                    "peakiness_max": 30.0,
-                    "stack_kurtosis_max": 8.0,
-                    "ice_concentration_min": 70.0}}},
-        "retracker": {
-            "ocean": {
-                "pyclass": "TFMRA",
-                "options": {
-                    "threshold": 0.5,
-                    "offset": 0.0,
-                    "wfm_oversampling_factor": 10,
-                    "wfm_oversampling_method": "linear",
-                    "wfm_smoothing_window_size": 11,
-                    "first_maximum_normalized_threshold": 0.15,
-                    "first_maximum_local_order": 1}},
-            "lead": {
-                "pyclass": "TFMRA",
-                "options": {
-                    "threshold": 0.5,
-                    "offset": 0.0,
-                    "wfm_oversampling_factor": 10,
-                    "wfm_oversampling_method": "linear",
-                    "wfm_smoothing_window_size": 11,
-                    "first_maximum_normalized_threshold": 0.15,
-                    "first_maximum_local_order": 1}},
-            "sea_ice": {
-                "pyclass": "TFMRA",
-                "options": {
-                    "threshold": 0.5,
-                    "offset": 0.0,
-                    "wfm_oversampling_factor": 10,
-                    "wfm_oversampling_method": "linear",
-                    "wfm_smoothing_window_size": 11,
-                    "first_maximum_normalized_threshold": 0.15,
-                    "first_maximum_local_order": 1}}},
-        "ssa": {
-            "pyclass": "SSASmoothedLinear",
-            "options": {
-                "critical_number_of_tiepoints": 5,
-                "use_ocean_wfm": False,
-                "smooth_filter_width_m": 25000.0,
-                "smooth_filter_width_footprint_size": 300.0}},
-        "frb": {
-            "pyclass": "SnowGeometricCorrection",
-            "options": {
-                "vacuum_light_speed_reduction": 0.22}},
-        "sit": {
-            "pyclass": "SeaIceFreeboardDefault",
-            "options": {
-                "water_density": 1024.0,
-                "fyi_density": 916.7,
-                "myi_density": 882.0}},
-        "filter": {
-            "freeboard": {
-                "frb_valid_range": {
-                    "pyclass": "L2ParameterValidRange",
-                    "options": {
-                        "valid_minimum_point_value": -0.25,
-                        "valid_maximum_point_value": 2.25}}},
-            "thickness": {
-                "frb_valid_range": {
-                    "pyclass": "L2ParameterValidRange",
-                    "options": {
-                        "valid_minimum_point_value": -0.5,
-                        "valid_maximum_point_value": 10.5}}}},
-        "validator": {
-            "surface_type": {
-                "n_leads": {
-                    "pyclass": "LeadFixedMinimumNumber",
-                    "options": {"minimum_n_leads": 3}},
-                }},
-        "post_processing": {},
-        "output": {
-            "l2i": {
-                "pyclass": "L2iDataNC",
-                "path": "",
-                "options": {
-                    "subfolders": ["year", "month"],
-                    "parameter": [
-                        "timestamp",
-                        "longitude",
-                        "latitude",
-                        "surface_type",
-                        "elevation",
-                        "mean_sea_surface",
-                        "sea_surface_anomaly",
-                        "radar_freeboard",
-                        "freeboard",
-                        "sea_ice_type",
-                        "snow_depth",
-                        "snow_density",
-                        "ice_density",
-                        "sea_ice_thickness"]}}}}
+    """ parse command line arguments """
+    parser = get_l2proc_argparser()
+    args = parser.parse_args()
 
+    """ Read the settings file """
+    setting_file = os.path.join(
+        config.pysiral_local_path, "settings", "l2", args.setting_id+".yaml")
+    setting = get_yaml_config(setting_file)
+
+    """ modify settings file that no output is written """
+    setting.level2.output = {}
+
+    """ Add run tag to settings """
+    setting.level2.run_tag = "DUMMY-FOLDER"
+
+    """ Start the processing """
     # Assemble the job order
     job = Level2Job()
     job.local_machine_settings(config.local_machine)
-    job.mission_settings(mission_settings)
-    job.roi_settings(roi_settings)
-    job.l2proc_settings(l2_settings)
+    job.mission_settings(setting.mission)
+    job.roi_settings(setting.roi)
+    job.l2proc_settings(setting.level2)
     job.validate()
 
     # Start the processor
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
     l2proc.error_handling(raise_on_error=True)
-    l2proc.set_l1b_files(l1b_files[:])
+
+    l1bdata_files = get_l1bdata_files(
+        config, job, setting.roi.hemisphere, args.year, args.month)
+    l2proc.set_l1b_files(l1bdata_files[0:1])
     l2proc.run()
 
-#    with open(r"D:\pysiral_tfmra_test.dat", "w") as fh:
-#        for elevation in l2proc.orbit[0].elev:
-#            fh.write("%14.5f\n" % elevation)
-
     # Test Plots
-    create_orbit_map(l2proc.orbit[1], block=False)
-    create_surface_type_plot(l2proc.orbit[1], block=False)
-    create_surface_elevation_plot(l2proc.orbit[1])
+    create_orbit_map(l2proc.orbit[0], block=False)
+    create_surface_type_plot(l2proc.orbit[0], block=False)
+    create_surface_elevation_plot(l2proc.orbit[0])
+
+
+def validate_year_month_list(year_month_list, label):
+    try:
+        datetime(year_month_list[0], year_month_list[1],  1)
+    except ValueError:
+        print "Error: Invalid "+label+" (%04g, %02g)" % (
+            year_month_list[0], year_month_list[1])
+        sys.exit(1)
+
+
+def get_l1bdata_files(config, job, hemisphere, year, month):
+    l1b_repo = config.local_machine.l1b_repository[job.mission.id].l1bdata
+    directory = os.path.join(
+        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
+    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+    return l1bdata_files
+
+
+def get_l2proc_argparser():
+    """ Handle command line arguments """
+    parser = argparse.ArgumentParser()
+    # Mission id string: cryosat2, envisat, ...
+    parser.add_argument(
+        '-s', '-setting', action='store', dest='setting_id',
+        help='setting id of yaml file in /settings/l2', required=True)
+    # Start month as list: [yyyy, mm]
+    parser.add_argument(
+        '-m', action='store', dest='month', type=int, required=True,
+        help='month (-m 03)')
+    # Stop month as list: [yyyy, mm]
+    parser.add_argument(
+        '-y', action='store', dest='year', type=int,  required=True,
+        help='year (-y 2015)')
+    # Show debug statements
+    parser.add_argument(
+        "-v", "--verbose", help="increase output verbosity",
+        action="store_true")
+    # show preprocessor version
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s 0.1a')
+    return parser
 
 
 def create_surface_type_plot(l2, block=True):
@@ -345,7 +251,7 @@ def create_surface_elevation_plot(l2, block=True):
         if len(type_definition.indices) == 0:
             continue
         plt.scatter(
-            x[type_definition.indices], l2.sit[type_definition.indices],
+            x[type_definition.indices], l2.frb[type_definition.indices],
             color=plot_style[surface_type_name]["color"],
             marker=plot_style[surface_type_name]["sym"],
             label=plot_style[surface_type_name]["label"])
