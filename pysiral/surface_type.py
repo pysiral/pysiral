@@ -12,8 +12,6 @@ from treedict import TreeDict
 from collections import OrderedDict
 
 
-
-
 class SurfaceType(object):
     """
     Container for surface type information.
@@ -186,6 +184,7 @@ class ClassifierContainer(object):
 
 class SurfaceTypeClassifier(object):
     """ Parent Class for surface type classifiers """
+
     def __init__(self):
         self._surface_type = SurfaceType()
         self._l1b_surface_type = None
@@ -214,6 +213,10 @@ class SurfaceTypeClassifier(object):
     def has_class(self, name):
         return name in self._classes
 
+    def set_unknown_default(self):
+        flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
+        self._surface_type.add_flag(flag, "unknown")
+
 
 class RickerTC2014(SurfaceTypeClassifier):
     """
@@ -230,15 +233,11 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
-        self._set_unknown_default()
+        self.set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
         self._set_land_mask()
-
-    def _set_unknown_default(self):
-        flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
-        self._surface_type.add_flag(flag, "unknown")
 
     def _classify_ocean(self):
         opt = self._options.ocean
