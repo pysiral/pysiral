@@ -36,6 +36,9 @@ def envisat_to_l1bdata():
     l1b.filename = l1b_files[0]
     l1b.construct()
 
+    # Quick plots
+    envisat_l1b_fullorbit_plot(l1b)
+
     # Limit amounts of waveforms to plot => memory error
     l1b.trim_to_subset(np.arange(2500)+6650)
 
@@ -65,6 +68,33 @@ def envisat_l1b_orbit_plot(l1b):
 
     plt.figure("Envisat Orbit Quickview", facecolor="white")
     m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='i')
+    m.fillcontinents(color='#00ace5', lake_color='#00ace5')
+    # draw parallels and meridians.
+    m.drawparallels(np.arange(-90., 120., 10.), **grid_keyw)
+    m.drawmeridians(np.arange(0., 420., 15.), **grid_keyw)
+
+    x, y = m(l1b.time_orbit.longitude, l1b.time_orbit.latitude)
+    m.plot(x, y, color="#003e6e", linewidth=2.0)
+
+    plt.title("")
+    plt.show(block=True)
+
+
+def envisat_l1b_fullorbit_plot(l1b):
+
+    # AWI eisblau #00ace5
+    # AWI tiefblau #003e6e
+    # AWI grau 1 #4b4b4d
+    # AWI grau 2 #bcbdbf
+
+    grid_keyw = {"dashes": (None, None),
+                 "color": "#bcbdbf",
+                 "linewidth": 0.5,
+                 "latmax": 88}
+
+    plt.figure("Envisat Orbit Quickview", facecolor="white")
+    m = Basemap(projection='cyl', llcrnrlat=-90, urcrnrlat=90,
+                llcrnrlon=-180, urcrnrlon=180, resolution='i')
     m.fillcontinents(color='#00ace5', lake_color='#00ace5')
     # draw parallels and meridians.
     m.drawparallels(np.arange(-90., 120., 10.), **grid_keyw)
