@@ -12,7 +12,8 @@ from pysiral.esa.functions import get_structarr_attr
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.helper import parse_datetime_str
-from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
+from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
+                                EnvisatWaveformParameter)
 
 import numpy as np
 
@@ -149,6 +150,10 @@ class L1bAdapterEnvisat(object):
         self._mission = "envisat"
 
     def construct_l1b(self, l1b):
+        """
+        Read the Envisat SGDR file and transfers its content to a
+        Level1bData instance
+        """
         self.l1b = l1b                        # pointer to L1bData object
         self._read_envisat_sgdr()             # Read Envisat SGDR data file
         self._transfer_metadata()             # (orbit, radar mode, ..)
@@ -236,4 +241,10 @@ class L1bAdapterEnvisat(object):
             self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
-        pass
+        """
+        OCOC retracker parameters are needed for surface type classification
+        in Envisat L2 processing
+        """
+        wfm = self.sgdr.mds_18hz.power
+        parameter = EnvisatWaveformParameter(wfm)
+        self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
