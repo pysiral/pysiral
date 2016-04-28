@@ -90,3 +90,33 @@ class CS2PulsePeakiness(BaseClassifier):
     @property
     def peakiness_l(self):
         return self._peakiness_l
+
+
+class EnvisatWaveformParameter(BaseClassifier):
+    """
+    Currently only computes pulse peakiness for Envisat waveforms
+    from SICCI processor.
+
+    Parameter for Envisat from SICCI Processor
+        skip = 5
+        bins_after_nominal_tracking_bin = 83
+    """
+
+    def __init__(self, wfm, skip=5, bins_after_nominal_tracking_bin=83):
+        super(EnvisatWaveformParameter, self).__init__()
+        self.shape = wfm.shape
+        self.skip = skip
+        self.t_n = bins_after_nominal_tracking_bin
+        self._init_parameter()
+        self._calc_parameter(wfm)
+
+    def _init_parameter(self):
+        n = self.shape[0]
+        self.pulse_peakiness = np.ndarray(shape=(n), dtype=np.float32)
+
+    def _calc_parameter(self, wfm):
+        for i in np.arange(self.shape[0]):
+            # Discard first bins, they are FFT artefacts anyway
+            wave = wfm[i, self.skip:]
+            pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            self.pulse_peakiness[i] = pp
