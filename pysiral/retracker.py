@@ -49,7 +49,7 @@ class BaseRetracker(object):
         # XXX: Currently only range and status (true: ok)
         self._range = np.ndarray(shape=(n_records))*np.nan
         self._power = np.ndarray(shape=(n_records))*np.nan
-        self._status = np.zeros(shape=(n_records), dtype=np.bool)
+        self._flag = np.zeros(shape=(n_records), dtype=np.bool)
 
     @property
     def range(self):
@@ -140,6 +140,115 @@ class TFMRA(BaseRetracker):
         return tfmra_range, tfmra_power
 
 
+class NoneRetracker(BaseRetracker):
+    """ A dummy retracker that just returns NaN's """
+
+    def __init__(self):
+        super(NoneRetracker, self).__init__()
+
+    def _create_retracker_properties(self, n_records):
+        pass
+
+    def _retrack(self, range, wfm, indices):
+        self._range[indices] = np.nan
+        self._power[indices] = np.nan
+        self._flag[indices] = True
+
+
+class SICCILead(BaseRetracker):
+
+    def __init__(self):
+        super(SICCILead, self).__init__()
+
+    def _create_retracker_properties(self, n_records):
+        parameter = ["retracked_bin", "maximum_power", "sigma", "k", "alpha",
+                     "power_in_echo_tail", "rms_echo_and_model"]
+        for parameter_name in parameter:
+            setattr(self, parameter_name,
+                    np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
+
+    def _retrack(self, range, wfm, indices):
+        # Run the retracker
+        self._sicci_lead_retracker(range, wfm, indices)
+        # Filter the results
+        self._filter_results()
+
+    def _sicci_lead_retracker(self, range, wfm, indices):
+        from scipy.optimize import curve_fit
+        # retracker options (see l2 settings file)
+        skip = self._options.skip_first_bins
+        initial_guess = self._options.initial_guess
+        maxfev = self._options.maxfev
+        time = np.arange(wfm.shape[1]-skip).astype(float)
+        x = np.arange(wfm.shape[1])
+
+        # Loop over lead indices
+        for index in indices:
+            wave = wfm[index, skip:]
+            initial_guess[3] = np.max(wave)
+            try:
+                popt, cov = curve_fit(P_lead, time, wave.astype(float),
+                                      p0=initial_guess, maxfev=maxfev)
+            except:
+                continue
+                # popt = [np.nan, np.nan, np.nan, np.nan]
+
+            # Store retracker parameter for filtering
+            # tracking point in units of range bins
+            self.retracked_bin[index] = skip + popt[0]
+            self.k[index] = popt[1]
+            self.sigma[index] = popt[2]
+            self.alpha[index] = popt[3]
+            self.maximum_power[index] = np.amax(wave)
+
+            # Get derived parameter
+            self.power_in_echo_tail[index] = power_in_echo_tail(
+                wfm[index, :], self.retracked_bin[index], self.alpha[index])
+            self.rms_echo_and_model[index] = rms_echo_and_model(
+                wfm[index, :], self.retracked_bin[index],
+                self.k[index], self.sigma[index], self.alpha[index])
+
+            # Get the range by interpolation of range bin location
+            self._range[index] = interp1d(
+                x, range[index, :], kind='linear', copy=False)(
+                    self.retracked_bin[index])
+
+    def _filter_results(self):
+        pass
+
+
+class SICCIOcog(BaseRetracker):
+
+    def __init__(self):
+        super(SICCIOcog, self).__init__()
+
+    def _create_retracker_properties(self, n_records):
+        pass
+
+    def _retrack(self, range, wfm, indices):
+        # retracker options (see l2 settings file)
+        skip = self._options.skip_first_bins
+        percentage = self._options.percentage
+        x = np.arange(wfm.shape[1])
+        # Loop over lead indices
+        for index in indices:
+            wave = np.array(wfm[index, skip:]).astype("float64")
+            waveform = wave*wave
+            sq_sum = np.sum(waveform)
+            waveform = waveform*waveform
+            qa_sum = np.sum(waveform)
+            # Calculate retracking threshold (2.6.2 in ATDBv0)
+            threshold = percentage * np.sqrt(qa_sum / sq_sum)
+            ind_first_over = np.min(np.nonzero(wave > threshold))
+            decimal = (wave[ind_first_over-1] - threshold) / \
+                (wave[ind_first_over-1] - wave[ind_first_over])
+            x_range_bin = skip + ind_first_over - 1 + decimal
+            self._range[index] = interp1d(
+                x, range[index, :], kind='linear', copy=False)(x_range_bin)
+
+
+# %% Function for CryoSat-2 based retracker
+
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
     return np.nanmean(wfm[0:5*oversample_factor])
@@ -229,12 +338,13 @@ def findpeaks(data, spacing=1, limit=None):
     peak_candidate[:] = True
     for s in range(spacing):
         start = spacing - s - 1
-        h_b = x[start : start + len]  # before
+        h_b = x[start:start + len]  # before
         start = spacing
-        h_c = x[start : start + len]  # central
+        h_c = x[start:start + len]  # central
         start = spacing + s + 1
-        h_a = x[start : start + len]  # after
-        peak_candidate = np.logical_and(peak_candidate, np.logical_and(h_c > h_b, h_c > h_a))
+        h_a = x[start:start + len]  # after
+        peak_candidate = np.logical_and(
+            peak_candidate, np.logical_and(h_c > h_b, h_c > h_a))
 
     ind = np.argwhere(peak_candidate)
     ind = ind.reshape(ind.size)
@@ -242,6 +352,57 @@ def findpeaks(data, spacing=1, limit=None):
         ind = ind[data[ind] > limit]
     return ind
 
+
+# %% Functions for SICCI retracker
+
+def P_lead(t, t_0, k, sigma, a):
+    """ Lead waveform model (for SICCILead curve fitting) """
+    # Time for F to be F_L
+    t_b = k*sigma**2
+    # Helper coefficient
+    sq_ktb = np.sqrt(k*t_b)
+    # Polynomial coefficients for F_L
+    aa = ((5*k*sigma) - (4*sq_ktb)) / (2*sigma*t_b*sq_ktb)
+    aaa = ((2*sq_ktb)-(3*k*sigma)) / (2*sigma*t_b*t_b*sq_ktb)
+    # We are mostly interested in time in reference to t_0
+    t_diff = (t - t_0)
+    # F is piecewise. These are (Truth where applicable) * (Function)
+    F_1 = (t <= t_0) * (t_diff/sigma)
+    F_2 = (t >= (t_b+t_0)) * (np.sqrt(np.abs(t_diff)*k))
+    F_L = np.logical_and(
+        t > t_0, t < (t_b+t_0)) * (aaa*t_diff**3 + aa*t_diff**2+t_diff/sigma)
+    # Compile F
+    F = F_1 + F_L + F_2
+    return a*np.exp(-F*F)  # Return e^-f^2(t)
+
+
+def power_in_echo_tail(wfm, retracked_bin, alpha, pad=3):
+    """
+    The tail power is computed by summing the bin count in all bins from
+    2 bins beyond the tracking point to the end of the range gate, then
+    normalised by dividing by the value of alpha returned from the lead
+    retracking
+    source: SICCI
+    """
+    tracking_point = int(retracked_bin)
+    return sum(wfm[tracking_point+pad:])/alpha
+
+
+def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
+    """
+    The root sum squared difference between the echo and the fitted function
+    in the lead retracking is computed. The 5 bins before the tracking point
+    are used as the echo rise.
+    """
+    tracking_point = int(retracked_bin)
+    time = np.arange(len(wfm)).astype(float)
+    modelled_wave = P_lead(time, retracked_bin, k, sigma, alpha)
+    diff = wfm[tracking_point-4:tracking_point+1] - \
+        modelled_wave[tracking_point-4:tracking_point+1]
+    return np.sqrt(np.sum(diff*diff)/5)/alpha
+
+
+# %% Retracker getter funtion
 
 def get_retracker_class(name):
     return globals()[name]()
