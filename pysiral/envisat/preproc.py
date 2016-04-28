@@ -82,7 +82,7 @@ class EnvisatPreProcJob(object):
             log.info(". %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
-            debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
+            # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
 
             # Loop over segments and check connectivity
             for l1b_segment in l1b_segments:
@@ -233,7 +233,7 @@ class EnvisatPreProcJob(object):
         log = self.log
 
         # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
-        debug_stack_export_orbit_plot(l1bdata_stack)
+        # debug_stack_export_orbit_plot(l1bdata_stack)
         # Concatenate the files
         l1b_merged = l1bdata_stack[0]
         l1bdata_stack.pop(0)
