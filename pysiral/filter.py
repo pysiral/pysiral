@@ -111,6 +111,8 @@ def fill_nan(y):
     result = np.copy(y)
     # Get first and last valid index
     no_nan = np.where(np.isfinite(y))[0]
+    if len(no_nan) == 0:
+        return result
     valid0, valid1 = np.amin(no_nan), np.amax(no_nan)
     # Cut the "inside" section that is bounded by valid measurements
     y_inside = y[valid0:valid1+1]
