@@ -80,10 +80,15 @@ envisat:
 
     options:
 
+        polar_threshold: 50.0
+
         geophysical_corrections:
 
+            # For an unkown reason deepcopy fails if this tag does not exist
+            default: null
+
             ionospheric_correction_source:
-                default: model_ionosphere_ku
+                selection: model_ionosphere_ku
                 target: ionosphere
                 type: selector
                 options:
@@ -94,7 +99,7 @@ envisat:
                     Source of Ionospheric Correction in SGDR data
 
             wet_tropospheric_correction_source:
-                default: wet_troposphere_model
+                selection: wet_troposphere_model
                 target: wet_troposphere
                 type: selector
                 options:
@@ -104,7 +109,7 @@ envisat:
                     Source of wet tropospheric correction in SGDR data
 
             tide_loading_source:
-                default: ocean_loading_tide_1
+                selection: ocean_loading_tide_1
                 target: ocean_loading_tide
                 type: selector
                 options:
@@ -114,7 +119,7 @@ envisat:
                     Source of tide loading correction in SGDR data
 
             total_geocentric_ocean_tide_source:
-                default: total_geocentric_ocean_tide_1
+                selection: total_geocentric_ocean_tide_1
                 target: total_geocentric_ocean_tide
                 type: selector
                 options:

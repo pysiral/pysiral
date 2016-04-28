@@ -227,7 +227,7 @@ class L1bAdapterEnvisat(object):
         correction_options = mission_defaults.geophysical_corrections
         for option in correction_options.iterbranches():
             self.l1b.correction.set_parameter(
-                    option.target, getattr(mds, option.default))
+                    option.target, getattr(mds, option.selection))
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.mds_18hz.surface_type
