@@ -140,7 +140,7 @@ class EnvisatPreProcJob(object):
         is_antarctic = FlagContainer(
             l1b.time_orbit.latitude < -1.*polar_threshold)
         antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-        self.log.info("Extracted Antrctic subset (%g records)" % (
+        self.log.info("Extracted Antarctic subset (%g records)" % (
             is_antarctic.num))
 
         # Order in sequence depeding on start time
