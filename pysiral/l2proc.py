@@ -354,7 +354,8 @@ class Level2Processor(DefaultLoggingClass):
                 continue
             timestamp = time.time()
             retracker = get_retracker_class(retracker_def[i].pyclass)
-            retracker.set_options(**retracker_def[i].options)
+            if retracker_def[i].options is not None:
+                retracker.set_options(**retracker_def[i].options)
             retracker.set_indices(surface_type_flag.indices)
             retracker.retrack(l1b, l2)
             l2.update_retracked_range(retracker)
