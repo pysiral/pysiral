@@ -329,7 +329,27 @@ class Envisat18HzArrays(object):
                 self.sgdr_geophysical_correction_list.append(correction_name)
 
     def reform_flags(self, mds):
-        # This is neede for Envisat waveform filtering
+        """
+        Retrieves a set of paramaters from the Envisat mds, that are needed
+        as flags for waveform flagging and surface type filtering.
+
+        Get the following parameters for the waveform is_valid flag:
+
+        1) MCD flags (time_orbit.measurement_confidence_data)
+
+           mcd[0]: packet_length_error
+           mcd[1]: obdh_invalid
+           mcd[4]: agc_fault
+           mcd[5]: rx_delay_fault
+           mcd[6]: waveform_fault
+
+        2) average_ku_chirp_band (must be 0: 320Mhz)
+
+        Get the follwing parameter for surface type classification/filtering
+
+            sea_ice_backscatter: backscatter.18hz_sea_ice_sigma_ku
+
+        """
         time_orbit = get_structarr_attr(mds, "time_orbit")
         mcd = get_structarr_attr(time_orbit, "measurement_confidence_data")
         self.flag_packet_length_error = np.repeat(np.array(
