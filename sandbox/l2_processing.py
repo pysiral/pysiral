@@ -151,7 +151,7 @@ def create_surface_type_plot(l2, block=True):
     pie_labels = pie_labels[non_zero]
     pie_colors = pie_colors[non_zero]
 
-    plt.figure(facecolor="white")
+    plt.figure("Surface Type Classification", facecolor="white")
 
     plt.subplot2grid((5, 15), (0, 0), colspan=14, rowspan=4)
     plt.gca().set_aspect(1.0)
@@ -206,7 +206,7 @@ def create_surface_elevation_plot(l2, block=True):
             "sym": "h",
             "label": "Sea Ice Waveforms"}}
 
-    plt.figure(facecolor="white")
+    plt.figure("Elevation and Freeboard", facecolor="white")
     # plot elevations
     plt.subplot(211)
     ax = plt.gca()
@@ -290,7 +290,7 @@ def create_orbit_map(l2, block=True):
     lon_0 = l2.info.lon_max
     lat_0 = l2.info.lat_max
 
-    plt.figure("l2 Debug Map", facecolor="#ffffff")
+    plt.figure("l2 Orbit Map", facecolor="#ffffff")
     m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='l')
     m.fillcontinents(color='#00ace5', lake_color='#00ace5')
 
