@@ -1,7 +1,7 @@
 # Level 2 processor settings are mission specific
 mission:
     id: envisat
-    
+
 # Regions Settings (for file selection and potential subsetting
 roi:
     pyclass: LowerLatLimit
@@ -15,7 +15,7 @@ level2:
     # Sources of ancillary datasets
     # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
     auxdata:
-        
+
         mss:
             name: dtu15
             options: null
@@ -25,17 +25,17 @@ level2:
         sitype:
             name: osisaf
             options: null
-        snow: 
+        snow:
             name: warren99
-            options: 
+            options:
                 fyi_correction_factor: 0.5
                 smooth_snow_depth: true
                 smooth_filter_width_m: 25000.0
                 valid_snow_depth_range: [0, 0.6]
                 invalid_replace: nan
-   
+
     # geophysical corrections applied to the l1b range window
-    corrections: 
+    corrections:
         - dry_troposphere
         - wet_troposphere
         - inverse_barometric
@@ -45,104 +45,118 @@ level2:
         - ocean_loading_tide
         - solid_earth_tide
         - geocentric_polar_tide
-        
+
     # Surface type classification algorithm
-    surface_type: 
+    surface_type:
         pyclass: RA2SICCI
-        options: 
+        options:
             ocean:
                 pulse_peakiness_max: 3.0
                 ice_concentration_min: 5.0
-            lead: 
+            lead:
                 pulse_peakiness_min: 30.0
                 ice_concentration_min: 70.0
-            sea_ice: 
+            sea_ice:
                 pulse_peakiness_max: 3.0
                 ice_concentration_min: 70.0
-                
+
     # Retracking algorithm dependent on surface type
-    retracker: 
-        ocean: 
+    retracker:
+        ocean:
             pyclass: NoneRetracker
             options: null
-        lead: 
+        lead:
             pyclass: SICCILead
-            options: 
+            options:
                 skip_first_bins: 5
                 initial_guess: [46.5, 0.5, 0.5, None]
                 maxfev: 5000
-        sea_ice: 
+                filter:
+                    maximum_std_of_gaussion_rise: 0.93
+                    minimum_bin_count_maxpower: 35
+                    sensible_lead_retracked_bin: [44.5, 46.5]
+                    minimum_echo_backscatter: 25
+                    maximum_power_in_echo_tail: 0.75
+                    maximum_rms_echo_model_diff: 20
+
+        sea_ice:
             pyclass: SICCIOcog
-            options: 
+            options:
                 skip_first_bins: 5
                 percentage: 0.5
-                
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
-    ssa: 
+                leading_edge_width_percentage: 0.3
+                filter:
+                    sensible_seaice_retracked_bin: [44, 46]
+                    maximum_leading_edge_width: 4
+                    maximum_echo_tail_line_deviation: 0.3
+
+
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    ssa:
         pyclass: SSASmoothedLinear
-        options: 
+        options:
             use_ocean_wfm: False
             smooth_filter_width_m: 25000.0
             smooth_filter_width_footprint_size: 380.0
-            
+
     # Algorithm for converting radar freeboard into freeboard
-    frb: 
+    frb:
         pyclass: SnowGeometricCorrection
-        options: 
+        options:
             vacuum_light_speed_reduction: 0.22
-            
+
     # Algorithm for getting sea ice thickness from other l2 parameters
-    sit: 
+    sit:
         pyclass: SeaIceFreeboardDefault
-        options: 
+        options:
             water_density: 1024.0
             fyi_density: 916.7
             myi_density: 882.0
-            
-    # List of filter at different stages of l2 procesing 
+
+    # List of filter at different stages of l2 procesing
     # (can be list of filters)
-    filter: 
-    
+    filter:
+
         # Filters after freeboard computation
-        freeboard: 
-            frb_valid_range: 
+        freeboard:
+            frb_valid_range:
                 pyclass: L2ParameterValidRange
-                options: 
+                options:
                     valid_minimum_point_value: -0.25
                     valid_maximum_point_value: 2.25
-                    
+
         # Filters after thickness computation
-        thickness: 
-            frb_valid_range: 
+        thickness:
+            frb_valid_range:
                 pyclass: L2ParameterValidRange
-                options: 
+                options:
                     valid_minimum_point_value: -0.5
                     valid_maximum_point_value: 10.5
-                    
+
     # Tests if l1b orbit file is valid
-    validator: 
-    
+    validator:
+
         # Tests (Can be several) after surface type classification
-        surface_type: 
-            n_leads: 
+        surface_type:
+            n_leads:
                 pyclass: LeadFixedMinimumNumber
-                options: 
+                options:
                     minimum_n_leads: 3
-            
-    # Post-Processing (tbd if needed)            
+
+    # Post-Processing (tbd if needed)
     post_processing: null
-    
+
     # Definition of output files of the l2 orbit datasets
     # (can be several if needed)
-    output: 
-        l2i: 
+    output:
+        l2i:
             pyclass: L2iDataNC
             path: null
-            options: 
-                subfolders: 
-                    - year 
+            options:
+                subfolders:
+                    - year
                     - month
-                parameter: 
+                parameter:
                     - timestamp
                     - longitude
                     - latitude
