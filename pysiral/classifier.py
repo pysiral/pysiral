@@ -118,5 +118,8 @@ class EnvisatWaveformParameter(BaseClassifier):
         for i in np.arange(self.shape[0]):
             # Discard first bins, they are FFT artefacts anyway
             wave = wfm[i, self.skip:]
-            pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            try:
+                pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            except ZeroDivisionError:
+                pp = np.nan
             self.pulse_peakiness[i] = pp
