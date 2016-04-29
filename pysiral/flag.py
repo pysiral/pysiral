@@ -13,6 +13,9 @@ class FlagContainer(object):
     def __init__(self, flag):
         self._flag = flag
 
+    def set_flag(self, flag):
+        self._flag = flag
+
     @property
     def indices(self):
         return np.where(self._flag)[0]

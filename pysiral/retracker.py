@@ -6,6 +6,7 @@ Created on Fri Jul 31 15:48:58 2015
 """
 
 from treedict import TreeDict
+from pysiral.flag import ANDCondition, FlagContainer
 import numpy as np
 
 # Utility methods for retracker:
@@ -19,6 +20,7 @@ class BaseRetracker(object):
 
     def __init__(self):
         self._indices = None
+        self._classifier = None
 
     def set_options(self, **opt_dict):
         # TODO: Create options object
@@ -27,6 +29,9 @@ class BaseRetracker(object):
     def set_indices(self, indices):
         # TODO: Validation
         self._indices = indices
+
+    def set_classifier(self, classifier):
+        self._classifier = classifier
 
     def retrack(self, l1b, l2):
         # Initialize the retracked range with an NaN array
@@ -63,8 +68,13 @@ class BaseRetracker(object):
     def indices(self):
         return self._indices
 
+    @property
+    def error_flag(self):
+        return FlagContainer(self._flag)
+
 
 class TFMRA(BaseRetracker):
+    """ Default Retracker from AWI CryoSat-2 production system """
 
     def __init__(self):
         super(TFMRA, self).__init__()
@@ -141,7 +151,11 @@ class TFMRA(BaseRetracker):
 
 
 class NoneRetracker(BaseRetracker):
-    """ A dummy retracker that just returns NaN's """
+    """
+    A dummy retracker that just returns NaN's but does not flag
+    the result as invalid. Should be used if a certain surface type
+    should not be used
+    """
 
     def __init__(self):
         super(NoneRetracker, self).__init__()
@@ -152,7 +166,7 @@ class NoneRetracker(BaseRetracker):
     def _retrack(self, range, wfm, indices):
         self._range[indices] = np.nan
         self._power[indices] = np.nan
-        self._flag[indices] = True
+        self._flag[indices] = False
 
 
 class SICCILead(BaseRetracker):
@@ -161,8 +175,8 @@ class SICCILead(BaseRetracker):
         super(SICCILead, self).__init__()
 
     def _create_retracker_properties(self, n_records):
-        parameter = ["retracked_bin", "maximum_power", "sigma", "k", "alpha",
-                     "power_in_echo_tail", "rms_echo_and_model"]
+        parameter = ["retracked_bin", "maximum_power_bin", "sigma", "k",
+                     "alpha", "power_in_echo_tail", "rms_echo_and_model"]
         for parameter_name in parameter:
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
@@ -199,7 +213,7 @@ class SICCILead(BaseRetracker):
             self.k[index] = popt[1]
             self.sigma[index] = popt[2]
             self.alpha[index] = popt[3]
-            self.maximum_power[index] = np.amax(wave)
+            self.maximum_power_bin[index] = np.argmax(wave)
 
             # Get derived parameter
             self.power_in_echo_tail[index] = power_in_echo_tail(
@@ -214,7 +228,80 @@ class SICCILead(BaseRetracker):
                     self.retracked_bin[index])
 
     def _filter_results(self):
-        pass
+        """ Filter the lead results based on threshold defined in SICCI """
+
+        thrs = self._options.filter
+        clf = self._classifier
+
+        valid = ANDCondition()
+        valid.add(self.sigma < thrs.maximum_std_of_gaussion_rise)
+        valid.add(self.maximum_power_bin > thrs.minimum_bin_count_maxpower)
+        valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+        valid.add(self.power_in_echo_tail < thrs.maximum_power_in_echo_tail)
+        valid.add(self.rms_echo_and_model < thrs.maximum_rms_echo_model_diff)
+        valid.add(self.retracked_bin > thrs.sensible_lead_retracked_bin[0])
+        valid.add(self.retracked_bin < thrs.sensible_lead_retracked_bin[1])
+
+        # Error flag is also computed for other surface types, do not
+        # overide those
+        error_flag = self._flag
+        error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
+        self._flag = error_flag
+
+#        import matplotlib.pyplot as plt
+#
+#        f, ax = plt.subplots(6, sharex=True, facecolor="white",
+#                             figsize=(10, 16))
+#        ax[0].plot(self.retracked_bin[self.indices], lw=0.5, color="#00ace5")
+#        ax[0].set_title("retracked_bin")
+#        ax[0].axhline(thrs.sensible_lead_retracked_bin[0], color="green")
+#        ax[0].axhline(thrs.sensible_lead_retracked_bin[1], color="red")
+#
+#        ax[1].plot(self.maximum_power_bin[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[1].set_title("maximum_power_bin")
+#        ax[1].axhline(thrs.minimum_bin_count_maxpower, color="green")
+#
+#        ax[2].plot(self.sigma[self.indices], lw=0.5, color="#00ace5")
+#        ax[2].set_title("sigma")
+#        ax[2].axhline(thrs.maximum_std_of_gaussion_rise, color="red")
+#
+#        ax[3].plot(clf.sea_ice_backscatter[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[3].set_title("sea_ice_backscatter")
+#        ax[3].axhline(thrs.minimum_echo_backscatter, color="green")
+#
+#        ax[4].plot(self.power_in_echo_tail[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[4].set_title("power_in_echo_tail")
+#        ax[4].axhline(thrs.maximum_power_in_echo_tail, color="red")
+#        ax[4].set_ylim(0, 1)
+#
+#        ax[5].plot(self.rms_echo_and_model[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[5].set_title("rms_echo_and_model")
+#        ax[5].axhline(thrs.maximum_rms_echo_model_diff, color="red")
+#        ax[5].set_ylim(0, 30)
+#
+#
+#        for i in np.arange(6):
+#            ax[i].yaxis.grid(True, which='minor')
+#            ax[i].yaxis.set_tick_params(direction='out')
+#            ax[i].yaxis.set_ticks_position('left')
+#            ax[i].xaxis.set_ticks([])
+#            spines_to_remove = ["top", "right", "bottom"]
+#            for spine in spines_to_remove:
+#                ax[i].spines[spine].set_visible(False)
+#
+#        plt.tight_layout()
+#
+#
+#        plt.figure()
+#        plt.plot(valid.flag[self.indices])
+#        plt.ylim(-0.1, 1.1)
+#
+#        plt.show(block=True)
+#        stop
 
 
 class SICCIOcog(BaseRetracker):
@@ -223,29 +310,96 @@ class SICCIOcog(BaseRetracker):
         super(SICCIOcog, self).__init__()
 
     def _create_retracker_properties(self, n_records):
-        pass
+        parameter = ["retracked_bin", "leading_edge_width", "tail_shape"]
+        for parameter_name in parameter:
+            setattr(self, parameter_name,
+                    np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
 
     def _retrack(self, range, wfm, indices):
-        # retracker options (see l2 settings file)
+        # Run the retracker
+        self._sicci_ice_retracker(range, wfm, indices)
+        # Filter the results
+        self._filter_results()
+
+    def _sicci_ice_retracker(self, range, wfm, indices):
+        # All retracker options need to be defined in the l2 settings file
+        # skip the first bins due to fft noise
         skip = self._options.skip_first_bins
+
+        # percentage of the OCOG retracking points
         percentage = self._options.percentage
+
+        # percentage of earlier retracking point to estimate leading edge width
+        lew_percentage = self._options.leading_edge_width_percentage
+
+        # dummy array for interpolation of actual retracker range window
         x = np.arange(wfm.shape[1])
-        # Loop over lead indices
+
+        # Loop over waveform indices marked as leads
         for index in indices:
             wave = np.array(wfm[index, skip:]).astype("float64")
-            waveform = wave*wave
-            sq_sum = np.sum(waveform)
-            waveform = waveform*waveform
-            qa_sum = np.sum(waveform)
-            # Calculate retracking threshold (2.6.2 in ATDBv0)
-            threshold = percentage * np.sqrt(qa_sum / sq_sum)
-            ind_first_over = np.min(np.nonzero(wave > threshold))
-            decimal = (wave[ind_first_over-1] - threshold) / \
-                (wave[ind_first_over-1] - wave[ind_first_over])
-            x_range_bin = skip + ind_first_over - 1 + decimal
+            range_bin = ocog_func(wave, percentage, skip)
+            range_bin_lew = ocog_func(wave, lew_percentage, skip)
             self._range[index] = interp1d(
-                x, range[index, :], kind='linear', copy=False)(x_range_bin)
+                x, range[index, :], kind='linear', copy=False)(range_bin)
 
+            # Store additional retracker parameter
+            self.retracked_bin[index] = range_bin
+            self.leading_edge_width[index] = range_bin - range_bin_lew
+            self.tail_shape[index] = ocog_tail_shape(wfm[index, :], range_bin)
+
+    def _filter_results(self):
+        """ These threshold are based on the SICCI code"""
+        thrs = self._options.filter
+
+        valid = ANDCondition()
+        valid.add(self.leading_edge_width < thrs.maximum_leading_edge_width)
+        valid.add(self.tail_shape < thrs.maximum_echo_tail_line_deviation)
+        valid.add(self.retracked_bin > thrs.sensible_seaice_retracked_bin[0])
+        valid.add(self.retracked_bin < thrs.sensible_seaice_retracked_bin[1])
+
+        # Error flag is also computed for other surface types, do not
+        # overide those
+        error_flag = self._flag
+        error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
+        self._flag = error_flag
+
+#        import matplotlib.pyplot as plt
+#
+#        f, ax = plt.subplots(3, sharex=True, facecolor="white",
+#                             figsize=(10, 16))
+#        ax[0].plot(self.retracked_bin[self.indices], lw=0.5, color="#00ace5")
+#        ax[0].set_title("retracked_bin")
+#        ax[0].axhline(thrs.sensible_seaice_retracked_bin[0], color="green")
+#        ax[0].axhline(thrs.sensible_seaice_retracked_bin[1], color="red")
+#
+#        ax[1].plot(self.tail_shape[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[1].set_title("tail_shape")
+#        ax[1].axhline(thrs.maximum_echo_tail_line_deviation, color="red")
+#
+#        ax[2].plot(self.leading_edge_width[self.indices],
+#                   lw=0.5, color="#00ace5")
+#        ax[2].set_title("leading_edge_width")
+#        # ax[2].axhline(thrs.maximum_leading_edge_width, color="red")
+#
+#        for i in np.arange(3):
+#            ax[i].yaxis.grid(True, which='minor')
+#            ax[i].yaxis.set_tick_params(direction='out')
+#            ax[i].yaxis.set_ticks_position('left')
+#            ax[i].xaxis.set_ticks([])
+#            spines_to_remove = ["top", "right", "bottom"]
+#            for spine in spines_to_remove:
+#                ax[i].spines[spine].set_visible(False)
+#
+#        plt.tight_layout()
+#
+#        plt.figure()
+#        plt.plot(valid.flag[self.indices])
+#        plt.ylim(-0.1, 1.1)
+#
+#        plt.show(block=True)
+#        stop
 
 # %% Function for CryoSat-2 based retracker
 
@@ -355,6 +509,20 @@ def findpeaks(data, spacing=1, limit=None):
 
 # %% Functions for SICCI retracker
 
+def ocog_func(wave, percentage, skip):
+    waveform = wave*wave
+    sq_sum = np.sum(waveform)
+    waveform = waveform*waveform
+    qa_sum = np.sum(waveform)
+    # Calculate retracking threshold (2.6.2 in ATDBv0)
+    threshold = percentage * np.sqrt(qa_sum / sq_sum)
+    ind_first_over = np.min(np.nonzero(wave > threshold))
+    decimal = (wave[ind_first_over-1] - threshold) / \
+        (wave[ind_first_over-1] - wave[ind_first_over])
+    x_range_bin = skip + ind_first_over - 1 + decimal
+    return x_range_bin
+
+
 def P_lead(t, t_0, k, sigma, a):
     """ Lead waveform model (for SICCILead curve fitting) """
     # Time for F to be F_L
@@ -386,6 +554,15 @@ def power_in_echo_tail(wfm, retracked_bin, alpha, pad=3):
     """
     tracking_point = int(retracked_bin)
     return sum(wfm[tracking_point+pad:])/alpha
+
+
+def ocog_tail_shape(wfm, tracking_point, tail_pad=3):
+    """ From SICCI module """
+    tail = wfm[tracking_point+tail_pad:]
+    tail = tail / np.mean(tail)
+    P = np.polyfit(np.arange(len(tail)), tail, 1)
+    residual = (tail-np.polyval(P, np.arange(len(tail))))
+    return np.sqrt(np.sum(residual*residual) / len(residual))
 
 
 def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
