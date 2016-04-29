@@ -76,6 +76,9 @@ class EnvisatPreProcJob(object):
             l1b_segments = self.get_envisat_l1bdata_ocean_segments(
                 envisat_l1b_file, self.config)
 
+            if len(l1b_segments) == 0:
+                continue
+
             # Skip if no relevant data was found
             if l1b_segments is None:
                 log.info(". no polar ocean data, skipping")
@@ -107,19 +110,32 @@ class EnvisatPreProcJob(object):
         pysiral.L1bdata objects.
 
         """
+
         # Read the envisat SGDR file
         l1b = L1bConstructor(config)
         l1b.mission = "envisat"
         l1b.filename = filename
         l1b.construct()
+
         # Extract relevant segments over ocean
         l1b_list = []
         first_segment, second_segment = self.extract_polar_segments(l1b)
+
         # Exclude land data from Arctic and Antarctic subsets
-        l1b_segments = self.extract_polar_ocean_segments(first_segment)
-        l1b_list.extend(l1b_segments)
-        l1b_segments = self.extract_polar_ocean_segments(second_segment)
-        l1b_list.extend(l1b_segments)
+        if first_segment is not None:
+            l1b_segments = self.extract_polar_ocean_segments(first_segment)
+            try:
+                l1b_list.extend(l1b_segments)
+            except TypeError:
+                self.log.info("- no ocean data in file")
+
+        if second_segment is not None:
+            l1b_segments = self.extract_polar_ocean_segments(second_segment)
+            try:
+                l1b_list.extend(l1b_segments)
+            except TypeError:
+                self.log.info("- no ocean data in file")
+
         return l1b_list
 
     def extract_polar_segments(self, l1b):
@@ -143,6 +159,23 @@ class EnvisatPreProcJob(object):
         antarctic_subset = l1b.extract_subset(is_antarctic.indices)
         self.log.info("Extracted Antarctic subset (%g records)" % (
             is_antarctic.num))
+
+        # Segments may be empty, test all cases
+        arctic_is_valid = True
+        antarctic_is_valid = True
+        try:
+            arctic_subset.info.start_time
+        except AttributeError:
+            arctic_is_valid = False
+
+        try:
+            antarctic_subset.info.start_time
+        except AttributeError:
+            antarctic_is_valid = False
+
+        # Return both unsorted, Empty segment will be discarded later
+        if not arctic_is_valid or not antarctic_is_valid:
+            return [arctic_subset, antarctic_subset]
 
         # Order in sequence depeding on start time
         if arctic_subset.info.start_time < antarctic_subset.info.start_time:

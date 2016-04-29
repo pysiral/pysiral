@@ -146,8 +146,11 @@ class Level1bData(object):
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-        l1b = copy.deepcopy(self)
-        l1b.trim_to_subset(subset_list)
+        if len(subset_list) > 0:
+            l1b = copy.deepcopy(self)
+            l1b.trim_to_subset(subset_list)
+        else:
+            return None
         return l1b
 
     def extract_region_of_interest(self, roi):
@@ -278,6 +281,7 @@ class L1bConstructor(Level1bData):
         adapter = get_l1b_adapter(self._mission)(self._config)
         adapter.filename = self.filename
         adapter.construct_l1b(self)
+
 
 
 class L1bdataNCFile(Level1bData):
