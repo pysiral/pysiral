@@ -221,7 +221,7 @@ def create_surface_elevation_plot(l2, block=True):
             marker=plot_style[surface_type_name]["sym"])
     plt.plot(x, l2.mss, color="black", lw=2, label="Mean Sea Surface (DTU15)")
     plt.plot(x, l2.mss+l2.ssa, color="violet", lw=2,
-             label="Sea Surface Anomaly")
+             label="Sea Surface Height")
     ssh_tiepoints = l2.surface_type.lead.indices
     for ssh_tiepoint in ssh_tiepoints:
         y = [l2.mss[ssh_tiepoint], l2.elev[ssh_tiepoint]]
