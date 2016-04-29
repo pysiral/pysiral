@@ -52,10 +52,12 @@ def l1bpreproc():
     preprocessor = get_mission_preprocessor(args.mission_id)
     iterator = month_iterator(args.start_date[0], args.start_date[1],
                               args.stop_date[0], args.stop_date[1])
+
     for year, month in iterator:
         job = preprocessor()
         job.year = year
         job.month = month
+        job.skip = args.skip
         job.execute()
 
 
@@ -89,6 +91,10 @@ def get_l1bpreproc_argparser():
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity",
         action="store_true")
+    # Add an Option to skip a number of files (e.g. for a restart)
+    parser.add_argument(
+        "-s", "-skip", action='store', type=int, const=0, nargs='?',
+        dest='skip', help='number of files to skip')
     # show preprocessor version
     parser.add_argument(
         '--version', action='version', version='%(prog)s 0.1a')

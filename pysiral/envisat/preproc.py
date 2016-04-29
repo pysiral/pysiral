@@ -23,6 +23,7 @@ class EnvisatPreProc(object):
     def __init__(self):
         self.month = None
         self.year = None
+        self.skip = 0
 
     def execute(self):
 
@@ -47,7 +48,7 @@ class EnvisatPreProc(object):
         job = EnvisatPreProcJob()
         job.config = config
         job.log = log
-        job.files = envisat_files.sorted_list
+        job.files = envisat_files.sorted_list[self.skip:]
         job.merge_and_export_polar_ocean_subsets()
 
 
