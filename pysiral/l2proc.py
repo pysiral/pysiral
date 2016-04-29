@@ -357,8 +357,11 @@ class Level2Processor(DefaultLoggingClass):
             if retracker_def[i].options is not None:
                 retracker.set_options(**retracker_def[i].options)
             retracker.set_indices(surface_type_flag.indices)
+            retracker.set_classifier(l1b.classifier)
             retracker.retrack(l1b, l2)
             l2.update_retracked_range(retracker)
+            if retracker.error_flag.num > 0:
+                l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
