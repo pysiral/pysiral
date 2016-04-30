@@ -4,6 +4,8 @@ Created on Fri Jul 24 16:30:24 2015
 
 @author: Stefan
 """
+from pysiral.iotools import ReadNC
+
 import numpy as np
 from geopy.distance import great_circle
 from collections import OrderedDict
@@ -140,3 +142,30 @@ class L2ElevationArray(np.ndarray):
 
     def set_uncertainty(self, uncertainty):
         self.uncertainty = uncertainty
+
+
+class L2iNCFile(object):
+
+    def __init__(self, filename):
+        self.filename = filename
+        self._n_records = 0
+        self._parse()
+
+    def _parse(self):
+        content = ReadNC(self.filename)
+        for parameter_name in content.parameters:
+            setattr(self, parameter_name, getattr(content, parameter_name))
+        self._n_records = len(self.longitude)
+
+    def project(self, griddef):
+        from pyproj import Proj
+        p = Proj(**griddef.projection)
+        self.projx, self.projy = p(self.longitude, self.latitude)
+        # Convert projection coordinates to grid indices
+        extent = griddef.extent
+        self.xi = np.floor((self.projx + extent.xsize/2.0)/extent.dx)
+        self.yj = np.floor((self.projy + extent.ysize/2.0)/extent.dy)
+
+    @property
+    def n_records(self):
+        return self._n_records
