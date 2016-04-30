@@ -262,7 +262,7 @@ class Envisat18HzArrays(object):
         wfm_tag = "average_wfm_if_corr_ku"
         tracker_range_tag = "18hz_tracker_range_no_doppler_ku"
         doppler_tag = "18Hz_ku_range_doppler"
-        slope_tag = "18Hz_ku_range_doppler"
+        slope_tag = "18Hz_ku_range_doppler_slope"
         # First get the echo power
         n_range_bins = 128
         n = self.n_records * self.n_blocks
