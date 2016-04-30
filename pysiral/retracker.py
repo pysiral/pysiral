@@ -340,8 +340,14 @@ class SICCIOcog(BaseRetracker):
             wave = np.array(wfm[index, skip:]).astype("float64")
             range_bin = ocog_func(wave, percentage, skip)
             range_bin_lew = ocog_func(wave, lew_percentage, skip)
-            self._range[index] = interp1d(
-                x, range[index, :], kind='linear', copy=False)(range_bin)
+            try:
+                self._range[index] = interp1d(
+                    x, range[index, :], kind='linear', copy=False)(range_bin)
+            except ValueError:
+                self.retracked_bin[index] = np.nan
+                self.leading_edge_width[index] = np.nan
+                self.tail_shape[index] = np.nan
+                continue
 
             # Store additional retracker parameter
             self.retracked_bin[index] = range_bin
