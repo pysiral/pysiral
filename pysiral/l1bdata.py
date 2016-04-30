@@ -240,12 +240,13 @@ class L1bConstructor(Level1bData):
 
     _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat"]
 
-    def __init__(self, config):
+    def __init__(self, config, header_only=False):
         super(L1bConstructor, self).__init__()
         self._config = config
         self._mission = None
         self._mission_options = None
         self._filename = None
+        self._header_only = header_only
 
     @property
     def mission(self):
@@ -282,6 +283,10 @@ class L1bConstructor(Level1bData):
         adapter.filename = self.filename
         adapter.construct_l1b(self)
 
+    def get_header_info(self):
+        adapter = get_l1b_adapter(self._mission)(self._config)
+        adapter.filename = self.filename
+        adapter.construct_l1b(self, header_only=True)
 
 
 class L1bdataNCFile(Level1bData):
@@ -399,7 +404,8 @@ class L1bMetaData(object):
         "mission", "mission_data_version", "mission_data_source",
         "n_records", "orbit", "cycle", "is_orbit_subset", "is_merged_orbit",
         "start_time", "stop_time", "subset_region_name",
-        "lat_min", "lat_max", "lon_min", "lon_max", "pysiral_version"]
+        "lat_min", "lat_max", "lon_min", "lon_max", "pysiral_version",
+        "open_ocean_percent"]
 
     def __init__(self):
         # Init all fields

@@ -16,6 +16,7 @@ from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
 import numpy as np
+# import time
 
 ESA_SURFACE_TYPE_DICT = {
     "ocean": 0,
@@ -32,9 +33,14 @@ class L1bAdapterCryoSat(object):
         self._config = config
         self._mission = "cryosat2"
 
-    def construct_l1b(self, l1b):
+    def construct_l1b(self, l1b, header_only=False):
         self.l1b = l1b                        # pointer to L1bData object
-        self._read_cryosat2l1b()              # Read CryoSat-2 L1b data file
+        self._read_cryosat2l1b_header()       # Read CryoSat-2 L1b header
+        if not header_only:
+            self.read_msd()
+
+    def read_msd(self):
+        self._read_cryosat2l1b_data()         # Read CryoSat-2 data content
         self._transfer_metadata()             # (orbit, radar mode, ..)
         self._transfer_timeorbit()            # (lon, lat, alt, time)
         self._transfer_waveform_collection()  # (power, range)
@@ -42,11 +48,43 @@ class L1bAdapterCryoSat(object):
         self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
         self._transfer_classifiers()          # (beam parameters, flags, ...)
 
-    def _read_cryosat2l1b(self):
-        """ Read the L1b file and create a CryoSat-2 native L1b object """
+    def _read_cryosat2l1b_header(self):
+        """
+        Read the header and L1b file and stores information
+        on open ocean coverage and geographical location in the metadata
+        file
+        """
+
         self.cs2l1b = CryoSatL1B()
         self.cs2l1b.filename = self.filename
-        self.cs2l1b.parse()
+        self.cs2l1b.parse_header()
+
+        # Populate metadata object with key information to decide if
+        # l1b file contains sea ice information
+
+        # open ocean percent from speficic product header in *.DBL
+        self.l1b.info.set_attribute(
+            "open_ocean_percent", self.cs2l1b.sph.open_ocean_percent*(10.**-2))
+
+        # Geographical coverage of data from start/stop positions in
+        # specific product header in *.DBL
+        start_lat = self.cs2l1b.sph.start_lat*(10.**-6)
+        stop_lat = self.cs2l1b.sph.stop_lat*(10.**-6)
+        start_lon = self.cs2l1b.sph.start_long*(10.**-6)
+        stop_lon = self.cs2l1b.sph.stop_long*(10.**-6)
+        self.l1b.info.set_attribute("lat_min", np.amin([start_lat, stop_lat]))
+        self.l1b.info.set_attribute("lat_max", np.amax([start_lat, stop_lat]))
+        self.l1b.info.set_attribute("lon_min", np.amin([start_lon, stop_lon]))
+        self.l1b.info.set_attribute("lon_max", np.amax([start_lon, stop_lon]))
+
+        error_status = self.cs2l1b.get_status()
+        if error_status:
+            # TODO: Needs ErrorHandler
+            raise IOError()
+
+    def _read_cryosat2l1b_data(self):
+        """ Read the L1b file and create a CryoSat-2 native L1b object """
+        self.cs2l1b.parse_mds()
         error_status = self.cs2l1b.get_status()
         if error_status:
             # TODO: Needs ErrorHandler
@@ -155,7 +193,10 @@ class L1bAdapterEnvisat(object):
         Level1bData instance
         """
         self.l1b = l1b                        # pointer to L1bData object
+        # t0 = time.time()
         self._read_envisat_sgdr()             # Read Envisat SGDR data file
+        # t1 = time.time()
+        # print "Parsing Envisat SGDR file in %.3g seconds" % (t1 - t0)
         self._transfer_metadata()             # (orbit, radar mode, ..)
         self._transfer_timeorbit()            # (lon, lat, alt, time)
         self._transfer_waveform_collection()  # (power, range)

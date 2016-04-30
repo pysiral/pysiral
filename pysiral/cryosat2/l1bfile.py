@@ -141,7 +141,7 @@ class CryoSatL1B(object):
     _VALID_BASELINES = ["B001", "C001"]
     _VALID_RADAR_MODES = ["sar"]
 
-    def __init__(self, raise_on_error=False):
+    def __init__(self, read_header_only=False, raise_on_error=False):
 
         # Error Handling
         self._init_error_handling(raise_on_error)
@@ -149,6 +149,7 @@ class CryoSatL1B(object):
         self._radar_mode = None
         self._filename_header = None
         self._filename_product = None
+        self._header_only = read_header_only
         self.xmlh = None
         self.mph = None
         self.sph = None
@@ -177,7 +178,7 @@ class CryoSatL1B(object):
     def radar_mode(self):
         return self._radar_mode
 
-    def parse(self):
+    def parse_header(self):
         """ Parse the content of the L1B file """
         # Validate input and either return or raise when input not ok
         if self._error.test_errors():
@@ -188,16 +189,14 @@ class CryoSatL1B(object):
         # Parse the xml header file
         try:
             self._parse_header_file()
+            self._parse_product_header()
         except:
             self._error.io_failed = True
+
+    def parse_mds(self):
         # Parse the product file
-        self._parse_product_file()
-#        try:
-#            self._parse_product_file()
-#        except:
-#            self._error.io_failed = True
-#        # Validate the parsing
-        # self._error.validate()
+        with open(self._filename_product, "rb") as self._fh:
+            self._parse_mds()
 
     def get_status(self):
         return self._error.test_errors()
@@ -226,7 +225,7 @@ class CryoSatL1B(object):
     def _parse_header_file(self):
         self._xmlh = parse_cryosat_l1b_xml_header(self._filename_header)
 
-    def _parse_product_file(self):
+    def _parse_product_header(self):
         """
         Reads the content of *L1B*.DBL files
             - main product header (mph)
@@ -238,8 +237,6 @@ class CryoSatL1B(object):
             self._parse_mph()
             self._parse_sph()
             self._parse_dsd()
-        with open(self._filename_product, "rb") as self._fh:
-            self._parse_mds()
 
     def _parse_mph(self):
         """

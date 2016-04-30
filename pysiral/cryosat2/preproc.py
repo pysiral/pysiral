@@ -99,7 +99,18 @@ class CryoSat2PreProcJob(DefaultLoggingClass):
         l1b = L1bConstructor(config)
         l1b.mission = "cryosat2"
         l1b.filename = filename
+        l1b.get_header_info()
+
+        # 1) Check if file has ocean data in the polar regions at all
+        has_polar_ocean = self.region_is_arctic_or_antarctic_ocean(l1b)
+        if not has_polar_ocean:
+            return None
+
+        # Only now read the full data set
+        t0 = time.time()
         l1b.construct()
+        t1 = time.time()
+        self.log.debug("- Parsed file in %.3g seconds" % (t1 - t0))
 
         # Extract relevant segments over ocean
         l1b_list = self.extract_polar_ocean_segments(l1b)
@@ -111,12 +122,6 @@ class CryoSat2PreProcJob(DefaultLoggingClass):
         landmasses
 
         """
-        log = self.log
-        # 1) Check if file has ocean data in the polar regions at all
-        has_polar_ocean = self.region_is_arctic_or_antarctic_ocean(l1b)
-        if not has_polar_ocean:
-            return None
-
         # 2) Trim l1b data to polar region (known that list won't be emtpy)
         #    CryoSat-2 specific: l1b data does not cover both polar regions
         self.log.info("- trimming to polar ocean subset")
