@@ -1,0 +1,32 @@
+grid_definition:
+
+    hemisphere: north
+
+    projection:
+        proj: laea
+        lat_0: 90.0
+        lon_0: 0.0
+        ellps: WGS84
+        datum: WGS84
+        units: m
+
+    extent:
+        xsize: 18000000
+        ysize: 18000000
+        dx: 100000
+        dy: 100000
+        numx: 180
+        numy: 180
+
+l2_parameter:
+    - freeboard
+    - radar_freeboard
+    - sea_ice_thickness
+    - sea_surface_anomaly
+    - mean_sea_surface
+    - snow_depth
+    - snow_density
+
+l3_parameter:
+    - n_valid_waveforms
+    - lead_fraction
