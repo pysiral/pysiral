@@ -4,18 +4,20 @@ import os
 
 import numpy as np
 from collections import deque
+from pysiral.logging import DefaultLoggingClass
 
 
-class CryoSat2FileListAllModes(object):
+class CryoSat2FileListAllModes(DefaultLoggingClass):
     """
     Class for the construction of a list of CryoSat-2 SAR/SIN files
     sorted by acquisition time
     """
 
     def __init__(self):
+        super(CryoSat2FileListAllModes, self).__init__(
+            "cryosat2-file-list-all-modes")
         self.folder_sar = None
         self.folder_sin = None
-        self.log = None
         self.year = None
         self.month = None
         self.pattern = ".DBL"

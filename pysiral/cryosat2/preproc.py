@@ -11,9 +11,10 @@ from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.path import validate_directory
 from pysiral.output import (l1bnc_filenaming, L1bDataNC)
-from pysiral.logging import stdout_logger
+from pysiral.logging import DefaultLoggingClass
 
 import numpy as np
+import time
 
 
 class CryoSat2PreProc(object):
@@ -24,9 +25,6 @@ class CryoSat2PreProc(object):
 
     def execute(self):
 
-        """ Get the logging instance """
-        log = stdout_logger("cryosat2-preproc")
-
         """ Get the configuration data for handling CryoSat-2 data """
         config = ConfigInfo()
         cryosat_l1b_repository = config.local_machine.l1b_repository.cryosat2
@@ -34,7 +32,6 @@ class CryoSat2PreProc(object):
         """ Get the list of files (SAR and SIN in chronological order) """
         # for the case of this test only for one month of data
         cryosat2_files = CryoSat2FileListAllModes()
-        cryosat2_files.log = log
         cryosat2_files.folder_sar = cryosat_l1b_repository.sar
         cryosat2_files.folder_sin = cryosat_l1b_repository.sin
         cryosat2_files.year = self.year
@@ -44,15 +41,14 @@ class CryoSat2PreProc(object):
         """ Start the CryoSat-2 pre-processor """
         job = CryoSat2PreProcJob()
         job.config = config
-        job.log = log
         job.files = cryosat2_files.sorted_list
         job.merge_and_export_polar_ocean_subsets()
 
 
-class CryoSat2PreProcJob(object):
+class CryoSat2PreProcJob(DefaultLoggingClass):
 
     def __init__(self):
-        self.log = None
+        super(CryoSat2PreProcJob, self).__init__("cryosat2-preproc-job")
         self.config = ConfigInfo()
         self.options = None
         self.files = []
@@ -67,15 +63,15 @@ class CryoSat2PreProcJob(object):
         l1bdata_stack = []
         for i, cryosat2_l1b_file in enumerate(self.files):
             # Parse the current file and split into polar ocean segments
-            log.info("Parsing file %g of %g: %s" % (
+            log.info("+ Parsing file %g of %g: %s" % (
                 i+1, n, cryosat2_l1b_file))
             l1b_segments = self.get_cryosat2_l1bdata_ocean_segments(
                 cryosat2_l1b_file, self.config)
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info(". no polar ocean data, skipping")
+                log.info("- no polar ocean data, skipping")
                 continue
-            log.info(". %g polar ocean data segments" % len(l1b_segments))
+            log.info("- %g polar ocean data segments" % len(l1b_segments))
             # XXX: Debug
             # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
             # Loop over segments and check connectivity
@@ -83,7 +79,7 @@ class CryoSat2PreProcJob(object):
                 if not self.l1b_is_connected_to_stack(
                         l1b_segment, l1bdata_stack):
                     # => break criterium, save existing stack and start over
-                    log.info(". segment unconnected, exporting current stack")
+                    log.info("- segment unconnected, exporting current stack")
                     self.concatenate_and_export_stack_files(l1bdata_stack)
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -123,7 +119,7 @@ class CryoSat2PreProcJob(object):
 
         # 2) Trim l1b data to polar region (known that list won't be emtpy)
         #    CryoSat-2 specific: l1b data does not cover both polar regions
-        log.info(". trimming to polar ocean subset")
+        self.log.info("- trimming to polar ocean subset")
         polar_threshold = self.options.polar_threshold
         is_polar = np.abs(l1b.time_orbit.latitude) >= polar_threshold
         polar_subset = np.where(is_polar)[0]
@@ -131,7 +127,7 @@ class CryoSat2PreProcJob(object):
             l1b.trim_to_subset(polar_subset)
 
         # 3) Trim l1b data from the first to the last ocean data record
-        log.info(". trim outer non-ocean regions")
+        self.log.info("- trim outer non-ocean regions")
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -141,18 +137,18 @@ class CryoSat2PreProcJob(object):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            log.info(". ocean subset [%g:%g]" % (
+            self.log.info("- ocean subset [%g:%g]" % (
                  first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         # 4) Identify larger landmasses and split orbit into segments
         #    if necessary
-        log.info(". test for inner larger landmasses")
+        self.log.info("- test for inner larger landmasses")
         ocean = l1b.surface_type.get_by_name("ocean")
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        log.info(". number of landmasses: %g" % len(landseg_index))
+        self.log.info("- number of landmasses: %g" % len(landseg_index))
         if len(landseg_index) == 0:
             # no land segements, return single segment
             return [l1b]
@@ -160,7 +156,7 @@ class CryoSat2PreProcJob(object):
         large_landsegs_index = np.where(
             segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        log.info(". number of large landmasses: %g" % len(
+        self.log.info("- number of large landmasses: %g" % len(
             large_landsegs_index))
         if len(large_landsegs_index) == 0:
             # no large land segments, return single segment
@@ -174,11 +170,12 @@ class CryoSat2PreProcJob(object):
         for index in large_landsegs_index:
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
-            log.debug(". ocean segment: [%g:%g]" % (start_index, stop_index))
+            self.log.debug("- ocean segment: [%g:%g]" % (
+                start_index, stop_index))
             l1b_segments.append(l1b.extract_subset(subset_list))
             start_index = segments_start[index+1]
         # extract the last subset
-        log.debug(". ocean segment: [%g:%g]" % (
+        self.log.debug("- ocean segment: [%g:%g]" % (
             start_index, len(ocean.flag)-1))
         last_subset_list = np.arange(start_index, len(ocean.flag))
         l1b_segments.append(l1b.extract_subset(last_subset_list))
@@ -189,16 +186,18 @@ class CryoSat2PreProcJob(object):
         Test if a CryoSat-2 l1b file has data over ocean in either Arctic
         of Antartic
         """
-        log = self.log
         # 1) test if either minimum or maximum latitude is in polar regions
         lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
         polar_threshold = self.options.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
-        log.info(". is_in_polar_region: %s" % str(is_polar))
+        self.log.info("- is_in_polar_region: %s" % str(is_polar))
+        self.log.debug("- l1b.info.lat_min: %.7g" % l1b.info.lat_min)
+        self.log.debug("- l1b.info.lat_max: %.7g" % l1b.info.lat_max)
         # 2) test if there is any ocean data at all
-        ocean = l1b.surface_type.get_by_name("ocean")
-        has_ocean = ocean.num > 0
-        log.info(". has_ocean: %s" % str(has_ocean))
+        has_ocean = l1b.info.open_ocean_percent > 0
+        self.log.info("- has_ocean: %s" % str(has_ocean))
+        self.log.debug("- l1b.info.open_ocean_percent: %.7g" % (
+            l1b.info.open_ocean_percent))
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean
 
