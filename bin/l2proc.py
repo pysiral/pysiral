@@ -13,7 +13,7 @@ import sys
 import os
 
 
-def l2preproc():
+def pysiral_l2proc():
 
     """ get the pysiral configuration info """
     config = ConfigInfo()
@@ -141,4 +141,4 @@ def get_l2proc_argparser():
 
 
 if __name__ == "__main__":
-    l2preproc()
+    pysiral_l2proc()

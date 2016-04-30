@@ -8,7 +8,7 @@ import argparse
 import sys
 
 
-def l1bpreproc():
+def pysiral_l1bpreproc():
 
     """ get the pysiral configuration info """
     config = ConfigInfo()
@@ -116,4 +116,4 @@ def get_mission_preprocessor(mission_id):
 
 
 if __name__ == "__main__":
-    l1bpreproc()
+    pysiral_l1bpreproc()
