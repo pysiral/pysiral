@@ -16,7 +16,137 @@ class EnvisatSGDRMDS(object):
         self.n_blocks = 20
 
 
+
 class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
+    """
+    This is a parser class optimized for performance
+    (Only parses the necessary datagroups and parameter)
+    """
+
+    def __init__(self):
+        super(EnvisatSGDRMDSRA2, self).__init__()
+
+    def get_mds_parser(self):
+
+        self.timestamp = Struct(
+            "utc_timestamp",
+            SBInt32("day"),
+            UBInt32("sec"),
+            UBInt32("msec"))
+
+        self.time_orbit = Struct(
+            "time_orbit",
+            self.timestamp,
+            SBInt8("quality_indicator"),
+            Padding(3),
+            MicroDeg(SBInt32("latitude")),
+            MicroDeg(SBInt32("longitude")),
+            UBInt32("source_packet_counter"),
+            UBInt32("instrument_mode_id"),
+            BitStruct("measurement_confidence_data", Array(32, Bit("flag"))),
+            MilliMeter(UBInt32("altitude")),
+            Array(20, MilliMeter(SBInt16("18hz_altitude_differences"))),
+            MilliMeter(SBInt16("instantaneous_altitude_rate")),
+            Padding(50))
+
+        self.range_information = Struct(
+            "range_information",
+            Array(20, MilliMeter(UBInt32("18hz_tracker_range_no_doppler_ku"))),
+            Padding(80),
+            UBInt32("map_valid_points_tracker_ku"),
+            Padding(4),
+            MilliMeter(UBInt32("ocean_range_ku")),
+            Padding(580),
+            Array(20, TenMicroDeg(SBInt16("18hz_latitude_differences"))),
+            Array(20, TenMicroDeg(SBInt16("18hz_longitude_differences"))))
+
+        self.range_correction = Struct(
+            "range_correction",
+            Array(20, MilliMeter(SBInt16("18Hz_ku_range_instrumental"))),
+            Padding(40),
+            Array(20, MilliMeter(SBInt16("18Hz_ku_range_doppler"))),
+            Padding(40),
+            Array(20, MilliMeter(SBInt16("18Hz_ku_range_doppler_slope"))),
+            Padding(40),
+            MilliMeter(SBInt16("dry_troposphere")),
+            MilliMeter(SBInt16("inverse_barometric")),
+            MilliMeter(SBInt16("wet_troposphere_model")),
+            MilliMeter(SBInt16("wet_troposphere_mwr")),
+            MilliMeter(SBInt16("ra2_ionosphere_ku")),
+            Padding(2),
+            MilliMeter(SBInt16("doris_ionosphere_ku")),
+            Padding(2),
+            MilliMeter(SBInt16("model_ionosphere_ku")),
+            Padding(2),
+            MilliMeter(SBInt16("sea_state_bias_ku")),
+            Padding(2),
+            MilliMeter(SBInt16("dib_hf")),
+            Padding(10))
+
+        self.significant_wave_height = Padding(268)
+
+        self.backscatter = Struct(
+            "backscatter",
+            Padding(340),
+            Array(20, OneHundredthDecibel(SBInt16("18hz_sea_ice_sigma_ku"))),
+            Padding(40))
+
+        self.backscatter_correction = Padding(12)
+
+        self.off_nadir_information = Padding(364)
+
+        self.geophysical_information = Struct(
+            "geophysical_information",
+            MilliMeter(SBInt32("mean_sea_surface_height")),
+            MilliMeter(SBInt32("geoid_height")),
+            MilliMeter(SBInt32("ocean_depth_land_elevation")),
+            MilliMeter(SBInt16("total_geocentric_ocean_tide_1")),
+            MilliMeter(SBInt16("total_geocentric_ocean_tide_2")),
+            MilliMeter(SBInt16("ocean_tide_long_period")),
+            MilliMeter(SBInt16("ocean_loading_tide_2")),
+            MilliMeter(SBInt16("solid_earth_tide")),
+            MilliMeter(SBInt16("geocentric_polar_tide")),
+            TenPascal(SBInt16("model_surface_atmospheric_pressure")),
+            OneHundredth(SBInt16("mwr_water_vapour_content")),
+            OneHundredth(SBInt16("mwr_liquid_water_content")),
+            OneTenths(SBInt16("ra2_total_electron_content")),
+            MilliMeter(SBInt16("ra2_wind_speed")),
+            MilliMeter(SBInt16("model_wind_vector_u")),
+            MilliMeter(SBInt16("model_wind_vector_v")),
+            MilliMeter(SBInt16("ocean_loading_tide_1")),
+            Padding(8))
+
+        self.mwr_information = Padding(10)
+
+        self.flags = Struct(
+            "flag",
+            UBInt16("average_ku_chirp_band"),
+            Padding(112),
+            UBInt16("altimeter_surface_type"),
+            UBInt16("radiometer_land_ocean"),
+            Padding(6),
+            UBInt8("sea_ice"),
+            Padding(5))
+
+        self.mds_record = Struct(
+            "mds_record",
+            self.time_orbit,
+            self.range_information,
+            self.range_correction,
+            self.significant_wave_height,
+            self.backscatter,
+            self.backscatter_correction,
+            self.off_nadir_information,
+            self.geophysical_information,
+            self.mwr_information,
+            self.flags)
+
+        self.mds = Array(self.n_records, self.mds_record)
+
+        return self.mds
+
+
+class EnvisatSGDRMDSRA2Full(EnvisatSGDRMDS):
 
     def __init__(self):
         super(EnvisatSGDRMDSRA2, self).__init__()
@@ -233,10 +363,10 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
         return self.mds
 
 
-class EnvisatSGDRMDSWFM18HZ(EnvisatSGDRMDS):
+class EnvisatSGDRMDSWFM18HZFull(EnvisatSGDRMDS):
 
     def __init__(self):
-        super(EnvisatSGDRMDSWFM18HZ, self).__init__()
+        super(EnvisatSGDRMDSWFM18HZFull, self).__init__()
 
     def get_mds_parser(self):
 
@@ -258,6 +388,37 @@ class EnvisatSGDRMDSWFM18HZ(EnvisatSGDRMDS):
             OneHundredth(SBInt16("agc_of_noise_power_measurement")),
             OneHundredthDecibel(UBInt16("reference_power_value")),
             Padding(10))
+
+        self.mds_record = Struct(
+            "mds_record",
+            self.timestamp,
+            SBInt8("quality_indicator"),
+            Padding(3),
+            UBInt32("source_packet_counter"),
+            Padding(8),
+            Array(20, self.waveform_data))
+
+        self.mds = Array(self.n_records, self.mds_record)
+        return self.mds
+
+
+class EnvisatSGDRMDSWFM18HZ(EnvisatSGDRMDS):
+
+    def __init__(self):
+        super(EnvisatSGDRMDSWFM18HZ, self).__init__()
+
+    def get_mds_parser(self):
+
+        self.timestamp = Struct(
+            "utc_timestamp",
+            SBInt32("day"),
+            UBInt32("sec"),
+            UBInt32("msec"))
+
+        self.waveform_data = Struct(
+            "wfm",
+            Array(128, Per2048(UBInt16("average_wfm_if_corr_ku"))),
+            Padding(172))
 
         self.mds_record = Struct(
             "mds_record",
