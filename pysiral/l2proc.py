@@ -227,7 +227,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Get elevation by retracking of different surface types
             # adds parameter elevation to l2
-            self._waveform_range_retracking(l1b, l2)
+            error_status = self._waveform_range_retracking(l1b, l2)
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
@@ -350,11 +350,13 @@ class Level2Processor(DefaultLoggingClass):
     def _waveform_range_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
+        error_status = {}
         surface_types, retracker_def = td_branches(self._job.config.retracker)
         for i, surface_type in enumerate(surface_types):
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 self.log.info("- no waveforms of type %s" % surface_type)
+                error_status[surface_type] = True
                 continue
             timestamp = time.time()
             retracker = get_retracker_class(retracker_def[i].pyclass)
@@ -369,6 +371,8 @@ class Level2Processor(DefaultLoggingClass):
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
+            error_status[surface_type] = False
+        return error_status
 
     def _estimate_ssh_and_radar_freeboard(self, l2):
         # 1. get mss for orbit
