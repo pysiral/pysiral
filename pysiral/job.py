@@ -9,6 +9,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.config import td_branches, ConfigInfo
 from treedict import TreeDict
 from datetime import datetime
+import glob
 import sys
 import os
 
@@ -98,3 +99,58 @@ class Level2Job(ProcJob):
             self.config.output[output_id].path = product_export_path
             self.log.info("Exporting %s data in directory %s" % (
                 output_id, product_export_path))
+
+
+class Level3Job(ProcJob):
+
+    def __init__(self):
+        super(Level3Job, self).__init__()
+        self.log.name = "Level3Job"
+        self._input_directory = None
+        self._grid_def = None
+        self._l2_file_filter = "l2i*nc"
+        self._l2_parameter = []
+        self._l2_parameter = []
+
+    def set_input_directory(self, directory):
+        self._input_directory = directory
+
+    def set_grid_definition(self, setting):
+        self._grid_def = setting
+
+    def set_parameter(self, l2=[], l3=[]):
+        self._l2_parameter = l2
+        self._l3_parameter = l3
+
+    def get_monthly_l2idata_files(self, year, month, l2tag="l2i"):
+        """
+        Returns a sorted list of level-2 files
+        (set_input_directory needs to be called first)
+        """
+        if self._input_directory is None:
+            self.log.warning(
+                "get_monthly_l2idata_files called without calling " +
+                "\'set_input_directory\' first, return list is empty")
+            return []
+        # Get the file search pattern
+        l2search = self._input_directory
+        l2search = os.path.join(l2search, l2tag, "%04g" % year, "%02g" % month)
+        l2search = os.path.join(l2search, self._l2_file_filter)
+        # Query the folder
+        l2files = sorted(glob.glob(l2search))
+        return l2files
+
+    def validate(self):
+        pass
+
+    @property
+    def grid(self):
+        return self._grid_def
+
+    @property
+    def l2_parameter(self):
+        return self._l2_parameter
+
+    @property
+    def l3_parameter(self):
+        return self._l3_parameter
