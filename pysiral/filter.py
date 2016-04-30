@@ -119,10 +119,14 @@ def fill_nan(y):
     x = np.arange(len(y_inside))
     valid_inside = np.where(np.isfinite(y_inside))[0]
     # Interpolate inside range of valid entries
-    func = interp1d(x[valid_inside], y_inside[valid_inside],
-                    bounds_error=False)
-    interpolated_inside = func(x)
-    result[valid0:valid1+1] = interpolated_inside
+    try:
+        func = interp1d(x[valid_inside], y_inside[valid_inside],
+                        bounds_error=False)
+        interpolated_inside = func(x)
+        result[valid0:valid1+1] = interpolated_inside
+    except ValueError:
+        # May not be applicable (no inner nan ranges)
+        pass
     # fill nan-borders with first/last valid value
     if valid0 != 0:
         result[0:valid0] = y[valid0]
