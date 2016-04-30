@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.basemap import Basemap
 import numpy as np
+import time
 
 
 def envisat_to_l1bdata():
@@ -31,10 +32,13 @@ def envisat_to_l1bdata():
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.N1"))
 
     # Read the file
+    t0 = time.time()
     l1b = L1bConstructor(config)
     l1b.mission = "envisat"
     l1b.filename = l1b_files[0]
     l1b.construct()
+    t1 = time.time()
+    print "Constructing Envisat l1bdata object in %.3g seconds" % (t1 - t0)
 
     # Quick plots
     envisat_l1b_fullorbit_plot(l1b)

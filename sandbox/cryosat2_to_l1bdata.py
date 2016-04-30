@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.basemap import Basemap
 import numpy as np
+import time
 
 
 def cryosat2_to_l1bdata():
@@ -31,10 +32,20 @@ def cryosat2_to_l1bdata():
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
     # Read the file
+    t0 = time.time()
     l1b = L1bConstructor(config)
     l1b.mission = "cryosat2"
-    l1b.filename = l1b_files[3]
+    l1b.filename = l1b_files[7]
+    l1b.get_header_info()
+    print l1b.info.open_ocean_percent
+    print l1b.info.lat_min
+    print l1b.info.lat_max
+    print l1b.info.lon_min
+    print l1b.info.lon_max
     l1b.construct()
+
+    t1 = time.time()
+    print "Constructing CryoSat-2 l1bdata object in %.3g seconds" % (t1 - t0)
 
     # Quick plots
     cryosat2_l1b_orbit_plot(l1b)
