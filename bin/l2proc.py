@@ -73,6 +73,7 @@ def l2preproc():
     # Start the processor
     l2proc = Level2Processor(job)
     l2proc.set_config(config)
+    l2proc.skip_files(args.skip)
     l2proc.error_handling(raise_on_error=True)
 
     iterator = month_iterator(args.start_date[0], args.start_date[1],
@@ -124,6 +125,10 @@ def get_l2proc_argparser():
         '-stop', action='store', dest='stop_date',
         nargs='+', type=int,  required=True,
         help='start date as year and month (-stop yyyy mm)')
+    # Add an Option to skip a number of files (e.g. for a restart)
+    parser.add_argument(
+        "-skip", action='store', type=int, const=0, nargs='?',
+        dest='skip', help='number of files to skip')
     # Show debug statements
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity",

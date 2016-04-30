@@ -36,6 +36,7 @@ class Level2Processor(DefaultLoggingClass):
         self._orbit = deque()
         self._l1b_files = []
         self._config = None
+        self._skip = 0
         self._initialized = False
         self._error_handler = {"raise_on_error": True}
 
@@ -52,6 +53,9 @@ class Level2Processor(DefaultLoggingClass):
 
     def set_config(self, config):
         self._config = config
+
+    def skip_files(self, skip):
+        self._skip = skip
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -179,7 +183,7 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Start Orbit Processing")
 
         # loop over l1bdata preprocessed orbits
-        for i, l1b_file in enumerate(self._l1b_files):
+        for i, l1b_file in enumerate(self._l1b_files[self._skip:]):
 
             # Log the current position in the file stack
             self.log.info("+ l1b orbit file %g of %g (%.2f%%)" % (
