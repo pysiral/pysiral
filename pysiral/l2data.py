@@ -33,7 +33,8 @@ class Level2Data(object):
         "snow_depth": "snow_depth",
         "snow_density": "snow_dens",
         "ice_density": "ice_dens",
-        "sea_ice_thickness": "sit"}
+        "sea_ice_thickness": "sit",
+        "sea_ice_concentration": "sic"}
 
     def __init__(self, l1b):
         # Copy necessary fields form l1b
