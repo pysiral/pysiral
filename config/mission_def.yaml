@@ -127,3 +127,20 @@ envisat:
                     - total_geocentric_ocean_tide_2
                 docstr:
                     Source of total geocentric ocean tide correction in SGDR data
+
+ers2:
+
+    long_name: ERS-2
+
+    docstr:
+        ERS-2 of the European Space Agency (ESA)
+
+    data_period:
+        start: 1995-05-14T00:00:00.00+00
+        stop: 2003-07-02T23:59:59.99+00
+
+    sea_ice_radar_modes: ["lrm"]
+
+    orbit_max_latitude: 82.5
+
+    options: null

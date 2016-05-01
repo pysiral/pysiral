@@ -11,6 +11,7 @@ from pysiral.cryosat2.functions import (
 from pysiral.esa.functions import get_structarr_attr
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
+from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.helper import parse_datetime_str
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
@@ -291,3 +292,137 @@ class L1bAdapterEnvisat(object):
         self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
         sea_ice_backscatter = self.sgdr.mds_18hz.sea_ice_backscatter
         self.l1b.classifier.add(sea_ice_backscatter, "sea_ice_backscatter")
+
+
+class L1bAdapterERS(object):
+    """ Converts a Envisat SGDR object into a L1bData object """
+
+    def __init__(self, config, mission):
+        self.filename = None
+        self._config = config
+        self._mission = mission
+
+    def construct_l1b(self, l1b):
+        """
+        Read the Envisat SGDR file and transfers its content to a
+        Level1bData instance
+        """
+        self.l1b = l1b                        # pointer to L1bData object
+        # t0 = time.time()
+        self._read_ers_sgdr()                 # Read Envisat SGDR data file
+        # t1 = time.time()
+        # print "Parsing Envisat SGDR file in %.3g seconds" % (t1 - t0)
+        self._transfer_metadata()             # (orbit, radar mode, ..)
+        self._transfer_timeorbit()            # (lon, lat, alt, time)
+        self._transfer_waveform_collection()  # (power, range)
+        self._transfer_range_corrections()    # (range corrections)
+        self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
+        self._transfer_classifiers()          # (beam parameters, flags, ...)
+
+    def _read_ers_sgdr(self):
+        """ Read the L1b file and create a ERS native L1b object """
+        self.sgdr = ERSSGDR()
+        self.sgdr.filename = self.filename
+        self.sgdr.parse()
+        error_status = self.sgdr.get_status()
+        if error_status:
+            # TODO: Needs ErrorHandler
+            raise IOError()
+        self.sgdr.post_processing()
+
+    def _transfer_metadata(self):
+        pass
+        """ Extract essential metadata information from SGDR file """
+        info = self.l1b.info
+        sgdr = self.sgdr
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_version", sgdr.nc.software_ver)
+        info.set_attribute("orbit", sgdr.nc.abs_orbit)
+        info.set_attribute("cycle", sgdr.nc.cycle)
+        info.set_attribute("mission_data_source", sgdr.nc.proc_centre)
+
+    def _transfer_timeorbit(self):
+        """ Extracts the time/orbit data group from the SGDR data """
+        from netCDF4 import num2date
+        # Transfer the orbit position
+        self.l1b.time_orbit.set_position(
+            self.sgdr.nc.lon_20hz.flatten(),
+            self.sgdr.nc.lat_20hz.flatten(),
+            self.sgdr.nc.alt_20hz.flatten())
+        # Transfer the timestamp
+        units = "seconds since 1990-01-01 00:00:00"
+        calendar = "gregorian"
+        timestamp = num2date(
+            self.sgdr.nc.time_20hz.flatten(), units, calendar)
+        self.l1b.time_orbit.timestamp = timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
+
+    def _transfer_waveform_collection(self):
+        """ Transfers the waveform data (power & range for each range bin) """
+
+        from pysiral.flag import ORCondition
+
+        # Transfer the reformed 18Hz waveforms
+        self.l1b.waveform.set_waveform_data(
+            self.sgdr.wfm_power,
+            self.sgdr.wfm_range,
+            self.sgdr.radar_mode)
+
+        # Set valid flag to exclude calibration data
+        # (see section 3.5 of Reaper handbook)
+        tracking_state = self.sgdr.nc.alt_state_flag_20hz.flatten()
+        valid = ORCondition()
+        valid.add(tracking_state == 2)
+        valid.add(tracking_state == 3)
+        self.l1b.waveform.set_valid_flag(valid.flag)
+
+    def _transfer_range_corrections(self):
+
+        # (see section 3.10 in REAPER handbook)
+        # TODO: move selection dict to configuration files
+        range_correction_target_dict = {
+            "dry_troposphere": "model_dry_tropo_corr",
+            "wet_troposphere": "model_wet_tropo_corr",
+            "inverse_barometric": "inv_bar_corr",
+            "dynamic_atmosphere": "hf_fluctuations_corr",
+            "ionosphere": "iono_corr_model",
+            "ocean_tide_elastic": "ocean_tide_sol1",
+            "ocean_tide_long_period": "ocean_tide_equil",
+            "ocean_loading_tide": "load_tide_sol1",
+            "solid_earth_tide": "solid_earth_tide",
+            "geocentric_polar_tide": "pole_tide",
+            "total_geocentric_ocean_tide": None}
+
+        for name in range_correction_target_dict.keys():
+            target_parameter = range_correction_target_dict[name]
+            if target_parameter is None:
+                continue
+            correction = getattr(self.sgdr.nc, target_parameter)
+            correction = np.repeat(correction, self.sgdr.n_blocks)
+            self.l1b.correction.set_parameter(name, correction)
+
+    def _transfer_classifiers(self):
+        chirp_type = self.sgdr.nc.alt_state_flag_chirp_type_20hz.flatten()
+        self.l1b.classifier.add(chirp_type, "chirp_type")
+
+    def _transfer_surface_type_data(self):
+        surface_type = self.sgdr.nc.surface_type
+        surface_type = np.repeat(surface_type, self.sgdr.n_blocks)
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
+            self.l1b.surface_type.add_flag(flag, key)
+
+
+class L1bAdapterERS1(L1bAdapterERS):
+    """ Class for ERS-1 """
+
+    def __init__(self, config):
+        super(L1bAdapterERS1, self).__init__(config, "ers1")
+
+
+class L1bAdapterERS2(L1bAdapterERS):
+    """ Class for ERS-1 """
+
+    def __init__(self, config):
+        super(L1bAdapterERS2, self).__init__(config, "ers2")

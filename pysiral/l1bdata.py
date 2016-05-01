@@ -89,7 +89,6 @@ Surface Type
 
 """
 
-from pysiral.io_adapter import (L1bAdapterCryoSat, L1bAdapterEnvisat)
 from pysiral.surface_type import SurfaceType
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
@@ -238,7 +237,7 @@ class L1bConstructor(Level1bData):
     L1b data files
     """
 
-    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat"]
+    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2"]
 
     def __init__(self, config, header_only=False):
         super(L1bConstructor, self).__init__()
@@ -756,7 +755,18 @@ class L1bWaveforms(object):
 
 def get_l1b_adapter(mission):
     """ Select and returns the correct IO Adapter for the specified mission """
+
+    from pysiral.io_adapter import (
+        L1bAdapterCryoSat, L1bAdapterEnvisat,
+        L1bAdapterERS1, L1bAdapterERS2)
+
     if mission == "cryosat2":
         return L1bAdapterCryoSat
-    if mission == "envisat":
+    elif mission == "envisat":
         return L1bAdapterEnvisat
+    elif mission == "ers1":
+        return L1bAdapterERS1
+    elif mission == "ers2":
+        return L1bAdapterERS2
+    else:
+        raise ValueError("Unknown mission id: %s" % mission)
