@@ -167,7 +167,9 @@ level2:
                     - radar_freeboard
                     - freeboard
                     - sea_ice_type
+                    - sea_ice_concentration
                     - snow_depth
                     - snow_density
                     - ice_density
                     - sea_ice_thickness
+                    
