@@ -185,7 +185,8 @@ class SICCILead(BaseRetracker):
         # Run the retracker
         self._sicci_lead_retracker(range, wfm, indices)
         # Filter the results
-        self._filter_results()
+        if self._options.filter.use_filter:
+            self._filter_results()
 
     def _sicci_lead_retracker(self, range, wfm, indices):
         from scipy.optimize import curve_fit
@@ -319,7 +320,8 @@ class SICCIOcog(BaseRetracker):
         # Run the retracker
         self._sicci_ice_retracker(range, wfm, indices)
         # Filter the results
-        self._filter_results()
+        if self._options.filter.use_filter:
+            self._filter_results()
 
     def _sicci_ice_retracker(self, range, wfm, indices):
         # All retracker options need to be defined in the l2 settings file
