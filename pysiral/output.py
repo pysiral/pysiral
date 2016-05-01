@@ -202,6 +202,52 @@ class L2iDataNC(NCDataFile):
             var[:] = data
 
 
+class L3SDataNC(NCDataFile):
+    """
+    Class to export a l2data object into a netcdf file
+    """
+
+    def __init__(self):
+        super(L3SDataNC, self).__init__()
+        self.parameter = []
+        self.export_path = None
+        self.metadata = None
+        self.l2 = None
+
+    def set_export_folder(self, path):
+        self.export_path = path
+
+    def set_metadata(self, metadata):
+        self.metadata = metadata
+
+    def export(self, l3):
+        self._validate()
+        self._open_file()
+        self._create_root_group(self.metadata.attdict)
+        self._populate_data_groups(l3)
+        self._write_to_file()
+
+    def _validate(self):
+        # Validate the export directory
+        path = self.export_path
+        validate_directory(path)
+        # get full output filename
+        filename = l3s_filenaming(self.metadata)
+        self.path = os.path.join(path, filename)
+
+    def _populate_data_groups(self, l3):
+        dimdict = l3.dimdict
+        dims = dimdict.keys()
+        for key in dims:
+                self._rootgrp.createDimension(key, dimdict[key])
+        for parameter_name in l3.parameter_list:
+            data = l3.get_parameter_by_name(parameter_name)
+            dimensions = tuple(dims[0:len(data.shape)])
+            var = self._rootgrp.createVariable(
+                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
+            var[:] = data
+
+
 def l1bnc_filenaming(l1b, config):
     """
     Returns the standard export folder and filename of a level-1b netCDF
@@ -255,6 +301,14 @@ def l2i_filenaming(l2):
         stopdt=l2.info.stop_time)
     return export_filename
 
+
+def l3s_filenaming(l3):
+    export_filename = "l3s_v{version:02g}_{mission}_" + \
+                      "{start_period}_{stop_period}.nc"
+    export_filename = export_filename.format(
+        version=0, mission=l3.mission,
+        start_period=l3.start_period, stop_period=l3.stop_period)
+    return export_filename
 
 
 def get_output_class(name):
