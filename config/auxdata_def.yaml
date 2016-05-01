@@ -120,6 +120,50 @@ sic:
             type: daily
             link: "/archive/ice/conc/{year}/{month}/ice_conc*polstere*.nc"
 
+    # OSI-SAf
+    ifremer:
+        pyclass: IfremerSIC
+        docstrs: SSM/I Sea-Ice concentration Arctic Daily Maps on 12.5 km Polar Grid (ifremer)
+        filenaming: "{year}{month}{day}.nc"
+        local_repository: ifremer
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45.
+                    lat_0: 90.
+                    lat_ts: 70.
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 608
+                    n_lines: 896
+                    dx: 12500
+                    dy: 12500
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
+        subfolders:
+            - year
+
+        source:
+            transfer: ftp
+            server: null
+            pwdfile: null
+            type: daily
+            link: null
+
 # List of sea ice type products
 sitype:
 

@@ -148,6 +148,7 @@ class Level2Processor(DefaultLoggingClass):
         self._sic.set_local_repository(settings.local_repository)
         self._sic.set_filenaming(settings.filenaming)
         self._sic.set_subfolders(settings.subfolders)
+        self._sic.initialize()
         self.log.info("Processor Settings - SIC handler: %s" % (
             settings.pyclass))
 
