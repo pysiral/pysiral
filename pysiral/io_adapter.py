@@ -405,6 +405,8 @@ class L1bAdapterERS(object):
     def _transfer_classifiers(self):
         chirp_type = self.sgdr.nc.alt_state_flag_chirp_type_20hz.flatten()
         self.l1b.classifier.add(chirp_type, "chirp_type")
+        parameter = EnvisatWaveformParameter(self.l1b.waveform.power)
+        self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.nc.surface_type
