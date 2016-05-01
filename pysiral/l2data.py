@@ -145,18 +145,30 @@ class L2ElevationArray(np.ndarray):
         self.uncertainty = uncertainty
 
 
-class L2iNCFile(object):
+class L2iNCFileImport(object):
+    # TODO: Needs proper implementation
 
     def __init__(self, filename):
+        from pysiral.output import NCDateNumDef
         self.filename = filename
         self._n_records = 0
+        self.time_def = NCDateNumDef()
         self._parse()
 
     def _parse(self):
+        from pysiral.path import file_basename
+        from netCDF4 import num2date
+
         content = ReadNC(self.filename)
         for parameter_name in content.parameters:
             setattr(self, parameter_name, getattr(content, parameter_name))
         self._n_records = len(self.longitude)
+        # XXX: Dirty hack to get the mission
+        basename = file_basename(self.filename, fullpath=False)
+        self.mission = basename.split("_")[3]
+
+        self.timestamp = num2date(self.timestamp, self.time_def.units,
+                                  self.time_def.calendar)
 
     def project(self, griddef):
         from pyproj import Proj
