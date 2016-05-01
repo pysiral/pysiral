@@ -68,6 +68,22 @@ definition:
         dtype: float32
         ascii_format: "%6.2f"
 
+    freeboard:
+        short_name: frb
+        label: Freeboard
+        unit: meter
+        dtype: float32
+        cmap:
+            name: viridis
+            vmin: 0
+            vmax: 0.5
+            step: 0.1
+        cmap_diff:
+            name: bwr
+            vmin: -0.5
+            vmax: 0.5
+            step: 0.25
+
     freeboard_uncertainty:
         short_name: frbu
         unit: meter
