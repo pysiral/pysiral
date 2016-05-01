@@ -29,11 +29,14 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         super(SnowGeometricCorrection, self).__init__()
 
     def _get_freeboard(self, l2):
+        import numpy as np
         correction_factor = self._options.vacuum_light_speed_reduction
         geometric_correction = correction_factor * l2.snow_depth
         sea_ice_only = l2.surface_type.sea_ice.indices
-        freeboard = l2.afrb
-        freeboard[sea_ice_only] += geometric_correction[sea_ice_only]
+        freeboard = np.ndarray(
+            shape=(l2.afrb.shape), dtype=np.float32) * np.nan
+        freeboard[sea_ice_only] = l2.afrb[sea_ice_only] + \
+            geometric_correction[sea_ice_only]
         return freeboard, ""
 
 
