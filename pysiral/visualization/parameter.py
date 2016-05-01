@@ -47,6 +47,10 @@ class GridMapParameter(GridMapParameterBase):
         self.grid = grid
         self.pardef = self._parameter_definitions[parameter_name]
 
+    @property
+    def short_name(self):
+        return self.pardef.short_name
+
 
 class GridMapDiffParameter(GridMapParameterBase):
     """
