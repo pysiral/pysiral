@@ -121,5 +121,19 @@ class OsiSafSIType(SITypeBaseClass):
         return sitype
 
 
+class MYIDefault(SITypeBaseClass):
+    """ Returns myi for all ice covered regions """
+
+    def __init__(self):
+        super(MYIDefault, self).__init__()
+
+    def _get_along_track_sitype(self, l2):
+        """ Every ice is myi (sitype = 1) """
+        sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
+        is_ice = np.where(l2.sic > 0)[0]
+        sitype[is_ice] = 1.0
+        return sitype, ""
+
+
 def get_l2_sitype_handler(name):
     return globals()[name]()

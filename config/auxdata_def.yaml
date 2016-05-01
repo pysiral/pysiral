@@ -167,6 +167,12 @@ sic:
 # List of sea ice type products
 sitype:
 
+    myi_default:
+        pyclass: MYIDefault
+        docstr: All sea ice is classified per default as multi-year sea ice
+        local_repository: null
+        options: null
+
     # OSI-SAf
     osisaf:
         pyclass: OsiSafSIType
