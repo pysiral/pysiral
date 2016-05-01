@@ -55,6 +55,7 @@ def pysiral_l1bpreproc():
 
     for year, month in iterator:
         job = preprocessor()
+        job.mission = args.mission_id
         job.year = year
         job.month = month
         job.skip = args.skip
@@ -106,13 +107,17 @@ def get_mission_preprocessor(mission_id):
 
     from pysiral.cryosat2.preproc import CryoSat2PreProc
     from pysiral.envisat.preproc import EnvisatPreProc
+    from pysiral.ers.preproc import ERSPreProc
 
     if mission_id == "cryosat2":
         return CryoSat2PreProc
     elif mission_id == "envisat":
         return EnvisatPreProc
-    print "error: mission %s currently not supported" % mission_id
-    sys.exit(1)
+    elif mission_id == "ers2":
+        return ERSPreProc
+    else:
+        print "error: mission %s currently not supported" % mission_id
+        sys.exit(1)
 
 
 if __name__ == "__main__":
