@@ -59,7 +59,7 @@ def l2_processing():
 
     l1bdata_files = get_l1bdata_files(
         config, job, setting.roi.hemisphere, args.year, args.month)
-    l2proc.set_l1b_files(l1bdata_files[0:1])
+    l2proc.set_l1b_files(l1bdata_files[args.skip:args.skip+1])
     l2proc.run()
 
     # Test Plots
@@ -104,6 +104,9 @@ def get_l2proc_argparser():
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity",
         action="store_true")
+    parser.add_argument(
+        "-skip", action='store', type=int, const=0, nargs='?',
+        dest='skip', help='number of files to skip')
     # show preprocessor version
     parser.add_argument(
         '--version', action='version', version='%(prog)s 0.1a')
