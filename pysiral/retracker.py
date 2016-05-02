@@ -47,7 +47,8 @@ class BaseRetracker(object):
         if len(self._indices) == 0:
             return False
         # Loop over each waveform of given surface type
-        self._retrack(l1b.waveform.range, l1b.waveform.power, self._indices)
+        self._retrack(l1b.waveform.range, l1b.waveform.power, self._indices,
+                      l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
 
     def _create_default_properties(self, n_records):
@@ -83,7 +84,8 @@ class TFMRA(BaseRetracker):
         # None so far
         pass
 
-    def _retrack(self, range, wfm, index_list):
+    def _retrack(self, range, wfm, index_list, radar_mode, is_valid):
+
         for index in index_list:
             # Echo oversampling & filtering
             x, y = self._filter_waveform(range[index, :], wfm[index, :])
@@ -101,7 +103,7 @@ class TFMRA(BaseRetracker):
             self._range[index] = tfmra_range
             self._power[index] = tfmra_power
 
-    def _filter_waveform(self, range, wfm):
+    def _filter_waveform(self, range, wfm, radar_mode):
         n = len(range)
         # Waveform Oversampling
         oversampling = self._options.wfm_oversampling_factor
@@ -163,7 +165,7 @@ class NoneRetracker(BaseRetracker):
     def _create_retracker_properties(self, n_records):
         pass
 
-    def _retrack(self, range, wfm, indices):
+    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
         self._range[indices] = np.nan
         self._power[indices] = np.nan
         self._flag[indices] = False
@@ -181,7 +183,7 @@ class SICCILead(BaseRetracker):
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
 
-    def _retrack(self, range, wfm, indices):
+    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
         self._sicci_lead_retracker(range, wfm, indices)
         # Filter the results
