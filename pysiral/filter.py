@@ -39,15 +39,16 @@ class L2ParameterValidRange(FilterBaseClass):
         super(L2ParameterValidRange, self).__init__()
 
     def _apply_filter(self, l2, target):
-        freeboard = getattr(l2, target)
+        parameter = getattr(l2, target)
         invalid = ORCondition()
-        invalid.add(freeboard < self._options.valid_minimum_point_value)
-        invalid.add(freeboard > self._options.valid_maximum_point_value)
+        invalid.add(parameter < self._options.valid_minimum_point_value)
+        invalid.add(parameter > self._options.valid_maximum_point_value)
         self._flag = FlagContainer(invalid.flag)
 
 
 def get_filter(name):
     return globals()[name]()
+
 
 def numpy_smooth(x, window):
     return np.convolve(x, np.ones(window)/window)
