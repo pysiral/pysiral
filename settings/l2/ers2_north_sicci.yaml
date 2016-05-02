@@ -56,7 +56,7 @@ level2:
                 pulse_peakiness_max: 3.0
                 ice_concentration_min: 5.0
             lead:
-                pulse_peakiness_min: 30.0
+                pulse_peakiness_min: 45.0
                 ice_concentration_min: 70.0
             sea_ice:
                 pulse_peakiness_max: 10.0
@@ -74,13 +74,13 @@ level2:
                 initial_guess: [33, 0.5, 0.5, None]
                 maxfev: 5000
                 filter:
-                    use_filter: false
-                    maximum_std_of_gaussion_rise: 0.93
-                    minimum_bin_count_maxpower: 35
-                    sensible_lead_retracked_bin: [44.5, 46.5]
-                    minimum_echo_backscatter: 25
-                    maximum_power_in_echo_tail: 0.75
-                    maximum_rms_echo_model_diff: 20
+                    use_filter: true
+                    maximum_std_of_gaussion_rise: 1.1
+                    minimum_bin_count_maxpower: 20
+                    sensible_lead_retracked_bin: [33, 38]
+                    minimum_echo_backscatter: null
+                    maximum_power_in_echo_tail: 0.4
+                    maximum_rms_echo_model_diff: 0.015
 
         sea_ice:
             pyclass: SICCIOcog
@@ -89,9 +89,9 @@ level2:
                 percentage: 0.5
                 leading_edge_width_percentage: 0.3
                 filter:
-                    use_filter: false
-                    sensible_seaice_retracked_bin: [44, 46]
-                    maximum_leading_edge_width: 4
+                    use_filter: true
+                    sensible_seaice_retracked_bin: [32, 35]
+                    maximum_leading_edge_width: 0.8
                     maximum_echo_tail_line_deviation: 0.3
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
