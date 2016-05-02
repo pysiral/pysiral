@@ -110,6 +110,8 @@ level2:
             use_ocean_wfm: False
             smooth_filter_width_m: 25000.0
             smooth_filter_width_footprint_size: 300.0
+            pre_filtering: true
+            pre_filter_maximum_mss_median_offset: 1.0 # in meter            
             
     # Algorithm for converting radar freeboard into freeboard
     frb: 

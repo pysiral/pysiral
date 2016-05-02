@@ -109,13 +109,27 @@ class SSASmoothedLinear(SSAInterpolator):
         self._calculate_uncertainty()
 
     def _linear_smoothed_interpolation_between_tiepoints(self, l2):
+
         # Use ocean and lead elevations
         self._ssh_tiepoints = l2.surface_type.lead.indices
         if self._options.use_ocean_wfm:
             self._ssh_tiepoints.append(l2.surface_type.ocean.indices)
             self._ssh_tiepoints = np.sort(self._ssh_tiepoints)
+
         # Get initial elevation at tiepoint locations
         mss_frb = l2.elev - l2.mss
+
+        # Remove ssh tiepoints from the list if their elevation
+        # corrected by the median offset of all tiepoints from the mss
+        # exceeds a certain threshold
+        if self._options.pre_filtering:
+            index_dict = np.arange(l2.surface_type.lead.num)
+            threshold = self._options.pre_filter_maximum_mss_median_offset
+            median_mss_offset = np.median(mss_frb[self._ssh_tiepoints])
+            offset = np.abs(mss_frb[self._ssh_tiepoints] - median_mss_offset)
+            valid = np.where(offset < threshold)
+            self._ssh_tiepoints = self._ssh_tiepoints[index_dict[valid]]
+
         ssa_raw = np.ndarray(shape=(l2.n_records))*np.nan
         ssa_raw[self._ssh_tiepoints] = mss_frb[self._ssh_tiepoints]
         non_tiepoints = np.where(np.isnan(ssa_raw))
@@ -140,7 +154,7 @@ class SSASmoothedLinear(SSAInterpolator):
         ssa = idl_smooth(ssa_filter2, filter_width)
         self._value = ssa
 
-        # TODO: Make example plot of individual filter steps
+#        # TODO: Make example plot of individual filter steps
 #        import matplotlib.pyplot as plt
 #        x = np.arange(l2.n_records)
 #        plt.figure(facecolor="white")
