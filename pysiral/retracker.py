@@ -243,7 +243,11 @@ class SICCILead(BaseRetracker):
         valid = ANDCondition()
         valid.add(self.sigma < thrs.maximum_std_of_gaussion_rise)
         valid.add(self.maximum_power_bin > thrs.minimum_bin_count_maxpower)
-        valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+
+        # sea ice backscatter not available for ERS?
+        if thrs.minimum_echo_backscatter is not None:
+            valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+
         valid.add(self.power_in_echo_tail < thrs.maximum_power_in_echo_tail)
         valid.add(self.rms_echo_and_model < thrs.maximum_rms_echo_model_diff)
         valid.add(self.retracked_bin > thrs.sensible_lead_retracked_bin[0])
