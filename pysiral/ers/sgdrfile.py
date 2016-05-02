@@ -18,6 +18,7 @@ class ERSSGDR(object):
         self.n_records = 0
         self.n_blocks = 20
         self.range_bin_width = 0.4545
+        self.nominal_tracking_bin = 32.5
 
     def parse(self):
         from pysiral.iotools import ReadNC
@@ -83,7 +84,8 @@ class ERSSGDR(object):
         self.wfm_range = np.ndarray(shape=target_shape, dtype=np.float32)
         for record in np.arange(n_records):
             self.wfm_range[record, :] = tracker_range_20hz[record] + \
-                range_bin_index*self.range_bin_width
+                (range_bin_index*self.range_bin_width) - \
+                (self.nominal_tracking_bin*self.range_bin_width)
 
     def _validate(self):
         pass
