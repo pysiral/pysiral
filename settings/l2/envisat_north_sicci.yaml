@@ -79,6 +79,7 @@ level2:
                     minimum_echo_backscatter: 25
                     maximum_power_in_echo_tail: 0.75
                     maximum_rms_echo_model_diff: 20
+                    maximum_retracker_maxpower_binsep: 12
 
         sea_ice:
             pyclass: SICCIOcog

@@ -248,6 +248,9 @@ class SICCILead(BaseRetracker):
         if thrs.minimum_echo_backscatter is not None:
             valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
 
+        bin_seperation = np.abs(self.retracked_bin - self.maximum_power_bin)
+        valid.add(bin_seperation < thrs.maximum_retracker_maxpower_binsep)
+
         valid.add(self.power_in_echo_tail < thrs.maximum_power_in_echo_tail)
         valid.add(self.rms_echo_and_model < thrs.maximum_rms_echo_model_diff)
         valid.add(self.retracked_bin > thrs.sensible_lead_retracked_bin[0])
