@@ -181,13 +181,17 @@ class L3DataGrid(object):
         self._l2 = stack
 
     def average_l2_parameter(self):
+
         # Loop over all grid cells
         # XXX: Is there a better way?
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
                 for name in self._l2_parameter:
                     data = np.array(self._l2.stack[name][yj][xi])
-                    self._l3[name][yj, xi] = np.nanmean(data)
+                    if len(np.where(np.isfinite(data))[0]) > 50:
+                        self._l3[name][yj, xi] = np.nanmean(data)
+
+
 
     def set_freeboard_nan_mask(self, targets):
         """
