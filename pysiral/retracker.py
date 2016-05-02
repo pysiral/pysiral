@@ -88,14 +88,16 @@ class TFMRA(BaseRetracker):
 
         for index in index_list:
             # Echo oversampling & filtering
-            x, y = self._filter_waveform(range[index, :], wfm[index, :])
+            x, y = self._filter_waveform(
+                range[index, :], wfm[index, :], radar_mode[index])
             # Normalize filtered waveform
             y, norm = self._normalize_wfm(y)
             # Get noise level in normalized units
             oversampling = self._options.wfm_oversampling_factor
             noise_level = wfm_get_noise_level(wfm, oversampling)
             # Find first maxima
-            first_maximum_index = self._get_first_maxima_index(y, noise_level)
+            first_maximum_index = self._get_first_maxima_index(
+                y, noise_level, radar_mode[index])
             # Get track point
             tfmra_range, tfmra_power = self._get_retracker_range(
                 x, y, first_maximum_index, norm)
@@ -113,20 +115,22 @@ class TFMRA(BaseRetracker):
         interpolator = interp1d(range, wfm, kind=interpolator_type)
         wfm_os = interpolator(range_os)
         # Smoothing
-        wfm_os = smooth(wfm_os, self._options.wfm_smoothing_window_size)
+        window_size = self._options.wfm_smoothing_window_size[radar_mode]
+        wfm_os = smooth(wfm_os, window_size)
         return range_os, wfm_os
 
     def _normalize_wfm(self, y):
         norm = np.nanmax(y)
         return y/norm, norm
 
-    def _get_first_maxima_index(self, y, noise_level):
+    def _get_first_maxima_index(self, y, noise_level, radar_mode):
         # Get the main maximum first
         absolute_maximum_index = np.argmax(y)
         # Find relative maxima before the absolute maximum
         peaks = findpeaks(y[0:absolute_maximum_index])
         # Check if relative maximum are above the required threshold
-        threshold = self._options.first_maximum_normalized_threshold
+        opt = self._options
+        threshold = opt.first_maximum_normalized_threshold[radar_mode]
         leading_maxima = np.where(y[peaks] >= threshold + noise_level)[0]
         # Identify the first maximum
         first_maximum_index = absolute_maximum_index

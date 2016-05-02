@@ -74,33 +74,37 @@ level2:
     retracker: 
         ocean: 
             pyclass: TFMRA
-            options: 
+            options:
+                # if arrays than [lrm, sar, sin]             
                 threshold: 0.5
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: 11
-                first_maximum_normalized_threshold: 0.15
+
+                wfm_smoothing_window_size: [11, 11, 51]  
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         lead: 
             pyclass: TFMRA
-            options: 
+            options:
+                # if arrays than [lrm, sar, sin]    
                 threshold: 0.5
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: 11
-                first_maximum_normalized_threshold: 0.15
+                wfm_smoothing_window_size: [11, 11, 51] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
             pyclass: TFMRA
             options: 
+                # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: 11
-                first_maximum_normalized_threshold: 0.15
+                wfm_smoothing_window_size: [11, 11, 51] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
                 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
