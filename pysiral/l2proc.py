@@ -353,26 +353,51 @@ class Level2Processor(DefaultLoggingClass):
         # loop over retrackers for each surface type
         error_status = {}
         surface_types, retracker_def = td_branches(self._job.config.retracker)
+
         for i, surface_type in enumerate(surface_types):
+
+            # Check if any waveforms need to be retracked for given
+            # surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 self.log.info("- no waveforms of type %s" % surface_type)
                 error_status[surface_type] = True
                 continue
+
+            # Benchmark retracker performance
+            # XXX: is currently the bottleneck of level2 processing
             timestamp = time.time()
+
+            # Retrieve the retracker assiciated with surface type
+            # from the l2 settings
             retracker = get_retracker_class(retracker_def[i].pyclass)
+
+            # Set options (if any)
             if retracker_def[i].options is not None:
                 retracker.set_options(**retracker_def[i].options)
+
+            # set subset of waveforms
             retracker.set_indices(surface_type_flag.indices)
+
+            # Add classifier data (some retracker need that)
             retracker.set_classifier(l1b.classifier)
+
+            # Start the retracking
             retracker.retrack(l1b, l2)
+
+            # Retrieve the range after retracking
             l2.update_retracked_range(retracker)
+
+            # XXX: Let the retracker return other parameters?
+
+            # retrieve potential error status and update surface type flag
             if retracker.error_flag.num > 0:
                 l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
             error_status[surface_type] = False
+
         return error_status
 
     def _estimate_ssh_and_radar_freeboard(self, l2):
