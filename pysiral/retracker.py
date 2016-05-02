@@ -230,9 +230,12 @@ class SICCILead(BaseRetracker):
                 self.k[index], self.sigma[index], self.alpha[index])
 
             # Get the range by interpolation of range bin location
-            self._range[index] = interp1d(
-                x, range[index, :], kind='linear', copy=False)(
-                    self.retracked_bin[index])
+            try:
+                self._range[index] = interp1d(
+                    x, range[index, :], kind='linear', copy=False)(
+                        self.retracked_bin[index])
+            except ValueError:
+                self._range[index] = np.nan
 
     def _filter_results(self):
         """ Filter the lead results based on threshold defined in SICCI """
