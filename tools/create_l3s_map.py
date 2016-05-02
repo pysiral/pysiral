@@ -24,7 +24,8 @@ def l3s_map():
 
     parameter_list = ["sea_ice_thickness", "freeboard"]
 
-    mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat"}
+    mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat",
+                         "ers2": "ERS-2"}
 
     ncfile = args.l3s_filename
     ncdata = NCMaskedGridData(ncfile)
