@@ -280,9 +280,9 @@ class SICCILead(BaseRetracker):
 #        ax[2].set_title("sigma")
 #        ax[2].axhline(thrs.maximum_std_of_gaussion_rise, color="red")
 #
-#        ax[3].plot(clf.sea_ice_backscatter[self.indices],
+#        ax[3].plot(np.abs(self.retracked_bin[self.indices]- self.maximum_power_bin[self.indices]),
 #                   lw=0.5, color="#00ace5")
-#        ax[3].set_title("sea_ice_backscatter")
+#        ax[3].set_title("retracked bin - max power bin")
 #        ax[3].axhline(thrs.minimum_echo_backscatter, color="green")
 #
 #        ax[4].plot(self.power_in_echo_tail[self.indices],
@@ -295,8 +295,7 @@ class SICCILead(BaseRetracker):
 #                   lw=0.5, color="#00ace5")
 #        ax[5].set_title("rms_echo_and_model")
 #        ax[5].axhline(thrs.maximum_rms_echo_model_diff, color="red")
-#        ax[5].set_ylim(0, 30)
-#
+#        # ax[5].set_ylim(0, 30)
 #
 #        for i in np.arange(6):
 #            ax[i].yaxis.grid(True, which='minor')
@@ -315,7 +314,7 @@ class SICCILead(BaseRetracker):
 #        plt.ylim(-0.1, 1.1)
 #
 #        plt.show(block=True)
-#        stop
+#        # stop
 
 
 class SICCIOcog(BaseRetracker):
@@ -329,7 +328,7 @@ class SICCIOcog(BaseRetracker):
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
 
-    def _retrack(self, range, wfm, indices):
+    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
         self._sicci_ice_retracker(range, wfm, indices)
         # Filter the results
@@ -420,7 +419,7 @@ class SICCIOcog(BaseRetracker):
 #        plt.ylim(-0.1, 1.1)
 #
 #        plt.show(block=True)
-#        stop
+#        # stop
 
 # %% Function for CryoSat-2 based retracker
 
