@@ -56,7 +56,7 @@ level2:
                 pulse_peakiness_max: 3.0
                 ice_concentration_min: 5.0
             lead:
-                pulse_peakiness_min: 45.0
+                pulse_peakiness_min: 40.0
                 ice_concentration_min: 70.0
             sea_ice:
                 pulse_peakiness_max: 10.0
