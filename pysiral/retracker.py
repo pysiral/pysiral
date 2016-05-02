@@ -366,7 +366,13 @@ class SICCIOcog(BaseRetracker):
             # Store additional retracker parameter
             self.retracked_bin[index] = range_bin
             self.leading_edge_width[index] = range_bin - range_bin_lew
-            self.tail_shape[index] = ocog_tail_shape(wfm[index, :], range_bin)
+            try:
+                self.tail_shape[index] = ocog_tail_shape(
+                    wfm[index, :], range_bin)
+            except ValueError:
+                self.tail_shape[index] = np.nan
+            except TypeError:
+                self.tail_shape[index] = np.nan
 
     def _filter_results(self):
         """ These threshold are based on the SICCI code"""
