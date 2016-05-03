@@ -87,4 +87,4 @@ class NCMaskedGridData(object):
 
 
 def get_temp_png_filename():
-    return os.path.join(tempfile.tempdir, str(uuid.uuid4())+".png")
+    return os.path.join(tempfile.gettempdir(), str(uuid.uuid4())+".png")
