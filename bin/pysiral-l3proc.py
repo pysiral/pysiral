@@ -48,6 +48,8 @@ def pysiral_l3proc():
                               args.stop_date[0], args.stop_date[1])
     for year, month in iterator:
         l2idata_files = job.get_monthly_l2idata_files(year, month)
+        if len(l2idata_files) == 0:
+            continue
         l3proc.set_l2_files(l2idata_files)
         l3proc.run()
 
