@@ -8,8 +8,7 @@ Created on Sun Apr 10 15:52:01 2016
 from pysiral.proj import EASE2North
 from pysiral.iotools import NCMaskedGridData
 from pysiral.visualization.gridmap import ArcticGridPresentationMap
-from pysiral.visualization.mapstyle import (GridMapAWIDarkStyle,
-                                            GridMapAWILightStyle)
+from pysiral.visualization.mapstyle import (GridMapSICCILightStyle)
 from pysiral.visualization.parameter import GridMapParameter
 
 from pysiral.path import (file_basename, folder_from_filename,
@@ -52,7 +51,7 @@ def l3s_map():
         map_filename = file_basename(ncfile)+"_"+data.short_name+".png"
         output = os.path.join(destination, map_filename)
         gridmap = ArcticGridPresentationMap()
-        gridmap.style = GridMapAWILightStyle()
+        gridmap.style = GridMapSICCILightStyle()
         gridmap.data = data
         gridmap.label.title = mission_name_dict[ncdata.mission_ids]
         gridmap.label.period = ncdata.period_label

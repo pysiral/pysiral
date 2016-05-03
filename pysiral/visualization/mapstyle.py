@@ -46,6 +46,17 @@ class GridMapAWILightStyle(GridMapAWIStyle):
         self.clip.is_active = True
 
 
+class GridMapSICCILightStyle(GridMapAWIStyle):
+
+    def __init__(self):
+        super(GridMapSICCILightStyle, self).__init__()
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
+        self.font.set_color("#4b4b4b")
+        self.logo.tag = "sicci"
+        self.background.tag = "light"
+        self.clip.is_active = True
+
+
 class GridMapFontProp(object):
 
     def __init__(self):
