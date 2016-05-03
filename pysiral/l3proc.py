@@ -89,6 +89,8 @@ class L2DataStack(object):
         self.mission = np.ndarray(shape=(n_files), dtype=object)
         # gridded parameter
         dimx, dimy = self.griddef.extent.numx, self.griddef.extent.numy
+        self.stack["surface_type"] = \
+            [[[] for _ in range(dimx)] for _ in range(dimy)]
         for parameter_name in self.l2_parameter:
             self.stack[parameter_name] = \
                 [[[] for _ in range(dimx)] for _ in range(dimy)]
@@ -101,8 +103,15 @@ class L2DataStack(object):
         self.l2_count += 1
         # Stack the l2 parameter in the corresponding grid cells
         self.n_records += orbit.n_records
+#        import matplotlib.pyplot as plt
+#        plt.figure()
+#        plt.plot(orbit.surface_type)
+#        plt.show()
         for i in np.arange(orbit.n_records):
+            # Add the surface type per default
+            # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(orbit.xi[i]), int(orbit.yj[i])
+            self.stack["surface_type"][y][x].append(orbit.surface_type[i])
             for parameter_name in self.l2_parameter:
                 data = getattr(orbit, parameter_name)
                 self.stack[parameter_name][y][x].append(data[i])
@@ -123,6 +132,7 @@ class L3DataGrid(object):
         # Taken from gridded SICCI data
         self.longitude = np.ndarray(shape=shape, dtype='f4')*np.nan
         self.latitude = np.ndarray(shape=shape, dtype='f4')*np.nan
+        self.is_land = np.ndarray(shape=shape, dtype='f4')*np.nan
         for parameter_name in l2_parameter:
             self._l3[parameter_name] = np.ndarray(
                 shape=shape, dtype='f4')*np.nan
@@ -186,12 +196,18 @@ class L3DataGrid(object):
         # XXX: Is there a better way?
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
+
+                # Filter land values
+                surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
+                # TODO: this needs to be done more formalized
+                # surface_type (land = 7)
+                self.is_land[xi, yj] = len(np.where(surface_type == 7)[0] > 0)
+                if self.is_land[xi, yj]:
+                    continue
                 for name in self._l2_parameter:
                     data = np.array(self._l2.stack[name][yj][xi])
-                    if len(np.where(np.isfinite(data))[0]) > 50:
+                    if len(np.where(np.isfinite(data))[0]) > 25:
                         self._l3[name][yj, xi] = np.nanmean(data)
-
-
 
     def set_freeboard_nan_mask(self, targets):
         """
