@@ -73,6 +73,16 @@ snow:
         local_machine_repository: none
         source: None
 
+    constant:
+        pyclass: FixedSnowDepthDensity
+        docstr: Constant snow depth and density
+        local_repository: null
+        options:
+            fixed_snow_depth: 0.3
+            fixed_snow_density: 300.0
+        local_machine_repository: none
+        source: None
+
 # List of sea ice concentration products
 sic:
 
