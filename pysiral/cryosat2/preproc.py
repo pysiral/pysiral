@@ -22,6 +22,7 @@ class CryoSat2PreProc(object):
     def __init__(self):
         self.month = None
         self.year = None
+        self.skip = None
 
     def execute(self):
 
@@ -41,7 +42,7 @@ class CryoSat2PreProc(object):
         """ Start the CryoSat-2 pre-processor """
         job = CryoSat2PreProcJob()
         job.config = config
-        job.files = cryosat2_files.sorted_list
+        job.files = cryosat2_files.sorted_list[self.skip:]
         job.merge_and_export_polar_ocean_subsets()
 
 
