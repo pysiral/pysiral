@@ -137,5 +137,19 @@ class Warren99(SnowBaseClass):
         return snow_density
 
 
+class FixedSnowDepthDensity(SnowBaseClass):
+    """ Always returns zero snow depth """
+
+    def __init__(self):
+        super(FixedSnowDepthDensity, self).__init__()
+
+    def _get_along_track_snow(self, l2):
+        snow_depth = np.ones(shape=(l2.n_records), dtype=np.float32)
+        snow_depth *= self._options.fixed_snow_depth
+        snow_density = np.ones(shape=(l2.n_records), dtype=np.float32)
+        snow_density *= self._options.fixed_snow_density
+        return snow_depth, snow_density, ""
+
+
 def get_l2_snow_handler(name):
     return globals()[name]()

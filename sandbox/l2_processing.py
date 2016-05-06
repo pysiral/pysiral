@@ -67,7 +67,6 @@ def l2_processing():
     create_surface_type_plot(l2proc.orbit[0], block=False)
     create_surface_elevation_plot(l2proc.orbit[0])
 
-
 def validate_year_month_list(year_month_list, label):
     try:
         datetime(year_month_list[0], year_month_list[1],  1)
@@ -154,7 +153,8 @@ def create_surface_type_plot(l2, block=True):
     pie_labels = pie_labels[non_zero]
     pie_colors = pie_colors[non_zero]
 
-    plt.figure("Surface Type Classification", facecolor="white")
+    plt.figure("Surface Type Classification", figsize=(10, 6.5),
+               facecolor="white", dpi=150)
 
     plt.subplot2grid((5, 15), (0, 0), colspan=14, rowspan=4)
     plt.gca().set_aspect(1.0)
@@ -167,7 +167,8 @@ def create_surface_type_plot(l2, block=True):
 
     plt.subplot2grid((5, 15), (4, 0), colspan=14)
     ax = plt.gca()
-    im = plt.imshow([flag], aspect=500, interpolation=None,
+    aspect= flag.shape[0]/20.
+    im = plt.imshow([flag], interpolation=None, aspect=aspect,
                     vmin=-0.5, vmax=8.5, cmap=cmap)
     ax.xaxis.set_tick_params(direction='out')
     ax.xaxis.set_ticks_position('bottom')
@@ -284,29 +285,95 @@ def create_orbit_map(l2, block=True):
     from mpl_toolkits.basemap import Basemap
     import matplotlib.pyplot as plt
 
-    grid_keyw = {"dashes": (None, None), "color": "#bcbdbf",
-                 "linewidth": 0.5, "latmax": 88}
+    projection = {
+        "north": {
+            "projection": "ortho",
+            "lon_0": -45,
+            "lat_0": 80,
+            "resolution": "i"},
+        "south": {
+            "projection": "ortho",
+            "lon_0": 0,
+            "lat_0": -70,
+            "resolution": "i"}
+            }
 
-    gridb_keyw = {"dashes": (None, None), "color": "#003e6e",
-                  "linewidth": 2, "latmax": 88}
+    hemisphere = "north"
+    if l2.track.latitude[0] < 0:
+        hemisphere = "south"
 
-    lon_0 = l2.info.lon_max
-    lat_0 = l2.info.lat_max
+    lats = np.linspace(-0.5*np.pi, 0.5*np.pi, num=500)
 
-    plt.figure("l2 Orbit Map", facecolor="#ffffff")
-    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='l')
-    m.fillcontinents(color='#00ace5', lake_color='#00ace5')
+    if hemisphere == "south":
+        shading = np.zeros(shape=(500, 1000))
+        indices = np.where(lats > np.deg2rad(-90))[0]
+        colormap_name = "Blues"
+    elif hemisphere == "north":
+        shading = np.ones(shape=(500, 1000)) * 2.0
+        indices = np.where(lats < np.deg2rad(90))[0]
+        colormap_name = "Blues_r"
+    for i in indices:
+        shading[i, :] = np.sin(lats[i])+1.0
+
+    from pysiral.iotools import get_temp_png_filename
+    temp_filename = get_temp_png_filename()
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.axes([0, 0, 1, 1])
+    plt.axis('off')
+    ax.imshow(np.flipud(shading), cmap=plt.get_cmap(colormap_name))
+    plt.savefig(temp_filename)
+    plt.close(fig)
+
+    # Create the actual map
+    grid_keyw = {"dashes": (None, None), "color": "#91e5ff",
+                 "linewidth": 0.2, "latmax": 88, "zorder": 10}
+
+    plt.figure(figsize=(12, 12), facecolor="#ffffff")
+    m = Basemap(**projection[hemisphere])
+    m.fillcontinents(color='#91e5ff', lake_color='#91e5ff',
+                     zorder=90)
+    # m.drawcoastlines(color="#bdbdbd", linewidth=0.5, zorder=300)
+    m.drawmapboundary(color="#91e5ff", linewidth=0.1)
 
     # draw parallels and meridians.
     m.drawparallels(np.arange(-90., 120., 10.), **grid_keyw)
-    m.drawparallels(np.arange(-50., 51., 100.), **gridb_keyw)
     m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
 
     x, y = m(l2.track.longitude, l2.track.latitude)
-    m.plot(x, y, color="#003e6e", linewidth=2.0, zorder=100)
-    m.scatter(x[0], y[0], s=50, color="#003e6e", zorder=100)
+    m.plot(x, y, color="#FF1700", linewidth=5.0, zorder=220)
+    m.scatter(x[0], y[0], s=120, color="#FF1700", zorder=220)
+
+    m.warpimage(temp_filename, zorder=200, alpha=0.5)
+    os.remove(temp_filename)
 
     plt.show(block=block)
+    #plt.savefig(self.filename, bbox_inches="tight")
+
+
+
+#    grid_keyw = {"dashes": (None, None), "color": "#bcbdbf",
+#                 "linewidth": 0.5, "latmax": 88}
+#
+#    gridb_keyw = {"dashes": (None, None), "color": "#003e6e",
+#                  "linewidth": 2, "latmax": 88}
+#
+#    lon_0 = l2.info.lon_max
+#    lat_0 = l2.info.lat_max
+#
+#    plt.figure("l2 Orbit Map", figsize=(10, 10), facecolor="#ffffff")
+#    m = Basemap(projection='ortho', lon_0=lon_0, lat_0=lat_0, resolution='l')
+#    m.fillcontinents(color='#00ace5', lake_color='#00ace5')
+#
+#    # draw parallels and meridians.
+#    m.drawparallels(np.arange(-90., 120., 10.), **grid_keyw)
+#    m.drawparallels(np.arange(-50., 51., 100.), **gridb_keyw)
+#    m.drawmeridians(np.arange(0., 420., 30.), **grid_keyw)
+#
+#    x, y = m(l2.track.longitude, l2.track.latitude)
+#    m.plot(x, y, color="#003e6e", linewidth=2.0, zorder=100)
+#    m.scatter(x[0], y[0], s=50, color="#003e6e", zorder=100)
+#
+#    plt.show(block=block)
 
 
 if __name__ == '__main__':

@@ -5,10 +5,10 @@ from pysiral.helper import month_iterator
 
 from pysiral.job import Level2Job
 from pysiral.l2proc import Level2Processor
+from pysiral.iotools import get_l1bdata_files
 
 from datetime import datetime
 import argparse
-import glob
 import sys
 import os
 
@@ -80,7 +80,7 @@ def pysiral_l2proc():
                               args.stop_date[0], args.stop_date[1])
     for year, month in iterator:
         l1bdata_files = get_l1bdata_files(
-            config, job, setting.roi.hemisphere, year, month)
+            job.mission.id, setting.roi.hemisphere, year, month, config=config)
         l2proc.set_l1b_files(l1bdata_files)
         l2proc.run()
 
@@ -92,15 +92,6 @@ def validate_year_month_list(year_month_list, label):
         print "Error: Invalid "+label+" (%04g, %02g)" % (
             year_month_list[0], year_month_list[1])
         sys.exit(1)
-
-
-def get_l1bdata_files(config, job, hemisphere, year, month):
-    l1b_repo = config.local_machine.l1b_repository[job.mission.id].l1bdata
-    directory = os.path.join(
-        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-    print directory
-    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
-    return l1bdata_files
 
 
 def get_l2proc_argparser():
