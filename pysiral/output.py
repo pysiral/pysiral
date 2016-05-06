@@ -304,10 +304,12 @@ def l2i_filenaming(l2):
 
 def l3s_filenaming(l3):
     export_filename = "l3s_v{version:02g}_{mission}_" + \
+                      "{grid_tag}_{resolution_tag}_" + \
                       "{start_period}_{stop_period}.nc"
     export_filename = export_filename.format(
-        version=0, mission=l3.mission,
-        start_period=l3.start_period, stop_period=l3.stop_period)
+        version=0, mission=l3.mission, grid_tag=l3.grid_tag,
+        resolution_tag=l3.resolution_tag, start_period=l3.start_period,
+        stop_period=l3.stop_period)
     return export_filename
 
 

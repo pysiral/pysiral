@@ -206,7 +206,7 @@ class L3DataGrid(object):
                     continue
                 for name in self._l2_parameter:
                     data = np.array(self._l2.stack[name][yj][xi])
-                    if len(np.where(np.isfinite(data))[0]) > 25:
+                    if len(np.where(np.isfinite(data))[0]) > 1:
                         self._l3[name][yj, xi] = np.nanmean(data)
 
     def set_freeboard_nan_mask(self, targets):
@@ -306,7 +306,7 @@ class L3MetaData(object):
 
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
-        "pysiral_version", "projection_str"]
+        "pysiral_version", "projection_str", "grid_tag", "resolution_tag"]
 
     def __init__(self):
         # Init all fields
@@ -328,7 +328,8 @@ class L3MetaData(object):
         self.set_attribute("period_label", self.start_time.strftime("%B %Y"))
 
     def get_projection_parameter(self, griddef):
-        pass
+        self.set_attribute("grid_tag", griddef.grid_tag)
+        self.set_attribute("resolution_tag", griddef.resolution_tag)
 
     def __repr__(self):
         output = "pysiral.L3S Metadata Container:\n"

@@ -1,6 +1,10 @@
 grid_definition:
 
     hemisphere: north
+    
+    grid_tag: EASE2
+    
+    resolution_tag: 100km
 
     projection:
         proj: laea
