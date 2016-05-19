@@ -34,6 +34,16 @@ def zipl2month():
     regex = re.compile(r"^[1-2]\d{3}$")
     year_folders = [d for d in top_level_folders if regex.match(d)]
 
+    if args.start_month is None:
+        start_month = 199001
+    else:
+        start_month = args.start_month
+
+    if args.stop_month is None:
+        stop_month = 299001
+    else:
+        stop_month = args.stop_month
+
     # loop over years
     for year in year_folders:
 
@@ -46,6 +56,11 @@ def zipl2month():
 
         # Loop over month folders
         for month in months:
+
+            month_id = int(year)*100+int(month)
+            if month_id < start_month or month_id > stop_month:
+                continue
+
             t0 = time.time()
             log.info("+ Create archive for: %s-%s" % (year, month))
             folder = os.path.join(args.folder, year, month)
@@ -58,11 +73,25 @@ def zipl2month():
 
 def get_zipl2month_argparser():
     parser = argparse.ArgumentParser()
-    # Mission id string: cryosat2, envisat, ...
+
+    # Main product folder
     parser.add_argument(
         action='store',
         dest='folder',
         help='main product folder')
+
+    # Start month as list: [yyyy, mm]
+    parser.add_argument(
+        '-start', action='store', dest='start_month',
+        type=int,
+        help='start date as year and month (-start yyyymm)')
+
+    # Stop month as list: [yyyy, mm]
+    parser.add_argument(
+        '-stop', action='store', dest='stop_month',
+        type=int,
+        help='stop date as year and month (-stop yyyymm)')
+
     return parser
 
 
