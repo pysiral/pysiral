@@ -72,11 +72,13 @@ class NCMaskedGridData(object):
 
         nc = ReadNC(self.filename)
 
+        self.parameters = nc.parameters
         for parameter in nc.parameters:
             data = np.ma.array(getattr(nc, parameter))
             data.mask = np.isnan(data)
             setattr(self, parameter, data)
 
+        self.attributes = nc.attributes
         for attribute in nc.attributes:
             setattr(self, attribute, getattr(nc, attribute))
 
