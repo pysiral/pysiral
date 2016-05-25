@@ -5,6 +5,8 @@ Created on Thu Apr 07 16:19:41 2016
 @author: shendric
 """
 
+import numpy as np
+
 
 class GridMapParameterBase(object):
     """
@@ -46,6 +48,10 @@ class GridMapParameter(GridMapParameterBase):
     def set_parameter(self, grid, parameter_name):
         self.grid = grid
         self.pardef = self._parameter_definitions[parameter_name]
+
+    def set_nan_mask(self, nan_mask):
+        mask_indices = np.where(np.isnan(nan_mask))
+        self.grid.mask[mask_indices] = True
 
     @property
     def short_name(self):
