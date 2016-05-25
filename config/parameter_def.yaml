@@ -84,6 +84,38 @@ definition:
             vmax: 0.5
             step: 0.25
 
+    sea_surface_anomaly:
+        short_name: ssa
+        label: Sea Surface Anomaly
+        unit: meter
+        dtype: float32
+        cmap:
+            name: RdBu_r
+            vmin: -1
+            vmax: 1.0
+            step: 0.5
+        cmap_diff:
+            name: bwr
+            vmin: -0.5
+            vmax: 0.5
+            step: 0.25
+
+    lead_fraction:
+        short_name: lfr
+        label: Lead Density
+        unit: fraction
+        dtype: float32
+        cmap:
+            name: afmhot
+            vmin: 0
+            vmax: 0.25
+            step: 0.05
+        cmap_diff:
+            name: bwr
+            vmin: -0.25
+            vmax: 0.25
+            step: 0.1
+
     freeboard_uncertainty:
         short_name: frbu
         unit: meter
