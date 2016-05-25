@@ -46,6 +46,22 @@ class GridMapAWILightStyle(GridMapAWIStyle):
         self.clip.is_active = True
 
 
+class GridMapPaperStyle(GridMapAWIStyle):
+
+    def __init__(self):
+        super(GridMapPaperStyle, self).__init__()
+        self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
+        self.font.set_color("#4b4b4b")
+        self.coastlines.is_active = True
+        self.coastlines.set_keyw(color="#000000", linewidth=0.5)
+        self.mapboundary.set_keyw(color="#000000", zorder=200,
+                                  linewidth=0.25, fill_color="#ecedef")
+        self.continents.set_keyw(color="#bcbdbf", lake_color="#bcbdbf")
+        self.font.annotation["color"] = "#ecedef"
+        self.font.annotation["fontproperties"] = get_custom_font(
+            fontsize=32, awi_font=False)
+
+
 class GridMapSICCILightStyle(GridMapAWIStyle):
 
     def __init__(self):
