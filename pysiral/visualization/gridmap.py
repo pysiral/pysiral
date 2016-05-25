@@ -136,4 +136,5 @@ class GridMapLabels(object):
     def __init__(self):
         self.title = ""
         self.period = ""
+        self.annotation = ""
         self.copyright = ""

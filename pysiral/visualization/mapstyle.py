@@ -70,6 +70,9 @@ class GridMapFontProp(object):
         self.title = {
             "color": self.color,
             "fontproperties": self.get_custom_font(fontsize=32)}
+        self.annotation = {
+            "color": self.color,
+            "fontproperties": get_custom_font(fontsize=22)}
         self.copyright = {
             "fontsize": 18, "color": self.color,
             "fontproperties": self.get_custom_font(fontsize=18)}
