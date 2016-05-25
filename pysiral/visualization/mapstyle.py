@@ -18,6 +18,7 @@ class GridMapAWIStyle(object):
         self.figure.set_keyw(figsize=(12, 12), facecolor="#ffffff")
         self.mapboundary = BasemapStyleDef()
         self.coastlines = BasemapStyleDef()
+        self.continents = BasemapStyleDef()
         self.grid = BasemapGridDef()
         self.crop = BasemapOrthoCrop()
         self.clip = BasemapImageClip()
