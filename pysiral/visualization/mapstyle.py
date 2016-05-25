@@ -63,30 +63,19 @@ class GridMapFontProp(object):
         self.color = "#bcbdbf"
         self.label = {
             "color": self.color,
-            "fontproperties": self.get_custom_font(fontsize=22)}
+            "fontproperties": get_custom_font(fontsize=22)}
         self.period = {
             "color": self.color,
-            "fontproperties": self.get_custom_font(fontsize=22)}
+            "fontproperties": get_custom_font(fontsize=22)}
         self.title = {
             "color": self.color,
-            "fontproperties": self.get_custom_font(fontsize=32)}
+            "fontproperties": get_custom_font(fontsize=32)}
         self.annotation = {
             "color": self.color,
             "fontproperties": get_custom_font(fontsize=22)}
         self.copyright = {
             "fontsize": 18, "color": self.color,
-            "fontproperties": self.get_custom_font(fontsize=18)}
-
-    def get_custom_font(self, fontsize=20):
-        import matplotlib.font_manager as fm
-        # See if AWI font does exist
-        folder = get_module_folder(__file__)
-        font_path = os.path.join(folder, "font", "NeoSansW1G-Regular.otf")
-        # Fall back to OpenSans if AWI font not installed
-        if not os.path.isfile(font_path):
-            font_path = os.path.join("font", "OpenSans-Regular.ttf")
-        prop = fm.FontProperties(fname=font_path, size=fontsize)
-        return prop
+            "fontproperties": get_custom_font(fontsize=18)}
 
     def set_color(self, color):
         self.color = color
@@ -188,3 +177,15 @@ class BasemapImageClip(object):
         patch = patches.Circle((width/2, height/2), radius=width/2,
                                transform=ax.transData)
         return patch
+
+
+def get_custom_font(fontsize=20, awi_font=True):
+    import matplotlib.font_manager as fm
+    # See if AWI font does exist
+    folder = get_module_folder(__file__)
+    font_path = os.path.join(folder, "font", "NeoSansW1G-Regular.otf")
+    # Fall back to OpenSans if AWI font not installed
+    if not os.path.isfile(font_path) or not awi_font:
+        font_path = os.path.join(folder, "font", "OpenSans-Regular.ttf")
+    prop = fm.FontProperties(fname=font_path, size=fontsize)
+    return prop
