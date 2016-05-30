@@ -11,6 +11,7 @@ from pysiral.visualization.parameter import GridMapParameter
 
 from pysiral.path import (file_basename, folder_from_filename,
                           validate_directory)
+import glob
 import os
 
 
@@ -34,57 +35,64 @@ def l3s_map():
     parser = get_l3s_map_argparser()
     args = parser.parse_args()
 
-    # TODO: batch processing
-    ncfile = args.l3s_filename
-    ncdata = NCMaskedGridData(ncfile)
+    if args.batch:
+        ncfiles = sorted(glob.glob(args.l3s_filename))
+    else:
+        ncfiles = [args.l3s_filename]
 
-    # Loop over parameters
-    for parameter_name in args.parameter_list:
+    for ncfile in ncfiles:
 
-        # Extract parameter and merge with metadata
-        data = GridMapParameter()
-        data.set_grid(ncdata.longitude, ncdata.latitude)
-        parameter = ncdata.get_by_name(parameter_name)
-        if args.cs2awi:
-            parameter_name = cs2awi_naming[parameter_name]
-        data.set_parameter(parameter, parameter_name)
-        data.set_projection(**EASE2North().projection_keyw)
+        # TODO: batch processing
+        ncdata = NCMaskedGridData(ncfile)
 
-        if args.cs2awi:
-            data.set_nan_mask(ncdata.sea_ice_freeboard)
+        # Loop over parameters
+        for parameter_name in args.parameter_list:
 
-        # Set output folder
-        if args.destination is None:
-            destination = folder_from_filename(args.l3s_filename)
-            destination = os.path.join(destination, "visuals", args.maptype)
-        else:
-            destination = args.destination
-        validate_directory(destination)
+            # Extract parameter and merge with metadata
+            data = GridMapParameter()
+            data.set_grid(ncdata.longitude, ncdata.latitude)
+            parameter = ncdata.get_by_name(parameter_name)
+            if args.cs2awi:
+                parameter_name = cs2awi_naming[parameter_name]
+            data.set_parameter(parameter, parameter_name)
+            data.set_projection(**EASE2North().projection_keyw)
 
-        # Output filename
-        map_filename = file_basename(ncfile)+"_"+data.short_name+".png"
-        output = os.path.join(destination, map_filename)
+            if args.cs2awi:
+                data.set_nan_mask(ncdata.sea_ice_freeboard)
 
-        # Map Labels
-        if args.cs2awi:
-            mission_id = "cryosat2"
-            # TODO: This is preliminary
-            period = ncdata.description.split()[-1][1:-1]
-            month, year = period.split("/")
-            period_label = "%s %s" % (month_names[month], year)
-        else:
-            mission_id = ncdata.mission_ids
-            period_label = ncdata.period_label
+            # Set output folder
+            if args.destination is None:
+                destination = folder_from_filename(args.l3s_filename)
+                destination = os.path.join(
+                    destination, "visuals", args.maptype)
+            else:
+                destination = args.destination
+            validate_directory(destination)
 
-        # Light style map
-        MapClass, StyleClass = get_map_classes(args)
-        gridmap = MapClass()
-        gridmap.style = StyleClass()
-        gridmap.data = data
-        gridmap.label.title = mission_name_dict[mission_id]
-        gridmap.label.period = period_label
-        gridmap.label.annotation = args.annotation
-        gridmap.save2png(output)
+            # Output filename
+            map_filename = file_basename(ncfile)+"_"+data.short_name+".png"
+            output = os.path.join(destination, map_filename)
+
+            # Map Labels
+            if args.cs2awi:
+                mission_id = "cryosat2"
+                # TODO: This is preliminary
+                period = ncdata.description.split()[-1][1:-1]
+                month, year = period.split("/")
+                period_label = "%s %s" % (month_names[month], year)
+            else:
+                mission_id = ncdata.mission_ids
+                period_label = ncdata.period_label
+
+            # Light style map
+            MapClass, StyleClass = get_map_classes(args)
+            gridmap = MapClass()
+            gridmap.style = StyleClass()
+            gridmap.data = data
+            gridmap.label.title = mission_name_dict[mission_id]
+            gridmap.label.period = period_label
+            gridmap.label.annotation = args.annotation
+            gridmap.save2png(output)
 
 
 def get_map_classes(args):
