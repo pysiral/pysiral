@@ -7,7 +7,8 @@ Created on Sun Apr 10 15:52:01 2016
 
 from pysiral.proj import EASE2North
 from pysiral.iotools import NCMaskedGridData
-from pysiral.visualization.parameter import GridMapParameter
+from pysiral.visualization.parameter import (
+    GridMapParameter, GridMapDiffParameter)
 
 from pysiral.path import (file_basename, folder_from_filename,
                           validate_directory)
@@ -49,12 +50,24 @@ def l3s_map():
         for parameter_name in args.parameter_list:
 
             # Extract parameter and merge with metadata
-            data = GridMapParameter()
-            data.set_grid(ncdata.longitude, ncdata.latitude)
-            parameter = ncdata.get_by_name(parameter_name)
-            if args.cs2awi:
-                parameter_name = cs2awi_naming[parameter_name]
-            data.set_parameter(parameter, parameter_name)
+            if args.diff == "none":
+                data = GridMapParameter()
+                data.set_grid(ncdata.longitude, ncdata.latitude)
+                parameter = ncdata.get_by_name(parameter_name)
+                if args.cs2awi:
+                    parameter_name = cs2awi_naming[parameter_name]
+                data.set_parameter(parameter, parameter_name)
+
+            else:
+                ncdata_diff = NCMaskedGridData(args.diff)
+                data = GridMapDiffParameter()
+                data.set_grid(ncdata.longitude, ncdata.latitude)
+                parameter_a = ncdata.get_by_name(parameter_name)
+                parameter_b = ncdata_diff.get_by_name(parameter_name)
+                if args.cs2awi:
+                    parameter_name = cs2awi_naming[parameter_name]
+                data.set_parameter(parameter_a, parameter_b, parameter_name)
+
             data.set_projection(**EASE2North().projection_keyw)
 
             if args.cs2awi:
@@ -70,7 +83,9 @@ def l3s_map():
             validate_directory(destination)
 
             # Output filename
-            map_filename = file_basename(ncfile)+"_"+data.short_name+".png"
+            annotation_str = get_annotation_str(args.annotation)
+            map_filename = file_basename(ncfile) + "_" + data.short_name + \
+                "_" + annotation_str + ".png"
             output = os.path.join(destination, map_filename)
 
             # Map Labels
@@ -111,6 +126,12 @@ def get_map_classes(args):
         sys.exit("Invalid map type (%s), aborting ..." % args.maptype)
 
 
+def get_annotation_str(annotation):
+    annotation_str = annotation.lower()
+    annotation_str = annotation_str.replace(" ", "_")
+    return annotation_str
+
+
 def get_l3s_map_argparser():
     """ Handle command line arguments """
     import argparse
@@ -138,6 +159,12 @@ def get_l3s_map_argparser():
         choices=['presentation', 'paper'],
         action='store', dest='maptype', default='presentation',
         help='map type')
+
+    # options
+    parser.add_argument(
+        '-diff',
+        action='store', dest='diff', default='none',
+        help='reference grid')
 
     parser.add_argument(
         '-annotation',
