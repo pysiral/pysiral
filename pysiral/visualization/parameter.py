@@ -33,6 +33,10 @@ class GridMapParameterBase(object):
         self.pgrid = GeoPcolorGrid(self.longitude, self.latitude)
         self.pgrid.calc_from_proj(**projection)
 
+    def set_nan_mask(self, nan_mask):
+        mask_indices = np.where(np.isnan(nan_mask))
+        self.grid.mask[mask_indices] = True
+
 
 class GridMapParameter(GridMapParameterBase):
 
@@ -48,10 +52,6 @@ class GridMapParameter(GridMapParameterBase):
     def set_parameter(self, grid, parameter_name):
         self.grid = grid
         self.pardef = self._parameter_definitions[parameter_name]
-
-    def set_nan_mask(self, nan_mask):
-        mask_indices = np.where(np.isnan(nan_mask))
-        self.grid.mask[mask_indices] = True
 
     @property
     def short_name(self):
@@ -76,3 +76,7 @@ class GridMapDiffParameter(GridMapParameterBase):
     def set_parameter(self, grida, gridb, parameter_name):
         self.grid = gridb-grida
         self.pardef = self._parameter_definitions[parameter_name]
+
+    @property
+    def short_name(self):
+        return self.pardef.short_name + "_diff"
