@@ -24,11 +24,17 @@ def colorbar_png():
     # Get the parameter definition for the corresponding parameter
     parameter_definitions = get_parameter_definitions()
     pardef = parameter_definitions[args.parameter]
-    cmap = pardef.cmap
-    parameter_label = pardef.label+" ("+pardef.unit+")"
 
-    output_filename = os.path.join(args.output,
-                                   "colorbar_%s.png" % args.parameter)
+    if args.diff:
+        cmap = pardef.cmap_diff
+        parameter_label = "$\Delta$ " + pardef.label+" ("+pardef.unit+")"
+        output_filename = os.path.join(
+            args.output, "colorbar_%s.png" % args.parameter)
+    else:
+        cmap = pardef.cmap
+        parameter_label = pardef.label+" ("+pardef.unit+")"
+        output_filename = os.path.join(
+            args.output, "colorbar_%s_diff.png" % args.parameter)
 
     font_label_properties = {
         "color": "#4b4b4b",
@@ -65,6 +71,7 @@ def colorbar_png():
     plt.sca(ax)
 
     plt.savefig(output_filename, transparent=True, dpi=600)
+
 
 def get_argparser():
     """ Handle command line arguments """
