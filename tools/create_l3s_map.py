@@ -36,10 +36,8 @@ def l3s_map():
     parser = get_l3s_map_argparser()
     args = parser.parse_args()
 
-    if args.batch:
-        ncfiles = sorted(glob.glob(args.l3s_filename))
-    else:
-        ncfiles = [args.l3s_filename]
+    # Get files (can be file link or search pattern)
+    ncfiles = sorted(glob.glob(args.l3s_filename))
 
     for ncfile in ncfiles:
 
@@ -85,7 +83,7 @@ def l3s_map():
             # Output filename
             annotation_str = get_annotation_str(args.annotation)
             map_filename = file_basename(ncfile) + "_" + data.short_name + \
-                "_" + annotation_str + ".png"
+                annotation_str + ".png"
             output = os.path.join(destination, map_filename)
 
             # Map Labels
@@ -129,6 +127,8 @@ def get_map_classes(args):
 def get_annotation_str(annotation):
     annotation_str = annotation.lower()
     annotation_str = annotation_str.replace(" ", "_")
+    if annotation_str != "":
+        annotation_str = "_" + annotation_str
     return annotation_str
 
 
@@ -170,12 +170,6 @@ def get_l3s_map_argparser():
         '-annotation',
         action='store', dest='annotation', default='',
         help='additional label')
-
-    # Batch Processing
-    parser.add_argument(
-        '--batch',
-        action='store_true', dest='batch',
-        help='positional argument is a search pattern')
 
     parser.add_argument(
         '--cs2awi',
