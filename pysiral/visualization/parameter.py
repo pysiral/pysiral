@@ -37,6 +37,20 @@ class GridMapParameterBase(object):
         mask_indices = np.where(np.isnan(nan_mask))
         self.grid.mask[mask_indices] = True
 
+    def set_cmap(self, label=None, unit=None, short_name=None, cmap=None,
+                 cmap_diff=None):
+        from pysiral.config import options_from_dictionary
+        if label is not None:
+            self.pardef.label = label
+        if unit is not None:
+            self.pardef.unit = unit
+        if short_name is not None:
+            self.pardef.short_name = short_name
+        if cmap is not None:
+            self.pardef.cmap = options_from_dictionary(cmap)
+        if cmap_diff is not None:
+            self.pardef.cmap_diff = options_from_dictionary(cmap_diff)
+
 
 class GridMapParameter(GridMapParameterBase):
 
