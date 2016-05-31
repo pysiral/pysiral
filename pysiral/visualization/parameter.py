@@ -94,3 +94,27 @@ class GridMapDiffParameter(GridMapParameterBase):
     @property
     def short_name(self):
         return self.pardef.short_name + "_diff"
+
+
+class GridMapAddParameter(GridMapParameterBase):
+    """
+    Contains data, pcolor grid calculation capability, colormap definition
+    and standardized parameter naming
+    """
+
+    def __init__(self):
+        super(GridMapAddParameter, self).__init__()
+
+    def get_cmap(self):
+        return self.pardef.cmap
+
+    def get_label(self):
+        return "$\Delta$ "+self.pardef.label+" ("+self.pardef.unit+")"
+
+    def set_parameter(self, grida, gridb, parameter_name):
+        self.grid = gridb+grida
+        self.pardef = self._parameter_definitions[parameter_name]
+
+    @property
+    def short_name(self):
+        return self.pardef.short_name + "_diff"
