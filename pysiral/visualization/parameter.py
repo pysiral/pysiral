@@ -47,9 +47,9 @@ class GridMapParameterBase(object):
         if short_name is not None:
             self.pardef.short_name = short_name
         if cmap is not None:
-            self.pardef.cmap = options_from_dictionary(cmap)
+            self.pardef.cmap = options_from_dictionary(**cmap)
         if cmap_diff is not None:
-            self.pardef.cmap_diff = options_from_dictionary(cmap_diff)
+            self.pardef.cmap_diff = options_from_dictionary(**cmap_diff)
 
 
 class GridMapParameter(GridMapParameterBase):
