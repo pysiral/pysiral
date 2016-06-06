@@ -14,7 +14,7 @@ class GeoPcolorGrid():
         self.longitude = np.ndarray((self.n+1, self.m+1), dtype=np.float32)
         self.latitude = np.ndarray((self.n+1, self.m+1), dtype=np.float32)
 
-    def calc_from_proj(self, **kwargs):
+    def calc_from_proj(self, xres=None, yres=None, **kwargs):
 
         p = Proj(**kwargs)
         x, y = p(self.glon, self.glat)
@@ -22,8 +22,15 @@ class GeoPcolorGrid():
         xp = np.ndarray((self.n+1, self.m+1), dtype=np.float32)
         yp = np.ndarray((self.n+1, self.m+1), dtype=np.float32)
 
-        dx = -0.5 * (x[0, 1] - x[0, 0])
-        dy = -0.5 * (y[1, 0] - y[0, 0])
+        if xres is None:
+            dx = -0.5 * (x[0, 1] - x[0, 0])
+        else:
+            dx = -0.5*xres
+
+        if yres is None:
+            dy = -0.5 * (y[1, 0] - y[0, 0])
+        else:
+            dy = -0.5*yres
 
         # Main part
         xp[0:self.n, 0:self.m] = x[0:self.n, 0:self.m] + dx
@@ -40,6 +47,16 @@ class GeoPcolorGrid():
         # Last tiny piece
         xp[self.n, self.m] = x[self.n-1, self.m-1] - dx
         yp[self.n, self.m] = y[self.n-1, self.m-1] - dy
+
+#        import matplotlib.pyplot as plt
+#
+#        plt.figure()
+#        plt.scatter(x, y, color="red")
+#        plt.scatter(xp, yp, color="black")
+#        plt.show()
+#
+#        stop
+
 
         self.longitude, self.latitude = p(xp, yp, inverse=True)
 
