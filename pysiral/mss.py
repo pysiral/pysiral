@@ -4,7 +4,7 @@ Created on Sat Aug 01 17:03:19 2015
 
 @author: Stefan
 """
-from pysiral.io_tools import ReadNC
+from pysiral.iotools import ReadNC
 from pysiral.filter import (fill_nan, idl_smooth)
 
 from treedict import TreeDict
