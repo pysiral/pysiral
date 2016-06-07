@@ -39,6 +39,11 @@ def l3s_map():
     # Get files (can be file link or search pattern)
     ncfiles = sorted(glob.glob(args.l3s_filename))
 
+    # XXX: Temporary cs2awi fix
+    xres, yres = None, None
+    if args.cs2awi:
+        xres, yres = 25000, 25000
+
     for ncfile in ncfiles:
 
         # TODO: batch processing
@@ -66,7 +71,8 @@ def l3s_map():
                     parameter_name = cs2awi_naming[parameter_name]
                 data.set_parameter(parameter_a, parameter_b, parameter_name)
 
-            data.set_projection(**EASE2North().projection_keyw)
+            data.set_projection(xres=xres, yres=yres,
+                                **EASE2North().projection_keyw)
 
             if args.cs2awi:
                 data.set_nan_mask(ncdata.sea_ice_freeboard)
