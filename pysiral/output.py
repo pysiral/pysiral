@@ -118,7 +118,7 @@ class L1bDataNC(NCDataFile):
         self.path = os.path.join(self.output_folder, self.filename)
 
     def _create_filename(self):
-        self.filename = file_basename(self.l1b.filename)+"nc"
+        self.filename = file_basename(self.l1b.filename)+".nc"
 
     def _populate_data_groups(self):
         for datagroup in self.datagroups:
@@ -283,7 +283,7 @@ def l1bnc_filenaming(l1b, config):
     # construct filename from
     export_filename = "l1bdata_v{version:02g}_{region}_{mission}_" + \
                       "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{startdt:%Y%m%dT%H%M%S}.nc"
+                      "{stopdt:%Y%m%dT%H%M%S}.nc"
     export_filename = export_filename.format(
         version=0, region=hemisphere, mission=l1b.info.mission,
         orbit=l1b.info.orbit, startdt=l1b.info.start_time,
