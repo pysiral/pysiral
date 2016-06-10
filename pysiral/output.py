@@ -294,7 +294,7 @@ def l1bnc_filenaming(l1b, config):
 def l2i_filenaming(l2):
     export_filename = "l2i_v{version:02g}_{region}_{mission}_" + \
                       "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{startdt:%Y%m%dT%H%M%S}.nc"
+                      "{stopdt:%Y%m%dT%H%M%S}.nc"
     export_filename = export_filename.format(
         version=0, region=l2.hemisphere, mission=l2.info.mission,
         orbit=l2.info.orbit, startdt=l2.info.start_time,
