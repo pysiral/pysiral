@@ -11,6 +11,7 @@ missions:
     - cryosat2
     - envisat
     - ers2
+    - sentinel3
 
 # These missions are includeed in the pysiral concept but support
 # will be added later in the development phase
@@ -144,3 +145,30 @@ ers2:
     orbit_max_latitude: 82.5
 
     options: null
+
+sentinel3:
+
+    long_name: Sentinel-3
+    docstr:
+        Cryosphere radar altimeter mission of the European Space
+        Agency (ESA)
+    data_period:
+        start: 2016-04-01T00:00:00.00+00
+        stop: null
+    sea_ice_radar_modes: ["sar"]
+    orbit_max_latitude: 81.35
+    options:
+        ionospheric_correction_source:
+            default: ionospheric_gim
+            target: ionosphere
+            type: selector
+            options:
+                - ionospheric_gim
+                - ionospheric_mod
+            docstr:
+                Source of Ionospheric Correction
+    preproc:
+        options:
+            polar_threshold: 50.0
+            max_connected_files_timedelta_seconds: 10
+            max_inner_nonocean_segment_nrecords: 1000

@@ -237,7 +237,8 @@ class L1bConstructor(Level1bData):
     L1b data files
     """
 
-    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2"]
+    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2",
+                               "sentinel3"]
 
     def __init__(self, config, header_only=False):
         super(L1bConstructor, self).__init__()
@@ -757,8 +758,8 @@ def get_l1b_adapter(mission):
     """ Select and returns the correct IO Adapter for the specified mission """
 
     from pysiral.io_adapter import (
-        L1bAdapterCryoSat, L1bAdapterEnvisat,
-        L1bAdapterERS1, L1bAdapterERS2)
+        L1bAdapterCryoSat, L1bAdapterEnvisat, L1bAdapterERS1,
+        L1bAdapterERS2, L1bAdapterSentinel3)
 
     if mission == "cryosat2":
         return L1bAdapterCryoSat
@@ -768,5 +769,7 @@ def get_l1b_adapter(mission):
         return L1bAdapterERS1
     elif mission == "ers2":
         return L1bAdapterERS2
+    elif mission == "sentinel3":
+        return L1bAdapterSentinel3
     else:
         raise ValueError("Unknown mission id: %s" % mission)
