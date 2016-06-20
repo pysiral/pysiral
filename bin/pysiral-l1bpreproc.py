@@ -13,6 +13,7 @@ def pysiral_l1bpreproc():
     """ get the pysiral configuration info """
     config = ConfigInfo()
 
+
     """ parse command line arguments """
     parser = get_l1bpreproc_argparser()
     args = parser.parse_args()
