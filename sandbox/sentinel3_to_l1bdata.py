@@ -5,8 +5,6 @@ Created on Tue Mar 08 18:42:01 2016
 @author: Stefan
 """
 
-import os
-
 from pysiral.sentinel3.iotools import get_sentinel3_l1b_filelist
 from pysiral.config import ConfigInfo
 from pysiral.l1bdata import L1bConstructor
@@ -14,6 +12,9 @@ from pysiral.l1bdata import L1bConstructor
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.basemap import Basemap
+
+import os
+import argparse
 import numpy as np
 import time
 
@@ -23,19 +24,23 @@ def sentinel3_to_l1bdata():
     Sandbox script to create an L1BData object from a ERS-2 L1b data file
     """
 
+    """ parse command line arguments """
+    parser = get_s3l1bdata_argparser()
+    args = parser.parse_args()
+
     # Get Configuration Information
     config = ConfigInfo()
 
     # Get an L1B SAR file
     l1b_directory = config.local_machine.l1b_repository.sentinel3.sral
-    l1b_directory = os.path.join(l1b_directory, "2016", "05")
+    l1b_directory = os.path.join(l1b_directory, args.month[0], args.month[1])
     l1b_files = get_sentinel3_l1b_filelist(l1b_directory)
 
     # Read the file
     t0 = time.time()
     l1b = L1bConstructor(config)
     l1b.mission = "sentinel3"
-    l1b.filename = l1b_files[0]
+    l1b.filename = l1b_files[args.file_number]
     l1b.construct()
     t1 = time.time()
     print "Constructing Sentinel-3A l1bdata object in %.3g seconds" % (t1 - t0)
@@ -278,6 +283,23 @@ def align_echo_power(power, range, altitude):
         aligned_power[i, :] = f(elevation_range)
 
     return aligned_power, elevation_range
+
+
+def get_s3l1bdata_argparser():
+    """ Handle command line arguments """
+    parser = argparse.ArgumentParser()
+    # Mission id string: cryosat2, envisat, ...
+    # Start month as list: [yyyy, mm]
+    parser.add_argument(
+        '-month', action='store', dest='month',
+        nargs='+', type=str, required=True,
+        help='start date as year and month (-t0 yyyy mm)')
+    # Add an Option to skip a number of files (e.g. for a restart)
+    parser.add_argument(
+        "-f", "-file", action='store', type=int, const=0, nargs='?',
+        dest='file_number', help='file number in month')
+
+    return parser
 
 
 if __name__ == "__main__":

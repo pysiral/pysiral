@@ -7,6 +7,7 @@ Created on Tue Jul 14 15:18:59 2015
 
 import os
 import glob
+import argparse
 
 from pysiral.config import ConfigInfo
 from pysiral.l1bdata import L1bConstructor
@@ -23,20 +24,25 @@ def cryosat2_to_l1bdata():
     Sandbox script to create an L1BData object from a CryoSat-2 L1b data file
     """
 
+    """ parse command line arguments """
+    parser = get_cs2l1bdata_argparser()
+    args = parser.parse_args()
+
     # Get Configuration Information
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = config.local_machine.l1b_repository.cryosat2.sin
-    l1b_directory = os.path.join(l1b_directory, "2015", "03")
+    l1b_directory = config.local_machine.l1b_repository.cryosat2[args.mode]
+    l1b_directory = os.path.join(l1b_directory, args.month[0], args.month[1])
     l1b_files = glob.glob(os.path.join(l1b_directory, "*.DBL"))
 
     # Read the file
     t0 = time.time()
     l1b = L1bConstructor(config)
     l1b.mission = "cryosat2"
-    l1b.filename = l1b_files[7]
+    l1b.filename = l1b_files[args.file_number]
     l1b.get_header_info()
+    print l1b.filename
     print l1b.info.open_ocean_percent
     print l1b.info.lat_min
     print l1b.info.lat_max
@@ -165,6 +171,29 @@ def align_echo_power(power, range, altitude):
         aligned_power[i, :] = f(elevation_range)
 
     return aligned_power, elevation_range
+
+
+def get_cs2l1bdata_argparser():
+    """ Handle command line arguments """
+    parser = argparse.ArgumentParser()
+    # Mission id string: cryosat2, envisat, ...
+    # Start month as list: [yyyy, mm]
+    parser.add_argument(
+        '-month', action='store', dest='month',
+        nargs='+', type=str, required=True,
+        help='start date as year and month (-t0 yyyy mm)')
+
+    parser.add_argument(
+        '-radarmode', action='store', dest='mode',
+        type=str, required=True,
+        help='radar mode [sar|sin]')
+
+    # Add an Option to skip a number of files (e.g. for a restart)
+    parser.add_argument(
+        "-f", "-file", action='store', type=int, const=0, nargs='?',
+        dest='file_number', help='file number in month')
+
+    return parser
 
 if __name__ == "__main__":
     mpl.rcParams['font.sans-serif'] = "arial"
