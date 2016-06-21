@@ -28,7 +28,7 @@ def sentinel3_to_l1bdata():
 
     # Get an L1B SAR file
     l1b_directory = config.local_machine.l1b_repository.sentinel3.sral
-    l1b_directory = os.path.join(l1b_directory, "2016", "04")
+    l1b_directory = os.path.join(l1b_directory, "2016", "05")
     l1b_files = get_sentinel3_l1b_filelist(l1b_directory)
 
     # Read the file
@@ -49,6 +49,7 @@ def sentinel3_to_l1bdata():
     # Quick plots
     s3_l1b_orbit_plot(l1b)
     s3_l1b_corrections_plot(l1b)
+    s3_l1b_classifier_plot(l1b)
     s3_l1b_waveform_plot(l1b)
 
 
@@ -173,6 +174,31 @@ def s3_l1b_corrections_plot(l1b):
     f, ax = plt.subplots(n, sharex=True, facecolor="white", figsize=(10, 16))
     for i in np.arange(n):
         correction, name = l1b.correction.get_parameter_by_index(i)
+        ax[i].plot(correction, lw=2, color="#00ace5")
+        ax[i].set_title(name)
+        # ax[i].yaxis.set_minor_locator(MultipleLocator(0.02))
+        ax[i].yaxis.grid(True, which='minor')
+        ax[i].yaxis.set_tick_params(direction='out')
+        ax[i].yaxis.set_ticks_position('left')
+        ax[i].xaxis.set_ticks([])
+
+        spines_to_remove = ["top", "right", "bottom"]
+        for spine in spines_to_remove:
+            ax[i].spines[spine].set_visible(False)
+
+    plt.tight_layout()
+    plt.show(block=False)
+
+
+def s3_l1b_classifier_plot(l1b):
+
+    # from matplotlib.ticker import MultipleLocator
+
+    n = len(l1b.classifier.parameter_list)
+    f, ax = plt.subplots(n, sharex=True, facecolor="white", figsize=(10, 16))
+    for i in np.arange(n):
+        name = l1b.classifier.parameter_list[i]
+        correction = l1b.classifier.get_parameter(name)
         ax[i].plot(correction, lw=2, color="#00ace5")
         ax[i].set_title(name)
         # ax[i].yaxis.set_minor_locator(MultipleLocator(0.02))
