@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from pysiral.sentinel3.iotools import get_sentinel3_sral_l1_from_l2
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.path import folder_from_filename
 
@@ -65,7 +66,19 @@ class Sentinel3SRALL1b(object):
 
         from pysiral.iotools import ReadNC
         self._validate()
+
+        # Read the L2 netCDF file
         self.nc = ReadNC(self.filename)
+
+        # Additionally read the L1 netCDF file for additional
+        # waveform and stack parameters
+        # L1 filename cannot be directly derived from L2 filename, thus
+        # it has to be estimated and looked for potential matches
+        # -> if l1nc_filename is None, corresponding L1 file does not exist
+        l1nc_filename = get_sentinel3_sral_l1_from_l2(self.filename)
+        if l1nc_filename is not None:
+            self.l1nc = ReadNC(l1nc_filename)
+
 #        for attribute in self.nc.attributes:
 #            print "attribute: %s = %s" % (
 #                attribute, str(getattr(self.nc, attribute)))
