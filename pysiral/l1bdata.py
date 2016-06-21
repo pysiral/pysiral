@@ -630,6 +630,9 @@ class L1bClassifiers(object):
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
 
+    def get_parameter(self, parameter_name):
+            return getattr(self, parameter_name)
+
     def append(self, annex):
         for parameter in self.parameter_list:
             this_data = getattr(self, parameter)
