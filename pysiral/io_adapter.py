@@ -441,19 +441,20 @@ class L1bAdapterSentinel3(object):
         self._config = config
         self._mission = "sentinel3"
 
-    def construct_l1b(self, l1b):
+    def construct_l1b(self, l1b, header_only=False):
         """
         Read the Envisat SGDR file and transfers its content to a
         Level1bData instance
         """
-        self.l1b = l1b                        # pointer to L1bData object
+        self.l1b = l1b
         self._read_sentinel3_sral_l1b()
-        self._transfer_metadata()             # (orbit, radar mode, ..)
-        self._transfer_timeorbit()            # (lon, lat, alt, time)
-        self._transfer_waveform_collection()  # (power, range)
-        self._transfer_range_corrections()    # (range corrections)
-        self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
-        self._transfer_classifiers()          # (beam parameters, flags, ...)
+        self._transfer_metadata()
+        if not header_only:
+            self._transfer_timeorbit()
+            self._transfer_waveform_collection()
+            self._transfer_range_corrections()
+            self._transfer_surface_type_data()
+            self._transfer_classifiers()
 
     def _read_sentinel3_sral_l1b(self):
         """ Read the L1b file and create a ERS native L1b object """
