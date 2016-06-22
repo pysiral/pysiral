@@ -73,19 +73,16 @@ class S3PreProcJob(object):
         for i, sentinel3_l2_file in enumerate(self.files):
 
             # Parse the current file and split into polar ocean segments
-            log.info("Parsing file %g of %g: %s" % (
+            log.info("+ Parsing file %g of %g: %s" % (
                 i+1, n, sentinel3_l2_file))
             l1b_segments = self.get_sentinel3_l1bdata_ocean_segments(
                 sentinel3_l2_file, self.config)
 
-            if len(l1b_segments) == 0:
-                continue
-
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info(". no polar ocean data, skipping")
+                log.info("- no polar ocean data, skipping")
                 continue
-            log.info(". %g polar ocean data segments" % len(l1b_segments))
+            log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
             # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
@@ -95,7 +92,7 @@ class S3PreProcJob(object):
                 if not self.l1b_is_connected_to_stack(
                         l1b_segment, l1bdata_stack):
                     # => break criterium, save existing stack and start over
-                    log.info(". segment unconnected, exporting current stack")
+                    log.info("- segment unconnected, exporting current stack")
                     self.concatenate_and_export_stack_files(l1bdata_stack)
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -118,28 +115,39 @@ class S3PreProcJob(object):
         l1b.filename = filename
         l1b.get_header_info()
 
-        self.log.debug(
-            ". sar_mode_percent: %.1f" % l1b.info.sar_mode_percent)
-        self.log.debug(
-            ". open_ocean_percent: %.1f" % l1b.info.open_ocean_percent)
+        self.log.info(
+            "- sar_mode_percent: %.1f" % l1b.info.sar_mode_percent)
+        self.log.info(
+            "- open_ocean_percent: %.1f" % l1b.info.open_ocean_percent)
 
         # check sar mode percentage and open ocean data
         if l1b.info.sar_mode_percent <= 0.:
-            self.log.info(". no sar mode data, skipping file")
-            return[]
+            self.log.info("- no sar mode data, skipping file")
+            return None
 
         # check sar mode percentage and open ocean data
         if l1b.info.open_ocean_percent <= 0.:
-            self.log.info(". no open ocean data, skipping file")
-            return[]
+            self.log.info("- no open ocean data, skipping file")
+            return None
+
+        # check sar mode percentage and open ocean data
+        if l1b.error_status:
+            self.log.info("- l1b error status raised, skipping file")
+            return None
 
         # Read the full data set
         l1b.construct()
 
         # Extract relevant segments over ocean
-        l1b_list = self.extract_polar_segments(l1b)
+        l1b_single_file_subsets = self.extract_polar_segments(l1b)
 
-        return l1b_list
+        ocean_segments = []
+        for l1b_single_file_subset in l1b_single_file_subsets:
+            l1b_ocean_sections = self.extract_polar_ocean_segments(
+                l1b_single_file_subset)
+            ocean_segments.extend(l1b_ocean_sections)
+
+        return ocean_segments
 
     def extract_polar_segments(self, l1b):
         """
@@ -147,9 +155,16 @@ class S3PreProcJob(object):
         with no SAR coverage
         """
 
+        # The threshold is the same for arctic and antarctic (50°)
+        polar_threshold = self.options.polar_threshold
+
+        is_polar = FlagContainer(
+            np.abs(l1b.time_orbit.latitude > polar_threshold))
+        polar_subset = l1b.extract_subset(is_polar.indices)
+
         from matplotlib.dates import date2num
 
-        timestamp = l1b.time_orbit.timestamp
+        timestamp = polar_subset.time_orbit.timestamp
         delta_seconds = np.diff(86400.*date2num(timestamp))
         threshold = self.options.max_connected_files_timedelta_seconds
         new_segments_start_index = np.where(delta_seconds > threshold)[0]+1
@@ -157,21 +172,21 @@ class S3PreProcJob(object):
 
         # 1 segment -> return full orbit
         if n_segments == 1:
-            return [l1b]
+            return [polar_subset]
 
         # Create two lists describing the start and end indeces of
         # orbit segments
         segments_start_index = [0]
         segments_start_index.extend(new_segments_start_index)
         segments_stop_index = [index-1 for index in new_segments_start_index]
-        segments_stop_index.append(l1b.n_records-1)
+        segments_stop_index.append(polar_subset.n_records-1)
 
         # Extract the individual data segments
         l1bdata_segments = []
         for i in np.arange(n_segments):
             subset_list = np.arange(segments_start_index[i],
                                     segments_stop_index[i]+1)
-            l1bdata_segment = l1b.extract_subset(subset_list)
+            l1bdata_segment = polar_subset.extract_subset(subset_list)
             l1bdata_segments.append(l1bdata_segment)
 
         return l1bdata_segments
@@ -196,7 +211,7 @@ class S3PreProcJob(object):
         """
 
         # 1) Trim l1b data from the first to the last ocean data record
-        self.log.info(". trim outer non-ocean regions")
+        self.log.info("- trim outer non-ocean regions")
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -206,18 +221,18 @@ class S3PreProcJob(object):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            self.log.info(". ocean subset [%g:%g]" % (
+            self.log.info("- ocean subset [%g:%g]" % (
                  first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         # 2) Identify larger landmasses and split orbit into segments
         #    if necessary
-        self.log.info(". test for inner larger landmasses")
+        self.log.info("- test for inner larger landmasses")
         ocean = l1b.surface_type.get_by_name("ocean")
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        self.log.info(". number of landmasses: %g" % len(landseg_index))
+        self.log.info("- number of landmasses: %g" % len(landseg_index))
         if len(landseg_index) == 0:
             # no land segements, return single segment
             return [l1b]
@@ -225,7 +240,7 @@ class S3PreProcJob(object):
         large_landsegs_index = np.where(
             segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        self.log.info(". number of large landmasses: %g" % len(
+        self.log.info("- number of large landmasses: %g" % len(
             large_landsegs_index))
         if len(large_landsegs_index) == 0:
             # no large land segments, return single segment
@@ -239,12 +254,12 @@ class S3PreProcJob(object):
         for index in large_landsegs_index:
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
-            self.log.debug(". ocean segment: [%g:%g]" % (
+            self.log.debug("- ocean segment: [%g:%g]" % (
                 start_index, stop_index))
             l1b_segments.append(l1b.extract_subset(subset_list))
             start_index = segments_start[index+1]
         # extract the last subset
-        self.log.debug(". ocean segment: [%g:%g]" % (
+        self.log.debug("- ocean segment: [%g:%g]" % (
             start_index, len(ocean.flag)-1))
         last_subset_list = np.arange(start_index, len(ocean.flag))
         l1b_segments.append(l1b.extract_subset(last_subset_list))
@@ -283,8 +298,8 @@ class S3PreProcJob(object):
         # Prepare data export
         config = self.config
         export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
-        log.info("Creating l1bdata netCDF: %s" % export_filename)
-        log.info(". in folder: %s" % export_folder)
+        log.info("+ Creating l1bdata netCDF: %s" % export_filename)
+        log.info("- in folder: %s" % export_folder)
         validate_directory(export_folder)
 
         # Export the data object
