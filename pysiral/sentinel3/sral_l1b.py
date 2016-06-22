@@ -77,15 +77,25 @@ class Sentinel3SRALL1b(object):
         # -> if l1nc_filename is None, corresponding L1 file does not exist
         l1nc_filename = get_sentinel3_sral_l1_from_l2(self.filename)
         if l1nc_filename is not None:
+
             self.l1nc = ReadNC(l1nc_filename)
+
+            # Verify time overlap between l1 and l2 data
+            start_l1 = np.amin(self.l1nc.time_l1b_echo_sar_ku)
+            end_l1 = np.amax(self.l1nc.time_l1b_echo_sar_ku)
+
+            start_l2 = np.amin(self.nc.time_20_ku)
+            end_l2 = np.amax(self.nc.time_20_ku)
+
+            l1_l2_overlap = (start_l1 <= end_l2) and (end_l1 >= start_l2)
+            if not l1_l2_overlap:
+                raise IOError("L1/L2 files - no overlap")
 
 #        for attribute in self.nc.attributes:
 #            print "attribute: %s = %s" % (
 #                attribute, str(getattr(self.nc, attribute)))
-#        stop
-        for parameter in self.nc.parameters:
-            print parameter, getattr(self.nc, parameter).shape
-        # stop
+#        for parameter in self.nc.parameters:
+#            print parameter, getattr(self.nc, parameter).shape
 
     def get_status(self):
         # XXX: Not much functionality here
