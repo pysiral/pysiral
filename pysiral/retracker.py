@@ -87,20 +87,32 @@ class TFMRA(BaseRetracker):
     def _retrack(self, range, wfm, index_list, radar_mode, is_valid):
 
         for index in index_list:
+
             # Echo oversampling & filtering
             x, y = self._filter_waveform(
                 range[index, :], wfm[index, :], radar_mode[index])
+
             # Normalize filtered waveform
             y, norm = self._normalize_wfm(y)
+
             # Get noise level in normalized units
             oversampling = self._options.wfm_oversampling_factor
             noise_level = wfm_get_noise_level(wfm, oversampling)
+
             # Find first maxima
             first_maximum_index = self._get_first_maxima_index(
                 y, noise_level, radar_mode[index])
+
+            # first maximum finder may fail
+            if first_maximum_index is None:
+                self._range[index] = np.nan
+                self._power[index] = np.nan
+                return
+
             # Get track point
             tfmra_range, tfmra_power = self._get_retracker_range(
                 x, y, first_maximum_index, norm)
+
             # Mandatory return function
             self._range[index] = tfmra_range
             self._power[index] = tfmra_power
@@ -127,7 +139,10 @@ class TFMRA(BaseRetracker):
         # Get the main maximum first
         absolute_maximum_index = np.argmax(y)
         # Find relative maxima before the absolute maximum
-        peaks = findpeaks(y[0:absolute_maximum_index])
+        try:
+            peaks = findpeaks(y[0:absolute_maximum_index])
+        except:
+            return None
         # Check if relative maximum are above the required threshold
         opt = self._options
         threshold = opt.first_maximum_normalized_threshold[radar_mode]
