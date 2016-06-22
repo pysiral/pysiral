@@ -414,6 +414,7 @@ class L1bMetaData(object):
         for field in self.attribute_list:
             setattr(self, field, None)
         # Set some fields to False (instead of none)
+        self.orbit = 999999
         self.is_orbit_subset = False
         self.is_merged_orbit = False
         self.n_records = -1
