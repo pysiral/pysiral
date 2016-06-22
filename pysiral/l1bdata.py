@@ -765,7 +765,7 @@ def get_l1b_adapter(mission):
 
     from pysiral.io_adapter import (
         L1bAdapterCryoSat, L1bAdapterEnvisat, L1bAdapterERS1,
-        L1bAdapterERS2, L1bAdapterSentinel3)
+        L1bAdapterERS2, L1bAdapterSentinel3A)
 
     if mission == "cryosat2":
         return L1bAdapterCryoSat
@@ -776,6 +776,6 @@ def get_l1b_adapter(mission):
     elif mission == "ers2":
         return L1bAdapterERS2
     elif mission == "sentinel3a":
-        return L1bAdapterSentinel3
+        return L1bAdapterSentinel3A
     else:
         raise ValueError("Unknown mission id: %s" % mission)

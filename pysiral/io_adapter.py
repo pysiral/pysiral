@@ -436,10 +436,10 @@ class L1bAdapterSentinel3(object):
     """ Class for Sentinel3 """
     """ Converts a Envisat SGDR object into a L1bData object """
 
-    def __init__(self, config):
+    def __init__(self, config, mission):
         self.filename = None
+        self._mission = mission
         self._config = config
-        self._mission = "sentinel3"
 
     def construct_l1b(self, l1b, header_only=False):
         """
@@ -589,3 +589,10 @@ class L1bAdapterSentinel3(object):
         for key in ESA_SURFACE_TYPE_DICT.keys():
             flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)
+
+
+class L1bAdapterSentinel3A(L1bAdapterSentinel3):
+    """ Class for ERS-1 """
+
+    def __init__(self, config):
+        super(L1bAdapterSentinel3A, self).__init__(config, "sentinel3a")
