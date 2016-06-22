@@ -406,6 +406,7 @@ class L1bMetaData(object):
         "n_records", "orbit", "cycle", "is_orbit_subset", "is_merged_orbit",
         "start_time", "stop_time", "subset_region_name",
         "lat_min", "lat_max", "lon_min", "lon_max", "pysiral_version",
+        "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
         "open_ocean_percent"]
 
     def __init__(self):
