@@ -38,7 +38,7 @@ level2:
     corrections:
         - dry_troposphere
         - wet_troposphere
-        - inverse_barometric
+        - ionospheric
         - ocean_tide_elastic
         - ocean_tide_long_period
         - ocean_loading_tide
@@ -59,14 +59,14 @@ level2:
                 peakiness_l_min: 40.0
                 peakiness_r_min: 30.0
                 peakiness_min: 40.0
-                stack_kurtosis_min: 40.0
+                stack_kurtosis_min: 10.0
                 stack_standard_deviation_max: 4.0
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_r_max: 15.0
-                peakiness_l_max: 20.0
+                peakiness_r_max: 30.0
+                peakiness_l_max: 100.0
                 peakiness_max: 30.0
-                stack_kurtosis_max: 8.0
+                stack_kurtosis_max: 5.0
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
