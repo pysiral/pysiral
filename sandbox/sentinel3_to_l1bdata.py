@@ -134,7 +134,8 @@ def s3_l1b_orbit_plot(l1b):
 
     x, y = m(l1b.time_orbit.longitude, l1b.time_orbit.latitude)
     m.scatter(x, y, c=l1b.surface_type.flag, s=10,
-              cmap=plt.get_cmap("cool"), edgecolors="none", zorder=201)
+              cmap=plt.get_cmap("cool"), edgecolors="none", zorder=202)
+    m.scatter(x[0], y[0], marker="D", s=80, edgecolors="#4b4b4d", zorder=201)
     # m.plot(x, y, color="#003e6e", linewidth=2.0)
 
     plt.title("")
