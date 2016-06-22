@@ -32,14 +32,14 @@ def sentinel3_to_l1bdata():
     config = ConfigInfo()
 
     # Get an L1B SAR file
-    l1b_directory = config.local_machine.l1b_repository.sentinel3.sral
+    l1b_directory = config.local_machine.l1b_repository.sentinel3a.sral
     l1b_directory = os.path.join(l1b_directory, args.month[0], args.month[1])
     l1b_files = get_sentinel3_l1b_filelist(l1b_directory)
 
     # Read the file
     t0 = time.time()
     l1b = L1bConstructor(config)
-    l1b.mission = "sentinel3"
+    l1b.mission = "sentinel3a"
     l1b.filename = l1b_files[args.file_number]
     l1b.construct()
     t1 = time.time()

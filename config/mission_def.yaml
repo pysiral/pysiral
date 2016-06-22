@@ -11,7 +11,7 @@ missions:
     - cryosat2
     - envisat
     - ers2
-    - sentinel3
+    - sentinel3a
 
 # These missions are includeed in the pysiral concept but support
 # will be added later in the development phase
@@ -28,7 +28,7 @@ modes:
 # Support for LRM data will come later with the integration of
 # EnviSat and the ERS-1/2 mission
 modes_to_be_added:
-    - Null
+    - plrm
 
 
 # -----------------------------------------------------------------------------
@@ -146,9 +146,10 @@ ers2:
 
     options: null
 
-sentinel3:
 
-    long_name: Sentinel-3
+sentinel3a:
+
+    long_name: Sentinel-3A
     docstr:
         Cryosphere radar altimeter mission of the European Space
         Agency (ESA)

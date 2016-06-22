@@ -237,8 +237,9 @@ class L1bConstructor(Level1bData):
     L1b data files
     """
 
+    # TODO: should be coming from config file
     _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2",
-                               "sentinel3"]
+                               "sentinel3a"]
 
     def __init__(self, config, header_only=False):
         super(L1bConstructor, self).__init__()
@@ -772,7 +773,7 @@ def get_l1b_adapter(mission):
         return L1bAdapterERS1
     elif mission == "ers2":
         return L1bAdapterERS2
-    elif mission == "sentinel3":
+    elif mission == "sentinel3a":
         return L1bAdapterSentinel3
     else:
         raise ValueError("Unknown mission id: %s" % mission)
