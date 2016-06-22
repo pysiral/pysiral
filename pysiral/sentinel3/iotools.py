@@ -4,6 +4,43 @@ import os
 import glob
 
 
+class Sentinel3FileList(object):
+    """
+    Class for the construction of a list of Sentinel-3 SRAL L2 files
+    sorted by acquisition time
+    XXX: Based on the file and directory structure of the early access data
+    """
+
+    def __init__(self):
+        self.folder = None
+        self.log = None
+        self.year = None
+        self.month = None
+        self.target = "enhanced_measurement.nc"
+        self._sorted_list = []
+
+    def search(self):
+        self._get_file_listing()
+
+    @property
+    def sorted_list(self):
+        return self._sorted_list
+
+    def _get_file_listing(self):
+        search_toplevel_folder = self._get_toplevel_search_folder()
+        s3_l2_file_list = get_sentinel3_l1b_filelist(
+            search_toplevel_folder, target=self.target)
+        self._sorted_list = sorted(s3_l2_file_list)
+
+    def _get_toplevel_search_folder(self):
+        folder = self.folder
+        if self.year is not None:
+            folder = os.path.join(folder, "%4g" % self.year)
+        if self.month is not None and self.year is not None:
+            folder = os.path.join(folder, "%02g" % self.month)
+        return folder
+
+
 def get_sentinel3_l1b_filelist(folder, target="enhanced_measurement.nc"):
     """ Returns a list with measurement.nc files for given month """
     s3_l1b_file_list = []
@@ -30,10 +67,13 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="measurement.nc"):
     folder, filename = os.path.split(l1nc_filename)
     directories = folder.split(os.sep)
 
-    # split the last directory name and replace changing date with asterisk
+    # split the dates with asterisk, orbit number should provide unique
+    # match for the test data set
     s3_orbit_dir = directories[-1]
     s3_orbit_dir_components = s3_orbit_dir.split("_")
-    s3_orbit_dir_components[9] = "*"
+    s3_orbit_dir_components[7] = "*"     # Start time
+    s3_orbit_dir_components[8] = "*"     # Stop time
+    s3_orbit_dir_components[9] = "*"     # product creation time
 
     # Compile the folder again with search pattern
     search_s3_l1b_folder = "_".join(s3_orbit_dir_components)
