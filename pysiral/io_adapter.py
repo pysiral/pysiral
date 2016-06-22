@@ -471,9 +471,11 @@ class L1bAdapterSentinel3(object):
         pass
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
-        sral = self.sral
+        product = self.sral.product_info
         info.set_attribute("mission", self._mission)
-        info.set_attribute("mission_data_source", sral.nc.institution)
+        info.set_attribute("mission_data_source", self.sral.nc.institution)
+        info.set_attribute("sar_mode_percent", product.sar_mode_percentage)
+        info.set_attribute("open_ocean_percent", product.open_ocean_percentage)
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
