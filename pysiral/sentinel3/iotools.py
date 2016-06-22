@@ -74,6 +74,7 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="measurement.nc"):
     s3_orbit_dir_components[7] = "*"     # Start time
     s3_orbit_dir_components[8] = "*"     # Stop time
     s3_orbit_dir_components[9] = "*"     # product creation time
+    s3_orbit_dir_components[10] = "*"    # some version code
 
     # Compile the folder again with search pattern
     search_s3_l1b_folder = "_".join(s3_orbit_dir_components)
@@ -82,6 +83,7 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="measurement.nc"):
 
     # Search and return first match. If no match is found return none
     sral_l1_folder = glob.glob(sral_l1_search)
+
     if len(sral_l1_folder) > 0:
         l1nc_filename = os.path.join(sral_l1_folder[0], target)
     else:

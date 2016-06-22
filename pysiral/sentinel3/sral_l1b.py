@@ -80,16 +80,21 @@ class Sentinel3SRALL1b(object):
 
             self.l1nc = ReadNC(l1nc_filename)
 
-            # Verify time overlap between l1 and l2 data
-            start_l1 = np.amin(self.l1nc.time_l1b_echo_sar_ku)
-            end_l1 = np.amax(self.l1nc.time_l1b_echo_sar_ku)
+            if len(self.l1nc.time_l1b_echo_sar_ku) == 0:
+                print ". Warning - l1 ku data empty"
+            else:
+                # Verify time overlap between l1 and l2 data
+                start_l1 = np.amin(self.l1nc.time_l1b_echo_sar_ku)
+                end_l1 = np.amax(self.l1nc.time_l1b_echo_sar_ku)
 
-            start_l2 = np.amin(self.nc.time_20_ku)
-            end_l2 = np.amax(self.nc.time_20_ku)
+                start_l2 = np.amin(self.nc.time_20_ku)
+                end_l2 = np.amax(self.nc.time_20_ku)
 
-            l1_l2_overlap = (start_l1 <= end_l2) and (end_l1 >= start_l2)
-            if not l1_l2_overlap:
-                raise IOError("L1/L2 files - no overlap")
+                l1_l2_overlap = (start_l1 <= end_l2) and (end_l1 >= start_l2)
+                if not l1_l2_overlap:
+                    raise IOError("L1/L2 files - no overlap")
+        else:
+            print ". Warning - no l1 file match"
 
 #        for attribute in self.nc.attributes:
 #            print "attribute: %s = %s" % (
