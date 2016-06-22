@@ -13,7 +13,6 @@ def pysiral_l1bpreproc():
     """ get the pysiral configuration info """
     config = ConfigInfo()
 
-
     """ parse command line arguments """
     parser = get_l1bpreproc_argparser()
     args = parser.parse_args()
@@ -109,6 +108,7 @@ def get_mission_preprocessor(mission_id):
     from pysiral.cryosat2.preproc import CryoSat2PreProc
     from pysiral.envisat.preproc import EnvisatPreProc
     from pysiral.ers.preproc import ERSPreProc
+    from pysiral.sentinel3.preproc import Sentinel3PreProc
 
     if mission_id == "cryosat2":
         return CryoSat2PreProc
@@ -116,6 +116,8 @@ def get_mission_preprocessor(mission_id):
         return EnvisatPreProc
     elif mission_id == "ers2":
         return ERSPreProc
+    elif mission_id == "sentinel3a":
+        return Sentinel3PreProc
     else:
         print "error: mission %s currently not supported" % mission_id
         sys.exit(1)

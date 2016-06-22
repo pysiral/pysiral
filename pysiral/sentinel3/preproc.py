@@ -5,7 +5,7 @@ Created on Thu Mar 31 20:52:32 2016
 @author: Stefan
 """
 
-from pysiral.ers.iotools import ERSFileList
+from pysiral.sentinel3.iotools import Sentinel3FileList
 from pysiral.l1bdata import L1bConstructor
 from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
@@ -17,7 +17,7 @@ from pysiral.flag import FlagContainer
 import numpy as np
 
 
-class S3PreProc(object):
+class Sentinel3PreProc(object):
 
     def __init__(self):
         self.month = None
@@ -28,27 +28,27 @@ class S3PreProc(object):
     def execute(self):
 
         """ Get the logging instance """
-        log = stdout_logger("envisat-preproc")
+        log = stdout_logger("sentinel3-preproc")
 
-        """ Get the configuration data for handling ERS-1/2 data """
+        """ Get the configuration data for handling Sentinel3X data """
         config = ConfigInfo()
         l1b_repository = config.local_machine.l1b_repository
-        ers_l1b_repository = l1b_repository[self.mission].sgdr
+        s3_l1b_repository = l1b_repository[self.mission].sral
 
         """ Get the list of files """
         # for the case of this test only for one month of data
-        ers_files = ERSFileList()
-        ers_files.log = log
-        ers_files.folder = ers_l1b_repository
-        ers_files.year = self.year
-        ers_files.month = self.month
-        ers_files.search()
+        s3_files = Sentinel3FileList()
+        s3_files.log = log
+        s3_files.folder = s3_l1b_repository
+        s3_files.year = self.year
+        s3_files.month = self.month
+        s3_files.search()
 
         """ Start the CryoSat-2 pre-processor """
         job = S3PreProcJob(self.mission)
         job.config = config
         job.log = log
-        job.files = ers_files.sorted_list[self.skip:]
+        job.files = s3_files.sorted_list[self.skip:]
         job.merge_and_export_polar_ocean_subsets()
 
 
@@ -60,6 +60,7 @@ class S3PreProcJob(object):
         self.options = None
         self.files = []
         self.mission = mission
+        self.new_segment_delta_seconds = 10
         self._get_default_options()
 
     def merge_and_export_polar_ocean_subsets(self):
@@ -69,13 +70,13 @@ class S3PreProcJob(object):
         if n == 0:
             return
         l1bdata_stack = []
-        for i, envisat_l1b_file in enumerate(self.files):
+        for i, sentinel3_l2_file in enumerate(self.files):
 
             # Parse the current file and split into polar ocean segments
             log.info("Parsing file %g of %g: %s" % (
-                i+1, n, envisat_l1b_file))
-            l1b_segments = self.get_envisat_l1bdata_ocean_segments(
-                envisat_l1b_file, self.config)
+                i+1, n, sentinel3_l2_file))
+            l1b_segments = self.get_sentinel3_l1bdata_ocean_segments(
+                sentinel3_l2_file, self.config)
 
             if len(l1b_segments) == 0:
                 continue
@@ -105,84 +106,88 @@ class S3PreProcJob(object):
         """ Export the final stack => done """
         self.concatenate_and_export_stack_files(l1bdata_stack)
 
-    def get_envisat_l1bdata_ocean_segments(self, filename, config):
+    def get_sentinel3_l1bdata_ocean_segments(self, filename, config):
         """
         Returns the source ERS l1b data as a list of
         pysiral.L1bdata objects.
-
         """
 
-        # Read the envisat SGDR file
+        # Read the sentinel3 file
         l1b = L1bConstructor(config)
         l1b.mission = self.mission
         l1b.filename = filename
+        l1b.get_header_info()
+
+        self.log.debug(
+            ". sar_mode_percent: %.1f" % l1b.info.sar_mode_percent)
+        self.log.debug(
+            ". open_ocean_percent: %.1f" % l1b.info.open_ocean_percent)
+
+        # check sar mode percentage and open ocean data
+        if l1b.info.sar_mode_percent <= 0.:
+            self.log.info(". no sar mode data, skipping file")
+            return[]
+
+        # check sar mode percentage and open ocean data
+        if l1b.info.open_ocean_percent <= 0.:
+            self.log.info(". no open ocean data, skipping file")
+            return[]
+
+        # Read the full data set
         l1b.construct()
 
         # Extract relevant segments over ocean
-        l1b_list = []
-        first_segment, second_segment = self.extract_polar_segments(l1b)
-
-        # Exclude land data from Arctic and Antarctic subsets
-        if first_segment is not None:
-            l1b_segments = self.extract_polar_ocean_segments(first_segment)
-            try:
-                l1b_list.extend(l1b_segments)
-            except TypeError:
-                self.log.info("- no ocean data in file")
-
-        if second_segment is not None:
-            l1b_segments = self.extract_polar_ocean_segments(second_segment)
-            try:
-                l1b_list.extend(l1b_segments)
-            except TypeError:
-                self.log.info("- no ocean data in file")
+        l1b_list = self.extract_polar_segments(l1b)
 
         return l1b_list
 
     def extract_polar_segments(self, l1b):
         """
-        Envisat specific: Extract Arctic and Antarctic subsets and
-        return both in the correct sequence
+        Sentinel3 early data specific: There might be gaps in the data files
+        with no SAR coverage
         """
 
-        # The threshold is the same for arctic and antarctic (50°)
-        polar_threshold = self.options.polar_threshold
+        from matplotlib.dates import date2num
 
-        # Extract Arctic
-        is_arctic = FlagContainer(
-            l1b.time_orbit.latitude > polar_threshold)
-        arctic_subset = l1b.extract_subset(is_arctic.indices)
-        self.log.info("Extracted Arctic subset (%g records)" % is_arctic.num)
+        timestamp = l1b.time_orbit.timestamp
+        delta_seconds = np.diff(86400.*date2num(timestamp))
+        threshold = self.options.max_connected_files_timedelta_seconds
+        new_segments_start_index = np.where(delta_seconds > threshold)[0]+1
+        n_segments = len(new_segments_start_index)+1
 
-        # Extract Antarctic
-        is_antarctic = FlagContainer(
-            l1b.time_orbit.latitude < -1.*polar_threshold)
-        antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-        self.log.info("Extracted Antarctic subset (%g records)" % (
-            is_antarctic.num))
+        # 1 segment -> return full orbit
+        if n_segments == 1:
+            return [l1b]
 
-        # Segments may be empty, test all cases
-        arctic_is_valid = True
-        antarctic_is_valid = True
-        try:
-            arctic_subset.info.start_time
-        except AttributeError:
-            arctic_is_valid = False
+        # Create two lists describing the start and end indeces of
+        # orbit segments
+        segments_start_index = [0]
+        segments_start_index.extend(new_segments_start_index)
+        segments_stop_index = [index-1 for index in new_segments_start_index]
+        segments_stop_index.append(l1b.n_records-1)
 
-        try:
-            antarctic_subset.info.start_time
-        except AttributeError:
-            antarctic_is_valid = False
+        # Extract the individual data segments
+        l1bdata_segments = []
+        for i in np.arange(n_segments):
+            subset_list = np.arange(segments_start_index[i],
+                                    segments_stop_index[i]+1)
+            l1bdata_segment = l1b.extract_subset(subset_list)
+            l1bdata_segments.append(l1bdata_segment)
 
-        # Return both unsorted, Empty segment will be discarded later
-        if not arctic_is_valid or not antarctic_is_valid:
-            return [arctic_subset, antarctic_subset]
+        return l1bdata_segments
 
-        # Order in sequence depeding on start time
-        if arctic_subset.info.start_time < antarctic_subset.info.start_time:
-            return [arctic_subset, antarctic_subset]
-        else:
-            return [antarctic_subset, arctic_subset]
+#        import matplotlib.pyplot as plt
+#
+#        plt.figure()
+#        xref = np.arange(l1b.n_records)
+#        plt.plot(xref, timestamp)
+#        plt.scatter(xref[new_segments_index], timestamp[new_segments_index])
+#
+#        plt.figure()
+#        plt.plot(np.diff(86400.*date2num(l1b.time_orbit.timestamp)))
+#        plt.show()
+#
+#        stop
 
     def extract_polar_ocean_segments(self, l1b):
         """
@@ -291,7 +296,7 @@ class S3PreProcJob(object):
         ncfile.export()
 
     def _get_default_options(self):
-        self.options = self.config.mission.cryosat2.preproc.options
+        self.options = self.config.mission[self.mission].preproc.options
 
 
 def debug_stack_orbit_plot(l1b_stack, l1b_segments):
