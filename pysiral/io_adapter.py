@@ -489,7 +489,7 @@ class L1bAdapterSentinel3(object):
         units = "seconds since 2000-01-01 00:00:00.0"
         calendar = "gregorian"
         timestamp = num2date(
-            self.sral.nc.UTC_time_1hz_20_ku, units, calendar)
+            self.sral.nc.time_20_ku, units, calendar)
         self.l1b.time_orbit.timestamp = timestamp
         # Update meta data container
         self.l1b.update_data_limit_attributes()
