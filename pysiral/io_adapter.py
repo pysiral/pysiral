@@ -584,7 +584,7 @@ class L1bAdapterSentinel3(object):
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
 
     def _transfer_surface_type_data(self):
-        surface_type = self.sral.nc.surf_class_20_ku
+        surface_type = self.sral.nc.surf_type_20_ku
         # surface_type = np.repeat(surface_type, self.sgdr.n_blocks)
         for key in ESA_SURFACE_TYPE_DICT.keys():
             flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
