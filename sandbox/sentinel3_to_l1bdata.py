@@ -108,8 +108,9 @@ def s3_l1b_orbit_plot(l1b):
     fig = plt.figure(figsize=(10, 5))
     ax = plt.axes([0, 0, 1, 1])
     plt.axis('off')
-    ax.imshow(np.flipud(shading), cmap=plt.get_cmap(colormap_name))
-    plt.savefig(temp_filename, dpi=300)
+    ax.imshow(np.flipud(shading), cmap=plt.get_cmap(colormap_name),
+              vmin=0, vmax=1.1*np.amax(shading))
+    plt.savefig(temp_filename, dpi=600)
     plt.close(fig)
 
     grid_keyw = {"dashes": (None, None),
@@ -138,7 +139,7 @@ def s3_l1b_orbit_plot(l1b):
 
     plt.title("")
 
-    m.warpimage(temp_filename, zorder=200, alpha=0.75)
+    m.warpimage(temp_filename, zorder=200, alpha=0.80)
     os.remove(temp_filename)
     plt.tight_layout()
     plt.show(block=False)
