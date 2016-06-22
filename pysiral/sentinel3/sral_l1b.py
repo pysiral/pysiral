@@ -75,26 +75,26 @@ class Sentinel3SRALL1b(object):
         # L1 filename cannot be directly derived from L2 filename, thus
         # it has to be estimated and looked for potential matches
         # -> if l1nc_filename is None, corresponding L1 file does not exist
-        l1nc_filename = get_sentinel3_sral_l1_from_l2(self.filename)
-        if l1nc_filename is not None:
-
-            self.l1nc = ReadNC(l1nc_filename)
-
-            if len(self.l1nc.time_l1b_echo_sar_ku) == 0:
-                print ". Warning - l1 ku data empty"
-            else:
-                # Verify time overlap between l1 and l2 data
-                start_l1 = np.amin(self.l1nc.time_l1b_echo_sar_ku)
-                end_l1 = np.amax(self.l1nc.time_l1b_echo_sar_ku)
-
-                start_l2 = np.amin(self.nc.time_20_ku)
-                end_l2 = np.amax(self.nc.time_20_ku)
-
-                l1_l2_overlap = (start_l1 <= end_l2) and (end_l1 >= start_l2)
-                if not l1_l2_overlap:
-                    raise IOError("L1/L2 files - no overlap")
-        else:
-            print ". Warning - no l1 file match"
+#        l1nc_filename = get_sentinel3_sral_l1_from_l2(self.filename)
+#        if l1nc_filename is not None:
+#
+#            self.l1nc = ReadNC(l1nc_filename)
+#
+#            if len(self.l1nc.time_l1b_echo_sar_ku) == 0:
+#                print ". Warning - l1 ku data empty"
+#            else:
+#                # Verify time overlap between l1 and l2 data
+#                start_l1 = np.amin(self.l1nc.time_l1b_echo_sar_ku)
+#                end_l1 = np.amax(self.l1nc.time_l1b_echo_sar_ku)
+#
+#                start_l2 = np.amin(self.nc.time_20_ku)
+#                end_l2 = np.amax(self.nc.time_20_ku)
+#
+#                l1_l2_overlap = (start_l1 <= end_l2) and (end_l1 >= start_l2)
+#                if not l1_l2_overlap:
+#                    raise IOError("L1/L2 files - no overlap")
+#        else:
+#            print ". Warning - no l1 file match"
 
 #        for attribute in self.nc.attributes:
 #            print "attribute: %s = %s" % (
@@ -141,14 +141,16 @@ class Sentinel3SRALL1b(object):
         range bin
         """
 
-        self.wfm_power = self.nc.waveform_20_ku
+        # self.wfm_power = self.nc.waveform_20_ku
+        self.wfm_power = self.nc.i2q2_meas_ku_l1b_echo_sar_ku
         n_records, n_range_bins = np.shape(self.wfm_power)
         self.n_records = n_records
         # Get the window delay
         # "The tracker_range_20hz is the range measured by the onboard tracker
         #  as the window delay, corrected for instrumental effects and
         #  CoG offset"
-        tracker_range_20hz = self.nc.tracker_range_20_ku
+        tracker_range_20hz = self.nc.range_ku_l1b_echo_sar_ku
+
 
         self.wfm_range = np.ndarray(shape=self.wfm_power.shape,
                                     dtype=np.float32)

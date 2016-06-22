@@ -16,7 +16,7 @@ class Sentinel3FileList(object):
         self.log = None
         self.year = None
         self.month = None
-        self.target = "enhanced_measurement.nc"
+        self.target = "measurement.nc"
         self._sorted_list = []
 
     def search(self):
@@ -41,7 +41,7 @@ class Sentinel3FileList(object):
         return folder
 
 
-def get_sentinel3_l1b_filelist(folder, target="enhanced_measurement.nc"):
+def get_sentinel3_l1b_filelist(folder, target="measurement.nc"):
     """ Returns a list with measurement.nc files for given month """
     s3_l1b_file_list = []
     for root, dirs, files in os.walk(folder):

@@ -248,6 +248,7 @@ class L1bConstructor(Level1bData):
         self._mission_options = None
         self._filename = None
         self._header_only = header_only
+        self.error_status = False
 
     @property
     def mission(self):
