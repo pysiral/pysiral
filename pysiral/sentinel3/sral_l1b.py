@@ -19,7 +19,7 @@ class Sentinel3SRALL1b(object):
         self._filename = None
         self.n_records = 0
         self.range_bin_width = 0.234212857813 * 2.
-        self.nominal_tracking_bin = 64
+        self.nominal_tracking_bin = 60
         self._xml_header_file = "xfdumanifest.xml"
         self._xml_metadata_object_index = {
             "processing": 0,
