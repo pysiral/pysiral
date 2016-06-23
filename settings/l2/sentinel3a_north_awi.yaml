@@ -64,7 +64,7 @@ level2:
                 ice_concentration_min: 70.0
             sea_ice:
                 peakiness_r_max: 30.0
-                peakiness_l_max: 100.0
+                peakiness_l_max: 80.0
                 peakiness_max: 30.0
                 stack_kurtosis_max: 5.0
                 ice_concentration_min: 70.0
