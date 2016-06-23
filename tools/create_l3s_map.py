@@ -17,7 +17,7 @@ import os
 
 
 mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat",
-                     "ers2": "ERS-2"}
+                     "ers2": "ERS-2", "sentinel3a": "Sentinel-3A"}
 
 cs2awi_naming = {"sea_ice_freeboard": "freeboard",
                  "sea_ice_thickness": "sea_ice_thickness",
@@ -38,6 +38,8 @@ def l3s_map():
 
     # Get files (can be file link or search pattern)
     ncfiles = sorted(glob.glob(args.l3s_filename))
+
+    print "%g l3s files found" % len(ncfiles)
 
     # XXX: Temporary cs2awi fix
     xres, yres = None, None
