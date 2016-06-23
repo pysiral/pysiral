@@ -145,7 +145,10 @@ class S3PreProcJob(object):
         for l1b_single_file_subset in l1b_single_file_subsets:
             l1b_ocean_sections = self.extract_polar_ocean_segments(
                 l1b_single_file_subset)
-            ocean_segments.extend(l1b_ocean_sections)
+            try:
+                ocean_segments.extend(l1b_ocean_sections)
+            except:
+                pass
 
         return ocean_segments
 
