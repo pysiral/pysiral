@@ -105,12 +105,20 @@ def l3s_map():
                 mission_id = ncdata.mission_ids
                 period_label = ncdata.period_label
 
+            # Map Title
+            title = mission_name_dict[mission_id]
+            if (args.diff != "none") and (
+                    ncdata_diff.mission_ids != ncdata_diff.mission_ids):
+                mission_id_b = ncdata_diff.mission_ids
+                title = mission_name_dict[mission_id_b] + " - " + \
+                    mission_name_dict[mission_id]
+
             # Light style map
             MapClass, StyleClass = get_map_classes(args)
             gridmap = MapClass()
             gridmap.style = StyleClass()
             gridmap.data = data
-            gridmap.label.title = mission_name_dict[mission_id]
+            gridmap.label.title = title
             gridmap.label.period = period_label
             gridmap.label.annotation = args.annotation
             gridmap.save2png(output)
