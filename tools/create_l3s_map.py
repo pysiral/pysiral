@@ -17,7 +17,7 @@ import os
 
 
 mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat",
-                     "ers2": "ERS-2"}
+                     "ers2": "ERS-2", "sentinel3a": "Sentinel-3A"}
 
 cs2awi_naming = {"sea_ice_freeboard": "freeboard",
                  "sea_ice_thickness": "sea_ice_thickness",
@@ -38,6 +38,8 @@ def l3s_map():
 
     # Get files (can be file link or search pattern)
     ncfiles = sorted(glob.glob(args.l3s_filename))
+
+    print "%g l3s files found" % len(ncfiles)
 
     # XXX: Temporary cs2awi fix
     xres, yres = None, None
@@ -103,12 +105,20 @@ def l3s_map():
                 mission_id = ncdata.mission_ids
                 period_label = ncdata.period_label
 
+            # Map Title
+            title = mission_name_dict[mission_id]
+            if (args.diff != "none") and (
+                    ncdata_diff.mission_ids != ncdata_diff.mission_ids):
+                mission_id_b = ncdata_diff.mission_ids
+                title = mission_name_dict[mission_id_b] + " - " + \
+                    mission_name_dict[mission_id]
+
             # Light style map
             MapClass, StyleClass = get_map_classes(args)
             gridmap = MapClass()
             gridmap.style = StyleClass()
             gridmap.data = data
-            gridmap.label.title = mission_name_dict[mission_id]
+            gridmap.label.title = title
             gridmap.label.period = period_label
             gridmap.label.annotation = args.annotation
             gridmap.save2png(output)

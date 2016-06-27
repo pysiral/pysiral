@@ -12,10 +12,12 @@ from pysiral.esa.functions import get_structarr_attr
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.ers.sgdrfile import ERSSGDR
+from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 from pysiral.helper import parse_datetime_str
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
+from scipy import interpolate
 import numpy as np
 # import time
 
@@ -428,3 +430,201 @@ class L1bAdapterERS2(L1bAdapterERS):
 
     def __init__(self, config):
         super(L1bAdapterERS2, self).__init__(config, "ers2")
+
+
+class L1bAdapterSentinel3(object):
+    """ Class for Sentinel3 """
+    """ Converts a Envisat SGDR object into a L1bData object """
+
+    def __init__(self, config, mission):
+        self.filename = None
+        self._mission = mission
+        self._config = config
+        self.error_status = False
+
+    def construct_l1b(self, l1b, header_only=False):
+        """
+        Read the Envisat SGDR file and transfers its content to a
+        Level1bData instance
+        """
+        self.l1b = l1b
+        self._read_sentinel3_sral_l1b()
+        self._transfer_metadata()
+        self._test_ku_data_present()
+        if not header_only and not self.l1b.error_status:
+            self._transfer_timeorbit()
+            self._transfer_waveform_collection()
+            self._transfer_range_corrections()
+            self._transfer_surface_type_data()
+            self._transfer_classifiers()
+
+    def _read_sentinel3_sral_l1b(self):
+        """ Read the L1b file and create a ERS native L1b object """
+        self.sral = Sentinel3SRALL1b()
+        self.sral.filename = self.filename
+        self.sral.parse()
+        self.error_status = self.sral.get_status()
+        if not self.error_status:
+            # TODO: Needs ErrorHandler
+            self.sral.post_processing()
+
+    def _transfer_metadata(self):
+        pass
+        """ Extract essential metadata information from SGDR file """
+        info = self.l1b.info
+        product = self.sral.product_info
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_source", self.sral.nc.institution)
+        info.set_attribute("sar_mode_percent", product.sar_mode_percentage)
+        info.set_attribute("open_ocean_percent", product.open_ocean_percentage)
+
+    def _test_ku_data_present(self):
+        if len(self.sral.nc.time_l1b_echo_sar_ku) == 0:
+            self.error_status = True
+            self.l1b.error_status = True
+
+    def _transfer_timeorbit(self):
+        """ Extracts the time/orbit data group from the SGDR data """
+        from netCDF4 import num2date
+        # Transfer the orbit position
+#        self.l1b.time_orbit.set_position(
+#            self.sral.nc.lon_20_ku,
+#            self.sral.nc.lat_20_ku,
+#            self.sral.nc.alt_20_ku)
+        self.l1b.time_orbit.set_position(
+            self.sral.nc.lon_l1b_echo_sar_ku,
+            self.sral.nc.lat_l1b_echo_sar_ku,
+            self.sral.nc.alt_l1b_echo_sar_ku)
+        # Transfer the timestamp
+        units = "seconds since 2000-01-01 00:00:00.0"
+        calendar = "gregorian"
+        timestamp = num2date(
+                self.sral.nc.time_l1b_echo_sar_ku, units, calendar)
+
+        self.l1b.time_orbit.timestamp = timestamp
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
+
+    def _transfer_waveform_collection(self):
+        """ Transfers the waveform data (power & range for each range bin) """
+
+        # Transfer the 20Hz waveforms
+        self.l1b.waveform.set_waveform_data(
+            self.sral.wfm_power,
+            self.sral.wfm_range,
+            self.sral.radar_mode)
+
+    def _transfer_range_corrections(self):
+
+        # (see section 3.10 in REAPER handbook)
+        # TODO: move selection dict to configuration files
+#        range_correction_target_dict = {
+#            "dry_troposphere": "mod_dry_tropo_cor_meas_altitude_01",
+#            "wet_troposphere": "mod_wet_tropo_cor_meas_altitude_01",
+#            "inverse_barometric": "iono_cor_alt_20_ku",
+#            "dynamic_atmosphere": "hf_fluct_cor_01",
+#            "ionosphere": "inv_bar_cor_01",
+#            "ocean_tide_elastic": None,
+#            "ocean_tide_long_period": "ocean_tide_eq_01",
+#            "ocean_loading_tide": "load_tide_sol1_01",
+#            "solid_earth_tide": "solid_earth_tide_01",
+#            "geocentric_polar_tide": "pole_tide_01",
+#            "total_geocentric_ocean_tide": None}
+
+        range_correction_target_dict = {
+            "dry_troposphere": None,
+            "wet_troposphere": None,
+            "inverse_barometric": None,
+            "dynamic_atmosphere": None,
+            "ionosphere": None,
+            "ocean_tide_elastic": None,
+            "ocean_tide_long_period": None,
+            "ocean_loading_tide": None,
+            "solid_earth_tide": None,
+            "geocentric_polar_tide": None,
+            "total_geocentric_ocean_tide": None}
+
+        dummy_val = np.zeros(shape=(self.l1b.n_records), dtype=np.float32)
+        for name in range_correction_target_dict.keys():
+            target_parameter = range_correction_target_dict[name]
+            if target_parameter is None:
+                correction = dummy_val
+            else:
+                correction = getattr(self.sral.nc, target_parameter)
+
+#            # Some corrections are only available in 1Hz, while 20Hz is needed
+#            if len(correction) != self.l1b.n_records:
+#                corr_interp = interpolate.interp1d(
+#                    self.sral.nc.time_01, correction, bounds_error=False)
+#                correction = corr_interp(self.sral.nc.time_20_ku)
+
+            self.l1b.correction.set_parameter(name, correction)
+
+    def _transfer_classifiers(self):
+        """
+        Transfer the classifiers from L2, L1 (if available) and from
+        additional waveform shape analysis
+        XXX: This is a makeshift implementation for the expert user
+             assessment of early access data
+        """
+
+        # Try to get l1 stack parameters (might not be present)
+        # TODO: Move this into the mission config structure
+        l1_classifier_target_dict = {
+            "stack_standard_deviation": "stdev_stack_l1b_echo_sar_ku",
+            "stack_skewness": "skew_stack_l1b_echo_sar_ku",
+            "stack_kurtosis": "kurt_stack_l1b_echo_sar_ku",
+            "stack_maximum_power": "max_stack_l1b_echo_sar_ku",
+            "num_stack_waveforms": "nb_stack_l1b_echo_sar_ku"}
+
+        for name in l1_classifier_target_dict.keys():
+            target_parameter = l1_classifier_target_dict[name]
+            classifier = getattr(self.sral.nc, target_parameter)
+            self.l1b.classifier.add(classifier, name)
+
+#        if hasattr(self.sral, "l1nc"):
+#            time_l2 = self.sral.nc.time_20_ku
+#            time_l1 = self.sral.l1nc.time_l1b_echo_sar_ku
+#            for name in l1_classifier_target_dict.keys():
+#                target_parameter = l1_classifier_target_dict[name]
+#                classifier = getattr(self.sral.l1nc, target_parameter)
+#                # interpolation is required since L1 and L2 records are
+#                # not identical
+#                interp_l1_l2 = interpolate.interp1d(
+#                    time_l1, classifier, bounds_error=False)
+#                classifier = interp_l1_l2(time_l2)
+#                self.l1b.classifier.add(classifier, name)
+
+        # Transfer L2 classifier parameter
+        # XXX: Currently None
+        l2_classifier_target_dict = {}
+        for name in l2_classifier_target_dict.keys():
+            target_parameter = l2_classifier_target_dict[name]
+            classifier = getattr(self.sral.nc, target_parameter)
+            self.l1b.classifier.add(classifier, name)
+
+        # Compute sar specific waveform classifiers after Ricker et al. 2014
+        wfm = self.l1b.waveform.power
+        ocog = CS2OCOGParameter(wfm)
+        self.l1b.classifier.add(ocog.width, "ocog_width")
+        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+        # Calculate the Peakiness (CryoSat-2 notation)
+        pulse = CS2PulsePeakiness(wfm)
+        self.l1b.classifier.add(pulse.peakiness, "peakiness")
+        self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
+        self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+
+    def _transfer_surface_type_data(self):
+        # surface_type = self.sral.nc.surf_type_20_ku
+        surface_type = self.sral.nc.surf_type_l1b_echo_sar_ku
+        # surface_type = np.repeat(surface_type, self.sgdr.n_blocks)
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
+            self.l1b.surface_type.add_flag(flag, key)
+
+
+class L1bAdapterSentinel3A(L1bAdapterSentinel3):
+    """ Class for ERS-1 """
+
+    def __init__(self, config):
+        super(L1bAdapterSentinel3A, self).__init__(config, "sentinel3a")

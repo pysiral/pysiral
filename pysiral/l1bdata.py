@@ -237,7 +237,9 @@ class L1bConstructor(Level1bData):
     L1b data files
     """
 
-    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2"]
+    # TODO: should be coming from config file
+    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2",
+                               "sentinel3a"]
 
     def __init__(self, config, header_only=False):
         super(L1bConstructor, self).__init__()
@@ -246,6 +248,7 @@ class L1bConstructor(Level1bData):
         self._mission_options = None
         self._filename = None
         self._header_only = header_only
+        self.error_status = False
 
     @property
     def mission(self):
@@ -404,6 +407,7 @@ class L1bMetaData(object):
         "n_records", "orbit", "cycle", "is_orbit_subset", "is_merged_orbit",
         "start_time", "stop_time", "subset_region_name",
         "lat_min", "lat_max", "lon_min", "lon_max", "pysiral_version",
+        "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
         "open_ocean_percent"]
 
     def __init__(self):
@@ -411,6 +415,7 @@ class L1bMetaData(object):
         for field in self.attribute_list:
             setattr(self, field, None)
         # Set some fields to False (instead of none)
+        self.orbit = 999999
         self.is_orbit_subset = False
         self.is_merged_orbit = False
         self.n_records = -1
@@ -629,6 +634,9 @@ class L1bClassifiers(object):
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
 
+    def get_parameter(self, parameter_name):
+            return getattr(self, parameter_name)
+
     def append(self, annex):
         for parameter in self.parameter_list:
             this_data = getattr(self, parameter)
@@ -757,8 +765,8 @@ def get_l1b_adapter(mission):
     """ Select and returns the correct IO Adapter for the specified mission """
 
     from pysiral.io_adapter import (
-        L1bAdapterCryoSat, L1bAdapterEnvisat,
-        L1bAdapterERS1, L1bAdapterERS2)
+        L1bAdapterCryoSat, L1bAdapterEnvisat, L1bAdapterERS1,
+        L1bAdapterERS2, L1bAdapterSentinel3A)
 
     if mission == "cryosat2":
         return L1bAdapterCryoSat
@@ -768,5 +776,7 @@ def get_l1b_adapter(mission):
         return L1bAdapterERS1
     elif mission == "ers2":
         return L1bAdapterERS2
+    elif mission == "sentinel3a":
+        return L1bAdapterSentinel3A
     else:
         raise ValueError("Unknown mission id: %s" % mission)
