@@ -86,7 +86,10 @@ class ArcticGridPresentationMap(object):
             patch = self.style.clip.get_patch(x1, x2, y1, y2, ax)
             im.set_clip_path(patch)
         # Add labels
-        plt.annotate(self.label.title, (0.04, 0.93), xycoords="axes fraction",
+        title = self.label.title
+        if self.label.annotation != "":
+            title = title + " (%s)" % self.label.annotation
+        plt.annotate(title, (0.04, 0.93), xycoords="axes fraction",
                      **self.style.font.title)
         plt.annotate(self.label.period, (0.04, 0.89), xycoords="axes fraction",
                      **self.style.font.period)
