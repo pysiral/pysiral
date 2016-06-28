@@ -107,11 +107,14 @@ def l3s_map():
 
             # Map Title
             title = mission_name_dict[mission_id]
-            if (args.diff != "none") and (
-                    ncdata_diff.mission_ids != ncdata_diff.mission_ids):
-                mission_id_b = ncdata_diff.mission_ids
-                title = mission_name_dict[mission_id_b] + " - " + \
-                    mission_name_dict[mission_id]
+            try:  # Will fails for cs2awi files
+                if (args.diff != "none") and (
+                        ncdata_diff.mission_ids != ncdata_diff.mission_ids):
+                    mission_id_b = ncdata_diff.mission_ids
+                    title = mission_name_dict[mission_id_b] + " - " + \
+                        mission_name_dict[mission_id]
+            except:
+                title = "CryoSat-2"
 
             # Light style map
             MapClass, StyleClass = get_map_classes(args)
