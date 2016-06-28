@@ -67,6 +67,7 @@ def l2_processing():
     create_surface_type_plot(l2proc.orbit[0], block=False)
     create_surface_elevation_plot(l2proc.orbit[0])
 
+
 def validate_year_month_list(year_month_list, label):
     try:
         datetime(year_month_list[0], year_month_list[1],  1)
