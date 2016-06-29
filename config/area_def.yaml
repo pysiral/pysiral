@@ -1,19 +1,22 @@
 # Area definition file
 
-nsidc_stere_north_6k:
-    name: NSIDC Polar Stereographic North
-    id: nsidc_stere_north_6k
-    proj_dict:
-        proj: stere
+ease2_north_25km:
+    hemisphere: north
+    grid_tag: EASE2
+    resolution_tag: 25km
+    projection:
+        proj: laea
         lat_0: 90.0
-        lat_ts: 70.0
-        lon_0: -45.0
-        k: 1
-        x_0: 0
-        y_0: 0
-        a: 6378273.0
-        b: 6356889.449
+        lon_0: 0.0
+        ellps: WGS84
+        datum: WGS84
         units: m
-    xsize: 1216
-    ysize: 1792
-    area_extent: (-3850000.0, -5350000.0, 3750000.0, 5850000.0)
+    extent:
+        xoff: 0
+        yoff: 0
+        xsize: 10800000
+        ysize: 10800000
+        dx: 25000
+        dy: 25000
+        numx: 432
+        numy: 432
