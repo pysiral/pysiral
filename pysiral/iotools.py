@@ -100,6 +100,5 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None):
     l1b_repo = config.local_machine.l1b_repository[mission_id].l1bdata
     directory = os.path.join(
         l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-    print directory
     l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
     return l1bdata_files
