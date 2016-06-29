@@ -23,8 +23,18 @@ def pysiral_l2proc():
     args = parser.parse_args()
 
     """ Read the settings file """
-    setting_file = os.path.join(
-        config.pysiral_local_path, "settings", "l2", args.setting_id+".yaml")
+    # is filename
+    if os.path.isfile(args.setting_id):
+        setting_file = args.setting_id
+    # if not filename, than it need to be id of settings file in
+    # pysiral\config\l2
+    else:
+        setting_file = os.path.join(
+            config.pysiral_local_path, "settings", "l2",
+            args.setting_id+".yaml")
+        if not os.path.isfile(setting_file):
+            error_message = "Unknown l2 settings file: %s" % setting_file
+            sys.exit(error_message)
     setting = get_yaml_config(setting_file)
 
     """ Add run tag to settings """
