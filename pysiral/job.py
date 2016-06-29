@@ -47,12 +47,16 @@ class Level2Job(ProcJob):
     def __init__(self):
         super(Level2Job, self).__init__()
         self.log.name = "Level2Job"
+        self.overwrite_protection = True
 
     def l2proc_settings(self, config):
         if type(config) is dict:
             self._add_option_dict("config", config)
         elif type(config) is TreeDict:
             self.config = config
+
+    def set_overwrite_protection(self, flag):
+        self.overwrite_protection = flag
 
     def validate(self):
         self.log.info("validate and expand auxdata")
@@ -95,7 +99,11 @@ class Level2Job(ProcJob):
         time = datetime.now()
         tstamp = time.strftime("%Y%m%dT%H%M%S")
         for output_id, output_def in zip(output_ids, output_defs):
-            product_export_path = os.path.join(export_path, tstamp, output_id)
+            if self.overwrite_protection:
+                product_export_path = os.path.join(
+                   export_path, tstamp, output_id)
+            else:
+                product_export_path = os.path.join(export_path, output_id)
             self.config.output[output_id].path = product_export_path
             self.log.info("Exporting %s data in directory %s" % (
                 output_id, product_export_path))

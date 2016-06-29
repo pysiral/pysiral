@@ -78,6 +78,7 @@ def pysiral_l2proc():
     job.mission_settings(setting.mission)
     job.roi_settings(setting.roi)
     job.l2proc_settings(setting.level2)
+    job.set_overwrite_protection(args.overwrite_protection_flag)
     job.validate()
 
     # Start the processor
@@ -107,33 +108,49 @@ def validate_year_month_list(year_month_list, label):
 def get_l2proc_argparser():
     """ Handle command line arguments """
     parser = argparse.ArgumentParser()
+
     # Mission id string: cryosat2, envisat, ...
     parser.add_argument(
         '-s', '-setting', action='store', dest='setting_id',
         help='setting id of yaml file in /settings/l2', required=True)
+
     # run tag:
     parser.add_argument(
         '-r', '-runtag', action='store', dest='run_tag',
         help='tag (str) for the processor run (directory in products folder)',
         required=True)
+
     # Start month as list: [yyyy, mm]
     parser.add_argument(
         '-start', action='store', dest='start_date',
         nargs='+', type=int, required=True,
         help='start date as year and month (-start yyyy mm)')
+
     # Stop month as list: [yyyy, mm]
     parser.add_argument(
         '-stop', action='store', dest='stop_date',
         nargs='+', type=int,  required=True,
         help='start date as year and month (-stop yyyy mm)')
+
     # Add an Option to skip a number of files (e.g. for a restart)
     parser.add_argument(
         "-skip", action='store', type=int, const=0, nargs='?',
         dest='skip', help='number of files to skip')
+
     # Show debug statements
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity",
         action="store_true")
+
+    # Overwrite flag
+    parser.add_argument('--overwrite-protection',
+                        dest='overwrite_protection_flag',
+                        action='store_true')
+    parser.add_argument('--no-overwrite-protection',
+                        dest='overwrite_protection_flag',
+                        action='store_false')
+    parser.set_defaults(overwrite=True)
+
     # show preprocessor version
     parser.add_argument(
         '--version', action='version', version='%(prog)s 0.1a')
