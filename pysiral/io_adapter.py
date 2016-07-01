@@ -159,6 +159,9 @@ class L1bAdapterCryoSat(object):
             self.l1b.surface_type.add_flag(flag, key)
 
     def _transfer_classifiers(self):
+
+        from pysiral.waveform import get_waveforms_peak_power
+
         # Add L1b beam parameter group
         beam_parameter_list = [
             "stack_standard_deviation", "stack_centre",
@@ -180,6 +183,10 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+        # Add the peak power (in Watts)
+        # (use l1b waveform power array that is already in physical units)
+        peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
+        self.l1b.classifier.add(peak_power, "peak_power")
 
 
 class L1bAdapterEnvisat(object):
