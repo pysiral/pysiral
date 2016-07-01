@@ -277,8 +277,8 @@ class ClassifierGrid(DefaultLoggingClass):
         year = self.jobdef.args.month[0]
         month = self.jobdef.args.month[1]
         filename = "%s_classifier_%04g%02g_%s_%s_%s_%s.npz" % (
-            mission_id, year, month, parameter_name, grid_tag, hemisphere_tag,
-            resolution_tag)
+            mission_id, year, month, grid_tag, hemisphere_tag,
+            resolution_tag, parameter_name)
         return filename
 
     @property
