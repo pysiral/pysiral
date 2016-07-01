@@ -124,10 +124,10 @@ def cryosat2_l1b_waveform_plot(l1b):
     image_extent = (0, len(l1b.time_orbit.altitude),
                     np.amin(elevation_range), np.amax(elevation_range))
 
-    ref_aspect = 0.5
-    num_recs, num_range_bins = l1b.waveform.power.shape
+    ref_aspect = 0.4
+    num_recs, num_range_bins = image.shape
     waveform_aspect = float(num_recs)/float(num_range_bins)
-    aspect = waveform_aspect * ref_aspect
+    aspect = waveform_aspect / ref_aspect
 
     im = ax.imshow(
         np.log10(image).transpose(), cmap=plt.get_cmap("magma"),
