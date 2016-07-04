@@ -26,7 +26,7 @@ class SurfaceType(object):
         - continental ice
         - land
     """
-    _SURFACE_TYPE_DICT = {
+    SURFACE_TYPE_DICT = {
         "unknown": 0,
         "ocean": 1,
         "lead": 2,
@@ -74,15 +74,15 @@ class SurfaceType(object):
         return self.get_by_name("sea_ice")
 
     def name(self, index):
-        i = self._SURFACE_TYPE_DICT.values().index(index)
-        return self._SURFACE_TYPE_DICT.keys()[i]
+        i = self.SURFACE_TYPE_DICT.values().index(index)
+        return self.SURFACE_TYPE_DICT.keys()[i]
 
     def set_flag(self, flag):
         self._surface_type = flag
 
     def add_flag(self, flag, type_str):
         """ Add a surface type flag """
-        if type_str not in self._SURFACE_TYPE_DICT.keys():
+        if type_str not in self.SURFACE_TYPE_DICT.keys():
             # TODO: Error Handling
             raise("surface type str %s unknown" % type_str)
         if self._invalid_n_records(len(flag)):
@@ -101,7 +101,7 @@ class SurfaceType(object):
         return type_str in self._surface_type_flags
 
     def get_by_name(self, name):
-        if name in self._SURFACE_TYPE_DICT.keys():
+        if name in self.SURFACE_TYPE_DICT.keys():
             type_id = self._get_type_id(name)
             return FlagContainer(self._surface_type == type_id)
         else:
@@ -125,7 +125,7 @@ class SurfaceType(object):
             return True
 
     def _get_type_id(self, name):
-        return self._SURFACE_TYPE_DICT[name]
+        return self.SURFACE_TYPE_DICT[name]
 
 #    def __getattr__(self, name):
 #        """
@@ -133,7 +133,7 @@ class SurfaceType(object):
 #        set yet
 #        """
 #        print name
-#        if name in self._SURFACE_TYPE_DICT.keys():
+#        if name in self.SURFACE_TYPE_DICT.keys():
 #            if self.has_flag(name):
 #                type_id = self._get_type_id(name)
 #                return TypeContainer(self._surface_type == type_id)
