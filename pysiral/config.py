@@ -108,6 +108,10 @@ class RadarModes(object):
         except:
             return None
 
+    def name(self, index):
+        i = self.flag_dict.values().index(index)
+        return self.flag_dict.keys()[i]
+
 
 def get_yaml_config(filename, output="treedict"):
     """
