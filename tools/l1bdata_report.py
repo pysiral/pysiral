@@ -251,8 +251,8 @@ class L1BDataReportPDF(object):
 
         # Add range corrections plot
         max_grc_plots_per_page = 5
-        n_grc_parameter = len(self.l1b.correction.parameter_list)
-        n_grc_plots = np.ceil(n_grc_parameter/max_grc_plots_per_page)
+        n_grc_parameter = float(len(self.l1b.correction.parameter_list))
+        n_grc_plots = np.ceil(n_grc_parameter/float(max_grc_plots_per_page))
 
         for plotn in np.arange(n_grc_plots):
 
@@ -298,8 +298,8 @@ class L1BDataReportPDF(object):
 
         # Add range corrections plot
         max_clf_plots_per_page = 5
-        n_clf_parameter = len(self.l1b.classifier.parameter_list)
-        n_clf_plots = np.ceil(n_clf_parameter/max_clf_plots_per_page)
+        n_clf_parameter = float(len(self.l1b.classifier.parameter_list))
+        n_clf_plots = np.ceil(n_clf_parameter/float(max_clf_plots_per_page))
 
         for plotn in np.arange(n_clf_plots):
 
