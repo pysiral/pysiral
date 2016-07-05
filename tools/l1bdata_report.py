@@ -170,9 +170,9 @@ class L1BDataReportPDF(object):
 
         filename = get_temp_png_filename()
         plot = PlotL1bdataOrbit()
-        plot.filename = filename
         plot.create_plot(self.l1b)
-        plot.savefig()
+        plot.savefig(filename)
+
         width = xsize*mm
         height = plot.canvas_aspect*xsize*mm
         self.elements.append(Image(filename, width=width, height=height))
@@ -222,9 +222,9 @@ class L1BDataReportPDF(object):
         # Add waveform plot
         filename = get_temp_png_filename()
         plot = PlotL1bdataWaveform()
-        plot.filename = filename
         plot.create_plot(self.l1b)
-        plot.savefig()
+        plot.savefig(filename)
+
         width = xsize*mm
         height = plot.canvas_aspect*xsize*mm
         self.elements.append(Image(filename, width=width, height=height))
@@ -233,9 +233,9 @@ class L1BDataReportPDF(object):
         # Add flag plot
         filename = get_temp_png_filename()
         plot = PlotL1bdataWaveformFlags()
-        plot.filename = filename
         plot.create_plot(self.l1b)
-        plot.savefig()
+        plot.savefig(filename)
+
         width = xsize*mm
         height = plot.canvas_aspect*xsize*mm
         self.elements.append(Image(filename, width=width, height=height))
@@ -276,10 +276,9 @@ class L1BDataReportPDF(object):
             # Create the plot and write to temp file
             filename = get_temp_png_filename()
             plot = PlotL1bdataRangeCorrections()
-            plot.filename = filename
             plot.create_plot(self.l1b, grc_indices=grc_indices,
                              max_number_plots=max_grc_plots_per_page)
-            plot.savefig()
+            plot.savefig(filename)
 
             # Add the plot to the pdf
             width = xsize*mm
@@ -324,10 +323,9 @@ class L1BDataReportPDF(object):
             # Create the plot and write to temp file
             filename = get_temp_png_filename()
             plot = PlotL1bdataWaveformClassifier()
-            plot.filename = filename
             plot.create_plot(self.l1b, clf_indices=grc_indices,
                              max_number_plots=max_clf_plots_per_page)
-            plot.savefig()
+            plot.savefig(filename)
 
             # Add the plot to the pdf
             width = xsize*mm

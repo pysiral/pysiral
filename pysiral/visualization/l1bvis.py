@@ -27,9 +27,12 @@ class PlotL1bdata(object):
         self.fig_args = {"figsize": (10, 16), "facecolor": "white"}
         set_mpl_default_style()
 
-    def savefig(self):
+    def savefig(self, filename, close_figure=True):
+        self.filename = filename
         plt.savefig(self.filename, dpi=self.dpi,
                     facecolor=self.fig.get_facecolor())
+        if close_figure:
+            plt.close(self.fig)
 
     @property
     def canvas_aspect(self):
