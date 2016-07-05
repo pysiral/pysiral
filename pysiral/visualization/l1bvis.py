@@ -314,8 +314,7 @@ class PlotL1bdataRangeCorrections(PlotL1bdata):
         self.range_indicator = 0.05
 
         # Figure settings
-        self.fig_args = {"sharex": True, "facecolor": "white",
-                         "figsize": (10, 14)}
+        self.fig_args = {"facecolor": "white", "figsize": (10, 14)}
         self.axis_bg_color = '0.98'
         self.line_settings = {"lw": 2, "color": "#00ace5"}
 
@@ -350,30 +349,31 @@ class PlotL1bdataRangeCorrections(PlotL1bdata):
         n = self.max_number_plots
 
         # Create the figure
-        f, ax = plt.subplots(n, **self.fig_args)
+        gs = gridspec.GridSpec(n, 1)
+        self.fig = plt.figure(n, **self.fig_args)
         plt.subplots_adjust(bottom=0.075, top=0.95)
-        self.fig = f
 
         # Loop over parameters
         for i, grc_index in enumerate(self.grc_indices):
 
+            ax = plt.subplot(gs[i])
+
             # Retrieve and plot the range correction
             grc, name = self.l1b.correction.get_parameter_by_index(grc_index)
-            ax[i].plot(grc, **self.line_settings)
+            ax.plot(grc, **self.line_settings)
 
             # Labels and axis style
-            ax[i].set_axis_bgcolor(self.axis_bg_color)
-            ax[i].set_title(name)
-            ax[i].yaxis.set_minor_locator(
-                MultipleLocator(self.range_indicator))
-            ax[i].yaxis.grid(True, which='minor')
-            ax[i].yaxis.set_tick_params(direction='out')
-            ax[i].yaxis.set_ticks_position('left')
-            ax[i].xaxis.set_ticks([])
+            ax.set_axis_bgcolor(self.axis_bg_color)
+            ax.set_title(name)
+            ax.yaxis.set_minor_locator(MultipleLocator(self.range_indicator))
+            ax.yaxis.grid(True, which='minor')
+            ax.yaxis.set_tick_params(direction='out')
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks([])
 
             spines_to_remove = ["top", "right", "bottom"]
             for spine in spines_to_remove:
-                ax[i].spines[spine].set_visible(False)
+                ax.spines[spine].set_visible(False)
 
 
 class PlotL1bdataWaveformClassifier(PlotL1bdata):
