@@ -466,7 +466,9 @@ class PlotL1bdataWaveformClassifier(PlotL1bdata):
                 ax0.spines[spine].set_visible(False)
 
             # Compute histogram
-            hist, bin_edges = np.histogram(classifier, bins=500, density=True)
+            valid = np.where(np.isfinite(classifier))[0]
+            hist, bin_edges = np.histogram(
+                classifier[valid], bins=500, density=True)
             bin_width = bin_edges[1]-bin_edges[0]
             bin_center = bin_edges[0:-1] + 0.5*bin_width
             ax1.barh(bin_center, hist, height=bin_width, **self.barh_args)
