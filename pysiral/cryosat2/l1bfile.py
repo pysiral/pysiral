@@ -138,8 +138,8 @@ class CryoSatL1B(object):
 
     """
 
-    _VALID_BASELINES = ["B001", "C001"]
-    _VALID_RADAR_MODES = ["sar"]
+    _VALID_BASELINES = ["baseline-b", "baseline-c"]
+    _VALID_RADAR_MODES = ["sar", "sin"]
 
     def __init__(self, read_header_only=False, raise_on_error=False):
 
@@ -214,7 +214,7 @@ class CryoSatL1B(object):
     def _detect_filetype(self):
         """ Detect and validate the baseline """
         info = parse_cryosat_l1b_filename(self._filename_product)
-        self._baseline = info.baseline
+        self._baseline = "baseline-%s" % info.baseline[0].lower()
         self._radar_mode = info.radar_mode
         # Validate
         if self._baseline not in self._VALID_BASELINES:

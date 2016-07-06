@@ -227,18 +227,22 @@ class CryoSat2PreProcJob(DefaultLoggingClass):
         return is_connected
 
     def concatenate_and_export_stack_files(self, l1bdata_stack):
+
+        sar_bin_count = {"baseline-b": 128, "baseline-c": 256}
+
         log = self.log
         # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
         # debug_stack_export_orbit_plot(l1bdata_stack)
         # Concatenate the files
         l1b_merged = l1bdata_stack[0]
+        bin_count = sar_bin_count[l1b_merged.info.mission_data_version.lower()]
         if l1b_merged.info.radar_mode == "sin":
-            l1b_merged.reduce_waveform_bin_count(256)
+            l1b_merged.reduce_waveform_bin_count(bin_count)
         l1bdata_stack.pop(0)
         for orbit_segment in l1bdata_stack:
             # Rebin
             if orbit_segment.info.radar_mode == "sin":
-                orbit_segment.reduce_waveform_bin_count(256)
+                orbit_segment.reduce_waveform_bin_count(bin_count)
             l1b_merged.append(orbit_segment)
         # stop
         # Prepare data export

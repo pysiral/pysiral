@@ -932,11 +932,12 @@ class Cryosat2SINBaselineC(Cryosat2L1bMDSDefinition):
 
         return self.mds
 
+
 def cryosat2_get_mds_def(radar_mode, baseline, n_records):
     """ Picks the right parser class for CryoSat2 L1b data """
     # Get correct definition class
     mds_class = "Cryosat2{mode}Baseline{baseline}".format(
-        mode=radar_mode.upper(), baseline=baseline[0].upper())
+        mode=radar_mode.upper(), baseline=baseline[-1].upper())
     definition = globals()[mds_class]()
     definition.n_records = n_records
     return definition
