@@ -14,6 +14,7 @@ from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 from pysiral.helper import parse_datetime_str
+from pysiral.path import filename_from_path
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
@@ -103,6 +104,8 @@ class L1bAdapterCryoSat(object):
             self.cs2l1b.sph.start_record_tai_time)
         self.l1b.info.stop_time = parse_datetime_str(
             self.cs2l1b.sph.stop_record_tai_time)
+        mission_data_source = filename_from_path(self.cs2l1b.filename)
+        self.l1b.info.mission_data_source = mission_data_source
 
     def _transfer_timeorbit(self):
         # Transfer the orbit position
