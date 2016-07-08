@@ -117,23 +117,33 @@ class Level1bData(object):
 
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """
-        # XXX: Needs tests
+
+        # Append data in each datagroup
         for data_group in self.data_groups:
             this_data_group = getattr(self, data_group)
             annex_data_group = getattr(l1b_annex, data_group)
             this_data_group.append(annex_data_group)
-        self.update_data_limit_attributes()
+
+        # Update the statistics
         self.info.set_attribute("is_merged_orbit", True)
         self.info.set_attribute("n_records", len(self.time_orbit.timestamp))
+        mission_data_source = ";".join([self.info.mission_data_source,
+                                        l1b_annex.info.mission_data_source])
+        self.info.set_attribute("mission_data_source", mission_data_source)
+        self.update_metadata
 
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
+
+        # Trim all datagroups
         for data_group in self.data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
-        self.update_data_limit_attributes()
+
+        # Update metadata
         self.info.set_attribute("is_orbit_subset", True)
         self.info.set_attribute("n_records", len(subset_list))
+        self.update_l1b_metadata()
 
     def apply_range_correction(self, correction):
         """  Apply range correction """
@@ -163,17 +173,61 @@ class Level1bData(object):
             l1b = Level1bData()
         return l1b
 
+    def update_l1b_metadata(self):
+        self.update_data_limit_attributes()
+        self.update_waveform_statistics()
+        self.update_region_name()
+
     def update_data_limit_attributes(self):
         """
         Set latitude/longitude and timestamp limits in the metadata container
         """
+
         info = self.info
+
+        # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
         info.set_attribute("lat_max", np.nanmax(self.time_orbit.latitude))
         info.set_attribute("lon_min", np.nanmin(self.time_orbit.longitude))
         info.set_attribute("lon_max", np.nanmax(self.time_orbit.longitude))
         info.set_attribute("start_time", self.time_orbit.timestamp[0])
         info.set_attribute("stop_time", self.time_orbit.timestamp[-1])
+
+    def update_waveform_statistics(self):
+        """ Compute waveform metadata attributes """
+
+        from pysiral.config import RadarModes
+
+        # waveform property infos (lrm, sar, sarin)
+        radar_modes = RadarModes()
+        radar_mode = self.waveform.radar_mode
+
+        # Check if radar mode is none
+        # (e.g. if only header information is parsed at this stage)
+        if radar_mode is None:
+            return
+
+        # Compute the percentage of each radar mode in the l1b object
+        nrecs_fl = float(self.n_records)
+        for flag in range(radar_modes.num):
+            is_this_radar_mode = np.where(radar_mode == flag)[0]
+            radar_mode_percent = 100.*float(len(is_this_radar_mode))/nrecs_fl
+            attribute_name = "%s_mode_percent" % radar_modes.name(flag)
+            self.info.set_attribute(attribute_name, radar_mode_percent)
+
+    def update_region_name(self):
+        """ Estimate the region (north/south/global) for metatdata class """
+
+        lat_range = np.array([self.info.lat_min, self.info.lat_max])
+
+        if np.amin(lat_range) > 0 and np.amax(lat_range) > 0:
+            region_name = "north"
+        elif np.amin(lat_range) < 0 and np.amax(lat_range) < 0:
+            region_name = "south"
+        else:
+            region_name = "global"
+        self.info.set_attribute("region_name", region_name)
+
 
     def reduce_waveform_bin_count(self, target_count, maxloc=0.4):
         """
@@ -712,11 +766,14 @@ class L1bWaveforms(object):
         if len(power.shape) != 2:
             raise ValueError("power and range arrays must be of dimension" +
                              " (n_records, n_bins)")
-        # Validate number of records
+
+            # Validate number of records
         self._info.check_n_records(power.shape[0])
+
         # Assign values
         self._power = power
         self._range = range
+
         # Create radar mode arrays
         if type(radar_mode) is str and radar_mode in self._valid_radar_modes:
             mode_flag = self.radar_mode_def.get_flag(radar_mode)
@@ -727,6 +784,7 @@ class L1bWaveforms(object):
                 self._radar_mode = radar_mode
         else:
             raise ValueError("Invalid radar_mode: ", radar_mode)
+
         # Set valid flag (assumed to be valid for all waveforms)
         # Flag can be set separately using the set_valid_flag method
         if self._is_valid is None:
