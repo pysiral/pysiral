@@ -44,13 +44,34 @@ class L1bAdapterCryoSat(object):
             self.read_msd()
 
     def read_msd(self):
-        self._read_cryosat2l1b_data()         # Read CryoSat-2 data content
-        self._transfer_metadata()             # (orbit, radar mode, ..)
-        self._transfer_timeorbit()            # (lon, lat, alt, time)
-        self._transfer_waveform_collection()  # (power, range)
-        self._transfer_range_corrections()    # (range corrections)
-        self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
-        self._transfer_classifiers()          # (beam parameters, flags, ...)
+
+        # Read the content of the .DLB & .HDR files and store content in
+        # this class for
+        self._read_cryosat2l1b_data()
+
+        # Transfer relevant metdata
+        self._transfer_metadata()
+
+        # Extract time orbit data group (lon, lat, alt, time)
+        self._transfer_timeorbit()
+
+        # Extract waveform data (power, range, mode, flags)
+        self._transfer_waveform_collection()
+
+        # Extract range correction and tidal information
+        self._transfer_range_corrections()
+
+        # Get the surface type data from the L1b file
+        # (will serve mainly as source for land mask at this stage)
+        self._transfer_surface_type_data()
+
+        # Extract waveform parameters that will be used for
+        # surface type classification in the L2 processing
+        self._transfer_classifiers()
+
+        # now that all data is transfered to the l1bdata object,
+        # complete the attributes in the metadata container
+        self.l1b.update_l1b_metadata()
 
     def _read_cryosat2l1b_header(self):
         """
@@ -108,11 +129,13 @@ class L1bAdapterCryoSat(object):
         self.l1b.info.mission_data_source = mission_data_source
 
     def _transfer_timeorbit(self):
+
         # Transfer the orbit position
         longitude = get_structarr_attr(self.cs2l1b.time_orbit, "longitude")
         latitude = get_structarr_attr(self.cs2l1b.time_orbit, "latitude")
         altitude = get_structarr_attr(self.cs2l1b.time_orbit, "altitude")
         self.l1b.time_orbit.set_position(longitude, latitude, altitude)
+
         # Transfer the timestamp
         tai_objects = get_structarr_attr(
             self.cs2l1b.time_orbit, "tai_timestamp")
@@ -123,12 +146,14 @@ class L1bAdapterCryoSat(object):
         self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
+
         # Create the numpy arrays for power & range
         dtype = np.float32
         n_records = len(self.cs2l1b.waveform)
         n_range_bins = len(self.cs2l1b.waveform[0].wfm)
         echo_power = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
         echo_range = np.ndarray(shape=(n_records, n_range_bins), dtype=dtype)
+
         # Set the echo power in dB and calculate range
         # XXX: This might need to be switchable
         for i, record in enumerate(self.cs2l1b.waveform):
@@ -137,7 +162,8 @@ class L1bAdapterCryoSat(object):
                 record.linear_scale, record.power_scale)
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
-        # Transfer to L1bData
+
+            # Transfer to L1bData
         self.l1b.waveform.set_waveform_data(
             echo_power, echo_range, self.cs2l1b.radar_mode)
 
