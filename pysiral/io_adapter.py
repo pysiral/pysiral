@@ -117,16 +117,25 @@ class L1bAdapterCryoSat(object):
         self.cs2l1b.post_processing()
 
     def _transfer_metadata(self):
-        self.l1b.info.mission = self._mission
-        self.l1b.info.mission_data_version = self.cs2l1b.baseline
-        self.l1b.info.radar_mode = self.cs2l1b.radar_mode
-        self.l1b.info.orbit = self.cs2l1b.sph.abs_orbit_start
-        self.l1b.info.start_time = parse_datetime_str(
-            self.cs2l1b.sph.start_record_tai_time)
-        self.l1b.info.stop_time = parse_datetime_str(
-            self.cs2l1b.sph.stop_record_tai_time)
+
+        info = self.l1b.info
+
+        # Processing System info
+        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+
+        # General CryoSat-2 metadata
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_version", self.cs2l1b.baseline)
+        info.set_attribute("orbit", self.cs2l1b.sph.abs_orbit_start)
+        info.set_attribute("cycle", self.cs2l1b.mph.cycle)
         mission_data_source = filename_from_path(self.cs2l1b.filename)
-        self.l1b.info.mission_data_source = mission_data_source
+        info.set_attribute("mission_data_source", mission_data_source)
+
+        # Time-Orbit Metadata
+        start_time = parse_datetime_str(self.cs2l1b.sph.start_record_tai_time)
+        stop_time = parse_datetime_str(self.cs2l1b.sph.stop_record_tai_time)
+        info.set_attribute("start_time", start_time)
+        info.set_attribute("stop_time", stop_time)
 
     def _transfer_timeorbit(self):
 
@@ -142,8 +151,6 @@ class L1bAdapterCryoSat(object):
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
         utc_timestamp = tai2utc(tai_timestamp)
         self.l1b.time_orbit.timestamp = utc_timestamp
-        # Update meta data container
-        self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
 
