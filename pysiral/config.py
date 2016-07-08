@@ -84,6 +84,10 @@ class ConfigInfo(object):
 
     def get_mission_info(self, mission):
         mission_info = self.mission[mission]
+        if mission_info.data_period.start is None:
+            mission_info.data_period.start = datetime.utcnow()
+        if mission_info.data_period.stop is None:
+            mission_info.data_period.stop = datetime.utcnow()
         return mission_info
 
     def _read_config_files(self):
