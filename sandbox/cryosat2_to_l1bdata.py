@@ -42,13 +42,12 @@ def cryosat2_to_l1bdata():
     l1b.mission = "cryosat2"
     l1b.filename = l1b_files[args.file_number]
     l1b.get_header_info()
-    print l1b.filename
-    print l1b.info.open_ocean_percent
-    print l1b.info.lat_min
-    print l1b.info.lat_max
-    print l1b.info.lon_min
-    print l1b.info.lon_max
+
+    print l1b.info
+
     l1b.construct()
+
+    print l1b.info
 
     t1 = time.time()
     print "Constructing CryoSat-2 l1bdata object in %.3g seconds" % (t1 - t0)
