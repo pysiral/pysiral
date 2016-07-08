@@ -27,6 +27,8 @@ class ConfigInfo(object):
     (local_machine_definition.yaml)
     """
 
+    PYSIRAL_VERSION = "0.2.pre"
+
     # Global variables
     _DEFINITION_FILES = {
         "mission": "mission_def.yaml",
