@@ -114,6 +114,10 @@ class RadarModes(object):
         i = self.flag_dict.values().index(index)
         return self.flag_dict.keys()[i]
 
+    @property
+    def num(self):
+        return len(self.flag_dict.keys())
+
 
 def get_yaml_config(filename, output="treedict"):
     """
