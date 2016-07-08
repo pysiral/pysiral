@@ -4,6 +4,33 @@ Created on Fri Jul 10 15:25:45 2015
 
 @author: Stefan
 """
+import sys
+
+
+class ErrorStatus(object):
+
+    def __init__(self):
+        self.status = False
+        self.codes = []
+        self.messages = []
+
+    def add_error(self, code, message):
+        self.status = True
+        self.codes.append(code)
+        self.messages.append(message)
+
+    def raise_on_error(self):
+        if self.status:
+            output = "ErrorMessage:\n"
+            for i in range(len(self.codes)):
+                output += "(%s): %s" % (self.codes[i], self.messages[i])
+                output += "\n"
+            print output
+            sys.exit(1)
+
+    @property
+    def message(self):
+        return ",".join(self.messages)
 
 
 class ErrorHandler(object):
