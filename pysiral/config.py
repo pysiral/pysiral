@@ -249,6 +249,56 @@ class TimeRangeRequest(object):
         return self._stop_dt
 
 
+class TimeRangeIteration(object):
+
+    def __init__(self):
+        self._index = 0
+        self._num_iterations = 0
+        self._start = None
+        self._stop = None
+
+    def __repr__(self):
+        output = "pysiral TimeRangeIteration Object:\n"
+        output += "%6s: %s\n" % ("start", str(self.start))
+        output += "%6s: %s\n" % ("stop", str(self.stop))
+        output += "Iteration: %s of %s\n" % (
+            str(self.index), str(self.num_iterations))
+        return output
+
+    def set_range(self, start, stop):
+        self._start = start
+        self._stop = stop
+
+    def set_indices(self, i, n):
+        self._index = i
+        self._num_iterations = n
+
+    @property
+    def start(self):
+        return self._start
+
+    @property
+    def stop(self):
+        return self._stop
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def num_iterations(self):
+        return self._num_iterations
+
+    @property
+    def is_full_month(self):
+        test_diff = (self.start+relativedelta(months=1))-self.stop
+        return test_diff.days < 1
+
+    @property
+    def label(self):
+        return str(self.start)+" till "+str(self.stop)
+
+
 class DefaultCommandLineArguments(object):
 
     def __init__(self):
