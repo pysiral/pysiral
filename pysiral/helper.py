@@ -8,6 +8,8 @@ Created on Tue Jul 21 18:04:43 2015
 from dateutil import parser as dtparser
 import numpy as np
 import time
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 def parse_datetime_str(dtstr):
@@ -61,8 +63,23 @@ def month_iterator(start_year, start_month, end_year, end_month):
     from datetime import datetime
     start = datetime(start_year, start_month, 1)
     end = datetime(end_year, end_month, 1)
-    return ((d.year, d.month) for d in rrule(MONTHLY,
-            dtstart=start, until=end))
+    return [(d.year, d.month) for d in rrule(MONTHLY,
+            dtstart=start, until=end)]
+
+
+def get_month_time_range(year, month):
+    """ Returns the a start and stop datetime object for a given month """
+    start_dt = datetime(year, month, 1)
+    stop_dt = start_dt + relativedelta(months=1, microseconds=-1)
+    return start_dt, stop_dt
+
+
+def validate_year_month_list(year_month_list, label):
+    try:
+        datetime(year_month_list[0], year_month_list[1], 1)
+    except ValueError:
+        print "Error: Invalid "+label+" (%04g, %02g)" % (
+            year_month_list[0], year_month_list[1])
 
 
 class SimpleTimer(object):
