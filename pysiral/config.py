@@ -341,7 +341,24 @@ class DefaultCommandLineArguments(object):
                 "type": int,
                 "required": False,
                 "default": None,
-                "help": 'list of months to be excluded from processing'}}
+                "help": 'list of months to be excluded from processing'},
+
+            # Flag that indicates if previous versions shall be removed
+            # before processing / plotting etc.
+            "remove-old": {
+                "action": "store_true",
+                "dest": "remove_old",
+                "default": False,
+                "required": False,
+                "help": 'remove all existing product in target directory'},
+
+            # version tag of input data
+            "input-version": {
+                "action": "store",
+                "dest": "input_version",
+                "default": "default",
+                "required": False,
+                "help": 'input version name (see documentation)'}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
