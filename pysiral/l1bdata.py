@@ -228,7 +228,6 @@ class Level1bData(object):
             region_name = "global"
         self.info.set_attribute("region_name", region_name)
 
-
     def reduce_waveform_bin_count(self, target_count, maxloc=0.4):
         """
         Reduce the bin count of waveform power and range arrays.
@@ -278,11 +277,20 @@ class Level1bData(object):
             power[i, :] = orig_power[i, start[i]:stop[i]]
             range[i, :] = orig_range[i, start[i]:stop[i]]
         # Push to waveform container
-        self.waveform.set_waveform_data(power, range, self.info.radar_mode)
+        self.waveform.set_waveform_data(power, range, self.radar_modes)
 
     @property
     def n_records(self):
         return self.info.n_records
+
+    @property
+    def radar_modes(self):
+        radar_modes = RadarModes()
+        radar_mode_flag_list = np.unique(self.waveform.radar_mode)
+        radar_mode_list = []
+        for radar_mode_flag in radar_mode_flag_list:
+            radar_mode_list.append(radar_modes.name(radar_mode_flag))
+        return ";".join(radar_mode_list)
 
 
 class L1bConstructor(Level1bData):
