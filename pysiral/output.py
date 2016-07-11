@@ -248,7 +248,7 @@ class L3SDataNC(NCDataFile):
             var[:] = data
 
 
-def l1bnc_filenaming(l1b, config):
+def l1bnc_filenaming(l1b, config, version):
     """
     Returns the standard export folder and filename of a level-1b netCDF
     data file
@@ -275,7 +275,8 @@ def l1bnc_filenaming(l1b, config):
 
     """
     # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
-    export_folder = config.local_machine.l1b_repository[l1b.mission].l1bdata
+    local_repository = config.local_machine.l1b_repository
+    export_folder = local_repository[l1b.mission][version].l1bdata
     yyyy = "%04g" % l1b.info.start_time.year
     mm = "%02g" % l1b.info.start_time.month
     hemisphere = l1b.info.hemisphere
