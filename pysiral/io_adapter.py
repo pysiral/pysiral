@@ -101,7 +101,7 @@ class L1bAdapterCryoSat(object):
         self.l1b.info.set_attribute("lat_max", np.amax([start_lat, stop_lat]))
         self.l1b.info.set_attribute("lon_min", np.amin([start_lon, stop_lon]))
         self.l1b.info.set_attribute("lon_max", np.amax([start_lon, stop_lon]))
-
+        self.l1b.update_region_name()
         error_status = self.cs2l1b.get_status()
         if error_status:
             # TODO: Needs ErrorHandler
