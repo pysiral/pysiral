@@ -3,12 +3,9 @@
 from pysiral.config import (ConfigInfo, TimeRangeRequest,
                             DefaultCommandLineArguments)
 from pysiral.logging import DefaultLoggingClass
-from pysiral.helper import month_iterator
+from pysiral.errorhandler import ErrorStatus
 
-from datetime import datetime
 import argparse
-import sys
-import os
 
 
 def pysiral_l1bpreproc():
@@ -31,6 +28,9 @@ def pysiral_l1bpreproc():
     # (e.g. summer Arctic)
     jobdef.process_requested_time_range()
 
+    # Check if everything is ok
+    jobdef.error.raise_on_error()
+
     # L1b data is grouped by month
     # -> if requested time range exceeds one month, the preprocessor
     #    will run in several iterations
@@ -40,21 +40,28 @@ def pysiral_l1bpreproc():
     preprocessor = jobdef.get_mission_preprocessor()
 
     # Loop over iterations (one per month)
-    for iteration in jobdef.iterations:
+    for time_range in jobdef.iterations:
 
-        # Get the list of input files
-        #
-        file_list = jobdef.get_file_list(iteration)
+        # Start the pre-processing
+        job = preprocessor()
+        job.log.info("Processing period: %s" % time_range.label)
 
-        #
-        if len(file_list) == 0:
+        # Set the pre-processing parameter
+        job.settings(jobdef)
+
+        # Get the list of input files from local machine def
+        version = jobdef.input_version
+        job.set_input_files_local_machine_def(time_range, version=version)
+
+        # Check error, e.g. problems with local_machine_def, ...
+        job.error.raise_on_error()
+
+        # List might be empty
+        if job.has_empty_file_list:
+            job.log.info(" Skipping period: %s" % time_range.label)
             continue
 
-        job = preprocessor()
-
-        # Though
-        job.mission = jobdef.mission_id
-        job.file_list = file_list
+        # Pre-process data for one month
         job.execute()
 
 
@@ -69,7 +76,9 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
 
         # Initialize the time range and set to monthly per default
         self.time_range = TimeRangeRequest()
-        self.time_range.set_period("monthly")
+
+        # Error Status
+        self.error = ErrorStatus()
 
         # Initialize job parameter
         self.args = None
@@ -82,7 +91,15 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
         self.args = self.parser.parse_args()
 
     def generate_preprocessor_iterations(self):
-        pass
+
+        # The input data is organized in folder per month, therefore
+        # the processing period is set accordingly
+        self.time_range.set_period("monthly")
+        self.log.info("Pre-processor Period is monthly")
+        self.time_range.set_exclude_month(self.args.exclude_month)
+        self.log.info("Excluding month: %s" % str(self.args.exclude_month))
+        self.iterations = self.time_range.get_iterations()
+        self.log.info("Number of iterations: %g" % len(self.iterations))
 
     def process_requested_time_range(self):
 
@@ -91,39 +108,23 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
 
         # Set and validate the time range
         start_date, stop_date = self.args.start_date, self.args.stop_date
+
         self.time_range.set_range(start_date, stop_date)
 
         # Check if any errors in definitions
         self.time_range.error.raise_on_error()
 
+        self.log.info("Requested time range is: %s" % self.time_range.label)
+
         # Clip time range to mission time range
-        self.time_range.clip_to_range(mission_info.data_period.start,
-                                      mission_info.data_period.stop)
-#
-#        # start stop mus be a valid year/month combination
-#        validate_year_month_list(args.start_date, "start date")
-#        validate_year_month_list(args.stop_date, "stop date")
-#
-#        # Dates should not exceed mission lifetime
-#        start_date = datetime(args.start_date[0], args.start_date[1], 1)
-#        stop_date = datetime(args.stop_date[0], args.stop_date[1], 1)
-#
-#        # Set start time to mission start time (if necessary)
-#        if start_date < mission_info.data_period.start:
-#            print "Warning: start date before %s data period %s" % (
-#                args.mission_id, str(mission_info.data_period.start))
-#            args.start_date[0] = mission_info.data_period.start.year
-#            args.start_date[1] = mission_info.data_period.start.month
-#        # Stop time can be None if mission is ongoing
-#        if mission_info.data_period.stop is None:
-#            mission_stop_time = datetime.utcnow()
-#        else:
-#            mission_stop_time = mission_info.data_period.stop
-#        if stop_date > mission_stop_time:
-#            print "Warning: stopt date late then %s data period %s" % (
-#                args.mission_id, str(mission_stop_time))
-#            args.stop_date[0] = mission_stop_time.data_period.start.year
-#            args.stop_date[1] = mission_stop_time.data_period.start.month
+        is_clipped = self.time_range.clip_to_range(
+            mission_info.data_period.start, mission_info.data_period.stop)
+
+        if is_clipped:
+            self.log.info("Clipped to mission time range: %s till %s" % (
+                mission_info.data_period.start, mission_info.data_period.stop))
+            # Check if range is still valid
+            self.time_range.raise_if_empty()
 
     def get_mission_preprocessor(self):
 
@@ -141,12 +142,9 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
         elif self.mission_id == "sentinel3a":
             return Sentinel3PreProc
         else:
-            print "error: mission %s currently not supported" % self.mission_id
-            sys.exit(1)
-
-    @property
-    def n_l1b_files(self):
-        return len(self.l1b_files)
+            error_code = self.__class__.__name__+" (1)"
+            error_message = "Invalid mission_id: %s" % self.mission_id
+            self.error.add_error(error_code, error_message)
 
     @property
     def parser(self):
@@ -162,7 +160,9 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
             ("-start", "date", "start_date", True),
             ("-stop", "date", "stop_date", True),
             ("-hemisphere", "hemisphere", "hemisphere", False),
-            ("-exclude-month", "exclude-month", "exclude-month", False)]
+            ("-exclude-month", "exclude-month", "exclude_month", False),
+            ("-input-version", "input-version", "input_version", False),
+            ("--remove-old", "remove-old", "remove_old_l1bdata", False)]
 
         # create the parser
         parser = argparse.ArgumentParser()
@@ -179,24 +179,12 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
         return self.args.mission_id
 
     @property
-    def month_list(self):
-        iterator = month_iterator(
-            self.args.start_date[0], self.args.start_date[1],
-            self.args.stop_date[0], self.args.stop_date[1])
-        return iterator
+    def hemisphere(self):
+        return self.args.hemisphere
 
-
-def validate_year_month_list(year_month_list, label):
-    try:
-        datetime(year_month_list[0], year_month_list[1], 1)
-    except ValueError:
-        print "Error: Invalid "+label+" (%04g, %02g)" % (
-            year_month_list[0], year_month_list[1])
-        sys.exit(1)
-
-
-
-
+    @property
+    def input_version(self):
+        return self.args.input_version
 
 
 if __name__ == "__main__":
