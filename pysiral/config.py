@@ -16,6 +16,7 @@ Created on Mon Jul 06 10:38:41 2015
 """
 
 from pysiral.errorhandler import ErrorStatus
+from pysiral.helper import month_iterator, get_month_time_range
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -148,6 +149,18 @@ class TimeRangeRequest(object):
             output += "\n"
         return output
 
+    def raise_if_empty(self):
+        message = ""
+        if self._start_dt is None:
+            message += "start time is invalid\n"
+        if self._stop_dt is None:
+            message += "stop time is invalid\n"
+
+        if len(message) > 0:
+            message += "Aborting ..."
+            print message
+            sys.exit(1)
+
     def set_range(self, start_date, stop_date):
 
         # Decode start and stop time definition
@@ -158,7 +171,7 @@ class TimeRangeRequest(object):
             self._start_dt = start_date
             valid_start = True
         if isinstance(stop_date, datetime):
-            self._stopt_dt = stop_date
+            self._stop_dt = stop_date
             valid_stop = True
 
         if valid_start and valid_stop:
@@ -180,29 +193,101 @@ class TimeRangeRequest(object):
                 self.error.append(self.__class__.__name__, error_message)
 
     def clip_to_range(self, range_start, range_stop):
+        """ Clip the current time range to an defined time range """
+
+        is_clipped = False
 
         if self._start_dt < range_start and self._stop_dt > range_start:
+            is_clipped = True
             self._start_dt = range_start
         elif self._start_dt < range_start and self._stop_dt < range_start:
+            is_clipped = True
             self._start_dt = None
             self._stop_dt = None
 
         if self._stop_dt > range_stop and self._start_dt < range_stop:
+            is_clipped = True
             self._stop_dt = range_stop
         elif self._stop_dt > range_stop and self._start_dt > range_stop:
+            is_clipped = True
             self._start_dt = None
             self._stop_dt = None
 
+        return is_clipped
+
     def set_period(self, period):
+        """
+        Set the period (monthly, weekly, etc) for the generation of
+        iterations for the time range
+        """
+
         if period in self._PERIODS:
             self._period = period
         else:
             raise ValueError("Invalid TimeRangeRequest period: %s" % period)
 
+    def set_exclude_month(self, exclude_month_list):
+        """
+        Set a list of month, that shall be ignored during the generation of
+        iterations for the time range
+        """
+        if exclude_month_list is None:
+            exclude_month_list = []
+        self._exclude_month = exclude_month_list
+
     def raise_on_error(self):
+
         if self.error.status:
             print self.error.message
             sys.exit(1)
+
+    def get_iterations(self):
+        """
+        Return a list of iterations for the number of periods in the
+        time range
+        """
+
+        iterations = []
+        if self._start_dt is None or self._stop_dt is None:
+            return iterations
+
+        # monthly periods: return a list of time ranges that cover the full
+        # month from the first to the last month
+        if self._period == "monthly":
+
+            # Get an iterator for integer year and month
+            month_list = month_iterator(
+                self._start_dt.year, self._start_dt.month,
+                self._stop_dt.year, self._stop_dt.month)
+
+            # Filter month that are excluded from processing
+            month_list = [entry for entry in month_list if (
+                entry[1] not in self._exclude_month)]
+
+            # Create Iterations
+            n_iterations = len(month_list)
+            index = 1
+            for year, month in month_list:
+
+                # iteration will be a of type TimeRangeIteration
+                time_range = TimeRangeIteration()
+
+                # Per default get the full month
+                month_start, month_stop = get_month_time_range(year, month)
+
+                # limit the time range for first and last iteration
+                # (may not change anything if full month is selected)
+                if index == 1:
+                    month_start = self.start_dt
+                if index == n_iterations:
+                    month_stop = self.stop_dt
+
+                time_range.set_range(month_start, month_stop)
+                time_range.set_indices(index, n_iterations)
+                iterations.append(time_range)
+                index += 1
+
+        return iterations
 
     def _decode_int_list(self, int_list, start_or_stop):
 
@@ -229,9 +314,9 @@ class TimeRangeRequest(object):
         # if stop time: add one period
         if start_or_stop == "stop":
             if n_entries == 2:
-                extra_period = relativedelta(months=1, seconds=-1)
+                extra_period = relativedelta(months=1, microseconds=-1)
             else:
-                extra_period = relativedelta(days=1, seconds=-1)
+                extra_period = relativedelta(days=1, microseconds=-1)
             dt = dt + extra_period
 
         return dt
@@ -247,6 +332,10 @@ class TimeRangeRequest(object):
     @property
     def stop_dt(self):
         return self._stop_dt
+
+    @property
+    def label(self):
+        return str(self.start_dt)+" till "+str(self.stop_dt)
 
 
 class TimeRangeIteration(object):
