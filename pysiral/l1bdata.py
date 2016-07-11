@@ -130,7 +130,7 @@ class Level1bData(object):
         mission_data_source = ";".join([self.info.mission_data_source,
                                         l1b_annex.info.mission_data_source])
         self.info.set_attribute("mission_data_source", mission_data_source)
-        self.update_metadata
+        self.update_l1b_metadata()
 
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
