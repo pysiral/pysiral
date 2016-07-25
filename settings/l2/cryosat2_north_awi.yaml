@@ -80,7 +80,6 @@ level2:
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-
                 wfm_smoothing_window_size: [11, 11, 51]  
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
@@ -145,7 +144,7 @@ level2:
                     
         # Filters after thickness computation
         thickness: 
-            frb_valid_range: 
+            sit_valid_range: 
                 pyclass: L2ParameterValidRange
                 options: 
                     valid_minimum_point_value: -0.5
