@@ -6,9 +6,9 @@ Created on Tue Jul 05 18:56:49 2016
 """
 
 from pysiral.iotools import get_temp_png_filename
+from pysiral.visualization.dataplot import DataPlot
 
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MultipleLocator
@@ -17,30 +17,7 @@ import numpy as np
 import os
 
 
-class PlotL1bdata(object):
-
-    def __init__(self):
-        self.filename = None
-        self.dpi = 300
-        self.l1b = None
-        self.fig = None
-        self.fig_args = {"figsize": (10, 16), "facecolor": "white"}
-        set_mpl_default_style()
-
-    def savefig(self, filename, close_figure=True):
-        self.filename = filename
-        plt.savefig(self.filename, dpi=self.dpi,
-                    facecolor=self.fig.get_facecolor())
-        if close_figure:
-            plt.close(self.fig)
-
-    @property
-    def canvas_aspect(self):
-        figsize = self.fig_args["figsize"]
-        return float(figsize[1])/float(figsize[0])
-
-
-class PlotL1bdataOrbit(PlotL1bdata):
+class PlotL1bdataOrbit(DataPlot):
 
     def __init__(self):
 
@@ -123,7 +100,7 @@ class PlotL1bdataOrbit(PlotL1bdata):
         plt.tight_layout()
 
 
-class PlotL1bdataWaveform(PlotL1bdata):
+class PlotL1bdataWaveform(DataPlot):
 
     def __init__(self):
 
@@ -180,7 +157,7 @@ class PlotL1bdataWaveform(PlotL1bdata):
         cb.set_label("Echo Power log10(Watt)")
 
 
-class PlotL1bdataWaveformFlags(PlotL1bdata):
+class PlotL1bdataWaveformFlags(DataPlot):
 
     def __init__(self):
 
@@ -295,7 +272,7 @@ class PlotL1bdataWaveformFlags(PlotL1bdata):
                 wedge.set_ec("none")
 
 
-class PlotL1bdataRangeCorrections(PlotL1bdata):
+class PlotL1bdataRangeCorrections(DataPlot):
 
     def __init__(self):
 
@@ -376,7 +353,7 @@ class PlotL1bdataRangeCorrections(PlotL1bdata):
                 ax.spines[spine].set_visible(False)
 
 
-class PlotL1bdataWaveformClassifier(PlotL1bdata):
+class PlotL1bdataWaveformClassifier(DataPlot):
 
     def __init__(self):
 
@@ -480,13 +457,6 @@ class PlotL1bdataWaveformClassifier(PlotL1bdata):
             spines_to_remove = ["top", "left", "bottom"]
             for spine in spines_to_remove:
                 ax1.spines[spine].set_visible(False)
-
-
-def set_mpl_default_style():
-    mpl.rcParams['font.sans-serif'] = "arial"
-    for target in ["xtick.color", "ytick.color", "axes.edgecolor",
-                   "axes.labelcolor"]:
-        mpl.rcParams[target] = "#4b4b4d"
 
 
 def align_echo_power(power, range, altitude, elevation_limit=None):
