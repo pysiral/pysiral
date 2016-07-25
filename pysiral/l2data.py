@@ -145,6 +145,15 @@ class L2ElevationArray(np.ndarray):
         self.uncertainty = uncertainty
 
 
+class AttributeList(object):
+
+    def __init__(self):
+        pass
+
+    def set_attribute(self, name, value):
+        setattr(self, name, value)
+
+
 class L2iNCFileImport(object):
     # TODO: Needs proper implementation
 
@@ -153,6 +162,8 @@ class L2iNCFileImport(object):
         self.filename = filename
         self._n_records = 0
         self.time_def = NCDateNumDef()
+        self.info = AttributeList()
+        self.attribute_list = []
         self._parse()
 
     def _parse(self):
@@ -160,9 +171,17 @@ class L2iNCFileImport(object):
         from netCDF4 import num2date
 
         content = ReadNC(self.filename)
+
+        for attribute_name in content.attributes:
+            self.attribute_list.append(attribute_name)
+            self.info.set_attribute(attribute_name,
+                                    getattr(content, attribute_name))
+
         for parameter_name in content.parameters:
             setattr(self, parameter_name, getattr(content, parameter_name))
+
         self._n_records = len(self.longitude)
+
         # XXX: Dirty hack to get the mission
         basename = file_basename(self.filename, fullpath=False)
         self.mission = basename.split("_")[3]
