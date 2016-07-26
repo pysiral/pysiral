@@ -11,7 +11,8 @@ from pysiral.path import (validate_directory, folder_from_filename,
                           filename_from_path, file_basename)
 from pysiral.l2data import L2iNCFileImport
 from pysiral.iotools import get_temp_png_filename
-from pysiral.visualization.l2ivis import (PlotL2IdataOrbit)
+from pysiral.visualization.l2ivis import (
+    PlotL2iDataOrbit, PlotL2iAuxiliaryData, PlotL2iSurfaceTypeClassification)
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, portrait
@@ -168,7 +169,7 @@ class L2IDataReportPDF(object):
         self.elements.append(Spacer(width=0, height=5*mm))
 
         filename = get_temp_png_filename()
-        plot = PlotL2IdataOrbit()
+        plot = PlotL2iDataOrbit()
         plot.create_plot(self.l2i)
         plot.savefig(filename)
 
@@ -216,29 +217,17 @@ class L2IDataReportPDF(object):
         # Add chapter title
         subtitle = Paragraph("Auxiliary Parameter", self.style_subtitle)
         self.elements.append(subtitle)
-        self.elements.append(Spacer(width=0, height=10*mm))
 
-#        # Add waveform plot
-#        filename = get_temp_png_filename()
-#        plot = PlotL1bdataWaveform()
-#        plot.create_plot(self.l1b)
-#        plot.savefig(filename)
-#
-#        width = xsize*mm
-#        height = plot.canvas_aspect*xsize*mm
-#        self.elements.append(Image(filename, width=width, height=height))
-#        self.temp_files.append(filename)
-#
-#        # Add flag plot
-#        filename = get_temp_png_filename()
-#        plot = PlotL1bdataWaveformFlags()
-#        plot.create_plot(self.l1b)
-#        plot.savefig(filename)
-#
-#        width = xsize*mm
-#        height = plot.canvas_aspect*xsize*mm
-#        self.elements.append(Image(filename, width=width, height=height))
-#        self.temp_files.append(filename)
+        # Add auxilary data plot
+        filename = get_temp_png_filename()
+        plot = PlotL2iAuxiliaryData()
+        plot.create_plot(self.l2i)
+        plot.savefig(filename)
+
+        width = xsize*mm
+        height = plot.canvas_aspect*xsize*mm
+        self.elements.append(Image(filename, width=width, height=height))
+        self.temp_files.append(filename)
 
         # new page
         self.elements.append(PageBreak())
@@ -252,7 +241,17 @@ class L2IDataReportPDF(object):
         subtitle = Paragraph("Surface Type Classification",
                              self.style_subtitle)
         self.elements.append(subtitle)
-        self.elements.append(Spacer(width=0, height=10*mm))
+
+        # Add auxilary data plot
+        filename = get_temp_png_filename()
+        plot = PlotL2iSurfaceTypeClassification()
+        plot.create_plot(self.l2i)
+        plot.savefig(filename)
+
+        width = xsize*mm
+        height = plot.canvas_aspect*xsize*mm
+        self.elements.append(Image(filename, width=width, height=height))
+        self.temp_files.append(filename)
 
         # new page
         self.elements.append(PageBreak())
