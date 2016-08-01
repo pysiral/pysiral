@@ -188,23 +188,31 @@ class L1BDataReportPDF(object):
 
         # Add parameters
         for key in self.l1b.info.attribute_list:
-            entry = [key, str(getattr(self.l1b.info, key))]
+            entry = str(getattr(self.l1b.info, key))
+            entry = entry.replace(";", "\n")
+            entry = [key, entry]
             data.append(entry)
 
         # Table Style
         table_style = TableStyle([
             ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONT', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONT', (0, 0), (-1, -1), 'Courier-Bold'),
+            ('FONT', (1, 1), (-1, -1), 'Courier'),
             ('FONTSIZE', (0, 0), (-1, -1), 6),
+            ('LEADING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('INNERGRID', (0, 0), (-1, -1), 0.01, colors.black),
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black)])
 
         col_widths = (30*mm, 125*mm)
-        rowheights = [4*mm] * len(data)
+        # rowheights = [4*mm] * len(data)
+#        t = Table(data, hAlign='CENTER', colWidths=col_widths,
+#                  rowHeights=rowheights, repeatCols=1)
         t = Table(data, hAlign='CENTER', colWidths=col_widths,
-                  rowHeights=rowheights, repeatCols=1)
+                  repeatCols=1)
         t.setStyle(table_style)
         self.elements.append(t)
         self.elements.append(PageBreak())
