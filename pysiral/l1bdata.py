@@ -219,7 +219,7 @@ class Level1bData(object):
     def update_surface_type_statistics(self):
         """ Re-calculate the open ocean percent """
         n_ocean_records = self.surface_type.get_by_name("ocean").num
-        open_ocean_percent = 100.*float(self.n_records)/float(n_ocean_records)
+        open_ocean_percent = 100.*float(n_ocean_records)/float(self.n_records)
         self.info.set_attribute("open_ocean_percent", open_ocean_percent)
 
     def update_region_name(self):
