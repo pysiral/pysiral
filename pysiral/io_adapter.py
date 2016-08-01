@@ -221,8 +221,8 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
         # Add the peak power (in Watts)
         # (use l1b waveform power array that is already in physical units)
-        peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
-        self.l1b.classifier.add(peak_power, "peak_power")
+        peak_power = get_waveforms_peak_power(self.l1b.waveform.power, dB=True)
+        self.l1b.classifier.add(peak_power, "peak_power_db")
 
 
 class L1bAdapterEnvisat(object):

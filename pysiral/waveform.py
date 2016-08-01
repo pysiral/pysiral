@@ -8,7 +8,7 @@ Created on Fri Jul 01 13:07:10 2016
 import numpy as np
 
 
-def get_waveforms_peak_power(wfm):
+def get_waveforms_peak_power(wfm, dB=False):
     """
     Return the peak power (in input coordinates) of an array of waveforms
 
@@ -22,4 +22,6 @@ def get_waveforms_peak_power(wfm):
         float array with maximum for each echo
     """
     peak_power = np.amax(wfm, axis=1)
+    if dB:
+        peak_power = 10 * np.log10(peak_power)
     return peak_power
