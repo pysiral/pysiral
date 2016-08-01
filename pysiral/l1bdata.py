@@ -176,6 +176,7 @@ class Level1bData(object):
     def update_l1b_metadata(self):
         self.update_data_limit_attributes()
         self.update_waveform_statistics()
+        self.update_surface_type_statistics()
         self.update_region_name()
 
     def update_data_limit_attributes(self):
@@ -214,6 +215,12 @@ class Level1bData(object):
             radar_mode_percent = 100.*float(len(is_this_radar_mode))/nrecs_fl
             attribute_name = "%s_mode_percent" % radar_modes.name(flag)
             self.info.set_attribute(attribute_name, radar_mode_percent)
+
+    def update_surface_type_statistics(self):
+        """ Re-calculate the open ocean percent """
+        n_ocean_records = self.surface_type.get_by_name("ocean").num
+        open_ocean_percent = 100.*float(self.n_records)/float(n_ocean_records)
+        self.info.set_attribute("open_ocean_percent", open_ocean_percent)
 
     def update_region_name(self):
         """ Estimate the region (north/south/global) for metatdata class """
