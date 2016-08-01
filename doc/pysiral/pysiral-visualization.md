@@ -1,18 +1,53 @@
 # PysiralVisualization
 
-## Visualization of L3 gridded data
+## Visualization of Level-1 pre-processed orbit segments
+
+The content of the pre-processed l1bdata netCDF files can be summarized with `tools\l1bdata-report.py`. This tools creates a pdf report including a table listing of the metadata and graphical visualization of the time-orbit, waveform, surface-type and classifier data groups. 
+
+### Usage
+
+    python l1bdata_report.py [options] l1bdata_netcdf_file(s)
+
+### l1bdata input files
+
+The input files argument can either be a link to one speficic file or a simple search pattern, e.g.:
+
+    python l1bdata_report.py E:\altim\data\altimetry\cryosat2\baseline-c\l1bdata\north\2015\04\l1bdata_v00_north_cryosat2_026390_20150401T003811_20150401T003915.nc
+
+or
+
+    python l1bdata_report.py E:\altim\data\altimetry\cryosat2\baseline-c\l1bdata\north\2015\04\*.nc
+
+### Options
+
+The options can be used to modify the plot style, add labels and also to create difference plots. 
+
+Argument | Required | Parameter | Description
+--- | --- | --- | --- | ---
+**-h** | optional | *None* | Display manual
+**-o** *output_directory* | optional | str | valid target directory for pdf reports. If omitted, a `report` subdirectory of the input directory will be created 
+
+
+
+
+*****
+
+
+
+
+## Visualization of Level-3 gridded data
 
 Visualization of L3 data products (and differences) is handled by `tools\create_l3s_map.py`. It is based on the pysiral.visualization module. The definition of the colorbar (colormap, limits) is taken from the parameter configuration files in `config\parameter_def.yaml`. 
 
 ### Usage
 
-    python create_l3s_map.py [arguments] source_file(s)
+    python create_l3s_map.py [options] source_file(s)
 
 ### Source file
 
 The source files is either a full path to L3s netCDF file or a search pattern recognized by the python glob module, e.g.:
    
-    python create_l3s_map.py [arguments] E:\altim\products\altimetry\pysiral\some_result\l3s\*.nc
+    python create_l3s_map.py [options] E:\altim\products\altimetry\pysiral\some_result\l3s\*.nc
 
 If a search pattern is used, a map will be produced for all netCDF files in this folder.
 
