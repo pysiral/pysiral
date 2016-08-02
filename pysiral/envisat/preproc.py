@@ -11,79 +11,78 @@ from pysiral.config import ConfigInfo
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.path import validate_directory
 from pysiral.output import (l1bnc_filenaming, L1bDataNC)
-from pysiral.logging import stdout_logger
 from pysiral.flag import FlagContainer
+from pysiral.logging import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 
 
 import numpy as np
 
 
-class EnvisatPreProc(object):
+class EnvisatPreProc(DefaultLoggingClass):
 
     def __init__(self):
-        self.month = None
-        self.year = None
-        self.skip = 0
+
+        super(EnvisatPreProc, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+        self._jobdef = None
+        self._pysiral_config = ConfigInfo()
+        self.options = self._pysiral_config.mission.cryosat2.preproc.options
+        self._envisat_l1b_files = []
+
+    @property
+    def has_empty_file_list(self):
+        return len(self._envisat_l1b_files) == 0
+
+    def settings(self, jobdef):
+        self._jobdef = jobdef
+
+    def set_input_files_local_machine_def(self, time_range, version="default"):
+        """
+        Gets the input data files from default data repository that is
+        specified in `local_machine_def.yaml`
+        """
+
+        self.log.info("Getting input file list from local_machine_def.yaml")
+
+        # Get the l
+        pathdef = self._pysiral_config.local_machine
+        envisat_l1b_repository = pathdef.l1b_repository.envisat[version].sgdr
+
+        # Get the list of SGDR files for specific time range
+        envisat_files = EnvisatFileList()
+        envisat_files.folder = envisat_l1b_repository
+        envisat_files.search(time_range)
+        self._envisat_l1b_files = envisat_files.sorted_list
+        self.log.info("Total number of files: %g" % len(
+             self._envisat_l1b_files))
 
     def execute(self):
-
-        """ Get the logging instance """
-        log = stdout_logger("envisat-preproc")
-
-        """ Get the configuration data for handling CryoSat-2 data """
-        config = ConfigInfo()
-        l1b_repository = config.local_machine.l1b_repository
-        envisat_l1b_repository = l1b_repository.envisat.sgdr
-
-        """ Get the list of files (SAR and SIN in chronological order) """
-        # for the case of this test only for one month of data
-        envisat_files = EnvisatFileList()
-        envisat_files.log = log
-        envisat_files.folder = envisat_l1b_repository
-        envisat_files.year = self.year
-        envisat_files.month = self.month
-        envisat_files.search()
-
-        """ Start the CryoSat-2 pre-processor """
-        job = EnvisatPreProcJob()
-        job.config = config
-        job.log = log
-        job.files = envisat_files.sorted_list[self.skip:]
-        job.merge_and_export_polar_ocean_subsets()
-
-
-class EnvisatPreProcJob(object):
-
-    def __init__(self):
-        self.log = None
-        self.config = ConfigInfo()
-        self.options = None
-        self.files = []
-        self._get_default_options()
+        self.merge_and_export_polar_ocean_subsets()
 
     def merge_and_export_polar_ocean_subsets(self):
         """ loop over remaining files in file list """
         log = self.log
-        n = len(self.files)
+        n = len(self._envisat_l1b_files)
         if n == 0:
             return
         l1bdata_stack = []
-        for i, envisat_l1b_file in enumerate(self.files):
+        for i, envisat_l1b_file in enumerate(self._envisat_l1b_files):
 
             # Parse the current file and split into polar ocean segments
-            log.info("Parsing file %g of %g: %s" % (
+            log.info("+ Parsing file %g of %g: %s" % (
                 i+1, n, envisat_l1b_file))
             l1b_segments = self.get_envisat_l1bdata_ocean_segments(
-                envisat_l1b_file, self.config)
+                envisat_l1b_file, self._pysiral_config)
 
             if len(l1b_segments) == 0:
                 continue
 
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info(". no polar ocean data, skipping")
+                log.info(" no polar ocean data, skipping")
                 continue
-            log.info(". %g polar ocean data segments" % len(l1b_segments))
+            log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
             # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
@@ -93,7 +92,7 @@ class EnvisatPreProcJob(object):
                 if not self.l1b_is_connected_to_stack(
                         l1b_segment, l1bdata_stack):
                     # => break criterium, save existing stack and start over
-                    log.info(". segment unconnected, exporting current stack")
+                    log.info("- segment unconnected, exporting current stack")
                     self.concatenate_and_export_stack_files(l1bdata_stack)
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -151,13 +150,13 @@ class EnvisatPreProcJob(object):
         is_arctic = FlagContainer(
             l1b.time_orbit.latitude > polar_threshold)
         arctic_subset = l1b.extract_subset(is_arctic.indices)
-        self.log.info("Extracted Arctic subset (%g records)" % is_arctic.num)
+        self.log.info("- Extracted Arctic subset (%g records)" % is_arctic.num)
 
         # Extract Antarctic
         is_antarctic = FlagContainer(
             l1b.time_orbit.latitude < -1.*polar_threshold)
         antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-        self.log.info("Extracted Antarctic subset (%g records)" % (
+        self.log.info("- Extracted Antarctic subset (%g records)" % (
             is_antarctic.num))
 
         # Segments may be empty, test all cases
@@ -190,7 +189,7 @@ class EnvisatPreProcJob(object):
         """
 
         # 1) Trim l1b data from the first to the last ocean data record
-        self.log.info(". trim outer non-ocean regions")
+        self.log.info("- trim outer non-ocean regions")
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -200,18 +199,18 @@ class EnvisatPreProcJob(object):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            self.log.info(". ocean subset [%g:%g]" % (
-                 first_ocean_index, last_ocean_index))
+#            self.log.info("- ocean subset [%g:%g]" % (
+#                 first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         # 2) Identify larger landmasses and split orbit into segments
         #    if necessary
-        self.log.info(". test for inner larger landmasses")
+        self.log.info("- test for inner larger landmasses")
         ocean = l1b.surface_type.get_by_name("ocean")
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        self.log.info(". number of landmasses: %g" % len(landseg_index))
+        self.log.info("- number of landmasses: %g" % len(landseg_index))
         if len(landseg_index) == 0:
             # no land segements, return single segment
             return [l1b]
@@ -219,7 +218,7 @@ class EnvisatPreProcJob(object):
         large_landsegs_index = np.where(
             segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        self.log.info(". number of large landmasses: %g" % len(
+        self.log.info("- number of large landmasses: %g" % len(
             large_landsegs_index))
         if len(large_landsegs_index) == 0:
             # no large land segments, return single segment
@@ -233,13 +232,13 @@ class EnvisatPreProcJob(object):
         for index in large_landsegs_index:
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
-            self.log.debug(". ocean segment: [%g:%g]" % (
-                start_index, stop_index))
+#            self.log.debug("- ocean segment: [%g:%g]" % (
+#                start_index, stop_index))
             l1b_segments.append(l1b.extract_subset(subset_list))
             start_index = segments_start[index+1]
         # extract the last subset
-        self.log.debug(". ocean segment: [%g:%g]" % (
-            start_index, len(ocean.flag)-1))
+#        self.log.debug("- ocean segment: [%g:%g]" % (
+#            start_index, len(ocean.flag)-1))
         last_subset_list = np.arange(start_index, len(ocean.flag))
         l1b_segments.append(l1b.extract_subset(last_subset_list))
         return l1b_segments
@@ -275,10 +274,11 @@ class EnvisatPreProcJob(object):
             l1b_merged.append(orbit_segment)
 
         # Prepare data export
-        config = self.config
-        export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
-        log.info("Creating l1bdata netCDF: %s" % export_filename)
-        log.info(". in folder: %s" % export_folder)
+        config = self._pysiral_config
+        export_folder, export_filename = l1bnc_filenaming(
+            l1b_merged, config, self._jobdef.input_version)
+        log.info("- Creating l1bdata netCDF: %s" % export_filename)
+        log.info("- in folder: %s" % export_folder)
         validate_directory(export_folder)
 
         # Export the data object
@@ -290,7 +290,7 @@ class EnvisatPreProcJob(object):
         ncfile.export()
 
     def _get_default_options(self):
-        self.options = self.config.mission.cryosat2.preproc.options
+        self.options = self._pysiral_config.mission.envisat.preproc.options
 
 
 def debug_stack_orbit_plot(l1b_stack, l1b_segments):
