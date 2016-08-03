@@ -146,19 +146,28 @@ class EnvisatPreProc(DefaultLoggingClass):
         # The threshold is the same for arctic and antarctic (50°)
         polar_threshold = self.options.polar_threshold
 
-        # Extract Arctic
-        is_arctic = FlagContainer(
-            l1b.time_orbit.latitude > polar_threshold)
-        arctic_subset = l1b.extract_subset(is_arctic.indices)
-        self.log.info("- Extracted Arctic subset (%g records)" % is_arctic.num)
+        # Target hemisphere: north, south or global
+        target_hemisphere = self._jobdef.hemisphere
 
-        # Extract Antarctic
-        is_antarctic = FlagContainer(
-            l1b.time_orbit.latitude < -1.*polar_threshold)
-        antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-        self.log.info("- Extracted Antarctic subset (%g records)" % (
-            is_antarctic.num))
+        # Extract Arctic (if target hemisphere, else empty list)
+        if target_hemisphere == "north" or target_hemisphere == "global":
+            is_arctic = FlagContainer(
+                l1b.time_orbit.latitude > polar_threshold)
+            arctic_subset = l1b.extract_subset(is_arctic.indices)
+            self.log.info("- Extracted Arctic subset (%g records)" %
+                          is_arctic.num)
+        else:
+            arctic_subset = None
 
+        # Extract Antarctic (if target hemisphere, else empty list)
+        if target_hemisphere == "south" or target_hemisphere == "global":
+            is_antarctic = FlagContainer(
+                l1b.time_orbit.latitude < -1.*polar_threshold)
+            antarctic_subset = l1b.extract_subset(is_antarctic.indices)
+            self.log.info("- Extracted Antarctic subset (%g records)" % (
+                is_antarctic.num))
+        else:
+            antarctic_subset = None
         # Segments may be empty, test all cases
         arctic_is_valid = True
         antarctic_is_valid = True
