@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
+import numpy as np
 
 from collections import deque
+from pysiral.logging import DefaultLoggingClass
 
 
-class ERSFileList(object):
+class ERSFileList(DefaultLoggingClass):
     """
     Class for the construction of a list of Envisat N1 files
     sorted by acquisition time
@@ -13,15 +15,26 @@ class ERSFileList(object):
     """
 
     def __init__(self):
+        super(ERSFileList, self).__init__(self.__class__.__name__)
         self.folder = None
-        self.log = None
         self.year = None
         self.month = None
+        self.time_range = None
+        self.day_list = []
         self.pattern = ".NC"
         self._list = deque([])
         self._sorted_list = []
 
-    def search(self):
+    def search(self, time_range):
+        # Only per month search possible at this moment
+        self.year = time_range.start.year
+        self.month = time_range.start.month
+
+        # Create a list of day if not full month is required
+        if not time_range.is_full_month:
+            self.day_list = np.arange(
+                time_range.start.day, time_range.stop.day+1)
+
         self._get_file_listing()
 
     @property
@@ -32,6 +45,19 @@ class ERSFileList(object):
         search_toplevel_folder = self._get_toplevel_search_folder()
         # walk through files
         for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
+
+            # Envisat file structure specific:
+            # additional folders for days, therefore ignore top level folder
+            if dirpath == search_toplevel_folder:
+                continue
+
+            # Get the day from the directory name
+            current_day = int(os.path.split(dirpath)[-1])
+
+            # Check if in day list
+            if current_day not in self.day_list:
+                continue
+
             self.log.info("Searching folder: %s" % dirpath)
             # Get the list of all dbl files
             files = [os.path.join(dirpath, fn) for fn in filenames

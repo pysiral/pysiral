@@ -5,6 +5,8 @@ Created on Thu Mar 31 20:52:32 2016
 @author: Stefan
 """
 
+from pysiral.logging import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.iotools import ERSFileList
 from pysiral.l1bdata import L1bConstructor
 from pysiral.config import ConfigInfo
@@ -17,74 +19,110 @@ from pysiral.flag import FlagContainer
 import numpy as np
 
 
-class ERSPreProc(object):
+class ERSPreProc(DefaultLoggingClass):
+
+#    def __init__(self):
+#        self.month = None
+#        self.year = None
+#        self.mission = None
+#        self.skip = 0
+#
+#    def execute(self):
+#
+#        """ Get the logging instance """
+#        log = stdout_logger("envisat-preproc")
+#
+#        """ Get the configuration data for handling ERS-1/2 data """
+#        config = ConfigInfo()
+#        l1b_repository = config.local_machine.l1b_repository
+#        ers_l1b_repository = l1b_repository[self.mission].sgdr
+#
+#        """ Get the list of files """
+#        # for the case of this test only for one month of data
+#        ers_files = ERSFileList()
+#        ers_files.log = log
+#        ers_files.folder = ers_l1b_repository
+#        ers_files.year = self.year
+#        ers_files.month = self.month
+#        ers_files.search()
+#
+#        """ Start the CryoSat-2 pre-processor """
+#        job = ERSPreProcJob(self.mission)
+#        job.config = config
+#        job.log = log
+#        job.files = ers_files.sorted_list[self.skip:]
+#        job.merge_and_export_polar_ocean_subsets()
+
+
+#class ERSPreProcJob(object):
 
     def __init__(self):
-        self.month = None
-        self.year = None
-        self.mission = None
-        self.skip = 0
 
-    def execute(self):
+        super(ERSPreProc, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+        self._jobdef = None
+        self._pysiral_config = ConfigInfo()
+        self._ers_l1b_files = []
 
-        """ Get the logging instance """
-        log = stdout_logger("envisat-preproc")
-
-        """ Get the configuration data for handling ERS-1/2 data """
-        config = ConfigInfo()
-        l1b_repository = config.local_machine.l1b_repository
-        ers_l1b_repository = l1b_repository[self.mission].sgdr
-
-        """ Get the list of files """
-        # for the case of this test only for one month of data
-        ers_files = ERSFileList()
-        ers_files.log = log
-        ers_files.folder = ers_l1b_repository
-        ers_files.year = self.year
-        ers_files.month = self.month
-        ers_files.search()
-
-        """ Start the CryoSat-2 pre-processor """
-        job = ERSPreProcJob(self.mission)
-        job.config = config
-        job.log = log
-        job.files = ers_files.sorted_list[self.skip:]
-        job.merge_and_export_polar_ocean_subsets()
-
-
-class ERSPreProcJob(object):
-
-    def __init__(self, mission):
-        self.log = None
-        self.config = ConfigInfo()
+        # Will only be set if mission id (ers1 or ers2) is known
         self.options = None
-        self.files = []
-        self.mission = mission
-        self._get_default_options()
+
+    @property
+    def has_empty_file_list(self):
+        return len(self._ers_l1b_files) == 0
+
+    @property
+    def mission_id(self):
+        return self._jobdef.mission_id
+
+    def settings(self, jobdef):
+        mission = jobdef.mission_id
+        self._jobdef = jobdef
+        self.options = self._pysiral_config.mission[mission].preproc.options
+
+    def set_input_files_local_machine_def(self, time_range, version="default"):
+        """
+        Gets the input data files from default data repository that is
+        specified in `local_machine_def.yaml`
+        """
+
+        self.log.info("Getting input file list from local_machine_def.yaml")
+
+        # Get the l1b data repository
+        pathdef = self._pysiral_config.local_machine.l1b_repository
+        ersx_l1b_repository = pathdef[self.mission_id][version].sgdr
+
+        # Get the list of SGDR files for specific time range
+        ers_files = ERSFileList()
+        ers_files.folder = ersx_l1b_repository
+        ers_files.search(time_range)
+        self._ers_l1b_files = ers_files.sorted_list
+        self.log.info("Total number of files: %g" % len(
+             self._ers_l1b_files))
 
     def merge_and_export_polar_ocean_subsets(self):
         """ loop over remaining files in file list """
         log = self.log
-        n = len(self.files)
+        n = len(self._ers_l1b_files)
         if n == 0:
             return
         l1bdata_stack = []
-        for i, envisat_l1b_file in enumerate(self.files):
+        for i, ers_l1b_file in enumerate(self._ers_l1b_files):
 
             # Parse the current file and split into polar ocean segments
-            log.info("Parsing file %g of %g: %s" % (
-                i+1, n, envisat_l1b_file))
+            log.info("+ Parsing file %g of %g: %s" % (
+                i+1, n, ers_l1b_file))
             l1b_segments = self.get_envisat_l1bdata_ocean_segments(
-                envisat_l1b_file, self.config)
+                ers_l1b_file, self._pysiral_config)
 
             if len(l1b_segments) == 0:
                 continue
 
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info(". no polar ocean data, skipping")
+                log.info("- no polar ocean data, skipping")
                 continue
-            log.info(". %g polar ocean data segments" % len(l1b_segments))
+            log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
             # debug_stack_orbit_plot(l1bdata_stack, l1b_segments)
@@ -94,7 +132,7 @@ class ERSPreProcJob(object):
                 if not self.l1b_is_connected_to_stack(
                         l1b_segment, l1bdata_stack):
                     # => break criterium, save existing stack and start over
-                    log.info(". segment unconnected, exporting current stack")
+                    log.info("- segment unconnected, exporting current stack")
                     self.concatenate_and_export_stack_files(l1bdata_stack)
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -114,7 +152,7 @@ class ERSPreProcJob(object):
 
         # Read the envisat SGDR file
         l1b = L1bConstructor(config)
-        l1b.mission = self.mission
+        l1b.mission = self.mission_id
         l1b.filename = filename
         l1b.construct()
 
@@ -141,25 +179,35 @@ class ERSPreProcJob(object):
 
     def extract_polar_segments(self, l1b):
         """
-        Envisat specific: Extract Arctic and Antarctic subsets and
+        ERS specific: Extract Arctic and Antarctic subsets and
         return both in the correct sequence
         """
 
         # The threshold is the same for arctic and antarctic (50°)
         polar_threshold = self.options.polar_threshold
 
-        # Extract Arctic
-        is_arctic = FlagContainer(
-            l1b.time_orbit.latitude > polar_threshold)
-        arctic_subset = l1b.extract_subset(is_arctic.indices)
-        self.log.info("Extracted Arctic subset (%g records)" % is_arctic.num)
+        # Target hemisphere: north, south or global
+        target_hemisphere = self._jobdef.hemisphere
 
-        # Extract Antarctic
-        is_antarctic = FlagContainer(
-            l1b.time_orbit.latitude < -1.*polar_threshold)
-        antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-        self.log.info("Extracted Antarctic subset (%g records)" % (
-            is_antarctic.num))
+        # Extract Arctic (if target hemisphere, else empty list)
+        if target_hemisphere == "north" or target_hemisphere == "global":
+            is_arctic = FlagContainer(
+                l1b.time_orbit.latitude > polar_threshold)
+            arctic_subset = l1b.extract_subset(is_arctic.indices)
+            self.log.info("- Extracted Arctic subset (%g records)" %
+                          is_arctic.num)
+        else:
+            arctic_subset = None
+
+        # Extract Antarctic (if target hemisphere, else empty list)
+        if target_hemisphere == "south" or target_hemisphere == "global":
+            is_antarctic = FlagContainer(
+                l1b.time_orbit.latitude < -1.*polar_threshold)
+            antarctic_subset = l1b.extract_subset(is_antarctic.indices)
+            self.log.info("- Extracted Antarctic subset (%g records)" % (
+                is_antarctic.num))
+        else:
+            antarctic_subset = None
 
         # Segments may be empty, test all cases
         arctic_is_valid = True
@@ -184,6 +232,9 @@ class ERSPreProcJob(object):
         else:
             return [antarctic_subset, arctic_subset]
 
+    def execute(self):
+        self.merge_and_export_polar_ocean_subsets()
+
     def extract_polar_ocean_segments(self, l1b):
         """
         Extract segments of continous ocean data not separated by larger
@@ -191,7 +242,7 @@ class ERSPreProcJob(object):
         """
 
         # 1) Trim l1b data from the first to the last ocean data record
-        self.log.info(". trim outer non-ocean regions")
+        self.log.info("- trim outer non-ocean regions")
         ocean = l1b.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -201,18 +252,18 @@ class ERSPreProcJob(object):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            self.log.info(". ocean subset [%g:%g]" % (
-                 first_ocean_index, last_ocean_index))
+#            self.log.info("- ocean subset [%g:%g]" % (
+#                 first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         # 2) Identify larger landmasses and split orbit into segments
         #    if necessary
-        self.log.info(". test for inner larger landmasses")
+        self.log.info("- test for inner larger landmasses")
         ocean = l1b.surface_type.get_by_name("ocean")
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        self.log.info(". number of landmasses: %g" % len(landseg_index))
+        self.log.info("- number of landmasses: %g" % len(landseg_index))
         if len(landseg_index) == 0:
             # no land segements, return single segment
             return [l1b]
@@ -220,7 +271,7 @@ class ERSPreProcJob(object):
         large_landsegs_index = np.where(
             segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        self.log.info(". number of large landmasses: %g" % len(
+        self.log.info("- number of large landmasses: %g" % len(
             large_landsegs_index))
         if len(large_landsegs_index) == 0:
             # no large land segments, return single segment
@@ -234,13 +285,13 @@ class ERSPreProcJob(object):
         for index in large_landsegs_index:
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
-            self.log.debug(". ocean segment: [%g:%g]" % (
-                start_index, stop_index))
+#            self.log.debug("- ocean segment: [%g:%g]" % (
+#                start_index, stop_index))
             l1b_segments.append(l1b.extract_subset(subset_list))
             start_index = segments_start[index+1]
         # extract the last subset
-        self.log.debug(". ocean segment: [%g:%g]" % (
-            start_index, len(ocean.flag)-1))
+#        self.log.debug("- ocean segment: [%g:%g]" % (
+#            start_index, len(ocean.flag)-1))
         last_subset_list = np.arange(start_index, len(ocean.flag))
         l1b_segments.append(l1b.extract_subset(last_subset_list))
         return l1b_segments
@@ -276,10 +327,11 @@ class ERSPreProcJob(object):
             l1b_merged.append(orbit_segment)
 
         # Prepare data export
-        config = self.config
-        export_folder, export_filename = l1bnc_filenaming(l1b_merged, config)
-        log.info("Creating l1bdata netCDF: %s" % export_filename)
-        log.info(". in folder: %s" % export_folder)
+        config = self._pysiral_config
+        export_folder, export_filename = l1bnc_filenaming(
+            l1b_merged, config, self._jobdef.input_version)
+        log.info("- Creating l1bdata netCDF: %s" % export_filename)
+        log.info("- in folder: %s" % export_folder)
         validate_directory(export_folder)
 
         # Export the data object

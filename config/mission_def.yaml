@@ -146,6 +146,12 @@ ers2:
 
     options: null
 
+    preproc:
+        options:
+            polar_threshold: 50.0
+            max_connected_files_timedelta_seconds: 10
+            max_inner_nonocean_segment_nrecords: 1000    
+
 
 sentinel3a:
 
