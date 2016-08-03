@@ -275,12 +275,12 @@ def l1bnc_filenaming(l1b, config, version):
 
     """
     # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
-    local_repository = config.local_machine.l1b_repository
-    export_folder = local_repository[l1b.mission][version].l1bdata
-    yyyy = "%04g" % l1b.info.start_time.year
-    mm = "%02g" % l1b.info.start_time.month
+    year = l1b.info.start_time.year
+    month = l1b.info.start_time.month
     hemisphere = l1b.info.hemisphere
-    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
+    export_folder = get_l1bdata_export_folder(config, l1b.mission, version,
+                                              hemisphere, year, month)
+
     # construct filename from
     export_filename = "l1bdata_v{version:02g}_{region}_{mission}_" + \
                       "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
@@ -291,6 +291,15 @@ def l1bnc_filenaming(l1b, config, version):
         stopdt=l1b.info.stop_time)
     return export_folder, export_filename
 
+
+def get_l1bdata_export_folder(config, mission, version,
+                              hemisphere, year, month):
+    local_repository = config.local_machine.l1b_repository
+    export_folder = local_repository[mission][version].l1bdata
+    yyyy = "%04g" % year
+    mm = "%02g" % month
+    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
+    return export_folder
 
 def l2i_filenaming(l2):
     export_filename = "l2i_v{version:02g}_{region}_{mission}_" + \
