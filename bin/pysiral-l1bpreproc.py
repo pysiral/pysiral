@@ -61,6 +61,10 @@ def pysiral_l1bpreproc():
             job.log.info(" Skipping period: %s" % time_range.label)
             continue
 
+        # Empty output folder (if --remove_old is set)
+        if jobdef.remove_old:
+            job.remove_old_l1bdata()
+
         # Pre-process data for one month
         job.execute()
 
@@ -186,6 +190,9 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
     def input_version(self):
         return self.args.input_version
 
+    @property
+    def remove_old(self):
+        return self.args.remove_old_l1bdata
 
 if __name__ == "__main__":
     pysiral_l1bpreproc()
