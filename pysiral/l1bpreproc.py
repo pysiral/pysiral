@@ -3,38 +3,73 @@
 Created on Wed Aug 03 17:16:56 2016
 
 @author: shendric
+
 """
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
-                            TimeRangeRequest)
+from pysiral.config import (ConfigInfo, TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.flag import FlagContainer
+from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import (l1bnc_filenaming, get_l1bdata_export_folder,
                             L1bDataNC)
 from pysiral.path import validate_directory
 
 import numpy as np
-import argparse
 import os
 import glob
 
 
 class L1bPreProc(DefaultLoggingClass):
+    """
+    This is a parent class that bundles functionality for
+    mission-specific pre-processors that are in the modules
+    pysiral.$mission$.preproc
+
+    This class alone is not functional
+    """
 
     def __init__(self, name):
 
-        super(DefaultLoggingClass, self).__init__(self.__class__.__name__)
+        # Enable logging capability (self.log)
+        super(L1bPreProc, self).__init__(name)
+
+        # Error handler
         self.error = ErrorStatus()
+
+        # Job definition ( class L1bPreProcJob)
         self._jobdef = None
+
+        # Mission Options
+        self._mdef = None
+
+        # List of l1b input files
+        # Needs to be filled by the mission specific classes
         self._l1b_file_list = []
+
+        # pysiral configuration
         self._pysiral_config = ConfigInfo()
 
-    def settings(self, jobdef):
+    def set_job_definition(self, jobdef):
         """ jobdef needs to be of type L1bPreProcJobSettings """
         self._jobdef = jobdef
+        self._get_mission_options(jobdef.mission_id)
+
+    def get_input_files_local_machine_def(self, time_range, version="default"):
+        self.log.info("Getting input file list from local_machine_def.yaml")
+        self._get_input_files_local_machine_def(time_range, version)
+        self.log.info("Total number of files: %g" % len(self._l1b_file_list))
 
     def execute(self):
+        """ Runs the l1b pre-processing """
+
+        # Test if job definition is present
+        self._validate_jobdef()
+        if self.error.status:
+            return
+
+        # Loops over file in self._l1b_file_list
+        # -> have to be set by the mission specific processor
         self.merge_and_export_polar_ocean_subsets()
 
     def remove_old_l1bdata(self):
@@ -44,7 +79,8 @@ class L1bPreProc(DefaultLoggingClass):
         """
 
         # Test if job definition is present
-        if self._jobdef is None:
+        self._validate_jobdef()
+        if self.error.status:
             return
 
         # Get the l1bdata diretory
@@ -68,10 +104,12 @@ class L1bPreProc(DefaultLoggingClass):
 
     def merge_and_export_polar_ocean_subsets(self):
         """ loop over remaining files in file list """
+
         log = self.log
         n = len(self._l1b_file_list)
         if n == 0:
             return
+
         l1bdata_stack = []
         for i, l1b_file in enumerate(self._l1b_file_list):
 
@@ -96,7 +134,8 @@ class L1bPreProc(DefaultLoggingClass):
 
                     # => break criterium, save existing stack and start over
                     log.info("- segment unconnected, exporting current stack")
-                    self.concatenate_and_export_stack_files(l1bdata_stack)
+                    l1b_merged = self.merge_l1b_stack(l1bdata_stack)
+                    self.export_l1b_to_netcdf(l1b_merged)
 
                     # Reset the l1bdata stack
                     l1bdata_stack = [l1b_segment]
@@ -105,50 +144,125 @@ class L1bPreProc(DefaultLoggingClass):
                 # polar ocean data and connected => add to stack
                 l1bdata_stack.append(l1b_segment)
 
-    def extract_polar_segments(self, l1b):
+    def trim_single_hemisphere_segment_to_polar_region(self, l1b):
         """
-        Envisat specific: Extract Arctic and Antarctic subsets and
-        return both in the correct sequence
+        Extract polar region of interest from a segment that is either
+        north or south (not global)
+        """
+        self.log.info("- trimming to polar ocean subset")
+        polar_threshold = self._mdef.polar_threshold
+        is_polar = np.abs(l1b.time_orbit.latitude) >= polar_threshold
+        polar_subset = np.where(is_polar)[0]
+        if len(polar_subset) != l1b.n_records:
+            l1b.trim_to_subset(polar_subset)
+        return l1b
+
+    def trim_non_ocean_data(self, l1b):
+        """ Remove leading and trailing data that is not if type ocean """
+
+        self.log.info("- trim outer non-ocean regions")
+        ocean = l1b.surface_type.get_by_name("ocean")
+        first_ocean_index = get_first_array_index(ocean.flag, True)
+        last_ocean_index = get_last_array_index(ocean.flag, True)
+        if first_ocean_index is None or last_ocean_index is None:
+            return None
+        n = l1b.info.n_records-1
+        is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
+        if not is_full_ocean:
+            ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
+            self.log.info("- ocean subset [%g:%g]" % (
+                 first_ocean_index, last_ocean_index))
+            l1b.trim_to_subset(ocean_subset)
+
+        return l1b
+
+    def split_at_large_non_ocean_segments(self, l1b):
+        """
+        Identify larger segments that are not ocean (land, land ice)
+        and split the segments if necessary
+        """
+
+        # Find connected nonocean segments
+        self.log.info("- test for inner larger landmasses")
+        ocean = l1b.surface_type.get_by_name("ocean")
+        not_ocean_flag = np.logical_not(ocean.flag)
+        segments_len, segments_start, not_ocean = rle(not_ocean_flag)
+        landseg_index = np.where(not_ocean)[0]
+        self.log.info("- number of landmasses: %g" % len(landseg_index))
+
+        # no land segements, return segment
+        if len(landseg_index) == 0:
+            return [l1b]
+
+        # Test if nonocean segments above threshold
+        treshold = self._mdef.max_inner_nonocean_segment_nrecords
+        large_landsegs_index = np.where(
+            segments_len[landseg_index] > treshold)[0]
+        large_landsegs_index = landseg_index[large_landsegs_index]
+        self.log.info("- number of large landmasses: %g" % len(
+            large_landsegs_index))
+
+        # no large land segments, return segment
+        if len(large_landsegs_index) == 0:
+            return [l1b]
+
+        # Large land segments exist, split the l1b data object
+        l1b_segments = []
+        start_index = 0
+        for index in large_landsegs_index:
+            stop_index = segments_start[index]
+            subset_list = np.arange(start_index, stop_index)
+            l1b_segments.append(l1b.extract_subset(subset_list))
+            start_index = segments_start[index+1]
+        # extract the last subset
+        last_subset_list = np.arange(start_index, len(ocean.flag))
+        l1b_segments.append(l1b.extract_subset(last_subset_list))
+
+        # Return a list of segments
+        return l1b_segments
+
+    def extract_polar_segments_from_halforbit(self, l1b):
+        """
+        specific method for mission which data sets are organized in
+        half orbits (e.g. ERS-1/2, Envisat)
+
+        Extract Arctic and Antarctic subsets and return both in
+        the correct sequence. Returns always two segments, but entries
+        might be None if no data for specific hemisphere is found.
+
+        XXX: Do not use for full orbits
         """
 
         # The threshold is the same for arctic and antarctic (50°)
-        polar_threshold = self.options.polar_threshold
+        lat_threshold = self._mdef.polar_threshold
 
         # Target hemisphere: north, south or global
         target_hemisphere = self._jobdef.hemisphere
 
+        # Measurement position
+        position = l1b.time_orbit
+
+        log_entry = "- Extracted %s subset (%g records)"
+
         # Extract Arctic (if target hemisphere, else empty list)
         if target_hemisphere == "north" or target_hemisphere == "global":
-            is_arctic = FlagContainer(
-                l1b.time_orbit.latitude > polar_threshold)
+            is_arctic = FlagContainer(position.latitude > lat_threshold)
             arctic_subset = l1b.extract_subset(is_arctic.indices)
-            self.log.info("- Extracted Arctic subset (%g records)" %
-                          is_arctic.num)
+            self.log.info(log_entry % ("Arctic", is_arctic.num))
         else:
             arctic_subset = None
 
         # Extract Antarctic (if target hemisphere, else empty list)
         if target_hemisphere == "south" or target_hemisphere == "global":
-            is_antarctic = FlagContainer(
-                l1b.time_orbit.latitude < -1.*polar_threshold)
-            antarctic_subset = l1b.extract_subset(is_antarctic.indices)
-            self.log.info("- Extracted Antarctic subset (%g records)" % (
-                is_antarctic.num))
+            is_antactic = FlagContainer(position.latitude < -1.*lat_threshold)
+            antarctic_subset = l1b.extract_subset(is_antactic.indices)
+            self.log.info(log_entry % ("Antarctic", is_antactic.num))
         else:
             antarctic_subset = None
 
         # Segments may be empty, test all cases
-        arctic_is_valid = True
-        antarctic_is_valid = True
-        try:
-            arctic_subset.info.start_time
-        except AttributeError:
-            arctic_is_valid = False
-
-        try:
-            antarctic_subset.info.start_time
-        except AttributeError:
-            antarctic_is_valid = False
+        arctic_is_valid = arctic_subset is not None
+        antarctic_is_valid = antarctic_subset is not None
 
         # Return both unsorted, Empty segment will be discarded later
         if not arctic_is_valid or not antarctic_is_valid:
@@ -160,43 +274,35 @@ class L1bPreProc(DefaultLoggingClass):
         else:
             return [antarctic_subset, arctic_subset]
 
-    def concatenate_and_export_stack_files(self, l1bdata_stack):
+    def merge_l1b_stack(self, l1bdata_stack):
+        """ Merge a stack of connected l1b objects """
 
-        # XXX: This is hard coded since CryoSat-2 is the only
-        #      mission that requires this
-        sar_bin_count = {"baseline-b": 128, "baseline-c": 256}
-
-        log = self.log
-
-        # log.debug("Length of l1bdata_stack: %g" % len(l1bdata_stack))
-        # debug_stack_export_orbit_plot(l1bdata_stack)
-
-        # Concatenate the files
+        # Merge the stack to a single l1b instance
         l1b_merged = l1bdata_stack[0]
-        bin_count = sar_bin_count[l1b_merged.info.mission_data_version.lower()]
-
-        if l1b_merged.radar_modes == "sin":
-            l1b_merged.reduce_waveform_bin_count(bin_count)
-
         l1bdata_stack.pop(0)
         for orbit_segment in l1bdata_stack:
-            # Rebin
-            if orbit_segment.radar_modes == "sin":
-                orbit_segment.reduce_waveform_bin_count(bin_count)
             l1b_merged.append(orbit_segment)
-        # stop
-        # Prepare data export
-        config = self._pysiral_config
+
+        return l1b_merged
+
+    def export_l1b_to_netcdf(self, l1b):
+        """ Write l1b object to netcdf file """
+
+        # Log entries (filename, folder)
+        log_entry = "Creating netCDF %s in folder %s"
+
+        # Get export filename and folder
         export_folder, export_filename = l1bnc_filenaming(
-            l1b_merged, config, self._jobdef.input_version)
-        log.info("Creating l1bdata netCDF: %s" % export_filename)
-        log.info(". in folder: %s" % export_folder)
+            l1b, self._pysiral_config, self._jobdef.input_version)
+        self.log.info(log_entry % (export_filename, export_folder))
+
+        # Check if export folder exists, create if necessary
         validate_directory(export_folder)
 
         # Export the data object
         ncfile = L1bDataNC()
-        ncfile.l1b = l1b_merged
-        ncfile.config = config
+        ncfile.l1b = l1b
+        ncfile.config = self._pysiral_config
         ncfile.output_folder = export_folder
         ncfile.filename = export_filename
         ncfile.export()
@@ -205,19 +311,18 @@ class L1bPreProc(DefaultLoggingClass):
         """
         Test if a l1b file has data over ocean in either Arctic or Antartic
         """
+
         # 1) test if either minimum or maximum latitude is in polar regions
         lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
-        polar_threshold = self.options.polar_threshold
+        polar_threshold = self._mdef.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
         self.log.info("- hemisphere: %s" % l1b.info.region_name)
         self.log.info("- above polar threshold: %s" % str(is_polar))
-#        self.log.debug("- l1b.info.lat_min: %.7g" % l1b.info.lat_min)
-#        self.log.debug("- l1b.info.lat_max: %.7g" % l1b.info.lat_max)
+
         # 2) test if there is any ocean data at all
         has_ocean = l1b.info.open_ocean_percent > 0
         self.log.info("- has ocean data: %s" % str(has_ocean))
-#        self.log.debug("- l1b.info.open_ocean_percent: %.7g" % (
-#            l1b.info.open_ocean_percent))
+
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean
 
@@ -227,32 +332,47 @@ class L1bPreProc(DefaultLoggingClass):
         indicate neighbouring orbit segments (e.g. due to radar mode change)
 
         """
-        if len(l1b_stack) == 0:  # Stack is empty
+
+        # Stack is empty (return True -> create a new stack)
+        if len(l1b_stack) == 0:
             return True
+
+        # Test if segments are adjacent based on time gap between them
         last_l1b_in_stack = l1b_stack[-1]
         timedelta = l1b.info.start_time - last_l1b_in_stack.info.stop_time
-        threshold = self.options.max_connected_files_timedelta_seconds
+        threshold = self._mdef.max_connected_files_timedelta_seconds
         is_connected = timedelta.seconds <= threshold
-    #    log.debug("... last_l1b_in_stack.info.stop_time: %s" %
-    #              str(last_l1b_in_stack.info.stop_time))
-    #    log.debug("... l1b.info.start_time: %s" % str(l1b.info.start_time))
-    #    log.info("... is connected: %s (timedelta = %g sec)" % (
-    #        str(is_connected), timedelta.seconds))
+
         return is_connected
+
+    def _get_mission_options(self, mission_id):
+        """
+        Get mission specific preproc options
+        (see config/mission.def.yaml
+        """
+        self._mdef = self._pysiral_config.mission[mission_id].preproc.options
+
+    def _validate_jobdef(self):
+        """ Test if job definition is present """
+        if self._jobdef is None:
+            error_code = self.__class__.__name__+" (01)"
+            error_message = "Job definition not set"
+            self.error.add_error(error_code, error_message)
 
     @property
     def has_empty_file_list(self):
         return len(self._l1b_file_list) == 0
 
 
-class L1bPreProcJobSettings(DefaultLoggingClass):
+class L1bPreProcJob(DefaultLoggingClass):
+    """ Container for the definition and handling of a pre-processor job """
 
-    def __init__(self, config):
+    def __init__(self):
 
-        super(L1bPreProcJobSettings, self).__init__(self.__class__.__name__)
+        super(L1bPreProcJob, self).__init__(self.__class__.__name__)
 
         # Save pointer to pysiral configuration
-        self.pysiral_config = config
+        self.pysiral_config = ConfigInfo()
 
         # Initialize the time range and set to monthly per default
         self.time_range = TimeRangeRequest()
@@ -261,34 +381,34 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
         self.error = ErrorStatus()
 
         # Initialize job parameter
-        self.args = None
+        self.options = L1bPreProcJobOptions()
+
+        # List for iterations (currently only month-wise)
         self.iterations = []
 
-    def parse_command_line_arguments(self):
-
-        # use python module argparse to parse the command line arguments
-        # (first validation of required options and data types)
-        self.args = self.parser.parse_args()
-
     def generate_preprocessor_iterations(self):
+        """ Break the requested time range into monthly iterations """
 
         # The input data is organized in folder per month, therefore
         # the processing period is set accordingly
         self.time_range.set_period("monthly")
         self.log.info("Pre-processor Period is monthly")
-        self.time_range.set_exclude_month(self.args.exclude_month)
-        self.log.info("Excluding month: %s" % str(self.args.exclude_month))
+        self.time_range.set_exclude_month(self.options.exclude_month)
+        self.log.info("Excluding month: %s" % str(self.options.exclude_month))
         self.iterations = self.time_range.get_iterations()
         self.log.info("Number of iterations: %g" % len(self.iterations))
 
     def process_requested_time_range(self):
+        """
+        Verify time range with mission data availability and create
+        datetime objects
+        """
 
         config = self.pysiral_config
-        mission_info = config.get_mission_info(self.args.mission_id)
+        mission_info = config.get_mission_info(self.options.mission_id)
 
         # Set and validate the time range
-        start_date, stop_date = self.args.start_date, self.args.stop_date
-
+        start_date, stop_date = self.options.start_date, self.options.stop_date
         self.time_range.set_range(start_date, stop_date)
 
         # Check if any errors in definitions
@@ -307,6 +427,7 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
             self.time_range.raise_if_empty()
 
     def get_mission_preprocessor(self):
+        """ Return the mission specific pre-processor class """
 
         from pysiral.cryosat2.preproc import CryoSat2PreProc
         from pysiral.envisat.preproc import EnvisatPreProc
@@ -322,54 +443,43 @@ class L1bPreProcJobSettings(DefaultLoggingClass):
         elif self.mission_id == "sentinel3a":
             return Sentinel3PreProc
         else:
-            error_code = self.__class__.__name__+" (1)"
+            error_code = self.__class__.__name__+" (01)"
             error_message = "Invalid mission_id: %s" % self.mission_id
             self.error.add_error(error_code, error_message)
 
     @property
-    def parser(self):
-        # XXX: Move back to caller
-
-        # Take the command line options from default settings
-        # -> see config module for data types, destination variables, etc.
-        clargs = DefaultCommandLineArguments()
-
-        # List of command line option required for pre-processor
-        # (argname, argtype (see config module), destination, required flag)
-        options = [
-            ("-mission", "mission", "mission_id", True),
-            ("-start", "date", "start_date", True),
-            ("-stop", "date", "stop_date", True),
-            ("-hemisphere", "hemisphere", "hemisphere", False),
-            ("-exclude-month", "exclude-month", "exclude_month", False),
-            ("-input-version", "input-version", "input_version", False),
-            ("--remove-old", "remove-old", "remove_old_l1bdata", False)]
-
-        # create the parser
-        parser = argparse.ArgumentParser()
-        for option in options:
-            argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(
-                argtype, destination, required)
-            parser.add_argument(argname, **argparse_dict)
-
-        return parser
-
-    @property
     def mission_id(self):
-        return self.args.mission_id
+        return self.options.mission_id
 
     @property
     def hemisphere(self):
-        return self.args.hemisphere
+        return self.options.hemisphere
 
     @property
     def input_version(self):
-        return self.args.input_version
+        return self.options.input_version
 
     @property
     def remove_old(self):
-        return self.args.remove_old_l1bdata
+        return self.options.remove_old
+
+
+class L1bPreProcJobOptions(object):
+    """ Simple container for preprocessor options """
+
+    def __init__(self):
+        self.mission_id = None
+        self.hemisphere = "global"
+        self.input_version = "default"
+        self.remove_old = False
+        self.start_date = None
+        self.stop_date = None
+        self.exclude_month = []
+
+    def from_dict(self, options_dict):
+        for parameter in options_dict.keys():
+            if hasattr(self, parameter):
+                setattr(self, parameter, options_dict[parameter])
 
 
 def debug_stack_orbit_plot(l1b_stack, l1b_segments):
