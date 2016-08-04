@@ -79,9 +79,13 @@ envisat:
 
     orbit_max_latitude: 82.5
 
-    options:
+    preproc:
+        options:
+            polar_threshold: 50.0
+            max_connected_files_timedelta_seconds: 10
+            max_inner_nonocean_segment_nrecords: 1000    
 
-        polar_threshold: 50.0
+    options:
 
         geophysical_corrections:
 
