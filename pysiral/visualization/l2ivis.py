@@ -291,5 +291,3 @@ class PlotL2iSurfaceTypeClassification(DataPlot):
                 result[section, i] = float(num)/float(self.section_hist_size)
 
         return result
-
-

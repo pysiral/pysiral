@@ -38,7 +38,6 @@ class EnvisatPreProc(L1bPreProc):
         """
         Returns the source CryoSat-2 l1b data as a list of
         pysiral.L1bdata objects.
-
         """
 
         # Read the envisat SGDR file
