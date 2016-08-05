@@ -21,7 +21,9 @@ Argument | Required | Parameter | Description
 **-hemisphere** *hemisphere_id* | optional | string | select the hemisphere for the generation of l1bdata files , either `north`, `south` or `global` (default)
 **-exclude-month** *month_list*  | optional | integer list | list of month (from 01 - 12) that will be skipped)
 **-input-version** *version_id* | optional | string  | version name of the mission specific data (default: `default`). Any additional version must have a corresponding entry in `local_machine_def.yaml` for the particular mission
-**--remove-old** | optional | *None* | erase all files in output directory before pre-processing **(not yet implemented)**
+**--remove-old** | optional | *None* | delete all l1bdata files in output directory before pre-processing. Triggers manual confirmation prompt
+**--no-critical-prompt** | optional | *None* | skip the manual confirmation prompt for the **--remove-old** option
+
 
 ### Cookbook
 
