@@ -83,6 +83,10 @@ class ConfigInfo(object):
         mission_options = self.mission[mission].options
         return mission_options
 
+    def get_mission_settings(self, mission):
+        mission_options = self.mission[mission].settings
+        return mission_options
+
     def get_mission_info(self, mission):
         mission_info = self.mission[mission]
         if mission_info.data_period.start is None:
