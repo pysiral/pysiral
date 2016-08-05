@@ -97,11 +97,11 @@ class L1bPreProc(DefaultLoggingClass):
             self._jobdef.mission_id,
             self._jobdef.input_version,
             self._jobdef.hemisphere,
-            self._jobdef.time_range.start.year,
-            self._jobdef.time_range.start.month)
+            self._jobdef.time_range.start_dt.year,
+            self._jobdef.time_range.start_dt.month)
 
         # Get list of netcdf files
-        search_pattern = os.path.joint(export_folder, "*.nc")
+        search_pattern = os.path.join(export_folder, "*.nc")
         l1bdata_files = glob.glob(search_pattern)
 
         # Delete files
