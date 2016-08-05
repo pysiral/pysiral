@@ -365,7 +365,7 @@ class L1bPreProc(DefaultLoggingClass):
         Get mission specific preproc options
         (see config/mission.def.yaml
         """
-        self._mdef = self._pysiral_config.mission[mission_id].preproc.options
+        self._mdef = self._pysiral_config.mission[mission_id].settings
 
     def _validate_jobdef(self):
         """ Test if job definition is present """
