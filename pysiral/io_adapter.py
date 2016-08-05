@@ -494,12 +494,14 @@ class L1bAdapterSentinel3(object):
         self._read_sentinel3_sral_l1b()
         self._transfer_metadata()
         self._test_ku_data_present()
+
         if not header_only and not self.l1b.error_status:
             self._transfer_timeorbit()
             self._transfer_waveform_collection()
             self._transfer_range_corrections()
             self._transfer_surface_type_data()
             self._transfer_classifiers()
+            self.l1b.update_l1b_metadata()
 
     def _read_sentinel3_sral_l1b(self):
         """ Read the L1b file and create a ERS native L1b object """
@@ -512,7 +514,6 @@ class L1bAdapterSentinel3(object):
             self.sral.post_processing()
 
     def _transfer_metadata(self):
-        pass
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
         product = self.sral.product_info
@@ -545,8 +546,6 @@ class L1bAdapterSentinel3(object):
                 self.sral.nc.time_l1b_echo_sar_ku, units, calendar)
 
         self.l1b.time_orbit.timestamp = timestamp
-        # Update meta data container
-        self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
         """ Transfers the waveform data (power & range for each range bin) """

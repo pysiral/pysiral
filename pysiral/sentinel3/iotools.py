@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+from pysiral.logging import DefaultLoggingClass
+
 import os
 import glob
+import numpy as np
 
 
-class Sentinel3FileList(object):
+class Sentinel3FileList(DefaultLoggingClass):
     """
     Class for the construction of a list of Sentinel-3 SRAL L2 files
     sorted by acquisition time
@@ -12,19 +15,33 @@ class Sentinel3FileList(object):
     """
 
     def __init__(self):
+
+        super(Sentinel3FileList, self).__init__(self.__class__.__name__)
         self.folder = None
-        self.log = None
         self.year = None
         self.month = None
         self.target = "measurement.nc"
         self._sorted_list = []
 
-    def search(self):
+    def search(self, time_range):
+
+        self.year = time_range.start.year
+        self.month = time_range.start.month
+
+        # Create a list of day if not full month is required
+        if not time_range.is_full_month:
+            self.day_list = np.arange(
+                time_range.start.day, time_range.stop.day+1)
+
+        # Create a list of all files in folder
         self._get_file_listing()
+
+        # Limit the date range (if necessary)
+        self._limit_to_time_range()
 
     @property
     def sorted_list(self):
-        return self._sorted_list
+        return [item[0] for item in self._sorted_list]
 
     def _get_file_listing(self):
         search_toplevel_folder = self._get_toplevel_search_folder()
@@ -40,6 +57,19 @@ class Sentinel3FileList(object):
             folder = os.path.join(folder, "%02g" % self.month)
         return folder
 
+    def _limit_to_time_range(self):
+
+        # self.day_list is only set if time_range is not a full month
+        if self.day_list is None:
+            return
+
+        # Cross-check the data label and day list
+        self._sorted_list = [fn for fn in self._sorted_list if
+                             int(fn[1][6:8]) in self.day_list]
+
+        self.log.info("%g files match time range of this month" % (
+            len(self._sorted_list)))
+
 
 def get_sentinel3_l1b_filelist(folder, target="measurement.nc"):
     """ Returns a list with measurement.nc files for given month """
@@ -47,7 +77,9 @@ def get_sentinel3_l1b_filelist(folder, target="measurement.nc"):
     for root, dirs, files in os.walk(folder):
         for name in files:
             if name == target:
-                s3_l1b_file_list.append(os.path.join(root, name))
+                # Get the start datetime from the folder name
+                datestr = os.path.split(root)[-1].split("_")[7]
+                s3_l1b_file_list.append((os.path.join(root, name), datestr))
     return s3_l1b_file_list
 
 

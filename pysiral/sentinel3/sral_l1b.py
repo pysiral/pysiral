@@ -151,7 +151,6 @@ class Sentinel3SRALL1b(object):
         #  CoG offset"
         tracker_range_20hz = self.nc.range_ku_l1b_echo_sar_ku
 
-
         self.wfm_range = np.ndarray(shape=self.wfm_power.shape,
                                     dtype=np.float32)
         range_bin_index = np.arange(n_range_bins)
