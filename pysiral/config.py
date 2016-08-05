@@ -447,7 +447,15 @@ class DefaultCommandLineArguments(object):
                 "dest": "input_version",
                 "default": "default",
                 "required": False,
-                "help": 'input version name (see documentation)'}}
+                "help": 'input version name (see documentation)'},
+
+            # override any critical prompts for cronjobs etc
+            "no-critical-prompt": {
+                "action": "store_true",
+                "dest": "no_critical_prompt",
+                "default": False,
+                "required": False,
+                "help": 'set to skip any required command line inputs'}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
