@@ -57,11 +57,10 @@ cryosat2:
                 - ionospheric_mod
             docstr:
                 Source of Ionospheric Correction
-    preproc:
-        options:
-            polar_threshold: 50.0
-            max_connected_files_timedelta_seconds: 10
-            max_inner_nonocean_segment_nrecords: 1000
+    settings:
+        polar_threshold: 50.0
+        max_connected_files_timedelta_seconds: 10
+        max_inner_nonocean_segment_nrecords: 1000
 
 envisat:
 
@@ -79,11 +78,10 @@ envisat:
 
     orbit_max_latitude: 82.5
 
-    preproc:
-        options:
-            polar_threshold: 50.0
-            max_connected_files_timedelta_seconds: 10
-            max_inner_nonocean_segment_nrecords: 1000    
+    settings:
+        polar_threshold: 50.0
+        max_connected_files_timedelta_seconds: 10
+        max_inner_nonocean_segment_nrecords: 1000    
 
     options:
 
@@ -150,36 +148,74 @@ ers2:
 
     options: null
 
-    preproc:
-        options:
-            polar_threshold: 50.0
-            max_connected_files_timedelta_seconds: 10
-            max_inner_nonocean_segment_nrecords: 1000    
+    settings:
+        
+        polar_threshold: 50.0
+        max_connected_files_timedelta_seconds: 10
+        max_inner_nonocean_segment_nrecords: 1000    
 
 
 sentinel3a:
 
     long_name: Sentinel-3A
+
     docstr:
-        Cryosphere radar altimeter mission of the European Space
-        Agency (ESA)
+        Cryosphere radar altimeter mission of the European Space Agency (ESA)
+    
     data_period:
         start: 2016-04-01T00:00:00.00+00
         stop: null
+    
     sea_ice_radar_modes: ["sar"]
+    
     orbit_max_latitude: 81.35
-    options:
-        ionospheric_correction_source:
-            default: ionospheric_gim
-            target: ionosphere
-            type: selector
-            options:
-                - ionospheric_gim
-                - ionospheric_mod
-            docstr:
-                Source of Ionospheric Correction
-    preproc:
-        options:
-            polar_threshold: 50.0
-            max_connected_files_timedelta_seconds: 10
-            max_inner_nonocean_segment_nrecords: 1000
+    
+    settings:
+        
+        # Instrument Settings
+        radar_mode: sar
+        range_bin_width: 0.468465715626
+        nominal_tracking_bin: 60
+
+        # Dataset settings
+        time_units: seconds since 2000-01-01 00:00:00.0
+        time_calendar: gregorian
+
+        # Metadata information
+        xml_header_file: xfdumanifest.xml
+        xml_metadata_object_index:
+            processing: 0
+            acquisitionPeriod: 1
+            platform: 2
+            generalProductInformation: 3
+            measurementOrbitReference: 4
+            measurementQualityInformation: 5
+            measurementFrameSet: 6
+            sralProductInformation: 7
+    
+        # Selection for geophysical corrections
+        range_correction_targets:
+            dry_troposphere: null
+            wet_troposphere: null
+            inverse_barometric: null
+            dynamic_atmosphere: null
+            ionosphere: null
+            ocean_tide_elastic: null
+            ocean_tide_long_period: null
+            ocean_loading_tide: null
+            solid_earth_tide: null
+            geocentric_polar_tide: null
+            total_geocentric_ocean_tide: null
+        
+        # Classifier
+        classifier_targets:
+            stack_standard_deviation: stdev_stack_l1b_echo_sar_ku
+            stack_skewness: skew_stack_l1b_echo_sar_ku
+            stack_kurtosis: kurt_stack_l1b_echo_sar_ku
+            stack_maximum_power: max_stack_l1b_echo_sar_ku
+            num_stack_waveforms: nb_stack_l1b_echo_sar_ku
+
+        # Pre processors
+        polar_threshold: 50.0
+        max_connected_files_timedelta_seconds: 10
+        max_inner_nonocean_segment_nrecords: 1000
