@@ -320,8 +320,15 @@ class L1bPreProc(DefaultLoggingClass):
         Test if a l1b file has data over ocean in either Arctic or Antartic
         """
 
+        if l1b is None:
+            return False
+
         # 1) test if either minimum or maximum latitude is in polar regions
-        lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
+        try:
+            lat_range = np.abs([l1b.info.lat_min, l1b.info.lat_max])
+        except:
+            return False
+
         polar_threshold = self._mdef.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
         self.log.info("- hemisphere: %s" % l1b.info.region_name)
