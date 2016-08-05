@@ -60,6 +60,14 @@ class L1bPreProc(DefaultLoggingClass):
         self._get_input_files_local_machine_def(time_range, version)
         self.log.info("Total number of files: %g" % len(self._l1b_file_list))
 
+    def get_ocean_segments_from_input_file(self, filename):
+        """
+        Parse mission specific L1b data and return polar ocean
+        segments
+        """
+        # Redirect to mission-specific pre-processor
+        return self._get_l1bdata_ocean_segments(filename)
+
     def execute(self):
         """ Runs the l1b pre-processing """
 
@@ -115,7 +123,7 @@ class L1bPreProc(DefaultLoggingClass):
 
             # Parse the current file and split into polar ocean segments
             log.info("+ Parsing file %g of %g: %s" % (i+1, n, l1b_file))
-            l1b_segments = self.get_l1bdata_ocean_segments(l1b_file)
+            l1b_segments = self.get_ocean_segments_from_input_file(l1b_file)
 
             # Skip if no relevant data was found
             if l1b_segments is None:
