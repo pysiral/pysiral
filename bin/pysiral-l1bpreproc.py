@@ -7,6 +7,7 @@ from pysiral.l1bpreproc import L1bPreProcJob
 # from pysiral.logging import DefaultLoggingClass
 
 import argparse
+import sys
 
 
 def pysiral_l1bpreproc():
@@ -18,6 +19,9 @@ def pysiral_l1bpreproc():
 
     # Parse and validate the command line arguments
     args.parse_command_line_arguments()
+
+    # Get confirmation for critical choices (if necessary)
+    args.critical_prompt_confirmation()
 
     # Set up the pre-processing job
     jobdef = L1bPreProcJob()
@@ -55,7 +59,7 @@ def pysiral_l1bpreproc():
 
         # Get the list of input files from local machine def
         version = jobdef.input_version
-        job.set_input_files_local_machine_def(time_range, version=version)
+        job.get_input_files_local_machine_def(time_range, version=version)
 
         # Check error, e.g. problems with local_machine_def, ...
         job.error.raise_on_error()
@@ -83,6 +87,23 @@ class L1bPreProcArgParser(object):
         # (first validation of required options and data types)
         self.args = self.parser.parse_args()
 
+    def critical_prompt_confirmation(self):
+
+        # Any confirmation prompts can be overriden by --no-critical-prompt
+        no_prompt = self.args.no_critical_prompt
+
+        # if --remove_old is set, all previous l1bdata files will be
+        # erased for all month
+        if self.args.remove_old and not no_prompt:
+            message = "You have selected to remove all previous " + \
+                "l1bdata files for the requested period\n" + \
+                "(Note: use --no-critical-prompt to skip confirmation)\n" + \
+                "Enter \"YES\" to confirm and continue: "
+            result = raw_input(message)
+
+            if result != "YES":
+                sys.exit(1)
+
     @property
     def parser(self):
         # XXX: Move back to caller
@@ -100,7 +121,9 @@ class L1bPreProcArgParser(object):
             ("-hemisphere", "hemisphere", "hemisphere", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
-            ("--remove-old", "remove-old", "remove_old", False)]
+            ("--remove-old", "remove-old", "remove_old", False),
+            ("--no-critical-prompt", "no-critical-prompt",
+             "no_critical_prompt", False)]
 
         # create the parser
         parser = argparse.ArgumentParser()
