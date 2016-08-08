@@ -16,7 +16,6 @@ class EnvisatSGDRMDS(object):
         self.n_blocks = 20
 
 
-
 class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
     """
     This is a parser class optimized for performance

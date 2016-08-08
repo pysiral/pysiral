@@ -19,9 +19,10 @@ class EnvisatSGDR(object):
         "ra2": "RA2_DATA_SET_FOR_LEVEL_2",
         "wfm18hz": "RA2_AVERAGE_WAVEFORMS"}
 
-    def __init__(self, raise_on_error=False):
+    def __init__(self, settings, raise_on_error=False):
 
         # Error Handling
+        self.settings = settings
         self._init_error_handling(raise_on_error)
         self._baseline = None
         self._radar_mode = "lrm"
@@ -143,9 +144,11 @@ class EnvisatSGDR(object):
         self.mds_18hz.reform_waveform(self.mds_ra2, self.mds_wfm18hz)
         # Reform the land-mask based surface type flags
         self.mds_18hz.reform_surface_type_flags(self.mds_ra2)
+
         # Reform the geophysical range corrections
         # (instrumental range corrections are applied in _reform_waveform)
-        self.mds_18hz.reform_geophysical_corrections(self.mds_ra2)
+        grc_targets = self.settings.geophysical_correction_targets
+        self.mds_18hz.reform_geophysical_corrections(self.mds_ra2, grc_targets)
 
     def _validate(self):
         pass
@@ -298,31 +301,16 @@ class Envisat18HzArrays(object):
         self.radiometer_flag = np.repeat(radiometer_flag, self.n_blocks)
         self.sea_ice_flag = np.repeat(sea_ice_flag, self.n_blocks)
 
-    def reform_geophysical_corrections(self, mds):
+    def reform_geophysical_corrections(self, mds, grc_targets):
+        """
+        Automatically extract the corrections and replicate 1Hz => 18 Hz
+        grc_targets is defined in config/mission_def.yaml
+        -> envisat.settings.geophysical_correction_targets
+        """
         self.sgdr_geophysical_correction_list = []
-        # Select a list of corrections for Ku-Band only
-        geophysical_corrections = {
-            "range_correction": [
-                "dry_troposphere",
-                "inverse_barometric",
-                "wet_troposphere_model",
-                "wet_troposphere_mwr",
-                "ra2_ionosphere_ku",
-                "doris_ionosphere_ku",
-                "model_ionosphere_ku",
-                "sea_state_bias_ku"],
-            "geophysical_information": [
-                "total_geocentric_ocean_tide_1",
-                "total_geocentric_ocean_tide_2",
-                "ocean_tide_long_period",
-                "ocean_loading_tide_1",
-                "ocean_loading_tide_2",
-                "solid_earth_tide",
-                "geocentric_polar_tide"]}
-        # Automatically extract the corrections and replicate 1Hz => 18 Hz
-        for key in geophysical_corrections.keys():
+        for key in grc_targets.keys():
             mds_group = get_structarr_attr(mds, key)
-            for correction_name in geophysical_corrections[key]:
+            for correction_name in grc_targets[key]:
                 correction = get_structarr_attr(mds_group, correction_name)
                 setattr(self, correction_name,
                         np.repeat(correction, self.n_blocks))

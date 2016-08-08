@@ -79,9 +79,33 @@ envisat:
     orbit_max_latitude: 82.5
 
     settings:
+
+        # Pre-Pocessor settings
         polar_threshold: 50.0
         max_connected_files_timedelta_seconds: 10
         max_inner_nonocean_segment_nrecords: 1000    
+
+        # SGDR settings
+        geophysical_correction_targets:
+
+            range_correction:
+                - dry_troposphere
+                - inverse_barometric
+                - wet_troposphere_model
+                - wet_troposphere_mwr
+                - ra2_ionosphere_ku
+                - doris_ionosphere_ku
+                - model_ionosphere_ku
+                - sea_state_bias_ku
+            
+            geophysical_information:
+                - total_geocentric_ocean_tide_1
+                - total_geocentric_ocean_tide_2
+                - ocean_tide_long_period
+                - ocean_loading_tide_1
+                - ocean_loading_tide_2
+                - solid_earth_tide
+                - geocentric_polar_tide
 
     options:
 
