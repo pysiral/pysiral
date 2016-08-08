@@ -342,7 +342,7 @@ class PlotL1bdataRangeCorrections(DataPlot):
             # Labels and axis style
             ax.set_axis_bgcolor(self.axis_bg_color)
             ax.set_title(name)
-            ax.yaxis.set_minor_locator(MultipleLocator(self.range_indicator))
+            # ax.yaxis.set_minor_locator(MultipleLocator(self.range_indicator))
             ax.yaxis.grid(True, which='minor')
             ax.yaxis.set_tick_params(direction='out')
             ax.yaxis.set_ticks_position('left')
@@ -406,7 +406,7 @@ class PlotL1bdataWaveformClassifier(DataPlot):
 
         # Number of sub panels
         n = self.max_number_plots
-        classifier_names = self.l1b.classifier.parameter_list
+        classifier_names = sorted(self.l1b.classifier.parameter_list)
 
         # Create the figure
         gs = gridspec.GridSpec(n, 5)
