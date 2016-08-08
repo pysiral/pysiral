@@ -306,22 +306,13 @@ class L1bAdapterEnvisat(object):
         self.l1b.waveform.set_valid_flag(valid.flag)
 
     def _transfer_range_corrections(self):
+
         # Transfer all the correction in the list
         mds = self.sgdr.mds_18hz
         for correction_name in mds.sgdr_geophysical_correction_list:
-            if correction_name not in self._config.parameter.correction_list:
-                continue
             self.l1b.correction.set_parameter(
                     correction_name, getattr(mds, correction_name))
-        # Envisat specific: There are several options for sources
-        #   of geophysical correction in the SGDR files. Selct those
-        #   specified in the mission defaults
-        #   (see config/mission_def.yaml)
-        mission_defaults = self._config.get_mission_options(self._mission)
-        correction_options = mission_defaults.geophysical_corrections
-        for option in correction_options.iterbranches():
-            self.l1b.correction.set_parameter(
-                    option.target, getattr(mds, option.selection))
+
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.mds_18hz.surface_type

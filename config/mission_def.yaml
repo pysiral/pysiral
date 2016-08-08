@@ -88,6 +88,8 @@ envisat:
         # SGDR settings
         geophysical_correction_targets:
 
+            # List of 1Hz range corrections to replicate to 18Hz
+            # from mds group "range_correction"
             range_correction:
                 - dry_troposphere
                 - inverse_barometric
@@ -97,7 +99,9 @@ envisat:
                 - doris_ionosphere_ku
                 - model_ionosphere_ku
                 - sea_state_bias_ku
-            
+
+            # List of 1Hz tide parameter to replicate to 18Hz
+            # from mds group "geophysical_information"
             geophysical_information:
                 - total_geocentric_ocean_tide_1
                 - total_geocentric_ocean_tide_2
@@ -106,54 +110,6 @@ envisat:
                 - ocean_loading_tide_2
                 - solid_earth_tide
                 - geocentric_polar_tide
-
-    options:
-
-        geophysical_corrections:
-
-            # For an unkown reason deepcopy fails if this tag does not exist
-            default: null
-
-            ionospheric_correction_source:
-                selection: model_ionosphere_ku
-                target: ionosphere
-                type: selector
-                options:
-                    - ra2_ionosphere_ku
-                    - doris_ionosphere_ku
-                    - model_ionosphere_ku
-                docstr:
-                    Source of Ionospheric Correction in SGDR data
-
-            wet_tropospheric_correction_source:
-                selection: wet_troposphere_model
-                target: wet_troposphere
-                type: selector
-                options:
-                    - wet_troposphere_model
-                    - wet_troposphere_mwr
-                docstr:
-                    Source of wet tropospheric correction in SGDR data
-
-            tide_loading_source:
-                selection: ocean_loading_tide_1
-                target: ocean_loading_tide
-                type: selector
-                options:
-                    - ocean_loading_tide_1
-                    - ocean_loading_tide_2
-                docstr:
-                    Source of tide loading correction in SGDR data
-
-            total_geocentric_ocean_tide_source:
-                selection: total_geocentric_ocean_tide_1
-                target: total_geocentric_ocean_tide
-                type: selector
-                options:
-                    - total_geocentric_ocean_tide_1
-                    - total_geocentric_ocean_tide_2
-                docstr:
-                    Source of total geocentric ocean tide correction in SGDR data
 
 ers2:
 
