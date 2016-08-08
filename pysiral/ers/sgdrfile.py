@@ -12,13 +12,9 @@ class ERSSGDR(object):
 
         # Error Handling
         self._init_error_handling(raise_on_error)
-        self._baseline = None
         self._radar_mode = "lrm"
         self._filename = None
         self.n_records = 0
-        self.n_blocks = 20
-        self.range_bin_width = 0.4545
-        self.nominal_tracking_bin = 32.5
 
     def parse(self):
         from pysiral.iotools import ReadNC

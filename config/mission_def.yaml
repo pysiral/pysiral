@@ -150,6 +150,30 @@ ers2:
 
     settings:
         
+        # Radar Altimeter Settings
+        range_bin_width: 0.4545
+        nominal_tracking_bin: 32.5
+
+        # SGDR Input Settings
+        n_blocks: 20
+
+        range_correction_targets:
+            dry_troposphere: model_dry_tropo_corr
+            wet_troposphere: model_wet_tropo_corr
+            inverse_barometric: inv_bar_corr
+            dynamic_atmosphere: hf_fluctuations_corr
+            ionosphere: iono_corr_model
+            ocean_tide_elastic: ocean_tide_sol1
+            ocean_tide_long_period: ocean_tide_equil
+            ocean_loading_tide: load_tide_sol1
+            solid_earth_tide: solid_earth_tide
+            geocentric_polar_tide: pole_tide
+            total_geocentric_ocean_tide: Null
+
+        sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
+        sgdr_timestamp_calendar: gregorian
+
+        # Pre-Processor Settings
         polar_threshold: 50.0
         max_connected_files_timedelta_seconds: 10
         max_inner_nonocean_segment_nrecords: 1000    
