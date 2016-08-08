@@ -5,28 +5,27 @@ Created on Thu Jul 23 15:10:04 2015
 @author: Stefan
 """
 
-from pysiral.cryosat2.functions import (
-    tai2utc, get_tai_datetime_from_timestamp,
-    get_cryosat2_wfm_power, get_cryosat2_wfm_range)
-from pysiral.esa.functions import get_structarr_attr
+
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
-from pysiral.helper import parse_datetime_str
-from pysiral.path import filename_from_path
+
+from pysiral.cryosat2.functions import (
+    tai2utc, get_tai_datetime_from_timestamp,
+    get_cryosat2_wfm_power, get_cryosat2_wfm_range)
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
-from scipy import interpolate
-import numpy as np
-# import time
+from pysiral.esa.functions import get_structarr_attr
+from pysiral.flag import ORCondition
+from pysiral.helper import parse_datetime_str
+from pysiral.path import filename_from_path
+from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
+from pysiral.waveform import get_waveforms_peak_power
 
-ESA_SURFACE_TYPE_DICT = {
-    "ocean": 0,
-    "closed_sea": 1,
-    "land_ice": 2,
-    "land": 3}
+from netCDF4 import num2date
+import numpy as np
 
 
 class L1bAdapterCryoSat(object):
@@ -196,8 +195,6 @@ class L1bAdapterCryoSat(object):
 
     def _transfer_classifiers(self):
 
-        from pysiral.waveform import get_waveforms_peak_power
-
         # Add L1b beam parameter group
         beam_parameter_list = [
             "stack_standard_deviation", "stack_centre",
@@ -206,19 +203,23 @@ class L1bAdapterCryoSat(object):
             recs = get_structarr_attr(self.cs2l1b.waveform, "beam")
             beam_parameter = [rec[beam_parameter_name] for rec in recs]
             self.l1b.classifier.add(beam_parameter, beam_parameter_name)
+
         # Calculate Parameters from waveform counts
         # XXX: This is a legacy of the CS2AWI IDL processor
         #      Threshold defined for waveform counts not power in dB
         wfm = get_structarr_attr(self.cs2l1b.waveform, "wfm")
+
         # Calculate the OCOG Parameter (CryoSat-2 notation)
         ocog = CS2OCOGParameter(wfm)
         self.l1b.classifier.add(ocog.width, "ocog_width")
         self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+
         # Calculate the Peakiness (CryoSat-2 notation)
         pulse = CS2PulsePeakiness(wfm)
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+
         # Add the peak power (in Watts)
         # (use l1b waveform power array that is already in physical units)
         peak_power = get_waveforms_peak_power(self.l1b.waveform.power, dB=True)
@@ -232,6 +233,7 @@ class L1bAdapterEnvisat(object):
         self.filename = None
         self._config = config
         self._mission = "envisat"
+        self.settings = config.get_mission_settings(self._mission)
 
     def construct_l1b(self, l1b):
         """
@@ -252,7 +254,7 @@ class L1bAdapterEnvisat(object):
 
     def _read_envisat_sgdr(self):
         """ Read the L1b file and create a CryoSat-2 native L1b object """
-        self.sgdr = EnvisatSGDR()
+        self.sgdr = EnvisatSGDR(self.settings)
         self.sgdr.filename = self.filename
         self.sgdr.parse()
         error_status = self.sgdr.get_status()
@@ -346,6 +348,7 @@ class L1bAdapterERS(object):
         self.filename = None
         self._config = config
         self._mission = mission
+        self.settings = config.get_mission_settings(mission)
 
     def construct_l1b(self, l1b):
         """
@@ -388,25 +391,25 @@ class L1bAdapterERS(object):
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
-        from netCDF4 import num2date
+
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(
             self.sgdr.nc.lon_20hz.flatten(),
             self.sgdr.nc.lat_20hz.flatten(),
             self.sgdr.nc.alt_20hz.flatten())
+
         # Transfer the timestamp
-        units = "seconds since 1990-01-01 00:00:00"
-        calendar = "gregorian"
-        timestamp = num2date(
-            self.sgdr.nc.time_20hz.flatten(), units, calendar)
+        sgdr_timestamp = self.sgdr.nc.time_20hz.flatten()
+        units = self.settings.sgdr_timestamp_units
+        calendar = self.settings.sgdr_timestamp_calendar
+        timestamp = num2date(sgdr_timestamp, units, calendar)
         self.l1b.time_orbit.timestamp = timestamp
+
         # Update meta data container
         self.l1b.update_data_limit_attributes()
 
     def _transfer_waveform_collection(self):
         """ Transfers the waveform data (power & range for each range bin) """
-
-        from pysiral.flag import ORCondition
 
         # Transfer the reformed 18Hz waveforms
         self.l1b.waveform.set_waveform_data(
@@ -425,22 +428,9 @@ class L1bAdapterERS(object):
     def _transfer_range_corrections(self):
 
         # (see section 3.10 in REAPER handbook)
-        # TODO: move selection dict to configuration files
-        range_correction_target_dict = {
-            "dry_troposphere": "model_dry_tropo_corr",
-            "wet_troposphere": "model_wet_tropo_corr",
-            "inverse_barometric": "inv_bar_corr",
-            "dynamic_atmosphere": "hf_fluctuations_corr",
-            "ionosphere": "iono_corr_model",
-            "ocean_tide_elastic": "ocean_tide_sol1",
-            "ocean_tide_long_period": "ocean_tide_equil",
-            "ocean_loading_tide": "load_tide_sol1",
-            "solid_earth_tide": "solid_earth_tide",
-            "geocentric_polar_tide": "pole_tide",
-            "total_geocentric_ocean_tide": None}
-
-        for name in range_correction_target_dict.keys():
-            target_parameter = range_correction_target_dict[name]
+        grc_dict = self.settings.range_correction_targets
+        for name in grc_dict.keys():
+            target_parameter = grc_dict[name]
             if target_parameter is None:
                 continue
             correction = getattr(self.sgdr.nc, target_parameter)
@@ -463,14 +453,12 @@ class L1bAdapterERS(object):
 
 class L1bAdapterERS1(L1bAdapterERS):
     """ Class for ERS-1 """
-
     def __init__(self, config):
         super(L1bAdapterERS1, self).__init__(config, "ers1")
 
 
 class L1bAdapterERS2(L1bAdapterERS):
     """ Class for ERS-1 """
-
     def __init__(self, config):
         super(L1bAdapterERS2, self).__init__(config, "ers2")
 
@@ -575,6 +563,7 @@ class L1bAdapterSentinel3(object):
 
     def _transfer_range_corrections(self):
         """ Retrieve the geophysical range corrections """
+
         # The definition of which parameter to choose is set in
         # config/mission_def.yaml
         # (see sentinel3x.options.input_dataset.range_correction_target_dict)
@@ -608,6 +597,7 @@ class L1bAdapterSentinel3(object):
         ocog = CS2OCOGParameter(wfm)
         self.l1b.classifier.add(ocog.width, "ocog_width")
         self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+
         # Calculate the Peakiness (CryoSat-2 notation)
         pulse = CS2PulsePeakiness(wfm)
         self.l1b.classifier.add(pulse.peakiness, "peakiness")

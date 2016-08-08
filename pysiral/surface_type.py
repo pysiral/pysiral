@@ -12,6 +12,13 @@ from treedict import TreeDict
 from collections import OrderedDict
 
 
+ESA_SURFACE_TYPE_DICT = {
+    "ocean": 0,
+    "closed_sea": 1,
+    "land_ice": 2,
+    "land": 3}
+
+
 class SurfaceType(object):
     """
     Container for surface type information.
