@@ -43,7 +43,7 @@ class ERSPreProc(L1bPreProc):
 
         # Read the envisat SGDR file
         l1b = L1bConstructor(self._pysiral_config)
-        l1b.mission = self.mission_id
+        l1b.mission = self._jobdef.mission_id
         l1b.filename = filename
         l1b.construct()
 
@@ -67,3 +67,5 @@ class ERSPreProc(L1bPreProc):
                     l1b_list.extend(l1b_segments)
                 except TypeError:
                     self.log.info("- no ocean data in file")
+
+        return l1b_list
