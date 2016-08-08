@@ -8,18 +8,20 @@ import os
 
 class ERSSGDR(object):
 
-    def __init__(self, raise_on_error=False):
+    def __init__(self, settings, raise_on_error=False):
 
         # Error Handling
         self._init_error_handling(raise_on_error)
         self._radar_mode = "lrm"
         self._filename = None
         self.n_records = 0
+        self.settings = settings
 
     def parse(self):
         from pysiral.iotools import ReadNC
         self._validate()
-        self.nc = ReadNC(self.filename)
+        self.nc = ReadNC(self.filename, nan_fill_value=True)
+
 #        for attribute in self.nc.attributes:
 #            print "attribute: %s = %s" % (
 #                attribute, str(getattr(self.nc, attribute)))
@@ -75,13 +77,21 @@ class ERSSGDR(object):
         # "The tracker_range_20hz is the range measured by the onboard tracker
         #  as the window delay, corrected for instrumental effects and
         #  CoG offset"
-        tracker_range_20hz = self.nc.tracker_range_20hz.flatten()
-        range_bin_index = np.arange(n_range_bins)
+        tracker_range = self.nc.tracker_range_20hz.flatten()
         self.wfm_range = np.ndarray(shape=target_shape, dtype=np.float32)
-        for record in np.arange(n_records):
-            self.wfm_range[record, :] = tracker_range_20hz[record] + \
-                (range_bin_index*self.range_bin_width) - \
-                (self.nominal_tracking_bin*self.range_bin_width)
+
+        rbw = self.settings.range_bin_width
+        ntb = self.settings.nominal_tracking_bin
+        rbi = np.arange(n_range_bins)
+
+        # Loop over each waveform
+        for i in np.arange(n_records):
+            self.wfm_range[i, :] = tracker_range[i] + (rbi*rbw) - (ntb*rbw)
+
+#        for record in np.arange(n_records):
+#            self.wfm_range[record, :] = tracker_range_20hz[record] + \
+#                (range_bin_index*self.range_bin_width) - \
+#                (self.nominal_tracking_bin*self.range_bin_width)
 
     def _validate(self):
         pass

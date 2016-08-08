@@ -362,7 +362,7 @@ class L1bAdapterERS(object):
 
     def _read_ers_sgdr(self):
         """ Read the L1b file and create a ERS native L1b object """
-        self.sgdr = ERSSGDR()
+        self.sgdr = ERSSGDR(self.settings)
         self.sgdr.filename = self.filename
         self.sgdr.parse()
         error_status = self.sgdr.get_status()
@@ -421,26 +421,44 @@ class L1bAdapterERS(object):
         self.l1b.waveform.set_valid_flag(valid.flag)
 
     def _transfer_range_corrections(self):
+        """
+        Transfer range correction data from the SGDR netCDF to the
+        l1bdata object. The parameter are defined in
+        config/mission_def.yaml for ers1/ers2
+        -> ersX.settings.sgdr_range_correction_targets
 
-        # (see section 3.10 in REAPER handbook)
-        grc_dict = self.settings.range_correction_targets
+        For a description of the parameter see section 3.10 in the
+        REAPER handbook
+        """
+        grc_dict = self.settings.sgdr_range_correction_targets
         for name in grc_dict.keys():
             target_parameter = grc_dict[name]
             if target_parameter is None:
                 continue
             correction = getattr(self.sgdr.nc, target_parameter)
-            correction = np.repeat(correction, self.sgdr.n_blocks)
+            correction = np.repeat(correction, self.settings.sgdr_n_blocks)
             self.l1b.correction.set_parameter(name, correction)
 
     def _transfer_classifiers(self):
-        chirp_type = self.sgdr.nc.alt_state_flag_chirp_type_20hz.flatten()
-        self.l1b.classifier.add(chirp_type, "chirp_type")
+        """
+        Transfer classifier parameter from the SGDR netCDF to the
+        l1bdata object. Most parameter are defined in
+        config/mission_def.yaml for ers1/ers2
+        -> ersX.settings.sgdr_range_correction_targets
+        """
+        target_dict = self.settings.sgdr_classifier_targets
+        for parameter_name in target_dict.keys():
+            nc_parameter_name = target_dict[parameter_name]
+            nc_parameter = getattr(self.sgdr.nc, nc_parameter_name)
+            self.l1b.classifier.add(nc_parameter.flatten(), parameter_name)
+
+        # Add consistent definition of pulse peakiness
         parameter = EnvisatWaveformParameter(self.l1b.waveform.power)
         self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.nc.surface_type
-        surface_type = np.repeat(surface_type, self.sgdr.n_blocks)
+        surface_type = np.repeat(surface_type, self.settings.sgdr_n_blocks)
         for key in ESA_SURFACE_TYPE_DICT.keys():
             flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)
@@ -459,8 +477,7 @@ class L1bAdapterERS2(L1bAdapterERS):
 
 
 class L1bAdapterSentinel3(object):
-    """ Class for Sentinel3 """
-    """ Converts a Envisat SGDR object into a L1bData object """
+    """ Class for Sentinel3X """
 
     def __init__(self, config, mission):
         self.filename = None

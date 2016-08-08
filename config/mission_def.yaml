@@ -111,6 +111,7 @@ envisat:
                 - solid_earth_tide
                 - geocentric_polar_tide
 
+
 ers2:
 
     long_name: ERS-2
@@ -135,9 +136,14 @@ ers2:
         nominal_tracking_bin: 32.5
 
         # SGDR Input Settings
-        n_blocks: 20
+        sgdr_n_blocks: 20
 
-        range_correction_targets:
+        # SGDR timestamp units
+        sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
+        sgdr_timestamp_calendar: gregorian
+
+        # SGDR variable names for geophysical range corrections
+        sgdr_range_correction_targets:
             dry_troposphere: model_dry_tropo_corr
             wet_troposphere: model_wet_tropo_corr
             inverse_barometric: inv_bar_corr
@@ -149,9 +155,19 @@ ers2:
             solid_earth_tide: solid_earth_tide
             geocentric_polar_tide: pole_tide
             total_geocentric_ocean_tide: Null
-
-        sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
-        sgdr_timestamp_calendar: gregorian
+        
+        # SGDR variable names for classifier
+        sgdr_classifier_targets:
+            chirp_type: alt_state_flag_chirp_type_20hz
+            pulse_peakiness_sgdr: peakiness_20hz
+            ocog_width: width_20hz
+            ocog_amplitude: amplitude_20hz
+            sigma0_ice1: ice1_sig0_20hz
+            sigma0_ice2: ice2_sig0_20hz
+            sigma0_sitrack: sitrack_sig0_20hz
+            leading_edge_width_ice2: ice2_le_width_20hz
+            elevation_ice1: ice1_elevation_20hz
+            elevation_sitrack: sitrack_elevation_20hz
 
         # Pre-Processor Settings
         polar_threshold: 50.0
