@@ -267,12 +267,14 @@ class L1bAdapterEnvisat(object):
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
         sgdr = self.sgdr
+        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
         info.set_attribute("mission", self._mission)
         info.set_attribute("mission_data_version", "final v9.3p5")
         info.set_attribute("orbit", sgdr.mph.abs_orbit)
         info.set_attribute("cycle", sgdr.mph.cycle)
         info.set_attribute("cycle", sgdr.mph.cycle)
-        info.set_attribute("mission_data_source", sgdr.mph.product)
+        mission_data_source = filename_from_path(sgdr.filename)
+        info.set_attribute("mission_data_source", mission_data_source)
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
@@ -374,11 +376,13 @@ class L1bAdapterERS(object):
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
         sgdr = self.sgdr
+        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
         info.set_attribute("mission", self._mission)
         info.set_attribute("mission_data_version", sgdr.nc.software_ver)
         info.set_attribute("orbit", sgdr.nc.abs_orbit)
         info.set_attribute("cycle", sgdr.nc.cycle)
-        info.set_attribute("mission_data_source", sgdr.nc.proc_centre)
+        mission_data_source = filename_from_path(sgdr.nc.filename)
+        info.set_attribute("mission_data_source", mission_data_source)
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
@@ -495,11 +499,13 @@ class L1bAdapterSentinel3(object):
             self.sral.post_processing()
 
     def _transfer_metadata(self):
-        """ Extract essential metadata information from SGDR file """
+        """ Extract essential metadata information from SRAL L1 nc file """
         info = self.l1b.info
         product = self.sral.product_info
         info.set_attribute("mission", self._mission)
-        info.set_attribute("mission_data_source", self.sral.nc.institution)
+        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+        mission_data_source = filename_from_path(self.sral.filename)
+        info.set_attribute("mission_data_source", mission_data_source)
         info.set_attribute("sar_mode_percent", product.sar_mode_percentage)
         info.set_attribute("open_ocean_percent", product.open_ocean_percentage)
 
