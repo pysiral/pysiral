@@ -116,11 +116,12 @@ def get_temp_png_filename():
     return os.path.join(tempfile.gettempdir(), str(uuid.uuid4())+".png")
 
 
-def get_l1bdata_files(mission_id, hemisphere, year, month, config=None):
+def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
+                      version="default"):
     import glob
     if config is None:
         config = ConfigInfo()
-    l1b_repo = config.local_machine.l1b_repository[mission_id].l1bdata
+    l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
     directory = os.path.join(
         l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
     l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))

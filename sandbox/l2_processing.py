@@ -8,6 +8,7 @@ Created on Fri Jul 24 14:09:32 2015
 from pysiral.config import ConfigInfo, get_yaml_config
 from pysiral.job import Level2Job
 from pysiral.l2proc import Level2Processor
+from pysiral.iotools import get_l1bdata_files
 
 import os
 import glob
@@ -58,7 +59,7 @@ def l2_processing():
     l2proc.error_handling(raise_on_error=True)
 
     l1bdata_files = get_l1bdata_files(
-        config, job, setting.roi.hemisphere, args.year, args.month)
+        setting.mission.id, setting.roi.hemisphere, args.year, args.month)
     l2proc.set_l1b_files(l1bdata_files[args.skip:args.skip+1])
     l2proc.run()
 
@@ -75,14 +76,6 @@ def validate_year_month_list(year_month_list, label):
         print "Error: Invalid "+label+" (%04g, %02g)" % (
             year_month_list[0], year_month_list[1])
         sys.exit(1)
-
-
-def get_l1bdata_files(config, job, hemisphere, year, month):
-    l1b_repo = config.local_machine.l1b_repository[job.mission.id].l1bdata
-    directory = os.path.join(
-        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
-    return l1bdata_files
 
 
 def get_l2proc_argparser():
@@ -105,7 +98,7 @@ def get_l2proc_argparser():
         "-v", "--verbose", help="increase output verbosity",
         action="store_true")
     parser.add_argument(
-        "-skip", action='store', type=int, const=0, nargs='?',
+        "-skip", action='store', type=int, default=0,
         dest='skip', help='number of files to skip')
     # show preprocessor version
     parser.add_argument(
