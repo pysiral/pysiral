@@ -34,21 +34,25 @@ class BaseRetracker(object):
         self._classifier = classifier
 
     def retrack(self, l1b, l2):
+
         # Initialize the retracked range with an NaN array
         # -> only waveforms of type "surface_type" will retracked
         self._create_default_properties(l1b.n_records)
+
         # Give the Retracker the possibility to create additional
         # data arrays (All retracker must have this method)
-        self._create_retracker_properties(l1b.n_records)
+        self.create_retracker_properties(l1b.n_records)
+
         # Set the indices for the given surface type
         # Check if there is something to do
         if self._indices is None:
             self._indices = np.arange(l1b.n_records)
         if len(self._indices) == 0:
             return False
+
         # Loop over each waveform of given surface type
-        self._retrack(l1b.waveform.range, l1b.waveform.power, self._indices,
-                      l1b.waveform.radar_mode, l1b.waveform.is_valid)
+        self.l2_retrack(l1b.waveform.range, l1b.waveform.power, self._indices,
+                        l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
 
     def _create_default_properties(self, n_records):
@@ -80,11 +84,12 @@ class TFMRA(BaseRetracker):
     def __init__(self):
         super(TFMRA, self).__init__()
 
-    def _create_retracker_properties(self, n_records):
+    def create_retracker_properties(self, n_records):
         # None so far
         pass
 
-    def _retrack(self, range, wfm, index_list, radar_mode, is_valid):
+    def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
+        """ API Calling method """
 
         for index in index_list:
 
@@ -181,10 +186,10 @@ class NoneRetracker(BaseRetracker):
     def __init__(self):
         super(NoneRetracker, self).__init__()
 
-    def _create_retracker_properties(self, n_records):
+    def create_retracker_properties(self, n_records):
         pass
 
-    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
+    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         self._range[indices] = np.nan
         self._power[indices] = np.nan
         self._flag[indices] = False
@@ -195,14 +200,14 @@ class SICCILead(BaseRetracker):
     def __init__(self):
         super(SICCILead, self).__init__()
 
-    def _create_retracker_properties(self, n_records):
+    def create_retracker_properties(self, n_records):
         parameter = ["retracked_bin", "maximum_power_bin", "sigma", "k",
                      "alpha", "power_in_echo_tail", "rms_echo_and_model"]
         for parameter_name in parameter:
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
 
-    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
+    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
         self._sicci_lead_retracker(range, wfm, indices)
         # Filter the results
@@ -340,13 +345,13 @@ class SICCIOcog(BaseRetracker):
     def __init__(self):
         super(SICCIOcog, self).__init__()
 
-    def _create_retracker_properties(self, n_records):
+    def create_retracker_properties(self, n_records):
         parameter = ["retracked_bin", "leading_edge_width", "tail_shape"]
         for parameter_name in parameter:
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
 
-    def _retrack(self, range, wfm, indices, radar_mode, is_valid):
+    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
         self._sicci_ice_retracker(range, wfm, indices)
         # Filter the results
