@@ -22,7 +22,7 @@ from pysiral.flag import ORCondition
 from pysiral.helper import parse_datetime_str
 from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
-from pysiral.waveform import get_waveforms_peak_power
+from pysiral.waveform import get_waveforms_peak_power, TFMRALeadingEdgeWidth
 
 from netCDF4 import num2date
 import numpy as np
@@ -224,6 +224,17 @@ class L1bAdapterCryoSat(object):
         # (use l1b waveform power array that is already in physical units)
         peak_power = get_waveforms_peak_power(self.l1b.waveform.power, dB=True)
         self.l1b.classifier.add(peak_power, "peak_power_db")
+
+        # Compute the leading edge width (requires TFMRA retracking)
+        wfm = self.l1b.waveform.power
+        rng = self.l1b.waveform.range
+        radar_mode = self.l1b.waveform.radar_mode
+        is_ocean = self.l1b.surface_type.get_by_name("ocean").flag
+        lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        lew1 = lew.get_width_from_thresholds(0.05, 0.5)
+        lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+        self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
+        self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
 
 
 class L1bAdapterEnvisat(object):
