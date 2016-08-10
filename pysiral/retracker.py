@@ -81,8 +81,25 @@ class BaseRetracker(object):
 class TFMRA(BaseRetracker):
     """ Default Retracker from AWI CryoSat-2 production system """
 
+    DOCSTR = r"Threshold first maximum retracker (TFMRA)"
+
     def __init__(self):
         super(TFMRA, self).__init__()
+
+    def set_default_options(self):
+        self.set_options(**self.default_options_dict)
+
+    @property
+    def default_options_dict(self):
+        default_options_dict = {
+            "threshold": 0.5,
+            "offset": 0.0,
+            "wfm_oversampling_factor": 10,
+            "wfm_oversampling_method": "linear",
+            "wfm_smoothing_window_size": [11, 11, 51],
+            "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
+            "first_maximum_local_order": 1}
+        return default_options_dict
 
     def create_retracker_properties(self, n_records):
         # None so far
@@ -91,88 +108,166 @@ class TFMRA(BaseRetracker):
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
         """ API Calling method """
 
-        for index in index_list:
+        for i in indices:
 
-            # Echo oversampling & filtering
-            x, y = self._filter_waveform(
-                range[index, :], wfm[index, :], radar_mode[index])
+            # Get the filtered waveform, index of first maximum & norm
+            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
+                rng[i, :], wfm[i, :], radar_mode[i])
 
-            # Normalize filtered waveform
-            y, norm = self._normalize_wfm(y)
-
-            # Get noise level in normalized units
-            oversampling = self._options.wfm_oversampling_factor
-            noise_level = wfm_get_noise_level(wfm, oversampling)
-
-            # Find first maxima
-            first_maximum_index = self._get_first_maxima_index(
-                y, noise_level, radar_mode[index])
-
-            # first maximum finder may fail
-            if first_maximum_index is None:
-                self._range[index] = np.nan
-                self._power[index] = np.nan
+            # first maximum finder might have failed
+            if fmi is None:
+                self._range[i] = np.nan
+                self._power[i] = np.nan
                 return
 
-            # Get track point
-            tfmra_range, tfmra_power = self._get_retracker_range(
-                x, y, first_maximum_index, norm)
+            # Get track point and its power
+            tfmra_threshold = self._options.threshold
+            tfmra_range, tfmra_power = self.get_threshold_range(
+                filt_rng, filt_wfm, fmi, tfmra_threshold)
 
             # Mandatory return function
-            self._range[index] = tfmra_range
-            self._power[index] = tfmra_power
+            self._range[i] = tfmra_range + self._options.offset
+            self._power[i] = tfmra_power * norm
 
-    def _filter_waveform(self, range, wfm, radar_mode):
-        n = len(range)
-        # Waveform Oversampling
+    def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
+        """
+        Returns the intermediate product (oversampled range bins,
+        oversampled and filtered waveforms, indices of first maxima
+        and peak power norm for custom applications
+        """
+
+        oversample_factor = self._options.wfm_oversampling_factor
+        wfm_shape = (wfm.shape[0], wfm.shape[1]*oversample_factor)
+
+        filt_rng = np.full(wfm_shape, np.nan)
+        filt_wfm = np.full(wfm_shape, np.nan)
+        fmi = np.full(wfm_shape[0], -1, dtype=np.int32)
+        norm = np.full(wfm_shape[0], np.nan)
+
+        for i in np.arange(wfm.shape[0]):
+            if not is_valid[i]:
+                continue
+            result = self.get_filtered_wfm(rng[i, :], wfm[i, :], radar_mode[i])
+            filt_rng[i, :] = result[0]
+            filt_wfm[i, :] = result[1]
+            fmi[i] = result[2]
+            norm[i] = result[3]
+
+        return filt_rng, filt_wfm, fmi, norm
+
+    def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
+        """
+        Return the distance between two thresholds t0 < t1
+        """
+        width = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        for i in np.arange(rng.shape[0]):
+            if fmi[i] is None:
+                continue
+            r0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0)
+            r1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1)
+            width[i] = r1[0] - r0[0]
+
+        # some irregular waveforms might produce negative width values
+        is_negative = np.where(width < 0.)[0]
+        width[is_negative] = np.nan
+        return width
+
+    def get_filtered_wfm(self, rng, wfm, radar_mode):
+
+        # Echo oversampling & filtering
+        filt_rng, filt_wfm = self.filter_waveform(rng, wfm, radar_mode)
+
+        # Normalize filtered waveform
+        filt_wfm, norm = self.normalize_wfm(filt_wfm)
+
+        # Get noise level in normalized units
         oversampling = self._options.wfm_oversampling_factor
-        range_os = np.linspace(
-            np.nanmin(range), np.nanmax(range), n*oversampling)
-        interpolator_type = self._options.wfm_oversampling_method
-        interpolator = interp1d(range, wfm, kind=interpolator_type)
+        noise_level = wfm_get_noise_level(filt_wfm, oversampling)
+
+        # Find first maxima
+        # (needs to be above radar mode dependent noise threshold)
+        fmnt = self._options.first_maximum_normalized_threshold[radar_mode]
+        peak_minimum_power = fmnt + noise_level
+        fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power)
+
+        return filt_rng, filt_wfm, fmi, norm
+
+    def filter_waveform(self, rng, wfm, radar_mode):
+        """
+        Return a filtered waveform: block filter smoothing of
+        oversampled original waveform
+        """
+
+        # Parameter from options dictionary if omitted
+        opt = self._options
+        oversampling = opt.wfm_oversampling_factor
+        interp_type = opt.wfm_oversampling_method
+        window_size = opt.wfm_smoothing_window_size[radar_mode]
+
+        # Waveform Oversampling
+        n = len(rng)
+        range_os = np.linspace(np.nanmin(rng), np.nanmax(rng), n*oversampling)
+        interpolator = interp1d(rng, wfm, kind=interp_type)
         wfm_os = interpolator(range_os)
+
         # Smoothing
-        window_size = self._options.wfm_smoothing_window_size[radar_mode]
         wfm_os = smooth(wfm_os, window_size)
+
         return range_os, wfm_os
 
-    def _normalize_wfm(self, y):
+    def normalize_wfm(self, y):
         norm = np.nanmax(y)
         return y/norm, norm
 
-    def _get_first_maxima_index(self, y, noise_level, radar_mode):
+    def get_first_maximum_index(self, wfm, peak_minimum_power):
+        """
+        Return the index of the first peak (first maximum) on
+        the leading edge before the absolute power maximum.
+        The first peak is only valid if its power exceeds a certain threshold
+        """
+
         # Get the main maximum first
-        absolute_maximum_index = np.argmax(y)
+        absolute_maximum_index = np.argmax(wfm)
+
         # Find relative maxima before the absolute maximum
         try:
-            peaks = findpeaks(y[0:absolute_maximum_index])
+            peaks = findpeaks(wfm[0:absolute_maximum_index])
         except:
             return None
+
         # Check if relative maximum are above the required threshold
-        opt = self._options
-        threshold = opt.first_maximum_normalized_threshold[radar_mode]
-        leading_maxima = np.where(y[peaks] >= threshold + noise_level)[0]
+        leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]
+
         # Identify the first maximum
         first_maximum_index = absolute_maximum_index
         if len(leading_maxima) > 0:
             # first_maximum_index = leading_maxima[0]
             first_maximum_index = peaks[leading_maxima[0]]
+
         return first_maximum_index
 
-    def _get_retracker_range(self, x, y, first_maximum_index, norm):
+    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+        """
+        Return the range value and the power of the retrack point at
+        a given threshold of the firsts maximum power
+        """
+
         # get first index greater as threshold power
-        first_maximum_power = y[first_maximum_index]
-        tfmra_threshold = self._options.threshold
-        tfmra_power_normed = tfmra_threshold*first_maximum_power
-        points = np.where(y > tfmra_power_normed)[0]
-        # Use linear interpolation to get exact range value
-        i0, i1 = points[0]-1, points[0]
-        gradient = (y[i1]-y[i0])/(x[i1]-x[i0])
-        tfmra_range = (tfmra_power_normed - y[i0]) / gradient + x[i0]
-        # Add optional offset
-        tfmra_range += self._options.offset
+        first_maximum_power = wfm[first_maximum_index]
+
         # Get power of retracked point
-        tfmra_power = tfmra_power_normed*norm
+        tfmra_power = threshold*first_maximum_power
+
+        # Use linear interpolation to get exact range value
+        points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
+
+        if len(points) == 0:
+            return np.nan, np.nan
+
+        i0, i1 = points[0]-1, points[0]
+        gradient = (wfm[i1]-wfm[i0])/(rng[i1]-rng[i0])
+        tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
+
         return tfmra_range, tfmra_power
 
 
