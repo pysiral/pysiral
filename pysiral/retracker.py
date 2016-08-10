@@ -115,7 +115,7 @@ class TFMRA(BaseRetracker):
                 rng[i, :], wfm[i, :], radar_mode[i])
 
             # first maximum finder might have failed
-            if fmi is None:
+            if fmi == -1:
                 self._range[i] = np.nan
                 self._power[i] = np.nan
                 return
@@ -233,7 +233,7 @@ class TFMRA(BaseRetracker):
         try:
             peaks = findpeaks(wfm[0:absolute_maximum_index])
         except:
-            return None
+            return -1
 
         # Check if relative maximum are above the required threshold
         leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]
