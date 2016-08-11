@@ -35,7 +35,7 @@ class ConfigInfo(object):
     (local_machine_definition.yaml)
     """
 
-    PYSIRAL_VERSION = "0.2.pre"
+    PYSIRAL_VERSION = "0.2.0-dev"
 
     # Global variables
     _DEFINITION_FILES = {
