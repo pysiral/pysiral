@@ -91,24 +91,31 @@ class L1bPreProc(DefaultLoggingClass):
         if self.error.status:
             return
 
-        # Get the l1bdata diretory
-        export_folder = get_l1bdata_export_folder(
-            self._pysiral_config,
-            self._jobdef.mission_id,
-            self._jobdef.input_version,
-            self._jobdef.hemisphere,
-            self._jobdef.time_range.start_dt.year,
-            self._jobdef.time_range.start_dt.month)
+        if self._jobdef.hemisphere == "global":
+            hemisphere_targets = ["north", "south"]
+        else:
+            hemisphere_targets = [self._jobdef.hemisphere]
 
-        # Get list of netcdf files
-        search_pattern = os.path.join(export_folder, "*.nc")
-        l1bdata_files = glob.glob(search_pattern)
+        for hemisphere in hemisphere_targets:
 
-        # Delete files
-        self.log.info("Removing %g l1bdata files in %s" % (
-            len(l1bdata_files), export_folder))
-        for l1bdata_filename in l1bdata_files:
-            os.remove(l1bdata_filename)
+            # Get the l1bdata diretory
+            export_folder = get_l1bdata_export_folder(
+                self._pysiral_config,
+                self._jobdef.mission_id,
+                self._jobdef.input_version,
+                hemisphere,
+                self._jobdef.time_range.start_dt.year,
+                self._jobdef.time_range.start_dt.month)
+
+            # Get list of netcdf files
+            search_pattern = os.path.join(export_folder, "*.nc")
+            l1bdata_files = glob.glob(search_pattern)
+
+            # Delete files
+            self.log.info("Removing %g l1bdata files in %s" % (
+                len(l1bdata_files), export_folder))
+            for l1bdata_filename in l1bdata_files:
+                os.remove(l1bdata_filename)
 
     def merge_and_export_polar_ocean_subsets(self):
         """ loop over remaining files in file list """
