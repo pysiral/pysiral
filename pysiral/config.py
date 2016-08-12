@@ -68,6 +68,11 @@ class ConfigInfo(object):
         return self._return_path("config")
 
     @property
+    def sandbox_path(self):
+        """ Returns the local path to the document folder"""
+        return self._return_path("sandbox")
+
+    @property
     def mission_ids(self):
         return self.mission.missions
 
