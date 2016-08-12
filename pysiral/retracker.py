@@ -33,6 +33,9 @@ class BaseRetracker(object):
     def set_classifier(self, classifier):
         self._classifier = classifier
 
+    def init(self, n_records):
+        self._create_default_properties(n_records)
+
     def retrack(self, l1b, l2):
 
         # Initialize the retracked range with an NaN array
