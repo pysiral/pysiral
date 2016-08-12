@@ -233,3 +233,6 @@ pysiral/visualization/font/NeoSansW1G-Italic.otf
 pysiral/visualization/font/NeoSansW1G-Medium.otf
 pysiral/visualization/font/NeoSansW1G-MediumItalic.otf
 pysiral/visualization/font/NeoSansW1G-Regular.otf
+*.nbc
+*.nbi
+*.c
