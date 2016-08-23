@@ -29,12 +29,13 @@ def colorbar_png():
         cmap = pardef.cmap_diff
         parameter_label = "$\Delta$ " + pardef.label+" ("+pardef.unit+")"
         output_filename = os.path.join(
-            args.output, "colorbar_%s.png" % args.parameter)
+            args.output, "colorbar_%s_diff.png" % args.parameter)
     else:
         cmap = pardef.cmap
         parameter_label = pardef.label+" ("+pardef.unit+")"
         output_filename = os.path.join(
-            args.output, "colorbar_%s_diff.png" % args.parameter)
+            args.output, "colorbar_%s.png" % args.parameter)
+
 
     font_label_properties = {
         "color": "#4b4b4b",
