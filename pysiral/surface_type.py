@@ -298,6 +298,67 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
+class RickerTC2014_stripped(SurfaceTypeClassifier):
+    """
+    reduced version of the TC surface type classifieer to suit ENVISAT
+    """
+
+    def __init__(self):
+        super(RickerTC2014, self).__init__()
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
+
+    def _classify(self):
+        self.set_unknown_default()
+        self._classify_ocean()
+        self._classify_leads()
+        self._classify_sea_ice()
+        self._set_land_mask()
+
+    def _classify_ocean(self):
+        opt = self._options.ocean
+        parameter = self._classifier
+        ocean = ANDCondition()
+        # Peakiness Thresholds
+        ocean.add(parameter.peakiness >= opt.peakiness_min)
+        ocean.add(parameter.peakiness <= opt.peakiness_max)
+        # Ice Concentration
+        ocean.add(parameter.sic < opt.ice_concentration_min)
+        # OCOG Width
+        ocean.add(parameter.ocog_width >= opt.ocog_width_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self):
+        opt = self._options.lead
+        parameter = self._classifier
+        lead = ANDCondition()
+        # Stack (Beam) parameters
+        lead.add(parameter.peakiness_l >= opt.peakiness_l_min)
+        lead.add(parameter.peakiness_r >= opt.peakiness_r_min)
+        lead.add(parameter.peakiness >= opt.peakiness_min)
+        # Ice Concentration
+        lead.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self):
+        opt = self._options.sea_ice
+        parameter = self._classifier
+        ice = ANDCondition()
+        # Stack (Beam) parameters
+        ice.add(parameter.peakiness_r <= opt.peakiness_r_max)
+        ice.add(parameter.peakiness_l <= opt.peakiness_l_max)
+        ice.add(parameter.peakiness <= opt.peakiness_max)
+        # Ice Concentration
+        ice.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def _set_land_mask(self):
+        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
+        self._surface_type.add_flag(l1b_land_mask.flag, "land")
+        
+        
 class RA2SICCI(SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
