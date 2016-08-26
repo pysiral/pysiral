@@ -59,6 +59,10 @@ class ERSPreProc(L1bPreProc):
                 # Trim non ocean margins
                 l1b_roi = self.trim_non_ocean_data(seg)
 
+                # Test for unlikely case of no ocean data
+                if l1b_roi is None:
+                    return []
+
                 # Split orbits at larger non-ocean segments
                 l1b_segments = self.split_at_large_non_ocean_segments(l1b_roi)
 
