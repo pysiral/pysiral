@@ -341,6 +341,10 @@ class L1bAdapterEnvisat(object):
         wfm = self.sgdr.mds_18hz.power
         parameter = EnvisatWaveformParameter(wfm)
         self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
+        self.l1b.classifier.add(parameter.peakiness_left, "peakiness_left")
+        self.l1b.classifier.add(parameter.peakiness_right, "peakiness_right")
+        self.l1b.classifier.add(parameter.ocog_width, "ocog_width")
+        self.l1b.classifier.add(parameter.ocog_width, "ocog_amplitude")        
         sea_ice_backscatter = self.sgdr.mds_18hz.sea_ice_backscatter
         self.l1b.classifier.add(sea_ice_backscatter, "sea_ice_backscatter")
 
