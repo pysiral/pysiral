@@ -113,7 +113,11 @@ class EnvisatWaveformParameter(BaseClassifier):
     def _init_parameter(self):
         n = self.shape[0]
         self.pulse_peakiness = np.ndarray(shape=(n), dtype=np.float32)
-
+        self.peakiness_left = np.ndarray(shape=(n), dtype=np.float32)
+        self.peakiness_right = np.ndarray(shape=(n), dtype=np.float32)
+        self.ocog_width = np.ndarray(shape=(n), dtype=np.float32)
+        self.ocog_amplitude = np.ndarray(shape=(n), dtype=np.float32)
+        
     def _calc_parameter(self, wfm):
         for i in np.arange(self.shape[0]):
             # Discard first bins, they are FFT artefacts anyway
@@ -123,3 +127,35 @@ class EnvisatWaveformParameter(BaseClassifier):
             except ZeroDivisionError:
                 pp = np.nan
             self.pulse_peakiness[i] = pp
+
+            max_bin = np.nanargmax(wave)
+            if max_bin > 3+self.skip and max_bin < 123:
+                den_ppl = np.nanmean(wave[max_bin-3:max_bin-1])
+                den_ppr = np.nanmean(wave[max_bin+1:max_bin+3])
+                if den_ppl != 0:
+                    ppl = float(max(wave))/den_ppl*3.0
+                else:
+                    ppl = np.nan
+                if den_ppr != 0:
+                    ppr = float(max(wave))/den_ppr*3.0
+                else:
+                    ppr = np.nan
+            else:
+                ppl = np.nan
+                ppr = np.nan
+            self.peakiness_left[i] = ppl
+            self.peakiness_right[i] = ppr
+            
+            y = wave.flatten().astype(np.float32)
+            y -= np.nanmean(y[0:11])  # Remove Noise
+            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+            y2 = y**2.0
+            self.ocog_amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
+            self.ocog_width[i] = ((y2.sum())**2.0) / (y2**2.0).sum()
+            
+                #if max_bin > 3+self.skip and max_bin < 123:
+                #    ppl = float(max(wave))/np.nanmean(wave[max_bin-3:max_bin-1])*3.0
+                #    ppr = float(max(wave))/np.nanmean(wave[max_bin+1:max_bin+3])*3.0
+                #else:
+                #    ppl = np.nan
+                #    ppr = np.nan
