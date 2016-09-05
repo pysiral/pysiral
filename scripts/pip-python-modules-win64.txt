@@ -1,6 +1,7 @@
 construct==2.5.2
 geopy==1.11.0
 Logbook==0.12.5
+multiprocessing==2.6.2.1
 parse==1.6.6
 pyproj==1.9.5.1
 pyresample==1.1.3
