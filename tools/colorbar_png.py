@@ -29,12 +29,22 @@ def colorbar_png():
         cmap = pardef.cmap_diff
         parameter_label = "$\Delta$ " + pardef.label+" ("+pardef.unit+")"
         output_filename = os.path.join(
-            args.output, "colorbar_%s.png" % args.parameter)
+            args.output, "colorbar_%s_diff.png" % args.parameter)
     else:
         cmap = pardef.cmap
         parameter_label = pardef.label+" ("+pardef.unit+")"
         output_filename = os.path.join(
-            args.output, "colorbar_%s_diff.png" % args.parameter)
+            args.output, "colorbar_%s.png" % args.parameter)
+
+    # Check if colorbar needs extension triangles
+    if args.cmap_set_over and not args.cmap_set_under:
+        extend = 'max'
+    elif not args.cmap_set_over and args.cmap_set_under:
+        extend = 'min'
+    elif args.cmap_set_over and args.cmap_set_under:
+        extend = 'both'
+    else:
+        extend = 'neither'
 
     font_label_properties = {
         "color": "#4b4b4b",
@@ -57,13 +67,15 @@ def colorbar_png():
 #    ticks = MultipleLocator(cmap.step)
 #    axins = inset_axes(ax, **cb_ax_kwargs)
     ticks = MultipleLocator(cmap.step)
-    cb = plt.colorbar(sm, cax=ax, ticks=ticks, orientation="horizontal")
+    cb = plt.colorbar(sm, cax=ax, ticks=ticks, extend=extend,
+                      orientation="horizontal")
     cl = plt.getp(cb.ax, 'xmajorticklabels')
     plt.setp(cl, **font_label_properties)
     parameter_label = parameter_label
     cb.set_label(parameter_label, **font_label_properties)
     cb.outline.set_linewidth(0.1)
-    cb.outline.set_alpha(0.0)
+    if not args.cmap_outline:
+        cb.outline.set_alpha(0.0)
     for t in cb.ax.get_yticklines():
         t.set_color("1.0")
     cb.ax.tick_params('both', length=4.0, which='major', pad=10,
@@ -103,6 +115,21 @@ def get_argparser():
         '--vertical',
         action='store_true', dest='vertical',
         help='create a vertical colorbar')
+
+    parser.add_argument(
+        '--cmap-set-over',
+        action='store_true', dest='cmap_set_over',
+        default=False)
+
+    parser.add_argument(
+        '--cmap-set-under',
+        action='store_true', dest='cmap_set_under',
+        default=False)
+
+    parser.add_argument(
+        '--cmap-outline',
+        action='store_true', dest='cmap_outline',
+        default=False)
 
     # show preprocessor version
     parser.add_argument(
