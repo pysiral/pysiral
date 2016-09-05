@@ -7,7 +7,8 @@ Created on Fri Aug 12 17:10:27 2016
 import numpy as np
 
 def cyfindpeaks(data):
-    """Finds peaks in `data` which are of `spacing` width and >=`limit`.
+    """
+    Finds peaks in `data` which are of `spacing` width and >=`limit`.
     :param data: values
     :param spacing: minimum spacing to the next peak (should be 1 or more)
     :param limit: peaks should have value greater or equal
