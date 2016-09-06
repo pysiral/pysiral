@@ -15,6 +15,7 @@ cimport numpy as np
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
+ctypedef np.float32_t DTYPE_tf
 
 #class cTFMRACore():
 #    """ Default Retracker from AWI CryoSat-2 production system """
@@ -200,10 +201,15 @@ ctypedef np.float64_t DTYPE_t
 #    return np.nanmean(wfm[0:5*oversample_factor])
 
 
-def cysmooth(np.ndarray[DTYPE_t, ndim=1] x, int window):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+def cysmooth(double[:] x, int window):
     """ Numpy implementation of the IDL SMOOTH function """
-    cdef np.ndarray[DTYPE_t, ndim=1] kernel = np.ones(window)/float(window)
-    cdef np.ndarray[DTYPE_t, ndim=1] y = np.convolve(x, kernel, mode='same')
+    cdef np.ndarray[DTYPE_t, ndim=1] kernel
+    kernel = np.ones(shape=(window))/float(window)
+    y = np.convolve(x, kernel, mode='same')
     return y
 
 
@@ -216,15 +222,19 @@ def cyfindpeaks(np.ndarray[DTYPE_t, ndim=1] data):
     :return:
     """
 
-    cdef int spacing = 1
+    cdef int spacing, s, start
+    # cdef double[:] h_b, h_c, h_a
     cdef int len = data.size
-    cdef np.ndarray[DTYPE_t, ndim=1] x = np.zeros(len+2*spacing)
+    cdef np.ndarray[DTYPE_t, ndim=1] x
+
+    spacing = 1
+    x = np.zeros(shape=(len+2*spacing))
 
     x[:spacing] = data[0]-1.e-6
     x[-spacing:] = data[-1]-1.e-6
     x[spacing:spacing+len] = data
 
-    cdef np.ndarray[DTYPE_t, ndim=1] peak_candidate = np.zeros(len)
+    peak_candidate = np.zeros(len)
     peak_candidate[:] = True
 
     for s in range(spacing):
@@ -241,3 +251,55 @@ def cyfindpeaks(np.ndarray[DTYPE_t, ndim=1] data):
     ind = ind.reshape(ind.size)
 
     return ind
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def cyinterpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
+                  np.ndarray[DTYPE_tf, ndim=1] wfm,
+                  int oversampling):
+    cdef int n, n_os
+    cdef float minval, maxval
+    cdef np.ndarray[DTYPE_t, ndim=1] range_os
+    n = len(rng)
+    n_os = n*oversampling
+    minval = np.nanmin(rng)
+    maxval = np.nanmax(rng)
+    range_os = np.linspace(minval, maxval, n_os)
+    wfm_os = np.interp(range_os, rng, wfm)
+    return range_os, wfm_os
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+def cy_wfm_get_noise_level(double[:] wfm, int oversample_factor):
+    """ According to CS2AWI TFMRA implementation """
+    cpdef double[:] early_wfm = wfm[0:5*oversample_factor]
+    cdef double noise_level
+    noise_level = sum(early_wfm)/float(len(early_wfm))
+    return noise_level
+
+#def cy_filter_waveform(np.ndarray[DTYPE_tf, ndim=1] rng,
+#                       np.ndarray[DTYPE_tf, ndim=1] wfm,
+#                       int oversampling,
+#                       str interp_type,
+#                       int window_size):
+#    """
+#    Return a filtered waveform: block filter smoothing of
+#    oversampled original waveform
+#    """
+#
+#    # Waveform Oversampling
+#    cdef int n = len(rng)
+#    cdef np.ndarray[DTYPE_t, ndim=1] range_os = np.linspace(
+#        np.nanmin(rng), np.nanmax(rng), n*oversampling)
+#    interpolator = interp1d(rng, wfm, kind=interp_type)
+#    cdef np.ndarray[DTYPE_t, ndim=1] wfm_os = interpolator(range_os)
+#
+#    # Smoothing
+#    wfm_os = cysmooth(wfm_os, window_size)
+#
+#    return range_os, wfm_os
