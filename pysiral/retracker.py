@@ -13,9 +13,10 @@ import numpy as np
 from scipy.interpolate import interp1d
 import bottleneck as bn
 
-from pysiral.performance.cytfmra import (cysmooth, cyfindpeaks, cyinterpolate,
-                                         cy_wfm_get_noise_level,
-                                         cy_normalize_wfm)
+# cythonized bottleneck functions for cTFMRA
+from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
+                                    cytfmra_wfm_noise_level,
+                                    cytfmra_normalize_wfm)
 
 
 class BaseRetracker(object):
@@ -374,15 +375,14 @@ class cTFMRA(BaseRetracker):
 
     def get_filtered_wfm(self, rng, wfm, radar_mode):
 
-
         filt_rng, filt_wfm = self.filter_waveform(rng, wfm, radar_mode)
 
         # Normalize filtered waveform
-        filt_wfm, norm = cy_normalize_wfm(filt_wfm)
+        filt_wfm, norm = cytfmra_normalize_wfm(filt_wfm)
 
         # Get noise level in normalized units
         oversampling = self._options.wfm_oversampling_factor
-        noise_level = cy_wfm_get_noise_level(filt_wfm, oversampling)
+        noise_level = cytfmra_wfm_noise_level(filt_wfm, oversampling)
 
         # Find first maxima
         # (needs to be above radar mode dependent noise threshold)
@@ -405,7 +405,7 @@ class cTFMRA(BaseRetracker):
         window_size = opt.wfm_smoothing_window_size[radar_mode]
 
         # Use cython implementation of waveform oversampling
-        range_os, wfm_os = cyinterpolate(rng, wfm, oversampling)
+        range_os, wfm_os = cytfmra_interpolate(rng, wfm, oversampling)
 
         # Smoothing
         wfm_os = bnsmooth(wfm_os, window_size)
@@ -424,10 +424,10 @@ class cTFMRA(BaseRetracker):
 
         # Find relative maxima before the absolute maximum
 
-        #try:
-        peaks = cyfindpeaks(wfm[0:absolute_maximum_index])
-        #except:
-        #    return -1
+        try:
+            peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index])
+        except:
+            return -1
 
         # Check if relative maximum are above the required threshold
         leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]

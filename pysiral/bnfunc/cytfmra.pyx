@@ -23,30 +23,7 @@ ctypedef np.float32_t DTYPE_tf
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-@cython.cdivision(True)
-def cysmooth(np.ndarray[DTYPE_t, ndim=1] x, int window):
-    cdef int pad = (window-1)/2
-    cdef int n = len(x)
-    cdef np.ndarray[DTYPE_t, ndim=1] xpad = np.ndarray(shape=(n+window))
-    xpad[0:pad] = 0.0
-    xpad[pad:n+pad] = x
-    xpad[n+pad:] = 0.0
-    cdef np.ndarray[DTYPE_t, ndim=1] y = bn.move_mean(xpad, window=window)[window-1:(window+n-1)]
-    return y
-
-
-#def cysmooth(double[:] x, int window):
-#    """ Numpy implementation of the IDL SMOOTH function """
-#    cdef np.ndarray[DTYPE_t, ndim=1] kernel
-#    kernel = np.ones(shape=(window))/float(window)
-#    y = np.convolve(x, kernel, mode='same')
-#    return y
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-def cyfindpeaks(np.ndarray[DTYPE_t, ndim=1] data):
+def cytfmra_findpeaks(np.ndarray[DTYPE_t, ndim=1] data):
     """
     Finds peaks in `data` which are of `spacing` width and >=`limit`.
     :param data: values
@@ -76,8 +53,6 @@ def cyfindpeaks(np.ndarray[DTYPE_t, ndim=1] data):
     h_a = x[start:start + len]  # after
     peak_candidate = np.logical_and(h_c > h_b, h_c > h_a)
 
-#    ind = np.argwhere(peak_candidate)
-#    ind = ind.reshape(ind.size)
     ind = np.where(peak_candidate)[0]
 
     return ind
@@ -86,9 +61,9 @@ def cyfindpeaks(np.ndarray[DTYPE_t, ndim=1] data):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def cyinterpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
-                  np.ndarray[DTYPE_tf, ndim=1] wfm,
-                  int oversampling):
+def cytfmra_interpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
+                        np.ndarray[DTYPE_tf, ndim=1] wfm,
+                       int oversampling):
     cdef int n, n_os
     cdef float minval, maxval
     cdef np.ndarray[DTYPE_t, ndim=1] range_os
@@ -110,7 +85,7 @@ def cyinterpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-def cy_wfm_get_noise_level(double[:] wfm, int oversample_factor):
+def cytfmra_wfm_noise_level(double[:] wfm, int oversample_factor):
     """ According to CS2AWI TFMRA implementation """
     cpdef double[:] early_wfm = wfm[0:5*oversample_factor]
     cdef double noise_level
@@ -122,7 +97,7 @@ def cy_wfm_get_noise_level(double[:] wfm, int oversample_factor):
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-def cy_normalize_wfm(np.ndarray[DTYPE_t, ndim=1] y):
+def cytfmra_normalize_wfm(np.ndarray[DTYPE_t, ndim=1] y):
     cdef double norm = bn.nanmax(y)
     cdef np.ndarray[DTYPE_t, ndim=1] normed_y = y/norm
     return normed_y, norm
