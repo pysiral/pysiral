@@ -5,12 +5,10 @@ import numpy
 import os
 
 extensions = [
-    Extension(
-        "cytfmra",
-        [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
+    Extension("cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
 
 setup(
-    name = "pysiral-bnfunc",
+    name = "cysiral",
     version = "0.1",
     author = "Stefan Hendricks",
     author_email = "stefan.hendricks@awi.de",
