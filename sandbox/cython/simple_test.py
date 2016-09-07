@@ -9,7 +9,8 @@ import numpy as np
 import time
 
 from pysiral.performance.cytfmra import (cyinterpolate, cysmooth,
-                                         cy_wfm_get_noise_level)
+                                         cy_wfm_get_noise_level,
+                                         cy_normalize_wfm)
 
 def test_smooth():
 
@@ -73,6 +74,24 @@ def test_noise_level():
 
     print "- cython: %.4f seconds" % (t1-t0)
 
+def test_normalize():
+
+    n_tests = 2000
+    a = np.arange(10000, dtype=np.float64)
+
+    print "\nTest: normalize_wfm"
+    t0 = time.clock()
+    for i in np.arange(n_tests):
+        c = normalize_wfm(a)
+    t1 = time.clock()
+    print "- python: %.4f seconds" % (t1-t0)
+
+    t0 = time.clock()
+    for i in np.arange(n_tests):
+        c = cy_normalize_wfm(a[:])
+    t1 = time.clock()
+
+    print "- cython: %.4f seconds" % (t1-t0)
 
 from scipy.interpolate import interp1d
 
@@ -88,7 +107,13 @@ def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
     return np.nanmean(wfm[0:5*oversample_factor])
 
+
+def normalize_wfm(y):
+    norm = np.nanmax(y)
+    return y/norm, norm
+
 if __name__ == "__main__":
     test_smooth()
     test_interpolate()
     test_noise_level()
+    test_normalize()
