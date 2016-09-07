@@ -12,7 +12,9 @@ import numpy as np
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
 
-from pysiral.performance.cytfmra import (cysmooth, cyfindpeaks, cyinterpolate)
+from pysiral.performance.cytfmra import (cysmooth, cyfindpeaks, cyinterpolate,
+                                         cy_wfm_get_noise_level,
+                                         cy_normalize_wfm)
 
 
 class BaseRetracker(object):
@@ -375,11 +377,11 @@ class cTFMRA(BaseRetracker):
         filt_rng, filt_wfm = self.filter_waveform(rng, wfm, radar_mode)
 
         # Normalize filtered waveform
-        filt_wfm, norm = self.normalize_wfm(filt_wfm)
+        filt_wfm, norm = cy_normalize_wfm(filt_wfm)
 
         # Get noise level in normalized units
         oversampling = self._options.wfm_oversampling_factor
-        noise_level = wfm_get_noise_level(filt_wfm, oversampling)
+        noise_level = cy_wfm_get_noise_level(filt_wfm, oversampling)
 
         # Find first maxima
         # (needs to be above radar mode dependent noise threshold)
@@ -408,10 +410,6 @@ class cTFMRA(BaseRetracker):
         wfm_os = cysmooth(wfm_os, window_size)
 
         return range_os, wfm_os
-
-    def normalize_wfm(self, y):
-        norm = np.nanmax(y)
-        return y/norm, norm
 
     def get_first_maximum_index(self, wfm, peak_minimum_power):
         """
