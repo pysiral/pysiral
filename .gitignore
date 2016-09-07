@@ -218,6 +218,11 @@ pip-log.txt
 .coverage
 .tox
 
+# cProfile
+*.result
+
+
+
 #Translations
 *.mo
 
