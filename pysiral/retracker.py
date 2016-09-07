@@ -11,6 +11,7 @@ import numpy as np
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
+import bottleneck as bn
 
 from pysiral.performance.cytfmra import (cysmooth, cyfindpeaks, cyinterpolate,
                                          cy_wfm_get_noise_level,
@@ -407,7 +408,7 @@ class cTFMRA(BaseRetracker):
         range_os, wfm_os = cyinterpolate(rng, wfm, oversampling)
 
         # Smoothing
-        wfm_os = cysmooth(wfm_os, window_size)
+        wfm_os = bnsmooth(wfm_os, window_size)
 
         return range_os, wfm_os
 
@@ -419,7 +420,7 @@ class cTFMRA(BaseRetracker):
         """
 
         # Get the main maximum first
-        absolute_maximum_index = np.argmax(wfm)
+        absolute_maximum_index = bn.nanargmax(wfm)
 
         # Find relative maxima before the absolute maximum
 
@@ -462,6 +463,7 @@ class cTFMRA(BaseRetracker):
         tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
 
         return tfmra_range, tfmra_power
+
 
 class NoneRetracker(BaseRetracker):
     """
@@ -748,6 +750,15 @@ def smooth(x, window):
     """ Numpy implementation of the IDL SMOOTH function """
     return np.convolve(x, np.ones(window)/window, mode='same')
 
+def bnsmooth(x, window):
+    """ Bottleneck implementation of the IDL SMOOTH function """
+    pad = (window-1)/2
+    n = len(x)
+    xpad = np.ndarray(shape=(n+window))
+    xpad[0:pad] = 0.0
+    xpad[pad:n+pad] = x
+    xpad[n+pad:] = 0.0
+    return bn.move_mean(xpad, window=window, axis=0)[window-1:(window+n-1)]
 
 def peakdet(v, delta, x=None):
     """
