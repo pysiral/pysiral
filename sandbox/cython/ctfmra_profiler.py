@@ -51,10 +51,10 @@ def ctfrma_profiler():
 #
 #
 #    data = [wfm, rng, rmode, is_valid, indices, l1b.n_records]
-#    with open("profile_test_data.pkl", "wb") as f:
+#    with open("profile_test_data.pickle", "wb") as f:
 #        pickle.dump(data, f)
 
-    with open("profile_test_data.pkl", "rb") as f:
+    with open("profile_test_data.pickle", "rb") as f:
         wfm, rng, rmode, is_valid, indices, n_records =  pickle.load(f)
 
     ctfmra = cTFMRA()
