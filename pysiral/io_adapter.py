@@ -22,7 +22,8 @@ from pysiral.flag import ORCondition
 from pysiral.helper import parse_datetime_str
 from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
-from pysiral.waveform import get_waveforms_peak_power, TFMRALeadingEdgeWidth
+from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
+                              get_sar_sigma0)
 
 from netCDF4 import num2date
 import numpy as np
@@ -235,6 +236,18 @@ class L1bAdapterCryoSat(object):
         lew2 = lew.get_width_from_thresholds(0.5, 0.95)
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
+
+        # Compute sigma nought
+        peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
+        tx_power = get_structarr_attr(self.cs2l1b.measurement, "tx_power")
+        altitude = self.l1b.time_orbit.altitude
+        v = get_structarr_attr(self.cs2l1b.time_orbit, "satellite_velocity")
+        vx2, vy2, vz2 = v[:, 0]**2., v[:, 1]**2., v[:, 2]**2
+        vx2, vy2, vz2 = vx2.astype(float), vy2.astype(float), vz2.astype(float)
+        velocity = np.sqrt(vx2+vy2+vz2)
+        sigma0 = get_sar_sigma0(peak_power, tx_power, altitude, velocity)
+        self.l1b.classifier.add(sigma0, "sigma0")
+
 
 
 class L1bAdapterEnvisat(object):
