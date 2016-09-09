@@ -12,11 +12,12 @@ from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 
 from pysiral.cryosat2.functions import (
-    tai2utc, get_tai_datetime_from_timestamp,
-    get_cryosat2_wfm_power, get_cryosat2_wfm_range)
+    get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
+    get_cryosat2_wfm_range)
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
+from pysiral.clocks import UTCTAIConverter
 from pysiral.esa.functions import get_structarr_attr
 from pysiral.flag import ORCondition
 from pysiral.helper import parse_datetime_str
@@ -149,7 +150,14 @@ class L1bAdapterCryoSat(object):
         tai_objects = get_structarr_attr(
             self.cs2l1b.time_orbit, "tai_timestamp")
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
-        utc_timestamp = tai2utc(tai_timestamp)
+
+        # Convert the TAI timestamp to UTC
+        # XXX: Note, the leap seconds are only corrected based on the
+        # first timestamp to avoid having identical timestamps.
+        # In the unlikely case this will cause problems in orbits that
+        # span over a leap seconds change, set check_all=True
+        converter = UTCTAIConverter()
+        utc_timestamp = converter.tai2utc(tai_timestamp, check_all=False)
         self.l1b.time_orbit.timestamp = utc_timestamp
 
     def _transfer_waveform_collection(self):
