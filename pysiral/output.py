@@ -2,7 +2,7 @@
 
 
 from pysiral.path import file_basename
-from pysiral.config import options_from_dictionary
+from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
 
 from netCDF4 import Dataset, date2num
@@ -102,6 +102,7 @@ class L1bDataNC(NCDataFile):
                            "classifier", "correction"]
         self.output_folder = None
         self.l1b = None
+        self.parameter_attributes = get_parameter_attributes("l1b")
 
     def export(self):
         self._validate()
@@ -148,6 +149,26 @@ class L1bDataNC(NCDataFile):
                 var = dgroup.createVariable(
                     parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
+                # Add Parameter Attributes
+                attribute_dict = self._get_variable_attr_dict(parameter)
+                for key in attribute_dict.keys():
+                    setattr(var, key, attribute_dict[key])
+        print "Warning: Missing parameter attributes for "+"; ".join(
+            self._missing_parameters)
+
+    def _get_variable_attr_dict(self, parameter):
+        """ Retrieve the parameter attributes """
+        self._missing_parameters = []
+        default_attrs = {
+            "long_name": parameter,
+            "standard_name": parameter,
+            "scale_factor": 1.0,
+            "add_offset": 0.0}
+        if not self.parameter_attributes.has_key(parameter):
+            self._missing_parameters.append(parameter)
+            return default_attrs
+        else:
+            return dict(self.parameter_attributes[parameter])
 
 
 class L2iDataNC(NCDataFile):
