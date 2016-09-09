@@ -9,6 +9,8 @@
 * [l1b pre-processing] new classifier parameter for CryoSat-2, Envisat and ERS
 * [retracker] cythonized implementation of the TFRMA (3 times faster than pure python)
 * [tools] `l1bdata_report.py`: creates a pdf summary of l1bdata files
+* [tools] `zipl2month.py` creates monthly archives of l2i orbit files
+
 
 **Bugfixes**
 
