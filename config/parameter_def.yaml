@@ -3,8 +3,38 @@
 
 # categorical listing of all parameters with abbreviations, unit and docstr
 
-l1b_list:
-    - null
+l1b:
+    
+    timestamp:
+        long_name: utc timestamp
+        standard_name: timestamp
+        units: seconds since 1970-01-01
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    longitude:
+        long_name: longitude of satellite
+        standard_name: longitude
+        units: degrees
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    latitude:
+        long_name: latitude of satellite
+        standard_name: latitude
+        units: degrees
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    altitude:
+        long_name: altitude of satellite
+        standard_name: altitude
+        units: m
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
 
 l2_list:
     - null
@@ -24,7 +54,6 @@ correction_list:
     - ocean_loading_tide
     - solid_earth_tide
     - geocentric_polar_tide
-
 
 definition:
 

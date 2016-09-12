@@ -12,17 +12,19 @@ from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 
 from pysiral.cryosat2.functions import (
-    tai2utc, get_tai_datetime_from_timestamp,
-    get_cryosat2_wfm_power, get_cryosat2_wfm_range)
+    get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
+    get_cryosat2_wfm_range)
 from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
+from pysiral.clocks import UTCTAIConverter
 from pysiral.esa.functions import get_structarr_attr
 from pysiral.flag import ORCondition
 from pysiral.helper import parse_datetime_str
 from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
-from pysiral.waveform import get_waveforms_peak_power, TFMRALeadingEdgeWidth
+from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
+                              get_sar_sigma0)
 
 from netCDF4 import num2date
 import numpy as np
@@ -148,7 +150,14 @@ class L1bAdapterCryoSat(object):
         tai_objects = get_structarr_attr(
             self.cs2l1b.time_orbit, "tai_timestamp")
         tai_timestamp = get_tai_datetime_from_timestamp(tai_objects)
-        utc_timestamp = tai2utc(tai_timestamp)
+
+        # Convert the TAI timestamp to UTC
+        # XXX: Note, the leap seconds are only corrected based on the
+        # first timestamp to avoid having identical timestamps.
+        # In the unlikely case this will cause problems in orbits that
+        # span over a leap seconds change, set check_all=True
+        converter = UTCTAIConverter()
+        utc_timestamp = converter.tai2utc(tai_timestamp, check_all=False)
         self.l1b.time_orbit.timestamp = utc_timestamp
 
     def _transfer_waveform_collection(self):
@@ -235,7 +244,19 @@ class L1bAdapterCryoSat(object):
         lew2 = lew.get_width_from_thresholds(0.5, 0.95)
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
-        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
+
+        # Compute sigma nought
+        peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
+        tx_power = get_structarr_attr(self.cs2l1b.measurement, "tx_power")
+        altitude = self.l1b.time_orbit.altitude
+        v = get_structarr_attr(self.cs2l1b.time_orbit, "satellite_velocity")
+        vx2, vy2, vz2 = v[:, 0]**2., v[:, 1]**2., v[:, 2]**2
+        vx2, vy2, vz2 = vx2.astype(float), vy2.astype(float), vz2.astype(float)
+        velocity = np.sqrt(vx2+vy2+vz2)
+        sigma0 = get_sar_sigma0(peak_power, tx_power, altitude, velocity)
+        self.l1b.classifier.add(sigma0, "sigma0")
+
+
 
 class L1bAdapterEnvisat(object):
     """ Converts a Envisat SGDR object into a L1bData object """
@@ -341,24 +362,9 @@ class L1bAdapterEnvisat(object):
         wfm = self.sgdr.mds_18hz.power
         parameter = EnvisatWaveformParameter(wfm)
         self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
-        self.l1b.classifier.add(parameter.peakiness_left, "peakiness_left")
-        self.l1b.classifier.add(parameter.peakiness_right, "peakiness_right")
-        self.l1b.classifier.add(parameter.ocog_width, "ocog_width")
-        self.l1b.classifier.add(parameter.ocog_width, "ocog_amplitude")        
         sea_ice_backscatter = self.sgdr.mds_18hz.sea_ice_backscatter
         self.l1b.classifier.add(sea_ice_backscatter, "sea_ice_backscatter")
-        
-        # Compute the leading edge width (requires TFMRA retracking)
-        wfm = self.l1b.waveform.power
-        rng = self.l1b.waveform.range
-        radar_mode = self.l1b.waveform.radar_mode
-        is_ocean = self.l1b.surface_type.get_by_name("ocean").flag
-        lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
-        lew1 = lew.get_width_from_thresholds(0.05, 0.5)
-        lew2 = lew.get_width_from_thresholds(0.5, 0.95)
-        self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
-        self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
-        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
+
 
 class L1bAdapterERS(object):
     """ Converts a Envisat SGDR object into a L1bData object """

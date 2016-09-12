@@ -522,3 +522,7 @@ def td_branches(t):
 def options_from_dictionary(**opt_dict):
     """ Function for converting option dictionary in Treedict """
     return TreeDict.fromdict(opt_dict, expand_nested=True)
+
+def get_parameter_attributes(target):
+    config = ConfigInfo()
+    return config.parameter.l1b
