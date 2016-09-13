@@ -35,14 +35,26 @@ class Level2Processor(DefaultLoggingClass):
 
     def __init__(self, job):
 
-        super(Level2Processor, self).__init__("Level2Processor")
+        super(Level2Processor, self).__init__(self.__class__.__name__)
+
+        # Error Status Handler
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+
+        # job definition
         self._job = job
+
+        # List of Level-2 (processed) orbit segments
         self._orbit = deque()
+
+        # List of Level-1b input files
         self._l1b_files = []
-        self._config = None
-        self._skip = 0
+
+        # pysiral config
+        self._config = ConfigInfo()
+
+        # Processor Initialization Flag
         self._initialized = False
-        self._error_handler = {"raise_on_error": True}
+
 
 # %% Level2Processor: class properties
 
@@ -52,14 +64,8 @@ class Level2Processor(DefaultLoggingClass):
 
 # %% Level2Processor: public methods
 
-    def error_handling(self, **keyw):
-        self._error_handler.update(keyw)
-
-    def set_config(self, config):
-        self._config = config
-
-    def skip_files(self, skip):
-        self._skip = skip
+    def initialize(self):
+        self._initialize_processor()
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -124,7 +130,7 @@ class Level2Processor(DefaultLoggingClass):
         self._set_snow_handler()
 
         # All done
-        self.initialized = True
+        self._initialized = True
         self.log.info("Initializing done")
 
     def _set_roi(self):
