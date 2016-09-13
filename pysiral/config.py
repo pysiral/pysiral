@@ -464,7 +464,40 @@ class DefaultCommandLineArguments(object):
                 "dest": "no_critical_prompt",
                 "default": False,
                 "required": False,
-                "help": 'set to skip any required command line inputs'}}
+                "help": 'set to skip any required command line inputs'},
+
+            # fetch the level-2 settings file
+            "l2-settings": {
+                "action": "store",
+                "dest": "l2_settings",
+                "default": None,
+                "required": True,
+                "help": 'id or path to Level-2 settings file'},
+
+            # set the run tag for the Level-2 Processor
+            "run-tag": {
+                "action": "store",
+                "dest": "no_critical_prompt",
+                "default": None,
+                "required": False,
+                "help": 'tag for the Level-2 output'},
+
+            # no overwrite protection for level-2 outputs
+            "no-overwrite-protection": {
+                "action": "store_true",
+                "dest": "overwrite_protection",
+                "default": False,
+                "required": False,
+                "help": 'disable writing Level-2 output to unique directory'},
+
+            # no overwrite protection for level-2 outputs
+            "overwrite-protection": {
+                "action": "store_true",
+                "dest": "overwrite_protection",
+                "default": True,
+                "required": False,
+                "help": 'enable writing Level-2 output to unique directory ' +
+                        '(default)'}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
