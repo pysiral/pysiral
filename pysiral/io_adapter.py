@@ -244,6 +244,7 @@ class L1bAdapterCryoSat(object):
         lew2 = lew.get_width_from_thresholds(0.5, 0.95)
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
+        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
 
         # Compute sigma nought
         peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
@@ -361,10 +362,24 @@ class L1bAdapterEnvisat(object):
         """
         wfm = self.sgdr.mds_18hz.power
         parameter = EnvisatWaveformParameter(wfm)
-        self.l1b.classifier.add(parameter.pulse_peakiness, "pulse_peakiness")
+        self.l1b.classifier.add(parameter.peakiness, "peakiness")
+        self.l1b.classifier.add(parameter.peakiness_l, "peakiness_l")
+        self.l1b.classifier.add(parameter.peakiness_r, "peakiness_r")
+        
         sea_ice_backscatter = self.sgdr.mds_18hz.sea_ice_backscatter
         self.l1b.classifier.add(sea_ice_backscatter, "sea_ice_backscatter")
 
+        # Compute the leading edge width (requires TFMRA retracking)
+        wfm = self.l1b.waveform.power
+        rng = self.l1b.waveform.range
+        radar_mode = self.l1b.waveform.radar_mode
+        is_ocean = self.l1b.surface_type.get_by_name("ocean").flag
+        lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        lew1 = lew.get_width_from_thresholds(0.05, 0.5)
+        lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+        self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
+        self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
+        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
 
 class L1bAdapterERS(object):
     """ Converts a Envisat SGDR object into a L1bData object """

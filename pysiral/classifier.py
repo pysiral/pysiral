@@ -112,9 +112,9 @@ class EnvisatWaveformParameter(BaseClassifier):
 
     def _init_parameter(self):
         n = self.shape[0]
-        self.pulse_peakiness = np.ndarray(shape=(n), dtype=np.float32)
-        self.peakiness_left = np.ndarray(shape=(n), dtype=np.float32)
-        self.peakiness_right = np.ndarray(shape=(n), dtype=np.float32)
+        self.peakiness = np.ndarray(shape=(n), dtype=np.float32)
+        self.peakiness_l = np.ndarray(shape=(n), dtype=np.float32)
+        self.peakiness_r = np.ndarray(shape=(n), dtype=np.float32)
         self.ocog_width = np.ndarray(shape=(n), dtype=np.float32)
         self.ocog_amplitude = np.ndarray(shape=(n), dtype=np.float32)
         
@@ -126,7 +126,7 @@ class EnvisatWaveformParameter(BaseClassifier):
                 pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
             except ZeroDivisionError:
                 pp = np.nan
-            self.pulse_peakiness[i] = pp
+            self.peakiness[i] = pp
 
             max_bin = np.nanargmax(wave)
             if max_bin > 3+self.skip and max_bin < 123:
@@ -143,8 +143,8 @@ class EnvisatWaveformParameter(BaseClassifier):
             else:
                 ppl = np.nan
                 ppr = np.nan
-            self.peakiness_left[i] = ppl
-            self.peakiness_right[i] = ppr
+            self.peakiness_l[i] = ppl
+            self.peakiness_r[i] = ppr
             
             y = wave.flatten().astype(np.float32)
             y -= np.nanmean(y[0:11])  # Remove Noise
@@ -153,9 +153,3 @@ class EnvisatWaveformParameter(BaseClassifier):
             self.ocog_amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
             self.ocog_width[i] = ((y2.sum())**2.0) / (y2**2.0).sum()
             
-                #if max_bin > 3+self.skip and max_bin < 123:
-                #    ppl = float(max(wave))/np.nanmean(wave[max_bin-3:max_bin-1])*3.0
-                #    ppr = float(max(wave))/np.nanmean(wave[max_bin+1:max_bin+3])*3.0
-                #else:
-                #    ppl = np.nan
-                #    ppr = np.nan
