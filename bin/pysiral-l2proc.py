@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pysiral.config import DefaultCommandLineArguments
-# from pysiral.config import ConfigInfo, get_yaml_config
-# from pysiral.helper import month_iterator
-
 from pysiral.l2proc import Level2Processor, L2ProcJob
-from pysiral.iotools import get_l1bdata_files
 
 import argparse
 import sys
