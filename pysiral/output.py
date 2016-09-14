@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.path import file_basename
+from pysiral.path import filename_from_path
+from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
 
+
 from netCDF4 import Dataset, date2num
 from datetime import datetime
+from dateutil import parser as dtparser
 import numpy as np
+import parse
 import os
 
 
@@ -268,6 +272,37 @@ class L3SDataNC(NCDataFile):
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
 
+
+class PysiralOutputFileNaming(object):
+
+    def __init__(self):
+        self.error = ErrorStatus()
+        self.data_level = None
+        self.version = None
+        self.hemisphere = None
+        self.mission_id = None
+        self.orbit = None
+        self.start = None
+        self.stop = None
+        self.resolution_tag = None
+        self.grid_tag = None
+
+        self._registered_parsers = {
+            "l1bdata": "l1bdata_{version}_{hemisphere}_{mission_id}_{orbit:06d}_{start}_{stop}.nc"}
+
+    def parse_filename(self, fn):
+        filename = filename_from_path(fn)
+        for data_level in self._registered_parsers.keys():
+            parser = parse.compile(self._registered_parsers[data_level])
+            match = parser.parse(filename)
+            if match:
+                self.data_level = data_level
+                for parameter in match.named.keys():
+                    value = match[parameter]
+                    if parameter in ["start", "stop"]:
+                        value = dtparser.parse(value)
+                    setattr(self, parameter, value)
+                return
 
 def l1bnc_filenaming(l1b, config, version):
     """
