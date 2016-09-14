@@ -54,24 +54,24 @@ def pysiral_l2proc():
 
         job.log.info("Processing period: %s" % time_range.label)
 
-#        # Get the list of input files from local machine def
-#        version = jobdef.input_version
-#        job.get_input_files_local_machine_def(time_range, version=version)
-#
-#        # Check error, e.g. problems with local_machine_def, ...
-#        job.error.raise_on_error()
-#
-#        # List might be empty
-#        if job.has_empty_file_list:
-#            job.log.info(" Skipping period: %s" % time_range.label)
-#            continue
-#
-#        # Empty output folder (if --remove_old is set)
-#        if jobdef.remove_old and not joddef.overwrite_protection:
-#            job.remove_old_l2data()
+        # Get the list of input files from local machine def
+        version = jobdef.input_version
+        job.get_input_files_local_machine_def(time_range, version=version)
+
+        # Check error, e.g. problems with local_machine_def, ...
+        job.error.raise_on_error()
+
+        # List might be empty
+        if job.has_empty_file_list:
+            job.log.info(" Skipping period: %s" % time_range.label)
+            continue
+
+        # Empty output folder (if --remove_old is set)
+        if jobdef.remove_old and not jobdef.overwrite_protection:
+            job.remove_old_l2data()
 
         # Pre-process data for one month
-        # job.run()
+        job.run()
 
 
 class L2ProcArgParser(object):
