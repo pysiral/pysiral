@@ -9,6 +9,7 @@ from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
                             get_yaml_config)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l1bdata import L1bdataNCFile
+from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
 from pysiral.sic import get_l2_sic_handler
@@ -62,10 +63,22 @@ class Level2Processor(DefaultLoggingClass):
     def orbit(self):
         return self._orbit
 
+    @property
+    def has_empty_file_list(self):
+        return len(self._l1b_files) == 0
+
+
 # %% Level2Processor: public methods
 
     def initialize(self):
         self._initialize_processor()
+
+    def get_input_files_local_machine_def(self, time_range, version="default"):
+        mission_id = self._job.mission_id
+        hemisphere = self._job.hemisphere
+        l1b_files = get_local_l1bdata_files(
+            mission_id, time_range, hemisphere, version=version)
+        self.set_l1b_files(l1b_files)
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -78,9 +91,6 @@ class Level2Processor(DefaultLoggingClass):
 
     def purge(self):
         """ Clean the orbit collection """
-        pass
-
-    def grid_orbit_collection(self, grid_definitions):
         pass
 
 # %% Level2Processor: house keeping methods
@@ -194,7 +204,7 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Start Orbit Processing")
 
         # loop over l1bdata preprocessed orbits
-        for i, l1b_file in enumerate(self._l1b_files[self._skip:]):
+        for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
             self.log.info("+ l1b orbit file %g of %g (%.2f%%)" % (
@@ -567,7 +577,7 @@ class L2ProcJob(DefaultLoggingClass):
         # The input data is organized in folder per month, therefore
         # the processing period is set accordingly
         self.time_range.set_period("monthly")
-        self.log.info("Pre-processor Period is monthly")
+        self.log.info("Level-2 processor base period is monthly")
         self.time_range.set_exclude_month(self.options.exclude_month)
         self.log.info("Excluding month: %s" % str(self.options.exclude_month))
         self.iterations = self.time_range.get_iterations()
@@ -631,8 +641,10 @@ class L2ProcJob(DefaultLoggingClass):
             auxdata_def = self.pysiral_config.local_machine.auxdata_repository
             auxdata_id = pysiral_def.local_repository
 
-            # Specific type might not need a local repository
+            # Specific type might not need a local repository, but update
+            # anyway
             if auxdata_id is None:
+                self.settings.level2.auxdata[auxtype].update(pysiral_def)
                 continue
 
             # Check if entry is in local_machine_def.yaml
@@ -656,7 +668,8 @@ class L2ProcJob(DefaultLoggingClass):
                 self.error.add_error("missing-auxdata-dir", msg)
 
     def _validate_and_create_output_directory(self):
-        output_ids, output_defs = td_branches(self.settings.output)
+
+        output_ids, output_defs = td_branches(self.settings.level2.output)
         export_path = self.pysiral_config.local_machine.product_repository
         export_path = os.path.join(export_path, self.options.run_tag)
         time = datetime.now()
@@ -670,6 +683,7 @@ class L2ProcJob(DefaultLoggingClass):
             self.config.output[output_id].path = product_export_path
             self.log.info("Exporting %s data in directory %s" % (
                 output_id, product_export_path))
+        self.settings.export_path = product_export_path
 
     @property
     def mission_id(self):
@@ -691,6 +705,13 @@ class L2ProcJob(DefaultLoggingClass):
     def overwrite_protection(self):
         return self.options.overwrite_protection
 
+    @property
+    def config(self):
+        return self.settings.level2
+
+    @property
+    def roi(self):
+        return self.settings.roi
 
 
 class L2ProcJobOptions(object):
@@ -701,10 +722,11 @@ class L2ProcJobOptions(object):
         self.run_tag = None
         self.input_version = "default"
         self.remove_old = False
-        self.overwrite_protect = True
+        self.overwrite_protection = True
         self.start_date = None
         self.stop_date = None
         self.exclude_month = []
+        self.export_path = None
 
     def from_dict(self, options_dict):
         for parameter in options_dict.keys():
