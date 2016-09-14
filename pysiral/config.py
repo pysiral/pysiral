@@ -349,11 +349,12 @@ class TimeRangeRequest(object):
 
 class TimeRangeIteration(object):
 
-    def __init__(self):
+    def __init__(self, base_period="monthly"):
         self._index = 0
         self._num_iterations = 0
         self._start = None
         self._stop = None
+        self._base_period = base_period
 
     def __repr__(self):
         output = "pysiral TimeRangeIteration Object:\n"
@@ -391,6 +392,10 @@ class TimeRangeIteration(object):
     def is_full_month(self):
         test_diff = (self.start+relativedelta(months=1))-self.stop
         return test_diff.days < 1
+
+    @property
+    def base_period(self):
+        return self._base_period
 
     @property
     def label(self):
