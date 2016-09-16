@@ -355,61 +355,74 @@ class PysiralOutputFilenaming(object):
         return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)
 
 
+class PysiralOutputFolder(object):
     """
-    # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
+    Class for generating and retrieving output folders
+    """
 
-    # Get a proper filename friendly representation of the pysiral version
-    pysiral_version = config.PYSIRAL_VERSION
-    pysiral_version = pysiral_version.replace(".", "")
-    pysiral_version = pysiral_version.replace("-", "")
+    def __init__(self, config=None, load_config=True):
+        self.error = ErrorStatus()
+        self.data_level = None
+        self.path = None
+        self.version = "default"
+        self.mission_id = None
+        self.year = None
+        self.month = None
+        if not load_config:
+            return
+        if config is None or not isinstance(config, ConfigInfo):
+            self.config = ConfigInfo()
+        else:
+            self.config = config
 
-    year = l1b.info.start_time.year
-    month = l1b.info.start_time.month
-    hemisphere = l1b.info.hemisphere
-    export_folder = get_l1bdata_export_folder(config, l1b.mission, version,
-                                              hemisphere, year, month)
+    def l1bdata_from_list(self, mission_id, version, hemisphere, year, month):
+        self.mission_id = mission_id
+        self.version = version
+        self.hemisphere = hemisphere
+        self.year = year
+        self.month = month
+        self._set_folder_as_l1bdata()
 
-    # construct filename from
-    export_filename = "l1bdata_v{version}_{region}_{mission}_" + \
-                      "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{stopdt:%Y%m%dT%H%M%S}.nc"
-    export_filename = export_filename.format(
-        version=pysiral_version, region=hemisphere, mission=l1b.info.mission,
-        orbit=l1b.info.orbit, startdt=l1b.info.start_time,
-        stopdt=l1b.info.stop_time)
-    return export_folder, export_filename
+    def l1bdata_from_l1b(self, l1b, version="default"):
+        self.mission_id = l1b.mission
+        self.version = version
+        self.hemisphere = l1b.info.hemisphere
+        self.year = l1b.info.start_time.year
+        self.month = l1b.info.start_time.month
+        self._set_folder_as_l1bdata()
+
+    def l2i_from_startdt(self, startdt, base_path, subfolders):
+        stringify = {"month": "%02g", "year": "%04g", "day": "%02g"}
+        self.path = base_path
+        for subfolder_tag in subfolders:
+            parameter = getattr(startdt, subfolder_tag)
+            subfolder = stringify[subfolder_tag] % parameter
+            self.path = os.path.join(self.path, subfolder)
+
+    def create(self):
+        validate_directory(self.path)
+
+    def _set_folder_as_l1bdata(self):
+        self.data_level = "l1b"
+        local_repository = self.config.local_machine.l1b_repository
+        export_folder = local_repository[self.mission_id][self.version].l1bdata
+        yyyy = "%04g" % self.year
+        mm = "%02g" % self.month
+        self.path = os.path.join(export_folder, self.hemisphere, yyyy, mm)
 
 
-def get_l1bdata_export_folder(config, mission, version,
-                              hemisphere, year, month):
-    local_repository = config.local_machine.l1b_repository
-    export_folder = local_repository[mission][version].l1bdata
-    yyyy = "%04g" % year
-    mm = "%02g" % month
-    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
-    return export_folder
 
-def l2i_filenaming(l2):
-    export_filename = "l2i_v{version:02g}_{region}_{mission}_" + \
-                      "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{stopdt:%Y%m%dT%H%M%S}.nc"
-    export_filename = export_filename.format(
-        version=0, region=l2.hemisphere, mission=l2.info.mission,
-        orbit=l2.info.orbit, startdt=l2.info.start_time,
-        stopdt=l2.info.stop_time)
-    return export_filename
-
-
-def l3s_filenaming(l3):
-    export_filename = "l3s_v{version:02g}_{mission}_" + \
-                      "{grid_tag}_{resolution_tag}_" + \
-                      "{start_period}_{stop_period}.nc"
-    export_filename = export_filename.format(
-        version=0, mission=l3.mission, grid_tag=l3.grid_tag,
-        resolution_tag=l3.resolution_tag, start_period=l3.start_period,
-        stop_period=l3.stop_period)
-    return export_filename
-
+#def get_l1bdata_export_folder(l1b, config=None, version="default"):
+#    """ Returns the l1bdata export folder for a l1b data object """
+#    if config is None or not isinstance(config, ConfigInfo):
+#            config = ConfigInfo()
+#
+#    local_repository = config.local_machine.l1b_repository
+#    export_folder = local_repository[mission_id][version].l1bdata
+#    yyyy = "%04g" % year
+#    mm = "%02g" % month
+#    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
+#    return export_folder
 
 def get_output_class(name):
     return globals()[name]()
