@@ -267,7 +267,8 @@ class L3SDataNC(NCDataFile):
         path = self.export_path
         validate_directory(path)
         # get full output filename
-        filename = l3s_filenaming(self.metadata)
+        filenaming = PysiralOutputFilenaming()
+        filename = filenaming.from_l3s(self.metadata)
         self.path = os.path.join(path, filename)
 
     def _populate_data_groups(self, l3):
