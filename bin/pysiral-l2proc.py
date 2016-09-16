@@ -41,14 +41,14 @@ def pysiral_l2proc():
     # (e.g. summer Arctic)
     jobdef.process_requested_time_range()
 
-    # Validate given infos and availability of data files
-    jobdef.validate()
-    jobdef.error.raise_on_error()
-
-    # L1b data is grouped by month
+    # L2 output is grouped by month
     # -> if requested time range exceeds one month, the processor
     #    will run in several iterations
     jobdef.generate_preprocessor_iterations()
+
+    # Validate given infos and availability of data files
+    jobdef.validate()
+    jobdef.error.raise_on_error()
 
     # Initialize the Level-2 Processor
     job = Level2Processor(jobdef)
