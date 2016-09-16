@@ -28,14 +28,15 @@ import yaml
 from treedict import TreeDict
 
 
+PYSIRAL_VERSION = "0.2.0-dev"
+PYSIRAL_VERSION_FILENAME = "020dev"
+
 class ConfigInfo(object):
     """
     Container for the content of the pysiral definition files
     (in pysiral/configration) and the local machine definition file
     (local_machine_definition.yaml)
     """
-
-    PYSIRAL_VERSION = "0.2.0-dev"
 
     # Global variables
     _DEFINITION_FILES = {

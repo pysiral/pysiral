@@ -2,6 +2,7 @@
 
 
 from pysiral.path import filename_from_path
+from pysiral.config import PYSIRAL_VERSION_FILENAME, ConfigInfo
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
