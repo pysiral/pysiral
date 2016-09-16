@@ -289,50 +289,71 @@ class PysiralOutputFilenaming(object):
         self.orbit = None
         self.start = None
         self.stop = None
-        self.resolution_tag = None
-        self.grid_tag = None
+        self.resolution = None
+        self.grid = None
 
         self._registered_parsers = {
-            "l1bdata": "l1bdata_{version}_{hemisphere}_{mission_id}_{orbit:06d}_{start}_{stop}.nc"}
+            "l1bdata": "l1bdata_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
+            "l2i": "l2i_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
+            "l3s": "l3s_{version}_{mission_id}_{grid}_{resolution}_{start}_{stop}.nc"}
+
+    def from_l1b(self, l1b):
+        """ Level-1b preprocessed filename """
+        export_filename = self._registered_parsers["l1bdata"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            hemisphere=l1b.info.hemisphere,
+            mission_id=l1b.mission,
+            start=self._datetime_format(l1b.info.start_time),
+            stop=self._datetime_format(l1b.info.stop_time))
+        return export_filename
+
+    def from_l2i(self, l2i):
+        """ Level-2 Intermediate filename """
+        export_filename = self._registered_parsers["l2i"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            hemisphere=l2i.hemisphere,
+            mission_id=l2i.info.mission,
+            start=self._datetime_format(l2i.info.start_time),
+            stop=self._datetime_format(l2i.info.stop_time))
+        return export_filename
+
+    def from_l3s(self, l3s):
+        """ Level-3 super-collocated filename """
+        export_filename = self._registered_parsers["l3s"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            mission=l3s.mission,
+            gri=l3s.grid_tag,
+            resolution_tag=l3s.resolution_tag,
+            start=self._datetime_format(l3s.start_period),
+            stop_period=self._datetime_format(l3s.stop_period))
+        return export_filename
 
     def parse_filename(self, fn):
+        """ Parse info from pysiral output filename """
         filename = filename_from_path(fn)
+        match_found = False
         for data_level in self._registered_parsers.keys():
             parser = parse.compile(self._registered_parsers[data_level])
             match = parser.parse(filename)
             if match:
+                match_found = True
                 self.data_level = data_level
                 for parameter in match.named.keys():
                     value = match[parameter]
                     if parameter in ["start", "stop"]:
                         value = dtparser.parse(value)
                     setattr(self, parameter, value)
-                return
+                break
+        if not match_found:
+            print "Unrecognized filename: %s" % filename
 
-def l1bnc_filenaming(l1b, config, version):
-    """
-    Returns the standard export folder and filename of a level-1b netCDF
-    data file
 
-    Export Folder
-    -------------
+    def _datetime_format(self, datetime):
+        return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)
 
-    Based on the ``l1bdata`` file for the specific mission in
-    ``local_machine_def.yaml`` in the pysiral main directory
-    with sub-folders for hemisphere, year, month
-
-    Filename
-    --------
-
-    Default l1bdata filename in pysiral::
-
-        l1bdat_v$VERS_$REG_$MISSION_$ORBIT_$YYYYMMDDHHMISS_$YYYYMMDDHHMISS.nc
-
-    :$VERS: l1bdata version [00 (beta)]
-    :$REG: region [north | south]
-    :$MISSION: mission short name [cryosat2 | envisat | ers1 | ...]
-    :$ORBIT: orbit/cylce number [ 00026000 ]
-    :$YYYYMMDDHHMISS: start and end time
 
     """
     # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
