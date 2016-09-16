@@ -129,14 +129,18 @@ class L1bPreProc(DefaultLoggingClass):
         for i, l1b_file in enumerate(self._l1b_file_list):
 
             # Parse the current file and split into polar ocean segments
-            log.info("+ Parsing file %g of %g: %s" % (i+1, n, l1b_file))
+            log.info("+ [ Processing %g of %g ]" % (i+1, n))
+            log.info("- Input file: %s" % filename_from_path(l1b_file))
             l1b_segments = self.get_ocean_segments_from_input_file(l1b_file)
 
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info("- no %s polar ocean data, skipping" % (
+                log.info("- %s polar ocean data: False -> skip file" % (
                      self._jobdef.hemisphere))
                 continue
+            else:
+                log.info("- %s polar ocean data: True" % (
+                     self._jobdef.hemisphere))
             log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
@@ -320,6 +324,9 @@ class L1bPreProc(DefaultLoggingClass):
         ncfile.filename = export_filename
         ncfile.export()
 
+        log_entry = "- Exported l1bdata: %s"
+        self.log.info(log_entry % (export_filename))
+
     def region_is_arctic_or_antarctic_ocean(self, l1b):
         """
         Test if a l1b file has data over ocean in either Arctic or Antartic
@@ -341,7 +348,7 @@ class L1bPreProc(DefaultLoggingClass):
 
         # 2) test if there is any ocean data at all
         has_ocean = l1b.info.open_ocean_percent > 0
-        self.log.info("- has ocean data: %s" % str(has_ocean))
+        # self.log.info("- has ocean data: %s" % str(has_ocean))
 
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean
