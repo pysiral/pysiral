@@ -7,7 +7,7 @@ Created on Sat Aug 01 17:33:02 2015
 
 from pysiral.config import ConfigInfo, TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
-from pysiral.output import NCDateNumDef, PysiralOutputFileNaming
+from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from pysiral.path import file_basename
 from netCDF4 import Dataset, num2date
 
@@ -174,7 +174,7 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
 def l1bdata_in_trange(fn, tr):
     """ Returns flag if filename is within time range """
     # Parse infos from l1bdata filename
-    fnattr = PysiralOutputFileNaming()
+    fnattr = PysiralOutputFilenaming()
     fnattr.parse_filename(fn)
     # Compute overlap between two start/stop pairs
     is_overlap = fnattr.start <= tr.stop and fnattr.stop >= tr.start

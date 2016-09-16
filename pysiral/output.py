@@ -274,7 +274,11 @@ class L3SDataNC(NCDataFile):
             var[:] = data
 
 
-class PysiralOutputFileNaming(object):
+class PysiralOutputFilenaming(object):
+    """
+    Class for generating and parsing of pysiral output
+    filenames for all data levels
+    """
 
     def __init__(self):
         self.error = ErrorStatus()
