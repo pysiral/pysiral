@@ -24,11 +24,13 @@ from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
 from pysiral.output import get_output_class
+from pysiral.path import filename_from_path
 
 from collections import deque
 from datetime import datetime
 import numpy as np
 import time
+import glob
 import os
 
 
@@ -227,7 +229,7 @@ class Level2Processor(DefaultLoggingClass):
         for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
-            self.log.info("+ l1b orbit file %g of %g (%.2f%%)" % (
+            self.log.info("+ [ %g of %g ] (%.2f%%)" % (
                 i+1, len(self._l1b_files),
                 float(i+1)/float(len(self._l1b_files))*100.))
 
@@ -300,7 +302,8 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        self.log.info("- Parsing l1bdata file: %s" % l1b_file)
+        filename = filename_from_path(l1b_file)
+        self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         l1b.info.subset_region_name = self._job.roi.hemisphere
@@ -525,10 +528,10 @@ class Level2Processor(DefaultLoggingClass):
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
-            output.set_export_path(output_def.path)
+            output.set_base_export_path(output_def.path)
             output.write_to_file(l2)
             self.log.info("- Write %s data file: %s" % (
-                output_id, output.path))
+                output_id, output.filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
