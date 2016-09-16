@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.path import filename_from_path
 from pysiral.config import PYSIRAL_VERSION_FILENAME, ConfigInfo
+from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
@@ -184,29 +184,38 @@ class L2iDataNC(NCDataFile):
     def __init__(self):
         super(L2iDataNC, self).__init__()
         self.parameter = []
-        self.export_path = None
+        self.base_export_path = None
         self.l2 = None
 
-    def set_export_path(self, path):
-        self.export_path = path
+    def set_base_export_path(self, path):
+        self.base_export_path = path
+
+    def get_full_export_path(self, startdt):
+        self._get_full_export_path(startdt)
+        return self.export_path
 
     def write_to_file(self, l2):
-        self._validate(l2)
+        self._get_full_export_path(l2.info.start_time)
+        self._get_export_filename(l2)
         self._open_file()
         self._create_root_group(l2.info.attdict)
         self._populate_data_groups(l2)
         self._write_to_file()
 
-    def _validate(self, l2):
-        # Validate the export directory
-        path = self.export_path
-        for subfolder_tag in self._options.subfolders:
-            subfolder = getattr(l2.info, subfolder_tag)
-            path = os.path.join(path, subfolder)
-        validate_directory(path)
+    def _get_full_export_path(self, startdt):
+        # Comput und create the export directory
+        base_path = self.base_export_path
+        sub_folders = self._options.subfolders
+        folder = PysiralOutputFolder(load_config=False)
+        folder.l2i_from_startdt(startdt, base_path, sub_folders)
+        folder.create()
+        self.export_path = folder.path
+
+    def _get_export_filename(self, l2):
         # get full output filename
-        filename = l2i_filenaming(l2)
-        self.path = os.path.join(path, filename)
+        filenaming = PysiralOutputFilenaming()
+        self.filename = filenaming.from_l2i(l2)
+        self.path = os.path.join(self.export_path, self.filename)
 
     def _populate_data_groups(self, l2):
         dimdict = l2.dimdict
