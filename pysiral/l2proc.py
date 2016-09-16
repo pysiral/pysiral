@@ -83,6 +83,26 @@ class Level2Processor(DefaultLoggingClass):
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
 
+    def remove_old_l2data(self, time_range):
+        """ Clean up old l2 output data """
+        # can be several oututs
+        output_ids, output_defs = td_branches(self._job.config.output)
+        for output_id, output_def in zip(output_ids, output_defs):
+            output = get_output_class(output_def.pyclass)
+            output.set_options(**output_def.options)
+            output.set_base_export_path(output_def.path)
+            export_folder = output.get_full_export_path(time_range.start)
+
+            # Get list of output files
+            search_pattern = os.path.join(export_folder, "*.*")
+            l2output_files = glob.glob(search_pattern)
+
+            # Delete files
+            self.log.info("Removing %g output files [ %s ] in %s" % (
+                len(l2output_files), output_id, export_folder))
+            for l2output_file in l2output_files:
+                os.remove(l2output_file)
+
     def run(self):
         """ Run the processor """
         self._initialize_processor()

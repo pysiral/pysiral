@@ -73,7 +73,7 @@ def pysiral_l2proc():
 
         # Empty output folder (if --remove_old is set)
         if jobdef.remove_old and not jobdef.overwrite_protection:
-            job.remove_old_l2data()
+            job.remove_old_l2data(time_range)
 
         # Pre-process data for one month
         job.run()
