@@ -490,7 +490,7 @@ class DefaultCommandLineArguments(object):
 
             # no overwrite protection for level-2 outputs
             "no-overwrite-protection": {
-                "action": "store_true",
+                "action": "store_false",
                 "dest": "overwrite_protection",
                 "default": False,
                 "required": False,
