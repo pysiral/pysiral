@@ -127,6 +127,7 @@ class L1bDataNC(NCDataFile):
         self.filename = file_basename(self.l1b.filename)+".nc"
 
     def _populate_data_groups(self):
+        self._missing_parameters = []
         for datagroup in self.datagroups:
             if self.verbose:
                 print datagroup.upper()
@@ -163,7 +164,6 @@ class L1bDataNC(NCDataFile):
 
     def _get_variable_attr_dict(self, parameter):
         """ Retrieve the parameter attributes """
-        self._missing_parameters = []
         default_attrs = {
             "long_name": parameter,
             "standard_name": parameter,
