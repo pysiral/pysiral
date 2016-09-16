@@ -3,11 +3,16 @@
 from pysiral.config import DefaultCommandLineArguments
 from pysiral.l2proc import Level2Processor, L2ProcJob
 
+from datetime import timedelta
 import argparse
+import time
 import sys
 
 
 def pysiral_l2proc():
+
+    # Get start time of processor run
+    t0 = time.clock()
 
     # Collect job settings from pysiral configuration data and
     # command line arguments
@@ -72,6 +77,11 @@ def pysiral_l2proc():
 
         # Pre-process data for one month
         job.run()
+
+    # All done
+    t1 = time.clock()
+    seconds = int(t1-t0)
+    job.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class L2ProcArgParser(object):
