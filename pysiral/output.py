@@ -90,6 +90,19 @@ class NCDataFile(object):
         for key in attdict.keys():
             self._rootgrp.setncattr(prefix+key, attdict[key])
 
+    def _get_variable_attr_dict(self, parameter):
+        """ Retrieve the parameter attributes """
+        default_attrs = {
+            "long_name": parameter,
+            "standard_name": parameter,
+            "scale_factor": 1.0,
+            "add_offset": 0.0}
+        if not self.parameter_attributes.has_key(parameter):
+            self._missing_parameters.append(parameter)
+            return default_attrs
+        else:
+            return dict(self.parameter_attributes[parameter])
+
 
     def _open_file(self):
         self._rootgrp = Dataset(self.path, "w")
@@ -165,18 +178,6 @@ class L1bDataNC(NCDataFile):
         print "Warning: Missing parameter attributes for "+"; ".join(
             self._missing_parameters)
 
-    def _get_variable_attr_dict(self, parameter):
-        """ Retrieve the parameter attributes """
-        default_attrs = {
-            "long_name": parameter,
-            "standard_name": parameter,
-            "scale_factor": 1.0,
-            "add_offset": 0.0}
-        if not self.parameter_attributes.has_key(parameter):
-            self._missing_parameters.append(parameter)
-            return default_attrs
-        else:
-            return dict(self.parameter_attributes[parameter])
 
 
 class L2iDataNC(NCDataFile):
