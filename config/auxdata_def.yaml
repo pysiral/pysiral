@@ -19,7 +19,7 @@ mss:
     # DTU 10 mean sea surface
     dtu10:
         pyclass: DTU1MinGrid
-        docstr: DTU10 mean sea surface (1 minute grid)
+        long_name: DTU10 mean sea surface (1 minute grid)
         local_directory: dtu10
         file: DTU10MSS_1min.nc
         options: null
@@ -34,7 +34,7 @@ mss:
     # DTU 13 mean sea surface
     dtu13:
         pyclass: DTU1MinGrid
-        docstr: DTU13 mean sea surface (1 minute grid)
+        long_name: DTU13 mean sea surface (1 minute grid)
         local_directory: dtu13
         file: DTU13MSS_1min.nc
         options: null
@@ -48,7 +48,7 @@ mss:
     # DTU 15 mean sea surface
     dtu15:
         pyclass: DTU1MinGrid
-        docstr: DTU15 mean sea surface (1 minute grid)
+        long_name: DTU15 mean sea surface (1 minute grid)
         local_repository: dtu15
         file: DTU15MSS_1min.nc
         options: null
@@ -65,7 +65,7 @@ snow:
     # Warren99 snow climatology
     warren99:
         pyclass: Warren99
-        docstr: Warren99 snow depth and density climatology
+        long_name: Warren99 snow depth and density climatology
         local_repository: null
         options:
             fyi_correction_factor: 0.5
@@ -75,7 +75,7 @@ snow:
 
     constant:
         pyclass: FixedSnowDepthDensity
-        docstr: Constant snow depth and density
+        long_name: Constant snow depth and density
         local_repository: null
         options:
             fixed_snow_depth: 0.3
@@ -89,7 +89,7 @@ sic:
     # OSI-SAf
     osisaf:
         pyclass: OsiSafSIC
-        docstrs: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
+        long_name: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
         local_repository: osisaf
         options:
@@ -133,7 +133,7 @@ sic:
     # OSI-SAf
     ifremer:
         pyclass: IfremerSIC
-        docstrs: SSM/I Sea-Ice concentration Arctic Daily Maps on 12.5 km Polar Grid (ifremer)
+        long_name: SSM/I Sea-Ice concentration Arctic Daily Maps on 12.5 km Polar Grid (ifremer)
         filenaming: "{year}{month}{day}.nc"
         local_repository: ifremer
         options:
@@ -179,14 +179,14 @@ sitype:
 
     myi_default:
         pyclass: MYIDefault
-        docstr: All sea ice is classified per default as multi-year sea ice
+        long_name: All sea ice is classified per default as multi-year sea ice
         local_repository: null
         options: null
 
     # OSI-SAf
     osisaf:
         pyclass: OsiSafSIType
-        docstrs: OSI-SAF Global Sea Ice Type (OSI-403-b)
+        long_names: OSI-SAF Global Sea Ice Type (OSI-403-b)
         filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
         local_repository: osisaf
         options:
