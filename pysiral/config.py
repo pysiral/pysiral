@@ -564,4 +564,4 @@ def options_from_dictionary(**opt_dict):
 
 def get_parameter_attributes(target):
     config = ConfigInfo()
-    return config.parameter.l1b
+    return config.parameter[target]
