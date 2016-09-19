@@ -528,6 +528,7 @@ class Level2Processor(DefaultLoggingClass):
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
+            output.set_processor_settings(self._job.settings.level2)
             output.set_base_export_path(output_def.path)
             output.write_to_file(l2)
             self.log.info("- Write %s data file: %s" % (
