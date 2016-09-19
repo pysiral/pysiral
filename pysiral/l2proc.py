@@ -669,6 +669,8 @@ class L2ProcJob(DefaultLoggingClass):
             # anyway
             if auxdata_id is None:
                 self.settings.level2.auxdata[auxtype].update(pysiral_def)
+                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                    del self.settings.level2.auxdata[auxtype].source
                 continue
 
             # Check if entry is in local_machine_def.yaml
@@ -686,6 +688,8 @@ class L2ProcJob(DefaultLoggingClass):
             if os.path.isdir(local_repository):
                 # Expand the settings with actual path
                 self.settings.level2.auxdata[auxtype].update(pysiral_def)
+                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                    del self.settings.level2.auxdata[auxtype].source
             else:
                 msg = "Missing local auxiliary directory (%s:%s): %s " % (
                           auxtype, auxdata_id, local_repository)
