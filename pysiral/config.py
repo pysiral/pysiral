@@ -28,8 +28,8 @@ import yaml
 from treedict import TreeDict
 
 
-PYSIRAL_VERSION = "0.2.0-dev"
-PYSIRAL_VERSION_FILENAME = "020dev"
+PYSIRAL_VERSION = "0.3.0-dev"
+PYSIRAL_VERSION_FILENAME = "030dev"
 
 class ConfigInfo(object):
     """
