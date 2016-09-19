@@ -1,6 +1,6 @@
 # History of changes
 
-## Version 0.2.0 (TBD)
+## Version 0.2.0 (19. September 2016)
 
 **New Features**
 * [l1b pre-processing] time range for can be specified for individual days
