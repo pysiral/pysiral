@@ -35,12 +35,14 @@ class NCDataFile(object):
         self.zlib = True
         self._rootgrp = None
         self._options = None
+        self._proc_settings = None
         self.verbose = False
 
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
 
-    def _create_root_group(self, attdict):
+    def set_processor_settings(self, proc_settings):
+        self._proc_settings = proc_settings
 
     def _create_root_group(self, attdict, **global_attr_keyw):
         """
@@ -103,6 +105,12 @@ class NCDataFile(object):
         else:
             return dict(self.parameter_attributes[parameter])
 
+    def _write_processor_settings(self):
+        if self._proc_settings is None:
+            pass
+        settings = self._proc_settings
+        for item in settings.iterkeys():
+            self._rootgrp.setncattr(item, str(settings[item]))
 
     def _open_file(self):
         self._rootgrp = Dataset(self.path, "w")
@@ -190,6 +198,8 @@ class L2iDataNC(NCDataFile):
         self.parameter = []
         self.base_export_path = None
         self.l2 = None
+        self._missing_parameters = []
+        self.parameter_attributes = get_parameter_attributes("l2i")
 
     def set_base_export_path(self, path):
         self.base_export_path = path
@@ -202,8 +212,9 @@ class L2iDataNC(NCDataFile):
         self._get_full_export_path(l2.info.start_time)
         self._get_export_filename(l2)
         self._open_file()
-        self._create_root_group(l2.info.attdict)
+        self._create_root_group(l2.info.attdict, prefix="input.")
         self._populate_data_groups(l2)
+        self._write_processor_settings()
         self._write_to_file()
 
     def _get_full_export_path(self, startdt):
@@ -239,6 +250,10 @@ class L2iDataNC(NCDataFile):
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
+                # Add Parameter Attributes
+            attribute_dict = self._get_variable_attr_dict(parameter_name)
+            for key in attribute_dict.keys():
+                setattr(var, key, attribute_dict[key])
 
 
 class L3SDataNC(NCDataFile):
