@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.config import PYSIRAL_VERSION_FILENAME, ConfigInfo
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
+                            ConfigInfo)
 from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
@@ -183,8 +184,12 @@ class L1bDataNC(NCDataFile):
                 attribute_dict = self._get_variable_attr_dict(parameter)
                 for key in attribute_dict.keys():
                     setattr(var, key, attribute_dict[key])
-        print "Warning: Missing parameter attributes for "+"; ".join(
-            self._missing_parameters)
+
+        # Report mission variable attributes (not in master release)
+        not_master = "master" not in PYSIRAL_VERSION
+        if not_master:
+            print "Warning: Missing parameter attributes for "+"; ".join(
+                self._missing_parameters)
 
 
 
@@ -255,6 +260,11 @@ class L2iDataNC(NCDataFile):
             for key in attribute_dict.keys():
                 setattr(var, key, attribute_dict[key])
 
+        # Report mission variable attributes (not in master release)
+        not_master = "master" not in PYSIRAL_VERSION
+        if not_master:
+            print "Warning: Missing parameter attributes for "+"; ".join(
+                self._missing_parameters)
 
 class L3SDataNC(NCDataFile):
     """
@@ -376,6 +386,7 @@ class PysiralOutputFilenaming(object):
                         value = dtparser.parse(value)
                     setattr(self, parameter, value)
                 break
+
         if not match_found:
             print "Unrecognized filename: %s" % filename
 
