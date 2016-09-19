@@ -440,18 +440,5 @@ class PysiralOutputFolder(object):
         self.path = os.path.join(export_folder, self.hemisphere, yyyy, mm)
 
 
-
-#def get_l1bdata_export_folder(l1b, config=None, version="default"):
-#    """ Returns the l1bdata export folder for a l1b data object """
-#    if config is None or not isinstance(config, ConfigInfo):
-#            config = ConfigInfo()
-#
-#    local_repository = config.local_machine.l1b_repository
-#    export_folder = local_repository[mission_id][version].l1bdata
-#    yyyy = "%04g" % year
-#    mm = "%02g" % month
-#    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
-#    return export_folder
-
 def get_output_class(name):
     return globals()[name]()
