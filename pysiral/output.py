@@ -41,13 +41,15 @@ class NCDataFile(object):
         self._options = options_from_dictionary(**opt_dict)
 
     def _create_root_group(self, attdict):
+
+    def _create_root_group(self, attdict, **global_attr_keyw):
         """
         Create the root group and add l1b metadata as global attributes
         """
         self._convert_datetime_attributes(attdict)
         self._convert_bool_attributes(attdict)
         self._convert_nonetype_attributes(attdict)
-        self._set_global_attributes(attdict)
+        self._set_global_attributes(attdict, **global_attr_keyw)
 
     def _convert_datetime_attributes(self, attdict):
         """
@@ -83,10 +85,11 @@ class NCDataFile(object):
             if content is None:
                 attdict[key] = ""
 
-    def _set_global_attributes(self, attdict):
+    def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
         for key in attdict.keys():
-            self._rootgrp.setncattr(key, attdict[key])
+            self._rootgrp.setncattr(prefix+key, attdict[key])
+
 
     def _open_file(self):
         self._rootgrp = Dataset(self.path, "w")
