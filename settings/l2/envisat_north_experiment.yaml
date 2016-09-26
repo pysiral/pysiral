@@ -48,16 +48,23 @@ level2:
 
     # Surface type classification algorithm
     surface_type:
-        pyclass: RA2SICCI
+        pyclass: almost_unified_surf_type_classifier_envisat
         options:
             ocean:
-                pulse_peakiness_max: 3.0
+                peakiness_max: 3.0
                 ice_concentration_min: 5.0
             lead:
-                pulse_peakiness_min: 30.0
+                peakiness_min: 25.0
+                sib_min: 22.0
+                lew1_max: 0.65
+                lew2_max: 0.45
                 ice_concentration_min: 70.0
             sea_ice:
-                pulse_peakiness_max: 3.0
+                peakiness_max: 15.0
+                sib_min: 2.0
+                sib_max: 22.0
+                lew1_min: 0.5
+                lew2_min: 0.3
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
