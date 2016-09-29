@@ -304,7 +304,7 @@ class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
     """
 
     def __init__(self):
-        super(RickerTC2014, self).__init__()
+        super(almost_unified_surf_type_classifier_envisat, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
@@ -331,8 +331,8 @@ class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
         lead = ANDCondition()
         # Peakiness, backscatter, and leading edge width
         lead.add(parameter.sea_ice_backscatter >= opt.sib_min)
-        lead.add(parameter.lew1 <= opt.lew1_max)
-        lead.add(parameter.lew2 <= opt.lew2_max)
+        lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
+        lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -346,8 +346,8 @@ class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
         # Stack (Beam) parameters
         ice.add(parameter.sea_ice_backscatter >= opt.sib_min)
         ice.add(parameter.sea_ice_backscatter <= opt.sib_max)
-        ice.add(parameter.lew1 >= opt.lew1_min)
-        ice.add(parameter.lew2 >= opt.lew2_min)
+        ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
+        ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
