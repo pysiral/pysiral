@@ -68,37 +68,40 @@ level2:
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
-    retracker:
-        ocean:
-            pyclass: NoneRetracker
-            options: null
-        lead:
-            pyclass: SICCILead
+    retracker: 
+        ocean: 
+            pyclass: TFMRA
             options:
-                skip_first_bins: 5
-                initial_guess: [46.5, 0.5, 0.5, None]
-                maxfev: 5000
-                filter:
-                    use_filter: true
-                    maximum_std_of_gaussion_rise: 0.93
-                    minimum_bin_count_maxpower: 35
-                    sensible_lead_retracked_bin: [44.5, 46.5]
-                    minimum_echo_backscatter: 25
-                    maximum_power_in_echo_tail: 0.75
-                    maximum_rms_echo_model_diff: 20
-                    maximum_retracker_maxpower_binsep: 12
-
-        sea_ice:
-            pyclass: SICCIOcog
+                # if arrays than [lrm, sar, sin]             
+                threshold: 0.5
+                offset: 0.0
+                wfm_oversampling_factor: 10
+                wfm_oversampling_method: linear
+                wfm_smoothing_window_size: [11, 11, 51]  
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_local_order: 1
+        lead: 
+            pyclass: TFMRA
             options:
-                skip_first_bins: 5
-                percentage: 0.5
-                leading_edge_width_percentage: 0.3
-                filter:
-                    use_filter: true
-                    sensible_seaice_retracked_bin: [44, 46]
-                    maximum_leading_edge_width: 4
-                    maximum_echo_tail_line_deviation: 0.3
+                # if arrays than [lrm, sar, sin]    
+                threshold: 0.5
+                offset: 0.0
+                wfm_oversampling_factor: 10
+                wfm_oversampling_method: linear
+                wfm_smoothing_window_size: [11, 11, 51] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_local_order: 1
+        sea_ice: 
+            pyclass: TFMRA
+            options: 
+                # if arrays than [lrm, sar, sin]   
+                threshold: 0.5
+                offset: 0.0
+                wfm_oversampling_factor: 10
+                wfm_oversampling_method: linear
+                wfm_smoothing_window_size: [11, 11, 51] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_local_order: 1
 
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
