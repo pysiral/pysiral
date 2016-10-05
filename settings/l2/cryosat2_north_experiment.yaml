@@ -48,26 +48,23 @@ level2:
         
     # Surface type classification algorithm
     surface_type: 
-        pyclass: RickerTC2014
+        pyclass: almost_unified_surf_type_classifier_cryosat
         options: 
             ocean:
-                peakiness_min: 0.0
-                peakiness_max: 10.0
-                stack_standard_deviation_min: 18.5
+                peakiness_max: 3.0
                 ice_concentration_min: 5.0
-                ocog_width_min: 38
-            lead: 
-                peakiness_l_min: 40.0
-                peakiness_r_min: 20.0
+            lead:
                 peakiness_min: 40.0
-                stack_kurtosis_min: 30.0
-                stack_standard_deviation_max: 4.0
+                sib_min: 20.0
+                lew1_max: 0.65
+                lew2_max: 0.25
                 ice_concentration_min: 70.0
-            sea_ice: 
-                peakiness_r_max: 15.0
-                peakiness_l_max: 30.0
+            sea_ice:
                 peakiness_max: 30.0
-                stack_kurtosis_max: 20.0
+                sib_min: 2.0
+                sib_max: 20.0
+                lew1_min: 0.8
+                lew2_min: 0.25
                 ice_concentration_min: 70.0
                 
     # Retracking algorithm dependent on surface type

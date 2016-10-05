@@ -70,29 +70,29 @@ level2:
     # Retracking algorithm dependent on surface type
     retracker: 
         ocean: 
-            pyclass: TFMRA
+            pyclass: TFMRA_env
             options:
                 # if arrays than [lrm, sar, sin]             
-                threshold: 0.5
+                threshold: 0.95
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51]  
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
                 first_maximum_local_order: 1
         lead: 
-            pyclass: TFMRA
+            pyclass: TFMRA_env
             options:
                 # if arrays than [lrm, sar, sin]    
-                threshold: 0.5
+                threshold: 0.95
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
-            pyclass: TFMRA
+            pyclass: TFMRA_env
             options: 
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
@@ -100,7 +100,7 @@ level2:
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
                 first_maximum_local_order: 1
 
 
@@ -110,7 +110,7 @@ level2:
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 25000.0
-            smooth_filter_width_footprint_size: 380.0
+            smooth_filter_width_footprint_size: 300.0
             pre_filtering: true
             pre_filter_maximum_mss_median_offset: 1.0 # in meter
 
