@@ -37,8 +37,8 @@ def pysiral_l3proc():
     job.set_input_directory(args.input_directory)
     job.set_grid_definition(setting.grid_definition)
     job.set_parameter(
-        l2=setting.l2_parameter, l3=setting.l2_parameter,
-        frb_nanmask=setting.l2_freeboard_nan_mask_targets)
+        l2=setting.l2_parameter, l3=setting.l3_parameter,
+        frb_nanmask=setting.freeboard_nan_mask_targets)
     job.validate()
 
     # Start the processor

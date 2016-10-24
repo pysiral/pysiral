@@ -35,12 +35,12 @@ l2_parameter:
     - ice_density
     - sea_ice_type
 
-l2_freeboard_nan_mask_targets:
-    - sea_surface_anomaly
-    - mean_sea_surface
-
 l3_parameter:
     - n_total_waveforms
     - n_valid_waveforms
+
+freeboard_nan_mask_targets:
+    - sea_surface_anomaly
+    - mean_sea_surface
     - lead_fraction
     - ice_fraction

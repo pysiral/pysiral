@@ -48,7 +48,10 @@ class Level3Processor(DefaultLoggingClass):
         # Average level-2 parameter for each grid cell
         grid.set_l2_stack(stack)
         grid.average_l2_parameter()
-        grid.set_freeboard_nan_mask(self.job.l2_freeboard_nan_mask_targets)
+
+        # Set parameters nan if freeboard is nan
+        # (list in output definition file)
+        grid.set_freeboard_nan_mask(self.job.freeboard_nan_mask_targets)
 
         # TODO: Compute level-3 parameter (lead_fraction ....)
 
