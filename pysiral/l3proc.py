@@ -33,8 +33,8 @@ class Level3Processor(DefaultLoggingClass):
 
         # Initialize the data grid
         grid = L3DataGrid(self.job.grid)
-        grid.init_l2_parameter(self.job.l2_parameter)
-        grid.init_l3_parameter(self.job.l3_parameter)
+        grid.init_parameter_fields(self.job.l2_parameter, "l2")
+        grid.init_parameter_fields(self.job.l3_parameter, "l3")
         grid.calculate_longitude_latitude_fields()
 
         # Parse all orbit files and add to the stack
@@ -128,24 +128,24 @@ class L3DataGrid(DefaultLoggingClass):
         super(L3DataGrid, self).__init__(self.__class__.__name__)
         self.griddef = griddef
         self._l2_parameter = None
+        self._l3_parameter = None
         self._l2 = None
         self._l3 = {}
 
-    def init_l2_parameter(self, l2_parameter):
-        self._l2_parameter = l2_parameter
+    def init_parameter_fields(self, parameter_names, level):
+        setattr(self, "_"+level+"_parameter", parameter_names)
         shape = (self.griddef.extent.numx, self.griddef.extent.numy)
         # Taken from gridded SICCI data
+        # XXX: There needs to be a better handling of data types
+        #       (requires better definition of l3 output file format)
         self.longitude = np.ndarray(shape=shape, dtype='f4')*np.nan
         self.latitude = np.ndarray(shape=shape, dtype='f4')*np.nan
         self.is_land = np.ndarray(shape=shape, dtype='f4')*np.nan
-        for parameter_name in l2_parameter:
+        for parameter_name in parameter_names:
+            msg = "Adding %s parameter: %s" % (level, parameter_name)
+            self.log.info(msg)
             self._l3[parameter_name] = np.ndarray(
                 shape=shape, dtype='f4')*np.nan
-
-    def init_l3_parameter(self, l3_parameter):
-        # shape = (self.griddef.extent.numx, self.griddef.extent.numy)
-        # derived parameters from the stack
-        pass
 
     def calculate_longitude_latitude_fields(self):
 
