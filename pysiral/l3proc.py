@@ -258,7 +258,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Number of all Waveforms (including unknown, invalid etc)
         if l3_parameter_name == "n_total_waveforms":
-            n_total_waveforms
+            return n_total_waveforms
 
         # Only positively identified waveforms (either lead or ice)
         # XXX: what about polynay and ocean?
