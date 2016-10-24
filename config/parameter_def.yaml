@@ -252,7 +252,7 @@ definition:
 
     lead_fraction:
         short_name: lfr
-        label: Lead Density
+        label: Lead Waveforms
         unit: fraction
         dtype: float32
         cmap:
@@ -268,14 +268,14 @@ definition:
 
     ice_fraction:
         short_name: ifr
-        label: Sea Ice Density
+        label: Ice Waveforms
         unit: fraction
         dtype: float32
         cmap:
             name: afmhot
             vmin: 0
-            vmax: 1.0
-            step: 0.2
+            vmax: 0.5
+            step: 0.1
         cmap_diff:
             name: bwr
             vmin: -0.25
