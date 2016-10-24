@@ -266,6 +266,38 @@ definition:
             vmax: 0.25
             step: 0.1
 
+    ice_fraction:
+        short_name: ifr
+        label: Sea Ice Density
+        unit: fraction
+        dtype: float32
+        cmap:
+            name: afmhot
+            vmin: 0
+            vmax: 0.1
+            step: 0.2
+        cmap_diff:
+            name: bwr
+            vmin: -0.25
+            vmax: 0.25
+            step: 0.1
+
+    valid_fraction:
+        short_name: vfr
+        label: Valid Waveforms
+        unit: fraction
+        dtype: float32
+        cmap:
+            name: rainbow
+            vmin: 0
+            vmax: 0.1
+            step: 0.2
+        cmap_diff:
+            name: bwr
+            vmin: -0.25
+            vmax: 0.25
+            step: 0.1
+
     freeboard_uncertainty:
         short_name: frbu
         unit: meter
