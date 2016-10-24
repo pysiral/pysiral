@@ -38,6 +38,9 @@ l2_parameter:
 l3_parameter:
     - n_total_waveforms
     - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
 
 freeboard_nan_mask_targets:
     - sea_surface_anomaly
