@@ -29,25 +29,25 @@ class FlagContainer(object):
         return len(self.indices)
 
 
-class ANDCondition(object):
+class ANDCondition(FlagContainer):
 
     def __init__(self):
-        self.flag = None
+        super(ANDCondition, self).__init__(None)
 
     def add(self, flag):
-        if self.flag is None:
-            self.flag = flag
+        if self._flag is None:
+            self.set_flag(flag)
         else:
-            self.flag = np.logical_and(self.flag, flag)
+            self.set_flag(np.logical_and(self.flag, flag))
 
 
-class ORCondition(object):
+class ORCondition(FlagContainer):
 
     def __init__(self):
-        self.flag = None
+        super(ORCondition, self).__init__(None)
 
     def add(self, flag):
-        if self.flag is None:
-            self.flag = flag
+        if self._flag is None:
+            self.set_flag(flag)
         else:
-            self.flag = np.logical_or(self.flag, flag)
+            self.set_flag(np.logical_or(self.flag, flag))
