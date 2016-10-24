@@ -281,8 +281,8 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Fractions of leads on valid_waveforms
         elif l3_parameter_name == "ice_fraction":
+            n_ice = len(np.where(surface_type == stflags["sea_ice"]))
             n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
-            n_ice = np.where(surface_type == stflags["sea_ice"])
             try:
                 ice_fraction = float(n_ice)/float(n_valid)
             except:
