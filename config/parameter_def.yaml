@@ -274,7 +274,7 @@ definition:
         cmap:
             name: afmhot
             vmin: 0
-            vmax: 0.1
+            vmax: 1.0
             step: 0.2
         cmap_diff:
             name: bwr
@@ -290,7 +290,7 @@ definition:
         cmap:
             name: rainbow
             vmin: 0
-            vmax: 0.1
+            vmax: 1.0
             step: 0.2
         cmap_diff:
             name: bwr
