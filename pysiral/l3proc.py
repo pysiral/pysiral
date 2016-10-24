@@ -247,46 +247,48 @@ class L3DataGrid(DefaultLoggingClass):
         surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
         stflags = self._surface_type_dict
 
+        # Compute total waveforms
+        n_total_waveforms = len(surface_type)
+
+        # Compute valid wavefords
+        valid_waveform = ORCondition()
+        valid_waveform.add(surface_type == stflags["lead"])
+        valid_waveform.add(surface_type == stflags["sea_ice"])
+        n_valid_waveforms = valid_waveform.num
+
         # Number of all Waveforms (including unknown, invalid etc)
         if l3_parameter_name == "n_total_waveforms":
-            return len(surface_type)
+            n_total_waveforms
 
         # Only positively identified waveforms (either lead or ice)
         # XXX: what about polynay and ocean?
         elif l3_parameter_name == "n_valid_waveforms":
-            valid_waveform = ORCondition()
-            valid_waveform.add(surface_type == stflags["lead"])
-            valid_waveform.add(surface_type == stflags["sea_ice"])
-            return valid_waveform.num
+            return n_valid_waveforms
 
         # Fractions of leads on valid_waveforms
         elif l3_parameter_name == "valid_fraction":
-            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
-            n_total = self.get_l3_parameter("n_total_waveforms", xi, yj)
             try:
-                valid_fraction = float(n_valid)/float(n_total)
+                valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
             except:
-                valid_fraction = 0.0
+                valid_fraction = np.nan
             return valid_fraction
 
         # Fractions of leads on valid_waveforms
         elif l3_parameter_name == "lead_fraction":
             n_leads = len(np.where(surface_type == stflags["lead"]))
-            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
             try:
-                lead_fraction = float(n_leads)/float(n_valid)
+                lead_fraction = float(n_leads)/float(n_valid_waveforms)
             except:
-                lead_fraction = 0.0
+                lead_fraction = np.nan
             return lead_fraction
 
         # Fractions of leads on valid_waveforms
         elif l3_parameter_name == "ice_fraction":
             n_ice = len(np.where(surface_type == stflags["sea_ice"]))
-            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
             try:
-                ice_fraction = float(n_ice)/float(n_valid)
+                ice_fraction = float(n_ice)/float(n_valid_waveforms)
             except:
-                ice_fraction = 0.0
+                ice_fraction = np.nan
             return ice_fraction
 
         # Raise if unknown l3 parameter
