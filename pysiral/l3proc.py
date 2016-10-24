@@ -70,9 +70,10 @@ class Level3Processor(DefaultLoggingClass):
 
 # %% Helper Classes
 
-class L2DataStack(object):
+class L2DataStack(DefaultLoggingClass):
 
     def __init__(self):
+        super(L2DataStack, self).__init__(self.__class__.__name__)
         self.griddef = None
         self.l2_parameter = None
         self.n_records = 0
@@ -120,10 +121,11 @@ class L2DataStack(object):
                 self.stack[parameter_name][y][x].append(data[i])
 
 
-class L3DataGrid(object):
+class L3DataGrid(DefaultLoggingClass):
     """ Contains gridded orbit data parameters plus derived parameter  """
 
     def __init__(self, griddef):
+        super(L3DataGrid, self).__init__(self.__class__.__name__)
         self.griddef = griddef
         self._l2_parameter = None
         self._l2 = None
