@@ -34,6 +34,7 @@ l2_parameter:
     - snow_density
     - ice_density
     - sea_ice_type
+    - sea_ice_concentration
 
 l3_parameter:
     - n_total_waveforms
