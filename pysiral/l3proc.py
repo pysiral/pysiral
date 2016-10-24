@@ -434,11 +434,11 @@ class L3MetaData(object):
 
     @property
     def start_period(self):
-        return self.start_time.strftime("%Y%m%d")
+        return self.start_time
 
     @property
     def stop_period(self):
-        return self.stop_time.strftime("%Y%m%d")
+        return self.stop_time
 
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
