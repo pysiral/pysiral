@@ -8,6 +8,8 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.output import L3SDataNC
+from pysiral.flag import ORCondition
+from pysiral.surface_type import SurfaceType
 import numpy as np
 
 
@@ -48,6 +50,10 @@ class Level3Processor(DefaultLoggingClass):
         # Average level-2 parameter for each grid cell
         grid.set_l2_stack(stack)
         grid.average_l2_parameter()
+
+
+        # Get the level-3 parameter
+        grid.compute_l3_parameter()
 
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
@@ -127,6 +133,7 @@ class L3DataGrid(DefaultLoggingClass):
     def __init__(self, griddef):
         super(L3DataGrid, self).__init__(self.__class__.__name__)
         self.griddef = griddef
+        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
         self._l2_parameter = None
         self._l3_parameter = None
         self._l2 = None
@@ -223,6 +230,70 @@ class L3DataGrid(DefaultLoggingClass):
         for target in targets:
             self._l3[target][frb_is_nan] = np.nan
 
+    def compute_l3_parameter(self):
+
+        # Loop over grid items
+        for xi in self.grid_xi_range:
+            for yj in self.grid_yj_range:
+                for l3_parameter_name in self._l3_parameter:
+                    result = self.get_l3_parameter(l3_parameter_name, xi, yj)
+                    self._l3[l3_parameter_name][yj, xi] = result
+
+    def get_l3_parameter(self, l3_parameter_name, xi, yj):
+        """
+        XXX: Currently only works for a defined set of l3 parameter
+             Better implementation needed for future flexibility
+        """
+        surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
+        stflags = self._surface_type_dict
+
+        # Number of all Waveforms (including unknown, invalid etc)
+        if l3_parameter_name == "n_total_waveforms":
+            return len(surface_type)
+
+        # Only positively identified waveforms (either lead or ice)
+        # XXX: what about polynay and ocean?
+        elif l3_parameter_name == "n_valid_waveforms":
+            valid_waveform = ORCondition()
+            valid_waveform.add(surface_type == stflags["lead"])
+            valid_waveform.add(surface_type == stflags["sea_ice"])
+            return valid_waveform.num
+
+        # Fractions of leads on valid_waveforms
+        elif l3_parameter_name == "valid_fraction":
+            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
+            n_total = self.get_l3_parameter("n_total_waveforms", xi, yj)
+            try:
+                valid_fraction = float(n_valid)/float(n_total)
+            except:
+                valid_fraction = 0.0
+            return valid_fraction
+
+        # Fractions of leads on valid_waveforms
+        elif l3_parameter_name == "lead_fraction":
+            n_leads = len(np.where(surface_type == stflags["lead"]))
+            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
+            try:
+                lead_fraction = float(n_leads)/float(n_valid)
+            except:
+                lead_fraction = 0.0
+            return lead_fraction
+
+        # Fractions of leads on valid_waveforms
+        elif l3_parameter_name == "ice_fraction":
+            n_valid = self.get_l3_parameter("n_valid_waveforms", xi, yj)
+            n_ice = np.where(surface_type == stflags["sea_ice"])
+            try:
+                ice_fraction = float(n_ice)/float(n_valid)
+            except:
+                ice_fraction = 0.0
+            return ice_fraction
+
+        # Raise if unknown l3 parameter
+        else:
+            msg = "Unknown L3 parameter name: %s" % l3_parameter_name
+            raise ValueError(msg)
+
     def get_parameter_by_name(self, name):
         return self._l3[name]
 
@@ -290,6 +361,7 @@ class L3DataGrid(DefaultLoggingClass):
     def parameter_list(self):
         # TODO: Only L2 parameter for now
         parameter_list = self._l2_parameter
+        parameter_list.extend(self._l3_parameter)
         parameter_list.append("longitude")
         parameter_list.append("latitude")
         return parameter_list
