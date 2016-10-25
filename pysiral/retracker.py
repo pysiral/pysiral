@@ -118,10 +118,14 @@ class TFMRA_env(BaseRetracker):
         """ API Calling method """
 
         for i in indices:
-
+            
+            # Remove artifact bins
+            wfm_skipped = wfm[i,:]
+            wfm_skipped[0:5] = 0
+            
             # Get the filtered waveform, index of first maximum & norm
             filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
-                rng[i, :], wfm[i, :], radar_mode[i])
+                rng[i, :], wfm_skipped, radar_mode[i])
 
             # first maximum finder might have failed
             if fmi == -1:
@@ -133,7 +137,8 @@ class TFMRA_env(BaseRetracker):
             peakiness = self._classifier.peakiness[i]
             sib = self._classifier.sea_ice_backscatter[i]
             ts = self.get_tail_sum(filt_wfm,fmi)
-
+            #tm = self.get_tail_mean(filt_wfm)
+            
             # Get track point and its power
             tfmra_threshold = self._options.threshold
             
@@ -141,10 +146,16 @@ class TFMRA_env(BaseRetracker):
             if (peakiness>1.5 and peakiness<3.6 and sib>7.0 and sib<10.0 and 
                 ts>225.0 and ts<365.0):
                 tfmra_threshold -= 0.25
-            if (peakiness>2.0 and peakiness<8.1 and sib>16. and sib<21.0 and 
+            if (peakiness>2.0 and peakiness<8.2 and sib>16. and sib<21.0 and 
                 ts>90.0 and ts<155.0):
-                tfmra_threshold += 0.15     
+                tfmra_threshold += 0.15 
             
+            # adapt threshold for MYI
+            #if (tm>0.25):
+            #    tfmra_threshold -= 0.15
+            #if (tm<0.07):
+            #    tfmra_threshold += 0.1             
+                        
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
@@ -157,6 +168,12 @@ class TFMRA_env(BaseRetracker):
         retrieve sum of engery normalized waveform tail
         """
         return sum(filt_wfm[(fmi+1):])
+        
+    def get_tail_mean(self, filt_wfm):
+        """
+        retrieve sum of engery normalized waveform tail
+        """
+        return np.mean(filt_wfm[-300:-100])
         
     
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
