@@ -21,6 +21,7 @@ class Level3Processor(DefaultLoggingClass):
         super(Level3Processor, self).__init__("Level3Processor")
         self.job = job
         self._l2_files = []
+        self._l3_progress_percent = 0.0
 
     def set_l2_files(self, l2_files):
         self._l2_files = l2_files
@@ -28,56 +29,72 @@ class Level3Processor(DefaultLoggingClass):
     def run(self):
 
         # Initialize the stack for the l2i orbit files
+        self.log.info("Initialize l2i data stack")
         stack = L2DataStack()
         stack.set_grid_definition(self.job.grid)
         stack.set_l2_parameter(self.job.l2_parameter)
         stack.initialize(len(self._l2_files))
 
-        # Initialize the data grid
-        grid = L3DataGrid(self.job.grid)
-        grid.init_parameter_fields(self.job.l2_parameter, "l2")
-        grid.init_parameter_fields(self.job.l3_parameter, "l3")
-        grid.calculate_longitude_latitude_fields()
-
         # Parse all orbit files and add to the stack
         for i, l2_file in enumerate(self._l2_files):
-            self.log.info("+ Parsing file %g of %g: %s" % (
-                i+1, len(self._l2_files), l2_file))
+            self._log_progress(i)
             l2data = L2iNCFileImport(l2_file)
             l2data.project(self.job.grid)
             stack.append(l2data)
 
+        # Initialize the data grid
+        self.log.info("Initialize l3 data grid")
+        grid = L3DataGrid(self.job.grid)
+        grid.init_parameter_fields(self.job.l2_parameter, "l2")
+        grid.init_parameter_fields(self.job.l3_parameter, "l3")
         grid.init_mandatory_parameter_fields()
+        grid.calculate_longitude_latitude_fields()
+
         # Average level-2 parameter for each grid cell
-        grid.set_l2_stack(stack)
-        grid.average_l2_parameter()
+        grid.set_l2i_stack(stack)
+        self.log.info("Compute masks and mandatory grid statistics")
         grid.compute_l3_mandatory_parameter()
 
+        self.log.info("Compute l2i parameter averages")
+        grid.compute_l2_parameter_averages()
 
         # Get the level-3 parameter
-        grid.compute_l3_parameter()
+        self.log.info("Compute level-3 ouput parameter")
+        grid.compute_l3_output_parameter()
 
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
+        self.log.info("Apply data masks")
         grid.set_freeboard_nan_mask(self.job.freeboard_nan_mask_targets)
-
-        # TODO: Compute level-3 parameter (lead_fraction ....)
         grid.set_sic_mask(self.job.sea_ice_concentration_mask_targets)
 
         # Get the metadata information from the L2 stack
+        self.log.info("Compile metadata")
         l3_metadata = L3MetaData()
         l3_metadata.get_missions_from_stack(stack)
         l3_metadata.get_data_period_from_stack(stack)
         l3_metadata.get_projection_parameter(self.job.grid)
 
         # Write grid to L3S netcdf file:
+        self.log.info("Exporting file")
         output = L3SDataNC()
         output.set_metadata(l3_metadata)
         output.set_export_folder(self.job.export_folder)
         output.export(grid)
 
+    def _log_progress(self, i):
+        """ Concise logging on the progress of l2i stack creation """
+        n = len(self._l2_files)
+        progress_percent = float(i)/float(n-1)*100.
+        current_reminder = np.mod(progress_percent, 10)
+        last_reminder = np.mod(self._l3_progress_percent, 10)
+        if last_reminder > current_reminder:
+            self.log.info("Creating l2i orbit stack: %3g%% (%g of %g)" % (
+                          progress_percent-current_reminder, i+1, n))
+        self._l3_progress_percent = progress_percent
 
-# %% Helper Classes
+
+# %% Data Containers
 
 class L2DataStack(DefaultLoggingClass):
 
@@ -131,11 +148,19 @@ class L2DataStack(DefaultLoggingClass):
 
 
 class L3DataGrid(DefaultLoggingClass):
-    """ Contains gridded orbit data parameters plus derived parameter  """
+    """
+    Container for computing gridded data sets based on a l2i data stack
+    (averaged l2i parameter, grid cell statistics)
+    """
 
     def __init__(self, griddef):
+
         super(L3DataGrid, self).__init__(self.__class__.__name__)
+
+        # Grid size definition
         self.griddef = griddef
+
+        # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
 
         # Name and data type of mandatory surface type statistics
@@ -146,20 +171,25 @@ class L3DataGrid(DefaultLoggingClass):
             "lead_fraction": "f4",
             "ice_fraction": "f4",
             "is_land": "i2"}
+
+        # List of level-2 parameter
+        # (gridded parameter that are already in l2i)
         self._l2_parameter = None
+
+        # list of level-3 parameter
+        # (grid specific parameter, e.g. surface type statistics)
         self._l3_parameter = None
+
+        # list of stacked l2 parameters for each grid cell
         self._l2 = None
+
+        # container for gridded parameters
         self._l3 = {}
 
     def init_parameter_fields(self, parameter_names, level):
+        """ Initialize output parameter fields """
         setattr(self, "_"+level+"_parameter", parameter_names)
-        shape = (self.griddef.extent.numx, self.griddef.extent.numy)
-        # Taken from gridded SICCI data
-        # XXX: There needs to be a better handling of data types
-        #       (requires better definition of l3 output file format)
-        self.longitude = np.ndarray(shape=shape, dtype='f4')*np.nan
-        self.latitude = np.ndarray(shape=shape, dtype='f4')*np.nan
-        self.is_land = np.ndarray(shape=shape, dtype='f4')*np.nan
+        shape = self.grid_shape
         for parameter_name in parameter_names:
             msg = "Adding %s parameter: %s" % (level, parameter_name)
             self.log.info(msg)
@@ -208,7 +238,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def calculate_longitude_latitude_fields(self):
 
-        # TODO: Move all this into a grid container
+        # TODO: Move all this into a grid definition container
         from pyproj import Proj
         proj = Proj(**self.griddef.projection)
 
@@ -230,69 +260,100 @@ class L3DataGrid(DefaultLoggingClass):
         self._l3["longitude"] = lon
         self._l3["latitude"] = lat
 
-#        import matplotlib.pyplot as plt
-#
-#        plt.figure("xx")
-#        plt.imshow(xx, cmap=plt.get_cmap("rainbow"))
-#        plt.colorbar()
-#
-#        plt.figure("yy")
-#        plt.imshow(yy, cmap=plt.get_cmap("rainbow"))
-#        plt.colorbar()
-#
-#        plt.figure("longitude")
-#        plt.imshow(lon, cmap=plt.get_cmap("rainbow"))
-#        plt.colorbar()
-#
-#        plt.figure("lat")
-#        plt.imshow(lat, cmap=plt.get_cmap("rainbow"))
-#        plt.colorbar()
-#
-#        plt.show()
-#        stop
+    def set_l2i_stack(self, l2i_stack):
+        """
+        Set the l2i data stack
+        (list of all individual measurements per grid cell
+         grouped by parameter)
+        """
+        # Input validation
+        if not isinstance(l2i_stack, L2DataStack):
+            msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
+            msg = msg % type(l2i_stack)
+            raise ValueError(msg)
+        self._l2 = l2i_stack
 
-    def set_l2_stack(self, stack):
-        self._l2 = stack
+    def compute_l2_parameter_averages(self):
+        """
+        Compute averages of all l2i parameter for each grid cell.
+        The list of l2i parameter is from the output format definition
 
-    def average_l2_parameter(self):
-
+        No averages are computed for grid cells that are tagged with
+        a land flag.
+        """
         # Loop over all grid cells
         # XXX: Is there a better way?
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
 
-                # Filter land values
-                surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
-                # TODO: this needs to be done more formalized
-                # surface_type (land = 7)
-                self.is_land[xi, yj] = len(np.where(surface_type == 7)[0] > 0)
-                if self.is_land[xi, yj]:
+                # Exclude land (or near land grid cells)
+                if self._l3["is_land"][xi, yj]:
                     continue
+
                 for name in self._l2_parameter:
                     data = np.array(self._l2.stack[name][yj][xi])
+
+                    # nanmean needs at least 2 valid items
                     if len(np.where(np.isfinite(data))[0]) > 1:
                         self._l3[name][yj, xi] = np.nanmean(data)
 
-    def set_freeboard_nan_mask(self, targets):
     def compute_l3_mandatory_parameter(self):
         """
         Wrapper method for computing the surface type statistics for
         each grid cell
         """
+        for xi in self.grid_xi_range:
+            for yj in self.grid_yj_range:
+                for l3_parameter_name in self._l3_parameter:
+                    self._compute_surface_type_grid_statistics(xi, yj)
 
-    def compute_l3_parameter(self):
-
+    def compute_l3_output_parameter(self):
+        """
+        Compute level-3 parameter for each grid cell. A parameter is
+        classified as level-3 if it only exists on the grid cell level
+        (e.g. total number of waveforms). Parameters that are averaged
+        from  the l2i orbits, are called level-2 in the terminology
+        of pysiral.Level2Processor
+        """
         # Loop over grid items
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
                 for l3_parameter_name in self._l3_parameter:
+                    # level-3 parameter can to be computed
                     result = self.get_l3_parameter(l3_parameter_name, xi, yj)
-                    self._l3[l3_parameter_name][yj, xi] = result
+                    if result is not None:
+                        self._l3[l3_parameter_name][yj, xi] = result
 
     def get_l3_parameter(self, l3_parameter_name, xi, yj):
         """
-        XXX: Currently only works for a defined set of l3 parameter
-             Better implementation needed for future flexibility
+        Compution of all level-3 parameter for a given grid cell
+        Since level-3 parameter may be computed in very different ways,
+        this method is supplied with the grid index and the name of the
+        parameter and then redirects to the corresponding computation
+        method.
+
+        It returns the parameter value, which will be ignored if None. This
+        is the case for the mandatory level-3 parameter (surface type
+        statistics), which are computed in a seperate method and can safely
+        be ignored here.
+        """
+        # Surface type based parameter are computed anyway, skip
+        if l3_parameter_name in self._surface_type_l3par:
+            return None
+        # No other l3 parameter computations at the moment
+        else:
+            raise ValueError("Unknown l3 parameter name: %s" %
+                             l3_parameter_name)
+
+    def set_freeboard_nan_mask(self, nan_masks_targets):
+        """
+        Apply the freeboard nan mask to a selected number of parameters
+        see setting/l3/*.yaml for details
+        """
+        frb_is_nan = np.where(np.isnan(self._l3["freeboard"]))
+        for target in nan_masks_targets:
+            self.log.info("freeboard nan mask to %s" % target)
+            self._l3[target][frb_is_nan] = np.nan
 
     def set_sic_mask(self, nan_masks_targets):
         """
@@ -306,6 +367,18 @@ class L3DataGrid(DefaultLoggingClass):
             self.log.info("sea ice concentration mask to %s" % target)
             self._l3[target][sic_mask] = np.nan
 
+    def _compute_surface_type_grid_statistics(self, xi, yj):
+        """
+        Computes the mandatory surface type statistics for a given
+        grid index based on the surface type stack flag
+
+        The current list
+          - is_land (land flag exists in l2i stack)
+          - n_total_waveforms (size of l2i stack)
+          - n_valid_waveforms (tagged as either lead or sea ice )
+          - valid_fraction (n_valid/n_total)
+          - lead_fraction (n_leads/n_valid)
+          - ice_fraction (n_ice/n_valid)
         """
         surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
 
@@ -357,7 +430,6 @@ class L3DataGrid(DefaultLoggingClass):
 
     def get_parameter_by_name(self, name):
         return self._l3[name]
-
 
 #        import matplotlib.pyplot as plt
 #
@@ -433,6 +505,10 @@ class L3DataGrid(DefaultLoggingClass):
         dimdict = OrderedDict([("numx", self.griddef.extent.numx),
                                ("numy", self.griddef.extent.numy)])
         return dimdict
+
+    @property
+    def grid_shape(self):
+        return (self.griddef.extent.numx, self.griddef.extent.numy)
 
 
 class L3MetaData(object):
