@@ -47,9 +47,11 @@ class Level3Processor(DefaultLoggingClass):
             l2data.project(self.job.grid)
             stack.append(l2data)
 
+        grid.init_mandatory_parameter_fields()
         # Average level-2 parameter for each grid cell
         grid.set_l2_stack(stack)
         grid.average_l2_parameter()
+        grid.compute_l3_mandatory_parameter()
 
 
         # Get the level-3 parameter
@@ -135,6 +137,15 @@ class L3DataGrid(DefaultLoggingClass):
         super(L3DataGrid, self).__init__(self.__class__.__name__)
         self.griddef = griddef
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+
+        # Name and data type of mandatory surface type statistics
+        self._surface_type_l3par = {
+            "n_total_waveforms": "i4",
+            "n_valid_waveforms": "i4",
+            "valid_fraction": "f4",
+            "lead_fraction": "f4",
+            "ice_fraction": "f4",
+            "is_land": "i2"}
         self._l2_parameter = None
         self._l3_parameter = None
         self._l2 = None
@@ -153,6 +164,46 @@ class L3DataGrid(DefaultLoggingClass):
             msg = "Adding %s parameter: %s" % (level, parameter_name)
             self.log.info(msg)
             self._l3[parameter_name] = np.ndarray(
+                shape=shape, dtype='f4')*np.nan
+
+    def init_mandatory_parameter_fields(self):
+        """
+        Initialize mandatory parameter field that may be needed for masking
+        and thus will be calculated whether they are included in the
+        output files or not (computational cost is small)
+
+        Note: These parameter fields will be computed separately from the
+        loops over the l2/l3 parameter loops. But as the fields can
+        be also specified in the output format definition, these will be
+        than ignored when looping over all output parameters
+        """
+
+        # grid output dimensions
+        shape = self.grid_shape
+
+        # XXX: There needs to be a better handling of data types
+        #       (requires better definition of l3 output file format)
+        self.longitude = np.ndarray(shape=shape, dtype='f4')*np.nan
+        self.latitude = np.ndarray(shape=shape, dtype='f4')*np.nan
+
+        self.log.info("Adding parameter: longitude")
+        self.log.info("Adding parameter: latitude")
+
+        # Surface type statistics
+        for surface_type_statistics_par in self._surface_type_l3par.keys():
+            # Check if already created, which will be the case if
+            # the parameter is in the l3 output definition
+            if surface_type_statistics_par in self._l3_parameter:
+                continue
+            self.log.info("Adding parameter: %s" % surface_type_statistics_par)
+            dtype = self._surface_type_l3par[surface_type_statistics_par]
+            self._l3[surface_type_statistics_par] = np.ndarray(
+                shape=shape, dtype=dtype)
+
+        # Sea Ice Concentration (for potential masking)
+        if "sea_ice_concentration" not in self._l2_parameter:
+            self.log.info("Adding parameter: sea_ice_concentration")
+            self._l3["sea_ice_concentration"] = np.ndarray(
                 shape=shape, dtype='f4')*np.nan
 
     def calculate_longitude_latitude_fields(self):
@@ -223,13 +274,11 @@ class L3DataGrid(DefaultLoggingClass):
                         self._l3[name][yj, xi] = np.nanmean(data)
 
     def set_freeboard_nan_mask(self, targets):
+    def compute_l3_mandatory_parameter(self):
         """
-        Apply the freeboard nan mask to a selected number of parameters
-        see setting/l3/*.yaml for details
+        Wrapper method for computing the surface type statistics for
+        each grid cell
         """
-        frb_is_nan = np.where(np.isnan(self._l3["freeboard"]))
-        for target in targets:
-            self._l3[target][frb_is_nan] = np.nan
 
     def compute_l3_parameter(self):
 
@@ -259,56 +308,52 @@ class L3DataGrid(DefaultLoggingClass):
 
         """
         surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
+
+        # Stack can be empty
+        if len(surface_type) == 0:
+            return
+
         stflags = self._surface_type_dict
 
-        # Compute total waveforms
+        # Create a land flag
+        is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
+        self._l3["is_land"][xi, yj] = is_land
+
+        # Compute total waveforms in grid cells
         n_total_waveforms = len(surface_type)
+        self._l3["n_total_waveforms"][yj, xi] = n_total_waveforms
 
         # Compute valid wavefords
+        # Only positively identified waveforms (either lead or ice)
+        # XXX: what about polynay and ocean?
         valid_waveform = ORCondition()
         valid_waveform.add(surface_type == stflags["lead"])
         valid_waveform.add(surface_type == stflags["sea_ice"])
         n_valid_waveforms = valid_waveform.num
-
-        # Number of all Waveforms (including unknown, invalid etc)
-        if l3_parameter_name == "n_total_waveforms":
-            return n_total_waveforms
-
-        # Only positively identified waveforms (either lead or ice)
-        # XXX: what about polynay and ocean?
-        elif l3_parameter_name == "n_valid_waveforms":
-            return n_valid_waveforms
+        self._l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
 
         # Fractions of leads on valid_waveforms
-        elif l3_parameter_name == "valid_fraction":
-            try:
-                valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
-            except:
-                valid_fraction = np.nan
-            return valid_fraction
+        try:
+            valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
+        except:
+            valid_fraction = np.nan
+        self._l3["valid_fraction"][yj, xi] = valid_fraction
 
         # Fractions of leads on valid_waveforms
-        elif l3_parameter_name == "lead_fraction":
-            n_leads = len(np.where(surface_type == stflags["lead"]))
-            try:
-                lead_fraction = float(n_leads)/float(n_valid_waveforms)
-            except:
-                lead_fraction = np.nan
-            return lead_fraction
+        n_leads = len(np.where(surface_type == stflags["lead"])[0])
+        try:
+            lead_fraction = float(n_leads)/float(n_valid_waveforms)
+        except:
+            lead_fraction = np.nan
+        self._l3["lead_fraction"][yj, xi] = lead_fraction
 
         # Fractions of leads on valid_waveforms
-        elif l3_parameter_name == "ice_fraction":
-            n_ice = len(np.where(surface_type == stflags["sea_ice"]))
-            try:
-                ice_fraction = float(n_ice)/float(n_valid_waveforms)
-            except:
-                ice_fraction = np.nan
-            return ice_fraction
-
-        # Raise if unknown l3 parameter
-        else:
-            msg = "Unknown L3 parameter name: %s" % l3_parameter_name
-            raise ValueError(msg)
+        n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
+        try:
+            ice_fraction = float(n_ice)/float(n_valid_waveforms)
+        except:
+            ice_fraction = np.nan
+        self._l3["ice_fraction"][yj, xi] = ice_fraction
 
     def get_parameter_by_name(self, name):
         return self._l3[name]
