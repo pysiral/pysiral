@@ -241,3 +241,4 @@ pysiral/visualization/font/NeoSansW1G-Regular.otf
 *.nbc
 *.nbi
 *.c
+sh.exe.stackdump
