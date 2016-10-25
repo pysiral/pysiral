@@ -28,14 +28,15 @@ import yaml
 from treedict import TreeDict
 
 
+PYSIRAL_VERSION = "0.3.0-dev"
+PYSIRAL_VERSION_FILENAME = "030dev"
+
 class ConfigInfo(object):
     """
     Container for the content of the pysiral definition files
     (in pysiral/configration) and the local machine definition file
     (local_machine_definition.yaml)
     """
-
-    PYSIRAL_VERSION = "0.2.0-dev"
 
     # Global variables
     _DEFINITION_FILES = {
@@ -349,11 +350,12 @@ class TimeRangeRequest(object):
 
 class TimeRangeIteration(object):
 
-    def __init__(self):
+    def __init__(self, base_period="monthly"):
         self._index = 0
         self._num_iterations = 0
         self._start = None
         self._stop = None
+        self._base_period = base_period
 
     def __repr__(self):
         output = "pysiral TimeRangeIteration Object:\n"
@@ -391,6 +393,10 @@ class TimeRangeIteration(object):
     def is_full_month(self):
         test_diff = (self.start+relativedelta(months=1))-self.stop
         return test_diff.days < 1
+
+    @property
+    def base_period(self):
+        return self._base_period
 
     @property
     def label(self):
@@ -464,7 +470,40 @@ class DefaultCommandLineArguments(object):
                 "dest": "no_critical_prompt",
                 "default": False,
                 "required": False,
-                "help": 'set to skip any required command line inputs'}}
+                "help": 'set to skip any required command line inputs'},
+
+            # fetch the level-2 settings file
+            "l2-settings": {
+                "action": "store",
+                "dest": "l2_settings",
+                "default": None,
+                "required": True,
+                "help": 'id or path to Level-2 settings file'},
+
+            # set the run tag for the Level-2 Processor
+            "run-tag": {
+                "action": "store",
+                "dest": "no_critical_prompt",
+                "default": None,
+                "required": False,
+                "help": 'tag for the Level-2 output'},
+
+            # no overwrite protection for level-2 outputs
+            "no-overwrite-protection": {
+                "action": "store_false",
+                "dest": "overwrite_protection",
+                "default": False,
+                "required": False,
+                "help": 'disable writing Level-2 output to unique directory'},
+
+            # no overwrite protection for level-2 outputs
+            "overwrite-protection": {
+                "action": "store_true",
+                "dest": "overwrite_protection",
+                "default": True,
+                "required": False,
+                "help": 'enable writing Level-2 output to unique directory ' +
+                        '(default)'}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
@@ -525,4 +564,4 @@ def options_from_dictionary(**opt_dict):
 
 def get_parameter_attributes(target):
     config = ConfigInfo()
-    return config.parameter.l1b
+    return config.parameter[target]

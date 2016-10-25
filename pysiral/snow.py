@@ -5,6 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 from pysiral.config import options_from_dictionary
+from pysiral.errorhandler import ErrorStatus
 from pysiral.filter import idl_smooth
 
 from pyproj import Proj
@@ -151,5 +152,12 @@ class FixedSnowDepthDensity(SnowBaseClass):
         return snow_depth, snow_density, ""
 
 
+
 def get_l2_snow_handler(name):
-    return globals()[name]()
+    try:
+        return globals()[name]()
+    except:
+        msg = "Unknown snow depth handler: %s" % name
+        error = ErrorStatus(caller_id="get_l2_snow_handler")
+        error.add_error("invalid-snow-handler", msg)
+        error.raise_on_error()

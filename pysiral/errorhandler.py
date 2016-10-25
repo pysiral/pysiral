@@ -9,7 +9,8 @@ import sys
 
 class ErrorStatus(object):
 
-    def __init__(self):
+    def __init__(self, caller_id=""):
+        self.caller_id = caller_id
         self.status = False
         self.codes = []
         self.messages = []
@@ -21,9 +22,10 @@ class ErrorStatus(object):
 
     def raise_on_error(self):
         if self.status:
-            output = "ErrorMessage:\n"
+            output = "%s Critical Error(s): (%g)\n" % (self.caller_id,
+                                                       len(self.codes))
             for i in range(len(self.codes)):
-                output += "(%s): %s" % (self.codes[i], self.messages[i])
+                output += "  [%s] %s" % (self.codes[i], self.messages[i])
                 output += "\n"
             print output
             sys.exit(1)

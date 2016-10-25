@@ -5,7 +5,7 @@ Created on Thu Jul 23 15:10:04 2015
 @author: Stefan
 """
 
-
+from pysiral.config import PYSIRAL_VERSION
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.ers.sgdrfile import ERSSGDR
@@ -122,7 +122,7 @@ class L1bAdapterCryoSat(object):
         info = self.l1b.info
 
         # Processing System info
-        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
 
         # General CryoSat-2 metadata
         info.set_attribute("mission", self._mission)
@@ -300,7 +300,7 @@ class L1bAdapterEnvisat(object):
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
         sgdr = self.sgdr
-        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
         info.set_attribute("mission", self._mission)
         info.set_attribute("mission_data_version", "final v9.3p5")
         info.set_attribute("orbit", sgdr.mph.abs_orbit)
@@ -423,7 +423,7 @@ class L1bAdapterERS(object):
         """ Extract essential metadata information from SGDR file """
         info = self.l1b.info
         sgdr = self.sgdr
-        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
         info.set_attribute("mission", self._mission)
         info.set_attribute("mission_data_version", sgdr.nc.software_ver)
         info.set_attribute("orbit", sgdr.nc.abs_orbit)
@@ -567,7 +567,7 @@ class L1bAdapterSentinel3(object):
         info = self.l1b.info
         product = self.sral.product_info
         info.set_attribute("mission", self._mission)
-        info.set_attribute("pysiral_version", self._config.PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
         mission_data_source = filename_from_path(self.sral.filename)
         info.set_attribute("mission_data_source", mission_data_source)
         info.set_attribute("sar_mode_percent", product.sar_mode_percentage)

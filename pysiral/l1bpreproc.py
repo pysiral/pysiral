@@ -11,9 +11,9 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.flag import FlagContainer
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.logging import DefaultLoggingClass
-from pysiral.output import (l1bnc_filenaming, get_l1bdata_export_folder,
+from pysiral.output import (PysiralOutputFilenaming, PysiralOutputFolder,
                             L1bDataNC)
-from pysiral.path import validate_directory
+from pysiral.path import filename_from_path
 
 import numpy as np
 import os
@@ -99,8 +99,8 @@ class L1bPreProc(DefaultLoggingClass):
         for hemisphere in hemisphere_targets:
 
             # Get the l1bdata diretory
-            export_folder = get_l1bdata_export_folder(
-                self._pysiral_config,
+            export_folder = PysiralOutputFolder(config=self._pysiral_config)
+            export_folder.l1bdata_from_list(
                 self._jobdef.mission_id,
                 self._jobdef.input_version,
                 hemisphere,
@@ -108,12 +108,12 @@ class L1bPreProc(DefaultLoggingClass):
                 self._jobdef.time_range.start_dt.month)
 
             # Get list of netcdf files
-            search_pattern = os.path.join(export_folder, "*.nc")
+            search_pattern = os.path.join(export_folder.path, "*.nc")
             l1bdata_files = glob.glob(search_pattern)
 
             # Delete files
             self.log.info("Removing %g l1bdata files in %s" % (
-                len(l1bdata_files), export_folder))
+                len(l1bdata_files), export_folder.path))
             for l1bdata_filename in l1bdata_files:
                 os.remove(l1bdata_filename)
 
@@ -129,14 +129,18 @@ class L1bPreProc(DefaultLoggingClass):
         for i, l1b_file in enumerate(self._l1b_file_list):
 
             # Parse the current file and split into polar ocean segments
-            log.info("+ Parsing file %g of %g: %s" % (i+1, n, l1b_file))
+            log.info("+ [ Processing %g of %g ]" % (i+1, n))
+            log.info("- Input file: %s" % filename_from_path(l1b_file))
             l1b_segments = self.get_ocean_segments_from_input_file(l1b_file)
 
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info("- no %s polar ocean data, skipping" % (
+                log.info("- %s polar ocean data: False -> skip file" % (
                      self._jobdef.hemisphere))
                 continue
+            else:
+                log.info("- %s polar ocean data: True" % (
+                     self._jobdef.hemisphere))
             log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
@@ -303,24 +307,25 @@ class L1bPreProc(DefaultLoggingClass):
     def export_l1b_to_netcdf(self, l1b):
         """ Write l1b object to netcdf file """
 
-        # Log entries (filename, folder)
-        log_entry = "Creating netCDF %s in folder %s"
+        # Get and create export folder
+        export_folder = PysiralOutputFolder(config=self._pysiral_config)
+        export_folder.l1bdata_from_l1b(l1b, version=self._jobdef.input_version)
+        export_folder.create()
 
-        # Get export filename and folder
-        export_folder, export_filename = l1bnc_filenaming(
-            l1b, self._pysiral_config, self._jobdef.input_version)
-        self.log.info(log_entry % (export_filename, export_folder))
-
-        # Check if export folder exists, create if necessary
-        validate_directory(export_folder)
+        # Get export filename
+        filenaming = PysiralOutputFilenaming()
+        export_filename = filenaming.from_l1b(l1b)
 
         # Export the data object
         ncfile = L1bDataNC()
         ncfile.l1b = l1b
         ncfile.config = self._pysiral_config
-        ncfile.output_folder = export_folder
+        ncfile.output_folder = export_folder.path
         ncfile.filename = export_filename
         ncfile.export()
+
+        log_entry = "- Exported l1bdata: %s"
+        self.log.info(log_entry % (export_filename))
 
     def region_is_arctic_or_antarctic_ocean(self, l1b):
         """
@@ -343,7 +348,7 @@ class L1bPreProc(DefaultLoggingClass):
 
         # 2) test if there is any ocean data at all
         has_ocean = l1b.info.open_ocean_percent > 0
-        self.log.info("- has ocean data: %s" % str(has_ocean))
+        # self.log.info("- has ocean data: %s" % str(has_ocean))
 
         # Return a flag and the ocean flag list for later use
         return is_polar and has_ocean

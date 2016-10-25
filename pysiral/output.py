@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.path import file_basename
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
+                            ConfigInfo)
+from pysiral.path import filename_from_path, file_basename
+from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
 
+
 from netCDF4 import Dataset, date2num
 from datetime import datetime
+from dateutil import parser as dtparser
 import numpy as np
+import parse
 import os
 
 
@@ -30,19 +36,23 @@ class NCDataFile(object):
         self.zlib = True
         self._rootgrp = None
         self._options = None
+        self._proc_settings = None
         self.verbose = False
 
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
 
-    def _create_root_group(self, attdict):
+    def set_processor_settings(self, proc_settings):
+        self._proc_settings = proc_settings
+
+    def _create_root_group(self, attdict, **global_attr_keyw):
         """
         Create the root group and add l1b metadata as global attributes
         """
         self._convert_datetime_attributes(attdict)
         self._convert_bool_attributes(attdict)
         self._convert_nonetype_attributes(attdict)
-        self._set_global_attributes(attdict)
+        self._set_global_attributes(attdict, **global_attr_keyw)
 
     def _convert_datetime_attributes(self, attdict):
         """
@@ -78,10 +88,30 @@ class NCDataFile(object):
             if content is None:
                 attdict[key] = ""
 
-    def _set_global_attributes(self, attdict):
+    def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
         for key in attdict.keys():
-            self._rootgrp.setncattr(key, attdict[key])
+            self._rootgrp.setncattr(prefix+key, attdict[key])
+
+    def _get_variable_attr_dict(self, parameter):
+        """ Retrieve the parameter attributes """
+        default_attrs = {
+            "long_name": parameter,
+            "standard_name": parameter,
+            "scale_factor": 1.0,
+            "add_offset": 0.0}
+        if not self.parameter_attributes.has_key(parameter):
+            self._missing_parameters.append(parameter)
+            return default_attrs
+        else:
+            return dict(self.parameter_attributes[parameter])
+
+    def _write_processor_settings(self):
+        if self._proc_settings is None:
+            pass
+        settings = self._proc_settings
+        for item in settings.iterkeys():
+            self._rootgrp.setncattr(item, str(settings[item]))
 
     def _open_file(self):
         self._rootgrp = Dataset(self.path, "w")
@@ -122,6 +152,7 @@ class L1bDataNC(NCDataFile):
         self.filename = file_basename(self.l1b.filename)+".nc"
 
     def _populate_data_groups(self):
+        self._missing_parameters = []
         for datagroup in self.datagroups:
             if self.verbose:
                 print datagroup.upper()
@@ -153,22 +184,13 @@ class L1bDataNC(NCDataFile):
                 attribute_dict = self._get_variable_attr_dict(parameter)
                 for key in attribute_dict.keys():
                     setattr(var, key, attribute_dict[key])
-        print "Warning: Missing parameter attributes for "+"; ".join(
-            self._missing_parameters)
 
-    def _get_variable_attr_dict(self, parameter):
-        """ Retrieve the parameter attributes """
-        self._missing_parameters = []
-        default_attrs = {
-            "long_name": parameter,
-            "standard_name": parameter,
-            "scale_factor": 1.0,
-            "add_offset": 0.0}
-        if not self.parameter_attributes.has_key(parameter):
-            self._missing_parameters.append(parameter)
-            return default_attrs
-        else:
-            return dict(self.parameter_attributes[parameter])
+        # Report mission variable attributes (not in master release)
+        not_master = "master" not in PYSIRAL_VERSION
+        if not_master:
+            print "Warning: Missing parameter attributes for "+"; ".join(
+                self._missing_parameters)
+
 
 
 class L2iDataNC(NCDataFile):
@@ -179,29 +201,41 @@ class L2iDataNC(NCDataFile):
     def __init__(self):
         super(L2iDataNC, self).__init__()
         self.parameter = []
-        self.export_path = None
+        self.base_export_path = None
         self.l2 = None
+        self._missing_parameters = []
+        self.parameter_attributes = get_parameter_attributes("l2i")
 
-    def set_export_path(self, path):
-        self.export_path = path
+    def set_base_export_path(self, path):
+        self.base_export_path = path
+
+    def get_full_export_path(self, startdt):
+        self._get_full_export_path(startdt)
+        return self.export_path
 
     def write_to_file(self, l2):
-        self._validate(l2)
+        self._get_full_export_path(l2.info.start_time)
+        self._get_export_filename(l2)
         self._open_file()
-        self._create_root_group(l2.info.attdict)
+        self._create_root_group(l2.info.attdict, prefix="input.")
         self._populate_data_groups(l2)
+        self._write_processor_settings()
         self._write_to_file()
 
-    def _validate(self, l2):
-        # Validate the export directory
-        path = self.export_path
-        for subfolder_tag in self._options.subfolders:
-            subfolder = getattr(l2.info, subfolder_tag)
-            path = os.path.join(path, subfolder)
-        validate_directory(path)
+    def _get_full_export_path(self, startdt):
+        # Comput und create the export directory
+        base_path = self.base_export_path
+        sub_folders = self._options.subfolders
+        folder = PysiralOutputFolder(load_config=False)
+        folder.l2i_from_startdt(startdt, base_path, sub_folders)
+        folder.create()
+        self.export_path = folder.path
+
+    def _get_export_filename(self, l2):
         # get full output filename
-        filename = l2i_filenaming(l2)
-        self.path = os.path.join(path, filename)
+        filenaming = PysiralOutputFilenaming()
+        self.filename = filenaming.from_l2i(l2)
+        self.path = os.path.join(self.export_path, self.filename)
 
     def _populate_data_groups(self, l2):
         dimdict = l2.dimdict
@@ -221,7 +255,16 @@ class L2iDataNC(NCDataFile):
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
+                # Add Parameter Attributes
+            attribute_dict = self._get_variable_attr_dict(parameter_name)
+            for key in attribute_dict.keys():
+                setattr(var, key, attribute_dict[key])
 
+        # Report mission variable attributes (not in master release)
+        not_master = "master" not in PYSIRAL_VERSION
+        if not_master:
+            print "Warning: Missing parameter attributes for "+"; ".join(
+                self._missing_parameters)
 
 class L3SDataNC(NCDataFile):
     """
@@ -253,7 +296,8 @@ class L3SDataNC(NCDataFile):
         path = self.export_path
         validate_directory(path)
         # get full output filename
-        filename = l3s_filenaming(self.metadata)
+        filenaming = PysiralOutputFilenaming()
+        filename = filenaming.from_l3s(self.metadata)
         self.path = os.path.join(path, filename)
 
     def _populate_data_groups(self, l3):
@@ -269,85 +313,142 @@ class L3SDataNC(NCDataFile):
             var[:] = data
 
 
-def l1bnc_filenaming(l1b, config, version):
+class PysiralOutputFilenaming(object):
     """
-    Returns the standard export folder and filename of a level-1b netCDF
-    data file
-
-    Export Folder
-    -------------
-
-    Based on the ``l1bdata`` file for the specific mission in
-    ``local_machine_def.yaml`` in the pysiral main directory
-    with sub-folders for hemisphere, year, month
-
-    Filename
-    --------
-
-    Default l1bdata filename in pysiral::
-
-        l1bdat_v$VERS_$REG_$MISSION_$ORBIT_$YYYYMMDDHHMISS_$YYYYMMDDHHMISS.nc
-
-    :$VERS: l1bdata version [00 (beta)]
-    :$REG: region [north | south]
-    :$MISSION: mission short name [cryosat2 | envisat | ers1 | ...]
-    :$ORBIT: orbit/cylce number [ 00026000 ]
-    :$YYYYMMDDHHMISS: start and end time
-
+    Class for generating and parsing of pysiral output
+    filenames for all data levels
     """
-    # export folder: $mission_l1bdata_folder/YYYY/MM (start time)
 
-    # Get a proper filename friendly representation of the pysiral version
-    pysiral_version = config.PYSIRAL_VERSION
-    pysiral_version = pysiral_version.replace(".", "")
-    pysiral_version = pysiral_version.replace("-", "")
+    def __init__(self):
+        self.error = ErrorStatus()
+        self.data_level = None
+        self.version = None
+        self.hemisphere = None
+        self.mission_id = None
+        self.orbit = None
+        self.start = None
+        self.stop = None
+        self.resolution = None
+        self.grid = None
 
-    year = l1b.info.start_time.year
-    month = l1b.info.start_time.month
-    hemisphere = l1b.info.hemisphere
-    export_folder = get_l1bdata_export_folder(config, l1b.mission, version,
-                                              hemisphere, year, month)
+        self._registered_parsers = {
+            "l1bdata": "l1bdata_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
+            "l2i": "l2i_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
+            "l3s": "l3s_{version}_{mission_id}_{grid}_{resolution}_{start}_{stop}.nc"}
 
-    # construct filename from
-    export_filename = "l1bdata_v{version}_{region}_{mission}_" + \
-                      "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{stopdt:%Y%m%dT%H%M%S}.nc"
-    export_filename = export_filename.format(
-        version=pysiral_version, region=hemisphere, mission=l1b.info.mission,
-        orbit=l1b.info.orbit, startdt=l1b.info.start_time,
-        stopdt=l1b.info.stop_time)
-    return export_folder, export_filename
+    def from_l1b(self, l1b):
+        """ Level-1b preprocessed filename """
+        export_filename = self._registered_parsers["l1bdata"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            hemisphere=l1b.info.hemisphere,
+            mission_id=l1b.mission,
+            start=self._datetime_format(l1b.info.start_time),
+            stop=self._datetime_format(l1b.info.stop_time))
+        return export_filename
+
+    def from_l2i(self, l2i):
+        """ Level-2 Intermediate filename """
+        export_filename = self._registered_parsers["l2i"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            hemisphere=l2i.hemisphere,
+            mission_id=l2i.info.mission,
+            start=self._datetime_format(l2i.info.start_time),
+            stop=self._datetime_format(l2i.info.stop_time))
+        return export_filename
+
+    def from_l3s(self, l3s):
+        """ Level-3 super-collocated filename """
+        export_filename = self._registered_parsers["l3s"]
+        export_filename = export_filename.format(
+            version=PYSIRAL_VERSION_FILENAME,
+            mission=l3s.mission,
+            gri=l3s.grid_tag,
+            resolution_tag=l3s.resolution_tag,
+            start=self._datetime_format(l3s.start_period),
+            stop_period=self._datetime_format(l3s.stop_period))
+        return export_filename
+
+    def parse_filename(self, fn):
+        """ Parse info from pysiral output filename """
+        filename = filename_from_path(fn)
+        match_found = False
+        for data_level in self._registered_parsers.keys():
+            parser = parse.compile(self._registered_parsers[data_level])
+            match = parser.parse(filename)
+            if match:
+                match_found = True
+                self.data_level = data_level
+                for parameter in match.named.keys():
+                    value = match[parameter]
+                    if parameter in ["start", "stop"]:
+                        value = dtparser.parse(value)
+                    setattr(self, parameter, value)
+                break
+
+        if not match_found:
+            print "Unrecognized filename: %s" % filename
 
 
-def get_l1bdata_export_folder(config, mission, version,
-                              hemisphere, year, month):
-    local_repository = config.local_machine.l1b_repository
-    export_folder = local_repository[mission][version].l1bdata
-    yyyy = "%04g" % year
-    mm = "%02g" % month
-    export_folder = os.path.join(export_folder, hemisphere, yyyy, mm)
-    return export_folder
-
-def l2i_filenaming(l2):
-    export_filename = "l2i_v{version:02g}_{region}_{mission}_" + \
-                      "{orbit:06g}_{startdt:%Y%m%dT%H%M%S}_" + \
-                      "{stopdt:%Y%m%dT%H%M%S}.nc"
-    export_filename = export_filename.format(
-        version=0, region=l2.hemisphere, mission=l2.info.mission,
-        orbit=l2.info.orbit, startdt=l2.info.start_time,
-        stopdt=l2.info.stop_time)
-    return export_filename
+    def _datetime_format(self, datetime):
+        return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)
 
 
-def l3s_filenaming(l3):
-    export_filename = "l3s_v{version:02g}_{mission}_" + \
-                      "{grid_tag}_{resolution_tag}_" + \
-                      "{start_period}_{stop_period}.nc"
-    export_filename = export_filename.format(
-        version=0, mission=l3.mission, grid_tag=l3.grid_tag,
-        resolution_tag=l3.resolution_tag, start_period=l3.start_period,
-        stop_period=l3.stop_period)
-    return export_filename
+class PysiralOutputFolder(object):
+    """
+    Class for generating and retrieving output folders
+    """
+
+    def __init__(self, config=None, load_config=True):
+        self.error = ErrorStatus()
+        self.data_level = None
+        self.path = None
+        self.version = "default"
+        self.mission_id = None
+        self.year = None
+        self.month = None
+        if not load_config:
+            return
+        if config is None or not isinstance(config, ConfigInfo):
+            self.config = ConfigInfo()
+        else:
+            self.config = config
+
+    def l1bdata_from_list(self, mission_id, version, hemisphere, year, month):
+        self.mission_id = mission_id
+        self.version = version
+        self.hemisphere = hemisphere
+        self.year = year
+        self.month = month
+        self._set_folder_as_l1bdata()
+
+    def l1bdata_from_l1b(self, l1b, version="default"):
+        self.mission_id = l1b.mission
+        self.version = version
+        self.hemisphere = l1b.info.hemisphere
+        self.year = l1b.info.start_time.year
+        self.month = l1b.info.start_time.month
+        self._set_folder_as_l1bdata()
+
+    def l2i_from_startdt(self, startdt, base_path, subfolders):
+        stringify = {"month": "%02g", "year": "%04g", "day": "%02g"}
+        self.path = base_path
+        for subfolder_tag in subfolders:
+            parameter = getattr(startdt, subfolder_tag)
+            subfolder = stringify[subfolder_tag] % parameter
+            self.path = os.path.join(self.path, subfolder)
+
+    def create(self):
+        validate_directory(self.path)
+
+    def _set_folder_as_l1bdata(self):
+        self.data_level = "l1b"
+        local_repository = self.config.local_machine.l1b_repository
+        export_folder = local_repository[self.mission_id][self.version].l1bdata
+        yyyy = "%04g" % self.year
+        mm = "%02g" % self.month
+        self.path = os.path.join(export_folder, self.hemisphere, yyyy, mm)
 
 
 def get_output_class(name):

@@ -5,11 +5,14 @@ Created on Sat Aug 01 17:33:02 2015
 @author: Stefan
 """
 
-from pysiral.config import ConfigInfo
-from pysiral.output import NCDateNumDef
+from pysiral.config import ConfigInfo, TimeRangeIteration
+from pysiral.errorhandler import ErrorStatus
+from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
+from pysiral.path import file_basename
 from netCDF4 import Dataset, num2date
 
 import os
+import glob
 import tempfile
 import uuid
 import numpy as np
@@ -126,3 +129,53 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
         l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
     l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
     return l1bdata_files
+
+
+def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
+                      version="default"):
+    """
+    Returns a list of l1bdata files for a given mission, hemisphere, version
+    and time range
+    XXX: Note: this function will slowly replace `get_l1bdata_files`, which
+         is limited to full month
+    """
+
+    # parse config data (if not provided)
+    if config is None or not isinstance(config, ConfigInfo):
+        config = ConfigInfo()
+
+    # Validate time_range (needs to be of type TimeRangeIteration)
+    try:
+        time_range_is_correct_object = time_range.base_period == "monthly"
+    except:
+        time_range_is_correct_object = False
+    if not time_range_is_correct_object:
+        error = ErrorStatus()
+        msg = "Invalid type of time_range, required: %s, was %s" % (
+            type(time_range), type(TimeRangeIteration))
+        error.add("invalid-timerange-type", msg)
+        error.raise_on_error()
+
+    # 1) get list of full month
+    yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
+    l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
+    directory = os.path.join(l1b_repo, hemisphere, yyyy, mm)
+    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+
+    # 2) check if month subset is requested
+    tr = time_range
+    if time_range.is_full_month:
+        return l1bdata_files
+    else:
+        subset = [f for f in l1bdata_files if l1bdata_in_trange(f, tr)]
+        return subset
+
+
+def l1bdata_in_trange(fn, tr):
+    """ Returns flag if filename is within time range """
+    # Parse infos from l1bdata filename
+    fnattr = PysiralOutputFilenaming()
+    fnattr.parse_filename(fn)
+    # Compute overlap between two start/stop pairs
+    is_overlap = fnattr.start <= tr.stop and fnattr.stop >= tr.start
+    return is_overlap

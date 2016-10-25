@@ -11,6 +11,7 @@ from pysiral.config import get_parameter_definitions
 from pysiral.visualization.mapstyle import get_custom_font
 
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 from matplotlib.ticker import MultipleLocator
 
 import os
@@ -24,6 +25,9 @@ def colorbar_png():
     # Get the parameter definition for the corresponding parameter
     parameter_definitions = get_parameter_definitions()
     pardef = parameter_definitions[args.parameter]
+
+    if args.label is not None:
+        pardef.label = args.label
 
     if args.diff:
         cmap = pardef.cmap_diff
@@ -46,9 +50,25 @@ def colorbar_png():
     else:
         extend = 'neither'
 
-    font_label_properties = {
-        "color": "#4b4b4b",
-        "fontproperties": get_custom_font(fontsize=22, awi_font=False)}
+
+    if args.font == "awi-font":
+        font_label_properties = {
+            "color": "#4b4b4b",
+            "fontproperties": get_custom_font(fontsize=22)}
+    else:
+        font_label_properties = {
+            "color": "#4b4b4b",
+            "fontproperties": fm.FontProperties(family=args.font, size=22)}
+
+
+    if args.vmin is not None:
+        cmap.vmin = args.vmin
+
+    if args.vmax is not None:
+        cmap.vmax = args.vmax
+
+    if args.vstep is not None:
+        cmap.step = args.vstep
 
     # Create the figure
     figsize = (8, 1.5)
@@ -104,6 +124,26 @@ def get_argparser():
         "-font",
         action='store', dest='font', default="awi-font",
         help='Font to use')
+
+    parser.add_argument(
+        "-vmin",
+        action='store', type=float, dest='vmin', default=None,
+        help='Overrides vmin')
+
+    parser.add_argument(
+        "-vmax",
+        action='store', type=float, dest='vmax', default=None,
+        help='Overrides vmin')
+
+    parser.add_argument(
+        "-vstep",
+        action='store', type=float, dest='vstep', default=None,
+        help='Overrides vstep')
+
+    parser.add_argument(
+        "-label",
+        action='store', dest='label', default=None,
+        help='Overrides label')
 
     # Batch Processing
     parser.add_argument(

@@ -36,11 +36,132 @@ l1b:
         scale_factor: 1.0
         add_offset: 0.0
 
-l2_list:
-    - null
+#  Parameter definitions for Level-2 intermediate (l2i) output files
+l2i:
 
-l2_list:
-    - null
+    timestamp:
+        long_name: utc timestamp
+        standard_name: timestamp
+        units: seconds since 1970-01-01
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    longitude:
+        long_name: longitude of satellite / nadir measurement point
+        standard_name: longitude
+        units: degrees
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    latitude:
+        long_name: latitude of satellite / nadir measurement point
+        standard_name: latitude
+        units: degrees
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+    
+    surface_type:
+        long_name: "surface type flag (0: unknown, 1: ocean, 2: lead: 2, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid)"
+        standard_name: surface_tyoe
+        units: flag
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    elevation:
+        long_name: "elevation of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
+        standard_name: elevation
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    mean_sea_surface:
+        long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
+        standard_name: mean_sea_surface
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    sea_surface_anomaly:
+        long_name: "departure of instantaneous sea surface height from mean sea surface height"
+        standard_name: sea_surface_anomaly
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0    
+
+    radar_freeboard:
+        long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+        standard_name: radar_freeboard
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0
+
+    freeboard:
+        long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+        standard_name: freeboard
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0    
+
+    sea_ice_thickness:
+        long_name: "thickness of the sea ice layer"
+        standard_name: sea_ice_thickness
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0        
+
+    snow_depth:
+        long_name: "thickness of the snow layer"
+        standard_name: snow_depth
+        units: meter
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0     
+
+    snow_density:
+        long_name: "density of the snow layer"
+        standard_name: snow_density
+        units: kg/m^3
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0     
+
+    ice_density:
+        long_name: "density of the sea ice layer"
+        standard_name: ice_density
+        units: kg/m^3
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0  
+
+    sea_ice_concentration:
+        long_name: "sea ice concentration"
+        standard_name: sea_ice_concentration
+        units: percent
+        valid_min: 0.0
+        valid_max: 100.0
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0  
+
+    sea_ice_type:
+        long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+        standard_name: sea_ice_type
+        units: fraction
+        valid_min: 0.0
+        valid_max: 1.0
+        coordinates: timestamp
+        scale_factor: 1.0
+        add_offset: 0.0 
+
 
 # A list of recognized identifiers for geophysical range corrections
 correction_list:

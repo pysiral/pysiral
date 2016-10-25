@@ -4,8 +4,12 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral.config import td_branches
+
+from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
+                            get_yaml_config)
+from pysiral.errorhandler import ErrorStatus
 from pysiral.l1bdata import L1bdataNCFile
+from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
 from pysiral.sic import get_l2_sic_handler
@@ -20,10 +24,13 @@ from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
 from pysiral.output import get_output_class
+from pysiral.path import filename_from_path
 
 from collections import deque
+from datetime import datetime
 import numpy as np
 import time
+import glob
 import os
 
 
@@ -31,14 +38,26 @@ class Level2Processor(DefaultLoggingClass):
 
     def __init__(self, job):
 
-        super(Level2Processor, self).__init__("Level2Processor")
+        super(Level2Processor, self).__init__(self.__class__.__name__)
+
+        # Error Status Handler
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+
+        # job definition
         self._job = job
+
+        # List of Level-2 (processed) orbit segments
         self._orbit = deque()
+
+        # List of Level-1b input files
         self._l1b_files = []
-        self._config = None
-        self._skip = 0
+
+        # pysiral config
+        self._config = ConfigInfo()
+
+        # Processor Initialization Flag
         self._initialized = False
-        self._error_handler = {"raise_on_error": True}
+
 
 # %% Level2Processor: class properties
 
@@ -46,19 +65,45 @@ class Level2Processor(DefaultLoggingClass):
     def orbit(self):
         return self._orbit
 
+    @property
+    def has_empty_file_list(self):
+        return len(self._l1b_files) == 0
+
+
 # %% Level2Processor: public methods
 
-    def error_handling(self, **keyw):
-        self._error_handler.update(keyw)
+    def initialize(self):
+        self._initialize_processor()
 
-    def set_config(self, config):
-        self._config = config
-
-    def skip_files(self, skip):
-        self._skip = skip
+    def get_input_files_local_machine_def(self, time_range, version="default"):
+        mission_id = self._job.mission_id
+        hemisphere = self._job.hemisphere
+        l1b_files = get_local_l1bdata_files(
+            mission_id, time_range, hemisphere, version=version)
+        self.set_l1b_files(l1b_files)
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
+
+    def remove_old_l2data(self, time_range):
+        """ Clean up old l2 output data """
+        # can be several oututs
+        output_ids, output_defs = td_branches(self._job.config.output)
+        for output_id, output_def in zip(output_ids, output_defs):
+            output = get_output_class(output_def.pyclass)
+            output.set_options(**output_def.options)
+            output.set_base_export_path(output_def.path)
+            export_folder = output.get_full_export_path(time_range.start)
+
+            # Get list of output files
+            search_pattern = os.path.join(export_folder, "*.*")
+            l2output_files = glob.glob(search_pattern)
+
+            # Delete files
+            self.log.info("Removing %g output files [ %s ] in %s" % (
+                len(l2output_files), output_id, export_folder))
+            for l2output_file in l2output_files:
+                os.remove(l2output_file)
 
     def run(self):
         """ Run the processor """
@@ -68,9 +113,6 @@ class Level2Processor(DefaultLoggingClass):
 
     def purge(self):
         """ Clean the orbit collection """
-        pass
-
-    def grid_orbit_collection(self, grid_definitions):
         pass
 
 # %% Level2Processor: house keeping methods
@@ -120,7 +162,7 @@ class Level2Processor(DefaultLoggingClass):
         self._set_snow_handler()
 
         # All done
-        self.initialized = True
+        self._initialized = True
         self.log.info("Initializing done")
 
     def _set_roi(self):
@@ -184,10 +226,10 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Start Orbit Processing")
 
         # loop over l1bdata preprocessed orbits
-        for i, l1b_file in enumerate(self._l1b_files[self._skip:]):
+        for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
-            self.log.info("+ l1b orbit file %g of %g (%.2f%%)" % (
+            self.log.info("+ [ %g of %g ] (%.2f%%)" % (
                 i+1, len(self._l1b_files),
                 float(i+1)/float(len(self._l1b_files))*100.))
 
@@ -260,7 +302,8 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        self.log.info("- Parsing l1bdata file: %s" % l1b_file)
+        filename = filename_from_path(l1b_file)
+        self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         l1b.info.subset_region_name = self._job.roi.hemisphere
@@ -485,10 +528,236 @@ class Level2Processor(DefaultLoggingClass):
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
-            output.set_export_path(output_def.path)
+            output.set_processor_settings(self._job.settings.level2)
+            output.set_base_export_path(output_def.path)
             output.write_to_file(l2)
             self.log.info("- Write %s data file: %s" % (
-                output_id, output.path))
+                output_id, output.filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
+
+
+class L2ProcJob(DefaultLoggingClass):
+    """ Container for the definition and handling of a pre-processor job """
+
+    def __init__(self):
+
+        super(L2ProcJob, self).__init__(self.__class__.__name__)
+
+        # Error Status
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+
+        # Save pointer to pysiral configuration
+        self.pysiral_config = ConfigInfo()
+
+        # Initialize the time range and set to monthly per default
+        self.time_range = TimeRangeRequest()
+
+        # Initialize job parameter
+        self.options = L2ProcJobOptions()
+
+        # Level-2 processor settings from external file
+        self.settings = None
+
+        # List for iterations (currently only month-wise)
+        self.iterations = []
+
+    def parse_l2_settings(self):
+        """ Read the Level-2 settings yaml file """
+
+        # Check if l2_settings (id or filename is already known)
+        # a) self.options.from_dict must have been called
+        # b) self.options.l2_settings must have been manually set
+        if self.options.l2_settings is None:
+            self.error.add_error(
+                "no-l2-settings", "L2 settings file unspecified (is None)")
+            return
+
+        # Check
+        if os.path.isfile(self.options.l2_settings):
+            l2_settings_filename = self.options.l2_settings
+        # if not filename, than it need to be id of settings file in
+        # pysiral\config\l2
+        else:
+            settings_path = os.path.join(
+                self.pysiral_config.pysiral_local_path, "settings", "l2")
+            l2_settings_filename = os.path.join(settings_path,
+                self.options.l2_settings+".yaml")
+            if not os.path.isfile(l2_settings_filename):
+                self.error.add_error(
+                    "l2-settings-not-found",
+                    "Level-2 yaml settings file not found: %s" % (
+                        l2_settings_filename))
+                return
+
+        # All clear, read the settings
+        self.settings = get_yaml_config(l2_settings_filename)
+        self.log.info("Level-2 settings file: %s" % l2_settings_filename)
+
+    def generate_preprocessor_iterations(self):
+        """ Break the requested time range into monthly iterations """
+
+        # The input data is organized in folder per month, therefore
+        # the processing period is set accordingly
+        self.time_range.set_period("monthly")
+        self.log.info("Level-2 processor base period is monthly")
+        self.time_range.set_exclude_month(self.options.exclude_month)
+        self.log.info("Excluding month: %s" % str(self.options.exclude_month))
+        self.iterations = self.time_range.get_iterations()
+        self.log.info("Number of iterations: %g" % len(self.iterations))
+
+    def process_requested_time_range(self):
+        """
+        Verify time range with mission data availability and create
+        datetime objects
+        """
+
+        mission_info = self.pysiral_config.get_mission_info(self.mission_id)
+
+        # Set and validate the time range
+        start_date, stop_date = self.options.start_date, self.options.stop_date
+        self.time_range.set_range(start_date, stop_date)
+
+        # Check if any errors in definitions
+        self.time_range.error.raise_on_error()
+
+        self.log.info("Requested time range is: %s" % self.time_range.label)
+
+        # Clip time range to mission time range
+        is_clipped = self.time_range.clip_to_range(
+            mission_info.data_period.start, mission_info.data_period.stop)
+
+        if is_clipped:
+            self.log.info("Clipped to mission time range: %s till %s" % (
+                mission_info.data_period.start, mission_info.data_period.stop))
+            # Check if range is still valid
+            self.time_range.raise_if_empty()
+
+    def validate(self):
+        self._validate_and_expand_auxdata()
+        self._validate_and_create_output_directory()
+
+    def _validate_and_expand_auxdata(self):
+        """
+        - Verifies auxdata information in config.auxdata with
+          content of config/auxdata_def.yaml
+        - Transfer relevant content of auxdata_def.yaml into configuration
+          structure
+        """
+
+        # Loop over all auxiliary data types
+        auxtypes, auxinfos = td_branches(self.settings.level2.auxdata)
+        for auxtype, auxinfo in zip(auxtypes, auxinfos):
+
+            self.log.info("Validating local auxiliary repository [%s:%s]" % (
+                auxtype, auxinfo.name))
+
+            # Locate auxdata setting in config/auxdata_def.yaml
+            try:
+                pysiral_def = self.pysiral_config.auxdata[auxtype][auxinfo.name]
+            except:
+                msg = "id %s for type %s not in config/auxdata_def.yaml" % (
+                    auxinfo.name, auxtype)
+                self.error.add_error("invalid-auxdata-def", msg)
+
+            # Repace local machine directory placeholder with actual directory
+            auxdata_def = self.pysiral_config.local_machine.auxdata_repository
+            auxdata_id = pysiral_def.local_repository
+
+            # Specific type might not need a local repository, but update
+            # anyway
+            if auxdata_id is None:
+                self.settings.level2.auxdata[auxtype].update(pysiral_def)
+                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                    del self.settings.level2.auxdata[auxtype].source
+                continue
+
+            # Check if entry is in local_machine_def.yaml
+            try:
+                local_repository = auxdata_def[auxtype][auxdata_id]
+                pysiral_def.local_repository = local_repository
+            except:
+                msg = "Missing auxdata definition in local_machine_def.yaml "+\
+                      "for %s:%s" % (auxtype, auxdata_id)
+                self.error.add_error("missing-auxdata-def", msg)
+                continue
+
+            # Check if local directory (only main) does exist
+            # XXX: Check for each iteration?
+            if os.path.isdir(local_repository):
+                # Expand the settings with actual path
+                self.settings.level2.auxdata[auxtype].update(pysiral_def)
+                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                    del self.settings.level2.auxdata[auxtype].source
+            else:
+                msg = "Missing local auxiliary directory (%s:%s): %s " % (
+                          auxtype, auxdata_id, local_repository)
+                self.error.add_error("missing-auxdata-dir", msg)
+
+    def _validate_and_create_output_directory(self):
+
+        output_ids, output_defs = td_branches(self.settings.level2.output)
+        export_path = self.pysiral_config.local_machine.product_repository
+        export_path = os.path.join(export_path, self.options.run_tag)
+        time = datetime.now()
+        tstamp = time.strftime("%Y%m%dT%H%M%S")
+        for output_id, output_def in zip(output_ids, output_defs):
+            if self.overwrite_protection:
+                product_export_path = os.path.join(
+                   export_path, tstamp, output_id)
+            else:
+                product_export_path = os.path.join(export_path, output_id)
+            self.config.output[output_id].path = product_export_path
+            self.log.info("Exporting %s data in directory %s" % (
+                output_id, product_export_path))
+        self.settings.export_path = product_export_path
+
+    @property
+    def mission_id(self):
+        return self.settings.mission.id
+
+    @property
+    def hemisphere(self):
+        return self.settings.roi.hemisphere
+
+    @property
+    def input_version(self):
+        return self.options.input_version
+
+    @property
+    def remove_old(self):
+        return self.options.remove_old
+
+    @property
+    def overwrite_protection(self):
+        return self.options.overwrite_protection
+
+    @property
+    def config(self):
+        return self.settings.level2
+
+    @property
+    def roi(self):
+        return self.settings.roi
+
+
+class L2ProcJobOptions(object):
+    """ Simple container for Level-2 processor options """
+
+    def __init__(self):
+        self.l2_settings = None
+        self.run_tag = None
+        self.input_version = "default"
+        self.remove_old = False
+        self.overwrite_protection = True
+        self.start_date = None
+        self.stop_date = None
+        self.exclude_month = []
+        self.export_path = None
+
+    def from_dict(self, options_dict):
+        for parameter in options_dict.keys():
+            if hasattr(self, parameter):
+                setattr(self, parameter, options_dict[parameter])
+
