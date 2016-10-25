@@ -60,6 +60,7 @@ class Level3Processor(DefaultLoggingClass):
         grid.set_freeboard_nan_mask(self.job.freeboard_nan_mask_targets)
 
         # TODO: Compute level-3 parameter (lead_fraction ....)
+        grid.set_sic_mask(self.job.sea_ice_concentration_mask_targets)
 
         # Get the metadata information from the L2 stack
         l3_metadata = L3MetaData()
@@ -243,6 +244,19 @@ class L3DataGrid(DefaultLoggingClass):
         """
         XXX: Currently only works for a defined set of l3 parameter
              Better implementation needed for future flexibility
+
+    def set_sic_mask(self, nan_masks_targets):
+        """
+        Apply the sea ice concentration mask (0 or nan) to a selected number
+        of parameters see setting/l3/*.yaml for details
+        """
+        sic_is_nan = np.isnan(self._l3["sea_ice_concentration"])
+        sic_is_zero = self._l3["sea_ice_concentration"] <= 1e-6
+        sic_mask = np.logical_or(sic_is_nan, sic_is_zero)
+        for target in nan_masks_targets:
+            self.log.info("sea ice concentration mask to %s" % target)
+            self._l3[target][sic_mask] = np.nan
+
         """
         surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
         stflags = self._surface_type_dict

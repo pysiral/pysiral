@@ -38,7 +38,8 @@ def pysiral_l3proc():
     job.set_grid_definition(setting.grid_definition)
     job.set_parameter(
         l2=setting.l2_parameter, l3=setting.l3_parameter,
-        frb_nanmask=setting.freeboard_nan_mask_targets)
+        frb_nanmask=setting.freeboard_nan_mask_targets,
+        sic_mask=setting.sea_ice_concentration_mask_targets)
     job.validate()
 
     # Start the processor
