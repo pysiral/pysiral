@@ -274,8 +274,8 @@ definition:
         cmap:
             name: afmhot
             vmin: 0
-            vmax: 0.5
-            step: 0.1
+            vmax: 1.0
+            step: 0.2
         cmap_diff:
             name: bwr
             vmin: -0.25
@@ -288,7 +288,7 @@ definition:
         unit: fraction
         dtype: float32
         cmap:
-            name: rainbow
+            name: PiYG
             vmin: 0
             vmax: 1.0
             step: 0.2
