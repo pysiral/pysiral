@@ -5,6 +5,7 @@
 **New Features**
 * [l3 processing] Added surface type statistics (level-3) parameter (`n_total_waveforms`, `n_valid_waveforms`, `valid_fraction`, `lead_fraction`, `ice_fraction`)
 * [l3 processing] Added sea ice concentration masking (grid parameter to nan if `sic == 0` or `sic == nan`)
+* [tools] Added customization options for the colorbar generator
 
 **Changes**
 * [l3 processing] Improved logging and documentation
