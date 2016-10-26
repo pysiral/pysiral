@@ -255,7 +255,7 @@ class L2iDataNC(NCDataFile):
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
-                # Add Parameter Attributes
+            # Add Parameter Attributes
             attribute_dict = self._get_variable_attr_dict(parameter_name)
             for key in attribute_dict.keys():
                 setattr(var, key, attribute_dict[key])
@@ -265,6 +265,7 @@ class L2iDataNC(NCDataFile):
         if not_master:
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
+
 
 class L3SDataNC(NCDataFile):
     """
@@ -363,11 +364,11 @@ class PysiralOutputFilenaming(object):
         export_filename = self._registered_parsers["l3s"]
         export_filename = export_filename.format(
             version=PYSIRAL_VERSION_FILENAME,
-            mission=l3s.mission,
-            gri=l3s.grid_tag,
-            resolution_tag=l3s.resolution_tag,
+            mission_id=l3s.mission,
+            grid=l3s.grid_tag,
+            resolution=l3s.resolution_tag,
             start=self._datetime_format(l3s.start_period),
-            stop_period=self._datetime_format(l3s.stop_period))
+            stop=self._datetime_format(l3s.stop_period))
         return export_filename
 
     def parse_filename(self, fn):
@@ -389,7 +390,6 @@ class PysiralOutputFilenaming(object):
 
         if not match_found:
             print "Unrecognized filename: %s" % filename
-
 
     def _datetime_format(self, datetime):
         return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)

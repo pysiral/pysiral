@@ -252,7 +252,7 @@ definition:
 
     lead_fraction:
         short_name: lfr
-        label: Lead Density
+        label: Lead Waveforms
         unit: fraction
         dtype: float32
         cmap:
@@ -260,6 +260,38 @@ definition:
             vmin: 0
             vmax: 0.20
             step: 0.05
+        cmap_diff:
+            name: bwr
+            vmin: -0.25
+            vmax: 0.25
+            step: 0.1
+
+    ice_fraction:
+        short_name: ifr
+        label: Ice Waveforms
+        unit: fraction
+        dtype: float32
+        cmap:
+            name: afmhot
+            vmin: 0
+            vmax: 1.0
+            step: 0.2
+        cmap_diff:
+            name: bwr
+            vmin: -0.25
+            vmax: 0.25
+            step: 0.1
+
+    valid_fraction:
+        short_name: vfr
+        label: Valid Waveforms
+        unit: fraction
+        dtype: float32
+        cmap:
+            name: PiYG
+            vmin: 0
+            vmax: 1.0
+            step: 0.2
         cmap_diff:
             name: bwr
             vmin: -0.25

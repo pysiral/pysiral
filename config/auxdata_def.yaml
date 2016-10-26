@@ -203,7 +203,7 @@ sitype:
                     n_lines: 1120
                     dx: 10000
                     dy: 10000
-            south:
+            south: 
                 projection:
                     proj: stere
                     ellps: WGS84
@@ -226,3 +226,33 @@ sitype:
             pwdfile: null
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
+
+    icdc_nasateam:
+        pyclass: ICDCNasaTeam
+        long_names: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
+        filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v14__0.nc"
+        local_repository: icdc_nasateam
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 484
+                    dx: 25000
+                    dy: 25000
+            south: null
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: ftp.zmaw.de/
+            pwdfile: null
+            type: daily
+            link: "outgoing/icdc/esasicci/"        

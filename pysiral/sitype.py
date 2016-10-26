@@ -4,6 +4,8 @@ Created on Sun Apr 24 13:57:56 2016
 
 @author: Stefan
 """
+
+from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary
 from pysiral.iotools import ReadNC
 
@@ -19,6 +21,7 @@ class SITypeBaseClass(object):
         self._options = None
         self._local_repository = None
         self._subfolders = []
+        self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
@@ -76,7 +79,16 @@ class OsiSafSIType(SITypeBaseClass):
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
             return
+
+        # construct filename
         path = self._get_local_repository_filename(l2)
+
+        # Validation
+        if not os.path.isfile(path):
+            msg = "File not found: %s " % path
+            self.error.add_error("osisaf-ioerror", msg)
+            return
+
         self._data = ReadNC(path)
         self._data.ice_type = self._data.ice_type[0, :, :]
         # self._data.confidence_level = self._data.confidence_level[0, :, :]
