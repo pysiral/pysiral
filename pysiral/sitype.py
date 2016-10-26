@@ -133,6 +133,113 @@ class OsiSafSIType(SITypeBaseClass):
         return sitype
 
 
+class ICDCNasaTeam(SITypeBaseClass):
+    """ MYI Fraction from NASA Team Algorithm (from ICDC UHH) """
+
+    def __init__(self):
+        super(ICDCNasaTeam, self).__init__()
+        self._data = None
+        self._current_date = [0, 0, 0]
+        self._requested_date = [-1, -1, -1]
+
+    @property
+    def year(self):
+        return "%04g" % self._requested_date[0]
+
+    @property
+    def month(self):
+        return "%02g" % self._requested_date[1]
+
+    @property
+    def day(self):
+        return "%02g" % self._requested_date[2]
+
+    def _get_along_track_sitype(self, l2):
+        self._msg = ""
+        self._get_requested_date(l2)
+        self._get_data(l2)
+        sic = self._get_sitype_track(l2)
+        return sic, self._msg
+
+    def _get_requested_date(self, l2):
+        """ Use first timestamp as reference, date changes are ignored """
+        year = l2.track.timestamp[0].year
+        month = l2.track.timestamp[0].month
+        day = l2.track.timestamp[0].day
+        self._requested_date = [year, month, day]
+
+    def _get_data(self, l2):
+        """ Loads file from local repository only if needed """
+        if self._requested_date == self._current_date:
+            # Data already loaded, nothing to do
+            return
+
+        # construct filename
+        path = self._get_local_repository_filename(l2)
+
+        # Validation
+        if not os.path.isfile(path):
+            msg = "File not found: %s " % path
+            self.error.add_error("osisaf-ioerror", msg)
+            return
+
+        self._data = ReadNC(path)
+        myi_fraction = getattr(self._data, self._options.variable_name)
+        self._data.ice_type = myi_fraction[0, :, :]
+
+        # This step is important for calculation of image coordinates
+        # self._data.ice_type = np.flipud(self._data.ice_type)
+        # self._data.confidence_level = np.flipud(self._data.confidence_level)
+        self._msg = "Loaded SIType file: %s" % path
+        self._current_date = self._requested_date
+
+    def _get_local_repository_filename(self, l2):
+        path = self._local_repository
+        for subfolder_tag in self._subfolders:
+            subfolder = getattr(self, subfolder_tag)
+            path = os.path.join(path, subfolder)
+        filename = self._filenaming.format(
+            year=self.year, month=self.month, day=self.day,
+            hemisphere_code=l2.hemisphere_code)
+        path = os.path.join(path, filename)
+        return path
+
+    def _get_sitype_track(self, l2):
+        # Convert grid/track coordinates to grid projection coordinates
+        kwargs = self._options[l2.hemisphere].projection
+        p = Proj(**kwargs)
+        x, y = p(self._data.longitude, self._data.latitude)
+        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
+        # Convert track projection coordinates to image coordinates
+        # x: 0 < n_lines; y: 0 < n_cols
+        dim = self._options[l2.hemisphere].dimension
+        x_min = x[dim.n_lines-1, 0]
+        y_min = y[dim.n_lines-1, 0]
+        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+        # Extract along track data from grid
+        myi_fraction_percent = ndimage.map_coordinates(
+            self._data.ice_type, [iy, ix], order=0)
+        # Convert flags to myi fraction
+
+        sitype = myi_fraction_percent/100.
+
+        import matplotlib.pyplot as plt
+
+
+        plt.figure()
+        plt.axis('equal')
+        plt.scatter(x, y)
+
+        plt.figure()
+        # XXX: imshow needs extent
+        plt.imshow(self._data.ice_type, vmin=0, vmax=100, interpolation="none")
+        plt.plot(ix, iy)
+        plt.show()
+        stop
+
+        return sitype
+
+
 class MYIDefault(SITypeBaseClass):
     """ Returns myi for all ice covered regions """
 
