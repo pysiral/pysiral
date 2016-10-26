@@ -78,7 +78,7 @@ level2:
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51]  
-                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         lead: 
             pyclass: TFMRA_env
@@ -89,7 +89,7 @@ level2:
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 
-                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
             pyclass: TFMRA_env
@@ -100,7 +100,7 @@ level2:
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 
-                first_maximum_normalized_threshold: [0.25, 0.25, 0.45] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
 
 
