@@ -1,5 +1,16 @@
 # History of changes
 
+## Version 0.3.0 (TBD)
+
+**New Features**
+* [l3 processing] Added surface type statistics (level-3) parameter (`n_total_waveforms`, `n_valid_waveforms`, `valid_fraction`, `lead_fraction`, `ice_fraction`)
+* [l3 processing] Added sea ice concentration masking (grid parameter to nan if `sic == 0` or `sic == nan`)
+
+**Changes**
+* [l3 processing] Improved logging and documentation
+* [l3 processing] Additional field `sea_ice_concentration_mask_targets` in level-3 output definition required
+
+
 ## Version 0.2.0 (19. September 2016)
 
 **New Features**
