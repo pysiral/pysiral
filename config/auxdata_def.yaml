@@ -233,6 +233,7 @@ sitype:
         filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v14__0.nc"
         local_repository: icdc_nasateam
         options:
+            variable_name: my_sea_ice_area_fraction_0to100_limitedexpansion
             north:
                 projection:
                     proj: stere
@@ -243,7 +244,7 @@ sitype:
                     b: 6356889.44891
                 dimension:
                     n_cols: 304
-                    n_lines: 484
+                    n_lines: 448
                     dx: 25000
                     dy: 25000
             south: null
