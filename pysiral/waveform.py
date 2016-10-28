@@ -139,9 +139,9 @@ class TFMRALeadingEdgeWidth(object):
     """
 
     def __init__(self, rng, wfm, radar_mode, is_ocean):
-        from retracker import TFMRA
+        from retracker import TFMRA_env
         # Compute filtered waveform and index of first maximum once
-        self.tfmra = TFMRA()
+        self.tfmra = TFMRA_env()
         self.tfmra.set_default_options()
         filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(
             rng, wfm, radar_mode, is_ocean)

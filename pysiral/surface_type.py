@@ -298,6 +298,128 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
+class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
+    """
+    new and unified surface type classifier for cryosat2 and envisat based on similar parameters
+    """
+
+    def __init__(self):
+        super(almost_unified_surf_type_classifier_envisat, self).__init__()
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
+
+    def _classify(self):
+        self.set_unknown_default()
+        self._classify_ocean()
+        self._classify_leads()
+        self._classify_sea_ice()
+        self._set_land_mask()
+
+    def _classify_ocean(self):
+        opt = self._options.ocean
+        parameter = self._classifier
+        ocean = ANDCondition()
+        # Peakiness Thresholds
+        ocean.add(parameter.peakiness <= opt.peakiness_max)  
+        # Ice Concentration
+        ocean.add(parameter.sic < opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self):
+        opt = self._options.lead
+        parameter = self._classifier
+        lead = ANDCondition()
+        # Peakiness, backscatter, and leading edge width
+        lead.add(parameter.sea_ice_backscatter >= opt.sib_min)
+        lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
+        lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
+        lead.add(parameter.peakiness >= opt.peakiness_min)
+        # Ice Concentration
+        lead.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self):
+        opt = self._options.sea_ice
+        parameter = self._classifier
+        ice = ANDCondition()
+        # Stack (Beam) parameters
+        ice.add(parameter.sea_ice_backscatter >= opt.sib_min)
+        ice.add(parameter.sea_ice_backscatter <= opt.sib_max)
+        ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
+        ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
+        ice.add(parameter.peakiness <= opt.peakiness_max)
+        # Ice Concentration
+        ice.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def _set_land_mask(self):
+        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
+        self._surface_type.add_flag(l1b_land_mask.flag, "land")
+     
+     
+class almost_unified_surf_type_classifier_cryosat(SurfaceTypeClassifier):
+    """
+    new and unified surface type classifier for cryosat2 and envisat based on similar parameters
+    """
+
+    def __init__(self):
+        super(almost_unified_surf_type_classifier_cryosat, self).__init__()
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
+
+    def _classify(self):
+        self.set_unknown_default()
+        self._classify_ocean()
+        self._classify_leads()
+        self._classify_sea_ice()
+        self._set_land_mask()
+
+    def _classify_ocean(self):
+        opt = self._options.ocean
+        parameter = self._classifier
+        ocean = ANDCondition()
+        # Peakiness Thresholds
+        ocean.add(parameter.peakiness <= opt.peakiness_max)  
+        # Ice Concentration
+        ocean.add(parameter.sic < opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self):
+        opt = self._options.lead
+        parameter = self._classifier
+        lead = ANDCondition()
+        # Peakiness, backscatter, and leading edge width
+        lead.add(parameter.sigma0 >= opt.sib_min)
+        lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
+        lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
+        lead.add(parameter.peakiness >= opt.peakiness_min)
+        # Ice Concentration
+        lead.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self):
+        opt = self._options.sea_ice
+        parameter = self._classifier
+        ice = ANDCondition()
+        # Stack (Beam) parameters
+        ice.add(parameter.sigma0 >= opt.sib_min)
+        ice.add(parameter.sigma0 <= opt.sib_max)
+        ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
+        ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
+        ice.add(parameter.peakiness <= opt.peakiness_max)
+        # Ice Concentration
+        ice.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def _set_land_mask(self):
+        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
+        self._surface_type.add_flag(l1b_land_mask.flag, "land")
+
+        
 class RA2SICCI(SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
@@ -321,7 +443,7 @@ class RA2SICCI(SurfaceTypeClassifier):
         parameter = self._classifier
         ocean = ANDCondition()
         # Peakiness Thresholds
-        ocean.add(parameter.pulse_peakiness < opt.pulse_peakiness_max)
+        ocean.add(parameter.peakiness < opt.pulse_peakiness_max)
         # Ice Concentration
         ocean.add(parameter.sic < opt.ice_concentration_min)
         # Done, add flag
@@ -332,7 +454,7 @@ class RA2SICCI(SurfaceTypeClassifier):
         parameter = self._classifier
         lead = ANDCondition()
         # Stack (Beam) parameters
-        lead.add(parameter.pulse_peakiness > opt.pulse_peakiness_min)
+        lead.add(parameter.peakiness > opt.pulse_peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
@@ -343,7 +465,7 @@ class RA2SICCI(SurfaceTypeClassifier):
         parameter = self._classifier
         ice = ANDCondition()
         # Stack (Beam) parameters
-        ice.add(parameter.pulse_peakiness < opt.pulse_peakiness_max)
+        ice.add(parameter.peakiness < opt.pulse_peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag

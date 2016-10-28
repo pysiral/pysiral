@@ -1,6 +1,6 @@
 grid_definition:
 
-    hemisphere: north
+    hemisphere: south
     
     grid_tag: EASE2
     
@@ -8,7 +8,7 @@ grid_definition:
 
     projection:
         proj: laea
-        lat_0: 90.0
+        lat_0: -90.0
         lon_0: 0.0
         ellps: WGS84
         datum: WGS84
