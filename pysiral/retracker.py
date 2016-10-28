@@ -87,13 +87,13 @@ class BaseRetracker(object):
         return FlagContainer(self._flag)
 
 
-class TFMRA_env(BaseRetracker):
+class SICCI2TfmraEnvisat(BaseRetracker):
     """ Default Retracker from AWI CryoSat-2 production system """
 
     DOCSTR = r"Threshold first maximum retracker (TFMRA)"
 
     def __init__(self):
-        super(TFMRA_env, self).__init__()
+        super(SICCI2TfmraEnvisat, self).__init__()
 
     def set_default_options(self):
         self.set_options(**self.default_options_dict)
@@ -118,11 +118,11 @@ class TFMRA_env(BaseRetracker):
         """ API Calling method """
 
         for i in indices:
-            
+
             # Remove artifact bins
-            wfm_skipped = wfm[i,:]
+            wfm_skipped = wfm[i, :]
             wfm_skipped[0:5] = 0
-            
+
             # Get the filtered waveform, index of first maximum & norm
             filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
                 rng[i, :], wfm_skipped, radar_mode[i])
@@ -132,30 +132,30 @@ class TFMRA_env(BaseRetracker):
                 self._range[i] = np.nan
                 self._power[i] = np.nan
                 return
-                
+
             # Retrieve parameters peakiness, backscatter and tail sum
             #peakiness = self._classifier.peakiness[i]
             #sib = self._classifier.sea_ice_backscatter[i]
             #ts = self.get_tail_sum(filt_wfm,fmi)
             #tm = self.get_tail_mean(filt_wfm)
-            
+
             # Get track point and its power
             tfmra_threshold = self._options.threshold
-            
+
             # adapt threshold for MYI/FYI
-            #if (peakiness>1.5 and peakiness<3.6 and sib>7.0 and sib<10.0 and 
+            #if (peakiness>1.5 and peakiness<3.6 and sib>7.0 and sib<10.0 and
             #    ts>225.0 and ts<365.0):
             #    tfmra_threshold -= 0.25
-            #if (peakiness>2.0 and peakiness<8.2 and sib>16. and sib<21.0 and 
+            #if (peakiness>2.0 and peakiness<8.2 and sib>16. and sib<21.0 and
             #    ts>90.0 and ts<155.0):
-            #    tfmra_threshold += 0.15 
-            
+            #    tfmra_threshold += 0.15
+
             # adapt threshold for MYI
             #if (tm>0.25):
             #    tfmra_threshold -= 0.15
             #if (tm<0.07):
-            #    tfmra_threshold += 0.1             
-                        
+            #    tfmra_threshold += 0.1
+
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
@@ -168,14 +168,13 @@ class TFMRA_env(BaseRetracker):
     #    retrieve sum of engery normalized waveform tail
     #    """
     #    return sum(filt_wfm[(fmi+1):])
-        
+
     #def get_tail_mean(self, filt_wfm):
     #    """
     #    retrieve sum of engery normalized waveform tail
     #    """
     #    return np.mean(filt_wfm[-300:-100])
-        
-    
+
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
         Returns the intermediate product (oversampled range bins,
@@ -308,13 +307,13 @@ class TFMRA_env(BaseRetracker):
         # Use linear interpolation to get exact range value
         potential_points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
         diff_points = np.diff(potential_points)
-        diff_points_gap = np.where(diff_points > 1)[0]       
-        
+        diff_points_gap = np.where(diff_points > 1)[0]
+
         if len(potential_points) == 0:
             return np.nan, np.nan
         else:
             if len(diff_points_gap) > 0:
-                retrack_point  = potential_points[diff_points_gap[-1]+1]
+                retrack_point = potential_points[diff_points_gap[-1]+1]
             else:
                 retrack_point = potential_points[0]
 
@@ -323,7 +322,8 @@ class TFMRA_env(BaseRetracker):
         tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
 
         return tfmra_range, tfmra_power
-        
+
+
 class TFMRA(BaseRetracker):
     """ Default Retracker from AWI CryoSat-2 production system """
 
