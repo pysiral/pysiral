@@ -5,18 +5,25 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
-from treedict import TreeDict
+# cythonized bottleneck functions for cTFMRA
+try:
+    from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
+                                        cytfmra_wfm_noise_level,
+                                        cytfmra_normalize_wfm)
+    CYTFMRA_OK = True
+except:
+    CYTFMRA_OK = False
+
+
 from pysiral.flag import ANDCondition, FlagContainer
+
+from treedict import TreeDict
 import numpy as np
+import sys
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
 import bottleneck as bn
-
-# cythonized bottleneck functions for cTFMRA
-from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
-                                    cytfmra_wfm_noise_level,
-                                    cytfmra_normalize_wfm)
 
 
 class BaseRetracker(object):
@@ -1167,4 +1174,11 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
 # %% Retracker getter funtion
 
 def get_retracker_class(name):
+
+    if name == "cTFMRA" and not CYTFMRA_OK:
+        msg = "pysiral error: cTFMRA selected but pysiral.bnfunc.cytfmra " + \
+              "not available locally\n"
+        msg += "(See documentation on compilation with cython)"
+        sys.exit(msg)
+
     return globals()[name]()
