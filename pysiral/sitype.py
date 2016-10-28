@@ -205,37 +205,30 @@ class ICDCNasaTeam(SITypeBaseClass):
         return path
 
     def _get_sitype_track(self, l2):
+
         # Convert grid/track coordinates to grid projection coordinates
         kwargs = self._options[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.longitude, self._data.latitude)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
+
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self._options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]
-        y_min = y[dim.n_lines-1, 0]
+        x_min = x[0, 0]
+        y_min = y[0, 0]
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+
         # Extract along track data from grid
         myi_fraction_percent = ndimage.map_coordinates(
             self._data.ice_type, [iy, ix], order=0)
-        # Convert flags to myi fraction
 
+        # Convert percent [0-100] into fraction [0-1]
         sitype = myi_fraction_percent/100.
 
-        import matplotlib.pyplot as plt
-
-
-        plt.figure()
-        plt.axis('equal')
-        plt.scatter(x, y)
-
-        plt.figure()
-        # XXX: imshow needs extent
-        plt.imshow(self._data.ice_type, vmin=0, vmax=100, interpolation="none")
-        plt.plot(ix, iy)
-        plt.show()
-        stop
+        # Remove invalid parameter
+        invalid = np.where(sitype < 0)[0]
+        sitype[invalid] = 0.0
 
         return sitype
 
