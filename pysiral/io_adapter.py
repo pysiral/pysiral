@@ -257,7 +257,6 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(sigma0, "sigma0")
 
 
-
 class L1bAdapterEnvisat(object):
     """ Converts a Envisat SGDR object into a L1bData object """
 
@@ -346,7 +345,6 @@ class L1bAdapterEnvisat(object):
         for correction_name in mds.sgdr_geophysical_correction_list:
             self.l1b.correction.set_parameter(
                     correction_name, getattr(mds, correction_name))
-
 
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.mds_18hz.surface_type
