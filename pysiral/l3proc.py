@@ -355,13 +355,13 @@ class L3DataGrid(DefaultLoggingClass):
             self.log.info("freeboard nan mask to %s" % target)
             self._l3[target][frb_is_nan] = np.nan
 
-    def set_sic_mask(self, nan_masks_targets):
+    def set_sic_mask(self, nan_masks_targets, sic_threshold=5.0):
         """
         Apply the sea ice concentration mask (0 or nan) to a selected number
         of parameters see setting/l3/*.yaml for details
         """
         sic_is_nan = np.isnan(self._l3["sea_ice_concentration"])
-        sic_is_zero = self._l3["sea_ice_concentration"] <= 1e-6
+        sic_is_zero = self._l3["sea_ice_concentration"] <= sic_threshold
         sic_mask = np.logical_or(sic_is_nan, sic_is_zero)
         for target in nan_masks_targets:
             self.log.info("sea ice concentration mask to %s" % target)
