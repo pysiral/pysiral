@@ -298,13 +298,14 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
-class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
+class SICCI2Envisat(SurfaceTypeClassifier):
     """
-    new and unified surface type classifier for cryosat2 and envisat based on similar parameters
+    new and unified surface type classifier for cryosat2 and envisat
+    based on similar parameters
     """
 
     def __init__(self):
-        super(almost_unified_surf_type_classifier_envisat, self).__init__()
+        super(SICCI2Envisat, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
@@ -319,7 +320,7 @@ class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
         parameter = self._classifier
         ocean = ANDCondition()
         # Peakiness Thresholds
-        ocean.add(parameter.peakiness <= opt.peakiness_max)  
+        ocean.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ocean.add(parameter.sic < opt.ice_concentration_min)
         # Done, add flag
@@ -357,15 +358,16 @@ class almost_unified_surf_type_classifier_envisat(SurfaceTypeClassifier):
     def _set_land_mask(self):
         l1b_land_mask = self._l1b_surface_type.get_by_name("land")
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
-     
-     
-class almost_unified_surf_type_classifier_cryosat(SurfaceTypeClassifier):
+
+
+class SICCI2CryoSat2(SurfaceTypeClassifier):
     """
-    new and unified surface type classifier for cryosat2 and envisat based on similar parameters
+    new and unified surface type classifier for cryosat2 and envisat
+    based on similar parameters
     """
 
     def __init__(self):
-        super(almost_unified_surf_type_classifier_cryosat, self).__init__()
+        super(SICCI2CryoSat2, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
@@ -380,7 +382,7 @@ class almost_unified_surf_type_classifier_cryosat(SurfaceTypeClassifier):
         parameter = self._classifier
         ocean = ANDCondition()
         # Peakiness Thresholds
-        ocean.add(parameter.peakiness <= opt.peakiness_max)  
+        ocean.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ocean.add(parameter.sic < opt.ice_concentration_min)
         # Done, add flag
@@ -419,8 +421,8 @@ class almost_unified_surf_type_classifier_cryosat(SurfaceTypeClassifier):
         l1b_land_mask = self._l1b_surface_type.get_by_name("land")
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
-        
-class RA2SICCI(SurfaceTypeClassifier):
+
+class SICCI1Envisat(SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
 
@@ -428,7 +430,7 @@ class RA2SICCI(SurfaceTypeClassifier):
     """
 
     def __init__(self):
-        super(RA2SICCI, self).__init__()
+        super(SICCI1Envisat, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice"]
 
     def _classify(self):

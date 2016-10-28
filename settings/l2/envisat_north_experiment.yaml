@@ -48,7 +48,7 @@ level2:
 
     # Surface type classification algorithm
     surface_type:
-        pyclass: almost_unified_surf_type_classifier_envisat
+        pyclass: SICCI2Envisat
         options:
             ocean:
                 peakiness_max: 3.0
