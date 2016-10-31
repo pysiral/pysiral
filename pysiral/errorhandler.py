@@ -20,9 +20,7 @@ class ErrorStatus(object):
 
     def __init__(self, caller_id=""):
         self.caller_id = caller_id
-        self.status = False
-        self.codes = []
-        self.messages = []
+        self.reset()
 
     def add_error(self, code, message):
         self.status = True
@@ -38,6 +36,13 @@ class ErrorStatus(object):
                 output += "\n"
             print output
             sys.exit(1)
+
+
+    def reset(self):
+        """ Remove all error messages and set to clean status """
+        self.status = False
+        self.codes = []
+        self.messages = []
 
     @property
     def message(self):
