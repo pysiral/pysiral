@@ -254,7 +254,11 @@ class Level2Processor(DefaultLoggingClass):
             l2 = Level2Data(l1b)
 
             # Add sea ice concentration (can be used as classifier)
-            self._get_sea_ice_concentration(l2)
+            error_status, error_code = self._get_sea_ice_concentration(l2)
+            if error_status:
+                self.report.add_orbit_discarded_event(error_code, l1b_file)
+                self.log.info("- skip file")
+                continue
 
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
@@ -324,11 +328,64 @@ class Level2Processor(DefaultLoggingClass):
 
     def _get_sea_ice_concentration(self, l2):
         """ Get sea ice concentration along track from auxdata """
+
+        # Get along-track sea ice concentrations via the SIC handler class
+        # (see self._set_sic_handler)
         sic, msg = self._sic.get_along_track_sic(l2)
+
+        # Report any messages from the SIC handler
         if not msg == "":
             self.log.info("- "+msg)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._sic.error.status
+        error_codes = self._sic.error.codes
+
+        # No error: Set sea ice concentration data to the l2 data container
+        if not error_status:
+            l2.sic.set_value(sic)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._sic.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+                self._sic.error.reset()
+
+        return error_status, error_codes
+
+    def _get_sea_ice_type(self, l2):
+        """ Get sea ice type (myi fraction) along track from auxdata """
+
+        # Call the sitype handler
+        sitype, msg = self._sitype.get_along_track_sitype(l2)
+
+        # Report any messages from the sitype handler
+        if not msg == "":
+            self.log.info("- "+msg)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._sitype.error.status
+        error_codes = self._sitype.error.codes
+
         # Add to l2data
-        l2.sic.set_value(sic)
+        if not error_status:
+            l2.sitype.set_value(sitype)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._sic.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+                self._sitype.error.reset()
+
+        return error_status, error_codes
 
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
