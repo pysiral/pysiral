@@ -283,7 +283,10 @@ class Level2Processor(DefaultLoggingClass):
             self._estimate_ssh_and_radar_freeboard(l2)
 
             # Get sea ice type (may be required for geometrical corrcetion)
-            self._get_sea_ice_type(l2)
+            error_status, error_code = self._get_sea_ice_type(l2)
+            if error_status:
+                self._discard_l1b_procedure(error_code, l1b_file)
+                continue
 
             # Get snow depth & density
             self._get_snow_parameters(l2)
@@ -481,14 +484,6 @@ class Level2Processor(DefaultLoggingClass):
         l2.ssa.set_uncertainty(ssa.uncertainty)
         # altimeter freeboard (from radar altimeter w/o corrections)
         l2.afrb = l2.elev - l2.mss - l2.ssa
-
-    def _get_sea_ice_type(self, l2):
-        """ Get sea ice concentration along track from auxdata """
-        sitype, msg = self._sitype.get_along_track_sitype(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        # Add to l2data
-        l2.sitype.set_value(sitype)
 
     def _get_snow_parameters(self, l2):
         """ Get snow depth and density """
