@@ -256,8 +256,7 @@ class Level2Processor(DefaultLoggingClass):
             # Add sea ice concentration (can be used as classifier)
             error_status, error_code = self._get_sea_ice_concentration(l2)
             if error_status:
-                self.report.add_orbit_discarded_event(error_code, l1b_file)
-                self.log.info("- skip file")
+                self._discard_l1b_procedure(error_code, l1b_file)
                 continue
 
             # Surface type classification (ocean, ice, lead, ...)
@@ -608,8 +607,8 @@ class L2ProcJob(DefaultLoggingClass):
         else:
             settings_path = os.path.join(
                 self.pysiral_config.pysiral_local_path, "settings", "l2")
-            l2_settings_filename = os.path.join(settings_path,
-                self.options.l2_settings+".yaml")
+            l2_settings_filename = os.path.join(
+                settings_path, self.options.l2_settings+".yaml")
             if not os.path.isfile(l2_settings_filename):
                 self.error.add_error(
                     "l2-settings-not-found",
@@ -704,8 +703,8 @@ class L2ProcJob(DefaultLoggingClass):
                 local_repository = auxdata_def[auxtype][auxdata_id]
                 pysiral_def.local_repository = local_repository
             except:
-                msg = "Missing auxdata definition in local_machine_def.yaml "+\
-                      "for %s:%s" % (auxtype, auxdata_id)
+                msg = "No auxdata definition in local_machine_def.yaml" + \
+                      " for %s:%s" % (auxtype, auxdata_id)
                 self.error.add_error("missing-auxdata-def", msg)
                 continue
 
