@@ -245,13 +245,6 @@ class Level2Processor(DefaultLoggingClass):
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
 
-            # File subsetting
-            # XXX: This is obsolete due to pre-processing, keep for later?
-            # in_roi = self._trim_to_roi(l1b)
-            # over_ocean = self._trim_land_margins(l1b)
-            # if not in_roi or not over_ocean:
-            #     continue
-
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
             # TODO: move to level1bData class
@@ -318,44 +311,6 @@ class Level2Processor(DefaultLoggingClass):
         l1b.info.subset_region_name = self._job.roi.hemisphere
         return l1b
 
-    def _trim_to_roi(self, l1b):
-        """
-        Trims orbit for ice/ocean areas (excluding land, land ice)
-        and returns true if data in ROI and false otherwise
-        """
-        roi_list = self._roi.get_roi_list(
-            l1b.time_orbit.longitude, l1b.time_orbit.latitude)
-        if len(roi_list) == 0:  # No match
-            return False
-        if len(roi_list) == l1b.n_records:  # Full match (no trimming)
-            return True
-        l1b.trim_to_subset(roi_list)  # Partial match (trimming)
-        return True
-
-    def _trim_land_margins(self, l1b):
-        """
-        Trim land areas at the margins of the orbit data
-
-        points over land surrounded by ocean measurements (e.g. inside the
-        Canadian Archipelago) will be excluded later in the processing
-        """
-        if not l1b.surface_type.has_flag("ocean"):
-            # TODO: Think of method to classify lon/lat point as land/ocean
-            #       (e.g. basemap functionality?) if land flag is not part
-            #       of l1b data set
-            pass
-        # TODO: This assumes that in the initial classification all waveforms
-        #       of relevance are classified as ocean
-        flag = l1b.surface_type.ocean.flag
-        is_ocean_list = np.nonzero(flag)
-        if len(is_ocean_list) == l1b.n_records:  # Nothing to do here
-            return True
-        if len(is_ocean_list) == 0:              # Nothing left to do
-            return False
-        trimmed_list = np.arange(np.amin(is_ocean_list),
-                                 np.amax(is_ocean_list)+1)
-        l1b.trim_to_subset(trimmed_list)
-        return True
     def _discard_l1b_procedure(self, error_codes, l1b_file):
         """ Log and report discarded l1b orbit segment """
         for error_code in error_codes:
