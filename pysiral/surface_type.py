@@ -331,7 +331,7 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         parameter = self._classifier
         lead = ANDCondition()
         # Peakiness, backscatter, and leading edge width
-        lead.add(parameter.sea_ice_backscatter >= opt.sib_min)
+        lead.add(parameter.sigma0 >= opt.sib_min)
         lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
         lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
@@ -345,8 +345,8 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         parameter = self._classifier
         ice = ANDCondition()
         # Stack (Beam) parameters
-        ice.add(parameter.sea_ice_backscatter >= opt.sib_min)
-        ice.add(parameter.sea_ice_backscatter <= opt.sib_max)
+        ice.add(parameter.sigma0 >= opt.sib_min)
+        ice.add(parameter.sigma0 <= opt.sib_max)
         ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
         ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
