@@ -267,11 +267,9 @@ class Level2Processor(DefaultLoggingClass):
 
             # Validate surface type classification
             # yes/no decision on continuing with orbit
-            error_status, error_messages = self._validate_surface_types(l2)
+            error_status, error_codes = self._validate_surface_types(l2)
             if error_status:
-                for error_message in error_messages:
-                    self.log.info("- validator message: "+error_message)
-                self.log.info("- skip file")
+                self._discard_l1b_procedure(error_code, l1b_file)
                 continue
 
             # Get elevation by retracking of different surface types
@@ -409,6 +407,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Loop over stack of surface type validators """
         surface_type_validators = self._job.config.validator.surface_type
         names, validators = td_branches(surface_type_validators)
+        error_code = "surface_type_discarded"
         error_states = []
         error_messages = []
         for name, validator_def in zip(names, validators):
