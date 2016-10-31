@@ -274,7 +274,10 @@ class Level2Processor(DefaultLoggingClass):
 
             # Get elevation by retracking of different surface types
             # adds parameter elevation to l2
-            error_status = self._waveform_range_retracking(l1b, l2)
+            error_status, error_codes = self._waveform_retracking(l1b, l2)
+            if error_status:
+                self._discard_l1b_procedure(error_code, l1b_file)
+                continue
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
