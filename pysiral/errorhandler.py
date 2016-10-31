@@ -5,6 +5,15 @@ Created on Fri Jul 10 15:25:45 2015
 @author: Stefan
 """
 import sys
+from collections import OrderedDict
+
+
+PYSIRAL_ERROR_CODES = OrderedDict([
+    ("auxdata_missing_sic", "Missing sea ice concentration data set"),
+    ("auxdata_missing_sitype", "Missing ice type/MYI fraction data set"),
+    ("auxdata_missing_snow", "Missing snow depth data set(s)"),
+    ("l2proc_invalid_l1b", "Invalid l1bdata input data"),
+    ("l2proc_surface_type_discarded", "Discarded by surface type validator")])
 
 
 class ErrorStatus(object):
