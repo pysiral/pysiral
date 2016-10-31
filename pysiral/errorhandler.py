@@ -37,6 +37,14 @@ class ErrorStatus(object):
             print output
             sys.exit(1)
 
+    def get_all_messages(self):
+        output = []
+        if self.status:
+            for i in range(len(self.codes)):
+                error_message = "%s error: [%s] %s" % (
+                    self.caller_id, self.codes[i], self.messages[i])
+                output.append(error_message)
+        return output
 
     def reset(self):
         """ Remove all error messages and set to clean status """
