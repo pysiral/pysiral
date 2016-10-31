@@ -6,8 +6,8 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
-                            get_yaml_config)
-from pysiral.errorhandler import ErrorStatus
+                            get_yaml_config, PYSIRAL_VERSION)
+from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
