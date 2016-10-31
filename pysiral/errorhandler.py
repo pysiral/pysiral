@@ -23,14 +23,16 @@ class ErrorStatus(object):
         self.reset()
 
     def add_error(self, code, message):
+        """ Add an error. Error code and messages are arbitrary """
         self.status = True
         self.codes.append(code)
         self.messages.append(message)
 
     def raise_on_error(self):
+        """ print error messages and exit program on existing error(s) """
         if self.status:
-            output = "%s Critical Error(s): (%g)\n" % (self.caller_id,
-                                                       len(self.codes))
+            output = "%s Critical Error(s): (%g)\n" % (
+                self.caller_id, len(self.codes))
             for i in range(len(self.codes)):
                 output += "  [%s] %s" % (self.codes[i], self.messages[i])
                 output += "\n"
