@@ -26,7 +26,7 @@ from pysiral.sit import get_sit_algorithm
 from pysiral.output import get_output_class
 from pysiral.path import filename_from_path
 
-from collections import deque
+from collections import deque, OrderedDict
 from datetime import datetime
 import numpy as np
 import time
@@ -57,6 +57,9 @@ class Level2Processor(DefaultLoggingClass):
 
         # Processor Initialization Flag
         self._initialized = False
+
+        # Processor summary report
+        self.report = L2ProcessorReport()
 
 
 # %% Level2Processor: class properties
@@ -109,6 +112,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Run the processor """
         self._initialize_processor()
         self._l2_processing_of_orbit_files()
+        self._l2proc_summary_to_file()
         self._clean_up()
 
     def purge(self):
@@ -116,6 +120,11 @@ class Level2Processor(DefaultLoggingClass):
         pass
 
 # %% Level2Processor: house keeping methods
+
+    def _l2proc_summary_to_file(self):
+        output_ids, output_defs = td_branches(self._job.config.output)
+        for output_id, output_def in zip(output_ids, output_defs):
+            self.report.write_to_file(output_def.path)
 
     def _clean_up(self):
         """ Make sure to deallocate memory """
@@ -347,6 +356,11 @@ class Level2Processor(DefaultLoggingClass):
                                  np.amax(is_ocean_list)+1)
         l1b.trim_to_subset(trimmed_list)
         return True
+    def _discard_l1b_procedure(self, error_codes, l1b_file):
+        """ Log and report discarded l1b orbit segment """
+        for error_code in error_codes:
+            self.report.add_orbit_discarded_event(error_code, l1b_file)
+            self.log.info("- skip file")
 
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
@@ -761,3 +775,31 @@ class L2ProcJobOptions(object):
             if hasattr(self, parameter):
                 setattr(self, parameter, options_dict[parameter])
 
+
+class L2ProcessorReport(object):
+
+    def __init__(self):
+
+        self.pysiral_version = PYSIRAL_VERSION
+        self.n_files = 0
+        self.data_period = None
+
+        # Counter for error codes
+        # XXX: This is a first quick implementation of error codes
+        #      (see pysiral.error_handler modules for more info) and
+        #      the dev should make sure to use the correct names. A
+        #      more formalized way of reporting errors will be added
+        #      in future updates
+        self.error_counter = OrderedDict([])
+        for error_code in PYSIRAL_ERROR_CODES.keys():
+            self.error_counter[error_code] = []
+
+    def add_orbit_discarded_event(self, error_code, l1b_file):
+        """ Add the l1b file to the list of files with a certain error code """
+        try:
+            self.error_counter[error_code] = l1b_file
+        except:
+            pass
+
+    def write_to_file(self, directory):
+        pass
