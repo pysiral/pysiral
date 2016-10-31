@@ -287,7 +287,10 @@ class Level2Processor(DefaultLoggingClass):
                 continue
 
             # Get snow depth & density
-            self._get_snow_parameters(l2)
+            error_status, error_codes = self._get_snow_parameters(l2)
+            if error_status:
+                self.report.add_orbit_discarded_event(error_code, l1b_file)
+                continue
 
             # get radar(-derived) from altimeter freeboard
             self._get_freeboard_from_radar_freeboard(l2)
