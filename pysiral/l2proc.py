@@ -855,15 +855,15 @@ class L2ProcessorReport(DefaultLoggingClass):
 
             # Write infos on settings, host, os, ....
             fhandle.write("# pysiral Level2Processor Summary\n\n")
-            fhandle.write("  created : %s\n\n" % current_time)
+            fhandle.write(lfmt % ("created", current_time))
 
             # Brief statistics of files, errors, warnings
-            fhandle.write("# Processor Statistics\n\n")
-            fhandle.write("  l1b files : "+str(self.n_files)+"\n")
-            fhandle.write("  errors    : "+str(self.n_discarded_files)+"\n")
-            fhandle.write("  warnings  : "+str(self.n_warnings)+"\n\n")
+            fhandle.write("\n# Processor Statistics\n\n")
+            fhandle.write(lfmt % ("l1b files", str(self.n_files)))
+            fhandle.write(lfmt % ("errors", str(self.n_discarded_files)))
+            fhandle.write(lfmt % ("warnings", str(self.n_warnings)))
 
-            fhandle.write("# Processor & Local Machine Settings\n\n")
+            fhandle.write("\n# Processor & Local Machine Settings\n\n")
             fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
             fhandle.write(lfmt % ("python version", sys.version))
             fhandle.write(lfmt % ("hostname", HOSTNAME))
