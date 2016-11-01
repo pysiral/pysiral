@@ -443,7 +443,7 @@ class Level2Processor(DefaultLoggingClass):
         error_status = True in error_states
         return error_status, error_messages
 
-    def _waveform_range_retracking(self, l1b, l2):
+    def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
         error_status = {}
