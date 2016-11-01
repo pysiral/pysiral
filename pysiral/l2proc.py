@@ -849,19 +849,19 @@ class L2ProcessorReport(DefaultLoggingClass):
         filename = os.path.join(directory, "pysiral-l2proc-summary.txt")
         self.log.info("Exporting summary report: %s" % filename)
 
-        lfmt = "%-20s : %s\n"
+        lfmt = "  %-16s : %s\n"
         current_time = str(datetime.now()).split(".")[0]
         with open(filename, "w") as fhandle:
 
             # Write infos on settings, host, os, ....
             fhandle.write("# pysiral Level2Processor Summary\n\n")
-            fhandle.write("created : %s\n\n" % current_time)
+            fhandle.write("  created : %s\n\n" % current_time)
 
             # Brief statistics of files, errors, warnings
             fhandle.write("# Processor Statistics\n\n")
-            fhandle.write("l1b files : "+str(self.n_files)+"\n")
-            fhandle.write("errors    : "+str(self.n_discarded_files)+"\n")
-            fhandle.write("warnings  : "+str(self.n_warnings)+"\n\n")
+            fhandle.write("  l1b files : "+str(self.n_files)+"\n")
+            fhandle.write("  errors    : "+str(self.n_discarded_files)+"\n")
+            fhandle.write("  warnings  : "+str(self.n_warnings)+"\n\n")
 
             fhandle.write("# Processor & Local Machine Settings\n\n")
             fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
@@ -874,8 +874,8 @@ class L2ProcessorReport(DefaultLoggingClass):
             fhandle.write(lfmt % ("l1b repository", self.l1b_repository))
 
             # List discarded files and reason (error code & description)
-            fhandle.write("# Detailed Error Breakdown\n\n")
-            msg = "\nNo %s output generated for %g l1b files due " + \
+            fhandle.write("\n# Detailed Error Breakdown\n\n")
+            msg = "  No %s output generated for %g l1b files due " + \
                   "to following errors\n\n"
             fhandle.write(msg % (output_id, self.n_discarded_files))
 
@@ -884,7 +884,7 @@ class L2ProcessorReport(DefaultLoggingClass):
                 if n_discarded_files == 0:
                     continue
                 error_description = PYSIRAL_ERROR_CODES[error_code]
-                msg = "%g file(s): [error_code:%s] %s\n" % (
+                msg = "  %g file(s): [error_code:%s] %s\n" % (
                     n_discarded_files, error_code, error_description)
                 fhandle.write(msg)
                 for discarded_file in self.error_counter[error_code]:
