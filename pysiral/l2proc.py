@@ -273,9 +273,9 @@ class Level2Processor(DefaultLoggingClass):
             l2 = Level2Data(l1b)
 
             # Add sea ice concentration (can be used as classifier)
-            error_status, error_code = self._get_sea_ice_concentration(l2)
+            error_status, error_codes = self._get_sea_ice_concentration(l2)
             if error_status:
-                self._discard_l1b_procedure(error_code, l1b_file)
+                self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
             # Surface type classification (ocean, ice, lead, ...)
@@ -287,14 +287,14 @@ class Level2Processor(DefaultLoggingClass):
             # yes/no decision on continuing with orbit
             error_status, error_codes = self._validate_surface_types(l2)
             if error_status:
-                self._discard_l1b_procedure(error_code, l1b_file)
+                self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
             # Get elevation by retracking of different surface types
             # adds parameter elevation to l2
             error_status, error_codes = self._waveform_retracking(l1b, l2)
             if error_status:
-                self._discard_l1b_procedure(error_code, l1b_file)
+                self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
             # Compute the sea surface anomaly (from mss and lead tie points)
@@ -302,15 +302,15 @@ class Level2Processor(DefaultLoggingClass):
             self._estimate_ssh_and_radar_freeboard(l2)
 
             # Get sea ice type (may be required for geometrical corrcetion)
-            error_status, error_code = self._get_sea_ice_type(l2)
+            error_status, error_codes = self._get_sea_ice_type(l2)
             if error_status:
-                self._discard_l1b_procedure(error_code, l1b_file)
+                self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
             # Get snow depth & density
             error_status, error_codes = self._get_snow_parameters(l2)
             if error_status:
-                self.report.add_orbit_discarded_event(error_code, l1b_file)
+                self.report.add_orbit_discarded_event(error_codes, l1b_file)
                 continue
 
             # get radar(-derived) from altimeter freeboard
@@ -342,9 +342,9 @@ class Level2Processor(DefaultLoggingClass):
 
     def _discard_l1b_procedure(self, error_codes, l1b_file):
         """ Log and report discarded l1b orbit segment """
+        self.log.info("- skip file")
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
-            self.log.info("- skip file")
 
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
@@ -431,7 +431,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Loop over stack of surface type validators """
         surface_type_validators = self._job.config.validator.surface_type
         names, validators = td_branches(surface_type_validators)
-        error_code = "surface_type_discarded"
+        error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
         error_messages = []
         for name, validator_def in zip(names, validators):
@@ -440,13 +440,14 @@ class Level2Processor(DefaultLoggingClass):
             state, message = validator.validate(l2)
             error_states.append(state)
             error_messages.append(message)
+            if state:
+                self.log.info("- Validator message: "+message)
         error_status = True in error_states
-        return error_status, error_messages
+        return error_status, error_codes
 
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        error_status = {}
         surface_types, retracker_def = td_branches(self._job.config.retracker)
 
         for i, surface_type in enumerate(surface_types):
@@ -456,7 +457,6 @@ class Level2Processor(DefaultLoggingClass):
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 self.log.info("- no waveforms of type %s" % surface_type)
-                error_status[surface_type] = True
                 continue
 
             # Benchmark retracker performance
@@ -491,9 +491,9 @@ class Level2Processor(DefaultLoggingClass):
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
-            error_status[surface_type] = False
 
-        return error_status
+        # Error handling not yet implemented, return dummy values
+        return False, None
 
     def _estimate_ssh_and_radar_freeboard(self, l2):
         # 1. get mss for orbit
@@ -516,6 +516,8 @@ class Level2Processor(DefaultLoggingClass):
         # Add to l2data
         l2.snow_depth.set_value(snow_depth)
         l2.snow_dens.set_value(snow_dens)
+        # XXX: Error Handling not yet implemted, return dummies
+        return False, None
 
     def _get_freeboard_from_radar_freeboard(self, l2):
         """ Convert the altimeter freeboard in radar freeboard """
