@@ -125,5 +125,7 @@ class EnvisatWaveformParameter(BaseClassifier):
             #except ZeroDivisionError:
             #    pp = np.nan
             #self.peakiness[i] = pp
-            self.peakiness[i] = float(max(wave))/float(sum(wave))*self._n_range_bins
-            
+            try:
+                self.peakiness[i] = float(max(wave))/float(sum(wave))*self._n_range_bins
+            except ZeroDivisionError:
+                self.peakiness[i] = np.nan
