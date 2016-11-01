@@ -67,7 +67,7 @@ level2:
     # Retracking algorithm dependent on surface type
     retracker: 
         ocean: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]             
                 threshold: 0.95
@@ -78,7 +78,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         lead: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]    
                 threshold: 0.95
@@ -89,7 +89,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options: 
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
