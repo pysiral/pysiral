@@ -876,7 +876,7 @@ class L2ProcessorReport(DefaultLoggingClass):
             # List discarded files and reason (error code & description)
             fhandle.write("\n# Detailed Error Breakdown\n\n")
             msg = "  No %s output generated for %g l1b files due " + \
-                  "to following errors\n\n"
+                  "to following errors:\n\n"
             fhandle.write(msg % (output_id, self.n_discarded_files))
 
             for error_code in PYSIRAL_ERROR_CODES.keys():
@@ -889,7 +889,7 @@ class L2ProcessorReport(DefaultLoggingClass):
                 fhandle.write(msg)
                 for discarded_file in self.error_counter[error_code]:
                     fn = filename_from_path(discarded_file)
-                    fhandle.write("* %s\n" % fn)
+                    fhandle.write("  * %s\n" % fn)
 
     def clean_up(self):
         """ Remove all non-persistent parameter """
