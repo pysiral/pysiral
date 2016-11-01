@@ -6,7 +6,7 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
-                            get_yaml_config, PYSIRAL_VERSION)
+                            get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.iotools import get_local_l1bdata_files
@@ -31,6 +31,7 @@ from datetime import datetime
 import numpy as np
 import time
 import glob
+import sys
 import os
 
 
@@ -77,6 +78,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def initialize(self):
         self._initialize_processor()
+        self._initialize_summary_report()
 
     def get_input_files_local_machine_def(self, time_range, version="default"):
         mission_id = self._job.mission_id
@@ -84,6 +86,11 @@ class Level2Processor(DefaultLoggingClass):
         l1b_files = get_local_l1bdata_files(
             mission_id, time_range, hemisphere, version=version)
         self.set_l1b_files(l1b_files)
+
+        # Update the report
+        self.report.n_files = len(l1b_files)
+        self.report.time_range = time_range
+        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -124,11 +131,16 @@ class Level2Processor(DefaultLoggingClass):
     def _l2proc_summary_to_file(self):
         output_ids, output_defs = td_branches(self._job.config.output)
         for output_id, output_def in zip(output_ids, output_defs):
-            self.report.write_to_file(output_def.path)
+            output = get_output_class(output_def.pyclass)
+            output.set_options(**output_def.options)
+            output.set_base_export_path(output_def.path)
+            time_range = self.report.time_range
+            export_folder = output.get_full_export_path(time_range.start)
+            self.report.write_to_file(output_id, export_folder)
 
     def _clean_up(self):
-        """ Make sure to deallocate memory """
-        pass
+        """ All procedures that need to be reset after a run """
+        self.report.clean_up()
 
 # %% Level2Processor: initialization
 
@@ -226,6 +238,13 @@ class Level2Processor(DefaultLoggingClass):
         self._snow.set_subfolders(settings.subfolders)
         self.log.info("Processor Settings - Snow handler: %s" % (
             settings.pyclass))
+
+    def _initialize_summary_report(self):
+        """
+        Only add report parameter that are not time range specific
+        (e.g. the processor l2 settings)
+        """
+        self.report.l2_settings_file = self._job.l2_settings_file
 
 # %% Level2Processor: orbit processing
 
@@ -618,6 +637,7 @@ class L2ProcJob(DefaultLoggingClass):
 
         # All clear, read the settings
         self.settings = get_yaml_config(l2_settings_filename)
+        self.options.l2_settings_filename = l2_settings_filename
         self.log.info("Level-2 settings file: %s" % l2_settings_filename)
 
     def generate_preprocessor_iterations(self):
@@ -766,11 +786,16 @@ class L2ProcJob(DefaultLoggingClass):
     def roi(self):
         return self.settings.roi
 
+    @property
+    def l2_settings_file(self):
+        return self.options.l2_settings_filename
+
 
 class L2ProcJobOptions(object):
     """ Simple container for Level-2 processor options """
 
     def __init__(self):
+        self.l2_settings_filename = "none"
         self.l2_settings = None
         self.run_tag = None
         self.input_version = "default"
@@ -787,13 +812,16 @@ class L2ProcJobOptions(object):
                 setattr(self, parameter, options_dict[parameter])
 
 
-class L2ProcessorReport(object):
+class L2ProcessorReport(DefaultLoggingClass):
 
     def __init__(self):
 
-        self.pysiral_version = PYSIRAL_VERSION
+        super(L2ProcessorReport, self).__init__(self.__class__.__name__)
+
         self.n_files = 0
         self.data_period = None
+        self.l2_settings_file = "none"
+        self.l1b_repository = "none"
 
         # Counter for error codes
         # XXX: This is a first quick implementation of error codes
@@ -801,16 +829,91 @@ class L2ProcessorReport(object):
         #      the dev should make sure to use the correct names. A
         #      more formalized way of reporting errors will be added
         #      in future updates
+        self._init_error_counters()
+
+    def add_orbit_discarded_event(self, error_code, l1b_file):
+        """ Add the l1b file to the list of files with a certain error code """
+
+        # Only except defined error codes
+        try:
+            self.error_counter[error_code].append(l1b_file)
+        except:
+            self.log.warning("Unknown error code (%s), ignoring" % error_code)
+
+    def write_to_file(self, output_id, directory):
+        """ Write a summary file to the defined export directory """
+
+        # Create a simple filename
+        filename = os.path.join(directory, "pysiral-l2proc-summary.txt")
+        self.log.info("Exporting summary report: %s" % filename)
+
+        lfmt = "%-20s : %s\n"
+        current_time = str(datetime.now()).split(".")[0]
+        with open(filename, "w") as fhandle:
+
+            # Write infos on settings, host, os, ....
+            fhandle.write("# pysiral Level2Processor Summary\n\n")
+            fhandle.write("created : %s\n\n" % current_time)
+
+            # Brief statistics of files, errors, warnings
+            fhandle.write("# Processor Statistics\n\n")
+            fhandle.write("l1b files : "+str(self.n_files)+"\n")
+            fhandle.write("errors    : "+str(self.n_discarded_files)+"\n")
+            fhandle.write("warnings  : "+str(self.n_warnings)+"\n\n")
+
+            fhandle.write("# Processor & Local Machine Settings\n\n")
+            fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
+            fhandle.write(lfmt % ("python version", sys.version))
+            fhandle.write(lfmt % ("hostname", HOSTNAME))
+
+            # More info on this specific run
+            fhandle.write(lfmt % ("data period", self.data_period_str))
+            fhandle.write(lfmt % ("Level-2 settings", self.l2_settings_file))
+            fhandle.write(lfmt % ("l1b repository", self.l1b_repository))
+
+            # List discarded files and reason (error code & description)
+            fhandle.write("# Detailed Error Breakdown\n\n")
+            msg = "\nNo %s output generated for %g l1b files due " + \
+                  "to following errors\n\n"
+            fhandle.write(msg % (output_id, self.n_discarded_files))
+
+            for error_code in PYSIRAL_ERROR_CODES.keys():
+                n_discarded_files = len(self.error_counter[error_code])
+                if n_discarded_files == 0:
+                    continue
+                error_description = PYSIRAL_ERROR_CODES[error_code]
+                msg = "%g file(s): [error_code:%s] %s\n" % (
+                    n_discarded_files, error_code, error_description)
+                fhandle.write(msg)
+                for discarded_file in self.error_counter[error_code]:
+                    fn = filename_from_path(discarded_file)
+                    fhandle.write("* %s\n" % fn)
+
+    def clean_up(self):
+        """ Remove all non-persistent parameter """
+        self.data_period = None
+        self.l1b_repository = "none"
+        self._init_error_counters()
+
+    def _init_error_counters(self):
         self.error_counter = OrderedDict([])
         for error_code in PYSIRAL_ERROR_CODES.keys():
             self.error_counter[error_code] = []
 
-    def add_orbit_discarded_event(self, error_code, l1b_file):
-        """ Add the l1b file to the list of files with a certain error code """
+    @property
+    def data_period_str(self):
         try:
-            self.error_counter[error_code] = l1b_file
+            return self.time_range.label
         except:
-            pass
+            return "invalid/mission data period"
 
-    def write_to_file(self, directory):
-        pass
+    @property
+    def n_discarded_files(self):
+        num_discarded_files = 0
+        for error_code in self.error_counter.keys():
+            num_discarded_files += len(self.error_counter[error_code])
+        return num_discarded_files
+
+    @property
+    def n_warnings(self):
+        return 0
