@@ -278,6 +278,12 @@ class Level2Processor(DefaultLoggingClass):
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
+            # Get sea ice type (may be required for geometrical corrcetion)
+            error_status, error_codes = self._get_sea_ice_type(l2)
+            if error_status:
+                self._discard_l1b_procedure(error_codes, l1b_file)
+                continue
+
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
             # TODO: Add L2 classifiers (ice concentration, ice type)
@@ -300,12 +306,6 @@ class Level2Processor(DefaultLoggingClass):
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
             self._estimate_ssh_and_radar_freeboard(l2)
-
-            # Get sea ice type (may be required for geometrical corrcetion)
-            error_status, error_codes = self._get_sea_ice_type(l2)
-            if error_status:
-                self._discard_l1b_procedure(error_codes, l1b_file)
-                continue
 
             # Get snow depth & density
             error_status, error_codes = self._get_snow_parameters(l2)
