@@ -25,11 +25,14 @@ from dateutil.relativedelta import relativedelta
 import os
 import sys
 import yaml
+import socket
 from treedict import TreeDict
 
 
 PYSIRAL_VERSION = "0.3.0-dev"
 PYSIRAL_VERSION_FILENAME = "030dev"
+HOSTNAME = socket.gethostname()
+
 
 class ConfigInfo(object):
     """
