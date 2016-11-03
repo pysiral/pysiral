@@ -3,12 +3,15 @@
 ## Version 0.3.0 (TBD)
 
 **New Features**
-* [l2 processing] Added SICCI-2 retracker class for Envisat (retracker.SICC2TfmraEnvisat) 
-* [l2 processing] Added SICCI-2 surface type class for Envisat and CryoSat-2 (surface_type.SICCI2Envisat, surface_type.Cryosat2) 
+* [l2 processing] Added SICCI-2 retracker class for Envisat (retracker.SICC2TfmraEnvisat)
+* [l2 processing] Added SICCI-2 surface type class for Envisat and CryoSat-2 (surface_type.SICCI2Envisat, surface_type.Cryosat2)
 * [l2 processing] Added support for NASAT-Team based MYI concentrations produced by Integrated Climate Data Center (ICDC) (-> sitype.ICDCNasaTeam)
 * [l3 processing] Added surface type statistics (level-3) parameter (`n_total_waveforms`, `n_valid_waveforms`, `valid_fraction`, `lead_fraction`, `ice_fraction`)
 * [l3 processing] Added sea ice concentration masking (grid parameter to nan if `sic < 5` or `sic == nan`)
 * [tools] Added customization options for the colorbar generator
+
+**Bugfixes**
+* [config] Bug #280: month exclusion ignored for the month given by -start option in the l1bpreproc, l2proc and l3proc calls leading to incorrect start and stop dates of the processors
 
 **Changes**
 * [l3 processing] Improved logging and documentation
