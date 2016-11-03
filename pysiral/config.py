@@ -289,12 +289,20 @@ class TimeRangeRequest(object):
                 month_start, month_stop = get_month_time_range(year, month)
 
                 # limit the time range for first and last iteration
-                # (may not change anything if full month is selected)
-                if index == 1:
-                    month_start = self.start_dt
-                if index == n_iterations:
+                # (only if the first and the last month are not in the
+                #  exclude_month list)
+
+                first_month = self._start_dt.month
+                first_month_excluded = first_month in self._exclude_month
+                if index == 1 and not first_month_excluded:
+                    month_start = self._start_dt
+
+                last_month = self._stop_dt.month
+                last_month_excluded = last_month in self._exclude_month
+                if index == n_iterations and not last_month_excluded:
                     month_stop = self.stop_dt
 
+                # set final time range
                 time_range.set_range(month_start, month_stop)
                 time_range.set_indices(index, n_iterations)
                 iterations.append(time_range)
