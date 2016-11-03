@@ -85,8 +85,8 @@ class OsiSafSIType(SITypeBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            msg = "File not found: %s " % path
-            self.error.add_error("osisaf-ioerror", msg)
+            msg = "OsiSafSIType: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         self._data = ReadNC(path)
@@ -96,7 +96,7 @@ class OsiSafSIType(SITypeBaseClass):
         # This step is important for calculation of image coordinates
         self._data.ice_type = np.flipud(self._data.ice_type)
         # self._data.confidence_level = np.flipud(self._data.confidence_level)
-        self._msg = "Loaded SIType file: %s" % path
+        self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -179,8 +179,8 @@ class ICDCNasaTeam(SITypeBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            msg = "File not found: %s " % path
-            self.error.add_error("osisaf-ioerror", msg)
+            msg = "ICDCNasaTeam: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         self._data = ReadNC(path)
@@ -190,7 +190,7 @@ class ICDCNasaTeam(SITypeBaseClass):
         # This step is important for calculation of image coordinates
         # self._data.ice_type = np.flipud(self._data.ice_type)
         # self._data.confidence_level = np.flipud(self._data.confidence_level)
-        self._msg = "Loaded SIType file: %s" % path
+        self._msg = "ICDCNasaTeam: Loaded SIType file: %s" % path
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):

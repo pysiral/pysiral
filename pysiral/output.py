@@ -262,7 +262,7 @@ class L2iDataNC(NCDataFile):
 
         # Report mission variable attributes (not in master release)
         not_master = "master" not in PYSIRAL_VERSION
-        if not_master:
+        if not_master and len(self._missing_parameters) > 0:
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
 
