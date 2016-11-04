@@ -223,6 +223,10 @@ class SurfaceTypeClassifier(object):
         flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
         self._surface_type.add_flag(flag, "unknown")
 
+    def set_l1b_land_mask(self):
+        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
+        self._surface_type.add_flag(l1b_land_mask.flag, "land")
+
 
 class RickerTC2014(SurfaceTypeClassifier):
     """
@@ -292,10 +296,6 @@ class RickerTC2014(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
-    def _set_land_mask(self):
-        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
-        self._surface_type.add_flag(l1b_land_mask.flag, "land")
-
 
 class SICCI2Envisat(SurfaceTypeClassifier):
     """
@@ -353,10 +353,6 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
-
-    def _set_land_mask(self):
-        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
-        self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
 class SICCI2CryoSat2(SurfaceTypeClassifier):
@@ -416,10 +412,6 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
-    def _set_land_mask(self):
-        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
-        self._surface_type.add_flag(l1b_land_mask.flag, "land")
-
 
 class SICCI1Envisat(SurfaceTypeClassifier):
     """
@@ -471,10 +463,6 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
-
-    def _set_land_mask(self):
-        l1b_land_mask = self._l1b_surface_type.get_by_name("land")
-        self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
 def get_surface_type_class(name):
