@@ -214,8 +214,7 @@ class SurfaceTypeClassifier(object):
         """ Overwrite classification"""
         self._surface_type = surface_type
 
-    def classify(self):
-        self._classify()
+    def classify(self, l1b, l2):
 
     def has_class(self, name):
         return name in self._classes
