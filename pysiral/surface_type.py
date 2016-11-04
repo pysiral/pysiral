@@ -5,6 +5,7 @@ Created on Mon Jul 27 11:25:04 2015
 @author: Stefan
 """
 
+from pysiral.config import RadarModes
 from pysiral.flag import FlagContainer, ANDCondition
 
 import numpy as np
@@ -196,6 +197,7 @@ class SurfaceTypeClassifier(object):
         self._surface_type = SurfaceType()
         self._l1b_surface_type = None
         self._classifier = ClassifierContainer()
+        self._radar_modes = RadarModes()
 
     @property
     def result(self):
@@ -226,11 +228,34 @@ class SurfaceTypeClassifier(object):
 
         # add radar mode
         self._add_classifiers(l1b.waveform.radar_mode, "radar_mode")
+
         # Initialize with unkown
         self.set_unknown_default()
+
+        # loop over different radar modes
+        # Note: This is necessary for CryoSat-2 with mixed SAR/SIN segments
+        for radar_mode in l1b.waveform.radar_modes:
+
+            # Obtain radar mode specific options
+            # (with failsaife for older settings files)
+            if self._options.has_key(radar_mode):
+                options = self._options[radar_mode]
+            else:
+                options = self._options
+
+            # get the radar mode flag
+            radar_mode_flag = self._radar_modes.get_flag(radar_mode)
+
+            # Create mandatory condition
+            self._is_radar_mode = l1b.waveform.radar_mode == radar_mode_flag
+
+            # Classify
+            self._classify(options)
+
         # Keep land information
         # (also overwrite any potential impossible classifications)
         self.set_l1b_land_mask()
+
     def has_class(self, name):
         return name in self._classes
 
@@ -257,15 +282,17 @@ class RickerTC2014(SurfaceTypeClassifier):
         super(RickerTC2014, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
-    def _classify(self):
-        self._classify_ocean()
-        self._classify_leads()
-        self._classify_sea_ice()
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
 
-    def _classify_ocean(self):
-        opt = self._options.ocean
+    def _classify_ocean(self, options):
+        opt = options.ocean
         parameter = self._classifier
         ocean = ANDCondition()
+        # Mandatory radar mode flag
+        ocean.add(self._is_radar_mode)
         # Peakiness Thresholds
         ocean.add(parameter.peakiness >= opt.peakiness_min)
         ocean.add(parameter.peakiness <= opt.peakiness_max)
@@ -279,10 +306,12 @@ class RickerTC2014(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ocean.flag, "ocean")
 
-    def _classify_leads(self):
-        opt = self._options.lead
+    def _classify_leads(self, options):
+        opt = options.lead
         parameter = self._classifier
         lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
         # Stack (Beam) parameters
         lead.add(parameter.peakiness_l >= opt.peakiness_l_min)
         lead.add(parameter.peakiness_r >= opt.peakiness_r_min)
@@ -295,10 +324,12 @@ class RickerTC2014(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
-    def _classify_sea_ice(self):
-        opt = self._options.sea_ice
+    def _classify_sea_ice(self, options):
+        opt = options.sea_ice
         parameter = self._classifier
         ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
         ice.add(parameter.peakiness_r <= opt.peakiness_r_max)
         ice.add(parameter.peakiness_l <= opt.peakiness_l_max)
@@ -320,15 +351,17 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         super(SICCI2Envisat, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
-    def _classify(self):
-        self._classify_ocean()
-        self._classify_leads()
-        self._classify_sea_ice()
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
 
-    def _classify_ocean(self):
-        opt = self._options.ocean
+    def _classify_ocean(self, options):
+        opt = options.ocean
         parameter = self._classifier
         ocean = ANDCondition()
+        # Mandatory radar mode flag
+        ocean.add(self._is_radar_mode)
         # Peakiness Thresholds
         ocean.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
@@ -336,10 +369,12 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ocean.flag, "ocean")
 
-    def _classify_leads(self):
-        opt = self._options.lead
+    def _classify_leads(self, options):
+        opt = options.lead
         parameter = self._classifier
         lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
         lead.add(parameter.sea_ice_backscatter >= opt.sib_min)
         lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
@@ -350,10 +385,12 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
-    def _classify_sea_ice(self):
-        opt = self._options.sea_ice
+    def _classify_sea_ice(self, options):
+        opt = options.sea_ice
         parameter = self._classifier
         ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
         ice.add(parameter.sea_ice_backscatter >= opt.sib_min)
         ice.add(parameter.sea_ice_backscatter <= opt.sib_max)
@@ -376,15 +413,17 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         super(SICCI2CryoSat2, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
-    def _classify(self):
-        self._classify_ocean()
-        self._classify_leads()
-        self._classify_sea_ice()
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
 
-    def _classify_ocean(self):
-        opt = self._options.ocean
+    def _classify_ocean(self, options):
+        opt = options.ocean
         parameter = self._classifier
         ocean = ANDCondition()
+        # Mandatory radar mode flag
+        ocean.add(self._is_radar_mode)
         # Peakiness Thresholds
         ocean.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
@@ -392,10 +431,12 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ocean.flag, "ocean")
 
-    def _classify_leads(self):
-        opt = self._options.lead
+    def _classify_leads(self, options):
+        opt = options.lead
         parameter = self._classifier
         lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
         lead.add(parameter.sigma0 >= opt.sib_min)
         lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
@@ -406,10 +447,12 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
-    def _classify_sea_ice(self):
-        opt = self._options.sea_ice
+    def _classify_sea_ice(self, options):
+        opt = options.sea_ice
         parameter = self._classifier
         ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
         ice.add(parameter.sigma0 >= opt.sib_min)
         ice.add(parameter.sigma0 <= opt.sib_max)
@@ -433,15 +476,17 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         super(SICCI1Envisat, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice"]
 
-    def _classify(self):
-        self._classify_ocean()
-        self._classify_leads()
-        self._classify_sea_ice()
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
 
-    def _classify_ocean(self):
-        opt = self._options.ocean
+    def _classify_ocean(self, options):
+        opt = options.ocean
         parameter = self._classifier
         ocean = ANDCondition()
+        # Mandatory radar mode flag
+        ocean.add(self._is_radar_mode)
         # Peakiness Thresholds
         ocean.add(parameter.peakiness < opt.pulse_peakiness_max)
         # Ice Concentration
@@ -449,10 +494,12 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ocean.flag, "ocean")
 
-    def _classify_leads(self):
-        opt = self._options.lead
+    def _classify_leads(self, options):
+        opt = options.lead
         parameter = self._classifier
         lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
         # Stack (Beam) parameters
         lead.add(parameter.peakiness > opt.pulse_peakiness_min)
         # Ice Concentration
@@ -460,10 +507,12 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
-    def _classify_sea_ice(self):
-        opt = self._options.sea_ice
+    def _classify_sea_ice(self, options):
+        opt = options.sea_ice
         parameter = self._classifier
         ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
         ice.add(parameter.peakiness < opt.pulse_peakiness_max)
         # Ice Concentration
