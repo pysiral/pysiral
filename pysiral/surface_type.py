@@ -226,6 +226,11 @@ class SurfaceTypeClassifier(object):
 
         # add radar mode
         self._add_classifiers(l1b.waveform.radar_mode, "radar_mode")
+        # Initialize with unkown
+        self.set_unknown_default()
+        # Keep land information
+        # (also overwrite any potential impossible classifications)
+        self.set_l1b_land_mask()
     def has_class(self, name):
         return name in self._classes
 
@@ -253,11 +258,9 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
-        self.set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
-        self._set_land_mask()
 
     def _classify_ocean(self):
         opt = self._options.ocean
@@ -318,11 +321,9 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
-        self.set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
-        self._set_land_mask()
 
     def _classify_ocean(self):
         opt = self._options.ocean
@@ -376,11 +377,9 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self):
-        self.set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
-        self._set_land_mask()
 
     def _classify_ocean(self):
         opt = self._options.ocean
@@ -435,11 +434,9 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         self._classes = ["unkown", "ocean", "lead", "sea_ice"]
 
     def _classify(self):
-        self.set_unknown_default()
         self._classify_ocean()
         self._classify_leads()
         self._classify_sea_ice()
-        self._set_land_mask()
 
     def _classify_ocean(self):
         opt = self._options.ocean
