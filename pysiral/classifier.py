@@ -104,50 +104,28 @@ class EnvisatWaveformParameter(BaseClassifier):
 
     def __init__(self, wfm, skip=5, bins_after_nominal_tracking_bin=83):
         super(EnvisatWaveformParameter, self).__init__()
-        self.shape = wfm.shape
+        #self.shape = wfm.shape
         self.skip = skip
-        self.t_n = bins_after_nominal_tracking_bin
+        #self.t_n = bins_after_nominal_tracking_bin
+        self._n = wfm.shape[0]
+        self._n_range_bins = wfm.shape[1]
         self._init_parameter()
         self._calc_parameter(wfm)
 
     def _init_parameter(self):
-        n = self.shape[0]
-        self.peakiness = np.ndarray(shape=(n), dtype=np.float32)
-        #self.ocog_width = np.ndarray(shape=(n), dtype=np.float32)
-        #self.ocog_amplitude = np.ndarray(shape=(n), dtype=np.float32)
-        
+        #self.peakiness = np.ndarray(shape=(n), dtype=np.float32)
+        self.peakiness = np.ndarray(shape=(self._n), dtype=np.float32)*np.nan
+
     def _calc_parameter(self, wfm):
-        for i in np.arange(self.shape[0]):
+        for i in np.arange(self._n):
             # Discard first bins, they are FFT artefacts anyway
             wave = wfm[i, self.skip:]
+            #try:
+            #    pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            #except ZeroDivisionError:
+            #    pp = np.nan
+            #self.peakiness[i] = pp
             try:
-                pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+                self.peakiness[i] = float(max(wave))/float(sum(wave))*self._n_range_bins
             except ZeroDivisionError:
-                pp = np.nan
-            self.peakiness[i] = pp
-
-            #max_bin = np.nanargmax(wave)
-            #if max_bin > 3+self.skip and max_bin < 123:
-            #    den_ppl = np.nanmean(wave[max_bin-3:max_bin-1])
-            #    den_ppr = np.nanmean(wave[max_bin+1:max_bin+3])
-            #    if den_ppl != 0:
-            #        ppl = float(max(wave))/den_ppl*3.0
-            #    else:
-            #        ppl = np.nan
-            #    if den_ppr != 0:
-            #        ppr = float(max(wave))/den_ppr*3.0
-            #    else:
-            #        ppr = np.nan
-            #else:
-            #    ppl = np.nan
-            #    ppr = np.nan
-            #self.peakiness_l[i] = ppl
-            #self.peakiness_r[i] = ppr
-            
-            #y = wave.flatten().astype(np.float32)
-            #y -= np.nanmean(y[0:11])  # Remove Noise
-            #y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
-            #y2 = y**2.0
-            #self.ocog_amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
-            #self.ocog_width[i] = ((y2.sum())**2.0) / (y2**2.0).sum()
-            
+                self.peakiness[i] = np.nan

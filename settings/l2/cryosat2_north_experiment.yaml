@@ -50,22 +50,37 @@ level2:
     surface_type: 
         pyclass: SICCI2Cryosat2
         options: 
-            ocean:
-                peakiness_max: 3.0
-                ice_concentration_min: 5.0
-            lead:
-                peakiness_min: 40.0
-                sib_min: 20.0
-                lew1_max: 0.65
-                lew2_max: 0.25
-                ice_concentration_min: 70.0
-            sea_ice:
-                peakiness_max: 30.0
-                sib_min: 2.0
-                sib_max: 20.0
-                lew1_min: 0.8
-                lew2_min: 0.25
-                ice_concentration_min: 70.0
+            sar:
+                ocean:
+                    peakiness_max: 3.0
+                    ice_concentration_min: 5.0
+                lead:
+                    peakiness_min: 40.0
+                    sib_min: 25.0
+                    lew_max: 0.85
+                    ice_concentration_min: 70.0
+                sea_ice:
+                    peakiness_max: 30.0
+                    sib_min: 5.0
+                    sib_max: 22.0
+                    lew_min: 1.0
+                    ice_concentration_min: 70.0
+            sin:
+                ocean:
+                    peakiness_max: 3.0
+                    ice_concentration_min: 5.0
+                lead:
+                    peakiness_min: 150.0
+                    sib_min: 25.0
+                    lew_max: 1.5
+                    ice_concentration_min: 70.0
+                sea_ice:    
+                    peakiness_max: 80.0
+                    sib_min: 5.0
+                    sib_max: 22.0
+                    lew_min: 1.5
+                    ice_concentration_min: 70.0
+
                 
     # Retracking algorithm dependent on surface type
     retracker: 

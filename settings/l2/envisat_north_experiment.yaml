@@ -51,26 +51,24 @@ level2:
         pyclass: SICCI2Envisat
         options:
             ocean:
-                peakiness_max: 3.0
+                peakiness_max: 5.0
                 ice_concentration_min: 5.0
             lead:
-                peakiness_min: 25.0
-                sib_min: 22.0
-                lew1_max: 0.65
-                lew2_max: 0.45
+                peakiness_min: 40.0
+                sib_min: 25.0
+                lew_max: 0.85
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_max: 15.0
-                sib_min: 2.0
+                peakiness_max: 20.0
+                sib_min: 5.0
                 sib_max: 22.0
-                lew1_min: 0.5
-                lew2_min: 0.3
+                lew_min: 0.9
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
     retracker: 
         ocean: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]             
                 threshold: 0.95
@@ -81,7 +79,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         lead: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]    
                 threshold: 0.95
@@ -92,7 +90,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
-            pyclass: TFMRA_env
+            pyclass: SICCI2TfmraEnvisat
             options: 
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
