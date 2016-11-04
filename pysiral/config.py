@@ -135,6 +135,9 @@ class RadarModes(object):
         except:
             return None
 
+    def get_name(self, flag):
+        return self.flag_dict[flag]
+
     def name(self, index):
         i = self.flag_dict.values().index(index)
         return self.flag_dict.keys()[i]
