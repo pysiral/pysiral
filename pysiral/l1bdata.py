@@ -286,6 +286,13 @@ class Level1bData(object):
         # Push to waveform container
         self.waveform.set_waveform_data(power, range, self.radar_modes)
 
+    def get_parameter_by_name(self, data_group, parameter_name):
+        try:
+            data_group = getattr(self, data_group)
+            return getattr(data_group, parameter_name)
+        except:
+            return None
+
     @property
     def n_records(self):
         return self.info.n_records
@@ -298,7 +305,6 @@ class Level1bData(object):
         for radar_mode_flag in radar_mode_flag_list:
             radar_mode_list.append(radar_modes.name(radar_mode_flag))
         return ";".join(radar_mode_list)
-
 
 class L1bConstructor(Level1bData):
     """

@@ -34,6 +34,8 @@ class BaseRetracker(object):
     def __init__(self):
         self._indices = None
         self._classifier = None
+        self._l1b = None
+        self._l2 = None
 
     def set_options(self, **opt_dict):
         # TODO: Create options object
@@ -50,6 +52,10 @@ class BaseRetracker(object):
         self._create_default_properties(n_records)
 
     def retrack(self, l1b, l2):
+
+        # Store the pointer to l1b and l2 data objects
+        self._l1b = l1b
+        self._l2 = l2
 
         # Initialize the retracked range with an NaN array
         # -> only waveforms of type "surface_type" will retracked
@@ -70,6 +76,20 @@ class BaseRetracker(object):
         self.l2_retrack(l1b.waveform.range, l1b.waveform.power, self._indices,
                         l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
+
+    def get_l1b_parameter(self, data_group, parameter_name):
+        """ Get any valid level-2 paremeter name """
+        try:
+            return self._l1b.get_parameter_by_name(data_group, parameter_name)
+        except:
+            return None
+
+    def get_l2_parameter(self, parameter_name):
+        """ Get any valid level-2 paremeter name """
+        try:
+            return self._l2.get_parameter_by_name(parameter_name)
+        except:
+            return None
 
     def _create_default_properties(self, n_records):
         # XXX: Currently only range and status (true: ok)
