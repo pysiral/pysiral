@@ -216,6 +216,16 @@ class SurfaceTypeClassifier(object):
 
     def classify(self, l1b, l2):
 
+        # Add all classifiers from l1bdata
+        for classifier_name in l1b.classifier.parameter_list:
+            classifier = getattr(l1b.classifier, classifier_name)
+            self.add_classifiers(classifier, classifier_name)
+
+        # add sea ice concentration
+        self.add_classifiers(l2.sic, "sic")
+
+        # add radar mode
+        self._add_classifiers(l1b.waveform.radar_mode, "radar_mode")
     def has_class(self, name):
         return name in self._classes
 
