@@ -18,6 +18,7 @@ import os
 class SITypeBaseClass(object):
 
     def __init__(self):
+        self._msg = ""
         self._options = None
         self._local_repository = None
         self._subfolders = []
@@ -61,11 +62,12 @@ class OsiSafSIType(SITypeBaseClass):
         return "%02g" % self._requested_date[2]
 
     def _get_along_track_sitype(self, l2):
-        self._msg = ""
         self._get_requested_date(l2)
         self._get_data(l2)
+        if self.error.status:
+            return None, self.error.message
         sic = self._get_sitype_track(l2)
-        return sic, self._msg
+        return sic, self.error.messages
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -155,9 +157,10 @@ class ICDCNasaTeam(SITypeBaseClass):
         return "%02g" % self._requested_date[2]
 
     def _get_along_track_sitype(self, l2):
-        self._msg = ""
         self._get_requested_date(l2)
         self._get_data(l2)
+        if self.error.status:
+            return None, self.error.message
         sic = self._get_sitype_track(l2)
         return sic, self._msg
 
@@ -170,8 +173,10 @@ class ICDCNasaTeam(SITypeBaseClass):
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
+
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
+            self._msg = "ICDCNasaTeam: Daily grid already present"
             return
 
         # construct filename
@@ -179,8 +184,8 @@ class ICDCNasaTeam(SITypeBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            msg = "ICDCNasaTeam: File not found: %s " % path
-            self.error.add_error("auxdata_missing_sitype", msg)
+            self._msg = "ICDCNasaTeam: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sitype", self._msg)
             return
 
         self._data = ReadNC(path)
