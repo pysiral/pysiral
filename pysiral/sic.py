@@ -86,13 +86,14 @@ class OsiSafSIC(SICBaseClass):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
+            self._msg = "OsiSafSIC: Daily grid already present"
             return
         path = self._get_local_repository_filename(l2)
 
         # Validation
         if not os.path.isfile(path):
-            msg = "OsiSafSIC: File not found: %s " % path
-            self.error.add_error("auxdata_missing_sic", msg)
+            self._msg = "OsiSafSIC: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sic", self._msg)
             return
 
         self._data = ReadNC(path)
@@ -185,8 +186,8 @@ class IfremerSIC(SICBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            msg = "IfremerSIC: File not found: %s " % path
-            self.error.add_error("auxdata_missing_sic", msg)
+            self._msg = "IfremerSIC: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sic", self._msg)
             return
 
         self._data = ReadNC(path)
