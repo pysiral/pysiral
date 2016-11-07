@@ -60,3 +60,4 @@ sea_ice_concentration_mask_targets:
     - valid_fraction
     - lead_fraction
     - ice_fraction
+    - sea_ice_type

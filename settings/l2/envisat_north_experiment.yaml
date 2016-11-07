@@ -23,7 +23,7 @@ level2:
             name: osisaf
             options: null
         sitype:
-            name: osisaf
+            name: icdc_nasateam
             options: null
         snow:
             name: warren99
