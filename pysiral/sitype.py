@@ -67,7 +67,7 @@ class OsiSafSIType(SITypeBaseClass):
         if self.error.status:
             return None, self.error.message
         sic = self._get_sitype_track(l2)
-        return sic, self.error.messages
+        return sic, self._msg
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
