@@ -63,7 +63,7 @@ level2:
                     peakiness_max: 20.0
                     sib_min: 5.0
                     sib_max: 22.0
-                    lew_min: 1.25
+                    lew_min: 1.1
                     ice_concentration_min: 70.0
             sin:
                 ocean:
@@ -72,13 +72,13 @@ level2:
                 lead:
                     peakiness_min: 150.0
                     sib_min: 25.0
-                    lew_max: 1.5
+                    lew_max: 1.4
                     ice_concentration_min: 70.0
                 sea_ice:    
-                    peakiness_max: 80.0
+                    peakiness_max: 60.0
                     sib_min: 5.0
                     sib_max: 22.0
-                    lew_min: 1.5
+                    lew_min: 1.75
                     ice_concentration_min: 70.0
 
                 
