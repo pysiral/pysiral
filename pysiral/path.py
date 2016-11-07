@@ -30,7 +30,12 @@ def file_basename(filename, fullpath=False):
     """
     strarr = os.path.split(filename)
     file_name = strarr[-1]
-    basename = file_name.split(".")[0]
+    # Ignore dots in filename -> only exclude last suffix
+    parts = file_name.split(".")
+    if len(parts) <= 2:
+        basename = parts[0]
+    else:
+        basename = ".".join(parts[:-1])
     if fullpath:
         basename = os.path.join(strarr[0], basename)
     # XXX: Sketchy, needs better solution (with access to os documentation)
