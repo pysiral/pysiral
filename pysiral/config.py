@@ -136,7 +136,10 @@ class RadarModes(object):
             return None
 
     def get_name(self, flag):
-        return self.flag_dict[flag]
+        for mode_name, mode_flag in self.flag_dict.items():
+            if flag == mode_flag:
+                return mode_name
+        return None
 
     def name(self, index):
         i = self.flag_dict.values().index(index)

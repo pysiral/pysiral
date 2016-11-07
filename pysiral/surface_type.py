@@ -227,7 +227,7 @@ class SurfaceTypeClassifier(object):
         self.add_classifiers(l2.sic, "sic")
 
         # add radar mode
-        self._add_classifiers(l1b.waveform.radar_mode, "radar_mode")
+        self.add_classifiers(l1b.waveform.radar_mode, "radar_mode")
 
         # Initialize with unkown
         self.set_unknown_default()
@@ -379,8 +379,6 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         lead.add(parameter.sigma0 >= opt.sib_min)
         lead.add(parameter.leading_edge_width_first_half + \
                  parameter.leading_edge_width_second_half <= opt.lew_max)
-        #lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
-        #lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -398,8 +396,6 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         ice.add(parameter.sigma0 <= opt.sib_max)
         ice.add(parameter.leading_edge_width_first_half + \
                 parameter.leading_edge_width_second_half >= opt.lew_min)
-        #ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
-        #ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
@@ -407,14 +403,14 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
-class SICCI2CryoSat2(SurfaceTypeClassifier):
+class SICCI2Cryosat2(SurfaceTypeClassifier):
     """
     new and unified surface type classifier for cryosat2 and envisat
     based on similar parameters
     """
 
     def __init__(self):
-        super(SICCI2CryoSat2, self).__init__()
+        super(SICCI2Cryosat2, self).__init__()
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self, options):
@@ -443,8 +439,8 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
         lead.add(parameter.sigma0 >= opt.sib_min)
-        lead.add(parameter.leading_edge_width_first_half <= opt.lew1_max)
-        lead.add(parameter.leading_edge_width_second_half <= opt.lew2_max)
+        lead.add(parameter.leading_edge_width_first_half + \
+                 parameter.leading_edge_width_second_half <= opt.lew_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -460,8 +456,8 @@ class SICCI2CryoSat2(SurfaceTypeClassifier):
         # Stack (Beam) parameters
         ice.add(parameter.sigma0 >= opt.sib_min)
         ice.add(parameter.sigma0 <= opt.sib_max)
-        ice.add(parameter.leading_edge_width_first_half >= opt.lew1_min)
-        ice.add(parameter.leading_edge_width_second_half >= opt.lew2_min)
+        ice.add(parameter.leading_edge_width_first_half + \
+                parameter.leading_edge_width_second_half >= opt.lew_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
