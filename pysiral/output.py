@@ -384,7 +384,11 @@ class PysiralOutputFilenaming(object):
                 for parameter in match.named.keys():
                     value = match[parameter]
                     if parameter in ["start", "stop"]:
-                        value = dtparser.parse(value)
+                        try:
+                            value = dtparser.parse(value)
+                        except:
+                            match_found = False
+                            break
                     setattr(self, parameter, value)
                 break
 
