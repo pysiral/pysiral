@@ -376,9 +376,9 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
-        lead.add(parameter.sigma0 >= opt.sib_min)
+        lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
         lead.add(parameter.leading_edge_width_first_half + \
-                 parameter.leading_edge_width_second_half <= opt.lew_max)
+                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -392,10 +392,10 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
-        ice.add(parameter.sigma0 >= opt.sib_min)
-        ice.add(parameter.sigma0 <= opt.sib_max)
+        ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
+        ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max)
         ice.add(parameter.leading_edge_width_first_half + \
-                parameter.leading_edge_width_second_half >= opt.lew_min)
+                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
@@ -438,9 +438,9 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
-        lead.add(parameter.sigma0 >= opt.sib_min)
+        lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
         lead.add(parameter.leading_edge_width_first_half + \
-                 parameter.leading_edge_width_second_half <= opt.lew_max)
+                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -454,10 +454,10 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
-        ice.add(parameter.sigma0 >= opt.sib_min)
-        ice.add(parameter.sigma0 <= opt.sib_max)
+        ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
+        ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max)
         ice.add(parameter.leading_edge_width_first_half + \
-                parameter.leading_edge_width_second_half >= opt.lew_min)
+                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
