@@ -493,7 +493,7 @@ class L3DataGrid(DefaultLoggingClass):
     @property
     def parameter_list(self):
         # TODO: Only L2 parameter for now
-        parameter_list = self._l2_parameter
+        parameter_list = list(self._l2_parameter)
         parameter_list.extend(self._l3_parameter)
         parameter_list.append("longitude")
         parameter_list.append("latitude")
