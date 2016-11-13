@@ -791,7 +791,7 @@ class SICCILead(BaseRetracker):
 
         # sea ice backscatter not available for ERS?
         if thrs.minimum_echo_backscatter is not None:
-            valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+            valid.add(clf.sigma0 > thrs.minimum_echo_backscatter)
 
         bin_seperation = np.abs(self.retracked_bin - self.maximum_power_bin)
         valid.add(bin_seperation < thrs.maximum_retracker_maxpower_binsep)
