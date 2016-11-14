@@ -149,6 +149,8 @@ class Level2Processor(DefaultLoggingClass):
 
         # Instance can be reused
         if self._initialized:
+            # Empty orbit list (or else orbits will acculumate)
+            self._orbit.clear()
             return
 
         self.log.info("Initializing processor")
