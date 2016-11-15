@@ -335,7 +335,7 @@ class TimeRangeRequest(object):
         except:
             error_message = "cannot convert integer list to datetime: %s" % (
                 str(int_list))
-            self.error.append(self.__class__.__name__, error_message)
+            self.error.add_error(self.__class__.__name__, error_message)
             return None
 
         # if stop time: add one period
