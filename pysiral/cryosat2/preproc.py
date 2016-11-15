@@ -65,10 +65,14 @@ class CryoSat2PreProc(L1bPreProc):
             return None
 
         # Only now read the full data set
-        t0 = time.time()
-        l1b.construct()
-        t1 = time.time()
-        self.log.info("- Parsed source file in %.3g seconds" % (t1 - t0))
+        try:
+            t0 = time.time()
+            l1b.construct()
+            t1 = time.time()
+            self.log.info("- Parsed source file in %.3g seconds" % (t1 - t0))
+        except:
+            self.log.warning(" - Error reading l1b file")
+            return []
 
         # Reduce the waveform count of SIN waveforms to the number of SAR
         # waveforms (for data mergung)
