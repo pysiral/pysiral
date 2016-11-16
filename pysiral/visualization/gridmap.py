@@ -42,17 +42,21 @@ class ArcticGridPresentationMap(object):
         self._clean_up()
 
     def _create_orthographic_map(self):
+
         # switch off interactive plotting
         plt.ioff()
         figure = plt.figure(**self.style.figure.keyw)
         m = Basemap(**self.projection)
+
         # load the (shaded) background
         filename = self.style.background.get_filename("north")
         m.warpimage(filename, **self.style.background.keyw)
+
         # coastline
         if self.style.coastlines.is_active:
             coastlines = get_landcoastlines(m, **self.style.coastlines.keyw)
             plt.gca().add_collection(coastlines)
+
         # Plot the data as pcolor grid
         data = self.data
         x, y = m(data.pgrid.longitude, data.pgrid.latitude)
@@ -71,20 +75,25 @@ class ArcticGridPresentationMap(object):
         # TODO: try with plt.ioff()
         image = Image.open(self.temp_file)
         imarr = np.array(image)
+
         # crop the full orthographic image, do not change projections
         x1, x2, y1, y2 = self.style.crop.get_crop_region(image.size)
         cropped_image = imarr[y1:y2, x1:x2, :]
+
         # Create a new figure
         figure = plt.figure(**self.style.figure.keyw)
         ax = plt.gca()
+
         # Display cropped image
         plt.axis('off')
         im = ax.imshow(cropped_image)
         ax.set_position([0, 0, 1, 1])
+
         # clip the image
         if self.style.clip.is_active:
             patch = self.style.clip.get_patch(x1, x2, y1, y2, ax)
             im.set_clip_path(patch)
+
         # Add labels
         title = self.label.title
         if self.label.annotation != "":
@@ -93,6 +102,7 @@ class ArcticGridPresentationMap(object):
                      **self.style.font.title)
         plt.annotate(self.label.period, (0.04, 0.89), xycoords="axes fraction",
                      **self.style.font.period)
+
         # Add colorbar
         cmap = self.data.get_cmap()
         sm = plt.cm.ScalarMappable(cmap=plt.get_cmap(cmap.name),
