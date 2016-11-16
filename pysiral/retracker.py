@@ -1162,13 +1162,15 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
     in the lead retracking is computed. The 5 bins before the tracking point
     are used as the echo rise.
     """
-    tracking_point = int(retracked_bin)
-    time = np.arange(len(wfm)).astype(float)
-    modelled_wave = P_lead(time, retracked_bin, k, sigma, alpha)
-    diff = wfm[tracking_point-4:tracking_point+1] - \
-        modelled_wave[tracking_point-4:tracking_point+1]
-    return np.sqrt(np.sum(diff*diff)/5)/alpha
-
+    try:
+        tracking_point = int(retracked_bin)
+        time = np.arange(len(wfm)).astype(float)
+        modelled_wave = P_lead(time, retracked_bin, k, sigma, alpha)
+        diff = wfm[tracking_point-4:tracking_point+1] - \
+            modelled_wave[tracking_point-4:tracking_point+1]
+        return np.sqrt(np.sum(diff*diff)/5)/alpha
+    except:
+        return np.nan
 
 # %% Retracker getter funtion
 
