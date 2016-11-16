@@ -95,6 +95,8 @@ level2:
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
                 offset: 0.0
+                use_threshold_icetype_dependency: True
+                threshold_icetype_modification_scaling: 0.1
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 

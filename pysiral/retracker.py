@@ -159,10 +159,18 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 self._range[i] = np.nan
                 self._power[i] = np.nan
                 return
+                
+            # Get TFMRA threshold
+            tfmra_threshold = self._options.threshold
+            
+            # Get sea-ice type information
+            icetype = self.get_l2_parameter("sea_ice_type")
+
+            # Adjust threshold based on multi-year sea-ice fraction
+            if self._options.use_threshold_icetype_dependency:
+                tfmra_threshold += icetype[i]*self._options.threshold_icetype_modification_scaling
 
             # Get track point and its power
-            tfmra_threshold = self._options.threshold
-
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
