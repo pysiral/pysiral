@@ -1132,8 +1132,11 @@ def power_in_echo_tail(wfm, retracked_bin, alpha, pad=3):
     retracking
     source: SICCI
     """
-    tracking_point = int(retracked_bin)
-    return sum(wfm[tracking_point+pad:])/alpha
+    try:
+        tracking_point = int(retracked_bin)
+        return sum(wfm[tracking_point+pad:])/alpha
+    except:
+        return np.nan
 
 
 def ocog_tail_shape(wfm, tracking_point, tail_pad=3):
