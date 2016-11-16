@@ -45,6 +45,10 @@ class GridMapAWILightStyle(GridMapAWIStyle):
         self.logo.tag = "awi-blue"
         self.background.tag = "light"
         self.clip.is_active = True
+        self.continents.set_keyw(color="#bcbdbf", lake_color="#bcbdbf",
+                                 iceshelf_color="#cdcdcf")
+        self.mapboundary.set_keyw(color="#ffffff", zorder=200,
+                                  linewidth=0.25, fill_color="#ffffff")
 
 
 class GridMapPaperStyle(GridMapAWIStyle):
