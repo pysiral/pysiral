@@ -523,7 +523,8 @@ class L3MetaData(object):
 
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
-        "pysiral_version", "projection_str", "grid_tag", "resolution_tag"]
+        "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
+        "hemisphere"]
 
     def __init__(self):
         # Init all fields
@@ -546,6 +547,7 @@ class L3MetaData(object):
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
+        self.set_attribute("hemisphere", griddef.hemisphere)
         self.set_attribute("resolution_tag", griddef.resolution_tag)
 
     def __repr__(self):
