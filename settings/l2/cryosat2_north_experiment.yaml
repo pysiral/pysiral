@@ -52,40 +52,40 @@ level2:
         options: 
             sar:
                 ocean:
-                    peakiness_max: 3.0
+                    peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
                     peakiness_min: 40.0
-                    sib_min: 25.0
-                    lew_max: 0.85
+                    sea_ice_backscatter_min: 25.0
+                    leading_edge_width_max: 0.85
                     ice_concentration_min: 70.0
                 sea_ice:
-                    peakiness_max: 30.0
-                    sib_min: 5.0
-                    sib_max: 22.0
-                    lew_min: 1.0
+                    peakiness_max: 20.0
+                    sea_ice_backscatter_min: 5.0
+                    sea_ice_backscatter_max: 20.0
+                    leading_edge_width_min: 1.1
                     ice_concentration_min: 70.0
             sin:
                 ocean:
-                    peakiness_max: 3.0
+                    peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
                     peakiness_min: 150.0
-                    sib_min: 25.0
-                    lew_max: 1.5
+                    sea_ice_backscatter_min: 25.0
+                    leading_edge_width_max: 1.4
                     ice_concentration_min: 70.0
                 sea_ice:    
-                    peakiness_max: 80.0
-                    sib_min: 5.0
-                    sib_max: 22.0
-                    lew_min: 1.5
+                    peakiness_max: 60.0
+                    sea_ice_backscatter_min: 5.0
+                    sea_ice_backscatter_max: 20.0
+                    leading_edge_width_min: 1.75
                     ice_concentration_min: 70.0
 
                 
     # Retracking algorithm dependent on surface type
     retracker: 
         ocean: 
-            pyclass: TFMRA
+            pyclass: cTFMRA
             options:
                 # if arrays than [lrm, sar, sin]             
                 threshold: 0.5
@@ -96,7 +96,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         lead: 
-            pyclass: TFMRA
+            pyclass: cTFMRA
             options:
                 # if arrays than [lrm, sar, sin]    
                 threshold: 0.5
@@ -107,7 +107,7 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
-            pyclass: TFMRA
+            pyclass: cTFMRA
             options: 
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5

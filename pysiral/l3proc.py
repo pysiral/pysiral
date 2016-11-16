@@ -143,8 +143,11 @@ class L2DataStack(DefaultLoggingClass):
             x, y = int(orbit.xi[i]), int(orbit.yj[i])
             self.stack["surface_type"][y][x].append(orbit.surface_type[i])
             for parameter_name in self.l2_parameter:
-                data = getattr(orbit, parameter_name)
-                self.stack[parameter_name][y][x].append(data[i])
+                try:
+                    data = getattr(orbit, parameter_name)
+                    self.stack[parameter_name][y][x].append(data[i])
+                except:
+                    pass
 
 
 class L3DataGrid(DefaultLoggingClass):
@@ -493,7 +496,7 @@ class L3DataGrid(DefaultLoggingClass):
     @property
     def parameter_list(self):
         # TODO: Only L2 parameter for now
-        parameter_list = self._l2_parameter
+        parameter_list = list(self._l2_parameter)
         parameter_list.extend(self._l3_parameter)
         parameter_list.append("longitude")
         parameter_list.append("latitude")

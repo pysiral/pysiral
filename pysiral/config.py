@@ -135,6 +135,12 @@ class RadarModes(object):
         except:
             return None
 
+    def get_name(self, flag):
+        for mode_name, mode_flag in self.flag_dict.items():
+            if flag == mode_flag:
+                return mode_name
+        return None
+
     def name(self, index):
         i = self.flag_dict.values().index(index)
         return self.flag_dict.keys()[i]
@@ -329,7 +335,7 @@ class TimeRangeRequest(object):
         except:
             error_message = "cannot convert integer list to datetime: %s" % (
                 str(int_list))
-            self.error.append(self.__class__.__name__, error_message)
+            self.error.add_error(self.__class__.__name__, error_message)
             return None
 
         # if stop time: add one period

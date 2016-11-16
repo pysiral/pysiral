@@ -4,6 +4,9 @@ Created on Fri Jul 24 16:30:24 2015
 
 @author: Stefan
 """
+
+from pysiral.output import PysiralOutputFilenaming
+from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
 
 import numpy as np
@@ -182,9 +185,11 @@ class L2iNCFileImport(object):
 
         self._n_records = len(self.longitude)
 
-        # XXX: Dirty hack to get the mission
-        basename = file_basename(self.filename, fullpath=False)
-        self.mission = basename.split("_")[3]
+        # Get mission id from filename
+        l2i_filename = filename_from_path(self.filename)
+        filenaming = PysiralOutputFilenaming()
+        filenaming.parse_filename(l2i_filename)
+        self.mission = filenaming.mission_id
 
         self.timestamp = num2date(self.timestamp, self.time_def.units,
                                   self.time_def.calendar)

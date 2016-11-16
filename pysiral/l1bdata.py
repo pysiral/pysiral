@@ -774,6 +774,13 @@ class L1bWaveforms(object):
         return self._get_wfm_shape(0)
 
     @property
+    def radar_modes(self):
+        if self._radar_mode is None:
+            return "none"
+        flags = np.unique(self._radar_mode)
+        return [self.radar_mode_def.get_name(flag) for flag in flags]
+
+    @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
         shape = np.shape(self._power)

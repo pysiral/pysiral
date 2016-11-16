@@ -48,20 +48,18 @@ level2:
         pyclass: SICCI2Envisat
         options:
             ocean:
-                peakiness_max: 3.0
+                peakiness_max: 5.0
                 ice_concentration_min: 5.0
             lead:
-                peakiness_min: 20.0
-                sib_min: 25.0
-                lew1_max: 0.65
-                lew2_max: 0.45
+                peakiness_min: 40.0
+                sea_ice_backscatter_min: 25.0
+                leading_edge_width_max: 0.85
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_max: 12.0
-                sib_min: 2.0
-                sib_max: 25.0
-                lew1_min: 0.5
-                lew2_min: 0.3
+                peakiness_max: 20.0
+                sea_ice_backscatter_min: 5.0
+                sea_ice_backscatter_max: 22.0
+                leading_edge_width_min: 0.9
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type

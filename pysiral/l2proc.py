@@ -149,6 +149,8 @@ class Level2Processor(DefaultLoggingClass):
 
         # Instance can be reused
         if self._initialized:
+            # Empty orbit list (or else orbits will acculumate)
+            self._orbit.clear()
             return
 
         self.log.info("Initializing processor")
@@ -403,12 +405,12 @@ class Level2Processor(DefaultLoggingClass):
         # on error: display error messages as warning and return status flag
         # (this will cause the processor to report and skip this orbit segment)
         else:
-            error_messages = self._sic.error.get_all_messages()
+            error_messages = self._sitype.error.get_all_messages()
             for error_message in error_messages:
                 self.log.warning("! "+error_message)
                 # SIC Handler is persistent, therefore errors status
                 # needs to be reset before next orbit
-                self._sitype.error.reset()
+            self._sitype.error.reset()
 
         return error_status, error_codes
 
@@ -417,14 +419,7 @@ class Level2Processor(DefaultLoggingClass):
         pyclass = self._job.config.surface_type.pyclass
         surface_type = get_surface_type_class(pyclass)
         surface_type.set_options(**self._job.config.surface_type.options)
-        # Add all classifiers from l1bdata
-        for classifier_name in l1b.classifier.parameter_list:
-            classifier = getattr(l1b.classifier, classifier_name)
-            surface_type.add_classifiers(classifier, classifier_name)
-        # add sea ice concentration
-        surface_type.add_classifiers(l2.sic, "sic")
-        surface_type.set_l1b_surface_type(l1b.surface_type)
-        surface_type.classify()
+        surface_type.classify(l1b, l2)
         l2.set_surface_type(surface_type.result)
 
     def _validate_surface_types(self, l2):
@@ -876,7 +871,7 @@ class L2ProcessorReport(DefaultLoggingClass):
             # List discarded files and reason (error code & description)
             fhandle.write("\n# Detailed Error Breakdown\n\n")
             msg = "  No %s output generated for %g l1b files due " + \
-                  "to following errors:\n\n"
+                  "to following errors:\n"
             fhandle.write(msg % (output_id, self.n_discarded_files))
 
             for error_code in PYSIRAL_ERROR_CODES.keys():
@@ -884,7 +879,7 @@ class L2ProcessorReport(DefaultLoggingClass):
                 if n_discarded_files == 0:
                     continue
                 error_description = PYSIRAL_ERROR_CODES[error_code]
-                msg = "  %g file(s): [error_code:%s] %s\n" % (
+                msg = "\n  %g file(s): [error_code:%s] %s\n" % (
                     n_discarded_files, error_code, error_description)
                 fhandle.write(msg)
                 for discarded_file in self.error_counter[error_code]:

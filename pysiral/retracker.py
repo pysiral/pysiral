@@ -159,10 +159,18 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 self._range[i] = np.nan
                 self._power[i] = np.nan
                 return
+                
+            # Get TFMRA threshold
+            tfmra_threshold = self._options.threshold
+            
+            # Get sea-ice type information
+            icetype = self.get_l2_parameter("sea_ice_type")
+
+            # Adjust threshold based on multi-year sea-ice fraction
+            if self._options.use_threshold_icetype_dependency:
+                tfmra_threshold += icetype[i]*self._options.threshold_icetype_modification_scaling
 
             # Get track point and its power
-            tfmra_threshold = self._options.threshold
-
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
@@ -791,7 +799,7 @@ class SICCILead(BaseRetracker):
 
         # sea ice backscatter not available for ERS?
         if thrs.minimum_echo_backscatter is not None:
-            valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+            valid.add(clf.sigma0 > thrs.minimum_echo_backscatter)
 
         bin_seperation = np.abs(self.retracked_bin - self.maximum_power_bin)
         valid.add(bin_seperation < thrs.maximum_retracker_maxpower_binsep)
@@ -1132,8 +1140,11 @@ def power_in_echo_tail(wfm, retracked_bin, alpha, pad=3):
     retracking
     source: SICCI
     """
-    tracking_point = int(retracked_bin)
-    return sum(wfm[tracking_point+pad:])/alpha
+    try:
+        tracking_point = int(retracked_bin)
+        return sum(wfm[tracking_point+pad:])/alpha
+    except:
+        return np.nan
 
 
 def ocog_tail_shape(wfm, tracking_point, tail_pad=3):

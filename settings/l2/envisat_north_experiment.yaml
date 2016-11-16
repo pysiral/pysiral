@@ -23,7 +23,7 @@ level2:
             name: osisaf
             options: null
         sitype:
-            name: osisaf
+            name: icdc_nasateam
             options: null
         snow:
             name: warren99
@@ -55,14 +55,14 @@ level2:
                 ice_concentration_min: 5.0
             lead:
                 peakiness_min: 40.0
-                sib_min: 25.0
-                lew_max: 0.85
+                sea_ice_backscatter_min: 25.0
+                leading_edge_width_max: 0.85
                 ice_concentration_min: 70.0
             sea_ice:
                 peakiness_max: 20.0
-                sib_min: 5.0
-                sib_max: 22.0
-                lew_min: 0.9
+                sea_ice_backscatter_min: 5.0
+                sea_ice_backscatter_max: 22.0
+                leading_edge_width_min: 0.9
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
@@ -95,6 +95,8 @@ level2:
                 # if arrays than [lrm, sar, sin]   
                 threshold: 0.5
                 offset: 0.0
+                use_threshold_icetype_dependency: True
+                threshold_icetype_modification_scaling: 0.1
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 51] 

@@ -1,14 +1,14 @@
 grid_definition:
 
-    hemisphere: north
+    hemisphere: south
     
     grid_tag: EASE2
     
-    resolution_tag: 100km
+    resolution_tag: 25km
 
     projection:
         proj: laea
-        lat_0: 90.0
+        lat_0: -90.0
         lon_0: 0.0
         ellps: WGS84
         datum: WGS84
@@ -19,10 +19,10 @@ grid_definition:
         yoff: 0
         xsize: 10800000
         ysize: 10800000
-        dx: 100000
-        dy: 100000
-        numx: 108
-        numy: 108
+        dx: 25000
+        dy: 25000
+        numx: 432
+        numy: 432
 
 # l2 parameter need to be present in the l2i orbit outputs will be simply averaged for each grid cell
 l2_parameter:
