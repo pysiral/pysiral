@@ -5,6 +5,7 @@ multiprocessing==2.6.2.1
 parse==1.6.6
 pyproj==1.9.5.1
 pyresample==1.1.3
+pyshp==1.2.10
 pyyaml==3.11
 reportlab==3.3.0
 treedict==0.14
