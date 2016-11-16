@@ -5,7 +5,7 @@ Created on Sun Apr 10 15:52:01 2016
 @author: Stefan
 """
 
-from pysiral.proj import EASE2North
+from pysiral.proj import EASE2North, EASE2South
 from pysiral.iotools import NCMaskedGridData
 from pysiral.visualization.parameter import (
     GridMapParameter, GridMapDiffParameter)
@@ -31,6 +31,9 @@ month_names = {
     "11": "November", "12": "December"}
 
 
+PROJDICT = {"north": EASE2North(), "south": EASE2South()}
+
+
 def l3s_map():
 
     parser = get_l3s_map_argparser()
@@ -50,6 +53,20 @@ def l3s_map():
 
         # TODO: batch processing
         ncdata = NCMaskedGridData(ncfile)
+
+        try:
+            hemisphere = ncdata.hemisphere
+        except:
+            hemisphere = "north"
+
+        # Get sea ice concentration as background
+        try:
+            sic = GridMapParameter()
+            sic.set_grid(ncdata.longitude, ncdata.latitude)
+            sic.set_parameter(ncdata.get_by_name("sea_ice_concentration"),
+                              "sea_ice_concentration")
+        except:
+            sic = None
 
         # Loop over parameters
         for parameter_name in args.parameter_list:
@@ -73,8 +90,9 @@ def l3s_map():
                     parameter_name = cs2awi_naming[parameter_name]
                 data.set_parameter(parameter_a, parameter_b, parameter_name)
 
+            projection = PROJDICT[hemisphere]
             data.set_projection(xres=xres, yres=yres,
-                                **EASE2North().projection_keyw)
+                                **projection.projection_keyw)
 
             if args.cs2awi:
                 data.set_nan_mask(ncdata.sea_ice_freeboard)
@@ -117,30 +135,43 @@ def l3s_map():
                 title = "CryoSat-2"
 
             # Light style map
-            MapClass, StyleClass = get_map_classes(args)
+            MapClass, StyleClass = get_map_classes(args, hemisphere)
             gridmap = MapClass()
             gridmap.style = StyleClass()
             gridmap.data = data
+            gridmap.sic = sic
             gridmap.label.title = title
             gridmap.label.period = period_label
             gridmap.label.annotation = args.annotation
             gridmap.save2png(output)
 
 
-def get_map_classes(args):
+def get_map_classes(args, hemisphere):
 
     from pysiral.visualization.gridmap import (
-        ArcticGridPresentationMap, ArcticGridPaperMap)
+        ArcticGridPresentationMap, ArcticGridPaperMap,
+        AntarcticGridPresentationMap, AntarcticGridPaperMap)
     from pysiral.visualization.mapstyle import (
         GridMapAWILightStyle, GridMapPaperStyle)
     import sys
 
-    if args.maptype == "presentation":
-        return ArcticGridPresentationMap, GridMapAWILightStyle
-    elif args.maptype == "paper":
-        return ArcticGridPaperMap, GridMapPaperStyle
+    if args.maptype not in ["presentation", "paper"]:
+        sys.exit("Invalid map type (%s), aborting ..." %
+                 args.maptype)
+
+    if hemisphere == "north":
+        if args.maptype == "presentation":
+            return ArcticGridPresentationMap, GridMapAWILightStyle
+        elif args.maptype == "paper":
+            return ArcticGridPaperMap, GridMapPaperStyle
+    elif hemisphere == "south":
+        if args.maptype == "presentation":
+            return AntarcticGridPresentationMap, GridMapAWILightStyle
+        elif args.maptype == "paper":
+            return AntarcticGridPaperMap, GridMapPaperStyle
     else:
-        sys.exit("Invalid map type (%s), aborting ..." % args.maptype)
+        sys.exit("Invalid hemisphere definition (%s), aborting ..." %
+                 hemisphere)
 
 
 def get_annotation_str(annotation):
