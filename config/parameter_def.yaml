@@ -333,3 +333,19 @@ definition:
             vmin: -1.0
             vmax: 1.0
             step: 0.5
+
+    sea_ice_concentration:
+        short_name: sic
+        label: Sea Ice Concentration
+        unit: meter
+        dtype: float32
+        cmap:
+            name: plasma
+            vmin: 0
+            vmax: 100.0
+            step: 20.0
+        cmap_diff:
+            name: bwr
+            vmin: -10.0
+            vmax: 10.0
+            step: 5
