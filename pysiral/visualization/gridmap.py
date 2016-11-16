@@ -69,6 +69,17 @@ class ArcticGridPresentationMap(object):
         cmap = data.get_cmap()
         m.pcolor(x, y, data.grid, cmap=plt.get_cmap(cmap.name),
                  vmin=cmap.vmin, vmax=cmap.vmax, zorder=110)
+
+        # Plot sea ice concentration as background
+        if hasattr(self, "sic"):
+            sic = self.sic.grid[:]
+            no_ice = sic < 15.
+            sic.mask = np.logical_or(sic.mask, no_ice)
+            is_ice = np.logical_not(sic.mask)
+            sic[np.where(is_ice)] = 90
+            plt.pcolormesh(x, y, sic, cmap=plt.get_cmap("gray"),
+                           vmin=0, vmax=100, zorder=109)
+
         # Draw the grid
         # XXX: Skip for noe
         plt.savefig(self.temp_file, dpi=600, facecolor=figure.get_facecolor(),
