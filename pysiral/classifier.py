@@ -104,9 +104,7 @@ class EnvisatWaveformParameter(BaseClassifier):
 
     def __init__(self, wfm, skip=5, bins_after_nominal_tracking_bin=83):
         super(EnvisatWaveformParameter, self).__init__()
-        #self.shape = wfm.shape
-        #self.t_n = bins_after_nominal_tracking_bin
-
+        self.t_n = bins_after_nominal_tracking_bin
         self.skip = skip
         self._n = wfm.shape[0]
         self._n_range_bins = wfm.shape[1]
@@ -114,7 +112,7 @@ class EnvisatWaveformParameter(BaseClassifier):
         self._calc_parameter(wfm)
 
     def _init_parameter(self):
-        #self.peakiness = np.ndarray(shape=(self._n), dtype=np.float32)
+        self.peakiness_old = np.ndarray(shape=(self._n), dtype=np.float32)
         self.peakiness = np.ndarray(shape=(self._n), dtype=np.float32)*np.nan
 
     def _calc_parameter(self, wfm):
@@ -123,11 +121,11 @@ class EnvisatWaveformParameter(BaseClassifier):
             wave = wfm[i, self.skip:]
 
             ## old peakiness
-            #try:
-            #    pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
-            #except ZeroDivisionError:
-            #    pp = np.nan
-            #self.peakiness[i] = pp
+            try:
+                pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            except ZeroDivisionError:
+                pp = np.nan
+            self.peakiness_old[i] = pp
             
             ## new peakiness
             try:

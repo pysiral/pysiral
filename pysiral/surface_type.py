@@ -488,7 +488,7 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         ocean.add(self._is_radar_mode)
         # Peakiness Thresholds
-        ocean.add(parameter.peakiness < opt.pulse_peakiness_max)
+        ocean.add(parameter.peakiness_old < opt.pulse_peakiness_max)
         # Ice Concentration
         ocean.add(parameter.sic < opt.ice_concentration_min)
         # Done, add flag
@@ -501,7 +501,7 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
         # Stack (Beam) parameters
-        lead.add(parameter.peakiness > opt.pulse_peakiness_min)
+        lead.add(parameter.peakiness_old > opt.pulse_peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
@@ -514,7 +514,7 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
         # Stack (Beam) parameters
-        ice.add(parameter.peakiness < opt.pulse_peakiness_max)
+        ice.add(parameter.peakiness_old < opt.pulse_peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
