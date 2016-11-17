@@ -4,6 +4,8 @@ Created on Sun Apr 24 13:57:56 2016
 
 @author: Stefan
 """
+
+from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary
 from pysiral.errorhandler import ErrorStatus
 from pysiral.filter import idl_smooth
@@ -15,6 +17,8 @@ import numpy as np
 class SnowBaseClass(object):
 
     def __init__(self):
+
+        self.error = ErrorStatus()
         self._options = None
         self._local_repository = None
         self._subfolders = []
@@ -32,8 +36,8 @@ class SnowBaseClass(object):
         self._subfolders = subfolder_list
 
     def get_along_track_snow(self, l2):
-        snow_depth, snow_dens, msg = self._get_along_track_snow(l2)
-        return snow_depth, snow_dens, msg
+        snow = self._get_along_track_snow(l2)
+        return snow
 
 
 class Warren99(SnowBaseClass):
@@ -74,23 +78,28 @@ class Warren99(SnowBaseClass):
         self._p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
     def _get_along_track_snow(self, l2):
+
         # Validate hemisphere
         if l2.hemisphere == "south":
-            snow_depth = np.zeros(l2.n_records)
-            snow_density = np.zeros(l2.n_records)
-            msg = "ERROR - Warren99 not valid for southern hemisphere"
-            return snow_depth, snow_density, msg
+            snow = SnowParameterContainer()
+            snow.set_dummy(l2.n_records)
+            msg = "Warren99 not valid for southern hemisphere, returning 0"
+            self.error.add_error("warren99-invalid-hemisphere", msg)
+            return snow
+
         # Get orginial warren values
-        snow_depth, snow_density = self._get_warren99_fit(l2)
+        snow = self._get_warren99_fit(l2)
+
         # Filter invalid values
         valid_min, valid_max = self._options.valid_snow_depth_range
-        invalid = np.logical_or(snow_depth < valid_min, snow_depth > valid_max)
+        invalid = np.logical_or(snow.depth < valid_min, snow.depth > valid_max)
         invalid_records = np.where(invalid)[0]
-        snow_depth[invalid_records] = np.nan
-        snow_density[invalid_records] = np.nan
+        snow.set_invalid(invalid_records)
+
         # Apply ice_type (myi_fraction correction)
         scaling = l2.sitype * self._options.fyi_correction_factor + 0.5
-        snow_depth *= scaling
+        snow.depth *= scaling
+
         # Smooth snow depth (if applicable)
         if self._options.smooth_snow_depth:
             filter_width = self._options.smooth_filter_width_m
@@ -98,21 +107,37 @@ class Warren99(SnowBaseClass):
             filter_width /= l2.footprint_spacing
             # Round to odd number
             filter_width = np.floor(filter_width) // 2 * 2 + 1
-            snow_depth = idl_smooth(snow_depth, filter_width)
-        return snow_depth, snow_density, ""
+            snow.depth = idl_smooth(snow.depth, filter_width)
+
+        return snow
 
     def _get_warren99_fit(self, l2):
+
         # get projection coordinates
         month = l2.track.timestamp[0].month
         l2x, l2y = self._p(l2.track.longitude, l2.track.latitude)
+
         # convert to degrees of arc
         l2x = l2x/(self.earth_radius * np.pi/180.0)
         l2y = l2y/(self.earth_radius * np.pi/180.0)
-        # Get W99 snow depth
-        snow_depth = self._get_snow_depth(month, l2x, l2y)
+
+        # Get W99 snow depth & unvertainty
+        sd = self._get_snow_depth(month, l2x, l2y)
+
         # Get W99 snow density
-        snow_density = self._get_snow_density(snow_depth, month, l2x, l2y)
-        return snow_depth, snow_density
+        sdens = self._get_snow_density(sd, month, l2x, l2y)
+
+        # Get the uncertainties
+        sd_unc, sdens_unc = self._get_warren_uncertainty(month, sd)
+
+        # Put everything in a container
+        snow = SnowParameterContainer()
+        snow.depth = sd
+        snow.density = sdens
+        snow.depth_uncertainty = sd_unc
+        snow.density_uncertainty = sdens_unc
+
+        return snow
 
     def _get_sd_coefs(self, month):
         return self.sd_coefs[month-1, 0:6]
@@ -127,14 +152,62 @@ class Warren99(SnowBaseClass):
         snow_depth *= 0.01
         return snow_depth
 
+    def _get_warren_uncertainty(self, month, sd):
+        """
+        Get the uncertainty from the Warren climatology for
+        snow depth and density
+
+        snow depth:
+            sum of fit rms and interannual variability
+
+        snow density
+            fit rms of snow water equivalent
+        """
+        # get w99 coeficients
+        sd_coef = self.sd_coefs[month-1, :]
+        swe_coef = self.swe_coefs[month-1, :]
+
+        # Snow depth uncertainties
+        sd_rms_fit_error = np.full(sd.shape, sd_coef[6]*0.01)
+        sd_interannual_var = np.full(sd.shape, sd_coef[9]*0.01)
+        sd_unc = sd_rms_fit_error + sd_interannual_var
+
+        # Snow density uncertainty
+        sdens_rms_fit_error = (swe_coef[6]*0.01)/sd*self.water_density
+        sdens_interannual_var = (swe_coef[9]*0.01)/sd*self.water_density
+        sdens_unc = sdens_rms_fit_error + sdens_interannual_var
+
+        return sd_unc, sdens_unc
+
+#        import matplotlib.pyplot as plt
+#        plt.figure("snow depth")
+#        plt.plot(sd_rms_fit_error, label="sd_rms_fit_error")
+#        plt.plot(sd_interannual_var, label="sd_interannual_var")
+#        plt.plot(sd_unc, label="sd_unc")
+#        plt.legend()
+#        plt.show()
+#
+#        plt.figure("snow density")
+#        plt.plot(sdens_rms_fit_error, label="sdens_rms_fit_error")
+#        plt.plot(sdens_interannual_var, label="sd_interannual_var")
+#        plt.plot(sdens_uncertainty, label="sdens_uncertainty")
+#        plt.legend()
+#        plt.show()
+#
+#        stop
+
     def _get_snow_density(self, snow_depth, month, l2x, l2y):
+        """ Extract along-track snow density """
+
         # get snow water equivalent coefs
         swe = self._get_swe_coefs(month)
         snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + \
             swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
         snow_water_equivalent *= 0.01
+
         # Convert sd and swe to snow density
         snow_density = snow_water_equivalent/snow_depth*self.water_density
+
         return snow_density
 
 
@@ -151,6 +224,26 @@ class FixedSnowDepthDensity(SnowBaseClass):
         snow_density *= self._options.fixed_snow_density
         return snow_depth, snow_density, ""
 
+
+class SnowParameterContainer(object):
+
+    def __init__(self):
+        self.depth = None
+        self.density = None
+        self.depth_uncertainty = None
+        self.density_uncertainty = None
+
+    def set_invalid(self, indices):
+        self.depth[indices] = np.nan
+        self.density[indices] = np.nan
+        self.depth_uncertainty[indices] = np.nan
+        self.density_uncertainty[indices] = np.nan
+
+    def set_dummy(self, n_records):
+        self.depth = np.full((n_records), np.nan)
+        self.density = np.full((n_records), np.nan)
+        self.depth_uncertainty = np.full((n_records), np.nan)
+        self.density_uncertainty = np.full((n_records), np.nan)
 
 
 def get_l2_snow_handler(name):
