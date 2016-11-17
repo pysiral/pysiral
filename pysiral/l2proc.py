@@ -574,13 +574,27 @@ class Level2Processor(DefaultLoggingClass):
             l2.frb[frbfilter.flag.indices] = np.nan
 
     def _convert_freeboard_to_thickness(self, l2):
+        """
+        Convert Freeboard to Thickness
+        Note: This step requires the definition of sea ice density
+              (usually in the l2 settings)
+        """
+
         frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
         frb2sit.set_options(**self._job.config.sit.options)
-        sit, ice_dens, msg = frb2sit.get_thickness(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.sit.set_value(sit)
-        l2.ice_dens.set_value(ice_dens)
+
+        sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frb2sit.error.status
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.sit.set_value(sit)
+            l2.sit.set_uncertainty(sit_unc)
+            l2.ice_dens.set_value(ice_dens)
+            l2.ice_dens.set_uncertainty(ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self._job.config.filter.thickness
