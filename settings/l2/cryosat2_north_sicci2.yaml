@@ -45,6 +45,14 @@ level2:
         - ocean_loading_tide
         - solid_earth_tide
         - geocentric_polar_tide
+
+    # Mission specific range uncertainties
+    uncertainty:
+        # These values come from cs2awi (for cryosat2)
+        range: 
+            sigma: [0.14, 0.10, 0.14] 
+            speckle_noise: 0.2
+    
         
     # Surface type classification algorithm
     surface_type: 
