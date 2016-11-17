@@ -13,7 +13,8 @@ PYSIRAL_ERROR_CODES = OrderedDict([
     ("auxdata_missing_sitype", "Missing ice type/MYI fraction data set"),
     ("auxdata_missing_snow", "Missing snow depth data set(s)"),
     ("l2proc_invalid_l1b", "Invalid l1bdata input data"),
-    ("l2proc_surface_type_discarded", "Discarded by surface type validator")])
+    ("l2proc_surface_type_discarded", "Discarded by surface type validator"),
+    ("warren99-invalid-hemisphere", "Warren99 snow climatology only valid for northern hemisphere")])
 
 
 class ErrorStatus(object):
