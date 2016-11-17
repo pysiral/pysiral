@@ -504,15 +504,34 @@ class Level2Processor(DefaultLoggingClass):
         l2.afrb = l2.elev - l2.mss - l2.ssa
 
     def _get_snow_parameters(self, l2):
-        """ Get snow depth and density """
-        snow_depth, snow_dens, msg = self._snow.get_along_track_snow(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
+        """ Get snow depth and density with respective uncertainties """
+
+        # Get along track snow depth info
+        snow = self._snow.get_along_track_snow(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._snow.error.status
+        error_codes = self._snow.error.codes
+
         # Add to l2data
-        l2.snow_depth.set_value(snow_depth)
-        l2.snow_dens.set_value(snow_dens)
-        # XXX: Error Handling not yet implemted, return dummies
-        return False, None
+        if not error_status:
+            # Add to l2data
+            l2.snow_depth.set_value(snow.depth)
+            l2.snow_depth.set_uncertainty(snow.depth_uncertainty)
+            l2.snow_dens.set_value(snow.density)
+            l2.snow_dens.set_uncertainty(snow.density_uncertainty)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+            self._snow.error.reset()
+
+        return error_status, error_codes
 
     def _get_freeboard_from_radar_freeboard(self, l2):
         """ Convert the altimeter freeboard in radar freeboard """
