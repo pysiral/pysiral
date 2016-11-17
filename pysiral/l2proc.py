@@ -535,12 +535,27 @@ class Level2Processor(DefaultLoggingClass):
 
     def _get_freeboard_from_radar_freeboard(self, l2):
         """ Convert the altimeter freeboard in radar freeboard """
+
         frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
         frbgeocorr.set_options(**self._job.config.frb.options)
-        frb, msg = frbgeocorr.get_freeboard(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.frb.set_value(frb)
+        frb, frb_unc = frbgeocorr.get_freeboard(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frbgeocorr.error.status
+        error_codes = frbgeocorr.error.codes
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.frb.set_value(frb)
+            l2.frb.set_uncertainty(frb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = frbgeocorr.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
