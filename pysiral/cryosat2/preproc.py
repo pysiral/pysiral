@@ -45,10 +45,13 @@ class CryoSat2PreProc(L1bPreProc):
         """
 
         # Read CryoSat-2 Header
-        l1b = L1bConstructor(self._pysiral_config)
-        l1b.mission = "cryosat2"
-        l1b.filename = filename
-        l1b.get_header_info()
+        try:
+            l1b = L1bConstructor(self._pysiral_config)
+            l1b.mission = "cryosat2"
+            l1b.filename = filename
+            l1b.get_header_info()
+        except:
+            return []
 
         # 1) Check if file has ocean data in the polar regions at all
         has_polar_ocean = self.region_is_arctic_or_antarctic_ocean(l1b)
