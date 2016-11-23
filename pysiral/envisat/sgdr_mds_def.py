@@ -148,7 +148,7 @@ class EnvisatSGDRMDSRA2(EnvisatSGDRMDS):
 class EnvisatSGDRMDSRA2Full(EnvisatSGDRMDS):
 
     def __init__(self):
-        super(EnvisatSGDRMDSRA2, self).__init__()
+        super(EnvisatSGDRMDSRA2Full, self).__init__()
 
     def get_mds_parser(self):
 
