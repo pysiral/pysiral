@@ -46,7 +46,9 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         # Compute freeboard only for sea ice waveforms
         is_ice = l2.surface_type.sea_ice.indices
         freeboard[is_ice] = l2.afrb[is_ice] + geometric_correction[is_ice]
-        freeboard_uncertainty[is_ice] = 0.0
+
+        # XXX: This is not correct yet
+        freeboard_uncertainty[is_ice] = l2.afrb.uncertainty[is_ice]
 
         return freeboard, freeboard_uncertainty
 
