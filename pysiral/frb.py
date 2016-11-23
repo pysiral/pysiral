@@ -51,5 +51,54 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         return freeboard, freeboard_uncertainty
 
 
+class L2RadarFreeboardAlgorithmBaseClass(object):
+
+    def __init__(self):
+        self.error = ErrorStatus()
+
+    def set_options(self, **opt_dict):
+        self._options = options_from_dictionary(**opt_dict)
+
+    def get_radar_freeboard(self, l2):
+        rfrb, rfrb_unc = self._get_radar_freeboard(l2)
+        return rfrb, rfrb_unc
+
+
+class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
+    """
+    Default Class for computing Radar Freeboard
+    (simple computation based on elevation, mean sea surface and
+     sea surface anomaly)
+    """
+
+    def __init__(self):
+        super(RadarFreeboardDefault, self).__init__()
+
+    def _get_radar_freeboard(self, l2):
+        """ Compute the radar freeboard and its uncertainty """
+
+        # radar freeboard is simple
+        rfrb = l2.elev - l2.mss - l2.ssa
+
+        # radar freeboard uncertainty is not
+        rfrb_unc = self._get_radar_freeboard_uncertainty(l2)
+
+        return rfrb, rfrb_unc
+
+    def _get_radar_freeboard_uncertainty(self, l2):
+        """
+        Get the radar freeboard uncertainty based on  error propagation
+        from assumed uncorrelated uncertainties of
+        - elevation (range)
+        - sea surface anomaly
+        mss uncertainties is ignored, respectively part of ssa uncertainty
+        """
+        deriv_elev = l2.mss - l2.ssa
+        deriv_ssa = l2.elev - l2.mss
+        rfrb_unc = np.sqrt((deriv_elev * l2.elev.uncertainty)**2. +
+                           (deriv_ssa * l2.ssa.uncertainty)**2.)
+        return rfrb_unc
+
+
 def get_frb_algorithm(name):
     return globals()[name]()

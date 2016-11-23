@@ -307,7 +307,10 @@ class Level2Processor(DefaultLoggingClass):
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
-            self._estimate_ssh_and_radar_freeboard(l2)
+            self._estimate_sea_surface_height(l2)
+
+            # Compute the radar freeboard and its uncertainty
+            self._get_altimeter_freeboard(l2)
 
             # Get snow depth & density
             error_status, error_codes = self._get_snow_parameters(l2)
@@ -505,18 +508,45 @@ class Level2Processor(DefaultLoggingClass):
         # Error handling not yet implemented, return dummy values
         return False, None
 
-    def _estimate_ssh_and_radar_freeboard(self, l2):
+    def _estimate_sea_surface_height(self, l2):
+
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
+
         # 2. get get sea surface anomaly
         ssa = get_l2_ssh_class(self._job.config.ssa.pyclass)
         ssa.set_options(**self._job.config.ssa.options)
         ssa.interpolate(l2)
+
         # dedicated setters, else the uncertainty, bias attributes are broken
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
-        # altimeter freeboard (from radar altimeter w/o corrections)
-        l2.afrb = l2.elev - l2.mss - l2.ssa
+
+    def _get_altimeter_freeboard(self, l2):
+        """ Compute radar freeboard and its uncertainty """
+
+        afrbalg = get_frb_algorithm(self._job.config.afrb.pyclass)
+        afrbalg.set_options(**self._job.config.rfrb.options)
+        afrb, afrb_unc = afrbalg.get_radar_freeboard(l2)
+
+        # Check and return error status and codes
+        # (unlikely in this case)
+        error_status = afrbalg.error.status
+        error_codes = afrbalg.error.codes
+
+        if not error_status:
+            # Add to l2data
+            l2.afrb.set_value(afrb)
+            l2.afrb.set_uncertainty(afrb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+
+        return error_status, error_codes
 
     def _get_snow_parameters(self, l2):
         """ Get snow depth and density with respective uncertainties """
