@@ -33,6 +33,11 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         super(SeaIceFreeboardDefault, self).__init__()
 
     def _get_thickness(self, l2):
+        """
+        Compute sea ice thickness based on a Level-2 data object
+        - Assuming freeboard is sea ice freeboard
+        - Sea ice density scaled based on FYI/MYI densities and MYI fraction
+        """
 
         # Initial thickness value with nans
         sit = np.full((l2.n_records), np.nan, dtype=np.float32)
@@ -44,7 +49,9 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         # Short cuts
         rho_w = self._options.water_density
         rho_s = l2.snow_dens
-        rho_i, rho_i_unc = self._get_rho_i(l2.sitype)
+
+        # Get sea ice density and uncertainty
+        rho_i, rho_i_unc = self._get_sea_ice_density(l2.sitype)
 
         # Classical sea ice freeboard to thickness concersion
         sit[sea_ice] = l2.frb[sea_ice] * (rho_w)/(rho_w - rho_i[sea_ice]) + \
@@ -55,7 +62,7 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
 
         return sit, sit_unc, rho_i, rho_i_unc
 
-    def _get_rho_i(self, myi_fraction):
+    def _get_sea_ice_density(self, myi_fraction):
         """ sea ice density scaled between fyi and myi by myi_fraction """
 
         # Boundary conditions (all fyi, all myi)
@@ -69,7 +76,13 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         return rho_i, rho_i_unc
 
     def _get_thickness_uncertainty(self, l2, rho_i, rho_i_unc):
-        """ Compute the sea ice thickness uncertainty """
+        """
+        Compute the sea ice thickness uncertainty based on the uncertainties
+        from the input parameters.
+
+        XXX: For now it is assumed that the uncertainty of the sea water
+             density is negligible
+        """
 
         rho_w = self._options.water_density
 
