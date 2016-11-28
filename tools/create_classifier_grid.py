@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from pysiral.logging import DefaultLoggingClass
-from pysiral.config import ConfigInfo
+from pysiral.config import ConfigInfo, TimeRangeRequest
 from pysiral.iotools import get_l1bdata_files
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.path import validate_directory
+from pysiral.l3proc import L3MetaData
+from pysiral.output import L3SDataNC
 
+from scipy.stats import skew, kurtosis
 from pyproj import Proj
 import numpy as np
 import sys
@@ -139,7 +142,34 @@ class ClassifierGridSettings(DefaultLoggingClass):
             nargs='+', type=int, required=True,
             help='year and month (-start yyyy mm)')
 
+        parser.add_argument(
+            '--export-stack', action='store_true', dest='export_stack',
+            default=False, help='export stack as *.npz')
+
         return parser
+
+    @property
+    def metadata_dict(self):
+        period = TimeRangeRequest()
+        start_date = [int(self.args.month[0]), int(self.args.month[1])]
+        stop_date = start_date
+        period.set_range(start_date, stop_date)
+        metadata_dict = {}
+        metadata_dict["start_time"] = period.start_dt
+        metadata_dict["stop_time"] = period.stop_dt
+        metadata_dict["period_label"] = period.start_dt.strftime("%B %Y")
+        metadata_dict["grid_tag"] = self.griddef.grid_tag
+        metadata_dict["hemisphere"] = self.griddef.hemisphere
+        metadata_dict["resolution_tag"] = self.griddef.resolution_tag
+        metadata_dict["mission_ids"] = self.args.mission_id
+        return metadata_dict
+
+    @property
+    def nc_dimdict(self):
+        from collections import OrderedDict
+        dimdict = OrderedDict([("numx", self.griddef.extent.numx),
+                               ("numy", self.griddef.extent.numy)])
+        return dimdict
 
 
 class ClassifierGrid(DefaultLoggingClass):
@@ -150,6 +180,7 @@ class ClassifierGrid(DefaultLoggingClass):
         self.classifier_list = []
         self.parameter_stack = {}
         self.parameter_grid = {}
+        self._progress_percent = 0
 
     def run(self):
         self.init_parameter_stacks()
@@ -158,18 +189,20 @@ class ClassifierGrid(DefaultLoggingClass):
         self.init_longitude_latitude_grids()
         self.create_orbit_stacks()
         self.grid_orbit_stacks()
-        self.export_stacks()
+        if self.jobdef.args.export_stack:
+            self.export_stacks()
+        self.export_l3_grid()
 
-        import matplotlib.pyplot as plt
-
-        for parameter_name in self.classifier_list:
-            data = self.parameter_grid[parameter_name]
-            plt.figure(parameter_name, figsize=(12, 12),
-                       facecolor="white")
-            plt.imshow(np.flipud(data), interpolation="none",
-                       cmap=plt.get_cmap("plasma"))
-            plt.colorbar()
-        plt.show()
+#        import matplotlib.pyplot as plt
+#
+#        for parameter_name in self.classifier_list:
+#            data = self.parameter_grid[parameter_name]
+#            plt.figure(parameter_name, figsize=(12, 12),
+#                       facecolor="white")
+#            plt.imshow(np.flipud(data), interpolation="none",
+#                       cmap=plt.get_cmap("plasma"))
+#            plt.colorbar()
+#        plt.show()
 
     def init_parameter_stacks(self):
         # get the list of clasiifiers from the first file in the list
@@ -193,6 +226,10 @@ class ClassifierGrid(DefaultLoggingClass):
         for parameter_name in self.classifier_list:
             self.parameter_grid[parameter_name] = \
                 np.ndarray(shape=shape, dtype='f4')*np.nan
+            for statmoment in self.statmoments:
+                statmoment_name = parameter_name+"_"+statmoment
+                self.parameter_grid[statmoment_name] = \
+                    np.ndarray(shape=shape, dtype='f4')*np.nan
 
     def init_projection(self):
         self.proj = Proj(**self.jobdef.griddef.projection)
@@ -217,13 +254,14 @@ class ClassifierGrid(DefaultLoggingClass):
 
         self.longitude = lon
         self.latitude = lat
+        self.parameter_grid["longitude"] = lon
+        self.parameter_grid["latitude"] = lat
 
     def create_orbit_stacks(self):
         """ Loop over l1b data files """
         n_l1b_files = len(self.jobdef.l1b_files)
         for i, l1b_file in enumerate(self.jobdef.l1b_files):
-            self.log.info("+ Parsing file %g of %g: %s" % (
-                i+1, n_l1b_files, l1b_file))
+            self._log_progress(i, n_l1b_files)
             l1b = L1bdataNCFile(l1b_file)
             l1b.parse()
             self.append_to_stack(l1b)
@@ -239,16 +277,28 @@ class ClassifierGrid(DefaultLoggingClass):
                 self.parameter_stack[parameter_name][y][x].append(data[i])
 
     def grid_orbit_stacks(self):
-        for xi in self.grid_xi_range:
-            for yj in self.grid_yj_range:
-                surface_type = np.array(self.surface_type_stack[yj][xi])
-                is_land = len(np.where(surface_type == 7)[0]) > 0
-                if is_land:
-                    continue
-                for name in self.classifier_list:
-                    data = np.array(self.parameter_stack[name][yj][xi])
-                    if len(np.where(np.isfinite(data))[0]) > 1:
-                        self.parameter_grid[name][yj, xi] = np.nanmean(data)
+        for name in self.classifier_list:
+            self.log.info("Gridding classifier: %s" % name)
+            for xi in self.grid_xi_range:
+                for yj in self.grid_yj_range:
+                    surface_type = np.array(self.surface_type_stack[yj][xi])
+                    is_land = len(np.where(surface_type == 7)[0]) > 0
+                    if is_land:
+                        continue
+                    self.create_gridcell_statistics(name, xi, yj)
+
+    def create_gridcell_statistics(self, name, xi, yj):
+        scipy_nanprops = {"nan_policy": "omit"}
+        grid = self.parameter_grid
+        data = np.array(self.parameter_stack[name][yj][xi])
+        if len(np.where(np.isfinite(data))[0]) > 1:
+            grid[name][yj, xi] = np.nanmean(data)
+            namevar = name+"_variance"
+            grid[namevar][yj, xi] = np.nanvar(data)
+            nameskew = name+"_skewness"
+            grid[nameskew][yj, xi] = skew(data, **scipy_nanprops)
+            namekurt = name+"_kurtosis"
+            grid[namekurt][yj, xi] = kurtosis(data, **scipy_nanprops)
 
     def get_l1b_track_grid_indices(self, l1b):
         projx, projy = self.proj(l1b.time_orbit.longitude,
@@ -260,7 +310,6 @@ class ClassifierGrid(DefaultLoggingClass):
         return xi, yj
 
     def export_stacks(self):
-
         for parameter_name in self.classifier_list:
             filename = self._get_stack_output_filename(parameter_name)
             path = os.path.join(self.jobdef.output_folder, filename)
@@ -268,6 +317,20 @@ class ClassifierGrid(DefaultLoggingClass):
                 parameter_name, path))
             array = np.array(self.parameter_stack[parameter_name])
             np.savez_compressed(path, array)
+
+    def export_l3_grid(self):
+        l3_metadata = L3MetaData()
+        metadata_dict = self.jobdef.metadata_dict
+        for key in metadata_dict.keys():
+            l3_metadata.set_attribute(key, metadata_dict[key])
+
+        # Write grid to L3S netcdf file:
+        self.log.info("Exporting file")
+        output = L3SDataNC()
+        output.set_metadata(l3_metadata)
+        output.set_export_folder(self.jobdef.output_folder)
+        output.export_parameter_dict(self.parameter_grid,
+                                     dimdict=self.jobdef.nc_dimdict)
 
     def _get_stack_output_filename(self, parameter_name):
         mission_id = self.jobdef.args.mission_id
@@ -281,6 +344,15 @@ class ClassifierGrid(DefaultLoggingClass):
             resolution_tag, parameter_name)
         return filename
 
+    def _log_progress(self, i, n):
+        progress_percent = float(i)/float(n-1)*100.
+        current_reminder = np.mod(progress_percent, 10)
+        last_reminder = np.mod(self._progress_percent, 10)
+        if last_reminder > current_reminder:
+            self.log.info("Parsing l1b orbit stack: %3g%% (%g of %g)" % (
+                          progress_percent-current_reminder, i+1, n))
+        self._progress_percent = progress_percent
+
     @property
     def grid_xi_range(self):
         return np.arange(self.jobdef.griddef.extent.numx)
@@ -288,6 +360,10 @@ class ClassifierGrid(DefaultLoggingClass):
     @property
     def grid_yj_range(self):
         return np.arange(self.jobdef.griddef.extent.numy)
+
+    @property
+    def statmoments(self):
+        return ["variance", "skewness", "kurtosis"]
 
 if __name__ == "__main__":
     create_classifier_grids()
