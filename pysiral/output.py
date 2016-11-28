@@ -192,7 +192,6 @@ class L1bDataNC(NCDataFile):
                 self._missing_parameters)
 
 
-
 class L2iDataNC(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
@@ -292,6 +291,13 @@ class L3SDataNC(NCDataFile):
         self._populate_data_groups(l3)
         self._write_to_file()
 
+    def export_parameter_dict(self, pardict, dimdict=None):
+        self._validate()
+        self._open_file()
+        self._create_root_group(self.metadata.attdict)
+        self._populate_data_groups_from_dict(pardict, dimdict)
+        self._write_to_file()
+
     def _validate(self):
         # Validate the export directory
         path = self.export_path
@@ -308,6 +314,17 @@ class L3SDataNC(NCDataFile):
                 self._rootgrp.createDimension(key, dimdict[key])
         for parameter_name in l3.parameter_list:
             data = l3.get_parameter_by_name(parameter_name)
+            dimensions = tuple(dims[0:len(data.shape)])
+            var = self._rootgrp.createVariable(
+                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
+            var[:] = data
+
+    def _populate_data_groups_from_dict(self, pardict, dimdict):
+        dims = dimdict.keys()
+        for key in dims:
+                self._rootgrp.createDimension(key, dimdict[key])
+        for parameter_name in sorted(pardict.keys()):
+            data = pardict[parameter_name]
             dimensions = tuple(dims[0:len(data.shape)])
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
