@@ -1,0 +1,63 @@
+grid_definition:
+
+    hemisphere: south
+    
+    grid_tag: ease2sh
+    
+    resolution_tag: 25km
+
+    projection:
+        proj: laea
+        lat_0: -90.0
+        lon_0: 0.0
+        ellps: WGS84
+        datum: WGS84
+        units: m
+
+    extent:
+        xoff: 0
+        yoff: 0
+        xsize: 10800000
+        ysize: 10800000
+        dx: 50000
+        dy: 50000
+        numx: 216
+        numy: 216
+
+# l2 parameter need to be present in the l2i orbit outputs will be simply averaged for each grid cell
+l2_parameter:
+    - freeboard
+    - radar_freeboard
+    - sea_ice_thickness
+    - sea_surface_anomaly
+    - mean_sea_surface
+    - snow_depth
+    - snow_density
+    - ice_density
+    - sea_ice_type
+    - sea_ice_concentration
+
+# l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
+# of valid l3 parameter names
+l3_parameter:
+    - n_total_waveforms
+    - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
+
+# All of these parameter will be set to nan if the freeboard (not radar_freeboard!) is nan
+freeboard_nan_mask_targets:
+    - sea_surface_anomaly
+    - mean_sea_surface
+
+# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
+# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
+#       is only a monthly average from the daily fields in the l2i orbits
+sea_ice_concentration_mask_targets:
+    - n_total_waveforms
+    - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
+    - sea_ice_type
