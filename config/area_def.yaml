@@ -2,7 +2,7 @@
 
 ease2_north_25km:
     hemisphere: north
-    grid_tag: EASE2
+    grid_tag: ease2north
     resolution_tag: 25km
     projection:
         proj: laea
