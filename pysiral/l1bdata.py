@@ -374,6 +374,7 @@ class L1bdataNCFile(Level1bData):
         self.filename = filename
         self.nc = None
         self.time_def = NCDateNumDef()
+        self.ncattrs_ignore_list = ['_NCProperties']
 
     def parse(self):
         """ populated the L1b data container from the l1bdata netcdf file """
@@ -392,6 +393,8 @@ class L1bdataNCFile(Level1bData):
         (stored as global attributes in l1bdata netCDF files)
         """
         for attribute_name in self.nc.ncattrs():
+            if attribute_name in self.ncattrs_ignore_list:
+                continue
             attribute_value = getattr(self.nc, attribute_name)
             # Convert timestamps back to datetime objects
             if attribute_name in ["start_time", "stop_time"]:
