@@ -2,7 +2,7 @@ grid_definition:
 
     hemisphere: north
     
-    grid_tag: EASE2
+    grid_tag: ease2nh
     
     resolution_tag: 25km
 
