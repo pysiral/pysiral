@@ -209,14 +209,19 @@ definition:
 
     radar_freeboard:
         short_name: rfrb
+        label: Radar Freeboard
         unit: meter
-        level: L2
-        docstr:
-          Elevation above local sea level from the altimeter range
-          with the geometrical correction for slower wave propagation
-          in the snow layer
         dtype: float32
-        ascii_format: "%6.2f"
+        cmap:
+            name: viridis
+            vmin: 0
+            vmax: 0.4
+            step: 0.1
+        cmap_diff:
+            name: bwr
+            vmin: -0.10
+            vmax: 0.10
+            step: 0.05
 
     freeboard:
         short_name: frb
@@ -349,3 +354,35 @@ definition:
             vmin: -10.0
             vmax: 10.0
             step: 5
+
+    sea_ice_type:
+        short_name: sitype
+        label: Sea Ice Type
+        unit: fraction 
+        dtype: float32
+        cmap:
+            name: Spectral
+            vmin: 0
+            vmax: 1
+            step: 0.25
+        cmap_diff:
+            name: bwr
+            vmin: -1.0
+            vmax: 1.0
+            step: 0.5
+
+    snow_depth:
+        short_name: sitype
+        label: Snow Depth
+        unit: meter
+        dtype: float32
+        cmap:
+            name: cool
+            vmin: 0
+            vmax: 0.5
+            step: 0.1
+        cmap_diff:
+            name: bwr
+            vmin: -0.5
+            vmax: 0.5
+            step: 0.25                           
