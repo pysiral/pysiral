@@ -50,6 +50,7 @@ l3_parameter:
 freeboard_nan_mask_targets:
     - sea_surface_anomaly
     - mean_sea_surface
+    - radar_freeboard
 
 # All these parameter will be set to nan if sea_ice_concentration is 0 or nan
 # Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
@@ -61,3 +62,5 @@ sea_ice_concentration_mask_targets:
     - lead_fraction
     - ice_fraction
     - sea_ice_type
+    - snow_depth
+    - snow_density
