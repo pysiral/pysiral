@@ -221,7 +221,7 @@ sic:
 # List of sea ice type products
 sitype:
 
-    myi_default:
+    fyi_default:
         pyclass: FYIDefault
         long_name: All sea ice is classified per default as first year sea ice
         local_repository: null
@@ -253,7 +253,7 @@ sitype:
                     n_lines: 1120
                     dx: 10000
                     dy: 10000
-            south: 
+            south:
                 projection:
                     proj: stere
                     ellps: WGS84
@@ -306,4 +306,4 @@ sitype:
             server: ftp.zmaw.de/
             pwdfile: null
             type: daily
-            link: "outgoing/icdc/esasicci/"        
+            link: "outgoing/icdc/esasicci/"
