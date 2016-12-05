@@ -222,6 +222,12 @@ sic:
 sitype:
 
     myi_default:
+        pyclass: FYIDefault
+        long_name: All sea ice is classified per default as first year sea ice
+        local_repository: null
+        options: null
+
+    myi_default:
         pyclass: MYIDefault
         long_name: All sea ice is classified per default as multi-year sea ice
         local_repository: null

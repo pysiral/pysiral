@@ -252,5 +252,17 @@ class MYIDefault(SITypeBaseClass):
         return sitype, ""
 
 
+class FYIDefault(SITypeBaseClass):
+    """ Returns myi for all ice covered regions """
+
+    def __init__(self):
+        super(FYIDefault, self).__init__()
+
+    def _get_along_track_sitype(self, l2):
+        """ Every ice is fyi (sitype = 0) """
+        sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
+        return sitype, ""
+
+
 def get_l2_sitype_handler(name):
     return globals()[name]()
