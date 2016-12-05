@@ -23,7 +23,7 @@ level2:
             name: osisaf409
             options: null
         sitype:
-            name: osisaf
+            name: fyi_default
             options: null
         snow: 
             name: constant
