@@ -5,13 +5,19 @@ Created on Tue Dec 06 09:50:05 2016
 @author: shendric
 """
 
+from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.iotools import NCMaskedGridData
 from pysiral.path import validate_directory
+from pysiral.visualization.mapstyle import get_custom_font
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.dates import date2num
+from matplotlib.patches import Rectangle
+from matplotlib.collections import PatchCollection
 
+from datetime import datetime
 import argparse
 import glob
 import os
@@ -200,9 +206,50 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
             l4dat.set_parameter_data(parameter)
             self.l4_points.append(l4dat)
 
+    def get_data_range(self, paddays=0):
+        dates = self.dates
+        return([np.amin(dates)-paddays, np.amax(dates)+paddays])
+
+    def get_boxplot_data(self, mission):
+        data = [l4.array for l4 in self.l4_points if l4.mission == mission]
+        dates = [l4.datenum for l4 in self.l4_points if l4.mission == mission]
+        if self.n_missions > 1:
+            mission_index = list(self.missions).index(mission)
+            offset = -5 + mission_index*10
+        else:
+            offset = 0
+        return data, np.array(dates)+offset
+
+    def get_all_periods(self):
+        return self.dates, self.labels
+
     @property
-    def boxplot_data(self):
-        return [l4.array for l4 in self.l4_points]
+    def dates(self):
+        return [l4.datenum for l4 in self.l4_points]
+
+    @property
+    def labels(self):
+        return [l4.label for l4 in self.l4_points]
+
+    @property
+    def years(self):
+        years_list = [l4.period[0] for l4 in self.l4_points]
+        return np.unique(sorted(years_list))
+
+    @property
+    def missions(self):
+        sort_order = ["ers1", "ers2", "envisat", "cryosat2"]
+        mission_list = [l4.mission for l4 in self.l4_points]
+        all_missions = np.unique(sorted(mission_list))
+        missions = []
+        for mission in sort_order:
+            if mission in all_missions:
+                missions.append(mission)
+        return missions
+
+    @property
+    def n_missions(self):
+        return len(self.missions)
 
 
 class Level4DataPoint(object):
@@ -224,6 +271,18 @@ class Level4DataPoint(object):
     def set_parameter_data(self, data):
         no_nans = np.where(np.isfinite(data))
         self.array = data[no_nans].ravel()
+
+    @property
+    def datenum(self):
+        return date2num(self.date)
+
+    @property
+    def label(self):
+        return self.date.strftime("%b")
+
+    @property
+    def date(self):
+        return datetime(self.period[0], self.period[1], 15)
 
 
 class LatLonBox(DefaultLoggingClass):
@@ -314,16 +373,106 @@ class Level4ParameterPlot(DefaultLoggingClass):
         self._export(output_folder)
 
     def _init_figure(self):
-        self.figure = plt.figure(figsize=(12, 6))
+        self.figure = plt.figure(figsize=(16, 6))
+        self.ax = plt.gca()
+        self.ax.set_position([0.05, 0.15, 0.92, 0.80])
+        self.ax.set_axis_bgcolor('0.98')
 
     def _create_plot(self):
-        plt.boxplot(self.l4.boxplot_data)
-        plt.ylim(-1, 6)
+        pysiral_config = ConfigInfo()
+        colors = ["#00ace5", "#003e6e"]
+        for i, mission in enumerate(self.l4.missions):
+
+            flierprops = dict(marker=',', color=colors[i], markersize=1)
+            boxprops = dict(color=colors[i], linewidth=1)
+            whiskerprops = dict(linestyle="-", color=colors[i], linewidth=0.75)
+            capprops = whiskerprops
+            meanprops = dict(zorder=101, mec="1.0", markerfacecolor=colors[i])
+            medianprops = dict(linewidth=0)
+
+            data, dates = self.l4.get_boxplot_data(mission)
+            bp = plt.boxplot(data, positions=dates,
+                             flierprops=flierprops, whiskerprops=whiskerprops,
+                             capprops=capprops, boxprops=boxprops,
+                             meanprops=meanprops, medianprops=medianprops,
+                             showmeans=True, widths=5,
+                             showfliers=False)
+
+            # Draw boxes as filled objects
+            for box in bp["boxes"]:
+                xdata, ydata = box.get_xdata(), box.get_ydata()
+                xmin, xmax = np.amin(xdata), np.amax(xdata)
+                ymin, ymax = np.amin(ydata), np.amax(ydata)
+                rect = Rectangle([xmin, ymin], xmax-xmin, ymax-ymin,
+                                 ec="none", fc=colors[i], zorder=100)
+                self.ax.add_patch(rect)
+
+            fontprops = {
+                "color": colors[i],
+                "fontproperties": get_custom_font(fontsize=16, awi_font=True)}
+
+            mission_info = pysiral_config.get_mission_info(mission)
+            labelx = 0.05 + i*0.075
+            plt.annotate(mission_info.long_name, (labelx, 0.05),
+                         xycoords="figure fraction",
+                         **fontprops)
+
+        # Force correct xticks
+        xticks, xticklabels = self.l4.get_all_periods()
+        self.ax.set_xticks(xticks)
+        self.ax.set_xticklabels(xticklabels)
+
+        fontprops = {
+            "color": "#4b4b4d",
+            "fontproperties": get_custom_font(fontsize=12, awi_font=True)}
+
+        patches = []
+        for year in self.l4.years:
+            labelx = date2num(datetime(year, 7, 1))
+            plt.annotate(str(year), (labelx, 3.8), xycoords="data",
+                         ha="center", **fontprops)
+            if np.mod(year, 2) == 0:
+                continue
+            xmin = date2num(datetime(year, 1, 1))
+            ymin = -0.5
+            width = 365
+            height = 4.5
+            rect = Rectangle([xmin, ymin], width, height, ec="none", fc="0.94")
+            self.ax.add_patch(rect)
+
+        plt.xlim(self.l4.get_data_range(paddays=30))
+        plt.ylim(-0.5, 4)
+
+        spines_to_remove = ["top", "right"]
+        for spine in spines_to_remove:
+            self.ax.spines[spine].set_visible(False)
+
+        self.ax.yaxis.set_tick_params(direction='out')
+        self.ax.yaxis.set_ticks_position('left')
+        self.ax.spines["left"].set_position(("axes", -0.01*6./16.))
+
+        self.ax.xaxis.set_tick_params(direction='out')
+        self.ax.xaxis.set_ticks_position('bottom')
+        self.ax.spines["bottom"].set_position(("axes", -0.01))
+
+        fontprops = {
+            "color": "#4b4b4d",
+            "fontproperties": get_custom_font(fontsize=5, awi_font=True)}
+        cl = plt.getp(self.ax, 'xmajorticklabels')
+        plt.setp(cl, **fontprops)
+
+        fontprops = {
+            "color": "#4b4b4d",
+            "fontproperties": get_custom_font(fontsize=12, awi_font=True)}
+
+        cl = plt.getp(self.ax, 'ymajorticklabels')
+        plt.setp(cl, **fontprops)
+        self.ax.set_ylabel("Sea Ice Thickness (meter)", **fontprops)
 
     def _export(self, output_folder):
         validate_directory(output_folder)
         filename = os.path.join(output_folder, "test.png")
-        plt.savefig(filename)
+        plt.savefig(filename, dpi=600)
         plt.close(self.figure)
 
 
