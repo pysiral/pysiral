@@ -95,7 +95,7 @@ level2:
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 11] 
+                wfm_smoothing_window_size: [11, 11, 21] 
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
         sea_ice: 
@@ -106,7 +106,7 @@ level2:
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 11] 
+                wfm_smoothing_window_size: [11, 11, 21] 
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
                 
