@@ -20,7 +20,7 @@ level2:
             name: dtu15
             options: null
         sic:
-            name: osisaf
+            name: osisaf409
             options: null
         sitype:
             name: icdc_nasateam
