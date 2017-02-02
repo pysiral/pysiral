@@ -127,7 +127,7 @@ class GridMapLogo(object):
     def __init__(self):
         self.is_active = True
         self.tag = "awi-white"
-        self.keyw = {"zoom": 0.8, "resample": True, "alpha": 0.75}
+        self.keyw = {"zoom": 0.2, "resample": True, "alpha": 0.75}
 
     def get_filename(self):
         folder = get_module_folder(__file__)
