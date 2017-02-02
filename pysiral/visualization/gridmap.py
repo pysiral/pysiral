@@ -350,11 +350,16 @@ class ArcticGridPaperMap(object):
         self.data = None
         self.style = GridMapAWIStyle()
         self.label = GridMapLabels()
+        self.lat_lon_boxes = []
 
     @property
     def projection(self):
         return {"width": 6e6, "height": 4.75e6, "lon_0": -45, "lat_0": 90,
                 "lat_ts": 88, "projection": "laea", "resolution": "i"}
+
+    def add_lonlat_box(self, **keyw):
+        self.lat_lon_boxes.append(keyw)
+
 
     def save2png(self, output):
         self.output = output
@@ -365,34 +370,46 @@ class ArcticGridPaperMap(object):
 
         # switch off interactive plotting
         plt.ioff()
-        figure = plt.figure(**self.style.figure.keyw)
+        self.figure = plt.figure(**self.style.figure.keyw)
 
         # Basemap settings
-        m = Basemap(**self.projection)
-        m.drawmapboundary(**self.style.mapboundary.keyw)
-        m.fillcontinents(zorder=120, **self.style.continents.keyw)
+        self.m = Basemap(**self.projection)
+        self.m.drawmapboundary(**self.style.mapboundary.keyw)
+        self.m.fillcontinents(zorder=120, **self.style.continents.keyw)
         if self.style.coastlines.is_active:
-            coastlines = get_landcoastlines(m, **self.style.coastlines.keyw)
+            coastlines = get_landcoastlines(self.m,
+                                            **self.style.coastlines.keyw)
             coastlines.set_zorder(120)
             plt.gca().add_collection(coastlines)
 
         # Plot the data as pcolor grid
         data = self.data
-        x, y = m(data.pgrid.longitude, data.pgrid.latitude)
+        x, y = self.m(data.pgrid.longitude, data.pgrid.latitude)
         cmap = data.get_cmap()
-        m.pcolor(x, y, data.grid, cmap=plt.get_cmap(cmap.name),
-                 vmin=cmap.vmin, vmax=cmap.vmax, zorder=110, lw=0.1,
-                 edgecolors=self.style.mapboundary.keyw["fill_color"])
+        self.m.pcolor(x, y, data.grid, cmap=plt.get_cmap(cmap.name),
+                      vmin=cmap.vmin, vmax=cmap.vmax, zorder=110, lw=0.1,
+                      edgecolors=self.style.mapboundary.keyw["fill_color"])
 
         # Annotation
         plt.annotate(self.label.annotation, (0.98, 0.93), ha="right",
                      xycoords="axes fraction", zorder=130,
                      **self.style.font.annotation)
 
+        # lat Lon boxes
+        for keyw in self.lat_lon_boxes:
+            lons, lats = keyw["lons"], keyw["lats"]
+            lon_corners = [lons[0], lons[1], lons[1], lons[0], lons[0]]
+            lat_corners = [lats[0], lats[0], lats[1], lats[1], lats[0]]
+            x, y = self.m(lon_corners, lat_corners)
+            plt.plot(x, y, color=keyw["color"], zorder=500)
+            plt.scatter(x, y, marker="o", c=keyw["color"], zorder=500,
+                        edgecolors="none")
+
         # Save plot
-        plt.savefig(self.output, dpi=600, facecolor=figure.get_facecolor(),
+        plt.savefig(self.output, dpi=600,
+                    facecolor=self.figure.get_facecolor(),
                     bbox_inches="tight")
-        plt.close(figure)
+        plt.close(self.figure)
 
     def _clean_up(self):
         os.remove(self.temp_file)
