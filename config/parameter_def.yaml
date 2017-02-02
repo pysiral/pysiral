@@ -4,7 +4,7 @@
 # categorical listing of all parameters with abbreviations, unit and docstr
 
 l1b:
-    
+
     timestamp:
         long_name: utc timestamp
         standard_name: timestamp
@@ -61,7 +61,7 @@ l2i:
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
-    
+
     surface_type:
         long_name: "surface type flag (0: unknown, 1: ocean, 2: lead: 2, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid)"
         standard_name: surface_tyoe
@@ -92,7 +92,7 @@ l2i:
         units: meter
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0    
+        add_offset: 0.0
 
     radar_freeboard:
         long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
@@ -108,7 +108,7 @@ l2i:
         units: meter
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0    
+        add_offset: 0.0
 
     sea_ice_thickness:
         long_name: "thickness of the sea ice layer"
@@ -116,7 +116,7 @@ l2i:
         units: meter
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0        
+        add_offset: 0.0
 
     snow_depth:
         long_name: "thickness of the snow layer"
@@ -124,7 +124,7 @@ l2i:
         units: meter
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0     
+        add_offset: 0.0
 
     snow_density:
         long_name: "density of the snow layer"
@@ -132,7 +132,7 @@ l2i:
         units: kg/m^3
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0     
+        add_offset: 0.0
 
     ice_density:
         long_name: "density of the sea ice layer"
@@ -140,7 +140,7 @@ l2i:
         units: kg/m^3
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0  
+        add_offset: 0.0
 
     sea_ice_concentration:
         long_name: "sea ice concentration"
@@ -150,7 +150,7 @@ l2i:
         valid_max: 100.0
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0  
+        add_offset: 0.0
 
     sea_ice_type:
         long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
@@ -160,7 +160,7 @@ l2i:
         valid_max: 1.0
         coordinates: timestamp
         scale_factor: 1.0
-        add_offset: 0.0 
+        add_offset: 0.0
 
 
 # A list of recognized identifiers for geophysical range corrections
@@ -235,9 +235,9 @@ definition:
             step: 0.1
         cmap_diff:
             name: bwr
-            vmin: -0.10
-            vmax: 0.10
-            step: 0.05
+            vmin: -0.20
+            vmax: 0.20
+            step: 0.10
 
     sea_surface_anomaly:
         short_name: ssa
@@ -304,14 +304,20 @@ definition:
             step: 0.1
 
     freeboard_uncertainty:
-        short_name: frbu
-        unit: meter
-        level: L2
-        docstr:
-          Uncorrelated uncertainty of the freeboard value (to be associated with
-          ice or snow freeboard only)
+        short_name: frbunc
+        label: Freeboard Uncertainty
+        unit: meters
         dtype: float32
-        ascii_format: "%6.2f"
+        cmap:
+            name: rainbow
+            vmin: 0
+            vmax: 0.4
+            step: 0.1
+        cmap_diff:
+            name: bwr
+            vmin: -10.0
+            vmax: 10.0
+            step: 5
 
     freeboard_bias:
         short_name: frbb
@@ -323,10 +329,26 @@ definition:
         dtype: float32
         ascii_format: "%6.2f"
 
+    sea_surface_height:
+        short_name: ssh
+        label: Sea Surface Height
+        unit: meters
+        dtype: float32
+        cmap:
+            name: gist_earth
+            vmin: -10
+            vmax: 20
+            step: 5.0
+        cmap_diff:
+            name: seismic
+            vmin: -0.6
+            vmax: 0.6
+            step: 0.3
+
     sea_ice_thickness:
         short_name: sit
         label: Sea Ice Thickness
-        unit: meter
+        unit: meters
         dtype: float32
         cmap:
             name: plasma
@@ -334,7 +356,23 @@ definition:
             vmax: 5.0
             step: 1.0
         cmap_diff:
-            name: bwr
+            name: coolwarm
+            vmin: -1.0
+            vmax: 1.0
+            step: 0.5
+
+    sea_ice_thickness_uncertainty:
+        short_name: situnc
+        label: Thickness Uncertainty
+        unit: meters
+        dtype: float32
+        cmap:
+            name: rainbow
+            vmin: 0
+            vmax: 2.0
+            step: 0.5
+        cmap_diff:
+            name: coolwarm
             vmin: -1.0
             vmax: 1.0
             step: 0.5
@@ -342,7 +380,7 @@ definition:
     sea_ice_concentration:
         short_name: sic
         label: Sea Ice Concentration
-        unit: meter
+        unit: percent
         dtype: float32
         cmap:
             name: plasma
@@ -358,7 +396,7 @@ definition:
     sea_ice_type:
         short_name: sitype
         label: Sea Ice Type
-        unit: fraction 
+        unit: fraction
         dtype: float32
         cmap:
             name: Spectral
@@ -372,7 +410,7 @@ definition:
             step: 0.5
 
     snow_depth:
-        short_name: sitype
+        short_name: sd
         label: Snow Depth
         unit: meter
         dtype: float32
@@ -385,4 +423,4 @@ definition:
             name: bwr
             vmin: -0.5
             vmax: 0.5
-            step: 0.25                           
+            step: 0.25
