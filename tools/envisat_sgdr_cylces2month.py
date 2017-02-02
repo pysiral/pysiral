@@ -8,7 +8,6 @@ Created on Fri Nov 18 15:26:26 2016
 import os
 import sys
 import glob
-import shutil
 import argparse
 import zipfile
 
@@ -96,10 +95,7 @@ def envisat_sgdr_cycles2month():
 
             target_file = os.path.join(output_directory, n1_filename+".N1")
             if not args.test_mode:
-                try:
-                    shutil.move(n1_file, target_file)
-                except:
-                    pass
+                os.rename(n1_file, target_file)
             else:
                 print " Move %s to %s" % (n1_filename, output_directory)
 

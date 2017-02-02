@@ -307,7 +307,10 @@ class Level2Processor(DefaultLoggingClass):
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
-            self._estimate_ssh_and_radar_freeboard(l2)
+            self._estimate_sea_surface_height(l2)
+
+            # Compute the radar freeboard and its uncertainty
+            self._get_altimeter_freeboard(l2)
 
             # Get snow depth & density
             error_status, error_codes = self._get_snow_parameters(l2)
@@ -332,6 +335,21 @@ class Level2Processor(DefaultLoggingClass):
 
             # Add data to orbit stack
             self._add_to_orbit_collection(l2)
+
+            # XXX: Debug: Plots of uncertainties
+            import matplotlib.pyplot as plt
+            f, axarr = plt.subplots(5, sharex=True)
+            axarr[0].plot(l2.sit.uncertainty)
+            axarr[0].set_title("thickness uncertainty")
+            axarr[1].plot(l2.frb.uncertainty)
+            axarr[1].set_title("freeboard uncertainty")
+            axarr[2].plot(l2.snow_depth.uncertainty)
+            axarr[2].set_title("snow depth uncertainty")
+            axarr[3].plot(l2.snow_dens.uncertainty)
+            axarr[3].set_title("snow density uncertainty")
+            axarr[4].plot(l2.ice_dens.uncertainty)
+            axarr[4].set_title("ice density uncertainty")
+            plt.show()
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
@@ -490,38 +508,99 @@ class Level2Processor(DefaultLoggingClass):
         # Error handling not yet implemented, return dummy values
         return False, None
 
-    def _estimate_ssh_and_radar_freeboard(self, l2):
+    def _estimate_sea_surface_height(self, l2):
+
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
+
         # 2. get get sea surface anomaly
         ssa = get_l2_ssh_class(self._job.config.ssa.pyclass)
         ssa.set_options(**self._job.config.ssa.options)
         ssa.interpolate(l2)
+
         # dedicated setters, else the uncertainty, bias attributes are broken
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
-        # altimeter freeboard (from radar altimeter w/o corrections)
-        l2.afrb = l2.elev - l2.mss - l2.ssa
+
+    def _get_altimeter_freeboard(self, l2):
+        """ Compute radar freeboard and its uncertainty """
+
+        afrbalg = get_frb_algorithm(self._job.config.afrb.pyclass)
+        afrbalg.set_options(**self._job.config.rfrb.options)
+        afrb, afrb_unc = afrbalg.get_radar_freeboard(l2)
+
+        # Check and return error status and codes
+        # (unlikely in this case)
+        error_status = afrbalg.error.status
+        error_codes = afrbalg.error.codes
+
+        if not error_status:
+            # Add to l2data
+            l2.afrb.set_value(afrb)
+            l2.afrb.set_uncertainty(afrb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+
+        return error_status, error_codes
 
     def _get_snow_parameters(self, l2):
-        """ Get snow depth and density """
-        snow_depth, snow_dens, msg = self._snow.get_along_track_snow(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
+        """ Get snow depth and density with respective uncertainties """
+
+        # Get along track snow depth info
+        snow = self._snow.get_along_track_snow(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._snow.error.status
+        error_codes = self._snow.error.codes
+
         # Add to l2data
-        l2.snow_depth.set_value(snow_depth)
-        l2.snow_dens.set_value(snow_dens)
-        # XXX: Error Handling not yet implemted, return dummies
-        return False, None
+        if not error_status:
+            # Add to l2data
+            l2.snow_depth.set_value(snow.depth)
+            l2.snow_depth.set_uncertainty(snow.depth_uncertainty)
+            l2.snow_dens.set_value(snow.density)
+            l2.snow_dens.set_uncertainty(snow.density_uncertainty)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+            self._snow.error.reset()
+
+        return error_status, error_codes
 
     def _get_freeboard_from_radar_freeboard(self, l2):
         """ Convert the altimeter freeboard in radar freeboard """
+
         frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
         frbgeocorr.set_options(**self._job.config.frb.options)
-        frb, msg = frbgeocorr.get_freeboard(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.frb.set_value(frb)
+        frb, frb_unc = frbgeocorr.get_freeboard(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frbgeocorr.error.status
+        error_codes = frbgeocorr.error.codes
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.frb.set_value(frb)
+            l2.frb.set_uncertainty(frb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = frbgeocorr.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
@@ -540,13 +619,27 @@ class Level2Processor(DefaultLoggingClass):
             l2.frb[frbfilter.flag.indices] = np.nan
 
     def _convert_freeboard_to_thickness(self, l2):
+        """
+        Convert Freeboard to Thickness
+        Note: This step requires the definition of sea ice density
+              (usually in the l2 settings)
+        """
+
         frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
         frb2sit.set_options(**self._job.config.sit.options)
-        sit, ice_dens, msg = frb2sit.get_thickness(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.sit.set_value(sit)
-        l2.ice_dens.set_value(ice_dens)
+
+        sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frb2sit.error.status
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.sit.set_value(sit)
+            l2.sit.set_uncertainty(sit_unc)
+            l2.ice_dens.set_value(ice_dens)
+            l2.ice_dens.set_uncertainty(ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self._job.config.filter.thickness
@@ -562,7 +655,7 @@ class Level2Processor(DefaultLoggingClass):
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
-            l2.frb[sitfilter.flag.indices] = np.nan
+            l2.frb.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
         output_ids, output_defs = td_branches(self._job.config.output)

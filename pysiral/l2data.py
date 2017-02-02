@@ -16,8 +16,8 @@ from collections import OrderedDict
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev", "afrb", "frb", "range", "sic",
-                      "sitype", "snow_depth", "snow_dens", "ice_dens",
+    _L2_DATA_ITEMS = ["mss", "ssa", "elev",  "afrb", "frb", "range", "sic",
+                      "sitype", "snow_depth",  "snow_dens",  "ice_dens",
                       "sit"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
@@ -58,9 +58,21 @@ class Level2Data(object):
         self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
 
     def get_parameter_by_name(self, parameter_name):
-        source = self._PARAMETER_CATALOG[parameter_name]
-        parameter = getattr(self, source)
-        return parameter
+
+        if "_uncertainty" in parameter_name:
+            parameter_name = parameter_name.replace("_uncertainty", "")
+            source = self._PARAMETER_CATALOG[parameter_name]
+            parameter = getattr(self, source)
+            return parameter.uncertainty
+        elif "_bias" in parameter_name:
+            parameter_name = parameter_name.replace("_bias", "")
+            source = self._PARAMETER_CATALOG[parameter_name]
+            parameter = getattr(self, source)
+            return parameter.bias
+        else:
+            source = self._PARAMETER_CATALOG[parameter_name]
+            parameter = getattr(self, source)
+            return parameter
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
@@ -122,7 +134,11 @@ class L2ElevationArray(np.ndarray):
         obj = np.ndarray.__new__(
             subtype, shape, dtype, buffer, offset, strides, order)*np.nan
         obj.uncertainty = np.zeros(shape=shape, dtype=float)
-        obj.bias = np.zeros(shape=shape, dtype=float)
+        obj.bias = np.ones(shape=shape, dtype=float)*0.1
+        obj.source_class = "n/a"
+        obj.source_files = "n/a"
+        obj.long_name = "n/a"
+        obj.unit = "n/a"
         return obj
 
     def __array_finalize__(self, obj):
@@ -130,6 +146,10 @@ class L2ElevationArray(np.ndarray):
             return
         self.uncertainty = getattr(obj, 'uncertainty', None)
         self.bias = getattr(obj, 'bias', None)
+        self.source_class = getattr(obj, 'source_class', None)
+        self.source_files = getattr(obj, 'source_files', None)
+        self.long_name = getattr(obj, 'long_name', None)
+        self.unit = getattr(obj, 'unit', None)
 
     def __getslice__(self, i, j):
         r = np.ndarray.__getslice__(self, i, j)
@@ -146,6 +166,16 @@ class L2ElevationArray(np.ndarray):
 
     def set_uncertainty(self, uncertainty):
         self.uncertainty = uncertainty
+
+    def set_bias(self, bias):
+        self.bias = bias
+
+    def set_nan_indices(self, indices):
+        value = self[:]
+        value[indices] = np.nan
+        self.set_value(value)
+        self.uncertainty[indices] = np.nan
+        self.bias[indices] = np.nan
 
 
 class AttributeList(object):
