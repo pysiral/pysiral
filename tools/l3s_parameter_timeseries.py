@@ -145,7 +145,6 @@ class L3sParameterTimeSeries(DefaultLoggingClass):
         parser.add_argument('-plot-range', action='store',
                             dest="plot_range", nargs=4, type=int,
                             help='plot range: yyyy mm till yyyy mm')
-
         return parser
 
 
@@ -410,12 +409,12 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
             showfliers=False)
         return boxplot_props
 
-    def get_boxfillprops(self, mission_index):
-        return dict(ec="none", fc=self.mission_colors[mission_index],
+    def get_boxfillprops(self, mission):
+        return dict(ec="none", fc=self.mission_colors[mission],
                     zorder=100)
 
-    def get_labelfontprops(self, mission_index):
-        return dict(color=self.mission_colors[mission_index],
+    def get_labelfontprops(self, mission):
+        return dict(color=self.mission_colors[mission],
                     fontproperties=get_custom_font(fontsize=16, awi_font=True))
 
     @property
@@ -465,7 +464,7 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
 
     @property
     def mission_colors(self):
-        return ["#00ace5", "#003e6e"]
+        return dict(envisat="#00ace5", cryosat2="#003e6e")
 
     @property
     def custom_plot_xlim(self):
@@ -512,7 +511,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
         for i, mission in enumerate(self.l4.missions):
 
             # First draw the boxplots
-            boxplotprops = self.plotdef.get_boxplotprops(i)
+            boxplotprops = self.plotdef.get_boxplotprops(mission)
             data, dates = self.l4.get_boxplot_data(mission)
             bp = plt.boxplot(data, positions=dates, **boxplotprops)
 
@@ -521,7 +520,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
                 xdata, ydata = box.get_xdata(), box.get_ydata()
                 xmin, xmax = np.amin(xdata), np.amax(xdata)
                 ymin, ymax = np.amin(ydata), np.amax(ydata)
-                boxfillprops = self.plotdef.get_boxfillprops(i)
+                boxfillprops = self.plotdef.get_boxfillprops(mission)
                 rect = Rectangle([xmin, ymin], xmax-xmin, ymax-ymin,
                                  **boxfillprops)
                 self.ax.add_patch(rect)
@@ -531,7 +530,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
             labelx = 0.05 + i*0.075
             plt.annotate(mission_info.long_name, (labelx, 0.03),
                          xycoords="figure fraction",
-                         **self.plotdef.get_labelfontprops(i))
+                         **self.plotdef.get_labelfontprops(mission))
 
     def _set_plot_ranges(self):
 
@@ -663,7 +662,6 @@ class Level4ROIMap(object):
             annstr = annstr.replace(" ", "_")
         output_filename = "l4map_%s%s.png" % (regstr, annstr)
         return output_filename
-
 
 
 if __name__ == "__main__":
