@@ -21,6 +21,9 @@ mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat",
 
 cs2awi_naming = {"sea_ice_freeboard": "freeboard",
                  "sea_ice_thickness": "sea_ice_thickness",
+                 "sea_ice_freeboard_uncertainty": "freeboard_uncertainty",
+                 "sit_stat": "sea_ice_thickness_uncertainty",
+                 "sit_syst": "sea_ice_thickness_uncertainty",
                  "sea_ice_concentration": "sea_ice_concentration",
                  "lead_fraction": "lead_fraction",
                  "sea_surface_height_anomaly": "sea_surface_anomaly"}
@@ -77,7 +80,10 @@ def l3s_map():
                 data.set_grid(ncdata.longitude, ncdata.latitude)
                 parameter = ncdata.get_by_name(parameter_name)
                 if args.cs2awi:
-                    parameter_name = cs2awi_naming[parameter_name]
+                    try:
+                        parameter_name = cs2awi_naming[parameter_name]
+                    except:
+                        pass
                 data.set_parameter(parameter, parameter_name)
 
             else:
@@ -87,7 +93,10 @@ def l3s_map():
                 parameter_a = ncdata.get_by_name(parameter_name)
                 parameter_b = ncdata_diff.get_by_name(parameter_name)
                 if args.cs2awi:
-                    parameter_name = cs2awi_naming[parameter_name]
+                    try:
+                        parameter_name = cs2awi_naming[parameter_name]
+                    except:
+                        pass
                 data.set_parameter(parameter_a, parameter_b, parameter_name)
 
             projection = PROJDICT[hemisphere]
