@@ -624,7 +624,7 @@ class Level2Processor(DefaultLoggingClass):
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
-            l2.frb[frbfilter.flag.indices] = np.nan
+            l2.frb.set_nan_indices(frbfilter.flag.indices)
 
     def _convert_freeboard_to_thickness(self, l2):
         """
