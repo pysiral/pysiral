@@ -6,6 +6,7 @@ Created on Tue Jul 05 18:56:49 2016
 """
 
 from pysiral.visualization.dataplot import DataPlot
+from pysiral.visualization.cmap import surface_type_cmap
 from pysiral.iotools import get_temp_png_filename
 
 import matplotlib.pyplot as plt
@@ -180,8 +181,6 @@ class PlotL2iSurfaceTypeClassification(DataPlot):
 
     def create_plot(self, l2i):
 
-        from pysiral.visualization.cmap import surface_type_cmap
-
         # Get the colorbar for surface types
         cmap, labels = surface_type_cmap()
 
@@ -207,7 +206,6 @@ class PlotL2iSurfaceTypeClassification(DataPlot):
         for wedge in wedges:
             wedge.set_width(0.5)
             wedge.set_ec("none")
-
 
         # Create the along track flag indicator plot
         plt.subplot2grid(gridshape, (4, 0), colspan=15)
@@ -291,3 +289,94 @@ class PlotL2iSurfaceTypeClassification(DataPlot):
                 result[section, i] = float(num)/float(self.section_hist_size)
 
         return result
+
+
+class PlotL2iSeaSurfaceHeightFreeboard(DataPlot):
+
+    def __init__(self):
+
+        super(PlotL2iSeaSurfaceHeightFreeboard, self).__init__()
+
+        # Figure settings
+        self.fig_args = {"facecolor": "white", "figsize": (12, 6)}
+        self.axis_bg_color = '0.98'
+        self.ssa_line_settings = {"lw": 2, "color": "#DDA0DD"}
+
+    def create_plot(self, l2i):
+        cmap, labels = surface_type_cmap()
+        xval = np.arange(l2i.n_records)
+
+        self.fig = plt.figure(**self.fig_args)
+        ax = plt.gca()
+
+        # plot lead and ice elevation w.r.t to mss
+        for surface_type_index in [4, 2]:
+            indices = np.where(l2i.surface_type == surface_type_index)[0]
+            if len(indices) == 0:
+                continue
+            color = cmap(float(surface_type_index)/float(9))
+            ax.scatter(xval[indices],
+                       l2i.elevation[indices]-l2i.mean_sea_surface[indices],
+                       color=color, marker="o", s=10, alpha=0.5,
+                       edgecolors="none")
+
+        # plot ssa
+        ax.plot(xval, l2i.sea_surface_anomaly, **self.ssa_line_settings)
+
+        # Labels and axis style
+        ax.set_axis_bgcolor(self.axis_bg_color)
+        # ax.yaxis.set_minor_locator(MultipleLocator(self.range_indicator))
+        ax.yaxis.grid(True, which='minor')
+        ax.yaxis.set_tick_params(direction='out')
+        ax.yaxis.set_ticks_position('left')
+        ax.set_ylabel("Elevation w.r.t. MSS (meters)")
+        ax.xaxis.set_ticks([])
+
+        spines_to_remove = ["top", "right", "bottom"]
+        for spine in spines_to_remove:
+            ax.spines[spine].set_visible(False)
+
+
+class PlotL2iFreeboardThickness(DataPlot):
+
+    def __init__(self):
+
+        super(PlotL2iFreeboardThickness, self).__init__()
+
+        # Figure settings
+        self.fig_args = {"facecolor": "white", "figsize": (12, 10)}
+        self.axis_bg_color = '0.98'
+        self.scatter_settings = {"edgecolors": "none", "color": "#DDA0DD",
+                                 "marker": "o", "s": 10}
+        self.axis_lim = [[-0.5, 1.0], [-2, 10]]
+
+    def create_plot(self, l2i):
+
+        xval = np.arange(l2i.n_records)
+
+        gs = gridspec.GridSpec(2, 1)
+        self.fig = plt.figure(2, **self.fig_args)
+        plt.subplots_adjust(bottom=0.075, top=0.95)
+
+        # Loop over parameters
+        for i, parameter_name in enumerate(["freeboard", "sea_ice_thickness"]):
+
+            ax = plt.subplot(gs[i])
+
+            # plot parameter
+            parameter = getattr(l2i, parameter_name)
+            ax.scatter(xval, parameter, **self.scatter_settings)
+
+            # Labels and axis style
+            ax.set_axis_bgcolor(self.axis_bg_color)
+            # ax.yaxis.set_minor_locator(MultipleLocator(self.range_indicator))
+            ax.yaxis.grid(True, which='minor')
+            ax.yaxis.set_tick_params(direction='out')
+            ax.yaxis.set_ticks_position('left')
+            ax.set_ylabel(parameter_name)
+            ax.set_ylim(self.axis_lim[i])
+            ax.xaxis.set_ticks([])
+
+            spines_to_remove = ["top", "right", "bottom"]
+            for spine in spines_to_remove:
+                ax.spines[spine].set_visible(False)
