@@ -16,6 +16,7 @@ from pysiral.sic import get_l2_sic_handler
 from pysiral.sitype import get_l2_sitype_handler
 from pysiral.snow import get_l2_snow_handler
 from pysiral.mss import get_l2_ssh_class
+from pysiral.output import PysiralOutputFilenaming
 from pysiral.roi import get_roi_class
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
@@ -87,6 +88,13 @@ class Level2Processor(DefaultLoggingClass):
             mission_id, time_range, hemisphere, version=version)
         self.set_l1b_files(l1b_files)
 
+        # Update the report
+        self.report.n_files = len(l1b_files)
+        self.report.time_range = time_range
+        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
+
+    def set_custom_l1b_file_list(self, l1b_files, time_range):
+        self.set_l1b_files(l1b_files)
         # Update the report
         self.report.n_files = len(l1b_files)
         self.report.time_range = time_range
@@ -697,6 +705,9 @@ class L2ProcJob(DefaultLoggingClass):
         # List for iterations (currently only month-wise)
         self.iterations = []
 
+        # List for predefined l1b files
+        self.preset_l1b_files = []
+
     def parse_l2_settings(self):
         """ Read the Level-2 settings yaml file """
 
@@ -735,12 +746,18 @@ class L2ProcJob(DefaultLoggingClass):
 
         # The input data is organized in folder per month, therefore
         # the processing period is set accordingly
-        self.time_range.set_period("monthly")
-        self.log.info("Level-2 processor base period is monthly")
-        self.time_range.set_exclude_month(self.options.exclude_month)
-        self.log.info("Excluding month: %s" % str(self.options.exclude_month))
+        if not self.options.l1b_preset_is_active:
+            self.time_range.set_period("monthly")
+            self.log.info("Level-2 processor base period is monthly")
+            self.time_range.set_exclude_month(self.options.exclude_month)
+            self.log.info("Excluding month: %s" % str(
+                    self.options.exclude_month))
+            self.log.info("Number of iterations: %g" % len(self.iterations))
+        else:
+            self.time_range.set_period("custom")
+            self.log.info("Level-2 processor with preset l1b files (%g)" %
+                          len(self.preset_l1b_files))
         self.iterations = self.time_range.get_iterations()
-        self.log.info("Number of iterations: %g" % len(self.iterations))
 
     def process_requested_time_range(self):
         """
@@ -750,9 +767,15 @@ class L2ProcJob(DefaultLoggingClass):
 
         mission_info = self.pysiral_config.get_mission_info(self.mission_id)
 
-        # Set and validate the time range
-        start_date, stop_date = self.options.start_date, self.options.stop_date
-        self.time_range.set_range(start_date, stop_date)
+        if not self.options.l1b_preset_is_active:
+            # Set and validate the time range
+            start_date = self.options.start_date
+            stop_date = self.options.stop_date
+            self.time_range.set_range(start_date, stop_date)
+        else:
+            self._get_l1b_file_preset_list()
+            start_dt, stop_dt = self._get_l1b_preset_range()
+            self.time_range.set_range(start_dt, stop_dt)
 
         # Check if any errors in definitions
         self.time_range.error.raise_on_error()
@@ -772,6 +795,20 @@ class L2ProcJob(DefaultLoggingClass):
     def validate(self):
         self._validate_and_expand_auxdata()
         self._validate_and_create_output_directory()
+
+    def _get_l1b_file_preset_list(self):
+        self.preset_l1b_files = glob.glob(self.options.l1b_files_preset)
+
+    def _get_l1b_preset_range(self):
+        # Get start from first preset file
+        start_file = self.preset_l1b_files[0]
+        start_info = PysiralOutputFilenaming()
+        start_info.parse_filename(filename_from_path(start_file))
+        # Get stop from last preset file
+        stop_file = self.preset_l1b_files[-1]
+        stop_info = PysiralOutputFilenaming()
+        stop_info.parse_filename(filename_from_path(stop_file))
+        return start_info.start, stop_info.stop
 
     def _validate_and_expand_auxdata(self):
         """
@@ -880,6 +917,10 @@ class L2ProcJob(DefaultLoggingClass):
     def l2_settings_file(self):
         return self.options.l2_settings_filename
 
+    @property
+    def l1b_preset_is_active(self):
+        return self.options.l1b_preset_is_active
+
 
 class L2ProcJobOptions(object):
     """ Simple container for Level-2 processor options """
@@ -887,6 +928,8 @@ class L2ProcJobOptions(object):
     def __init__(self):
         self.l2_settings_filename = "none"
         self.l2_settings = None
+        self.l1b_preset_is_active = False
+        self.l1b_files_preset = None
         self.run_tag = None
         self.input_version = "default"
         self.remove_old = False
@@ -900,6 +943,8 @@ class L2ProcJobOptions(object):
         for parameter in options_dict.keys():
             if hasattr(self, parameter):
                 setattr(self, parameter, options_dict[parameter])
+        if self.l1b_files_preset is not None:
+            self.l1b_preset_is_active = True
 
 
 class L2ProcessorReport(DefaultLoggingClass):

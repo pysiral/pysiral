@@ -152,7 +152,7 @@ class RadarModes(object):
 
 class TimeRangeRequest(object):
 
-    _PERIODS = ["monthly"]
+    _PERIODS = ["monthly", "custom"]
 
     def __init__(self):
         self._start_dt = None
@@ -313,6 +313,12 @@ class TimeRangeRequest(object):
                 time_range.set_indices(index, n_iterations)
                 iterations.append(time_range)
                 index += 1
+
+        elif self._period == "custom":
+            time_range = TimeRangeIteration(base_period="custom")
+            time_range.set_range(self.start_dt, self.stop_dt)
+            time_range.set_indices(1, 1)
+            iterations = [time_range]
 
         return iterations
 
@@ -488,6 +494,14 @@ class DefaultCommandLineArguments(object):
                 "default": False,
                 "required": False,
                 "help": 'set to skip any required command line inputs'},
+
+            # preset for level-1b (l1bdata) fiels
+            "l1b_files": {
+                "action": "store",
+                "dest": "l1b_files_preset",
+                "default": None,
+                "required": False,
+                "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
 
             # fetch the level-2 settings file
             "l2-settings": {

@@ -60,8 +60,12 @@ def pysiral_l2proc():
         job.log.info("Processing period: %s" % time_range.label)
 
         # Get the list of input files from local machine def
-        version = jobdef.input_version
-        job.get_input_files_local_machine_def(time_range, version=version)
+        if not jobdef.l1b_preset_is_active:
+            version = jobdef.input_version
+            job.get_input_files_local_machine_def(time_range, version=version)
+        # or set a predefined list of files
+        else:
+            job.set_custom_l1b_file_list(jobdef.preset_l1b_files, time_range)
 
         # Check error, e.g. problems with local_machine_def, ...
         job.error.raise_on_error()
@@ -94,6 +98,18 @@ class L2ProcArgParser(object):
         # (first validation of required options and data types)
         self.args = self.parser.parse_args()
 
+        # Add addtional check to make sure either `l1b-files` or
+        # `start ` and `stop` are set
+        l1b_file_preset_is_set = self.args.l1b_files_preset is not None
+        start_and_stop_is_set = self.args.start_date is not None and \
+            self.args.stop_date is not None
+
+        if l1b_file_preset_is_set and start_and_stop_is_set:
+            self.parser.error("-start & -stop and -l1b-files are exclusive")
+
+        if not l1b_file_preset_is_set and not start_and_stop_is_set:
+            self.parser.error("either -start & -stop or -l1b-files required")
+
     def critical_prompt_confirmation(self):
 
         # Any confirmation prompts can be overriden by --no-critical-prompt
@@ -124,8 +140,9 @@ class L2ProcArgParser(object):
         options = [
             ("-l2-settings", "l2-settings", "l2_settings", True),
             ("-run-tag", "run-tag", "run_tag", True),
-            ("-start", "date", "start_date", True),
-            ("-stop", "date", "stop_date", True),
+            ("-start", "date", "start_date", False),
+            ("-stop", "date", "stop_date", False),
+            ("-l1b-files", "l1b_files", "l1b_files_preset", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
             ("--remove-old", "remove-old", "remove_old", False),
