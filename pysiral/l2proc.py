@@ -336,20 +336,20 @@ class Level2Processor(DefaultLoggingClass):
             # Add data to orbit stack
             self._add_to_orbit_collection(l2)
 
-            # XXX: Debug: Plots of uncertainties
-            import matplotlib.pyplot as plt
-            f, axarr = plt.subplots(5, sharex=True)
-            axarr[0].plot(l2.sit.uncertainty)
-            axarr[0].set_title("thickness uncertainty")
-            axarr[1].plot(l2.frb.uncertainty)
-            axarr[1].set_title("freeboard uncertainty")
-            axarr[2].plot(l2.snow_depth.uncertainty)
-            axarr[2].set_title("snow depth uncertainty")
-            axarr[3].plot(l2.snow_dens.uncertainty)
-            axarr[3].set_title("snow density uncertainty")
-            axarr[4].plot(l2.ice_dens.uncertainty)
-            axarr[4].set_title("ice density uncertainty")
-            plt.show()
+#            # XXX: Debug: Plots of uncertainties
+#            import matplotlib.pyplot as plt
+#            f, axarr = plt.subplots(5, sharex=True)
+#            axarr[0].plot(l2.sit.uncertainty)
+#            axarr[0].set_title("thickness uncertainty")
+#            axarr[1].plot(l2.frb.uncertainty)
+#            axarr[1].set_title("freeboard uncertainty")
+#            axarr[2].plot(l2.snow_depth.uncertainty)
+#            axarr[2].set_title("snow depth uncertainty")
+#            axarr[3].plot(l2.snow_dens.uncertainty)
+#            axarr[3].set_title("snow density uncertainty")
+#            axarr[4].plot(l2.ice_dens.uncertainty)
+#            axarr[4].set_title("ice density uncertainty")
+#            plt.show()
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
