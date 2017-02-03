@@ -662,8 +662,8 @@ class Level2Processor(DefaultLoggingClass):
                 filter_def.pyclass, sitfilter.flag.num))
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
-            # Remove invalid elevations / freeboards
-            l2.frb.set_nan_indices(sitfilter.flag.indices)
+            # Remove invalid thickness values
+            l2.sit.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
         output_ids, output_defs = td_branches(self._job.config.output)
