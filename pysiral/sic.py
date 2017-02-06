@@ -72,8 +72,11 @@ class OsiSafSIC(SICBaseClass):
         self._msg = ""
         self._get_requested_date(l2)
         self._get_data(l2)
-        sic = self._get_sic_track(l2)
-        return sic, self._msg
+        if not self.error.status:
+            sic = self._get_sic_track(l2)
+            return sic, self._msg
+        else:
+            return None, self._msg
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
