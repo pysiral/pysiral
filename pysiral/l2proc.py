@@ -560,7 +560,11 @@ class Level2Processor(DefaultLoggingClass):
         """ Get snow depth and density with respective uncertainties """
 
         # Get along track snow depth info
-        snow = self._snow.get_along_track_snow(l2)
+        snow, msg = self._snow.get_along_track_snow(l2)
+
+        # Report any messages from the snow handler
+        if not msg == "":
+            self.log.info("- "+msg)
 
         # Check and return error status and codes (e.g. missing file)
         error_status = self._snow.error.status
