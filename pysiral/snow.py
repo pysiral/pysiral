@@ -14,6 +14,7 @@ import scipy.ndimage as ndimage
 
 from pyproj import Proj
 import numpy as np
+import os
 
 
 class SnowBaseClass(object):
@@ -111,7 +112,7 @@ class Warren99(SnowBaseClass):
             filter_width = np.floor(filter_width) // 2 * 2 + 1
             snow.depth = idl_smooth(snow.depth, filter_width)
 
-        return snow
+        return snow, ""
 
     def _get_warren99_fit(self, l2):
 
@@ -224,7 +225,13 @@ class FixedSnowDepthDensity(SnowBaseClass):
         snow_depth *= self._options.fixed_snow_depth
         snow_density = np.ones(shape=(l2.n_records), dtype=np.float32)
         snow_density *= self._options.fixed_snow_density
-        return snow_depth, snow_density, ""
+
+        snow = SnowParameterContainer()
+        snow.depth = snow_depth
+        snow.density = snow_density
+
+        return snow, ""
+
 
 class ICDCSouthernClimatology(SnowBaseClass):
     """ Class for daily climatology fields from UHH ICDC """
