@@ -159,19 +159,19 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 self._range[i] = np.nan
                 self._power[i] = np.nan
                 return
-                
+
             # Get TFMRA threshold
             tfmra_threshold = self._options.threshold
-            
+
             # Get sigma0 information
             sigma0 = self.get_l1b_parameter("classifier","sigma0")
-            
-            # Adjust threshold based on sigma0 
+
+            # Adjust threshold based on sigma0
             if self._options.use_sigma0_dependency:
                 if sigma0[i]<8:
-                      tfmra_threshold -= self._options.sigma0_modification_scaling  
+                      tfmra_threshold -= self._options.sigma0_modification_scaling
                 if sigma0[i]<15.5 and sigma0[i]>=8:
-                      tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling                
+                      tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling
 
             # Get track point and its power
             tfmra_range, tfmra_power = self.get_threshold_range(
@@ -381,6 +381,16 @@ class TFMRA(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
+        # Apply a radar mode dependent range bias if option is in
+        # level-2 settings file
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
+
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
         Returns the intermediate product (oversampled range bins,
@@ -570,9 +580,19 @@ class cTFMRA(BaseRetracker):
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
-            # Mandatory return function
+            # Set the values
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
+
+        # Apply a radar mode dependent range bias if option is in
+        # level-2 settings file
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
