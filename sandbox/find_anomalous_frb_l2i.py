@@ -47,8 +47,28 @@ def find_anomalous_frb_l2i():
         frb_mean[i] = np.nanmean(l2i.freeboard)
         frb2sit[i] = np.nanmean(l2i.freeboard)/np.nanmean(l2i.sea_ice_thickness)
 
+
         n_anomalous_frb[i] = len(np.where(l2i.freeboard > 0.4)[0])
         n_anomalous_frb_fract[i] = n_anomalous_frb[i]/l2i.n_records
+
+        ssa_negative = l2i.sea_surface_anomaly < 0.0
+        n_ssa_negative = len(np.where(ssa_negative)[0])
+        ssathres = 0.5*l2i.n_records
+        ssa_mostly_negative = n_ssa_negative > ssathres
+        is_central_arctic = np.amax(l2i.latitude) > 81.3
+
+        # print ssathres, n_ssa_negative, ssa_mostly_negative
+
+#        if ssa_mean[i] < 0.0:
+#            plt.figure()
+#            plt.plot(l2i.sea_surface_anomaly)
+#            plt.figure()
+#            plt.plot(ssa_negative)
+#            plt.show()
+#
+#            stop
+
+#         if ssa_mostly_negative and is_central_arctic:
 
 #        if np.abs(frb2sit[i]) > 0.5:
 #            print filename_from_path(l2i_file)
@@ -58,29 +78,26 @@ def find_anomalous_frb_l2i():
 #            plt.plot(l2i.sea_ice_thickness)
 #            plt.show()
 
-
 #        # Make an orbit plot
 #        orbitmap_filename = os.path.join(
 #                export_directory, file_basename(l2i_file)+"_map.png")
 #        orbitmap = PlotL2iDataOrbit()
 #        orbitmap.create_plot(l2i)
 #        orbitmap.savefig(orbitmap_filename)
-#
-#        # make a plot for freeboard and sea surface height anomaly
-#        frbssafig_filename = os.path.join(
-#                export_directory, file_basename(l2i_file)+"_frbssa.png")
-#        frbssafig = PlotL2iSeaSurfaceHeightFreeboard()
-#        frbssafig.create_plot(l2i)
-#        frbssafig.savefig(frbssafig_filename)
 
-        # make a plot for freeboard and thickness
-        frbsitfig_filename = os.path.join(
-                export_directory, file_basename(l2i_file)+"_frbsit.png")
-        frbsitfig = PlotL2iFreeboardThickness()
-        frbsitfig.create_plot(l2i)
-        frbsitfig.savefig(frbsitfig_filename)
+        # make a plot for freeboard and sea surface height anomaly
+        frbssafig_filename = os.path.join(
+                export_directory, file_basename(l2i_file)+"_frbssa.png")
+        frbssafig = PlotL2iSeaSurfaceHeightFreeboard()
+        frbssafig.create_plot(l2i)
+        frbssafig.savefig(frbssafig_filename)
 
-
+#        # make a plot for freeboard and thickness
+#        frbsitfig_filename = os.path.join(
+#                export_directory, file_basename(l2i_file)+"_frbsit.png")
+#        frbsitfig = PlotL2iFreeboardThickness()
+#        frbsitfig.create_plot(l2i)
+#        frbsitfig.savefig(frbsitfig_filename)
 
 #        if n_anomalous_frb[i] > 500:
 #            print filename_from_path(l2i_file)
@@ -98,9 +115,9 @@ def find_anomalous_frb_l2i():
 #    plt.plot(frb_mean)
 #    plt.figure("anomalous frb detector")
 #    plt.scatter(n_anomalous_frb, n_anomalous_frb_fract)
-    plt.figure("frb2sit")
-    plt.plot(frb2sit)
-    plt.show()
+#    plt.figure("frb2sit")
+#    plt.plot(frb2sit)
+#    plt.show()
 
 
 def get_command_line_arguments():

@@ -330,9 +330,10 @@ class PlotL2iSeaSurfaceHeightFreeboard(DataPlot):
         ax.yaxis.set_tick_params(direction='out')
         ax.yaxis.set_ticks_position('left')
         ax.set_ylabel("Elevation w.r.t. MSS (meters)")
-        ax.xaxis.set_ticks([])
+        ax.set_xlim(0, l2i.n_records)
+        # ax.xaxis.set_ticks([])
 
-        spines_to_remove = ["top", "right", "bottom"]
+        spines_to_remove = ["top", "right"]
         for spine in spines_to_remove:
             ax.spines[spine].set_visible(False)
 
@@ -375,8 +376,9 @@ class PlotL2iFreeboardThickness(DataPlot):
             ax.yaxis.set_ticks_position('left')
             ax.set_ylabel(parameter_name)
             ax.set_ylim(self.axis_lim[i])
-            ax.xaxis.set_ticks([])
+            ax.set_xlim(0, l2i.n_records)
+            # ax.xaxis.set_ticks([])
 
-            spines_to_remove = ["top", "right", "bottom"]
+            spines_to_remove = ["top", "right"]
             for spine in spines_to_remove:
                 ax.spines[spine].set_visible(False)

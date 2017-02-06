@@ -477,7 +477,6 @@ def align_echo_power(power, range, altitude, elevation_limit=None):
                                 range_step)
 
     aligned_power = np.ndarray(shape=(n_records, len(elevation_range)))
-    aligned_power *= np.nan
 
     for i in np.arange(n_records):
         f = interp1d(elevation[i, :].flatten(), power[i, :].flatten(),
