@@ -83,6 +83,31 @@ snow:
         local_machine_repository: none
         source: None
 
+    icdc_climatology_south:
+        pyclass: ICDCSouthernClimatology
+        long_name: ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology
+        filenaming: "ESA-SICCI_UB-IUP__AMSRE-AMSR2__SnowDepth_on_SeaIce__sh__12.5km__climatology__5DAY-Median__{month}{day}__fv0.01.nc"
+        local_repository: icdc_climatology_south
+        options:
+            snow_depth_nc_variable: mediansnowdepth_filtered100
+            snow_depth_uncertainty_nc_variable: mediansnowdepth_filtered100_variability
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 632
+                    n_lines: 664
+                    dx: 12500
+                    dy: 12500
+            subfolders: null
+
+
 # List of sea ice concentration products
 sic:
 
