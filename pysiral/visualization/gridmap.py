@@ -173,8 +173,8 @@ class AntarcticGridPresentationMap(object):
     @property
     def projection(self):
         mpl_proj = EASE2South().mpl_projection_keyw
-        mpl_proj["width"] = 8500000
-        mpl_proj["height"] = 8500000
+        mpl_proj["width"] = 9000000
+        mpl_proj["height"] = 9000000
         return mpl_proj
 
     def save2png(self, output):
