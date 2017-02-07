@@ -261,10 +261,10 @@ definition:
         unit: fraction
         dtype: float32
         cmap:
-            name: afmhot
+            name: copper
             vmin: 0
-            vmax: 0.20
-            step: 0.05
+            vmax: 0.50
+            step: 0.1
         cmap_diff:
             name: bwr
             vmin: -0.25
