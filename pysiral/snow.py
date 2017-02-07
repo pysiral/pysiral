@@ -249,7 +249,7 @@ class ICDCSouthernClimatology(SnowBaseClass):
         self._get_requested_date(l2)
 
         # Check if data for day is already loaded
-        if self._requested_date == self._current_date:
+        if self._requested_date != self._current_date:
             self._get_data(l2)
             self._current_date = self._requested_date
         else:
@@ -322,28 +322,101 @@ class ICDCSouthernClimatology(SnowBaseClass):
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self._options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]
-        y_min = y[dim.n_lines-1, 0]
+        x_min, y_min = np.nanmin(x), np.nanmin(y)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract snow depth along track data from grid
         sd_parameter_name = self._options.snow_depth_nc_variable
-        sdgrid = getattr(self._data, sd_parameter_name)
+        sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
+        sdgrid = np.flipud(sdgrid)
+        sdgrid = np.roll(sdgrid, 16, axis=0)
         sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
 
         # Extract snow depth uncertainty
         unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
-        uncgrid = getattr(self._data, unc_parameter_name)
+        uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
+        uncgrid = np.flipud(uncgrid)
+        uncgrid = np.roll(uncgrid, 16, axis=0)
         unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
+
+#        import matplotlib.pyplot as plt
+#        from mpl_toolkits.basemap import Basemap
+
+#        plt.figure("x")
+#        plt.imshow(x, origin="lower")
+#
+#        plt.figure("y")
+#        plt.imshow(y, origin="lower")
+#
+#
+#        plt.figure("lat")
+#        plt.imshow(self._data.lat, origin="lower")
+#
+#        plt.figure("lon")
+#        plt.imshow(self._data.lon, origin="lower")
+#        lat = self._data.lat
+#        lat_diff = np.flipud(lat) - lat
+#        plt.figure("lat flip test")
+#        plt.imshow(lat_diff)
+#        plt.colorbar(label="Latitude Diff (flipped - unflipped)")
+#        plt.show()
+
+#        width, height = dim.dy*dim.n_cols, dim.dx*dim.n_lines
+#        print "width: ", width
+#        print "height: ", height
+
+#        plt.figure("map")
+#        m = Basemap(projection='stere', lon_0=0, lat_0=-90, lat_ts=-70,
+#                    resolution='i', width=width, height=height)
+#        m.drawcoastlines(color='#4b4b4d', linewidth=2, zorder=20)
+#        px, py = m(l2.longitude, l2.latitude)
+#        m.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none", alpha=0.5)
+#        im = m.imshow(np.flipud(self._data.lon), interpolation="none",
+#                      alpha=0.4)
+#        plt.colorbar(im, label="Longitude")
+#        cs = m.contour(self._data.lon, self._data.lat, self._data.lat,
+#                       latlon=True, levels=np.arange(-89, 30, 5),
+#                       colors="white", linestyles="solid", linewidths=1)
+#        plt.clabel(cs, fontsize=10)
+#        m.plot(px, py, lw=2, color="red", zorder=100)
+#        m.drawparallels(np.arange(-90., 120., 10.), latmax=88)
+#        m.drawmeridians(np.arange(0., 420., 15.), latmax=88,
+#                        labels=[True, True, True, True])
+#
+#        image_extent = (np.amin(x), np.amax(x),
+#                        np.amin(y), np.amax(y))
+#
+#        plt.figure("map coordinates")
+#        plt.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none",
+#                   extent=image_extent, origin="lower")
+#        plt.plot(l2x, l2y, lw=2, color="red", zorder=100)
+#
+#        image_extent = (0, dim.n_cols,
+#                        0, dim.n_lines)
+#
+#        plt.figure("image coordinates")
+#        plt.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none",
+#                   extent=image_extent, origin="lower")
+#        plt.plot(ix, iy, lw=2, color="red", zorder=100)
+#        plt.scatter(ix[0], iy[0], color="red", zorder=101)
+#
+#        plt.figure("snow depth")
+#        x = np.arange(l2.n_records)
+#        plt.plot(x, sd)
+#        plt.xlim(0, len(x))
+#        plt.ylim(0, 0.6)
+#        plt.show()
+
+
         return sd, unc
 
     @property
     def month(self):
-        return "%02g" % self._requested_date[1]
+        return "%02g" % self._requested_date[0]
 
     @property
     def day(self):
-        return "%02g" % self._requested_date[2]
+        return "%02g" % self._requested_date[1]
 
 
 class SnowParameterContainer(object):
