@@ -62,30 +62,30 @@ level2:
                     peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
-                    peakiness_min: 40.0
-                    sea_ice_backscatter_min: 25.0
+                    peakiness_min: 70.0
+                    sea_ice_backscatter_min: 26.0
                     leading_edge_width_max: 0.75
                     ice_concentration_min: 70.0
                 sea_ice:
-                    peakiness_max: 30.0
+                    peakiness_max: 22.0
                     sea_ice_backscatter_min: 3.5
-                    sea_ice_backscatter_max: 20.0
-                    leading_edge_width_min: 1.35
+                    sea_ice_backscatter_max: 17.0
+                    leading_edge_width_min: 1.25
                     ice_concentration_min: 70.0
             sin:
                 ocean:
                     peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
-                    peakiness_min: 150.0
+                    peakiness_min: 222.5
                     sea_ice_backscatter_min: 25.0
-                    leading_edge_width_max: 1.4
+                    leading_edge_width_max: 1.2
                     ice_concentration_min: 70.0
                 sea_ice:    
-                    peakiness_max: 60.0
+                    peakiness_max: 55.7
                     sea_ice_backscatter_min: 5.0
-                    sea_ice_backscatter_max: 20.0
-                    leading_edge_width_min: 1.75
+                    sea_ice_backscatter_max: 15.5
+                    leading_edge_width_min: 1.95
                     ice_concentration_min: 70.0
 
                 
