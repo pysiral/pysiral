@@ -329,15 +329,17 @@ class ICDCSouthernClimatology(SnowBaseClass):
         sd_parameter_name = self._options.snow_depth_nc_variable
         sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
         sdgrid = np.flipud(sdgrid)
-        sdgrid = np.roll(sdgrid, 16, axis=0)
+        # sdgrid = np.roll(sdgrid, 16, axis=0)
         sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
+        sd[sd < 0.0] = np.nan
 
         # Extract snow depth uncertainty
         unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
         uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
         uncgrid = np.flipud(uncgrid)
-        uncgrid = np.roll(uncgrid, 16, axis=0)
+        # uncgrid = np.roll(uncgrid, 16, axis=0)
         unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
+        unc[unc < 0.0] = np.nan
 
 #        import matplotlib.pyplot as plt
 #        from mpl_toolkits.basemap import Basemap
@@ -406,7 +408,6 @@ class ICDCSouthernClimatology(SnowBaseClass):
 #        plt.xlim(0, len(x))
 #        plt.ylim(0, 0.6)
 #        plt.show()
-
 
         return sd, unc
 
