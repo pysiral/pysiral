@@ -222,6 +222,9 @@ class SurfaceTypeClassifier(object):
         for classifier_name in l1b.classifier.parameter_list:
             classifier = getattr(l1b.classifier, classifier_name)
             self.add_classifiers(classifier, classifier_name)
+            
+        # add month from L1b 
+        self._month = l1b.info.start_time.month
 
         # add sea ice concentration
         self.add_classifiers(l2.sic, "sic")
@@ -375,11 +378,18 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         lead = ANDCondition()
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
+        
+        # Check for monthly thresholds and pick index
+        if len(opt.sea_ice_backscatter_min)>1:
+            index = self._month-1
+        else:
+            index = 0
+        
         # Peakiness, backscatter, and leading edge width
-        lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
+        lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min[index])
         lead.add(parameter.leading_edge_width_first_half + \
-                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max)
-        lead.add(parameter.peakiness >= opt.peakiness_min)
+                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max[index])
+        lead.add(parameter.peakiness >= opt.peakiness_min[index])
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
@@ -391,12 +401,19 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         ice = ANDCondition()
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
-        # Stack (Beam) parameters
+        
+        # Check for monthly thresholds and pick index
+        if len(opt.sea_ice_backscatter_min)>1:
+            index = self._month-1
+        else:
+            index = 0
+        
+        # Peakiness, backscatter, and leading edge width
         ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
-        ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max)
+        ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max[index])
         ice.add(parameter.leading_edge_width_first_half + \
-                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min)
-        ice.add(parameter.peakiness <= opt.peakiness_max)
+                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min[index])
+        ice.add(parameter.peakiness <= opt.peakiness_max[index])
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag

@@ -62,15 +62,15 @@ level2:
                 peakiness_max: 5.0
                 ice_concentration_min: 5.0
             lead:
-                peakiness_min: 40.0
-                sea_ice_backscatter_min: 25.0
-                leading_edge_width_max: 0.8
+                peakiness_min: [37.4, 37.2, 37.8, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 30.3, 28.2, 35.4]
+                sea_ice_backscatter_min: [25.3, 25.0, 24.7, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 31.3, 25.4, 25.1]
+                leading_edge_width_max: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.8]
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_max: 20.0
+                peakiness_max: [14.1, 13.2, 13.3, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 30.0, 19.5, 15.9]
                 sea_ice_backscatter_min: 2.5
-                sea_ice_backscatter_max: 22.0
-                leading_edge_width_min: 0.9
+                sea_ice_backscatter_max: [22.4, 21.6, 21.5, 22.0, 22.0, 22.0, 22.0, 22.0, 22.0, 31.3, 25.2, 23.0]
+                leading_edge_width_min: [0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.7, 0.8, 0.8]
                 ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
