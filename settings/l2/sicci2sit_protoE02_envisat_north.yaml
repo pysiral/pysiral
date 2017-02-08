@@ -96,7 +96,7 @@ level2:
                 # if arrays than [lrm, sar, sin]
                 threshold: 0.45
                 offset: 0.0
-                use_sigma0_dependency: True
+                use_sigma0_dependency: False
                 sigma0_modification_scaling: 0.25
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
@@ -128,6 +128,7 @@ level2:
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: 0.22
+            use_footprint_correction: True
 
     # Algorithm for getting sea ice thickness from other l2 parameters
     sit:
