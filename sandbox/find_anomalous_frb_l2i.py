@@ -78,12 +78,12 @@ def find_anomalous_frb_l2i():
 #            plt.plot(l2i.sea_ice_thickness)
 #            plt.show()
 
-#        # Make an orbit plot
-#        orbitmap_filename = os.path.join(
-#                export_directory, file_basename(l2i_file)+"_map.png")
-#        orbitmap = PlotL2iDataOrbit()
-#        orbitmap.create_plot(l2i)
-#        orbitmap.savefig(orbitmap_filename)
+        # Make an orbit plot
+        orbitmap_filename = os.path.join(
+                export_directory, file_basename(l2i_file)+"_map.png")
+        orbitmap = PlotL2iDataOrbit()
+        orbitmap.create_plot(l2i)
+        orbitmap.savefig(orbitmap_filename)
 
         # make a plot for freeboard and sea surface height anomaly
         frbssafig_filename = os.path.join(
