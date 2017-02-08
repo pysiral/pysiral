@@ -327,7 +327,7 @@ class Level2Processor(DefaultLoggingClass):
                 continue
 
             # get radar(-derived) from altimeter freeboard
-            self._get_freeboard_from_radar_freeboard(l2)
+            self._get_freeboard_from_radar_freeboard(l1b, l2)
 
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
@@ -590,12 +590,12 @@ class Level2Processor(DefaultLoggingClass):
 
         return error_status, error_codes
 
-    def _get_freeboard_from_radar_freeboard(self, l2):
+    def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
 
         frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
         frbgeocorr.set_options(**self._job.config.frb.options)
-        frb, frb_unc = frbgeocorr.get_freeboard(l2)
+        frb, frb_unc = frbgeocorr.get_freeboard(l1b, l2)
 
         # Check and return error status and codes (e.g. missing file)
         error_status = frbgeocorr.error.status

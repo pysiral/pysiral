@@ -19,8 +19,8 @@ class L2FreeboardAlgorithmBaseClass(object):
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
 
-    def get_freeboard(self, l2):
-        freeboard, freeboard_uncertainty = self._get_freeboard(l2)
+    def get_freeboard(self, l1b, l2):
+        freeboard, freeboard_uncertainty = self._get_freeboard(l1b, l2)
         return freeboard, freeboard_uncertainty
 
 
@@ -31,7 +31,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
     def __init__(self):
         super(SnowGeometricCorrection, self).__init__()
 
-    def _get_freeboard(self, l2):
+    def _get_freeboard(self, l1b, l2):
         """ Compute the freeboard and its uncertainty """
 
         # Init parameter arrays
@@ -47,6 +47,14 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         is_ice = l2.surface_type.sea_ice.indices
         freeboard[is_ice] = l2.afrb[is_ice] + geometric_correction[is_ice]
 
+        # Apply fitted polynomial footprint correctoin based on sigma0
+        if self._options.has_key("use_footprint_correction"):
+            if self._options.use_footprint_correction:
+                sigma0 = l1b.classifier.sigma0
+                freeboard[is_ice] = freeboard[is_ice] - \
+                (0.3662153784 - 0.0290143102 * sigma0[is_ice] + \
+                 0.0005009073 * sigma0[is_ice]**2)
+        
         # XXX: This is not correct yet
         freeboard_uncertainty[is_ice] = l2.afrb.uncertainty[is_ice]
 
@@ -62,7 +70,7 @@ class L2RadarFreeboardAlgorithmBaseClass(object):
         self._options = options_from_dictionary(**opt_dict)
 
     def get_radar_freeboard(self, l1b, l2):
-        rfrb, rfrb_unc = self._get_radar_freeboard(l2)
+        rfrb, rfrb_unc = self._get_radar_freeboard(l1b, l2)
         return rfrb, rfrb_unc
 
 
