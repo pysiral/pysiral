@@ -318,7 +318,7 @@ class Level2Processor(DefaultLoggingClass):
             self._estimate_sea_surface_height(l2)
 
             # Compute the radar freeboard and its uncertainty
-            self._get_altimeter_freeboard(l2)
+            self._get_altimeter_freeboard(l1b, l2)
 
             # Get snow depth & density
             error_status, error_codes = self._get_snow_parameters(l2)
@@ -530,12 +530,12 @@ class Level2Processor(DefaultLoggingClass):
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
 
-    def _get_altimeter_freeboard(self, l2):
+    def _get_altimeter_freeboard(self, l1b, l2):
         """ Compute radar freeboard and its uncertainty """
 
         afrbalg = get_frb_algorithm(self._job.config.afrb.pyclass)
         afrbalg.set_options(**self._job.config.rfrb.options)
-        afrb, afrb_unc = afrbalg.get_radar_freeboard(l2)
+        afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
 
         # Check and return error status and codes
         # (unlikely in this case)

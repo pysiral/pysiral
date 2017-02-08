@@ -61,7 +61,7 @@ class L2RadarFreeboardAlgorithmBaseClass(object):
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
 
-    def get_radar_freeboard(self, l2):
+    def get_radar_freeboard(self, l1b, l2):
         rfrb, rfrb_unc = self._get_radar_freeboard(l2)
         return rfrb, rfrb_unc
 
@@ -76,7 +76,7 @@ class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
     def __init__(self):
         super(RadarFreeboardDefault, self).__init__()
 
-    def _get_radar_freeboard(self, l2):
+    def _get_radar_freeboard(self, l1b, l2):
         """ Compute the radar freeboard and its uncertainty """
 
         # radar freeboard is simple
