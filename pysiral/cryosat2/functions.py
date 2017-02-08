@@ -86,6 +86,14 @@ def get_cryosat2_wfm_range(window_delay, n_range_bins):
     return wfm_range
 
 
+def get_cryosat2_wfm_range_userhandbook(window_delay, n_range_bins):
+    lightspeed = 299792458.0
+    bandwidth = 320000000.0
+    range_bin_index = np.arange(n_range_bins)
+    wfm_range = lightspeed/(4. * bandwidth) * \
+        (2*window_delay*bandwidth - n_range_bins/2.0 + range_bin_index)
+    return wfm_range
+
 def get_tai_datetime_from_timestamp(mdsr_timestamp):
     """
     Converts the TAI MDSR timestamp into a datetime object
