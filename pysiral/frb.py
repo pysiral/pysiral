@@ -51,7 +51,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         if self._options.has_key("use_footprint_correction"):
             if self._options.use_footprint_correction:
                 sigma0 = l1b.classifier.sigma0
-                freeboard[is_ice] = freeboard[is_ice] - \
+                freeboard[is_ice] = freeboard[is_ice] + \
                 (0.3662153784 - 0.0290143102 * sigma0[is_ice] + \
                  0.0005009073 * sigma0[is_ice]**2)
         
