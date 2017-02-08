@@ -62,7 +62,7 @@ class L2RadarFreeboardAlgorithmBaseClass(object):
         self._options = options_from_dictionary(**opt_dict)
 
     def get_radar_freeboard(self, l1b, l2):
-        rfrb, rfrb_unc = self._get_radar_freeboard(l2)
+        rfrb, rfrb_unc = self._get_radar_freeboard(l1b, l2)
         return rfrb, rfrb_unc
 
 
