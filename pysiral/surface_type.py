@@ -222,8 +222,8 @@ class SurfaceTypeClassifier(object):
         for classifier_name in l1b.classifier.parameter_list:
             classifier = getattr(l1b.classifier, classifier_name)
             self.add_classifiers(classifier, classifier_name)
-            
-        # add month from L1b 
+
+        # add month from L1b
         self._month = l1b.info.start_time.month
 
         # add sea ice concentration
@@ -373,49 +373,79 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         self._surface_type.add_flag(ocean.flag, "ocean")
 
     def _classify_leads(self, options):
+
         opt = options.lead
         parameter = self._classifier
+
         lead = ANDCondition()
+
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
-        
+
         # Check for monthly thresholds and pick index
         if type(opt.sea_ice_backscatter_max) is list:
             index = self._month-1
+            n = len(opt.sea_ice_backscatter_max)
         else:
+            n = 1
             index = 0
-        
-        # Peakiness, backscatter, and leading edge width
-        lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min[index])
-        lead.add(parameter.leading_edge_width_first_half + \
-                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max[index])
-        lead.add(parameter.peakiness >= opt.peakiness_min[index])
+
+        # Sigma0
+        sea_ice_backscatter_min = np.full(n, opt.sea_ice_backscatter_min)
+        lead.add(parameter.sigma0 >= sea_ice_backscatter_min[index])
+
+        # Leading Edge Width
+        leading_edge_width_max = np.full(n, opt.leading_edge_width_max)
+        leading_edge_width = parameter.leading_edge_width_first_half + \
+            parameter.leading_edge_width_second_half
+        lead.add(leading_edge_width <= leading_edge_width_max[index])
+
+        # Pulse Peakiness
+        peakiness_min = np.full(n, opt.peakiness_min)
+        lead.add(parameter.peakiness >= peakiness_min[index])
+
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
+
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
     def _classify_sea_ice(self, options):
+
         opt = options.sea_ice
         parameter = self._classifier
+
         ice = ANDCondition()
+
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
 
         # Check for monthly thresholds and pick index
         if type(opt.sea_ice_backscatter_max) is list:
             index = self._month-1
+            n = len(opt.sea_ice_backscatter_max)
         else:
             index = 0
-        
-        # Peakiness, backscatter, and leading edge width
+            n = 1
+
+        # Sigma0
         ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
-        ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max[index])
-        ice.add(parameter.leading_edge_width_first_half + \
-                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min[index])
-        ice.add(parameter.peakiness <= opt.peakiness_max[index])
+        sea_ice_backscatter_max = np.full(n, opt.sea_ice_backscatter_max)
+        ice.add(parameter.sigma0 <= sea_ice_backscatter_max[index])
+
+        # Leading Edge Width
+        leading_edge_width = parameter.leading_edge_width_first_half + \
+            parameter.leading_edge_width_second_half
+        leading_edge_width_min = np.full(n, opt.leading_edge_width_min)
+        ice.add(leading_edge_width >= leading_edge_width_min[index])
+
+        # Pulse Peakiness
+        peakiness_max = np.full(n, opt.peakiness_max)
+        ice.add(parameter.peakiness <= peakiness_max[index])
+
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
+
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
@@ -456,8 +486,9 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         lead.add(self._is_radar_mode)
         # Peakiness, backscatter, and leading edge width
         lead.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
-        lead.add(parameter.leading_edge_width_first_half + \
-                 parameter.leading_edge_width_second_half <= opt.leading_edge_width_max)
+        lew = parameter.leading_edge_width_first_half + \
+            parameter.leading_edge_width_second_half
+        lead.add(lew <= opt.leading_edge_width_max)
         lead.add(parameter.peakiness >= opt.peakiness_min)
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
@@ -473,8 +504,9 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         # Stack (Beam) parameters
         ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
         ice.add(parameter.sigma0 <= opt.sea_ice_backscatter_max)
-        ice.add(parameter.leading_edge_width_first_half + \
-                parameter.leading_edge_width_second_half >= opt.leading_edge_width_min)
+        lew = parameter.leading_edge_width_first_half + \
+            parameter.leading_edge_width_second_half
+        ice.add(lew >= opt.leading_edge_width_min)
         ice.add(parameter.peakiness <= opt.peakiness_max)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
