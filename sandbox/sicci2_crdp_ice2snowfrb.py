@@ -56,23 +56,28 @@ class CRDPConvertP002aToP002b(DefaultLoggingClass):
 
     def convert(self, l2i_file, output_folder):
 
-#        import matplotlib.pyplot as plt
-
         # Read the data file
         l2i = L2iNCFileImport(l2i_file)
 
         # step one: Replace freeboard by radar freeboard
         l2i.freeboard = l2i.radar_freeboard
 
-#        plt.plot(l2i.sea_ice_thickness, "o")
+        # filter freeboard
+        valid_min, valid_max = -0.25, 2.25
+        invalid = np.where(np.logical_and(l2i.freeboard < valid_min,
+                                          l2i.freeboard > valid_max))
+        l2i.freeboard[invalid] = np.nan
+
         # step 2: recalculate sea ice thickness
         water_density = np.full(l2i.n_records, self.config.water_density)
         l2i.sea_ice_thickness = snowfreeboard2thickness(
                 l2i.freeboard, l2i.snow_depth, water_density,
                 l2i.ice_density, l2i.snow_density)
-#        plt.plot(l2i.sea_ice_thickness, "s")
-#        plt.show()
-#        stop
+
+        valid_min, valid_max = -0.5, 10.5
+        invalid = np.where(np.logical_and(l2i.sea_ice_thickness < valid_min,
+                                          l2i.sea_ice_thickness > valid_max))
+        l2i.sea_ice_thickness[invalid] = np.nan
 
         output_filename = os.path.join(output_folder,
                                        filename_from_path(l2i_file))
