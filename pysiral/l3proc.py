@@ -216,11 +216,11 @@ class L3DataGrid(DefaultLoggingClass):
 
         # XXX: There needs to be a better handling of data types
         #       (requires better definition of l3 output file format)
-        self.longitude = np.ndarray(shape=shape, dtype='f4')*np.nan
-        self.latitude = np.ndarray(shape=shape, dtype='f4')*np.nan
+        self.lon = np.ndarray(shape=shape, dtype='f4')*np.nan
+        self.lat = np.ndarray(shape=shape, dtype='f4')*np.nan
 
-        self.log.info("Adding parameter: longitude")
-        self.log.info("Adding parameter: latitude")
+        self.log.info("Adding parameter: lon")
+        self.log.info("Adding parameter: lat")
 
         # Surface type statistics
         for surface_type_statistics_par in self._surface_type_l3par.keys():
@@ -260,8 +260,8 @@ class L3DataGrid(DefaultLoggingClass):
         xx, yy = np.meshgrid(x, y)
         lon, lat = proj(xx, yy, inverse=True)
 
-        self._l3["longitude"] = lon
-        self._l3["latitude"] = lat
+        self._l3["lon"] = lon
+        self._l3["lat"] = lat
 
     def set_l2i_stack(self, l2i_stack):
         """
@@ -498,15 +498,16 @@ class L3DataGrid(DefaultLoggingClass):
         # TODO: Only L2 parameter for now
         parameter_list = list(self._l2_parameter)
         parameter_list.extend(self._l3_parameter)
-        parameter_list.append("longitude")
-        parameter_list.append("latitude")
+        parameter_list.append("lon")
+        parameter_list.append("lat")
         return parameter_list
 
     @property
     def dimdict(self):
         from collections import OrderedDict
-        dimdict = OrderedDict([("numx", self.griddef.extent.numx),
-                               ("numy", self.griddef.extent.numy)])
+        dimdict = OrderedDict([("time", 1),
+                               ("lat", self.griddef.extent.numx),
+                               ("lon", self.griddef.extent.numy)])
         return dimdict
 
     @property
