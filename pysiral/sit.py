@@ -115,5 +115,9 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         return sit_unc
 
 
+def snowfreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
+    return rho_w/(rho_w-rho_i)*frb + (rho_s-rho_w)/(rho_w-rho_i)*sd
+
+
 def get_sit_algorithm(name):
     return globals()[name]()
