@@ -57,6 +57,13 @@ def l3s_map():
         # TODO: batch processing
         ncdata = NCMaskedGridData(ncfile)
 
+        # XXX: Nasty hack as longitude/latitude output in pysiral l3s files
+        #      has changed to lon/lat for conformity with nc standards
+
+        if "lon" in ncdata.attributes:
+            ncdata.longitude = ncdata.lon
+            ncdata.latitude = ncdata.lat
+
         try:
             hemisphere = ncdata.hemisphere
         except:
