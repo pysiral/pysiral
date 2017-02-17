@@ -64,9 +64,11 @@ class CRDPConvertP002aToP002b(DefaultLoggingClass):
 
         # filter freeboard
         valid_min, valid_max = -0.25, 2.25
-        invalid = np.where(np.logical_and(l2i.freeboard < valid_min,
-                                          l2i.freeboard > valid_max))
+        invalid = np.where(np.logical_or(l2i.freeboard < valid_min,
+                                         l2i.freeboard > valid_max))[0]
         l2i.freeboard[invalid] = np.nan
+
+
 
         # step 2: recalculate sea ice thickness
         water_density = np.full(l2i.n_records, self.config.water_density)
@@ -75,8 +77,8 @@ class CRDPConvertP002aToP002b(DefaultLoggingClass):
                 l2i.ice_density, l2i.snow_density)
 
         valid_min, valid_max = -0.5, 10.5
-        invalid = np.where(np.logical_and(l2i.sea_ice_thickness < valid_min,
-                                          l2i.sea_ice_thickness > valid_max))
+        invalid = np.where(np.logical_or(l2i.sea_ice_thickness < valid_min,
+                                         l2i.sea_ice_thickness > valid_max))[0]
         l2i.sea_ice_thickness[invalid] = np.nan
 
         output_filename = os.path.join(output_folder,
