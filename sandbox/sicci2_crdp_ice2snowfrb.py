@@ -68,8 +68,6 @@ class CRDPConvertP002aToP002b(DefaultLoggingClass):
                                          l2i.freeboard > valid_max))[0]
         l2i.freeboard[invalid] = np.nan
 
-
-
         # step 2: recalculate sea ice thickness
         water_density = np.full(l2i.n_records, self.config.water_density)
         l2i.sea_ice_thickness = snowfreeboard2thickness(
