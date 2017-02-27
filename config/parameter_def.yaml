@@ -73,23 +73,23 @@ l2i:
     elevation:
         long_name: "elevation of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
         standard_name: elevation
-        units: meter
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
 
     mean_sea_surface:
         long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-        standard_name: mean_sea_surface
-        units: meter
+        standard_name: mean_sea_surface_elevation
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
 
     sea_surface_anomaly:
         long_name: "departure of instantaneous sea surface height from mean sea surface height"
-        standard_name: sea_surface_anomaly
-        units: meter
+        standard_name: sea_surface_elevation_anomaly
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
@@ -97,7 +97,7 @@ l2i:
     radar_freeboard:
         long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
         standard_name: radar_freeboard
-        units: meter
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
@@ -105,7 +105,7 @@ l2i:
     freeboard:
         long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
         standard_name: freeboard
-        units: meter
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
@@ -113,7 +113,7 @@ l2i:
     sea_ice_thickness:
         long_name: "thickness of the sea ice layer"
         standard_name: sea_ice_thickness
-        units: meter
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
@@ -121,7 +121,7 @@ l2i:
     snow_depth:
         long_name: "thickness of the snow layer"
         standard_name: snow_depth
-        units: meter
+        units: m
         coordinates: timestamp
         scale_factor: 1.0
         add_offset: 0.0
@@ -136,7 +136,7 @@ l2i:
 
     ice_density:
         long_name: "density of the sea ice layer"
-        standard_name: ice_density
+        standard_name: sea_ice_density
         units: kg/m^3
         coordinates: timestamp
         scale_factor: 1.0
@@ -144,7 +144,7 @@ l2i:
 
     sea_ice_concentration:
         long_name: "sea ice concentration"
-        standard_name: sea_ice_concentration
+        standard_name: sea_ice_area_fraction
         units: percent
         valid_min: 0.0
         valid_max: 100.0
@@ -154,7 +154,7 @@ l2i:
 
     sea_ice_type:
         long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
-        standard_name: sea_ice_type
+        standard_name: sea_ice_classification
         units: fraction
         valid_min: 0.0
         valid_max: 1.0
@@ -177,16 +177,16 @@ l3c:
 
     mean_sea_surface:
         long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-        standard_name: mean_sea_surface
-        units: meters
+        standard_name: mean_sea_surface_elevation
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
 
     sea_surface_anomaly:
         long_name: "departure of instantaneous sea surface height from mean sea surface height"
-        standard_name: sea_surface_anomaly
-        units: meter
+        standard_name: sea_surface_elevation_anomaly
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
@@ -194,7 +194,7 @@ l3c:
     radar_freeboard:
         long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
         standard_name: radar_freeboard
-        units: meters
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
@@ -202,7 +202,7 @@ l3c:
     freeboard:
         long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
         standard_name: freeboard
-        units: meters
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
@@ -210,15 +210,15 @@ l3c:
     sea_ice_thickness:
         long_name: "thickness of the sea ice layer"
         standard_name: sea_ice_thickness
-        units: meters
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
 
     snow_depth:
         long_name: "thickness of the snow layer"
-        standard_name: snow_depth
-        units: meter
+        standard_name: surface_snow_thickness_where_sea_ice
+        units: m
         coordinates: "lat lon time"
         scale_factor: 1.0
         add_offset: 0.0
@@ -235,7 +235,7 @@ l3c:
 
     ice_density:
         long_name: "density of the sea ice layer"
-        standard_name: ice_density
+        standard_name: sea_ice_density
         units: kg/m^3
         coordinates: "lat lon time"
         scale_factor: 1.0
@@ -243,7 +243,7 @@ l3c:
 
     sea_ice_concentration:
         long_name: "sea ice concentration"
-        standard_name: sea_ice_concentration
+        standard_name: sea_ice_area_fraction
         units: percent
         coordinates: "lat lon time"
         scale_factor: 1.0
@@ -251,7 +251,7 @@ l3c:
 
     sea_ice_type:
         long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
-        standard_name: sea_ice_type
+        standard_name: sea_ice_classification
         units: fraction
         coordinates: "lat lon time"
         scale_factor: 1.0
