@@ -165,13 +165,32 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
             # Get sigma0 information
             sigma0 = self.get_l1b_parameter("classifier","sigma0")
+            
+            # Adjust threshold based on sigma0 (2nd/3rd order polynomial fit)
+            if self._options.use_sigma0_threshold_dependency:
+                # Separate between first-year and multi-year ice type
+                if self._l2.sitype[i]<0.5:
+                    a0 = 0.2304690525
+                    a1 = 0.0102260586
+                    a2 = 0.0003467209
+                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
+                else:
+                    a0 = 0.2392926
+                    a1 = 4.885098e-03
+                    a2 = 6.43679e-05
+                    a3 = 2.420468e-05
+                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2 + a3 * sigma0[i]**3
+                    
+                    #a0 = 0.2104195466
+                    #a1 = 0.0044466796
+                    #a2 = 0.0006462485
+                    #tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
 
-            # Adjust threshold based on sigma0
-            if self._options.use_sigma0_dependency:
-                if sigma0[i]<8:
-                      tfmra_threshold -= self._options.sigma0_modification_scaling
-                if sigma0[i]<15.5 and sigma0[i]>=8:
-                      tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling
+            #if self._options.use_sigma0_dependency:
+            #    if sigma0[i]<8:
+            #          tfmra_threshold -= self._options.sigma0_modification_scaling
+            #    if sigma0[i]<15.5 and sigma0[i]>=8:
+            #          tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling
 
             # Get track point and its power
             tfmra_range, tfmra_power = self.get_threshold_range(
