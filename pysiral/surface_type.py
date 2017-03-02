@@ -383,9 +383,9 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         lead.add(self._is_radar_mode)
 
         # Check for monthly thresholds and pick index
-        if type(opt.sea_ice_backscatter_max) is list:
+        if type(opt.sea_ice_backscatter_min) is list:
             index = self._month-1
-            n = len(opt.sea_ice_backscatter_max)
+            n = len(opt.sea_ice_backscatter_min)
         else:
             n = 1
             index = 0
@@ -487,11 +487,11 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
-        
+        import pdb; pdb.set_trace()
         # Check for monthly thresholds and pick index
-        if type(opt.sea_ice_backscatter_max) is list:
+        if type(opt.sea_ice_backscatter_min) is list:
             index = self._month-1
-            n = len(opt.sea_ice_backscatter_max)
+            n = len(opt.sea_ice_backscatter_min)
         else:
             n = 1
             index = 0
