@@ -34,7 +34,7 @@ level2:
                 smooth_snow_depth: true
                 smooth_filter_width_m: 25000.0
                 valid_snow_depth_range: [0, 0.6]
-                invalid_replace: nan
+                invalid_replace: .0
    
     # geophysical corrections applied to the l1b range window
     corrections: 
@@ -57,30 +57,30 @@ level2:
                     peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
-                    peakiness_min: [66.2, 65.4, 66.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 71.2, 69.2, 65.8]
-                    sea_ice_backscatter_min: [22.1, 21.8, 21.6, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 25.1, 23.4, 22.2]
-                    leading_edge_width_max: [0.78, 0.79, 0.79, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 0.74, 0.76, 0.78]
+                    peakiness_min: [66.2, 65.4, 66.0, .0, .0, .0, .0, .0, .0, 71.2, 69.2, 65.8]
+                    sea_ice_backscatter_min: [22.1, 21.8, 21.6, .0, .0, .0, .0, .0, .0, 25.1, 23.4, 22.2]
+                    leading_edge_width_max: [0.78, 0.79, 0.79, .0, .0, .0, .0, .0, .0, 0.74, 0.76, 0.78]
                     ice_concentration_min: 70.0
                 sea_ice:
-                    peakiness_max: [27.2, 26.2, 25.7, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 27.8, 27.7, 26.7]
+                    peakiness_max: [27.2, 26.2, 25.7, .0, .0, .0, .0, .0, .0, 27.8, 27.7, 26.7]
                     sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [18.7, 18.1, 17.8, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 20.4, 19, 18.2]
-                    leading_edge_width_min: [1.13, 1.18, 1.19, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.13, 1.1, 1.13]
+                    sea_ice_backscatter_max: [18.7, 18.1, 17.8, .0, .0, .0, .0, .0, .0, 20.4, 19, 18.2]
+                    leading_edge_width_min: [1.13, 1.18, 1.19, .0, .0, .0, .0, .0, .0, 1.13, 1.1, 1.13]
                     ice_concentration_min: 70.0
             sin:
                 ocean:
                     peakiness_max: 5.0
                     ice_concentration_min: 5.0
                 lead:
-                    peakiness_min: [273.0, 272.7, 268.8, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 292.6, 289.1, 277.2]
-                    sea_ice_backscatter_min: [26.0, 26.4, 25.7, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 29.1, 27.6, 26.5]
-                    leading_edge_width_max: [1.07, 1.07, 1.08, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.02, 1.03, 1.06]
+                    peakiness_min: [273.0, 272.7, 268.8, .0, .0, .0, .0, .0, .0, 292.6, 289.1, 277.2]
+                    sea_ice_backscatter_min: [26.0, 26.4, 25.7, .0, .0, .0, .0, .0, .0, 29.1, 27.6, 26.5]
+                    leading_edge_width_max: [1.07, 1.07, 1.08, .0, .0, .0, .0, .0, .0, 1.02, 1.03, 1.06]
                     ice_concentration_min: 70.0
                 sea_ice:    
-                    peakiness_max: [104.6, 102.1, 97.7, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 113.6, 115.4, 107.8]
+                    peakiness_max: [104.6, 102.1, 97.7, .0, .0, .0, .0, .0, .0, 113.6, 115.4, 107.8]
                     sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [22.3, 21.9, 21.3, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 24.3, 24, 22.7]
-                    leading_edge_width_min: [1.50, 1.52, 1.56, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.45, 1.43, 1.47]
+                    sea_ice_backscatter_max: [22.3, 21.9, 21.3, .0, .0, .0, .0, .0, .0, 24.3, 24, 22.7]
+                    leading_edge_width_min: [1.50, 1.52, 1.56, .0, .0, .0, .0, .0, .0, 1.45, 1.43, 1.47]
                     ice_concentration_min: 70.0
 
     # Mission specific range uncertainties
