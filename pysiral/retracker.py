@@ -170,15 +170,15 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             if self._options.use_sigma0_threshold_dependency:
                 # Separate between first-year and multi-year ice type
                 if self._l2.sitype[i]<0.5:
-                    a0 = 0.2304690525
-                    a1 = 0.0102260586
-                    a2 = 0.0003467209
+                    a0 = 0.2226346193 #0.2304690525
+                    a1 = 0.0116119105 #0.0102260586
+                    a2 = 0.0003187522  #0.0003467209
                     tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
                 else:
-                    a0 = 0.2392926
-                    a1 = 4.885098e-03
-                    a2 = 6.43679e-05
-                    a3 = 2.420468e-05
+                    a0 = 2.410715e-01 #0.2392926
+                    a1 = 4.881797e-03 #4.885098e-03
+                    a2 = 1.381001e-04 #6.43679e-05
+                    a3 = 1.980877e-05 #2.420468e-05
                     tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2 + a3 * sigma0[i]**3
                     
                     #a0 = 0.2104195466
