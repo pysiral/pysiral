@@ -59,8 +59,8 @@ def l3s_map():
 
         # XXX: Nasty hack as longitude/latitude output in pysiral l3s files
         #      has changed to lon/lat for conformity with nc standards
-
-        if "lon" in ncdata.attributes:
+        if "lon" in ncdata.parameters:
+            print "cloning longitude, latitude attributes from lon, lat"
             ncdata.longitude = ncdata.lon
             ncdata.latitude = ncdata.lat
 
