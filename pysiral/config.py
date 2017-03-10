@@ -29,8 +29,8 @@ import socket
 from treedict import TreeDict
 
 
-PYSIRAL_VERSION = "0.3.0-dev"
-PYSIRAL_VERSION_FILENAME = "030dev"
+PYSIRAL_VERSION = "0.3.0"
+PYSIRAL_VERSION_FILENAME = "030"
 HOSTNAME = socket.gethostname()
 
 
