@@ -1,0 +1,213 @@
+# Level 2 processor settings are mission specific
+mission:
+    id: cryosat2
+    
+# Regions Settings (for file selection and potential subsetting
+roi:
+    pyclass: LowerLatLimit
+    hemisphere: south
+    options:
+        latitude_threshold: -50.0
+
+# Settings of Level-2 orbit processing
+level2:
+
+    # Sources of ancillary datasets
+    # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+    auxdata:
+        
+        mss:
+            name: dtu15
+            options: null
+        sic:
+            name: osisaf409
+            options: null
+        sitype:
+            name: fyi_default
+            options: null
+        snow: 
+            name: icdc_climatology_south
+            options: 
+                snow_density: 300
+                snow_density_uncertainty: 20
+                smooth_snow_depth: true
+                smooth_filter_width_m: 25000.0
+                
+    # geophysical corrections applied to the l1b range window
+    corrections: 
+        - dry_troposphere
+        - wet_troposphere
+        - inverse_barometric
+        - ionospheric
+        - ocean_tide_elastic
+        - ocean_tide_long_period
+        - ocean_loading_tide
+        - solid_earth_tide
+        - geocentric_polar_tide
+
+    # Mission specific range uncertainties
+    uncertainty:
+        # These values come from cs2awi (for cryosat2)
+        range:
+            sigma: [0.14, 0.10, 0.14]
+            speckle_noise: 0.2
+
+    # Surface type classification algorithm
+    surface_type: 
+        pyclass: SICCI2Cryosat2
+        options: 
+            sar:
+                ocean:
+                    peakiness_max: 5.0
+                    ice_concentration_min: 5.0
+                lead:
+                    peakiness_min: 40.0
+                    sea_ice_backscatter_min: 25.0
+                    leading_edge_width_max: 0.75
+                    ice_concentration_min: 70.0
+                sea_ice:
+                    peakiness_max: 30.0
+                    sea_ice_backscatter_min: 3.5
+                    sea_ice_backscatter_max: 20.0
+                    leading_edge_width_min: 1.35
+                    ice_concentration_min: 70.0
+            sin:
+                ocean:
+                    peakiness_max: 5.0
+                    ice_concentration_min: 5.0
+                lead:
+                    peakiness_min: 150.0
+                    sea_ice_backscatter_min: 25.0
+                    leading_edge_width_max: 1.4
+                    ice_concentration_min: 70.0
+                sea_ice:    
+                    peakiness_max: 60.0
+                    sea_ice_backscatter_min: 5.0
+                    sea_ice_backscatter_max: 20.0
+                    leading_edge_width_min: 1.75
+                    ice_concentration_min: 70.0
+
+                
+    # Retracking algorithm dependent on surface type
+    # mandatory entries for ocean, lead, sea ice
+    retracker: 
+        ocean: 
+            pyclass: NoneRetracker
+            options: null
+        lead: 
+            pyclass: cTFMRA
+            options:
+                # if arrays than [lrm, sar, sin]    
+                threshold: 0.5
+                offset: 0.0
+                wfm_oversampling_factor: 10
+                wfm_oversampling_method: linear
+                wfm_smoothing_window_size: [11, 11, 21] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_local_order: 1
+                range_bias: [-0.22, 0.47, 0.17]
+        sea_ice: 
+            pyclass: cTFMRA
+            options: 
+                # if arrays than [lrm, sar, sin]   
+                threshold: 0.5
+                offset: 0.0
+                wfm_oversampling_factor: 10
+                wfm_oversampling_method: linear
+                wfm_smoothing_window_size: [11, 11, 21] 
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                first_maximum_local_order: 1
+                range_bias: [-0.22, 0.47, 0.17]
+                
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
+    ssa: 
+        pyclass: SSASmoothedLinear
+        options: 
+            use_ocean_wfm: False
+            smooth_filter_width_m: 200000.0
+            smooth_filter_width_footprint_size: 300.0
+            pre_filtering: true
+            pre_filter_maximum_mss_median_offset: 1.0 # in meter            
+            uncertainty_tiepoints_distance_max: 100000.
+            uncertainty_minimum: 0.1
+            uncertainty_maximum: 0.5
+
+    # Estimation of Radar Freeboard
+    afrb:
+        pyclass: RadarFreeboardDefault
+        options: null
+
+    # Algorithm for converting radar freeboard into freeboard
+    frb: 
+        pyclass: SnowGeometricCorrection
+        options: 
+            vacuum_light_speed_reduction: 0.22
+            
+    # Algorithm for getting sea ice thickness from other l2 parameters
+    sit: 
+        pyclass: SeaIceFreeboardDefault
+        options: 
+            water_density: 1024.0
+            fyi_density: 916.7
+            myi_density: 882.0
+            
+    # List of filter at different stages of l2 procesing 
+    # (can be list of filters)
+    filter: 
+    
+        # Filters after freeboard computation
+        freeboard: 
+            frb_valid_range: 
+                pyclass: L2ParameterValidRange
+                options: 
+                    valid_minimum_point_value: -0.25
+                    valid_maximum_point_value: 2.25
+                    
+        # Filters after thickness computation
+        thickness: 
+            frb_valid_range: 
+                pyclass: L2ParameterValidRange
+                options: 
+                    valid_minimum_point_value: -0.5
+                    valid_maximum_point_value: 10.5
+                    
+    # Tests if l1b orbit file is valid
+    validator: 
+    
+        # Tests (Can be several) after surface type classification
+        surface_type: 
+            n_leads: 
+                pyclass: LeadFixedMinimumNumber
+                options: 
+                    minimum_n_leads: 3
+            
+    # Post-Processing (tbd if needed)            
+    post_processing: null
+    
+    # Definition of output files of the l2 orbit datasets
+    # (can be several if needed)
+    output: 
+        l2i: 
+            pyclass: L2iDataNC
+            path: null
+            options: 
+                subfolders: 
+                    - year 
+                    - month
+                parameter: 
+                    - timestamp
+                    - longitude
+                    - latitude
+                    - surface_type
+                    - elevation
+                    - mean_sea_surface
+                    - sea_surface_anomaly
+                    - radar_freeboard
+                    - freeboard
+                    - sea_ice_type
+                    - sea_ice_concentration
+                    - snow_depth
+                    - snow_density
+                    - ice_density
+                    - sea_ice_thickness
+                    

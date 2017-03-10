@@ -130,10 +130,11 @@ class Level3Job(ProcJob):
     def set_grid_definition(self, setting):
         self._grid_def = setting
 
-    def set_parameter(self, l2=[], l3=[], frb_nanmask=[]):
+    def set_parameter(self, l2=[], l3=[], frb_nanmask=[], sic_mask=[]):
         self._l2_parameter = l2
         self._l3_parameter = l3
         self._frb_nanmask = frb_nanmask
+        self._sic_mask = sic_mask
 
     def get_monthly_l2idata_files(self, year, month, l2tag="l2i"):
         """
@@ -171,8 +172,24 @@ class Level3Job(ProcJob):
         return self._l3_parameter
 
     @property
-    def l2_freeboard_nan_mask_targets(self):
+    def hemisphere(self):
+        return self._grid_def.hemisphere
+
+    @property
+    def resolution_tag(self):
+        return self._grid_def.resolution_tag
+
+    @property
+    def grid_tag(self):
+        return self._grid_def.grid_tag
+
+    @property
+    def freeboard_nan_mask_targets(self):
         return self._frb_nanmask
+
+    @property
+    def sea_ice_concentration_mask_targets(self):
+        return self._sic_mask
 
     @property
     def export_folder(self):

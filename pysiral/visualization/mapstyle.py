@@ -45,6 +45,10 @@ class GridMapAWILightStyle(GridMapAWIStyle):
         self.logo.tag = "awi-blue"
         self.background.tag = "light"
         self.clip.is_active = True
+        self.continents.set_keyw(color="#bcbdbf", lake_color="#bcbdbf",
+                                 iceshelf_color="#cdcdcf")
+        self.mapboundary.set_keyw(color="#ffffff", zorder=200,
+                                  linewidth=0.25, fill_color="#ffffff")
 
 
 class GridMapPaperStyle(GridMapAWIStyle):
@@ -123,7 +127,7 @@ class GridMapLogo(object):
     def __init__(self):
         self.is_active = True
         self.tag = "awi-white"
-        self.keyw = {"zoom": 0.8, "resample": True, "alpha": 0.75}
+        self.keyw = {"zoom": 0.2, "resample": True, "alpha": 0.75}
 
     def get_filename(self):
         folder = get_module_folder(__file__)

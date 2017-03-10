@@ -5,18 +5,25 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
-from treedict import TreeDict
+# cythonized bottleneck functions for cTFMRA
+try:
+    from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
+                                        cytfmra_wfm_noise_level,
+                                        cytfmra_normalize_wfm)
+    CYTFMRA_OK = True
+except:
+    CYTFMRA_OK = False
+
+
 from pysiral.flag import ANDCondition, FlagContainer
+
+from treedict import TreeDict
 import numpy as np
+import sys
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
 import bottleneck as bn
-
-# cythonized bottleneck functions for cTFMRA
-from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
-                                    cytfmra_wfm_noise_level,
-                                    cytfmra_normalize_wfm)
 
 
 class BaseRetracker(object):
@@ -27,6 +34,8 @@ class BaseRetracker(object):
     def __init__(self):
         self._indices = None
         self._classifier = None
+        self._l1b = None
+        self._l2 = None
 
     def set_options(self, **opt_dict):
         # TODO: Create options object
@@ -43,6 +52,10 @@ class BaseRetracker(object):
         self._create_default_properties(n_records)
 
     def retrack(self, l1b, l2):
+
+        # Store the pointer to l1b and l2 data objects
+        self._l1b = l1b
+        self._l2 = l2
 
         # Initialize the retracked range with an NaN array
         # -> only waveforms of type "surface_type" will retracked
@@ -63,6 +76,20 @@ class BaseRetracker(object):
         self.l2_retrack(l1b.waveform.range, l1b.waveform.power, self._indices,
                         l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
+
+    def get_l1b_parameter(self, data_group, parameter_name):
+        """ Get any valid level-2 paremeter name """
+        try:
+            return self._l1b.get_parameter_by_name(data_group, parameter_name)
+        except:
+            return None
+
+    def get_l2_parameter(self, parameter_name):
+        """ Get any valid level-2 paremeter name """
+        try:
+            return self._l2.get_parameter_by_name(parameter_name)
+        except:
+            return None
 
     def _create_default_properties(self, n_records):
         # XXX: Currently only range and status (true: ok)
@@ -85,6 +112,241 @@ class BaseRetracker(object):
     @property
     def error_flag(self):
         return FlagContainer(self._flag)
+
+
+class SICCI2TfmraEnvisat(BaseRetracker):
+    """ Default Retracker from AWI CryoSat-2 production system """
+
+    DOCSTR = r"Threshold first maximum retracker (TFMRA)"
+
+    def __init__(self):
+        super(SICCI2TfmraEnvisat, self).__init__()
+
+    def set_default_options(self):
+        self.set_options(**self.default_options_dict)
+
+    @property
+    def default_options_dict(self):
+        default_options_dict = {
+            "threshold": 0.5,
+            "offset": 0.0,
+            "wfm_oversampling_factor": 10,
+            "wfm_oversampling_method": "linear",
+            "wfm_smoothing_window_size": [11, 11, 51],
+            "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
+            "first_maximum_local_order": 1}
+        return default_options_dict
+
+    def create_retracker_properties(self, n_records):
+        # None so far
+        pass
+
+    def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
+        """ API Calling method """
+
+        for i in indices:
+
+            # Remove artifact bins
+            wfm_skipped = wfm[i, :]
+            wfm_skipped[0:5] = 0
+
+            # Get the filtered waveform, index of first maximum & norm
+            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
+                rng[i, :], wfm_skipped, radar_mode[i])
+
+            # first maximum finder might have failed
+            if fmi == -1:
+                self._range[i] = np.nan
+                self._power[i] = np.nan
+                return
+
+            # Get TFMRA threshold
+            tfmra_threshold = self._options.threshold
+
+            # Get sigma0 information
+            sigma0 = self.get_l1b_parameter("classifier","sigma0")
+            
+            # Adjust threshold based on sigma0 (2nd/3rd order polynomial fit)
+            if self._options.use_sigma0_threshold_dependency:
+                # Separate between first-year and multi-year ice type
+                if self._l2.sitype[i]<0.5:
+                    a0 = 0.2226346193 #0.2304690525
+                    a1 = 0.0116119105 #0.0102260586
+                    a2 = 0.0003187522  #0.0003467209
+                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
+                else:
+                    a0 = 2.410715e-01 #0.2392926
+                    a1 = 4.881797e-03 #4.885098e-03
+                    a2 = 1.381001e-04 #6.43679e-05
+                    a3 = 1.980877e-05 #2.420468e-05
+                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2 + a3 * sigma0[i]**3
+                    
+                    #a0 = 0.2104195466
+                    #a1 = 0.0044466796
+                    #a2 = 0.0006462485
+                    #tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
+
+            #if self._options.use_sigma0_dependency:
+            #    if sigma0[i]<8:
+            #          tfmra_threshold -= self._options.sigma0_modification_scaling
+            #    if sigma0[i]<15.5 and sigma0[i]>=8:
+            #          tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling
+
+            # Get track point and its power
+            tfmra_range, tfmra_power = self.get_threshold_range(
+                filt_rng, filt_wfm, fmi, tfmra_threshold)
+
+            # Mandatory return function
+            self._range[i] = tfmra_range + self._options.offset
+            self._power[i] = tfmra_power * norm
+
+    def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
+        """
+        Returns the intermediate product (oversampled range bins,
+        oversampled and filtered waveforms, indices of first maxima
+        and peak power norm for custom applications
+        """
+
+        oversample_factor = self._options.wfm_oversampling_factor
+        wfm_shape = (wfm.shape[0], wfm.shape[1]*oversample_factor)
+
+        filt_rng = np.full(wfm_shape, np.nan)
+        filt_wfm = np.full(wfm_shape, np.nan)
+        fmi = np.full(wfm_shape[0], -1, dtype=np.int32)
+        norm = np.full(wfm_shape[0], np.nan)
+
+        for i in np.arange(wfm.shape[0]):
+            if not is_valid[i]:
+                continue
+            result = self.get_filtered_wfm(rng[i, :], wfm[i, :], radar_mode[i])
+            filt_rng[i, :] = result[0]
+            filt_wfm[i, :] = result[1]
+            fmi[i] = result[2]
+            norm[i] = result[3]
+
+        return filt_rng, filt_wfm, fmi, norm
+
+    def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
+        """
+        Return the distance between two thresholds t0 < t1
+        """
+        width = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        for i in np.arange(rng.shape[0]):
+            if fmi[i] is None:
+                continue
+            r0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0)
+            r1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1)
+            width[i] = r1[0] - r0[0]
+
+        # some irregular waveforms might produce negative width values
+        is_negative = np.where(width < 0.)[0]
+        width[is_negative] = np.nan
+        return width
+
+    def get_filtered_wfm(self, rng, wfm, radar_mode):
+
+        # Echo oversampling & filtering
+        filt_rng, filt_wfm = self.filter_waveform(rng, wfm, radar_mode)
+
+        # Normalize filtered waveform
+        filt_wfm, norm = self.normalize_wfm(filt_wfm)
+
+        # Get noise level in normalized units
+        oversampling = self._options.wfm_oversampling_factor
+        noise_level = wfm_get_noise_level(filt_wfm, oversampling)
+
+        # Find first maxima
+        # (needs to be above radar mode dependent noise threshold)
+        fmnt = self._options.first_maximum_normalized_threshold[radar_mode]
+        peak_minimum_power = fmnt + noise_level
+        fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power)
+
+        return filt_rng, filt_wfm, fmi, norm
+
+    def filter_waveform(self, rng, wfm, radar_mode):
+        """
+        Return a filtered waveform: block filter smoothing of
+        oversampled original waveform
+        """
+
+        # Parameter from options dictionary if omitted
+        opt = self._options
+        oversampling = opt.wfm_oversampling_factor
+        interp_type = opt.wfm_oversampling_method
+        window_size = opt.wfm_smoothing_window_size[radar_mode]
+
+        # Waveform Oversampling
+        n = len(rng)
+        range_os = np.linspace(np.nanmin(rng), np.nanmax(rng), n*oversampling)
+        interpolator = interp1d(rng, wfm, kind=interp_type)
+        wfm_os = interpolator(range_os)
+
+        # Smoothing
+        wfm_os = smooth(wfm_os, window_size)
+
+        return range_os, wfm_os
+
+    def normalize_wfm(self, y):
+        norm = np.nanmax(y)
+        return y/norm, norm
+
+    def get_first_maximum_index(self, wfm, peak_minimum_power):
+        """
+        Return the index of the first peak (first maximum) on
+        the leading edge before the absolute power maximum.
+        The first peak is only valid if its power exceeds a certain threshold
+        """
+
+        # Get the main maximum first
+        absolute_maximum_index = np.argmax(wfm)
+
+        # Find relative maxima before the absolute maximum
+        try:
+            peaks = findpeaks(wfm[0:absolute_maximum_index])
+        except:
+            return -1
+
+        # Check if relative maximum are above the required threshold
+        leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]
+
+        # Identify the first maximum
+        first_maximum_index = absolute_maximum_index
+        if len(leading_maxima) > 0:
+            # first_maximum_index = leading_maxima[0]
+            first_maximum_index = peaks[leading_maxima[0]]
+
+        return first_maximum_index
+
+    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+        """
+        Return the range value and the power of the retrack point at
+        a given threshold of the firsts maximum power
+        """
+
+        # get first index greater as threshold power
+        first_maximum_power = wfm[first_maximum_index]
+
+        # Get power of retracked point
+        tfmra_power = threshold*first_maximum_power
+
+        # Use linear interpolation to get exact range value
+        potential_points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
+        diff_points = np.diff(potential_points)
+        diff_points_gap = np.where(diff_points > 1)[0]
+
+        if len(potential_points) == 0:
+            return np.nan, np.nan
+        else:
+            if len(diff_points_gap) > 0:
+                retrack_point = potential_points[diff_points_gap[-1]+1]
+            else:
+                retrack_point = potential_points[0]
+
+        i0, i1 = retrack_point-1, retrack_point
+        gradient = (wfm[i1]-wfm[i0])/(rng[i1]-rng[i0])
+        tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
+
+        return tfmra_range, tfmra_power
 
 
 class TFMRA(BaseRetracker):
@@ -137,6 +399,16 @@ class TFMRA(BaseRetracker):
             # Mandatory return function
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
+
+        # Apply a radar mode dependent range bias if option is in
+        # level-2 settings file
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
@@ -279,6 +551,7 @@ class TFMRA(BaseRetracker):
 
         return tfmra_range, tfmra_power
 
+
 class cTFMRA(BaseRetracker):
     """ Default Retracker from AWI CryoSat-2 production system """
 
@@ -326,9 +599,19 @@ class cTFMRA(BaseRetracker):
             tfmra_range, tfmra_power = self.get_threshold_range(
                 filt_rng, filt_wfm, fmi, tfmra_threshold)
 
-            # Mandatory return function
+            # Set the values
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
+
+        # Apply a radar mode dependent range bias if option is in
+        # level-2 settings file
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
@@ -558,7 +841,7 @@ class SICCILead(BaseRetracker):
 
         # sea ice backscatter not available for ERS?
         if thrs.minimum_echo_backscatter is not None:
-            valid.add(clf.sea_ice_backscatter > thrs.minimum_echo_backscatter)
+            valid.add(clf.sigma0 > thrs.minimum_echo_backscatter)
 
         bin_seperation = np.abs(self.retracked_bin - self.maximum_power_bin)
         valid.add(bin_seperation < thrs.maximum_retracker_maxpower_binsep)
@@ -899,8 +1182,11 @@ def power_in_echo_tail(wfm, retracked_bin, alpha, pad=3):
     retracking
     source: SICCI
     """
-    tracking_point = int(retracked_bin)
-    return sum(wfm[tracking_point+pad:])/alpha
+    try:
+        tracking_point = int(retracked_bin)
+        return sum(wfm[tracking_point+pad:])/alpha
+    except:
+        return np.nan
 
 
 def ocog_tail_shape(wfm, tracking_point, tail_pad=3):
@@ -918,15 +1204,24 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
     in the lead retracking is computed. The 5 bins before the tracking point
     are used as the echo rise.
     """
-    tracking_point = int(retracked_bin)
-    time = np.arange(len(wfm)).astype(float)
-    modelled_wave = P_lead(time, retracked_bin, k, sigma, alpha)
-    diff = wfm[tracking_point-4:tracking_point+1] - \
-        modelled_wave[tracking_point-4:tracking_point+1]
-    return np.sqrt(np.sum(diff*diff)/5)/alpha
-
+    try:
+        tracking_point = int(retracked_bin)
+        time = np.arange(len(wfm)).astype(float)
+        modelled_wave = P_lead(time, retracked_bin, k, sigma, alpha)
+        diff = wfm[tracking_point-4:tracking_point+1] - \
+            modelled_wave[tracking_point-4:tracking_point+1]
+        return np.sqrt(np.sum(diff*diff)/5)/alpha
+    except:
+        return np.nan
 
 # %% Retracker getter funtion
 
 def get_retracker_class(name):
+
+    if name == "cTFMRA" and not CYTFMRA_OK:
+        msg = "pysiral error: cTFMRA selected but pysiral.bnfunc.cytfmra " + \
+              "not available locally\n"
+        msg += "(See documentation on compilation with cython)"
+        sys.exit(msg)
+
     return globals()[name]()

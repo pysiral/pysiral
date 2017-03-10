@@ -106,9 +106,10 @@ class SSASmoothedLinear(SSAInterpolator):
 
     def _interpolate(self, l2):
         self._linear_smoothed_interpolation_between_tiepoints(l2)
-        self._calculate_uncertainty()
+        self._calculate_uncertainty(l2)
 
     def _linear_smoothed_interpolation_between_tiepoints(self, l2):
+        """ Based in cs2awi code from Robert Ricker """
 
         # Use ocean and lead elevations
         self._ssh_tiepoints = l2.surface_type.lead.indices
@@ -130,28 +131,24 @@ class SSASmoothedLinear(SSAInterpolator):
             valid = np.where(offset < threshold)
             self._ssh_tiepoints = self._ssh_tiepoints[index_dict[valid]]
 
-        ssa_raw = np.ndarray(shape=(l2.n_records))*np.nan
-        ssa_raw[self._ssh_tiepoints] = mss_frb[self._ssh_tiepoints]
-        non_tiepoints = np.where(np.isnan(ssa_raw))
-        # Prepare filtering, get filter width
-        #   filter width need to in points
-        #   -> need typical footprint size to be defined in filter options
-        filter_width = self._options.smooth_filter_width_m / \
-            self._options.smooth_filter_width_footprint_size
-        # Make sure filter width is odd number
-        filter_width = np.floor(filter_width) // 2 * 2 + 1
-        filter_width = filter_width.astype(int)
+        self.ssa_raw = np.ndarray(shape=(l2.n_records))*np.nan
+        self.ssa_raw[self._ssh_tiepoints] = mss_frb[self._ssh_tiepoints]
+        non_tiepoints = np.where(np.isnan(self.ssa_raw))
+
         # Filtered raw values
         # Use custom implementation of IDL SMOOTH:
         # idl_smooth(x, w) equivalent to SMOOTH(x, w, /edge_truncate, /nan)
-        ssa_filter1 = idl_smooth(ssa_raw, filter_width)
+        ssa_filter1 = idl_smooth(self.ssa_raw, self.filter_width)
+
         # Leave only the original ssh tie points
         ssa_filter1[non_tiepoints] = np.nan
+
         # Fill nans with linear interpolation and contant values at borders
         # python: fill_nan(x) = IDL: FILL_NAN(x, /NEIGHBOUR)
         ssa_filter2 = fill_nan(ssa_filter1)
+
         # Final smoothing
-        ssa = idl_smooth(ssa_filter2, filter_width)
+        ssa = idl_smooth(ssa_filter2, self.filter_width)
         self._value = ssa
 
 #        # TODO: Make example plot of individual filter steps
@@ -164,36 +161,67 @@ class SSASmoothedLinear(SSAInterpolator):
 #        plt.plot(x, ssa, color="orange", lw=3)
 #        plt.show()
 
-    def _calculate_uncertainty(self):
-        pass
+    def _calculate_uncertainty(self, l2):
+        """
+        Components that add to sea surface anomaly uncertainty
+        - mss uncertainty (if known)
+        - uncertainty of lead elevations
+        - distance to next lead tiepoint
+        """
 
-#      IDL Code for getting ssh uncertainty
-#      STD = REPLICATE(!VALUES.F_NAN, CS_L1B.N_RECORDS)
-#      FOR I=0,CS_L1B.N_RECORDS-1 DO BEGIN
-#        IF I LT SM/2 THEN BEGIN
-#          TMP = WHERE(FINITE(SSHA_RAW[0:I+SM/2]) EQ 1, NN)
-#          IF NN GT 0 THEN STD[I] = 1/SQRT(NN) * STDDEV([REPLICATE(!VALUES.D_NAN,ABS(I-SM/2)),SSHA_RAW[0:I+SM/2]],/NAN)
-#          NN = 0
-#        ENDIF
-#        IF I GE SM/2 AND I LE CS_L1B.N_RECORDS-1-SM/2 THEN BEGIN
-#          TMP = WHERE(FINITE(SSHA_RAW[I-SM/2:I+SM/2]) EQ 1, NN)
-#          IF NN GT 0 THEN STD[I] = 1/SQRT(NN) * STDDEV(SSHA_RAW[I-SM/2:I+SM/2],/NAN)
-#          NN = 0
-#        ENDIF
-#        IF I GT CS_L1B.N_RECORDS-1-SM/2 THEN BEGIN
-#          TMP = WHERE(FINITE(SSHA_RAW[I-SM/2:CS_L1B.N_RECORDS-1]) EQ 1, NN)
-#          IF NN GT 0 THEN STD[I] = 1/SQRT(NN) * STDDEV([SSHA_RAW[I-SM/2:CS_L1B.N_RECORDS-1],REPLICATE(!VALUES.D_NAN,ABS(CS_L1B.N_RECORDS-1+SM/2))],/NAN)
-#          NN = 0
-#        ENDIF
-#      ENDFOR
-#
-#      TMP = WHERE(FINITE(STD,/NAN),NN)
-#      IF NN GT 0 THEN BEGIN
-#        STD_MAX = ABS(SSHA_VALID - SMOOTH(ELEVATION,SM,/NAN,/EDGE_TRUNCATE))
-#        STD[TMP] = STD_MAX[TMP]
-#      ENDIF
-#
-#      SSH_UNCERTAINTY = SMOOTH(STD,SM,/NAN,/EDGE_TRUNCATE)
+        # short cuts to options
+        max_distance = self._options.uncertainty_tiepoints_distance_max
+        ssa_unc_min = self._options.uncertainty_minimum
+        ssa_unc_max = self._options.uncertainty_maximum
+
+        # prepare parameter arrays
+        lead_indices = l2.surface_type.lead.indices
+        lead_elevation = np.full((l2.n_records), np.nan, dtype=np.float32)
+        lead_elevation[lead_indices] = self._value[lead_indices]
+
+        # Compute distance to next lead tiepoint in meter
+        tiepoint_distance = get_tiepoint_distance(np.isfinite(lead_elevation))
+        tiepoint_distance = tiepoint_distance.astype(np.float32)
+        tiepoint_distance *= self._options.smooth_filter_width_footprint_size
+
+        # Compute the influence of distance to next tiepoints
+        # in the range of 0: minimum influence to 1: maximum influence
+        # It is assumed that the uncertainty has a quadratic dependance
+        # on tiepoint distance
+        tiepoint_distance_scalefact = tiepoint_distance / max_distance
+        above_distance_limit = np.where(tiepoint_distance_scalefact > 1.)[0]
+        tiepoint_distance_scalefact[above_distance_limit] = 1.
+        tiepoint_distance_scalefact = tiepoint_distance_scalefact**2.
+
+        # Compute the ssa uncertainty based on a min/max approach
+        # scaled by
+        ssa_unc_range = ssa_unc_max - ssa_unc_min
+        ssa_unc = ssa_unc_min + ssa_unc_range * tiepoint_distance_scalefact
+
+        # Save in class
+        self._uncertainty = ssa_unc
+
+#        XXX: Debug plot code
+#        import matplotlib.pyplot as plt
+#        plt.figure(figsize=(10, 6))
+#        plt.plot(lead_elevation, "o", label="leads")
+#        plt.plot(l2.elev-l2.mss, "+", label="elevations above mss")
+#        plt.plot(ssa_unc, lw=2, label="ssha uncertainty")
+#        plt.legend()
+#        plt.ylim(-0.5, 1.0)
+#        plt.ylabel("meter")
+#        plt.tight_layout()
+#        plt.show()
+
+
+    @property
+    def filter_width(self):
+        filter_width = self._options.smooth_filter_width_m / \
+            self._options.smooth_filter_width_footprint_size
+        # Make sure filter width is odd integer
+        filter_width = np.floor(filter_width) // 2 * 2 + 1
+        filter_width = filter_width.astype(int)
+        return filter_width
 
 
 def egm2wgs_delta_h(phi):
@@ -221,6 +249,45 @@ def compute_delta_h(a1, b1, a2, b2, phi):
     sinsqphi = sinsqphi * sinsqphi
     cossqphi = 1.0 - sinsqphi
     return -1.0*(delta_a * cossqphi + delta_b * sinsqphi)
+
+
+def rolling_window(a, window):
+    """
+    Recipe for rapid computations of rolling windows using numpy
+    from: http://www.rigtorp.se/2011/01/01/rolling-statistics-numpy.html
+    """
+    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+    strides = a.strides + (a.strides[-1],)
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+
+
+def get_tiepoint_distance(is_tiepoint):
+    """
+    Calculates the distance to the next tiepoints (boolean array)
+    """
+    distance_forward = get_tiepoints_oneway_distance(is_tiepoint)
+    distance_reverse = get_tiepoints_oneway_distance(is_tiepoint, reverse=True)
+    return np.minimum(distance_forward, distance_reverse)
+
+
+def get_tiepoints_oneway_distance(a, reverse=False):
+    """ loops through array and determines distance to latest flag=true """
+    n = len(a)
+    distance = np.full(a.shape, n+1, dtype=np.int32)
+    if reverse:
+        a = a[::-1]
+    dist = n
+    for i in np.arange(n):
+        if a[i]:
+            dist = 0
+        elif dist == n:
+            pass
+        else:
+            dist += 1
+        distance[i] = dist
+    if reverse:
+        distance = distance[::-1]
+    return distance
 
 
 def get_l2_ssh_class(name):

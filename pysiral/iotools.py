@@ -89,7 +89,8 @@ class ReadNC():
 
 class NCMaskedGridData(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename, squeeze=True):
+        self.squeeze = squeeze
         self.filename = filename
         self.parse()
 
@@ -101,6 +102,8 @@ class NCMaskedGridData(object):
         self.parameters = nc.parameters
         for parameter in nc.parameters:
             data = np.ma.array(getattr(nc, parameter))
+            if self.squeeze:
+                data = np.squeeze(data)
             data.mask = np.isnan(data)
             setattr(self, parameter, data)
 

@@ -48,7 +48,7 @@ level2:
 
     # Surface type classification algorithm
     surface_type:
-        pyclass: RA2SICCI
+        pyclass: SICCI1Envisat
         options:
             ocean:
                 pulse_peakiness_max: 3.0

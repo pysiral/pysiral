@@ -100,8 +100,8 @@ class NCDataFile(object):
             "standard_name": parameter,
             "scale_factor": 1.0,
             "add_offset": 0.0}
-        if not self.parameter_attributes.has_key(parameter):
-            self._missing_parameters.append(parameter)
+        if parameter not in self.parameter_attributes:
+            # self._missing_parameters.append(parameter)
             return default_attrs
         else:
             return dict(self.parameter_attributes[parameter])
@@ -192,7 +192,6 @@ class L1bDataNC(NCDataFile):
                 self._missing_parameters)
 
 
-
 class L2iDataNC(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
@@ -255,16 +254,17 @@ class L2iDataNC(NCDataFile):
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
-                # Add Parameter Attributes
+            # Add Parameter Attributes
             attribute_dict = self._get_variable_attr_dict(parameter_name)
             for key in attribute_dict.keys():
                 setattr(var, key, attribute_dict[key])
 
         # Report mission variable attributes (not in master release)
         not_master = "master" not in PYSIRAL_VERSION
-        if not_master:
+        if not_master and len(self._missing_parameters) > 0:
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
+
 
 class L3SDataNC(NCDataFile):
     """
@@ -277,6 +277,7 @@ class L3SDataNC(NCDataFile):
         self.export_path = None
         self.metadata = None
         self.l2 = None
+        self.parameter_attributes = get_parameter_attributes("l3c")
 
     def set_export_folder(self, path):
         self.export_path = path
@@ -289,6 +290,15 @@ class L3SDataNC(NCDataFile):
         self._open_file()
         self._create_root_group(self.metadata.attdict)
         self._populate_data_groups(l3)
+        self._add_time_dummy_variable()
+        self._write_to_file()
+
+    def export_parameter_dict(self, pardict, dimdict=None):
+        self._validate()
+        self._open_file()
+        self._create_root_group(self.metadata.attdict)
+        self._add_time_dummy_variable()
+        self._populate_data_groups_from_dict(pardict, dimdict)
         self._write_to_file()
 
     def _validate(self):
@@ -307,10 +317,41 @@ class L3SDataNC(NCDataFile):
                 self._rootgrp.createDimension(key, dimdict[key])
         for parameter_name in l3.parameter_list:
             data = l3.get_parameter_by_name(parameter_name)
-            dimensions = tuple(dims[0:len(data.shape)])
+            # Add time axis
+            if parameter_name not in ["lon", "lat"]:
+                data = np.array([data])
+                dimensions = tuple(dims[0:len(data.shape)])
+            else:
+                dimensions = tuple(dims[1:len(data.shape)+1])
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
+            # Add Parameter Attributes
+            attribute_dict = self._get_variable_attr_dict(parameter_name)
+            for key in attribute_dict.keys():
+                setattr(var, key, attribute_dict[key])
+
+    def _populate_data_groups_from_dict(self, pardict, dimdict):
+        dims = dimdict.keys()
+        for key in dims:
+                self._rootgrp.createDimension(key, dimdict[key])
+        for parameter_name in sorted(pardict.keys()):
+            data = pardict[parameter_name]
+            dimensions = tuple(dims[0:len(data.shape)])
+            var = self._rootgrp.createVariable(
+                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
+            var[:] = np.array([data])
+            # Add Parameter Attributes
+            attribute_dict = self._get_variable_attr_dict(parameter_name)
+            for key in attribute_dict.keys():
+                setattr(var, key, attribute_dict[key])
+
+    def _add_time_dummy_variable(self):
+        var = self._rootgrp.createVariable("time", "f8", ('time'),
+                                           zlib=self.zlib)
+        var.standard_name = "time"
+        var.long_name = self.time_def.units
+        var.units = "seconds"
 
 
 class PysiralOutputFilenaming(object):
@@ -363,11 +404,11 @@ class PysiralOutputFilenaming(object):
         export_filename = self._registered_parsers["l3s"]
         export_filename = export_filename.format(
             version=PYSIRAL_VERSION_FILENAME,
-            mission=l3s.mission,
-            gri=l3s.grid_tag,
-            resolution_tag=l3s.resolution_tag,
+            mission_id=l3s.mission,
+            grid=l3s.grid_tag,
+            resolution=l3s.resolution_tag,
             start=self._datetime_format(l3s.start_period),
-            stop_period=self._datetime_format(l3s.stop_period))
+            stop=self._datetime_format(l3s.stop_period))
         return export_filename
 
     def parse_filename(self, fn):
@@ -383,13 +424,16 @@ class PysiralOutputFilenaming(object):
                 for parameter in match.named.keys():
                     value = match[parameter]
                     if parameter in ["start", "stop"]:
-                        value = dtparser.parse(value)
+                        try:
+                            value = dtparser.parse(value)
+                        except:
+                            match_found = False
+                            break
                     setattr(self, parameter, value)
                 break
 
         if not match_found:
             print "Unrecognized filename: %s" % filename
-
 
     def _datetime_format(self, datetime):
         return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)

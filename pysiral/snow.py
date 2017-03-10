@@ -4,17 +4,24 @@ Created on Sun Apr 24 13:57:56 2016
 
 @author: Stefan
 """
-from pysiral.config import options_from_dictionary
+
 from pysiral.errorhandler import ErrorStatus
+from pysiral.config import options_from_dictionary
 from pysiral.filter import idl_smooth
+from pysiral.iotools import ReadNC
+
+import scipy.ndimage as ndimage
 
 from pyproj import Proj
 import numpy as np
+import os
 
 
 class SnowBaseClass(object):
 
     def __init__(self):
+
+        self.error = ErrorStatus()
         self._options = None
         self._local_repository = None
         self._subfolders = []
@@ -32,8 +39,8 @@ class SnowBaseClass(object):
         self._subfolders = subfolder_list
 
     def get_along_track_snow(self, l2):
-        snow_depth, snow_dens, msg = self._get_along_track_snow(l2)
-        return snow_depth, snow_dens, msg
+        snow = self._get_along_track_snow(l2)
+        return snow
 
 
 class Warren99(SnowBaseClass):
@@ -74,23 +81,28 @@ class Warren99(SnowBaseClass):
         self._p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
     def _get_along_track_snow(self, l2):
+
         # Validate hemisphere
         if l2.hemisphere == "south":
-            snow_depth = np.zeros(l2.n_records)
-            snow_density = np.zeros(l2.n_records)
-            msg = "ERROR - Warren99 not valid for southern hemisphere"
-            return snow_depth, snow_density, msg
+            snow = SnowParameterContainer()
+            snow.set_dummy(l2.n_records)
+            msg = "Warren99 not valid for southern hemisphere, returning 0"
+            self.error.add_error("warren99-invalid-hemisphere", msg)
+            return snow
+
         # Get orginial warren values
-        snow_depth, snow_density = self._get_warren99_fit(l2)
+        snow = self._get_warren99_fit(l2)
+
         # Filter invalid values
         valid_min, valid_max = self._options.valid_snow_depth_range
-        invalid = np.logical_or(snow_depth < valid_min, snow_depth > valid_max)
+        invalid = np.logical_or(snow.depth < valid_min, snow.depth > valid_max)
         invalid_records = np.where(invalid)[0]
-        snow_depth[invalid_records] = np.nan
-        snow_density[invalid_records] = np.nan
+        snow.set_invalid(invalid_records)
+
         # Apply ice_type (myi_fraction correction)
         scaling = l2.sitype * self._options.fyi_correction_factor + 0.5
-        snow_depth *= scaling
+        snow.depth *= scaling
+
         # Smooth snow depth (if applicable)
         if self._options.smooth_snow_depth:
             filter_width = self._options.smooth_filter_width_m
@@ -98,21 +110,37 @@ class Warren99(SnowBaseClass):
             filter_width /= l2.footprint_spacing
             # Round to odd number
             filter_width = np.floor(filter_width) // 2 * 2 + 1
-            snow_depth = idl_smooth(snow_depth, filter_width)
-        return snow_depth, snow_density, ""
+            snow.depth = idl_smooth(snow.depth, filter_width)
+
+        return snow, ""
 
     def _get_warren99_fit(self, l2):
+
         # get projection coordinates
         month = l2.track.timestamp[0].month
         l2x, l2y = self._p(l2.track.longitude, l2.track.latitude)
+
         # convert to degrees of arc
         l2x = l2x/(self.earth_radius * np.pi/180.0)
         l2y = l2y/(self.earth_radius * np.pi/180.0)
-        # Get W99 snow depth
-        snow_depth = self._get_snow_depth(month, l2x, l2y)
+
+        # Get W99 snow depth & unvertainty
+        sd = self._get_snow_depth(month, l2x, l2y)
+
         # Get W99 snow density
-        snow_density = self._get_snow_density(snow_depth, month, l2x, l2y)
-        return snow_depth, snow_density
+        sdens = self._get_snow_density(sd, month, l2x, l2y)
+
+        # Get the uncertainties
+        sd_unc, sdens_unc = self._get_warren_uncertainty(month, sd)
+
+        # Put everything in a container
+        snow = SnowParameterContainer()
+        snow.depth = sd
+        snow.density = sdens
+        snow.depth_uncertainty = sd_unc
+        snow.density_uncertainty = sdens_unc
+
+        return snow
 
     def _get_sd_coefs(self, month):
         return self.sd_coefs[month-1, 0:6]
@@ -127,14 +155,62 @@ class Warren99(SnowBaseClass):
         snow_depth *= 0.01
         return snow_depth
 
+    def _get_warren_uncertainty(self, month, sd):
+        """
+        Get the uncertainty from the Warren climatology for
+        snow depth and density
+
+        snow depth:
+            sum of fit rms and interannual variability
+
+        snow density
+            fit rms of snow water equivalent
+        """
+        # get w99 coeficients
+        sd_coef = self.sd_coefs[month-1, :]
+        swe_coef = self.swe_coefs[month-1, :]
+
+        # Snow depth uncertainties
+        sd_rms_fit_error = np.full(sd.shape, sd_coef[6]*0.01)
+        sd_interannual_var = np.full(sd.shape, sd_coef[9]*0.01)
+        sd_unc = sd_rms_fit_error + sd_interannual_var
+
+        # Snow density uncertainty
+        sdens_rms_fit_error = (swe_coef[6]*0.01)/sd*self.water_density
+        sdens_interannual_var = (swe_coef[9]*0.01)/sd*self.water_density
+        sdens_unc = sdens_rms_fit_error + sdens_interannual_var
+
+        return sd_unc, sdens_unc
+
+#        import matplotlib.pyplot as plt
+#        plt.figure("snow depth")
+#        plt.plot(sd_rms_fit_error, label="sd_rms_fit_error")
+#        plt.plot(sd_interannual_var, label="sd_interannual_var")
+#        plt.plot(sd_unc, label="sd_unc")
+#        plt.legend()
+#        plt.show()
+#
+#        plt.figure("snow density")
+#        plt.plot(sdens_rms_fit_error, label="sdens_rms_fit_error")
+#        plt.plot(sdens_interannual_var, label="sd_interannual_var")
+#        plt.plot(sdens_uncertainty, label="sdens_uncertainty")
+#        plt.legend()
+#        plt.show()
+#
+#        stop
+
     def _get_snow_density(self, snow_depth, month, l2x, l2y):
+        """ Extract along-track snow density """
+
         # get snow water equivalent coefs
         swe = self._get_swe_coefs(month)
         snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + \
             swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
         snow_water_equivalent *= 0.01
+
         # Convert sd and swe to snow density
         snow_density = snow_water_equivalent/snow_depth*self.water_density
+
         return snow_density
 
 
@@ -149,8 +225,220 @@ class FixedSnowDepthDensity(SnowBaseClass):
         snow_depth *= self._options.fixed_snow_depth
         snow_density = np.ones(shape=(l2.n_records), dtype=np.float32)
         snow_density *= self._options.fixed_snow_density
-        return snow_depth, snow_density, ""
 
+        snow = SnowParameterContainer()
+        snow.depth = snow_depth
+        snow.density = snow_density
+
+        return snow, ""
+
+
+class ICDCSouthernClimatology(SnowBaseClass):
+    """ Class for daily climatology fields from UHH ICDC """
+
+    def __init__(self):
+        super(ICDCSouthernClimatology, self).__init__()
+        self._data = None
+        self._current_date = [0, 0]
+        self._requested_date = [-1, -1]
+        self.error.caller_id = self.__class__.__name__
+
+    def _get_along_track_snow(self, l2):
+
+        # Extract requested day
+        self._get_requested_date(l2)
+
+        # Check if data for day is already loaded
+        if self._requested_date != self._current_date:
+            self._get_data(l2)
+            self._current_date = self._requested_date
+        else:
+            self._msg = "ICDCSouthernClimatology: Daily grid already present"
+
+        # Check if error with file I/O
+        if self.error.status:
+            return None, self._msg
+
+        # Extract along track snow depth and density
+        sd, sd_unc = self._get_snow_track(l2)
+
+        # Apply along-track smoothing if required
+        if self._options.smooth_snowdepth:
+            filter_width = self._options.smooth_filter_width_m
+            # Convert filter width to index
+            filter_width /= l2.footprint_spacing
+            # Round to odd number
+            filter_width = np.floor(filter_width) // 2 * 2 + 1
+            sd = idl_smooth(sd, filter_width)
+            sd_unc = idl_smooth(sd_unc, filter_width)
+
+        # Collect Parameters and return
+        # (density and density uncertainty fixed from l2 settings)
+        snow = SnowParameterContainer()
+        snow.depth = sd
+        snow.depth_uncertainty = sd_unc
+        snow.density = np.full(sd.shape, self._options.snow_density)
+        snow.density_uncertainty = np.full(
+            sd.shape, self._options.snow_density_uncertainty)
+
+        return snow, self._msg
+
+    def _get_data(self, l2):
+        """ Loads file from local repository only if needed """
+        path = self._get_local_repository_filename(l2)
+        # Validation
+        if not os.path.isfile(path):
+            self._msg = "ICDCSouthernClimatology: File not found: %s " % path
+            self.error.add_error("auxdata_missing_snow", self._msg)
+            return
+        self._data = ReadNC(path)
+        # This step is important for calculation of image coordinates
+        # self._data.ice_conc = np.flipud(self._data.ice_conc)
+        self._msg = "ICDCSouthernClimatology: Loaded SIC file: %s" % path
+
+    def _get_requested_date(self, l2):
+        """ Use first timestamp as reference, date changes are ignored """
+        month = l2.track.timestamp[0].month
+        day = l2.track.timestamp[0].day
+        self._requested_date = [month, day]
+
+    def _get_local_repository_filename(self, l2):
+        """ Get the filename (no subfolders as climatology for each day)"""
+        path = self._local_repository
+        filename = self._filenaming.format(month=self.month, day=self.day)
+        path = os.path.join(path, filename)
+        return path
+
+    def _get_snow_track(self, l2):
+
+        # TODO: Move functionality to image coordinate class
+
+        # Convert grid/track coordinates to grid projection coordinates
+        kwargs = self._options[l2.hemisphere].projection
+        p = Proj(**kwargs)
+        x, y = p(self._data.lon, self._data.lat)
+        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
+
+        # Convert track projection coordinates to image coordinates
+        # x: 0 < n_lines; y: 0 < n_cols
+        dim = self._options[l2.hemisphere].dimension
+        x_min, y_min = np.nanmin(x), np.nanmin(y)
+        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+
+        # Extract snow depth along track data from grid
+        sd_parameter_name = self._options.snow_depth_nc_variable
+        sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
+        sdgrid = np.flipud(sdgrid)
+        # sdgrid = np.roll(sdgrid, 16, axis=0)
+        sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
+        sd[sd < 0.0] = np.nan
+
+        # Extract snow depth uncertainty
+        unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
+        uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
+        uncgrid = np.flipud(uncgrid)
+        # uncgrid = np.roll(uncgrid, 16, axis=0)
+        unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
+        unc[unc < 0.0] = np.nan
+
+#        import matplotlib.pyplot as plt
+#        from mpl_toolkits.basemap import Basemap
+
+#        plt.figure("x")
+#        plt.imshow(x, origin="lower")
+#
+#        plt.figure("y")
+#        plt.imshow(y, origin="lower")
+#
+#
+#        plt.figure("lat")
+#        plt.imshow(self._data.lat, origin="lower")
+#
+#        plt.figure("lon")
+#        plt.imshow(self._data.lon, origin="lower")
+#        lat = self._data.lat
+#        lat_diff = np.flipud(lat) - lat
+#        plt.figure("lat flip test")
+#        plt.imshow(lat_diff)
+#        plt.colorbar(label="Latitude Diff (flipped - unflipped)")
+#        plt.show()
+
+#        width, height = dim.dy*dim.n_cols, dim.dx*dim.n_lines
+#        print "width: ", width
+#        print "height: ", height
+
+#        plt.figure("map")
+#        m = Basemap(projection='stere', lon_0=0, lat_0=-90, lat_ts=-70,
+#                    resolution='i', width=width, height=height)
+#        m.drawcoastlines(color='#4b4b4d', linewidth=2, zorder=20)
+#        px, py = m(l2.longitude, l2.latitude)
+#        m.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none", alpha=0.5)
+#        im = m.imshow(np.flipud(self._data.lon), interpolation="none",
+#                      alpha=0.4)
+#        plt.colorbar(im, label="Longitude")
+#        cs = m.contour(self._data.lon, self._data.lat, self._data.lat,
+#                       latlon=True, levels=np.arange(-89, 30, 5),
+#                       colors="white", linestyles="solid", linewidths=1)
+#        plt.clabel(cs, fontsize=10)
+#        m.plot(px, py, lw=2, color="red", zorder=100)
+#        m.drawparallels(np.arange(-90., 120., 10.), latmax=88)
+#        m.drawmeridians(np.arange(0., 420., 15.), latmax=88,
+#                        labels=[True, True, True, True])
+#
+#        image_extent = (np.amin(x), np.amax(x),
+#                        np.amin(y), np.amax(y))
+#
+#        plt.figure("map coordinates")
+#        plt.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none",
+#                   extent=image_extent, origin="lower")
+#        plt.plot(l2x, l2y, lw=2, color="red", zorder=100)
+#
+#        image_extent = (0, dim.n_cols,
+#                        0, dim.n_lines)
+#
+#        plt.figure("image coordinates")
+#        plt.imshow(sdgrid, vmin=0, vmax=0.5, interpolation="none",
+#                   extent=image_extent, origin="lower")
+#        plt.plot(ix, iy, lw=2, color="red", zorder=100)
+#        plt.scatter(ix[0], iy[0], color="red", zorder=101)
+#
+#        plt.figure("snow depth")
+#        x = np.arange(l2.n_records)
+#        plt.plot(x, sd)
+#        plt.xlim(0, len(x))
+#        plt.ylim(0, 0.6)
+#        plt.show()
+
+        return sd, unc
+
+    @property
+    def month(self):
+        return "%02g" % self._requested_date[0]
+
+    @property
+    def day(self):
+        return "%02g" % self._requested_date[1]
+
+
+class SnowParameterContainer(object):
+
+    def __init__(self):
+        self.depth = None
+        self.density = None
+        self.depth_uncertainty = None
+        self.density_uncertainty = None
+
+    def set_invalid(self, indices):
+        self.depth[indices] = np.nan
+        self.density[indices] = np.nan
+        self.depth_uncertainty[indices] = np.nan
+        self.density_uncertainty[indices] = np.nan
+
+    def set_dummy(self, n_records):
+        self.depth = np.full((n_records), np.nan)
+        self.density = np.full((n_records), np.nan)
+        self.depth_uncertainty = np.full((n_records), np.nan)
+        self.density_uncertainty = np.full((n_records), np.nan)
 
 
 def get_l2_snow_handler(name):

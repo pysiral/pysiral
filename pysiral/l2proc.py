@@ -6,8 +6,8 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
-                            get_yaml_config)
-from pysiral.errorhandler import ErrorStatus
+                            get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
+from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
@@ -16,6 +16,7 @@ from pysiral.sic import get_l2_sic_handler
 from pysiral.sitype import get_l2_sitype_handler
 from pysiral.snow import get_l2_snow_handler
 from pysiral.mss import get_l2_ssh_class
+from pysiral.output import PysiralOutputFilenaming
 from pysiral.roi import get_roi_class
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
@@ -26,11 +27,12 @@ from pysiral.sit import get_sit_algorithm
 from pysiral.output import get_output_class
 from pysiral.path import filename_from_path
 
-from collections import deque
+from collections import deque, OrderedDict
 from datetime import datetime
 import numpy as np
 import time
 import glob
+import sys
 import os
 
 
@@ -58,6 +60,9 @@ class Level2Processor(DefaultLoggingClass):
         # Processor Initialization Flag
         self._initialized = False
 
+        # Processor summary report
+        self.report = L2ProcessorReport()
+
 
 # %% Level2Processor: class properties
 
@@ -74,6 +79,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def initialize(self):
         self._initialize_processor()
+        self._initialize_summary_report()
 
     def get_input_files_local_machine_def(self, time_range, version="default"):
         mission_id = self._job.mission_id
@@ -81,6 +87,18 @@ class Level2Processor(DefaultLoggingClass):
         l1b_files = get_local_l1bdata_files(
             mission_id, time_range, hemisphere, version=version)
         self.set_l1b_files(l1b_files)
+
+        # Update the report
+        self.report.n_files = len(l1b_files)
+        self.report.time_range = time_range
+        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
+
+    def set_custom_l1b_file_list(self, l1b_files, time_range):
+        self.set_l1b_files(l1b_files)
+        # Update the report
+        self.report.n_files = len(l1b_files)
+        self.report.time_range = time_range
+        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -109,6 +127,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Run the processor """
         self._initialize_processor()
         self._l2_processing_of_orbit_files()
+        self._l2proc_summary_to_file()
         self._clean_up()
 
     def purge(self):
@@ -117,9 +136,19 @@ class Level2Processor(DefaultLoggingClass):
 
 # %% Level2Processor: house keeping methods
 
+    def _l2proc_summary_to_file(self):
+        output_ids, output_defs = td_branches(self._job.config.output)
+        for output_id, output_def in zip(output_ids, output_defs):
+            output = get_output_class(output_def.pyclass)
+            output.set_options(**output_def.options)
+            output.set_base_export_path(output_def.path)
+            time_range = self.report.time_range
+            export_folder = output.get_full_export_path(time_range.start)
+            self.report.write_to_file(output_id, export_folder)
+
     def _clean_up(self):
-        """ Make sure to deallocate memory """
-        pass
+        """ All procedures that need to be reset after a run """
+        self.report.clean_up()
 
 # %% Level2Processor: initialization
 
@@ -128,6 +157,8 @@ class Level2Processor(DefaultLoggingClass):
 
         # Instance can be reused
         if self._initialized:
+            # Empty orbit list (or else orbits will acculumate)
+            self._orbit.clear()
             return
 
         self.log.info("Initializing processor")
@@ -218,6 +249,13 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Processor Settings - Snow handler: %s" % (
             settings.pyclass))
 
+    def _initialize_summary_report(self):
+        """
+        Only add report parameter that are not time range specific
+        (e.g. the processor l2 settings)
+        """
+        self.report.l2_settings_file = self._job.l2_settings_file
+
 # %% Level2Processor: orbit processing
 
     def _l2_processing_of_orbit_files(self):
@@ -236,13 +274,6 @@ class Level2Processor(DefaultLoggingClass):
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
 
-            # File subsetting
-            # XXX: This is obsolete due to pre-processing, keep for later?
-            # in_roi = self._trim_to_roi(l1b)
-            # over_ocean = self._trim_land_margins(l1b)
-            # if not in_roi or not over_ocean:
-            #     continue
-
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
             # TODO: move to level1bData class
@@ -252,7 +283,16 @@ class Level2Processor(DefaultLoggingClass):
             l2 = Level2Data(l1b)
 
             # Add sea ice concentration (can be used as classifier)
-            self._get_sea_ice_concentration(l2)
+            error_status, error_codes = self._get_sea_ice_concentration(l2)
+            if error_status:
+                self._discard_l1b_procedure(error_codes, l1b_file)
+                continue
+
+            # Get sea ice type (may be required for geometrical corrcetion)
+            error_status, error_codes = self._get_sea_ice_type(l2)
+            if error_status:
+                self._discard_l1b_procedure(error_codes, l1b_file)
+                continue
 
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
@@ -261,29 +301,33 @@ class Level2Processor(DefaultLoggingClass):
 
             # Validate surface type classification
             # yes/no decision on continuing with orbit
-            error_status, error_messages = self._validate_surface_types(l2)
+            error_status, error_codes = self._validate_surface_types(l2)
             if error_status:
-                for error_message in error_messages:
-                    self.log.info("- validator message: "+error_message)
-                self.log.info("- skip file")
+                self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
             # Get elevation by retracking of different surface types
             # adds parameter elevation to l2
-            error_status = self._waveform_range_retracking(l1b, l2)
+            error_status, error_codes = self._waveform_retracking(l1b, l2)
+            if error_status:
+                self._discard_l1b_procedure(error_codes, l1b_file)
+                continue
 
             # Compute the sea surface anomaly (from mss and lead tie points)
             # adds parameter ssh, ssa, afrb to l2
-            self._estimate_ssh_and_radar_freeboard(l2)
+            self._estimate_sea_surface_height(l2)
 
-            # Get sea ice type (may be required for geometrical corrcetion)
-            self._get_sea_ice_type(l2)
+            # Compute the radar freeboard and its uncertainty
+            self._get_altimeter_freeboard(l1b, l2)
 
             # Get snow depth & density
-            self._get_snow_parameters(l2)
+            error_status, error_codes = self._get_snow_parameters(l2)
+            if error_status:
+                self.report.add_orbit_discarded_event(error_codes, l1b_file)
+                continue
 
             # get radar(-derived) from altimeter freeboard
-            self._get_freeboard_from_radar_freeboard(l2)
+            self._get_freeboard_from_radar_freeboard(l1b, l2)
 
             # Apply freeboard filter
             self._apply_freeboard_filter(l2)
@@ -300,6 +344,21 @@ class Level2Processor(DefaultLoggingClass):
             # Add data to orbit stack
             self._add_to_orbit_collection(l2)
 
+#            # XXX: Debug: Plots of uncertainties
+#            import matplotlib.pyplot as plt
+#            f, axarr = plt.subplots(5, sharex=True)
+#            axarr[0].plot(l2.sit.uncertainty)
+#            axarr[0].set_title("thickness uncertainty")
+#            axarr[1].plot(l2.frb.uncertainty)
+#            axarr[1].set_title("freeboard uncertainty")
+#            axarr[2].plot(l2.snow_depth.uncertainty)
+#            axarr[2].set_title("snow depth uncertainty")
+#            axarr[3].plot(l2.snow_dens.uncertainty)
+#            axarr[3].set_title("snow density uncertainty")
+#            axarr[4].plot(l2.ice_dens.uncertainty)
+#            axarr[4].set_title("ice density uncertainty")
+#            plt.show()
+
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
         filename = filename_from_path(l1b_file)
@@ -309,44 +368,11 @@ class Level2Processor(DefaultLoggingClass):
         l1b.info.subset_region_name = self._job.roi.hemisphere
         return l1b
 
-    def _trim_to_roi(self, l1b):
-        """
-        Trims orbit for ice/ocean areas (excluding land, land ice)
-        and returns true if data in ROI and false otherwise
-        """
-        roi_list = self._roi.get_roi_list(
-            l1b.time_orbit.longitude, l1b.time_orbit.latitude)
-        if len(roi_list) == 0:  # No match
-            return False
-        if len(roi_list) == l1b.n_records:  # Full match (no trimming)
-            return True
-        l1b.trim_to_subset(roi_list)  # Partial match (trimming)
-        return True
-
-    def _trim_land_margins(self, l1b):
-        """
-        Trim land areas at the margins of the orbit data
-
-        points over land surrounded by ocean measurements (e.g. inside the
-        Canadian Archipelago) will be excluded later in the processing
-        """
-        if not l1b.surface_type.has_flag("ocean"):
-            # TODO: Think of method to classify lon/lat point as land/ocean
-            #       (e.g. basemap functionality?) if land flag is not part
-            #       of l1b data set
-            pass
-        # TODO: This assumes that in the initial classification all waveforms
-        #       of relevance are classified as ocean
-        flag = l1b.surface_type.ocean.flag
-        is_ocean_list = np.nonzero(flag)
-        if len(is_ocean_list) == l1b.n_records:  # Nothing to do here
-            return True
-        if len(is_ocean_list) == 0:              # Nothing left to do
-            return False
-        trimmed_list = np.arange(np.amin(is_ocean_list),
-                                 np.amax(is_ocean_list)+1)
-        l1b.trim_to_subset(trimmed_list)
-        return True
+    def _discard_l1b_procedure(self, error_codes, l1b_file):
+        """ Log and report discarded l1b orbit segment """
+        self.log.info("- skip file")
+        for error_code in error_codes:
+            self.report.add_orbit_discarded_event(error_code, l1b_file)
 
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
@@ -355,31 +381,78 @@ class Level2Processor(DefaultLoggingClass):
 
     def _get_sea_ice_concentration(self, l2):
         """ Get sea ice concentration along track from auxdata """
+
+        # Get along-track sea ice concentrations via the SIC handler class
+        # (see self._set_sic_handler)
         sic, msg = self._sic.get_along_track_sic(l2)
+
+        # Report any messages from the SIC handler
         if not msg == "":
             self.log.info("- "+msg)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._sic.error.status
+        error_codes = self._sic.error.codes
+
+        # No error: Set sea ice concentration data to the l2 data container
+        if not error_status:
+            l2.sic.set_value(sic)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._sic.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+                self._sic.error.reset()
+
+        return error_status, error_codes
+
+    def _get_sea_ice_type(self, l2):
+        """ Get sea ice type (myi fraction) along track from auxdata """
+
+        # Call the sitype handler
+        sitype, msg = self._sitype.get_along_track_sitype(l2)
+
+        # Report any messages from the sitype handler
+        if not msg == "":
+            self.log.info("- "+msg)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._sitype.error.status
+        error_codes = self._sitype.error.codes
+
         # Add to l2data
-        l2.sic.set_value(sic)
+        if not error_status:
+            l2.sitype.set_value(sitype)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._sitype.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+            self._sitype.error.reset()
+
+        return error_status, error_codes
 
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
         pyclass = self._job.config.surface_type.pyclass
         surface_type = get_surface_type_class(pyclass)
         surface_type.set_options(**self._job.config.surface_type.options)
-        # Add all classifiers from l1bdata
-        for classifier_name in l1b.classifier.parameter_list:
-            classifier = getattr(l1b.classifier, classifier_name)
-            surface_type.add_classifiers(classifier, classifier_name)
-        # add sea ice concentration
-        surface_type.add_classifiers(l2.sic, "sic")
-        surface_type.set_l1b_surface_type(l1b.surface_type)
-        surface_type.classify()
+        surface_type.classify(l1b, l2)
         l2.set_surface_type(surface_type.result)
 
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
         surface_type_validators = self._job.config.validator.surface_type
         names, validators = td_branches(surface_type_validators)
+        error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
         error_messages = []
         for name, validator_def in zip(names, validators):
@@ -388,13 +461,14 @@ class Level2Processor(DefaultLoggingClass):
             state, message = validator.validate(l2)
             error_states.append(state)
             error_messages.append(message)
+            if state:
+                self.log.info("- Validator message: "+message)
         error_status = True in error_states
-        return error_status, error_messages
+        return error_status, error_codes
 
-    def _waveform_range_retracking(self, l1b, l2):
+    def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        error_status = {}
         surface_types, retracker_def = td_branches(self._job.config.retracker)
 
         for i, surface_type in enumerate(surface_types):
@@ -404,7 +478,6 @@ class Level2Processor(DefaultLoggingClass):
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 self.log.info("- no waveforms of type %s" % surface_type)
-                error_status[surface_type] = True
                 continue
 
             # Benchmark retracker performance
@@ -439,48 +512,107 @@ class Level2Processor(DefaultLoggingClass):
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def[i].pyclass,
                 time.time()-timestamp))
-            error_status[surface_type] = False
 
-        return error_status
+        # Error handling not yet implemented, return dummy values
+        return False, None
 
-    def _estimate_ssh_and_radar_freeboard(self, l2):
+    def _estimate_sea_surface_height(self, l2):
+
         # 1. get mss for orbit
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
+
         # 2. get get sea surface anomaly
         ssa = get_l2_ssh_class(self._job.config.ssa.pyclass)
         ssa.set_options(**self._job.config.ssa.options)
         ssa.interpolate(l2)
+
         # dedicated setters, else the uncertainty, bias attributes are broken
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
-        # altimeter freeboard (from radar altimeter w/o corrections)
-        l2.afrb = l2.elev - l2.mss - l2.ssa
 
-    def _get_sea_ice_type(self, l2):
-        """ Get sea ice concentration along track from auxdata """
-        sitype, msg = self._sitype.get_along_track_sitype(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        # Add to l2data
-        l2.sitype.set_value(sitype)
+    def _get_altimeter_freeboard(self, l1b, l2):
+        """ Compute radar freeboard and its uncertainty """
+
+        afrbalg = get_frb_algorithm(self._job.config.afrb.pyclass)
+        afrbalg.set_options(**self._job.config.rfrb.options)
+        afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
+
+        # Check and return error status and codes
+        # (unlikely in this case)
+        error_status = afrbalg.error.status
+        error_codes = afrbalg.error.codes
+
+        if not error_status:
+            # Add to l2data
+            l2.afrb.set_value(afrb)
+            l2.afrb.set_uncertainty(afrb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+
+        return error_status, error_codes
 
     def _get_snow_parameters(self, l2):
-        """ Get snow depth and density """
-        snow_depth, snow_dens, msg = self._snow.get_along_track_snow(l2)
+        """ Get snow depth and density with respective uncertainties """
+
+        # Get along track snow depth info
+        snow, msg = self._snow.get_along_track_snow(l2)
+
+        # Report any messages from the snow handler
         if not msg == "":
             self.log.info("- "+msg)
-        # Add to l2data
-        l2.snow_depth.set_value(snow_depth)
-        l2.snow_dens.set_value(snow_dens)
 
-    def _get_freeboard_from_radar_freeboard(self, l2):
+        # Check and return error status and codes (e.g. missing file)
+        error_status = self._snow.error.status
+        error_codes = self._snow.error.codes
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.snow_depth.set_value(snow.depth)
+            l2.snow_depth.set_uncertainty(snow.depth_uncertainty)
+            l2.snow_dens.set_value(snow.density)
+            l2.snow_dens.set_uncertainty(snow.density_uncertainty)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = self._snow.error.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
+                # SIC Handler is persistent, therefore errors status
+                # needs to be reset before next orbit
+            self._snow.error.reset()
+
+        return error_status, error_codes
+
+    def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
+
         frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
         frbgeocorr.set_options(**self._job.config.frb.options)
-        frb, msg = frbgeocorr.get_freeboard(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.frb.set_value(frb)
+        frb, frb_unc = frbgeocorr.get_freeboard(l1b, l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frbgeocorr.error.status
+        error_codes = frbgeocorr.error.codes
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.frb.set_value(frb)
+            l2.frb.set_uncertainty(frb_unc)
+
+        # on error: display error messages as warning and return status flag
+        # (this will cause the processor to report and skip this orbit segment)
+        else:
+            error_messages = frbgeocorr.get_all_messages()
+            for error_message in error_messages:
+                self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
         freeboard_filters = self._job.config.filter.freeboard
@@ -496,16 +628,30 @@ class Level2Processor(DefaultLoggingClass):
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
             # Remove invalid elevations / freeboards
-            l2.frb[frbfilter.flag.indices] = np.nan
+            l2.frb.set_nan_indices(frbfilter.flag.indices)
 
     def _convert_freeboard_to_thickness(self, l2):
+        """
+        Convert Freeboard to Thickness
+        Note: This step requires the definition of sea ice density
+              (usually in the l2 settings)
+        """
+
         frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
         frb2sit.set_options(**self._job.config.sit.options)
-        sit, ice_dens, msg = frb2sit.get_thickness(l2)
-        if not msg == "":
-            self.log.info("- "+msg)
-        l2.sit.set_value(sit)
-        l2.ice_dens.set_value(ice_dens)
+
+        sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
+
+        # Check and return error status and codes (e.g. missing file)
+        error_status = frb2sit.error.status
+
+        # Add to l2data
+        if not error_status:
+            # Add to l2data
+            l2.sit.set_value(sit)
+            l2.sit.set_uncertainty(sit_unc)
+            l2.ice_dens.set_value(ice_dens)
+            l2.ice_dens.set_uncertainty(ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self._job.config.filter.thickness
@@ -520,8 +666,8 @@ class Level2Processor(DefaultLoggingClass):
                 filter_def.pyclass, sitfilter.flag.num))
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
-            # Remove invalid elevations / freeboards
-            l2.frb[sitfilter.flag.indices] = np.nan
+            # Remove invalid thickness values
+            l2.sit.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
         output_ids, output_defs = td_branches(self._job.config.output)
@@ -563,6 +709,9 @@ class L2ProcJob(DefaultLoggingClass):
         # List for iterations (currently only month-wise)
         self.iterations = []
 
+        # List for predefined l1b files
+        self.preset_l1b_files = []
+
     def parse_l2_settings(self):
         """ Read the Level-2 settings yaml file """
 
@@ -582,8 +731,8 @@ class L2ProcJob(DefaultLoggingClass):
         else:
             settings_path = os.path.join(
                 self.pysiral_config.pysiral_local_path, "settings", "l2")
-            l2_settings_filename = os.path.join(settings_path,
-                self.options.l2_settings+".yaml")
+            l2_settings_filename = os.path.join(
+                settings_path, self.options.l2_settings+".yaml")
             if not os.path.isfile(l2_settings_filename):
                 self.error.add_error(
                     "l2-settings-not-found",
@@ -593,6 +742,7 @@ class L2ProcJob(DefaultLoggingClass):
 
         # All clear, read the settings
         self.settings = get_yaml_config(l2_settings_filename)
+        self.options.l2_settings_filename = l2_settings_filename
         self.log.info("Level-2 settings file: %s" % l2_settings_filename)
 
     def generate_preprocessor_iterations(self):
@@ -600,12 +750,18 @@ class L2ProcJob(DefaultLoggingClass):
 
         # The input data is organized in folder per month, therefore
         # the processing period is set accordingly
-        self.time_range.set_period("monthly")
-        self.log.info("Level-2 processor base period is monthly")
-        self.time_range.set_exclude_month(self.options.exclude_month)
-        self.log.info("Excluding month: %s" % str(self.options.exclude_month))
+        if not self.options.l1b_preset_is_active:
+            self.time_range.set_period("monthly")
+            self.log.info("Level-2 processor base period is monthly")
+            self.time_range.set_exclude_month(self.options.exclude_month)
+            self.log.info("Excluding month: %s" % str(
+                    self.options.exclude_month))
+            self.log.info("Number of iterations: %g" % len(self.iterations))
+        else:
+            self.time_range.set_period("custom")
+            self.log.info("Level-2 processor with preset l1b files (%g)" %
+                          len(self.preset_l1b_files))
         self.iterations = self.time_range.get_iterations()
-        self.log.info("Number of iterations: %g" % len(self.iterations))
 
     def process_requested_time_range(self):
         """
@@ -615,9 +771,15 @@ class L2ProcJob(DefaultLoggingClass):
 
         mission_info = self.pysiral_config.get_mission_info(self.mission_id)
 
-        # Set and validate the time range
-        start_date, stop_date = self.options.start_date, self.options.stop_date
-        self.time_range.set_range(start_date, stop_date)
+        if not self.options.l1b_preset_is_active:
+            # Set and validate the time range
+            start_date = self.options.start_date
+            stop_date = self.options.stop_date
+            self.time_range.set_range(start_date, stop_date)
+        else:
+            self._get_l1b_file_preset_list()
+            start_dt, stop_dt = self._get_l1b_preset_range()
+            self.time_range.set_range(start_dt, stop_dt)
 
         # Check if any errors in definitions
         self.time_range.error.raise_on_error()
@@ -637,6 +799,20 @@ class L2ProcJob(DefaultLoggingClass):
     def validate(self):
         self._validate_and_expand_auxdata()
         self._validate_and_create_output_directory()
+
+    def _get_l1b_file_preset_list(self):
+        self.preset_l1b_files = glob.glob(self.options.l1b_files_preset)
+
+    def _get_l1b_preset_range(self):
+        # Get start from first preset file
+        start_file = self.preset_l1b_files[0]
+        start_info = PysiralOutputFilenaming()
+        start_info.parse_filename(filename_from_path(start_file))
+        # Get stop from last preset file
+        stop_file = self.preset_l1b_files[-1]
+        stop_info = PysiralOutputFilenaming()
+        stop_info.parse_filename(filename_from_path(stop_file))
+        return start_info.start, stop_info.stop
 
     def _validate_and_expand_auxdata(self):
         """
@@ -678,8 +854,8 @@ class L2ProcJob(DefaultLoggingClass):
                 local_repository = auxdata_def[auxtype][auxdata_id]
                 pysiral_def.local_repository = local_repository
             except:
-                msg = "Missing auxdata definition in local_machine_def.yaml "+\
-                      "for %s:%s" % (auxtype, auxdata_id)
+                msg = "No auxdata definition in local_machine_def.yaml" + \
+                      " for %s:%s" % (auxtype, auxdata_id)
                 self.error.add_error("missing-auxdata-def", msg)
                 continue
 
@@ -741,12 +917,23 @@ class L2ProcJob(DefaultLoggingClass):
     def roi(self):
         return self.settings.roi
 
+    @property
+    def l2_settings_file(self):
+        return self.options.l2_settings_filename
+
+    @property
+    def l1b_preset_is_active(self):
+        return self.options.l1b_preset_is_active
+
 
 class L2ProcJobOptions(object):
     """ Simple container for Level-2 processor options """
 
     def __init__(self):
+        self.l2_settings_filename = "none"
         self.l2_settings = None
+        self.l1b_preset_is_active = False
+        self.l1b_files_preset = None
         self.run_tag = None
         self.input_version = "default"
         self.remove_old = False
@@ -760,4 +947,112 @@ class L2ProcJobOptions(object):
         for parameter in options_dict.keys():
             if hasattr(self, parameter):
                 setattr(self, parameter, options_dict[parameter])
+        if self.l1b_files_preset is not None:
+            self.l1b_preset_is_active = True
 
+
+class L2ProcessorReport(DefaultLoggingClass):
+
+    def __init__(self):
+
+        super(L2ProcessorReport, self).__init__(self.__class__.__name__)
+
+        self.n_files = 0
+        self.data_period = None
+        self.l2_settings_file = "none"
+        self.l1b_repository = "none"
+
+        # Counter for error codes
+        # XXX: This is a first quick implementation of error codes
+        #      (see pysiral.error_handler modules for more info) and
+        #      the dev should make sure to use the correct names. A
+        #      more formalized way of reporting errors will be added
+        #      in future updates
+        self._init_error_counters()
+
+    def add_orbit_discarded_event(self, error_code, l1b_file):
+        """ Add the l1b file to the list of files with a certain error code """
+
+        # Only except defined error codes
+        try:
+            self.error_counter[error_code].append(l1b_file)
+        except:
+            self.log.warning("Unknown error code (%s), ignoring" % error_code)
+
+    def write_to_file(self, output_id, directory):
+        """ Write a summary file to the defined export directory """
+
+        # Create a simple filename
+        filename = os.path.join(directory, "pysiral-l2proc-summary.txt")
+        self.log.info("Exporting summary report: %s" % filename)
+
+        lfmt = "  %-16s : %s\n"
+        current_time = str(datetime.now()).split(".")[0]
+        with open(filename, "w") as fhandle:
+
+            # Write infos on settings, host, os, ....
+            fhandle.write("# pysiral Level2Processor Summary\n\n")
+            fhandle.write(lfmt % ("created", current_time))
+
+            # Brief statistics of files, errors, warnings
+            fhandle.write("\n# Processor Statistics\n\n")
+            fhandle.write(lfmt % ("l1b files", str(self.n_files)))
+            fhandle.write(lfmt % ("errors", str(self.n_discarded_files)))
+            fhandle.write(lfmt % ("warnings", str(self.n_warnings)))
+
+            fhandle.write("\n# Processor & Local Machine Settings\n\n")
+            fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
+            fhandle.write(lfmt % ("python version", sys.version))
+            fhandle.write(lfmt % ("hostname", HOSTNAME))
+
+            # More info on this specific run
+            fhandle.write(lfmt % ("data period", self.data_period_str))
+            fhandle.write(lfmt % ("Level-2 settings", self.l2_settings_file))
+            fhandle.write(lfmt % ("l1b repository", self.l1b_repository))
+
+            # List discarded files and reason (error code & description)
+            fhandle.write("\n# Detailed Error Breakdown\n\n")
+            msg = "  No %s output generated for %g l1b files due " + \
+                  "to following errors:\n"
+            fhandle.write(msg % (output_id, self.n_discarded_files))
+
+            for error_code in PYSIRAL_ERROR_CODES.keys():
+                n_discarded_files = len(self.error_counter[error_code])
+                if n_discarded_files == 0:
+                    continue
+                error_description = PYSIRAL_ERROR_CODES[error_code]
+                msg = "\n  %g file(s): [error_code:%s] %s\n" % (
+                    n_discarded_files, error_code, error_description)
+                fhandle.write(msg)
+                for discarded_file in self.error_counter[error_code]:
+                    fn = filename_from_path(discarded_file)
+                    fhandle.write("  * %s\n" % fn)
+
+    def clean_up(self):
+        """ Remove all non-persistent parameter """
+        self.data_period = None
+        self.l1b_repository = "none"
+        self._init_error_counters()
+
+    def _init_error_counters(self):
+        self.error_counter = OrderedDict([])
+        for error_code in PYSIRAL_ERROR_CODES.keys():
+            self.error_counter[error_code] = []
+
+    @property
+    def data_period_str(self):
+        try:
+            return self.time_range.label
+        except:
+            return "invalid/mission data period"
+
+    @property
+    def n_discarded_files(self):
+        num_discarded_files = 0
+        for error_code in self.error_counter.keys():
+            num_discarded_files += len(self.error_counter[error_code])
+        return num_discarded_files
+
+    @property
+    def n_warnings(self):
+        return 0

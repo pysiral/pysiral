@@ -4,7 +4,9 @@ Created on Sun Apr 24 13:57:56 2016
 
 @author: Stefan
 """
+
 from pysiral.config import options_from_dictionary
+from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 
 import scipy.ndimage as ndimage
@@ -20,6 +22,7 @@ class SICBaseClass(object):
         self._local_repository = None
         self._subfolders = []
         self._msg = ""
+        self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
         self._options = options_from_dictionary(**opt_dict)
@@ -48,6 +51,7 @@ class OsiSafSIC(SICBaseClass):
         self._data = None
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
+        self.error.caller_id = self.__class__.__name__
 
     @property
     def year(self):
@@ -68,8 +72,11 @@ class OsiSafSIC(SICBaseClass):
         self._msg = ""
         self._get_requested_date(l2)
         self._get_data(l2)
-        sic = self._get_sic_track(l2)
-        return sic, self._msg
+        if not self.error.status:
+            sic = self._get_sic_track(l2)
+            return sic, self._msg
+        else:
+            return None, self._msg
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -82,15 +89,23 @@ class OsiSafSIC(SICBaseClass):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
+            self._msg = "OsiSafSIC: Daily grid already present"
             return
         path = self._get_local_repository_filename(l2)
+
+        # Validation
+        if not os.path.isfile(path):
+            self._msg = "OsiSafSIC: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sic", self._msg)
+            return
+
         self._data = ReadNC(path)
         self._data.ice_conc = self._data.ice_conc[0, :, :]
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = 0
         # This step is important for calculation of image coordinates
         self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self._msg = "Loaded SIC file: %s" % path
+        self._msg = "OsiSafSIC: Loaded SIC file: %s" % path
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -128,6 +143,7 @@ class IfremerSIC(SICBaseClass):
         self._data = None
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
+        self.error.caller_id = self.__class__.__name__
 
     @property
     def year(self):
@@ -170,6 +186,13 @@ class IfremerSIC(SICBaseClass):
             # Data already loaded, nothing to do
             return
         path = self._get_local_repository_filename(l2)
+
+        # Validation
+        if not os.path.isfile(path):
+            self._msg = "IfremerSIC: File not found: %s " % path
+            self.error.add_error("auxdata_missing_sic", self._msg)
+            return
+
         self._data = ReadNC(path)
         self._data.ice_conc = self._data.concentration[0, :, :]
         flagged = np.where(
@@ -178,7 +201,7 @@ class IfremerSIC(SICBaseClass):
 
         # This step is important for calculation of image coordinates
         self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self._msg = "Loaded SIC file: %s" % path
+        self._msg = "IfremerSIC: Loaded SIC file: %s" % path
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):

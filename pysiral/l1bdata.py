@@ -286,6 +286,13 @@ class Level1bData(object):
         # Push to waveform container
         self.waveform.set_waveform_data(power, range, self.radar_modes)
 
+    def get_parameter_by_name(self, data_group, parameter_name):
+        try:
+            data_group = getattr(self, data_group)
+            return getattr(data_group, parameter_name)
+        except:
+            return None
+
     @property
     def n_records(self):
         return self.info.n_records
@@ -298,7 +305,6 @@ class Level1bData(object):
         for radar_mode_flag in radar_mode_flag_list:
             radar_mode_list.append(radar_modes.name(radar_mode_flag))
         return ";".join(radar_mode_list)
-
 
 class L1bConstructor(Level1bData):
     """
@@ -368,6 +374,7 @@ class L1bdataNCFile(Level1bData):
         self.filename = filename
         self.nc = None
         self.time_def = NCDateNumDef()
+        self.ncattrs_ignore_list = ['_NCProperties']
 
     def parse(self):
         """ populated the L1b data container from the l1bdata netcdf file """
@@ -386,6 +393,8 @@ class L1bdataNCFile(Level1bData):
         (stored as global attributes in l1bdata netCDF files)
         """
         for attribute_name in self.nc.ncattrs():
+            if attribute_name in self.ncattrs_ignore_list:
+                continue
             attribute_value = getattr(self.nc, attribute_name)
             # Convert timestamps back to datetime objects
             if attribute_name in ["start_time", "stop_time"]:
@@ -766,6 +775,13 @@ class L1bWaveforms(object):
     @property
     def n_records(self):
         return self._get_wfm_shape(0)
+
+    @property
+    def radar_modes(self):
+        if self._radar_mode is None:
+            return "none"
+        flags = np.unique(self._radar_mode)
+        return [self.radar_mode_def.get_name(flag) for flag in flags]
 
     @property
     def dimdict(self):

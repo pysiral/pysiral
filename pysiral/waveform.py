@@ -5,6 +5,7 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
+from retracker import SICCI2TfmraEnvisat
 import numpy as np
 
 
@@ -131,7 +132,6 @@ def sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s,
     return sigma0
 
 
-
 class TFMRALeadingEdgeWidth(object):
     """
     Container for computation of leading edge width by taking differences
@@ -139,9 +139,8 @@ class TFMRALeadingEdgeWidth(object):
     """
 
     def __init__(self, rng, wfm, radar_mode, is_ocean):
-        from retracker import TFMRA
         # Compute filtered waveform and index of first maximum once
-        self.tfmra = TFMRA()
+        self.tfmra = SICCI2TfmraEnvisat()
         self.tfmra.set_default_options()
         filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(
             rng, wfm, radar_mode, is_ocean)

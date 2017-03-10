@@ -41,12 +41,15 @@ class EnvisatPreProc(L1bPreProc):
         """
 
         # Read the envisat SGDR file
-        t0 = time.time()
-        l1b = L1bConstructor(self._pysiral_config)
-        l1b.mission = "envisat"
-        l1b.filename = filename
-        l1b.construct()
-        t1 = time.time()
+        try:
+            t0 = time.time()
+            l1b = L1bConstructor(self._pysiral_config)
+            l1b.mission = "envisat"
+            l1b.filename = filename
+            l1b.construct()
+            t1 = time.time()
+        except:
+            return []
         self.log.info("- Parsed source file in %.3g seconds" % (t1 - t0))
 
         # Extract relevant segments over ocean

@@ -88,7 +88,7 @@ class GridMapDiffParameter(GridMapParameterBase):
         return "$\Delta$ "+self.pardef.label+" ("+self.pardef.unit+")"
 
     def set_parameter(self, grida, gridb, parameter_name):
-        self.grid = gridb-grida
+        self.grid = grida-gridb
         self.pardef = self._parameter_definitions[parameter_name]
 
     @property

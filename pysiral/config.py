@@ -25,11 +25,14 @@ from dateutil.relativedelta import relativedelta
 import os
 import sys
 import yaml
+import socket
 from treedict import TreeDict
 
 
-PYSIRAL_VERSION = "0.2.0-master"
-PYSIRAL_VERSION_FILENAME = "020"
+PYSIRAL_VERSION = "0.3.0-dev"
+PYSIRAL_VERSION_FILENAME = "030dev"
+HOSTNAME = socket.gethostname()
+
 
 class ConfigInfo(object):
     """
@@ -132,6 +135,12 @@ class RadarModes(object):
         except:
             return None
 
+    def get_name(self, flag):
+        for mode_name, mode_flag in self.flag_dict.items():
+            if flag == mode_flag:
+                return mode_name
+        return None
+
     def name(self, index):
         i = self.flag_dict.values().index(index)
         return self.flag_dict.keys()[i]
@@ -143,7 +152,7 @@ class RadarModes(object):
 
 class TimeRangeRequest(object):
 
-    _PERIODS = ["monthly"]
+    _PERIODS = ["monthly", "custom"]
 
     def __init__(self):
         self._start_dt = None
@@ -286,16 +295,30 @@ class TimeRangeRequest(object):
                 month_start, month_stop = get_month_time_range(year, month)
 
                 # limit the time range for first and last iteration
-                # (may not change anything if full month is selected)
-                if index == 1:
-                    month_start = self.start_dt
-                if index == n_iterations:
+                # (only if the first and the last month are not in the
+                #  exclude_month list)
+
+                first_month = self._start_dt.month
+                first_month_excluded = first_month in self._exclude_month
+                if index == 1 and not first_month_excluded:
+                    month_start = self._start_dt
+
+                last_month = self._stop_dt.month
+                last_month_excluded = last_month in self._exclude_month
+                if index == n_iterations and not last_month_excluded:
                     month_stop = self.stop_dt
 
+                # set final time range
                 time_range.set_range(month_start, month_stop)
                 time_range.set_indices(index, n_iterations)
                 iterations.append(time_range)
                 index += 1
+
+        elif self._period == "custom":
+            time_range = TimeRangeIteration(base_period="custom")
+            time_range.set_range(self.start_dt, self.stop_dt)
+            time_range.set_indices(1, 1)
+            iterations = [time_range]
 
         return iterations
 
@@ -318,7 +341,7 @@ class TimeRangeRequest(object):
         except:
             error_message = "cannot convert integer list to datetime: %s" % (
                 str(int_list))
-            self.error.append(self.__class__.__name__, error_message)
+            self.error.add_error(self.__class__.__name__, error_message)
             return None
 
         # if stop time: add one period
@@ -471,6 +494,14 @@ class DefaultCommandLineArguments(object):
                 "default": False,
                 "required": False,
                 "help": 'set to skip any required command line inputs'},
+
+            # preset for level-1b (l1bdata) fiels
+            "l1b_files": {
+                "action": "store",
+                "dest": "l1b_files_preset",
+                "default": None,
+                "required": False,
+                "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
 
             # fetch the level-2 settings file
             "l2-settings": {

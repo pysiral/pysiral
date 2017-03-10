@@ -83,6 +83,31 @@ snow:
         local_machine_repository: none
         source: None
 
+    icdc_climatology_south:
+        pyclass: ICDCSouthernClimatology
+        long_name: ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology
+        filenaming: "ESA-SICCI_UB-IUP__AMSRE-AMSR2__SnowDepth_on_SeaIce__sh__12.5km__climatology__5DAY-Median__{month}{day}__fv0.01.nc"
+        local_repository: icdc_climatology_south
+        options:
+            snow_depth_nc_variable: mediansnowdepth_filtered100
+            snow_depth_uncertainty_nc_variable: mediansnowdepth_filtered100_variability
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 632
+                    n_lines: 664
+                    dx: 12500
+                    dy: 12500
+            subfolders: null
+
+
 # List of sea ice concentration products
 sic:
 
@@ -131,6 +156,50 @@ sic:
             link: "/archive/ice/conc/{year}/{month}/ice_conc*polstere*.nc"
 
     # OSI-SAf
+    osisaf409:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration (OSI-409)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_reproc_{year}{month}{day}1200.nc4"
+        local_repository: osisaf409
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 760
+                    n_lines: 1120
+                    dx: 10000
+                    dy: 10000
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: null
+
+    # OSI-SAf
     ifremer:
         pyclass: IfremerSIC
         long_name: SSM/I Sea-Ice concentration Arctic Daily Maps on 12.5 km Polar Grid (ifremer)
@@ -176,6 +245,12 @@ sic:
 
 # List of sea ice type products
 sitype:
+
+    fyi_default:
+        pyclass: FYIDefault
+        long_name: All sea ice is classified per default as first year sea ice
+        local_repository: null
+        options: null
 
     myi_default:
         pyclass: MYIDefault
@@ -226,3 +301,34 @@ sitype:
             pwdfile: null
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
+
+    icdc_nasateam:
+        pyclass: ICDCNasaTeam
+        long_names: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
+        filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v14__0.04__90.nc"
+        local_repository: icdc_nasateam
+        options:
+            variable_name: my_sea_ice_area_fraction_0to100_limitedexpansion
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 448
+                    dx: 25000
+                    dy: 25000
+            south: null
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: ftp.zmaw.de/
+            pwdfile: null
+            type: daily
+            link: "outgoing/icdc/esasicci/"
