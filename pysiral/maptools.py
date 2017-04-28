@@ -34,29 +34,38 @@ class GeoPcolorGrid():
 
         # Main part
         xp[0:self.n, 0:self.m] = x[0:self.n, 0:self.m] + dx
-        yp[0:self.n, 0:self.m] = y[0:self.n, 0:self.m] + dy
+        yp[0:self.n, 0:self.m] = y[0:self.n, 0:self.m] - dy
 
         # lower boundary
         xp[self.n, 0:self.m] = x[self.n-1, 0:self.m] + dx
-        yp[self.n, 0:self.m] = y[self.n-1, 0:self.m] - dy
+        yp[self.n, 0:self.m] = y[self.n-1, 0:self.m] + dy
 
         # Right boundary
         xp[0:self.n, self.m] = x[0:self.n, self.m-1] - dx
-        yp[0:self.n, self.m] = y[0:self.n, self.m-1] + dy
+        yp[0:self.n, self.m] = y[0:self.n, self.m-1] - dy
 
         # Last tiny piece
         xp[self.n, self.m] = x[self.n-1, self.m-1] - dx
-        yp[self.n, self.m] = y[self.n-1, self.m-1] - dy
+        yp[self.n, self.m] = y[self.n-1, self.m-1] + dy
 
 #        import matplotlib.pyplot as plt
 #
+#        ii, jj = 310, 310
+#        plt.figure()
+#        plt.scatter([x[ii, jj]], [y[ii, jj]], s=120, color="red")
+#        plt.scatter([xp[ii, jj], xp[ii+1, jj], xp[ii, jj+1], xp[ii+1, jj+1]],
+#                    [yp[ii, jj], yp[ii+1, jj], yp[ii, jj+1], yp[ii+1, jj+1]],
+#                    color="black")
+#        plt.show()
+
 #        plt.figure()
 #        plt.scatter(x, y, color="red")
 #        plt.scatter(xp, yp, color="black")
+#        plt.xlim(np.nanmin(x), np.nanmax(x))
+#        plt.ylim(np.nanmin(y), np.nanmax(y))
 #        plt.show()
 #
 #        stop
-
 
         self.longitude, self.latitude = p(xp, yp, inverse=True)
 
