@@ -1,5 +1,18 @@
 # History of changes
 
+## Version 0.x.x (TBD)
+
+**New Features**
+* [visualization] Added mean filter for smooting in l3 maps (`create_l3s_map.py`: new option `-avfilt int:window_size`)
+
+**Bugfixes**
+
+**Changes**
+* [l2 processing] Option `-run-tag` has been made optional. If omitted, the run tag will be set to L2 settings id
+
+**Settings**
+
+
 ## Version 0.3.0 (10. March 2017)
 
 **New Features**
