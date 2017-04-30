@@ -51,6 +51,30 @@ def pysiral_l2proc():
     jobdef.error.raise_on_error()
 
     # Initialize the Level-2 Processor
+
+    # TODO: (0.4.0):
+    #
+    #   The arguments for the Level2Processor class are not well encapsulated.
+    #   In general, there should be the following separate objects which
+    #   are currently mixed in the L2 procjob. This leads to functionality
+    #   in Level2Processor that does not belong there.
+    #
+    #   1. L2 algorithm settings
+    #      - content of the l2 setting files (minus output definition)
+    #
+    #   2. Product definition
+    #      - run tag
+    #      - output location and formats
+    #
+    #   3. Auxdata handler
+    #      - location of auxiliary data files in local machine
+    #
+    #   4. List of l1b input files
+    #
+    #   job = Level2Processor(l2_settings, product_def, auxdata_handler)
+    #   job.execute(l1b_files)
+
+
     job = Level2Processor(jobdef)
     job.initialize()
 
@@ -58,6 +82,10 @@ def pysiral_l2proc():
     for time_range in jobdef.iterations:
 
         job.log.info("Processing period: %s" % time_range.label)
+
+        # TODO: (0.4.0):
+        # This should be simplified to
+        #   job.set_input_files(file_list)
 
         # Get the list of input files from local machine def
         if not jobdef.l1b_preset_is_active:
@@ -67,13 +95,22 @@ def pysiral_l2proc():
         else:
             job.set_custom_l1b_file_list(jobdef.preset_l1b_files, time_range)
 
+        # TODO: (0.4.0):
+        # This is going to be obsolete (check done before)
+
         # Check error, e.g. problems with local_machine_def, ...
         job.error.raise_on_error()
+
+        # TODO: (0.4.0):
+        # This is going to be obsolete (check done before)
 
         # List might be empty
         if job.has_empty_file_list:
             job.log.info(" Skipping period: %s" % time_range.label)
             continue
+
+        # TODO: (0.4.0):
+        # Data management should not be part of the l2 proc
 
         # Empty output folder (if --remove_old is set)
         if jobdef.remove_old and not jobdef.overwrite_protection:
