@@ -25,7 +25,7 @@ from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
 from pysiral.output import get_output_class
-from pysiral.path import filename_from_path
+from pysiral.path import filename_from_path, file_basename
 
 from collections import deque, OrderedDict
 from datetime import datetime
@@ -797,6 +797,7 @@ class L2ProcJob(DefaultLoggingClass):
             self.time_range.raise_if_empty()
 
     def validate(self):
+        self._validate_runtag()
         self._validate_and_expand_auxdata()
         self._validate_and_create_output_directory()
 
@@ -813,6 +814,17 @@ class L2ProcJob(DefaultLoggingClass):
         stop_info = PysiralOutputFilenaming()
         stop_info.parse_filename(filename_from_path(stop_file))
         return start_info.start, stop_info.stop
+
+    def _validate_runtag(self):
+        """ Check if -run-tag option is set, if not use l2 settings id """
+        if self.options.run_tag is not None:
+            return
+        if os.path.isfile(self.options.l2_settings):
+            self.options.run_tag = file_basename(self.options.l2_settings)
+        else:
+            self.options.run_tag = self.options.l2_settings
+        self.log.info("Using run tag from l2 settings [%s]" %
+                      self.options.run_tag)
 
     def _validate_and_expand_auxdata(self):
         """

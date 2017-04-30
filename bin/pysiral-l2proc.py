@@ -139,7 +139,7 @@ class L2ProcArgParser(object):
         # (argname, argtype (see config module), destination, required flag)
         options = [
             ("-l2-settings", "l2-settings", "l2_settings", True),
-            ("-run-tag", "run-tag", "run_tag", True),
+            ("-run-tag", "run-tag", "run_tag", False),
             ("-start", "date", "start_date", False),
             ("-stop", "date", "stop_date", False),
             ("-l1b-files", "l1b_files", "l1b_files_preset", False),

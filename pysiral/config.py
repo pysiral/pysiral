@@ -514,7 +514,7 @@ class DefaultCommandLineArguments(object):
             # set the run tag for the Level-2 Processor
             "run-tag": {
                 "action": "store",
-                "dest": "no_critical_prompt",
+                "dest": "run_tag",
                 "default": None,
                 "required": False,
                 "help": 'tag for the Level-2 output'},
