@@ -74,7 +74,7 @@ class DefaultAuxdataHandler(object):
             local_repository_id = auxdata_def.local_repository
             local_repo = self.get_local_repository(
                     auxdata_class, local_repository_id)
-            if local_repo is None:
+            if local_repo is None and local_repository_id is not None:
                 error_id = "auxdata_missing_localrepo_def"
                 error_message = PYSIRAL_ERROR_CODES[error_id] % (
                     auxdata_class, auxdata_id)
@@ -103,14 +103,18 @@ class DefaultAuxdataHandler(object):
             auxdata_handler.set_subfolder(auxdata_def.subfolders)
 
         if "options" in auxdata_def:
-            auxdata_handler.set_options(**auxdata_def.get("options", {}))
+            options = auxdata_def.get("options", None)
+            if options is not None:
+                auxdata_handler.set_options(**options)
 
         return auxdata_handler
 
     def get_local_repository(self, auxdata_class, auxdata_id):
         """ Get the local repository for the the auxdata type and id """
-        local_repo = self.pysiral_config.local_machine[auxdata_class]
-        return local_repo.get(auxdata_id, None)
+        if auxdata_id is None:
+            return None
+        local_repo = self.pysiral_config.local_machine.auxdata_repository
+        return local_repo[auxdata_class].get(auxdata_id, None)
 
     def get_auxdata_def(self, auxdata_class, auxdata_id):
         """ Returns the definition in `config/auxdata_def.yaml` for
