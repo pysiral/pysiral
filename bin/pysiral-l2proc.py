@@ -74,9 +74,8 @@ def pysiral_l2proc():
     #   job = Level2Processor(l2_settings, product_def, auxdata_handler)
     #   job.execute(l1b_files)
 
-
     job = Level2Processor(jobdef)
-    job.initialize()
+    # job.initialize()
 
     # Loop over iterations (one per month)
     for time_range in jobdef.iterations:

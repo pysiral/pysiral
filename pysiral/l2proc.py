@@ -66,6 +66,9 @@ class Level2Processor(DefaultLoggingClass):
         # Processor summary report
         self.report = L2ProcessorReport()
 
+        # Initialize the class
+        self._initialize()
+
 
 # %% Level2Processor: class properties
 
@@ -80,9 +83,9 @@ class Level2Processor(DefaultLoggingClass):
 
 # %% Level2Processor: public methods
 
-    def initialize(self):
-        self._initialize_processor()
-        self._initialize_summary_report()
+#    def initialize(self):
+#        self._initialize_processor()
+#        self._initialize_summary_report()
 
     def get_input_files_local_machine_def(self, time_range, version="default"):
         mission_id = self._job.mission_id
