@@ -36,11 +36,15 @@ class AuxdataBaseClass(object):
         """ Set the path the local auxdata repository """
         self._local_repository = path
 
+    def set_filename(self, filename):
+        """ Set a constant filename (e.g. for mss) """
+        self._filename = filename
+
     def set_filenaming(self, filenaming):
         """ Set the filenaming of the auxdata files """
         self._filenaming = filenaming
 
-    def set_subfolders(self, subfolder_list):
+    def set_subfolder(self, subfolder_list):
         """ Set a list of folders (year, [month, [day]]) where auxdata files
         can be found """
         self._subfolders = subfolder_list
@@ -51,7 +55,7 @@ class AuxdataBaseClass(object):
 
     @property
     def pyclass(self):
-        return self.__class__.__name___
+        return self.__class__.__name__
 
     @property
     def filename(self):
