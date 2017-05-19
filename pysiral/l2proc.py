@@ -861,14 +861,15 @@ class L2ProcJob(DefaultLoggingClass):
 #                continue
 
             # Check if entry is in local_machine_def.yaml
-            try:
-                local_repository = auxdata_def[auxtype][auxdata_id]
-                pysiral_def.local_repository = local_repository
-            except:
-                msg = "No auxdata definition in local_machine_def.yaml" + \
-                      " for %s:%s" % (auxtype, auxdata_id)
-                self.error.add_error("missing-auxdata-def", msg)
-                continue
+            if auxdata_id is not None:
+                try:
+                    local_repository = auxdata_def[auxtype][auxdata_id]
+                    pysiral_def.local_repository = local_repository
+                except:
+                    msg = "No auxdata definition in local_machine_def.yaml" + \
+                          " for %s:%s" % (auxtype, auxdata_id)
+                    self.error.add_error("missing-auxdata-def", msg)
+                    continue
 
             # Check if local directory (only main) does exist
             # XXX: Check for each iteration?
