@@ -288,4 +288,8 @@ def get_tiepoints_oneway_distance(a, reverse=False):
 
 
 def get_l2_ssh_class(name):
-    return globals()[name]()
+    pyclass = globals().get(name, None)
+    if pyclass is not None:
+        return pyclass()
+    else:
+        return pyclass
