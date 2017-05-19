@@ -65,7 +65,7 @@ class Level2Processor(DefaultLoggingClass):
         self.report = L2ProcessorReport()
 
         # Initialize the class
-        self._initialize()
+        self._initialize_processor()
 
 
 # %% Level2Processor: class properties
