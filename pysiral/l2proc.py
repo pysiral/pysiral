@@ -108,6 +108,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def remove_old_l2data(self, time_range):
         """ Clean up old l2 output data """
+        # TODO: Move data management out of processing class
         # can be several oututs
         output_ids, output_defs = td_branches(self._job.config.output)
         for output_id, output_def in zip(output_ids, output_defs):
