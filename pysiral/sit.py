@@ -122,5 +122,6 @@ def snowfreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
 def get_sit_algorithm(name):
     pyclass = globals().get(name, None)
     if pyclass is not None:
-        pyclass()
-    return pyclass
+        return pyclass()
+    else:
+        return pyclass
