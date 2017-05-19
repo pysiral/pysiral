@@ -5,8 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 
-from pysiral.errorhandler import ErrorStatus
-from pysiral.config import options_from_dictionary
+from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
 
 import scipy.ndimage as ndimage
@@ -15,26 +14,11 @@ import numpy as np
 import os
 
 
-class SITypeBaseClass(object):
+class SITypeBaseClass(AuxdataBaseClass):
 
     def __init__(self):
+        super(SITypeBaseClass, self).__init__()
         self._msg = ""
-        self._options = None
-        self._local_repository = None
-        self._subfolders = []
-        self.error = ErrorStatus()
-
-    def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
-
-    def set_local_repository(self, path):
-        self._local_repository = path
-
-    def set_filenaming(self, filenaming):
-        self._filenaming = filenaming
-
-    def set_subfolders(self, subfolder_list):
-        self._subfolders = subfolder_list
 
     def get_along_track_sitype(self, l2):
         sitype, msg = self._get_along_track_sitype(l2)
@@ -265,4 +249,7 @@ class FYIDefault(SITypeBaseClass):
 
 
 def get_l2_sitype_handler(name):
-    return globals()[name]()
+    pyclass = globals().get(name, None)
+    if pyclass is not None:
+        pyclass()
+    return pyclass

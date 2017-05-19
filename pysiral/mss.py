@@ -4,6 +4,7 @@ Created on Sat Aug 01 17:03:19 2015
 
 @author: Stefan
 """
+from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
 from pysiral.filter import (fill_nan, idl_smooth)
 
@@ -12,19 +13,14 @@ import scipy.ndimage as ndimage
 import numpy as np
 
 
-class BaseMSS(object):
+class BaseMSS(AuxdataBaseClass):
 
     def __init__(self):
-        pass
-
-    def set_filename(self, filename):
-        self._filename = filename
+        super(BaseMSS, self).__init__()
+        self._roi = None
 
     def set_roi(self, roi):
         self._roi = roi
-
-    def parse(self):
-        self._parse()
 
     def roi_latitude_range(self):
         if hasattr(self, "_roi"):
@@ -40,7 +36,8 @@ class DTU1MinGrid(BaseMSS):
     def __init__(self):
         super(DTU1MinGrid, self).__init__()
 
-    def _parse(self):
+    def _initialize(self):
+
         dtu_grid = ReadNC(self._filename)
         # Cut to ROI regions (latitude only)
         # -> no need for world mss

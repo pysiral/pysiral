@@ -38,7 +38,7 @@ import os
 
 class Level2Processor(DefaultLoggingClass):
 
-    def __init__(self, job):
+    def __init__(self, job, auxdata_handler=DefaultAuxdataHandler()):
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
@@ -47,6 +47,9 @@ class Level2Processor(DefaultLoggingClass):
 
         # job definition
         self._job = job
+
+        # Auxiliary Data Handler
+        self._auxdata_handler = auxdata_handler
 
         # List of Level-2 (processed) orbit segments
         self._orbit = deque()
@@ -204,50 +207,44 @@ class Level2Processor(DefaultLoggingClass):
     def _set_mss(self):
         """ Loading the mss product file from a static file """
         settings = self._job.config.auxdata.mss
-        filename = os.path.join(settings.local_repository, settings.file)
-        self.log.info("Processor Settings - MSS: %s" % settings.pyclass)
-        self.log.info("- loading roi subset from: %s" % filename)
-        self._mss = get_l2_ssh_class(settings.pyclass)
-        self._mss.set_filename(filename)
+        self._mss = self._auxdata_handler.get_pyclass("mss", settings.name)
+        self._auxdata_handler.error.raise_on_error()
+        self.log.info("Processor Settings - MSS: %s" % self._mss.pyclass)
+        self.log.info("- loading roi subset from: %s" % self._mss.filename)
         self._mss.set_roi(self._roi)
-        self._mss.parse()
+        self._mss.initialize()
 
     def _set_sic_handler(self):
         """ Set the sea ice concentration handler """
         settings = self._job.config.auxdata.sic
-        self._sic = get_l2_sic_handler(settings.pyclass)
+        self._sic = self._auxdata_handler.get_pyclass("sic", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._sic.set_options(**settings.options)
-        self._sic.set_local_repository(settings.local_repository)
-        self._sic.set_filenaming(settings.filenaming)
-        self._sic.set_subfolders(settings.subfolders)
         self._sic.initialize()
         self.log.info("Processor Settings - SIC handler: %s" % (
-            settings.pyclass))
+            self._sic.pyclass))
 
     def _set_sitype_handler(self):
         """ Set the sea ice type handler """
         settings = self._job.config.auxdata.sitype
-        self._sitype = get_l2_sitype_handler(settings.pyclass)
+        self._sitype = self._auxdata_handler.get_pyclass(
+                "sitype", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._sitype.set_options(**settings.options)
-        self._sitype.set_local_repository(settings.local_repository)
-        self._sitype.set_filenaming(settings.filenaming)
-        self._sitype.set_subfolders(settings.subfolders)
         self.log.info("Processor Settings - SIType handler: %s" % (
-            settings.pyclass))
+            self._sitype.pyclass))
 
     def _set_snow_handler(self):
         """ Set the snow (depth and density) handler """
         settings = self._job.config.auxdata.snow
-        self._snow = get_l2_snow_handler(settings.pyclass)
+        self._snow = self._auxdata_handler.get_pyclass("snow", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._snow.set_options(**settings.options)
-        self._snow.set_local_repository(settings.local_repository)
-        self._snow.set_filenaming(settings.filenaming)
-        self._snow.set_subfolders(settings.subfolders)
         self.log.info("Processor Settings - Snow handler: %s" % (
-            settings.pyclass))
+            self._snow.pyclass))
 
     def _initialize_summary_report(self):
         """

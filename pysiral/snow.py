@@ -5,6 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 
+from pysiral.auxdata import AuxdataBaseClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary
 from pysiral.filter import idl_smooth
@@ -17,26 +18,10 @@ import numpy as np
 import os
 
 
-class SnowBaseClass(object):
+class SnowBaseClass(AuxdataBaseClass):
 
     def __init__(self):
-
-        self.error = ErrorStatus()
-        self._options = None
-        self._local_repository = None
-        self._subfolders = []
-
-    def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
-
-    def set_local_repository(self, path):
-        self._local_repository = path
-
-    def set_filenaming(self, filenaming):
-        self._filenaming = filenaming
-
-    def set_subfolders(self, subfolder_list):
-        self._subfolders = subfolder_list
+        super(SnowBaseClass, self).__init__()
 
     def get_along_track_snow(self, l2):
         snow = self._get_along_track_snow(l2)
@@ -442,10 +427,14 @@ class SnowParameterContainer(object):
 
 
 def get_l2_snow_handler(name):
-    try:
-        return globals()[name]()
-    except:
-        msg = "Unknown snow depth handler: %s" % name
-        error = ErrorStatus(caller_id="get_l2_snow_handler")
-        error.add_error("invalid-snow-handler", msg)
-        error.raise_on_error()
+    pyclass = globals().get(name, None)
+    if pyclass is not None:
+        pyclass()
+    return pyclass
+#    try:
+#        return globals()[name]()
+#    except:
+#        msg = "Unknown snow depth handler: %s" % name
+#        error = ErrorStatus(caller_id="get_l2_snow_handler")
+#        error.add_error("invalid-snow-handler", msg)
+#        error.raise_on_error()
