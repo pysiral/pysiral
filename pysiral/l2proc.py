@@ -8,13 +8,11 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
                             get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.datahandler import DefaultAuxdataHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
-from pysiral.sic import get_l2_sic_handler
-from pysiral.sitype import get_l2_sitype_handler
-from pysiral.snow import get_l2_snow_handler
 from pysiral.mss import get_l2_ssh_class
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.roi import get_roi_class
