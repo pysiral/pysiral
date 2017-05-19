@@ -70,7 +70,6 @@ snow:
         options:
             fyi_correction_factor: 0.5
             valid_snow_depth_range: [0, 0.6]
-        local_machine_repository: none
         source: None
 
     constant:
@@ -80,7 +79,6 @@ snow:
         options:
             fixed_snow_depth: 0.3
             fixed_snow_density: 300.0
-        local_machine_repository: none
         source: None
 
     icdc_climatology_south:
