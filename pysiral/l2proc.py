@@ -853,11 +853,11 @@ class L2ProcJob(DefaultLoggingClass):
 
             # Specific type might not need a local repository, but update
             # anyway
-            if auxdata_id is None:
-                self.settings.level2.auxdata[auxtype].update(pysiral_def)
-                if self.settings.level2.auxdata[auxtype].has_key("source"):
-                    del self.settings.level2.auxdata[auxtype].source
-                continue
+#            if auxdata_id is None:
+#                self.settings.level2.auxdata[auxtype].update(pysiral_def)
+#                if self.settings.level2.auxdata[auxtype].has_key("source"):
+#                    del self.settings.level2.auxdata[auxtype].source
+#                continue
 
             # Check if entry is in local_machine_def.yaml
             try:
