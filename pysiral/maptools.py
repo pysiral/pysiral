@@ -13,7 +13,7 @@ class StereoMapAutoProjExtent(object):
         self.lons = lons
         self.lats = lats
 
-    def _compute_proj_parameters_and_extent(self):
+    def _compute_proj_parameters_and_extent(self, **kwargs):
 
         # 1. use approximate center to find actual center
         approx_lon_0 = np.mean([np.nanmin(self.lons), np.nanmax(self.lons)])
