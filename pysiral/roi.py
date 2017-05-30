@@ -76,8 +76,8 @@ class StereographicBox(ROIBase):
     def get_roi_list(self, longitude, latitude):
         proj = Proj(**self.projection)
         x, y = proj(longitude, latitude)
-        in_lon = np.abs(x) <= self.width
-        in_lat = np.abs(y) <= self.height
+        in_lon = np.abs(x) <= self.width/2.
+        in_lat = np.abs(y) <= self.height/2.
         in_roi = np.where(np.logical_and(in_lon, in_lat))[0]
         return in_roi
 
