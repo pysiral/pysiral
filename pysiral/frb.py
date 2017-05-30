@@ -48,7 +48,10 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         freeboard[is_ice] = l2.afrb[is_ice] + geometric_correction[is_ice]
 
         # XXX: This is not correct yet
-        freeboard_uncertainty[is_ice] = l2.afrb.uncertainty[is_ice]
+        deriv_snow = correction_factor
+        uncertainty = np.sqrt((deriv_snow*l2.snow_depth.uncertainty)**2. +
+                              l2.afrb.uncertainty**2.)
+        freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
         return freeboard, freeboard_uncertainty
 
