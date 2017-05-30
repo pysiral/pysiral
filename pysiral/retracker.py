@@ -92,9 +92,10 @@ class BaseRetracker(object):
             return None
 
     def _create_default_properties(self, n_records):
-        # XXX: Currently only range and status (true: ok)
-        self._range = np.ndarray(shape=(n_records))*np.nan
-        self._power = np.ndarray(shape=(n_records))*np.nan
+        # XXX: Currently only range and status (False: ok)
+        for parameter in ["_range", "_power"]:
+            setattr(self, parameter, np.full((n_records), np.nan))
+        self._uncertainty = np.full((n_records), 0.0, dtype=np.float32)
         self._flag = np.zeros(shape=(n_records), dtype=np.bool)
 
     @property
