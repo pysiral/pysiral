@@ -103,10 +103,8 @@ class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
         - sea surface anomaly
         mss uncertainties is ignored, respectively part of ssa uncertainty
         """
-        deriv_elev = l2.mss - l2.ssa
-        deriv_ssa = l2.elev - l2.mss
-        rfrb_unc = np.sqrt((deriv_elev * l2.elev.uncertainty)**2. +
-                           (deriv_ssa * l2.ssa.uncertainty)**2.)
+        rfrb_unc = np.sqrt((l2.elev.uncertainty)**2. +
+                           (l2.ssa.uncertainty)**2.)
         return rfrb_unc
 
 
