@@ -92,14 +92,19 @@ class BaseRetracker(object):
             return None
 
     def _create_default_properties(self, n_records):
-        # XXX: Currently only range and status (true: ok)
-        self._range = np.ndarray(shape=(n_records))*np.nan
-        self._power = np.ndarray(shape=(n_records))*np.nan
+        # XXX: Currently only range and status (False: ok)
+        for parameter in ["_range", "_power"]:
+            setattr(self, parameter, np.full((n_records), np.nan))
+        self._uncertainty = np.full((n_records), 0.0, dtype=np.float32)
         self._flag = np.zeros(shape=(n_records), dtype=np.bool)
 
     @property
     def range(self):
         return self._range
+
+    @property
+    def uncertainty(self):
+        return self._uncertainty
 
     @property
     def power(self):
@@ -172,6 +177,10 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             # Mandatory return function
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
+
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
 
     def get_tfmra_threshold(self, sigma0, sitype, indices):
 

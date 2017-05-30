@@ -5,6 +5,7 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
+from pysiral.errorhandler import ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
@@ -41,6 +42,7 @@ class Level2Data(object):
 
     def __init__(self, l1b):
         # Copy necessary fields form l1b
+        self.error = ErrorStatus()
         self._n_records = l1b.n_records
         self.info = l1b.info
         self.track = l1b.time_orbit
@@ -50,14 +52,38 @@ class Level2Data(object):
     def set_surface_type(self, surface_type):
         self.surface_type = surface_type
 
+    def set_parameter(self, target, value, uncertainty=None, bias=None):
+        """ Convienience method to safely add a parameter with optional
+        uncertainty and/or bias to the level-2 data structure """
+
+        # Sanity checks
+        is_valid = self._check_if_valid_parameter(target)
+        is_correct_size = self._check_valid_size(value)
+        if not is_valid or not is_correct_size:
+            return
+
+        # Set values, uncertainty bias
+        parameter = getattr(self, target)
+        parameter.set_value(value)
+        if uncertainty is not None:
+            uncertainty_value = self._get_as_array(uncertainty)
+            parameter.set_uncertainty(uncertainty_value)
+        if bias is not None:
+            bias_value = self._get_as_array(bias)
+            parameter.set_bias(bias, bias_value)
+        setattr(self, target, parameter)
+
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
         # XXX: should get an overhaul
         ii = retracker.indices
         self.range[ii] = retracker.range[ii]
+        self.range.uncertainty[ii] = retracker.uncertainty[ii]
         self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
+        self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
     def get_parameter_by_name(self, parameter_name):
+        """ Method to retrieve a level-2 parameter """
 
         if "_uncertainty" in parameter_name:
             parameter_name = parameter_name.replace("_uncertainty", "")
@@ -77,6 +103,67 @@ class Level2Data(object):
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
             setattr(self, item, L2ElevationArray(shape=(self._n_records)))
+
+    def _check_if_valid_parameter(self, parameter_name):
+        """ Performs a test if parameter name is a valid level-2 parameter
+        name. Adds error if result negative and returns flag (valid: True,
+        invalid: False) """
+        if parameter_name not in self._L2_DATA_ITEMS:
+            msg = "Invalid level-2 parameter: %s" % parameter_name
+            self.error.add_error("l2-invalid-parameter", msg)
+            return False
+        else:
+            return True
+
+    def _check_valid_size(self, array, name=""):
+        """ Test if array has the correct size shape=(n_records). Adds error
+        if not and returns flag (valid: True, invalid: False) """
+        condition = array.ndim == 1 and len(array) == self._n_records
+        if condition:
+            return True
+        else:
+            self.error.add_error("Invalid array added to level-2 class")
+            return False
+
+    def _get_as_array(self, value, dtype=np.float32):
+        """ Create an output array from values that is of length n_records.
+        Value can be scalar or array of length n_records. If value is any other
+        length or dimension, an error will be added and a nan array of length
+        n_records will be returned
+
+        Arguments:
+            value (integer, float or )
+
+        Note: This method is mostly used to allow scalar uncertainty and
+              bias values. It also makes sure that uncertainty and bias
+              are of the same shape than the value, which is not guaranteed
+              in L2ElevationArray. If a wrong uncertainty, bias shape is
+              passed, the result will be nan uncertainties/biases throughout
+              the processing chain and the start of NaN occurences can be used
+              to trace the origin of the error.
+        """
+
+        # Check if value is either float or integer
+        is_numeric = np.asarray(value).dtype.kind in "if"
+        if not is_numeric:
+            return np.full(self.arrshape, np.nan)
+
+        # Check if value is scalar or array
+        if np.isscalar(value):
+            return np.full(self.arrshape, value).astype(dtype)
+
+        # if array, check if correct size
+        else:
+            is_np_array = np.isinstance(value, (np.ndarray, np.array))
+            is_correct_size = self._check_valid_size(value)
+            if is_np_array and is_correct_size:
+                return value
+            else:
+                return np.full(self.arrshape, np.nan)
+
+    @property
+    def arrshape(self):
+        return (self.n_records)
 
     @property
     def n_records(self):

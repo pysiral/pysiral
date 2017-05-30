@@ -4,6 +4,8 @@ Created on Sat Aug 01 17:03:19 2015
 
 @author: Stefan
 """
+
+from pysiral.errorhandler import ErrorStatus
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
 from pysiral.filter import (fill_nan, idl_smooth)
@@ -76,7 +78,7 @@ class SSAInterpolator(object):
     Parent class for sea surface anomaly retrieval and interpolation
     """
     def __init__(self):
-        pass
+        self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
         self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
@@ -100,10 +102,13 @@ class SSASmoothedLinear(SSAInterpolator):
 
     def __init__(self):
         super(SSASmoothedLinear, self).__init__()
+        self.error.caller_id = self.__class__.__name__
 
     def _interpolate(self, l2):
         self._linear_smoothed_interpolation_between_tiepoints(l2)
         self._calculate_uncertainty(l2)
+        if "marine_segment_filter" in self._options:
+            self._marine_segment_filter(l2)
 
     def _linear_smoothed_interpolation_between_tiepoints(self, l2):
         """ Based in cs2awi code from Robert Ricker """
@@ -148,11 +153,21 @@ class SSASmoothedLinear(SSAInterpolator):
         ssa = idl_smooth(ssa_filter2, self.filter_width)
         self._value = ssa
 
-#        # TODO: Make example plot of individual filter steps
+
+##        # TODO: Make example plot of individual filter steps
 #        import matplotlib.pyplot as plt
 #        x = np.arange(l2.n_records)
+#
+#        plt.figure("land")
+#        plt.plot(l2.surface_type.land.flag)
+#
+#        plt.figure()
+#        plt.plot(x, l2.mss)
+#        plt.plot(x, l2.mss+ssa)
+#        plt.scatter(x, l2.elev, marker="+", alpha=0.5)
+#
 #        plt.figure(facecolor="white")
-#        plt.scatter(x, ssa_raw, color="black")
+#        # plt.scatter(x, ssa_raw, color="black")
 #        plt.scatter(x, ssa_filter1, color="red", alpha=0.5)
 #        plt.plot(x, ssa_filter2, color="blue", lw=2, alpha=0.5)
 #        plt.plot(x, ssa, color="orange", lw=3)
@@ -200,6 +215,7 @@ class SSASmoothedLinear(SSAInterpolator):
 
 #        XXX: Debug plot code
 #        import matplotlib.pyplot as plt
+#        import sys
 #        plt.figure(figsize=(10, 6))
 #        plt.plot(lead_elevation, "o", label="leads")
 #        plt.plot(l2.elev-l2.mss, "+", label="elevations above mss")
@@ -209,7 +225,70 @@ class SSASmoothedLinear(SSAInterpolator):
 #        plt.ylabel("meter")
 #        plt.tight_layout()
 #        plt.show()
+#        sys.exit()
 
+    def _marine_segment_filter(self, l2):
+        """ Check all sections divided by land masses for reliable
+        information content """
+
+        filter_options = self._options.marine_segment_filtering
+        minimum_lead_number = filter_options.minimum_lead_number
+        footprint_size = self._options.smooth_filter_width_footprint_size
+        section_prop = {"i0": 0.0, "i1": 0.0,
+                        "width": 0.0, "n_tiepoints": 0,
+                        "land_before": (9999.0, 0),
+                        "land_after": (9999.0, 0)}
+
+        # Find sea ice clusters
+        land = l2.surface_type.land
+
+        # No land -> nothing to do
+        if land.num == 0:
+            return
+
+        # Get indices for land sections
+        lead_flag = l2.surface_type.lead.flag
+        land_flag = land.flag.astype(int)
+        land_start = np.where(np.ediff1d(land_flag) > 0)[0]
+        land_stop = np.where(np.ediff1d(land_flag) < 0)[0]
+
+        # It is assumed here, that the l1b orbit segment never starts
+        # or end with land. Thus the number of land start and land stop
+        # events need to be identical.
+        if len(land_start) != len(land_stop):
+            code = "l2-crop-error"
+            msg = "l2 segments either starts or ends with land"
+            self.error.add_error(code, msg)
+            return
+
+        # Add artificial large land sections on beginning and end of profile
+        n_marine_segments = len(land_start) + 1
+        n = l2.n_records
+        land_start = np.concatenate(([-1000], land_start, [n-1]))
+        land_stop = np.concatenate(([-1], land_stop, [n+1000]))
+
+        # Loop over marine segments and collect information
+        marine_segments = []
+        for i in np.arange(n_marine_segments):
+
+            marine_segment = section_prop.copy()
+
+            # Get the start stop indices for marine section
+            i0 = land_stop[i]+1
+            i1 = land_start[i+1]
+            marine_segment["i0"] = i0
+            marine_segment["i1"] = i1
+            marine_segment["width"] = (i1-i0) * footprint_size
+
+            # get the number of leads
+            marine_section_indices = np.arange(i0, i1+1)
+            n_tiepoints = np.where(lead_flag[marine_section_indices])[0].size
+            marine_segment["n_tiepoints"] = n_tiepoints
+
+            if marine_segment["n_tiepoints"] < minimum_lead_number:
+                self._value[marine_section_indices] = np.nan
+
+            marine_segments.append(marine_segment)
 
     @property
     def filter_width(self):

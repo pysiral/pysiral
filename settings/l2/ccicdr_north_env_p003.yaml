@@ -65,13 +65,6 @@ level2:
                 leading_edge_width_min: [0.81, 0.83, 0.83, 0.83, 0.00, 0.00, 0.00, 0.00, 0.00, 0.78, 0.78, 0.80]
                 ice_concentration_min: 70.0
 
-    # Mission specific range uncertainties
-    uncertainty:
-        # These values come from cs2awi (for cryosat2)
-        range:
-            sigma: [0.14, 0.10, 0.14]
-            speckle_noise: 0.2
-
     # Retracking algorithm dependent on surface type
     retracker:
         ocean:
@@ -92,6 +85,9 @@ level2:
                 wfm_smoothing_window_size: [11, 11, 21]
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
+                uncertainty:
+                    type: fixed
+                    value: 0.1
         sea_ice:
             pyclass: SICCI2TfmraEnvisat
             options:
@@ -108,7 +104,9 @@ level2:
                 wfm_smoothing_window_size: [11, 11, 21]
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-
+                uncertainty:
+                    type: fixed
+                    value: 0.1
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     ssa:
@@ -120,8 +118,10 @@ level2:
             pre_filtering: true
             pre_filter_maximum_mss_median_offset: 5.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
-            uncertainty_minimum: 0.1
-            uncertainty_maximum: 0.5
+            uncertainty_minimum: 0.02
+            uncertainty_maximum: 0.10
+            marine_segment_filtering:
+                minimum_lead_number: 1
 
     # Estimation of Radar Freeboard
     afrb:
@@ -141,6 +141,9 @@ level2:
             water_density: 1024.0
             fyi_density: 916.7
             myi_density: 882.0
+            uncertainty:
+                fyi_density: 10.0
+                myi_density: 10.0
 
     # List of filter at different stages of l2 procesing
     # (can be list of filters)
@@ -191,13 +194,22 @@ level2:
                     - latitude
                     - surface_type
                     - elevation
+                    - elevation_uncertainty
                     - mean_sea_surface
                     - sea_surface_anomaly
+                    - sea_surface_anomaly_uncertainty
                     - radar_freeboard
+                    - radar_freeboard_uncertainty
                     - freeboard
+                    - freeboard_uncertainty
                     - sea_ice_type
+                    - sea_ice_type_uncertainty
                     - sea_ice_concentration
                     - snow_depth
+                    - snow_depth_uncertainty
                     - snow_density
+                    - snow_density_uncertainty
                     - ice_density
+                    - ice_density_uncertainty
                     - sea_ice_thickness
+                    - sea_ice_thickness_uncertainty
