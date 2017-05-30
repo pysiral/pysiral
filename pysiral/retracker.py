@@ -103,6 +103,10 @@ class BaseRetracker(object):
         return self._range
 
     @property
+    def uncertainty(self):
+        return self._uncertainty
+
+    @property
     def power(self):
         return self._power
 
