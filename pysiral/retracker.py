@@ -178,6 +178,10 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
+
     def get_tfmra_threshold(self, sigma0, sitype, indices):
 
         # short link to options
