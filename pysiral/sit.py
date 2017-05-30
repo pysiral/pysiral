@@ -71,7 +71,19 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
 
         # Scales with MYI fraction
         rho_i = rho_i_fyi - myi_fraction * (rho_i_fyi - rho_i_myi)
-        rho_i_unc = np.full(rho_i.shape, 0.0, dtype=np.float32)
+
+        # Compute uncertainty of sea ice density
+        if "uncertainty" in self._options:
+            unc = self._options.uncertainty
+            deriv_myi_fraction = rho_i_myi - rho_i_fyi
+            deriv_fyi_density = 1. - myi_fraction
+            deriv_myi_density = myi_fraction
+            rho_i_unc = np.sqrt(
+                    (deriv_myi_fraction*myi_fraction.uncertainty)**2. +
+                    (deriv_fyi_density*unc.fyi_density)**2. +
+                    (deriv_myi_density*unc.myi_density)**2.)
+        else:
+            rho_i_unc = np.full(rho_i.shape, 0.0, dtype=np.float32)
 
         return rho_i, rho_i_unc
 
