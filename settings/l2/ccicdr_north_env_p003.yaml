@@ -192,13 +192,22 @@ level2:
                     - latitude
                     - surface_type
                     - elevation
+                    - elevation_uncertainty
                     - mean_sea_surface
                     - sea_surface_anomaly
+                    - sea_surface_anomaly_uncertainty
                     - radar_freeboard
+                    - radar_freeboard_uncertainty
                     - freeboard
+                    - freeboard_uncertainty
                     - sea_ice_type
+                    - sea_ice_type_uncertainty
                     - sea_ice_concentration
                     - snow_depth
+                    - snow_depth_uncertainty
                     - snow_density
+                    - snow_density_uncertainty
                     - ice_density
+                    - ice_density_uncertainty
                     - sea_ice_thickness
+                    - sea_ice_thickness_uncertainty
