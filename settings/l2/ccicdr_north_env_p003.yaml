@@ -99,16 +99,15 @@ level2:
                 # type can be fixed, sigma_func, sitype_sigma_func, and poly_plane_fit
                 threshold:
                     type: poly_plane_fit
-                    intercept: 3.1074382427
-                    coef_lew: [-4.9959797381, 3.2814383311, -0.6999825163]
-                    coef_sig0: [-0.0807688831, 0.0064300121, -0.0001346437]
+                    intercept: 3.374446410
+                    coef_lew: [-5.562486419, 4.026856350, -0.998859842]
+                    coef_sig0: [-0.099068658, 0.006940633, -0.000135445]
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 21]
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
- 
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     ssa:
