@@ -151,8 +151,11 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
         # Get sigma0 information
         sigma0 = self.get_l1b_parameter("classifier", "sigma0")
+        lew1 = self.get_l1b_parameter("classifier", "leading_edge_width_first_half")
+        lew2 = self.get_l1b_parameter("classifier", "leading_edge_width_second_half")
+        lew = lew1+lew2
         sitype = self._l2.sitype
-        tfmra_threshold = self.get_tfmra_threshold(sigma0, sitype, indices)
+        tfmra_threshold = self.get_tfmra_threshold(sigma0, lew, sitype, indices)
 
         for i in indices:
 
@@ -178,11 +181,15 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
+<<<<<<< HEAD
         if "uncertainty" in self._options:
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
 
     def get_tfmra_threshold(self, sigma0, sitype, indices):
+=======
+    def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
+>>>>>>> 38f722f... [retracker] added a scheme for the Envisat adaptive retracker using a polynomial fit based on leading-edge width and sigma0 with related preliminary changes to the settings file
 
         # short link to options
         option = self._options.threshold
@@ -207,7 +214,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             value = np.zeros(sigma0.shape)
             for i, coef in enumerate(option.coef):
                 value += coef * sigma0**i
-            threshold[indices] = value
+            threshold[indices] = value[indices]
 
         # dependend in sitype and sigma0
         elif option.type == "sitype_sigma_func":
@@ -219,6 +226,16 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 value_myi += coef * sigma0**i
             myi_list = np.where(sitype > 0.5)[0]
             value[myi_list] = value_myi[myi_list]
+            threshold[indices] = value[indices]
+
+        # dependent on sigma0 and leading-edge width 3rd order polynomial fit
+        elif option.type == "poly_plane_fit":
+            value = np.zeros(sigma0.shape)
+            value += option.intercept
+            for i, coef in enumerate(option.coef_lew):
+                value += coef * lew**(i+1)
+            for i, coef in enumerate(option.coef_sig0):
+                value += coef * sigma0**(i+1)       
             threshold[indices] = value[indices]
 
         return threshold
