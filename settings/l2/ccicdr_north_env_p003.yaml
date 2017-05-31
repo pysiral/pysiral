@@ -120,8 +120,11 @@ level2:
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
-            marine_segment_filtering:
+            marine_segment_filter:
                 minimum_lead_number: 1
+            tiepoint_maxdist_filter:
+                maximum_distance_to_tiepoint: 200000.
+                edges_only: false
 
     # Estimation of Radar Freeboard
     afrb:

@@ -109,6 +109,8 @@ class SSASmoothedLinear(SSAInterpolator):
         self._calculate_uncertainty(l2)
         if "marine_segment_filter" in self._options:
             self._marine_segment_filter(l2)
+        if "tiepoint_maxdist_filter" in self._options:
+            self._tiepoint_maxdist_filter(l2)
 
     def _linear_smoothed_interpolation_between_tiepoints(self, l2):
         """ Based in cs2awi code from Robert Ricker """
@@ -186,15 +188,8 @@ class SSASmoothedLinear(SSAInterpolator):
         ssa_unc_min = self._options.uncertainty_minimum
         ssa_unc_max = self._options.uncertainty_maximum
 
-        # prepare parameter arrays
-        lead_indices = l2.surface_type.lead.indices
-        lead_elevation = np.full((l2.n_records), np.nan, dtype=np.float32)
-        lead_elevation[lead_indices] = self._value[lead_indices]
-
-        # Compute distance to next lead tiepoint in meter
-        tiepoint_distance = get_tiepoint_distance(np.isfinite(lead_elevation))
-        tiepoint_distance = tiepoint_distance.astype(np.float32)
-        tiepoint_distance *= self._options.smooth_filter_width_footprint_size
+        # get tiepoint distance
+        tiepoint_distance = self.get_tiepoint_distance(l2)
 
         # Compute the influence of distance to next tiepoints
         # in the range of 0: minimum influence to 1: maximum influence
@@ -212,20 +207,6 @@ class SSASmoothedLinear(SSAInterpolator):
 
         # Save in class
         self._uncertainty = ssa_unc
-
-#        XXX: Debug plot code
-#        import matplotlib.pyplot as plt
-#        import sys
-#        plt.figure(figsize=(10, 6))
-#        plt.plot(lead_elevation, "o", label="leads")
-#        plt.plot(l2.elev-l2.mss, "+", label="elevations above mss")
-#        plt.plot(ssa_unc, lw=2, label="ssha uncertainty")
-#        plt.legend()
-#        plt.ylim(-0.5, 1.0)
-#        plt.ylabel("meter")
-#        plt.tight_layout()
-#        plt.show()
-#        sys.exit()
 
     def _marine_segment_filter(self, l2):
         """ Check all sections divided by land masses for reliable
@@ -289,6 +270,51 @@ class SSASmoothedLinear(SSAInterpolator):
                 self._value[marine_section_indices] = np.nan
 
             marine_segments.append(marine_segment)
+
+    def _tiepoint_maxdist_filter(self, l2):
+        """  A filter that does not removes ssa values which distance to
+        the next ssh tiepoint exceeds a defined threshold """
+
+        # Get options
+        filter_options = self._options.tiepoint_maxdist_filter
+        edges_only = filter_options.edges_only
+        distance_threshold = filter_options.maximum_distance_to_tiepoint
+
+        # Compute distance to next tiepoint
+        tiepoint_distance = self.get_tiepoint_distance(l2)
+
+        # Get indices
+        invalid_indices = np.where(tiepoint_distance > distance_threshold)[0]
+
+        # Only remove ssa values at the edges (if edges_only:True)
+        if edges_only:
+            lead_indices = l2.surface_type.lead.indices
+            before_first_lead = invalid_indices < lead_indices[0]
+            after_last_lead = invalid_indices > lead_indices[-1]
+            edge_condition = np.logical_or(before_first_lead, after_last_lead)
+            invalid_indices = invalid_indices[np.where(edge_condition)[0]]
+
+        # Validity check
+        if len(invalid_indices) == 0:
+            return
+
+        # Set the values
+        self._value[invalid_indices] = np.nan
+
+    def get_tiepoint_distance(self, l2):
+        """ Returns the distance in meter to the next ssh tiepoint for
+        each record """
+
+        # prepare parameter arrays
+        lead_indices = l2.surface_type.lead.indices
+        lead_elevation = np.full((l2.n_records), np.nan, dtype=np.float32)
+        lead_elevation[lead_indices] = self._value[lead_indices]
+
+        # Compute distance to next lead tiepoint in meter
+        tiepoint_distance = get_tiepoint_distance(np.isfinite(lead_elevation))
+        tiepoint_distance = tiepoint_distance.astype(np.float32)
+        tiepoint_distance *= self._options.smooth_filter_width_footprint_size
+        return tiepoint_distance
 
     @property
     def filter_width(self):
