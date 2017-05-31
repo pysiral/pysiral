@@ -96,19 +96,19 @@ level2:
             pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]
-                # type can be fixed, sigma_func and sitype_sigma_func
+                # type can be fixed, sigma_func, sitype_sigma_func, and poly_plane_fit
                 threshold:
-                    type: sitype_sigma_func
-                    sigma_scaling: 0.84
-                    coef_fyi: [0.2226346193, 0.0116119105, 0.0003187522]
-                    coef_myi: [2.410715e-01, 4.881797e-03, 1.381001e-04, 1.980877e-05]
+                    type: poly_plane_fit
+                    intercept: 3.1074382427
+                    coef_lew: [-4.9959797381, 3.2814383311, -0.6999825163]
+                    coef_sig0: [-0.0807688831, 0.0064300121, -0.0001346437]
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
                 wfm_smoothing_window_size: [11, 11, 21]
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-
+ 
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     ssa:
