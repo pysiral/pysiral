@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pysiral.config import DefaultCommandLineArguments
-from pysiral.l2proc import Level2Processor, L2ProcJob
+from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 from datetime import timedelta
 import argparse
@@ -25,30 +25,30 @@ def pysiral_l2proc():
     args.critical_prompt_confirmation()
 
     # Set up the job definition for the Level-2 processor
-    jobdef = L2ProcJob()
+#    jobdef = L2ProcJob()
 
     # configure the job definition
-    jobdef.options.from_dict(args.arg_dict)
+#    jobdef.options.from_dict(args.arg_dict)
 
     # Parse the Level-2 settings file
-    jobdef.parse_l2_settings()
-    jobdef.error.raise_on_error()
+#    jobdef.parse_l2_settings()
+#    jobdef.error.raise_on_error()
 
     # There are several options of how the time range can be requested
     # a) start and stop month (no days specified)
     # b) full start and stop date
     # In addition, full month can be excluded from the pre-processing
     # (e.g. summer Arctic)
-    jobdef.process_requested_time_range()
+#    jobdef.process_requested_time_range()
 
     # L2 output is grouped by month
     # -> if requested time range exceeds one month, the processor
     #    will run in several iterations
-    jobdef.generate_preprocessor_iterations()
+#    jobdef.generate_preprocessor_iterations()
 
     # Validate given infos and availability of data files
-    jobdef.validate()
-    jobdef.error.raise_on_error()
+#    jobdef.validate()
+#    jobdef.error.raise_on_error()
 
     # Initialize the Level-2 Processor
 
@@ -74,49 +74,54 @@ def pysiral_l2proc():
     #   job = Level2Processor(l2_settings, product_def, auxdata_handler)
     #   job.execute(l1b_files)
 
-    job = Level2Processor(jobdef)
+    # for the hard code the default Level-2 output handler
+    run_tag = args.arg_dict["run_tag"]
+    l2_settings_file = args.arg_dict["l2_settings"]
+
+    product_definition = Level2ProductDefinition(run_tag, l2_settings_file)
+    job = Level2Processor(product_definition)
     # job.initialize()
 
-    # Loop over iterations (one per month)
-    for time_range in jobdef.iterations:
-
-        job.log.info("Processing period: %s" % time_range.label)
-
-        # TODO: (0.4.0):
-        # This should be simplified to
-        #   job.set_input_files(file_list)
-
-        # Get the list of input files from local machine def
-        if not jobdef.l1b_preset_is_active:
-            version = jobdef.input_version
-            job.get_input_files_local_machine_def(time_range, version=version)
-        # or set a predefined list of files
-        else:
-            job.set_custom_l1b_file_list(jobdef.preset_l1b_files, time_range)
-
-        # TODO: (0.4.0):
-        # This is going to be obsolete (check done before)
-
-        # Check error, e.g. problems with local_machine_def, ...
-        job.error.raise_on_error()
-
-        # TODO: (0.4.0):
-        # This is going to be obsolete (check done before)
-
-        # List might be empty
-        if job.has_empty_file_list:
-            job.log.info(" Skipping period: %s" % time_range.label)
-            continue
-
-        # TODO: (0.4.0):
-        # Data management should not be part of the l2 proc
-
-        # Empty output folder (if --remove_old is set)
-        if jobdef.remove_old and not jobdef.overwrite_protection:
-            job.remove_old_l2data(time_range)
-
-        # Pre-process data for one month
-        job.run()
+#    # Loop over iterations (one per month)
+#    for time_range in jobdef.iterations:
+#
+#        job.log.info("Processing period: %s" % time_range.label)
+#
+#        # TODO: (0.4.0):
+#        # This should be simplified to
+#        #   job.set_input_files(file_list)
+#
+#        # Get the list of input files from local machine def
+#        if not jobdef.l1b_preset_is_active:
+#            version = jobdef.input_version
+#            job.get_input_files_local_machine_def(time_range, version=version)
+#        # or set a predefined list of files
+#        else:
+#            job.set_custom_l1b_file_list(jobdef.preset_l1b_files, time_range)
+#
+#        # TODO: (0.4.0):
+#        # This is going to be obsolete (check done before)
+#
+#        # Check error, e.g. problems with local_machine_def, ...
+#        job.error.raise_on_error()
+#
+#        # TODO: (0.4.0):
+#        # This is going to be obsolete (check done before)
+#
+#        # List might be empty
+#        if job.has_empty_file_list:
+#            job.log.info(" Skipping period: %s" % time_range.label)
+#            continue
+#
+#        # TODO: (0.4.0):
+#        # Data management should not be part of the l2 proc
+#
+#        # Empty output folder (if --remove_old is set)
+#        if jobdef.remove_old and not jobdef.overwrite_protection:
+#            job.remove_old_l2data(time_range)
+#
+#        # Pre-process data for one month
+#        job.run()
 
     # All done
     t1 = time.clock()

@@ -2,7 +2,7 @@
 
 
 from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            ConfigInfo)
+                            ConfigInfo, get_yaml_config)
 from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary, get_parameter_attributes
@@ -15,6 +15,130 @@ from dateutil import parser as dtparser
 import numpy as np
 import parse
 import os
+
+
+class OutputHandlerBase(object):
+
+    subfolder_format = {"month": "%02g", "year": "%04g", "day": "%02g"}
+
+    def __init__(self, output_def):
+        self.error = ErrorStatus()
+        self._basedir = "n/a"
+        self._init_from_output_def(output_def)
+
+    def get_dt_subfolders(self, dt, subfolder_tags):
+        """ Returns a list of subdirectories based on a datetime object
+        (usually the start time of data collection) """
+        subfolders = []
+        for subfolder_tag in subfolder_tags:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            subfolders.append(subfolder)
+        return subfolders
+
+    def _init_from_output_def(self, output_def):
+        """ Adds the information for the output def yaml files (either
+        full filename or treedict structure) """
+        if os.path.isfile(output_def):
+            self._output_def = get_yaml_config(output_def)
+        else:
+            self._output_def = output_def
+
+    def _set_basedir(self, basedir, create=True):
+        """ Sets and and (per default) creates the main output directory """
+        self._basedir = basedir
+        if create:
+            self._create_directory(self._basedir)
+
+    def _create_directory(self, directory):
+        """ Convinience method to create a directory and add an error
+        when failed """
+        status = validate_directory(directory)
+        if not status:
+            msg = "Unable to create directory: %s" % str(directory)
+            self.error.add_error("directory-error", msg)
+
+    @property
+    def id(self):
+        try:
+            return self._output_def.metadata.output_id
+        except:
+            return None
+
+    @property
+    def product_level_subfolder(self):
+        try:
+            return self._output_def.product_level_subfolder
+        except:
+            return ""
+
+    @property
+    def basedir(self):
+        return self._basedir
+
+    @property
+    def output_def(self):
+        return self._output_def
+
+    @property
+    def now_directory(self):
+        """ Returns a directory suitable string with the current time """
+        return datetime.now().strftime("%Y%m%dT%H%M%S")
+
+
+class DefaultLevel2OutputHandler(OutputHandlerBase):
+    """ Default output handler with pysiral conventions. Uses product
+    directory from local_machine_def.yaml as standard repository """
+
+    # Some fixed parameters for this class
+    default_file_location = ["settings", "outputdef", "l2i_default.yaml"]
+    subfolder_tags = ["year", "month"]
+    applicable_data_level = 2
+
+    def __init__(self, output_def="default", subdirectory="default_output",
+                 overwrite_protection=True):
+        # Fall back to default output if no output_def is given
+        # (allows default initialization for the Level2 processor)
+        if output_def == "default":
+            output_def = self.default_output_def_filename
+        super(DefaultLevel2OutputHandler, self).__init__(output_def)
+        self.error.caller_id = self.__class__.__name__
+        self.subdirectory = subdirectory
+        self.overwrite_protection = overwrite_protection
+        self._init_product_directory()
+
+    def get_directory_from_l2(self, l2, create=True):
+        dt = l2.info.starttime
+        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
+        directory = os.path.join(self.basedir, *subfolders)
+        if create:
+            self._create_directory(directory)
+        return directory
+
+    def _init_product_directory(self):
+        """ Get main product directory from local_machine_def, add mandatory
+        runtag subdirectory, optional second subdirectory for overwrite
+        protection and product level id subfolder"""
+        pysiral_config = ConfigInfo()
+        basedir = pysiral_config.local_machine.product_repository
+        basedir = os.path.join(basedir, self.subdirectory)
+        if self.overwrite_protection:
+            basedir = os.path.join(basedir, self.now_directory)
+        basedir = os.path.join(basedir, self.product_level_subfolder)
+        self._set_basedir(basedir)
+
+    def _get_subdirectories(self, dt):
+        directory = self.basedir
+        for subfolder_tag in self.subfolders:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            directory = os.path.join(directory, subfolder)
+
+    @property
+    def default_output_def_filename(self):
+        pysiral_config = ConfigInfo()
+        local_settings_path = pysiral_config.pysiral_local_path
+        return os.path.join(local_settings_path, *self.default_file_location)
 
 
 class NCDateNumDef(object):
@@ -192,18 +316,16 @@ class L1bDataNC(NCDataFile):
                 self._missing_parameters)
 
 
-class L2iDataNC(NCDataFile):
+class Level2Output(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
     """
 
-    def __init__(self):
-        super(L2iDataNC, self).__init__()
-        self.parameter = []
-        self.base_export_path = None
-        self.l2 = None
-        self._missing_parameters = []
-        self.parameter_attributes = get_parameter_attributes("l2i")
+    def __init__(self, l2, output_handler):
+        super(Level2Output, self).__init__()
+        self.l2 = l2
+        self.output_handler = output_handler
+        self._write_to_file()
 
     def set_base_export_path(self, path):
         self.base_export_path = path
@@ -212,7 +334,7 @@ class L2iDataNC(NCDataFile):
         self._get_full_export_path(startdt)
         return self.export_path
 
-    def write_to_file(self, l2):
+    def _write_to_file(self, l2):
         self._get_full_export_path(l2.info.start_time)
         self._get_export_filename(l2)
         self._open_file()
@@ -264,6 +386,21 @@ class L2iDataNC(NCDataFile):
         if not_master and len(self._missing_parameters) > 0:
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
+
+    @property
+    def export_path(self):
+        """ Evoking this property will also create the directory if it
+        does not already exists """
+        return self.output_handler.get_directory_from_l2(self.l2, create=True)
+
+    @property
+    def export_filename(self):
+        """ Returns the filename for the level2 output file """
+        return self.output_handler.get_l2_filename(self.l2)
+
+    @property
+    def full_path(self):
+        return os.path.join(self.export_path, self.export_filename)
 
 
 class L3SDataNC(NCDataFile):

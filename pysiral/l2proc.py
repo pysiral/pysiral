@@ -14,7 +14,8 @@ from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
 from pysiral.mss import get_l2_ssh_class
-from pysiral.output import PysiralOutputFilenaming
+from pysiral.output import (Level2Output, DefaultLevel2OutputHandler,
+                            PysiralOutputFilenaming)
 from pysiral.roi import get_roi_class
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
@@ -43,11 +44,14 @@ class Level2Processor(DefaultLoggingClass):
         # Error Status Handler
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
-        # job definition
-        self._job = job
+#        # job definition
+#        self._job = job
 
         # Auxiliary Data Handler
         self._auxdata_handler = auxdata_handler
+
+        # Output_handler (can be one or many)
+        self._output_handler = job.output_handler
 
         # List of Level-2 (processed) orbit segments
         self._orbit = deque()
@@ -197,6 +201,9 @@ class Level2Processor(DefaultLoggingClass):
         # snow data handler (needs to provide snow depth and density)
         self._set_snow_handler()
 
+        # Report on output location
+        self._report_output_location()
+
         # All done
         self._initialized = True
         self.log.info("Initializing done")
@@ -247,6 +254,14 @@ class Level2Processor(DefaultLoggingClass):
             self._snow.set_options(**settings.options)
         self.log.info("Processor Settings - Snow handler: %s" % (
             self._snow.pyclass))
+
+    def _report_output_location(self):
+        for output_handler in self._output_handler:
+            msg = "Level-2 Output [%s]: %s" % (
+                    str(output_handler.id), output_handler.basedir)
+            self.log.info(msg)
+            # print output_handler.output_def.makeReport()
+        stop
 
     def _initialize_summary_report(self):
         """
@@ -654,15 +669,20 @@ class Level2Processor(DefaultLoggingClass):
             l2.sit.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
-        output_ids, output_defs = td_branches(self._job.config.output)
-        for output_id, output_def in zip(output_ids, output_defs):
-            output = get_output_class(output_def.pyclass)
-            output.set_options(**output_def.options)
-            output.set_processor_settings(self._job.settings.level2)
-            output.set_base_export_path(output_def.path)
-            output.write_to_file(l2)
+        for output_handler in self._l2_output_handler:
+            output = Level2Output(l2, output_handler)
             self.log.info("- Write %s data file: %s" % (
-                output_id, output.filename))
+                    output_handler.id, output.export_filename))
+
+#        output_ids, output_defs = td_branches(self._job.config.output)
+#        for output_id, output_def in zip(output_ids, output_defs):
+#            output = get_output_class(output_def.pyclass)
+#            output.set_options(**output_def.options)
+#            output.set_processor_settings(self._job.settings.level2)
+#            output.set_base_export_path(output_def.path)
+#            output.write_to_file(l2)
+#            self.log.info("- Write %s data file: %s" % (
+#                output_id, output.filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
@@ -946,6 +966,44 @@ class L2ProcJobOptions(object):
                 setattr(self, parameter, options_dict[parameter])
         if self.l1b_files_preset is not None:
             self.l1b_preset_is_active = True
+
+
+class Level2ProductDefinition(object):
+    """ Main configuration class for the Level-2 Processor """
+
+    def __init__(self, run_tag, l2_settings_def):
+
+        self.error = ErrorStatus(self.__class__.__name__)
+
+        # Mandatory parameter
+        self._run_tag = str(run_tag)
+        self._l2_setting_def = l2_settings_def
+        self._parse_l2_settings()
+
+        # Optional parameters (may be set to default values if not specified)
+        self._output_handler = []
+
+    def add_output_definition(self, output_def_file,
+                              overwrite_protection=True):
+
+        # Set given or default output handler
+        self._output_handler.append(DefaultLevel2OutputHandler(
+            output_def=output_def_file, subdirectory=self.run_tag,
+            overwrite_protection=overwrite_protection))
+
+    def _parse_l2_settings(self):
+        pass
+
+    @property
+    def run_tag(self):
+        return str(self._run_tag)
+
+    @property
+    def output_handler(self):
+        # Revert to default output handler if non was specifically added
+        if len(self._output_handler) == 0:
+            self.add_output_definition("default")
+        return self._output_handler
 
 
 class L2ProcessorReport(DefaultLoggingClass):
