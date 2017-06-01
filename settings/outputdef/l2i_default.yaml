@@ -8,6 +8,7 @@ metadata:
 
 # Output Definition
 filenaming: "l2i_{pysiral_version:filename}_{mission_id}_{hemisphere}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}.nc"
+product_level_subfolder: l2i
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
@@ -26,11 +27,11 @@ global_attributes:
   cdm_data_type: Trajectory
   date_created: "{utcnow}"
   creator_name: "Stefan Hendricks"
-	creator_url: "www.awi.de"
-	creator_email: "stefan.hendricks@awi.de"
-	institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
-	processing_level: "Level-2 intermediate (geophysical parameters at footprint resolution)"
-	acknowledgment: "ESA Climate Change Initiative on Sea Ice - Phase 2"
+  creator_url: "www.awi.de"
+  creator_email: "stefan.hendricks@awi.de"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
+  processing_level: "Level-2 intermediate (geophysical parameters at footprint resolution)"
+  acknowledgment: "ESA Climate Change Initiative on Sea Ice - Phase 2"
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
