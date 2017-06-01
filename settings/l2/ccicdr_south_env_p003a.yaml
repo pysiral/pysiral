@@ -96,9 +96,9 @@ level2:
                 # if arrays than [lrm, sar, sin]   
                 threshold:
                     type: poly_plane_fit
-                    intercept: 3.374446410
-                    coef_lew: [-5.562486419, 4.026856350, -0.998859842]
-                    coef_sig0: [-0.099068658, 0.006940633, -0.000135445]
+                    intercept: 3.455217213
+                    coef_lew: [-5.886689583, 4.313286625, -1.082021388]
+                    coef_sig0: [-0.090142457, 0.006310188, -0.000121868]
                 offset: 0.0
                 use_sigma0_threshold_dependency: False
                 wfm_oversampling_factor: 10
@@ -149,15 +149,15 @@ level2:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -0.5
-                    valid_maximum_point_value: 2.5
+                    valid_minimum_point_value: -0.25
+                    valid_maximum_point_value: 2.25
 
         # Filters after thickness computation
         thickness:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -1.0
+                    valid_minimum_point_value: -0.5
                     valid_maximum_point_value: 10.5
 
     # Tests if l1b orbit file is valid
