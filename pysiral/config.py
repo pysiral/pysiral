@@ -22,15 +22,17 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
+import re
 import os
 import sys
 import yaml
 import socket
 from treedict import TreeDict
 
+import numpy as np
 
-PYSIRAL_VERSION = "0.3.0-dev"
-PYSIRAL_VERSION_FILENAME = "030dev"
+PYSIRAL_VERSION = "0.4.0-dev"
+PYSIRAL_VERSION_FILENAME = "040dev"
 HOSTNAME = socket.gethostname()
 
 
@@ -52,8 +54,12 @@ class ConfigInfo(object):
 
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
+    VALID_DATA_LEVEL_IDS = ["l2", "l3"]
+
     def __init__(self):
         """ Read all definition files """
+
+        self.error = ErrorStatus(self.__class__.__name__)
         # Store the main path on this machine
         self.pysiral_local_path = get_pysiral_local_path()
         # read the definition files in the config folder
@@ -103,6 +109,60 @@ class ConfigInfo(object):
         if mission_info.data_period.stop is None:
             mission_info.data_period.stop = datetime.utcnow()
         return mission_info
+
+    def get_settings_file(self, data_level, setting_id_or_filename):
+        """ Returns a processor settings file for a given data level.
+        (data level: l2 or l3). The second argument can either be an
+        direct filename (which validity will be checked) or an id, for
+        which the corresponding file (id.yaml) will be looked up in
+        the default directory """
+
+        if data_level not in self.VALID_DATA_LEVEL_IDS:
+            return None
+
+        # Check if filename
+        if os.path.isfile(setting_id_or_filename):
+            return setting_id_or_filename
+
+        # Get all settings files in settings/{data_level} and its
+        # subdirectories
+        lookup_directory = self.get_local_setting_path(data_level)
+        ids, files = self.get_yaml_setting_filelist(lookup_directory)
+
+        # Test if ids are unique and return error for the moment
+        if len(np.unique(ids)) != len(ids):
+            msg = "Non-unique %s setting filename" % data_level
+            self.error.add_error("ambigous-setting-files", msg)
+            self.error.raise_on_error()
+
+        # Find filename to setting_id
+        try:
+            index = ids.index(setting_id_or_filename)
+            return files[index]
+        except:
+            return None
+
+    def get_yaml_setting_filelist(self, directory, ignore_obsolete=True):
+        """ Retrieve all yaml files from a given directory (including
+        subdirectories). Directories named "obsolete" are ignored if
+        ignore_obsolete=True (default) """
+        setting_ids = []
+        setting_files = []
+        for root, dirs, files in os.walk(directory):
+            if os.path.split(root)[-1] == "obsolete" and ignore_obsolete:
+                continue
+            for filename in files:
+                if re.search("yaml$", filename):
+                    setting_ids.append(filename.replace(".yaml", ""))
+                    setting_files.append(os.path.join(root, filename))
+        return setting_ids, setting_files
+
+    def get_local_setting_path(self, data_level):
+        if data_level in self.VALID_DATA_LEVEL_IDS:
+            return os.path.join(self.pysiral_local_path, "settings",
+                                data_level)
+        else:
+            return None
 
     def _read_config_files(self):
         for key in self._DEFINITION_FILES.keys():
