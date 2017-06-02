@@ -112,6 +112,11 @@ class ConfigInfo(DefaultLoggingClass):
             mission_info.data_period.stop = datetime.utcnow()
         return mission_info
 
+    def get_setting_ids(self, data_level):
+        lookup_directory = self.get_local_setting_path(data_level)
+        ids, files = self.get_yaml_setting_filelist(lookup_directory)
+        return ids
+
     def get_settings_file(self, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.
         (data level: l2 or l3). The second argument can either be an
