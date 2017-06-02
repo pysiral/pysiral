@@ -217,16 +217,17 @@ class RadarModes(object):
         return len(self.flag_dict.keys())
 
 
-class TimeRangeRequest(object):
+class TimeRangeRequest(DefaultLoggingClass):
 
     _PERIODS = ["monthly", "custom"]
 
-    def __init__(self):
-        self._start_dt = None
-        self._stop_dt = None
-        self._period = self._default_period
-        self._exclude_month = []
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[]):
+        super(TimeRangeRequest, self).__init__(self.__class__.__name__)
+        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
+        self.set_range(start_dt, stop_dt)
+        self.set_period(period)
+        self.set_exclude_month(exclude_month)
 
     def __repr__(self):
         output = "TimeRangeRequest object:\n"
@@ -235,17 +236,24 @@ class TimeRangeRequest(object):
             output += "\n"
         return output
 
+    def clip_to_mission(self, mission_id):
+        mission_info = self.pysiral_config.get_mission_info(mission_id)
+        start = mission_info.data_period.start
+        stop = mission_info.data_period.stop
+        is_clipped = self.clip_to_range(start, stop)
+        if is_clipped:
+            self.log.info("Clipped to mission time range: %s till %s" % (
+                mission_info.data_period.start, mission_info.data_period.stop))
+
     def raise_if_empty(self):
         message = ""
         if self._start_dt is None:
-            message += "start time is invalid\n"
+            message += "start time is invalid"
         if self._stop_dt is None:
-            message += "stop time is invalid\n"
-
+            message += "; stop time is invalid"
         if len(message) > 0:
-            message += "Aborting ..."
-            print message
-            sys.exit(1)
+            self.error.add_error("empty-time-range", message)
+            self.error.raise_on_error()
 
     def set_range(self, start_date, stop_date):
 
@@ -264,19 +272,22 @@ class TimeRangeRequest(object):
             return
 
         # Check and decode integer lists
+        msg_template = "invalid %s time (not integer list or datetime)"
         if isinstance(start_date, list):
             if all(isinstance(item, int) for item in start_date):
                 self._start_dt = self._decode_int_list(start_date, "start")
             else:
-                error_message = "invalid start time (not integer list)"
-                self.error.append(self.__class__.__name__, error_message)
+                error_message = msg_template % "start"
+                self.error.add_error("invalid-timedef", error_message)
 
         if isinstance(stop_date, list):
             if all(isinstance(item, int) for item in stop_date):
                 self._stop_dt = self._decode_int_list(stop_date, "stop")
             else:
-                error_message = "invalid stop time (non integer list)"
-                self.error.append(self.__class__.__name__, error_message)
+                error_message = msg_template % "stop"
+                self.error.append("invalid-timedef", error_message)
+
+        self.error.raise_on_error()
 
     def clip_to_range(self, range_start, range_stop):
         """ Clip the current time range to an defined time range """
@@ -436,6 +447,10 @@ class TimeRangeRequest(object):
     @property
     def label(self):
         return str(self.start_dt)+" till "+str(self.stop_dt)
+
+    @property
+    def iterations(self):
+        return self.get_iterations()
 
 
 class TimeRangeIteration(object):
