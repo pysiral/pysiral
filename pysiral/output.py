@@ -5,10 +5,11 @@ from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
                             ConfigInfo, get_yaml_config)
 from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
+from pysiral.logging import DefaultLoggingClass
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
 
-
+from glob import glob
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
@@ -17,11 +18,12 @@ import parse
 import os
 
 
-class OutputHandlerBase(object):
+class OutputHandlerBase(DefaultLoggingClass):
 
     subfolder_format = {"month": "%02g", "year": "%04g", "day": "%02g"}
 
     def __init__(self, output_def):
+        super(OutputHandlerBase, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
@@ -103,17 +105,33 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             output_def = self.default_output_def_filename
         super(DefaultLevel2OutputHandler, self).__init__(output_def)
         self.error.caller_id = self.__class__.__name__
+        self.log.name = self.__class__.__name__
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
 
     def get_directory_from_l2(self, l2, create=True):
-        dt = l2.info.starttime
-        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
-        directory = os.path.join(self.basedir, *subfolders)
+        directory = self._get_directory_from_dt(l2.info.starttime)
         if create:
             self._create_directory(directory)
         return directory
+
+    def remove_old(self, time_range):
+        """ This method will erase all files in the target orbit for a
+        given time range. Use with care """
+
+        # Get the target directory
+        # XXX: Assumption time_range is monthly
+        directory = self._get_directory_from_dt(time_range.start)
+        # Get list of output files
+        search_pattern = os.path.join(directory, "*.*")
+        l2output_files = glob.glob(search_pattern)
+
+        # Delete files
+        self.log.info("Removing %g l2 product files [ %s ] in %s" % (
+                len(l2output_files), self.id, directory))
+        for l2output_file in l2output_files:
+                os.remove(l2output_file)
 
     def _init_product_directory(self):
         """ Get main product directory from local_machine_def, add mandatory
@@ -133,6 +151,10 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             parameter = getattr(dt, subfolder_tag)
             subfolder = self.subfolder_format[subfolder_tag] % parameter
             directory = os.path.join(directory, subfolder)
+
+    def _get_directory_from_dt(self, dt):
+        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
+        return os.path.join(self.basedir, *subfolders)
 
     @property
     def default_output_def_filename(self):
