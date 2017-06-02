@@ -8,6 +8,7 @@ Created on Fri May 19 18:16:09 2017
 from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.iotools import get_local_l1bdata_files
 from pysiral.sic import get_l2_sic_handler
 from pysiral.sitype import get_l2_sitype_handler
 from pysiral.snow import get_l2_snow_handler
@@ -123,3 +124,18 @@ class DefaultAuxdataHandler(DefaultLoggingClass):
         specified auxdata class and id """
         auxdata_class_def = self.pysiral_config.auxdata[auxdata_class]
         return auxdata_class_def.get(auxdata_id, None)
+
+
+class DefaultL1bDataHandler(DefaultLoggingClass):
+    """ Class for retrieving default l1b directories and filenames """
+
+    def __init__(self, mission_id, hemisphere, version="default"):
+        super(DefaultL1bDataHandler, self).__init__(self.__class__.__name__)
+        self._mission_id = mission_id
+        self._hemisphere = hemisphere
+        self._version = version
+
+    def get_l1b_files_from_time_range(self, time_range):
+        return get_local_l1bdata_files(
+                self._mission_id, time_range, self._hemisphere,
+                version=self._version)
