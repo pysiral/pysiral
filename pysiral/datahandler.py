@@ -6,6 +6,7 @@ Created on Fri May 19 18:16:09 2017
 """
 
 from pysiral.config import ConfigInfo
+from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.sic import get_l2_sic_handler
 from pysiral.sitype import get_l2_sitype_handler
@@ -14,7 +15,7 @@ from pysiral.mss import get_l2_ssh_class
 import os
 
 
-class DefaultAuxdataHandler(object):
+class DefaultAuxdataHandler(DefaultLoggingClass):
     """ Class for retrieving handler classes for auxiliary data
     (mss, sic, sitype, snow). The classes are initialized with directory
     information from the local machine definition and the auxdata information
@@ -26,6 +27,7 @@ class DefaultAuxdataHandler(object):
               "sitype": get_l2_sitype_handler, "snow": get_l2_snow_handler}
 
     def __init__(self):
+        super(DefaultAuxdataHandler, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
