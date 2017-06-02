@@ -15,6 +15,7 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
+from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import month_iterator, get_month_time_range
 
@@ -36,7 +37,7 @@ PYSIRAL_VERSION_FILENAME = "040dev"
 HOSTNAME = socket.gethostname()
 
 
-class ConfigInfo(object):
+class ConfigInfo(DefaultLoggingClass):
     """
     Container for the content of the pysiral definition files
     (in pysiral/configration) and the local machine definition file
@@ -58,6 +59,7 @@ class ConfigInfo(object):
 
     def __init__(self):
         """ Read all definition files """
+        super(ConfigInfo, self).__init__(self.__class__.__name__)
 
         self.error = ErrorStatus(self.__class__.__name__)
         # Store the main path on this machine
