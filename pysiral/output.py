@@ -16,6 +16,7 @@ from dateutil import parser as dtparser
 import numpy as np
 import parse
 import os
+import re
 
 
 class OutputHandlerBase(DefaultLoggingClass):
@@ -28,6 +29,17 @@ class OutputHandlerBase(DefaultLoggingClass):
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
 
+    def fill_template_string(self, template, dataset):
+        """ Fill an template string with information of a dataset
+        object (in this case Level2Data) """
+        attributes = self.get_template_attrs(template)
+        result = str(template)
+        for attribute in attributes:
+            attribute_name, option, placeholder = attribute
+            attribute = dataset.get_attribute(attribute_name, *option)
+            result = result.replace(placeholder, attribute)
+        return result
+
     def get_dt_subfolders(self, dt, subfolder_tags):
         """ Returns a list of subdirectories based on a datetime object
         (usually the start time of data collection) """
@@ -37,6 +49,17 @@ class OutputHandlerBase(DefaultLoggingClass):
             subfolder = self.subfolder_format[subfolder_tag] % parameter
             subfolders.append(subfolder)
         return subfolders
+
+    def get_template_attrs(self, template):
+        """ Extract attribute names and options (if defined) for a
+        give template string """
+        attr_defs = re.findall("{.*?}", template)
+        attrs, options = [], []
+        for attr_def in attr_defs:
+            attr_name, _, optstr = attr_def[1:-1].partition(":")
+            attrs.append(attr_name)
+            options.append(optstr.split(","))
+        return zip(attrs, options, attr_defs)
 
     def _init_from_output_def(self, output_def):
         """ Adds the information for the output def yaml files (either
@@ -86,6 +109,13 @@ class OutputHandlerBase(DefaultLoggingClass):
     def now_directory(self):
         """ Returns a directory suitable string with the current time """
         return datetime.now().strftime("%Y%m%dT%H%M%S")
+
+    @property
+    def variable_def(self):
+        t = self.output_def.variables
+        variables = list(t.iterkeys(recursive=False, branch_mode='only'))
+        attribute_dicts = [self.output_def.variables[a] for a in variables]
+        return zip(variables, attribute_dicts)
 
 
 class DefaultLevel2OutputHandler(OutputHandlerBase):
