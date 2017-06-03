@@ -669,7 +669,7 @@ class Level2Processor(DefaultLoggingClass):
             l2.sit.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
-        for output_handler in self._l2_output_handler:
+        for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
             self.log.info("- Write %s data file: %s" % (
                     output_handler.id, output.export_filename))
