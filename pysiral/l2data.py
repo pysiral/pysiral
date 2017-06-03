@@ -5,6 +5,7 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
+from pysiral.config import PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.path import filename_from_path
@@ -100,6 +101,17 @@ class Level2Data(object):
             parameter = getattr(self, source)
             return parameter
 
+    def get_attribute(self, attribute_name, *args):
+        """ Return a string for a given attribute name. This method is
+        required for the output data handler """
+
+        try:
+            attr_getter = getattr(self, "_get_attr_"+attribute_name)
+            attribute = attr_getter(*args)
+            return attribute
+        except AttributeError:
+            return "attr_unavailable"
+
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
             setattr(self, item, L2ElevationArray(shape=(self._n_records)))
@@ -160,6 +172,26 @@ class Level2Data(object):
                 return value
             else:
                 return np.full(self.arrshape, np.nan)
+
+    def _get_attr_pysiral_version(self, target):
+        versions = {"filename": PYSIRAL_VERSION_FILENAME,
+                    "default": PYSIRAL_VERSION}
+        return versions[target]
+
+    def _get_attr_mission_id(self, *args):
+        return self.info.mission
+
+    def _get_attr_hemisphere(self, *args):
+        return self.hemisphere
+
+    def _get_attr_hemisphere_code(self, *args):
+        return self.hemisphere_code
+
+    def _get_attr_startdt(self, dtfmt):
+        return self.info.start_time.strftime(dtfmt)
+
+    def _get_attr_stopdt(self, dtfmt):
+        return self.info.stop_time.strftime(dtfmt)
 
     @property
     def arrshape(self):
