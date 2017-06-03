@@ -46,6 +46,10 @@ def pysiral_l2proc_time_range_job(args):
     mission_id = product_def.l2def.mission.id
     hemisphere = product_def.l2def.roi.hemisphere
 
+    # Specifically add an output handler
+    product_def.add_output_definition(
+            "default", overwrite_protection=args.overwrite_protection)
+
     # Break down the time range in individual month
     start, stop = args.start, args.stop
     job = TimeRangeRequest(start, stop, exclude_month=args.exclude_month)
@@ -200,6 +204,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def exclude_month(self):
         return self._args.exclude_month
+
+    @property
+    def overwrite_protection(self):
+        return self._args.overwrite_protection
 
     @property
     def l2_settings_file(self):
