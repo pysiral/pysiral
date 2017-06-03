@@ -400,7 +400,7 @@ class Level2Output(NCDataFile):
         super(Level2Output, self).__init__()
         self.l2 = l2
         self.output_handler = output_handler
-        self._write_to_file()
+        self._export_l2()
 
     def set_base_export_path(self, path):
         self.base_export_path = path
@@ -409,58 +409,46 @@ class Level2Output(NCDataFile):
         self._get_full_export_path(startdt)
         return self.export_path
 
-    def _write_to_file(self, l2):
-        self._get_full_export_path(l2.info.start_time)
-        self._get_export_filename(l2)
+    def _export_l2(self):
+        self.path = self.full_path
         self._open_file()
-        self._create_root_group(l2.info.attdict, prefix="input.")
-        self._populate_data_groups(l2)
-        self._write_processor_settings()
+        self._write_global_attributes()
+        self._populate_data_groups()
         self._write_to_file()
 
-    def _get_full_export_path(self, startdt):
-        # Comput und create the export directory
-        base_path = self.base_export_path
-        sub_folders = self._options.subfolders
-        folder = PysiralOutputFolder(load_config=False)
-        folder.l2i_from_startdt(startdt, base_path, sub_folders)
-        folder.create()
-        self.export_path = folder.path
+    def _write_global_attributes(self):
+        attr_dict = self.output_handler.get_global_attribute_dict(self.l2)
+        self._set_global_attributes(attr_dict)
 
-    def _get_export_filename(self, l2):
-        # get full output filename
-        filenaming = PysiralOutputFilenaming()
-        self.filename = filenaming.from_l2i(l2)
-        self.path = os.path.join(self.export_path, self.filename)
+    def _populate_data_groups(self):
 
-    def _populate_data_groups(self, l2):
-        dimdict = l2.dimdict
+        dimdict = self.l2.dimdict
         dims = dimdict.keys()
+
         for key in dims:
                 self._rootgrp.createDimension(key, dimdict[key])
-        for parameter_name in self._options.parameter:
-            data = l2.get_parameter_by_name(parameter_name)
+
+        for parameter_name, attribute_dict in self.output_handler.variable_def:
+
+            data = self.l2.get_parameter_by_name(parameter_name)
+
             # Convert datetime objects to number
             if type(data[0]) is datetime:
                 data = date2num(data, self.time_def.units,
                                 self.time_def.calendar)
+
             # Convert bool objects to integer
             if data.dtype.str == "|b1":
                 data = np.int8(data)
+
             dimensions = tuple(dims[0:len(data.shape)])
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
+
             # Add Parameter Attributes
-            attribute_dict = self._get_variable_attr_dict(parameter_name)
             for key in attribute_dict.keys():
                 setattr(var, key, attribute_dict[key])
-
-        # Report mission variable attributes (not in master release)
-        not_master = "master" not in PYSIRAL_VERSION
-        if not_master and len(self._missing_parameters) > 0:
-            print "Warning: Missing parameter attributes for "+"; ".join(
-                self._missing_parameters)
 
     @property
     def export_path(self):
@@ -471,7 +459,7 @@ class Level2Output(NCDataFile):
     @property
     def export_filename(self):
         """ Returns the filename for the level2 output file """
-        return self.output_handler.get_l2_filename(self.l2)
+        return self.output_handler.get_filename_from_l2(self.l2)
 
     @property
     def full_path(self):
