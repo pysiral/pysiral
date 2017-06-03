@@ -135,7 +135,7 @@ class DefaultL1bDataHandler(DefaultLoggingClass):
         self._hemisphere = hemisphere
         self._version = version
 
-    def get_l1b_files_from_time_range(self, time_range):
+    def get_files_from_time_range(self, time_range):
         return get_local_l1bdata_files(
                 self._mission_id, time_range, self._hemisphere,
                 version=self._version)
