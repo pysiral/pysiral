@@ -140,11 +140,34 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
 
+    def get_filename_from_l2(self, l2):
+        """ Return the filename for a defined level-2 data object
+        based on tag filenaming in output definition file """
+        filename_template = self.output_def.filenaming
+        return self.fill_template_string(filename_template, l2)
+
     def get_directory_from_l2(self, l2, create=True):
-        directory = self._get_directory_from_dt(l2.info.starttime)
+        """ Return the output directory based on information provided
+        in an l2 data object """
+        directory = self._get_directory_from_dt(l2.info.start_time)
         if create:
             self._create_directory(directory)
         return directory
+
+    def get_fullpath_from_l2(self, l2):
+        """ Return export path and filename based on information
+        provided in the l2 data object """
+        export_directory = self.get_directory_from_l2(l2)
+        export_filename = self.get_filename_from_l2(l2)
+        return os.path.join(export_directory, export_filename)
+
+    def get_global_attribute_dict(self, l2):
+        attr_dict = {}
+        for attr_name in self.output_def.global_attributes.iterkeys():
+            attr_template = self.output_def.global_attributes[attr_name]
+            attribute = self.fill_template_string(attr_template, l2)
+            attr_dict[attr_name] = attribute
+        return attr_dict
 
     def remove_old(self, time_range):
         """ This method will erase all files in the target orbit for a
