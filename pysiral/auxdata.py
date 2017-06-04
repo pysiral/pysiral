@@ -21,12 +21,12 @@ class AuxdataBaseClass(object):
         self._filename = None
         self._filenaming = None
         self._subfolders = []
-        self.long_name = ""
+        self._long_name = ""
         self.error = ErrorStatus()
 
     def set_long_name(self, docstr):
         """ Set a description of the auxdata source """
-        self.long_name = ""
+        self._long_name = docstr
 
     def set_options(self, **opt_dict):
         """  Pass a dictionary with options """
@@ -60,3 +60,7 @@ class AuxdataBaseClass(object):
     @property
     def filename(self):
         return self._filename
+
+    @property
+    def longname(self):
+        return self._long_name
