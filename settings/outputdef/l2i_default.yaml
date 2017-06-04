@@ -14,17 +14,17 @@ product_level_subfolder: l2i
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  title: "Geophysical sea ice parameters from {mission_id} (processor settings: {settings_id})"  
+  title: "Geophysical sea ice parameters from {mission_id} radar altimeter data"  
   summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
   keywords: "sea ice, radar altimetry"
-  product_version: "pysiral {pysiral_version:default}"
+  product_version: "{l2_algorithm_id}"
   mission_id: "{mission_id}"
   source_primary: "{source_primary}"
   source_mss: "{source_mss}"
   source_sic: "{source_sic}"
   source_sitype: "{source_sitype}"
   source_snow: "{source_snow}"
-  references: "pysiral {pysiral_version:default}"
+  references: "pysiral version: {pysiral_version:default}"
   cdm_data_type: Trajectory
   date_created: "{utcnow}"
   creator_name: "Stefan Hendricks"
