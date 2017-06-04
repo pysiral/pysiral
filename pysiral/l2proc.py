@@ -81,6 +81,20 @@ class Level2Processor(DefaultLoggingClass):
     def has_empty_file_list(self):
         return len(self._l1b_files) == 0
 
+    @property
+    def l2_auxdata_source_dict(self):
+        """ A dictionary that contains the descriptions of the auxiliary
+        data sources """
+        auxdata_dict = {}
+        for auxdata_type in ["mss", "sic", "sitype", "snow"]:
+            handler = getattr(self, "_"+auxdata_type)
+            auxdata_dict[auxdata_type] = handler.longname
+            try:
+                handler = getattr(self, "_"+auxdata_type)
+                auxdata_dict[auxdata_type] = handler.longname
+            except AttributeError:
+                auxdata_dict[auxdata_type] = "unspecified"
+        return auxdata_dict
 
 # %% Level2Processor: public methods
 
@@ -287,6 +301,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
+            source_primary_filename = os.path.split(l1b_file)[-1]
 
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
@@ -295,6 +310,8 @@ class Level2Processor(DefaultLoggingClass):
 
             # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
+            l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
+                            source_primary_filename=source_primary_filename)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)
