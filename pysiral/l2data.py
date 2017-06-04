@@ -12,6 +12,7 @@ from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
 
 import numpy as np
+from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
 
@@ -242,6 +243,14 @@ class Level2Data(object):
 
     def _get_attr_l2_algorithm_id(self, *args):
         return self._l2_algorithm_id
+
+
+    def _get_attr_time_resolution(self, *args):
+        tdelta = self.timestamp[-1]-self.timestamp[0]
+        seconds = tdelta.total_seconds() + 1e-6 * tdelta.microseconds
+        resolution = seconds/self.n_records
+        return "%.2f seconds" % resolution
+
     @property
     def arrshape(self):
         return (self.n_records)
