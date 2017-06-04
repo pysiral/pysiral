@@ -42,11 +42,17 @@ class Level2Data(object):
         "sea_ice_concentration": "sic"}
 
     def __init__(self, l1b):
+
         # Copy necessary fields form l1b
         self.error = ErrorStatus()
         self._n_records = l1b.n_records
         self.info = l1b.info
         self.track = l1b.time_orbit
+
+        # Metadata
+        self._auxdata_source_dict = {}
+        self._source_primary_filename = "unavailable"
+
         # Create Level2 Data Groups
         self._create_l2_data_items()
 
@@ -82,6 +88,13 @@ class Level2Data(object):
         self.range.uncertainty[ii] = retracker.uncertainty[ii]
         self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
+
+    def set_metadata(self, auxdata_source_dict=None,
+                     source_primary_filename=None):
+        if auxdata_source_dict is not None:
+            self._auxdata_source_dict = auxdata_source_dict
+        if source_primary_filename is not None:
+            self._source_primary_filename = source_primary_filename
 
     def get_parameter_by_name(self, parameter_name):
         """ Method to retrieve a level-2 parameter """
@@ -192,6 +205,36 @@ class Level2Data(object):
 
     def _get_attr_stopdt(self, dtfmt):
         return self.info.stop_time.strftime(dtfmt)
+
+    def _get_attr_geospatial_lat_min(self, *args):
+        return self._gett_attr_geospatial_str(np.nanmin(self.latitude))
+
+    def _get_attr_geospatial_lat_max(self, *args):
+        return self._gett_attr_geospatial_str(np.nanmin(self.latitude))
+
+    def _get_attr_geospatial_lon_min(self, *args):
+        return self._gett_attr_geospatial_str(np.nanmin(self.longitude))
+
+    def _get_attr_geospatial_lon_max(self, *args):
+        return self._gett_attr_geospatial_str(np.nanmin(self.longitude))
+
+    def _gett_attr_geospatial_str(self, value):
+        return "%.4f" % value
+
+    def _get_attr_source_sic(self, *args):
+        return self._auxdata_source_dict["sic"]
+
+    def _get_attr_source_sitype(self, *args):
+        return self._auxdata_source_dict["sitype"]
+
+    def _get_attr_source_mss(self, *args):
+        return self._auxdata_source_dict["mss"]
+
+    def _get_attr_source_snow(self, *args):
+        return self._auxdata_source_dict["snow"]
+
+    def _get_attr_source_primary(self, *args):
+        return self._source_primary_filename
 
     @property
     def arrshape(self):
