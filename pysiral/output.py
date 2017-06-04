@@ -289,7 +289,7 @@ class NCDataFile(object):
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
-        for key in attdict.keys():
+        for key in sorted(attdict.keys()):
             self._rootgrp.setncattr(prefix+key, attdict[key])
 
     def _get_variable_attr_dict(self, parameter):
