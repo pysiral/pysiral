@@ -52,6 +52,7 @@ class Level2Data(object):
         # Metadata
         self._auxdata_source_dict = {}
         self._source_primary_filename = "unavailable"
+        self._l2_algorithm_id = "unavailable"
 
         # Create Level2 Data Groups
         self._create_l2_data_items()
@@ -90,11 +91,14 @@ class Level2Data(object):
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
     def set_metadata(self, auxdata_source_dict=None,
-                     source_primary_filename=None):
+                     source_primary_filename=None,
+                     l2_algorithm_id=None):
         if auxdata_source_dict is not None:
             self._auxdata_source_dict = auxdata_source_dict
         if source_primary_filename is not None:
             self._source_primary_filename = source_primary_filename
+        if l2_algorithm_id is not None:
+            self._l2_algorithm_id = l2_algorithm_id
 
     def get_parameter_by_name(self, parameter_name):
         """ Method to retrieve a level-2 parameter """
@@ -236,6 +240,8 @@ class Level2Data(object):
     def _get_attr_source_primary(self, *args):
         return self._source_primary_filename
 
+    def _get_attr_l2_algorithm_id(self, *args):
+        return self._l2_algorithm_id
     @property
     def arrshape(self):
         return (self.n_records)
