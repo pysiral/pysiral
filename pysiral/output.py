@@ -53,7 +53,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def get_template_attrs(self, template):
         """ Extract attribute names and options (if defined) for a
         give template string """
-        attr_defs = re.findall("{.*?}", template)
+        attr_defs = re.findall("{.*?}", str(template))
         attrs, options = [], []
         for attr_def in attr_defs:
             attr_name, _, optstr = attr_def[1:-1].partition(":")
@@ -178,7 +178,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         directory = self._get_directory_from_dt(time_range.start)
         # Get list of output files
         search_pattern = os.path.join(directory, "*.*")
-        l2output_files = glob.glob(search_pattern)
+        l2output_files = glob(search_pattern)
 
         # Delete files
         self.log.info("Removing %g l2 product files [ %s ] in %s" % (
