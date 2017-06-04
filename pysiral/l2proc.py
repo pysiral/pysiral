@@ -888,7 +888,7 @@ class L2ProcJob(DefaultLoggingClass):
             if os.path.isdir(local_repository):
                 # Expand the settings with actual path
                 self.settings.level2.auxdata[auxtype].update(pysiral_def)
-                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                if "source" in self.settings.level2.auxdata[auxtype]:
                     del self.settings.level2.auxdata[auxtype].source
             else:
                 msg = "Missing local auxiliary directory (%s:%s): %s " % (
