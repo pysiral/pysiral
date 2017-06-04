@@ -18,6 +18,7 @@ global_attributes:
   summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
   keywords: "sea ice, radar altimetry"
   product_version: "pysiral {pysiral_version:default}"
+  mission_id: "{mission_id}"
   source_primary: "{source_primary}"
   source_mss: "{source_mss}"
   source_sic: "{source_sic}"
