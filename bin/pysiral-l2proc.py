@@ -6,11 +6,13 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
+from pysiral.path import file_basename
 
 from datetime import timedelta
 import argparse
 import time
 import sys
+import os
 
 
 def pysiral_l2proc():
@@ -199,7 +201,12 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
     @property
     def run_tag(self):
-        return self._args.run_tag
+        run_tag = self._args.run_tag
+        if run_tag is None:
+            run_tag = self._args.l2_settings
+            if os.path.isfile(run_tag):
+                run_tag = file_basename(run_tag)
+        return run_tag
 
     @property
     def exclude_month(self):
