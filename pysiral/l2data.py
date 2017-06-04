@@ -210,13 +210,13 @@ class Level2Data(object):
         return self._gett_attr_geospatial_str(np.nanmin(self.latitude))
 
     def _get_attr_geospatial_lat_max(self, *args):
-        return self._gett_attr_geospatial_str(np.nanmin(self.latitude))
+        return self._gett_attr_geospatial_str(np.nanmax(self.latitude))
 
     def _get_attr_geospatial_lon_min(self, *args):
         return self._gett_attr_geospatial_str(np.nanmin(self.longitude))
 
     def _get_attr_geospatial_lon_max(self, *args):
-        return self._gett_attr_geospatial_str(np.nanmin(self.longitude))
+        return self._gett_attr_geospatial_str(np.nanmax(self.longitude))
 
     def _gett_attr_geospatial_str(self, value):
         return "%.4f" % value
