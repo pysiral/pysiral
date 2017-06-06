@@ -636,6 +636,10 @@ class cTFMRA(BaseRetracker):
                 range_bias = self._options.range_bias[radar_mode_index]
                 self._range[indices] -= range_bias
 
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
+
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
         Returns the intermediate product (oversampled range bins,
