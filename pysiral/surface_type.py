@@ -81,6 +81,10 @@ class SurfaceType(object):
     def sea_ice(self):
         return self.get_by_name("sea_ice")
 
+    @property
+    def land(self):
+        return self.get_by_name("land")
+
     def name(self, index):
         i = self.SURFACE_TYPE_DICT.values().index(index)
         return self.SURFACE_TYPE_DICT.keys()[i]
@@ -479,15 +483,15 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         self._surface_type.add_flag(ocean.flag, "ocean")
 
     def _classify_leads(self, options):
-        
+
         opt = options.lead
         parameter = self._classifier
-        
+
         lead = ANDCondition()
-        
+
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
-        
+
         # Check for monthly thresholds and pick index
         if type(opt.sea_ice_backscatter_min) is list:
             index = self._month-1
@@ -509,23 +513,23 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         # Pulse Peakiness
         peakiness_min = np.full(n, opt.peakiness_min)
         lead.add(parameter.peakiness >= peakiness_min[index])
-        
+
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
-        
+
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
     def _classify_sea_ice(self, options):
-        
+
         opt = options.sea_ice
         parameter = self._classifier
-        
+
         ice = ANDCondition()
-        
+
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
-        
+
         # Check for monthly thresholds and pick index
         if type(opt.sea_ice_backscatter_max) is list:
             index = self._month-1
@@ -548,10 +552,10 @@ class SICCI2Cryosat2(SurfaceTypeClassifier):
         # Pulse Peakiness
         peakiness_max = np.full(n, opt.peakiness_max)
         ice.add(parameter.peakiness <= peakiness_max[index])
-        
+
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
-        
+
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
@@ -565,7 +569,7 @@ class SICCI1Envisat(SurfaceTypeClassifier):
 
     def __init__(self):
         super(SICCI1Envisat, self).__init__()
-        self._classes = ["unkown", "ocean", "lead", "sea_ice"]
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self, options):
         self._classify_ocean(options)
