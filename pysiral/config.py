@@ -400,6 +400,9 @@ class TimeRangeRequest(DefaultLoggingClass):
 
         return iterations
 
+    def get_id(self, dt_fmt="%Y%m%dT%H%M%S"):
+        return self.start_dt.strftime(dt_fmt)+"_"+self.stop_dt.strftime(dt_fmt)
+
     def _decode_int_list(self, int_list, start_or_stop):
 
         # XXX: Currently only yyyy mm [dd] (day is optional) are allowed
