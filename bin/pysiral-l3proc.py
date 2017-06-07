@@ -15,24 +15,28 @@ import os
 
 def pysiral_l3proc():
 
-    """ get the pysiral configuration info """
+    # get the pysiral configuration info
     config = ConfigInfo()
 
-    """ parse command line arguments """
+    # parse command line arguments
+    # XXX: Changes this to class (with changed arguments)
     parser = get_l3proc_argparser()
     args = parser.parse_args()
 
-    """ Read the settings file """
+     # Read the settings file
     setting_file = os.path.join(
         config.pysiral_local_path, "settings", "l3", args.setting_id+".yaml")
     setting = get_yaml_config(setting_file)
 
-    """ validate date values """
+    # validate date values
+    # XXX: This needs to be changed to TimeRangeRequest
     validate_year_month_list(args.start_date, "start date")
     validate_year_month_list(args.stop_date, "stop date")
 
-    """ Start the processing """
+
     # Assemble the job order
+    # This is actually not that bad, however needs to be extended with
+    # an output handler
     job = Level3Job()
     job.set_input_directory(args.input_directory)
     job.set_grid_definition(setting.grid_definition)
