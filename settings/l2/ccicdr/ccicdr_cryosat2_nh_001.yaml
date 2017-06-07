@@ -98,7 +98,10 @@ retracker:
             wfm_smoothing_window_size: [11, 11, 21] 
             first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
             first_maximum_local_order: 1
-            range_bias: [-0.022, 0.047, 0.017]                
+            range_bias: [-0.022, 0.047, 0.017]
+            uncertainty:
+                type: fixed
+                value: 0.1                
     sea_ice: 
         pyclass: cTFMRA
         options: 
@@ -111,6 +114,9 @@ retracker:
             first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
             first_maximum_local_order: 1
             range_bias: [-0.022, 0.047, 0.017]
+            uncertainty:
+                type: fixed
+                value: 0.1
             
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
 ssa: 
