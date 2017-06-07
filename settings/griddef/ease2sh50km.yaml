@@ -1,0 +1,27 @@
+# This is the default grid definition for southern hemisphere radar altimeter data
+
+hemisphere: south
+
+grid_id: ease2sh50km
+
+grid_tag: ease2sh
+
+resolution_tag: 50km
+
+projection:
+    proj: laea
+    lat_0: -90.0
+    lon_0: 0.0
+    ellps: WGS84
+    datum: WGS84
+    units: m
+
+extent:
+    xoff: 0
+    yoff: 0
+    xsize: 10800000
+    ysize: 10800000
+    dx: 50000
+    dy: 50000
+    numx: 216
+    numy: 216
