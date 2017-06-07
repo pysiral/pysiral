@@ -65,7 +65,7 @@ snow:
     # Warren99 snow climatology
     warren99:
         pyclass: Warren99
-        long_name: Warren99 snow depth and density climatology
+        long_name: Warren, S.G., Rigor, I.G., Untersteiner, N., Radionov, V.F., Bryazgin, N.N., Aleksandrov, Y.I., and Colony, R.. Snow depth on Arctic sea ice. Journal of Climate, 12, 1814-1829, 1999
         local_repository: null
         options:
             fyi_correction_factor: 0.5
