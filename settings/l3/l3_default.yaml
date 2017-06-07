@@ -1,0 +1,101 @@
+# Default Level-3 processor settings suitable for default l2i input files
+# 
+# Version 1.0
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method. 
+
+l2_parameter:
+
+    - radar_freeboard:
+        grid_method: average
+
+    - freeboard:
+        grid_method: average
+
+    - sea_ice_thickness:
+        grid_method: average
+
+    - sea_surface_anomaly:
+        grid_method: average
+
+    - mean_sea_surface:
+        grid_method: average
+
+    - snow_depth:
+        grid_method: average
+
+    - snow_density:
+        grid_method: average
+
+    - ice_density:
+        grid_method: average
+
+    - sea_ice_type:
+        grid_method: average
+
+    - sea_ice_concentration:
+        grid_method: average
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+
+l2_prefilter:
+    active: True
+    l2_nan_source: sea_ice_thickness
+    l2_nan_targets:
+        - freeboard
+        - radar_freeboard
+
+# ==================================================
+# Level-3 Parameter
+# ==================================================
+
+# l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
+# of valid l3 parameter names. (l2 parameter surface type is mandatory)
+
+l3_parameter:
+    - n_total_waveforms
+    - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells
+
+l3_masking:
+
+# Apply freeboard filter to mss, ssa for visualization purposes
+
+    - source: freeboard
+      condition: "is_nan"
+      targets:
+        - sea_surface_anomaly
+        - mean_sea_surface
+
+# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
+# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
+#       is only a monthly average from the daily fields in the l2i orbits
+
+    - source: sea_ice_concentration
+      condition: "is_smaller; is_zero"
+      connect_conditions: "or"
+      targets:
+        - n_total_waveforms
+        - n_valid_waveforms
+        - valid_fraction
+        - lead_fraction
+        - ice_fraction
+        - sea_ice_type
+        - snow_depth
+        - snow_density
