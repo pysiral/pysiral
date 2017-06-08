@@ -38,6 +38,7 @@ auxdata:
             smooth_snow_depth: true
             smooth_filter_width_m: 25000.0
 
+
 # geophysical corrections applied to the l1b range window
 # The following corrections have been deactivated for the southern hemisphere
 # as they have proven to be discontinous at the SAR/SARin mode change
@@ -98,7 +99,7 @@ retracker:
         pyclass: cTFMRA
         options:
             # if arrays than [lrm, sar, sin]
-            threshold: 0.5
+            threshold: 0.95
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
@@ -114,7 +115,7 @@ retracker:
         pyclass: cTFMRA
         options:
             # if arrays than [lrm, sar, sin]
-            threshold: 0.5
+            threshold: 0.75
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
