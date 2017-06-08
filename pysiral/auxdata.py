@@ -30,7 +30,10 @@ class AuxdataBaseClass(object):
 
     def set_options(self, **opt_dict):
         """  Pass a dictionary with options """
-        self._options = options_from_dictionary(**opt_dict)
+        if self._options is None:
+            self._options = options_from_dictionary(**opt_dict)
+        else:
+            self._options.update(options_from_dictionary(**opt_dict))
 
     def set_local_repository(self, path):
         """ Set the path the local auxdata repository """
@@ -64,3 +67,7 @@ class AuxdataBaseClass(object):
     @property
     def longname(self):
         return self._long_name
+
+    @property
+    def options(self):
+        return self._options.makeReport()
