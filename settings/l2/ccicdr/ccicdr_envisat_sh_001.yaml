@@ -107,8 +107,8 @@ ssa:
         pre_filtering: true
         pre_filter_maximum_mss_median_offset: 5.0 # in meter
         uncertainty_tiepoints_distance_max: 100000.
-        uncertainty_minimum: 0.1
-        uncertainty_maximum: 0.5
+        uncertainty_minimum: 0.02
+        uncertainty_maximum: 0.10
 
 # Estimation of Radar Freeboard
 afrb:
