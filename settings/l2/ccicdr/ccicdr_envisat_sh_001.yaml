@@ -91,9 +91,9 @@ retracker:
             # if arrays than [lrm, sar, sin]   
             threshold:
                 type: poly_plane_fit
-                intercept: 1.1501480295
-                coef_lew: [-0.9569443958, 0.2914180170]
-                coef_sig0: [-0.0080006077, 0.0003591899]
+                intercept: 0.8147895184
+                coef_lew: [-0.5555823623, 0.1347526920]
+                coef_sig0: [0.0055934198, -0.0001431595]
             offset: 0.0
             use_sigma0_threshold_dependency: False
             wfm_oversampling_factor: 10
