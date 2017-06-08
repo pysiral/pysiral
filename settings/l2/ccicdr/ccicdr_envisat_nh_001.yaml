@@ -95,9 +95,9 @@ retracker:
             # type can be fixed, sigma_func and sitype_sigma_func
             threshold:
                 type: poly_plane_fit
-                intercept: 3.455217213
-                coef_lew: [-5.886689583, 4.313286625, -1.082021388]
-                coef_sig0: [-0.090142457, 0.006310188, -0.000121868]
+                intercept: 3.4775697362
+                coef_lew: [-5.9296875486, 4.3516498381, -1.0933131955]
+                coef_sig0: [-0.0914747272, 0.0063983796, -0.0001237455]
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
