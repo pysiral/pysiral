@@ -47,16 +47,11 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         is_ice = l2.surface_type.sea_ice.indices
         freeboard[is_ice] = l2.afrb[is_ice] + geometric_correction[is_ice]
 
-        # Apply fitted polynomial footprint correctoin based on sigma0
-        if self._options.has_key("use_footprint_correction"):
-            if self._options.use_footprint_correction:
-                sigma0 = l1b.classifier.sigma0
-                freeboard[is_ice] = freeboard[is_ice] + \
-                (0.3662153784 - 0.0290143102 * sigma0[is_ice] + \
-                 0.0005009073 * sigma0[is_ice]**2)
-        
         # XXX: This is not correct yet
-        freeboard_uncertainty[is_ice] = l2.afrb.uncertainty[is_ice]
+        deriv_snow = correction_factor
+        uncertainty = np.sqrt((deriv_snow*l2.snow_depth.uncertainty)**2. +
+                              l2.afrb.uncertainty**2.)
+        freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
         return freeboard, freeboard_uncertainty
 
@@ -103,10 +98,8 @@ class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
         - sea surface anomaly
         mss uncertainties is ignored, respectively part of ssa uncertainty
         """
-        deriv_elev = l2.mss - l2.ssa
-        deriv_ssa = l2.elev - l2.mss
-        rfrb_unc = np.sqrt((deriv_elev * l2.elev.uncertainty)**2. +
-                           (deriv_ssa * l2.ssa.uncertainty)**2.)
+        rfrb_unc = np.sqrt((l2.elev.uncertainty)**2. +
+                           (l2.ssa.uncertainty)**2.)
         return rfrb_unc
 
 

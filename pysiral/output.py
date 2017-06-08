@@ -2,19 +2,218 @@
 
 
 from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            ConfigInfo)
+                            ConfigInfo, get_yaml_config)
 from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
+from pysiral.logging import DefaultLoggingClass
 from pysiral.config import options_from_dictionary, get_parameter_attributes
 from pysiral.path import validate_directory
 
-
+from glob import glob
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
 import numpy as np
 import parse
 import os
+import re
+
+
+class OutputHandlerBase(DefaultLoggingClass):
+
+    subfolder_format = {"month": "%02g", "year": "%04g", "day": "%02g"}
+
+    def __init__(self, output_def):
+        super(OutputHandlerBase, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+        self._basedir = "n/a"
+        self._init_from_output_def(output_def)
+
+    def fill_template_string(self, template, dataset):
+        """ Fill an template string with information of a dataset
+        object (in this case Level2Data) """
+        attributes = self.get_template_attrs(template)
+        result = str(template)
+        for attribute in attributes:
+            attribute_name, option, placeholder = attribute
+            attribute = dataset.get_attribute(attribute_name, *option)
+            result = result.replace(placeholder, attribute)
+        return result
+
+    def get_dt_subfolders(self, dt, subfolder_tags):
+        """ Returns a list of subdirectories based on a datetime object
+        (usually the start time of data collection) """
+        subfolders = []
+        for subfolder_tag in subfolder_tags:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            subfolders.append(subfolder)
+        return subfolders
+
+    def get_template_attrs(self, template):
+        """ Extract attribute names and options (if defined) for a
+        give template string """
+        attr_defs = re.findall("{.*?}", str(template))
+        attrs, options = [], []
+        for attr_def in attr_defs:
+            attr_name, _, optstr = attr_def[1:-1].partition(":")
+            attrs.append(attr_name)
+            options.append(optstr.split(","))
+        return zip(attrs, options, attr_defs)
+
+    def _init_from_output_def(self, output_def):
+        """ Adds the information for the output def yaml files (either
+        full filename or treedict structure) """
+        if os.path.isfile(output_def):
+            self._output_def = get_yaml_config(output_def)
+        else:
+            self._output_def = output_def
+
+    def _set_basedir(self, basedir, create=True):
+        """ Sets and and (per default) creates the main output directory """
+        self._basedir = basedir
+        if create:
+            self._create_directory(self._basedir)
+
+    def _create_directory(self, directory):
+        """ Convinience method to create a directory and add an error
+        when failed """
+        status = validate_directory(directory)
+        if not status:
+            msg = "Unable to create directory: %s" % str(directory)
+            self.error.add_error("directory-error", msg)
+
+    @property
+    def id(self):
+        try:
+            return self._output_def.metadata.output_id
+        except:
+            return None
+
+    @property
+    def product_level_subfolder(self):
+        try:
+            return self._output_def.product_level_subfolder
+        except:
+            return ""
+
+    @property
+    def basedir(self):
+        return self._basedir
+
+    @property
+    def output_def(self):
+        return self._output_def
+
+    @property
+    def now_directory(self):
+        """ Returns a directory suitable string with the current time """
+        return datetime.now().strftime("%Y%m%dT%H%M%S")
+
+    @property
+    def variable_def(self):
+        t = self.output_def.variables
+        variables = list(t.iterkeys(recursive=False, branch_mode='only'))
+        attribute_dicts = [self.output_def.variables[a] for a in variables]
+        return zip(variables, attribute_dicts)
+
+
+class DefaultLevel2OutputHandler(OutputHandlerBase):
+    """ Default output handler with pysiral conventions. Uses product
+    directory from local_machine_def.yaml as standard repository """
+
+    # Some fixed parameters for this class
+    default_file_location = ["settings", "outputdef", "l2i_default.yaml"]
+    subfolder_tags = ["year", "month"]
+    applicable_data_level = 2
+
+    def __init__(self, output_def="default", subdirectory="default_output",
+                 overwrite_protection=True):
+        # Fall back to default output if no output_def is given
+        # (allows default initialization for the Level2 processor)
+        if output_def == "default":
+            output_def = self.default_output_def_filename
+        super(DefaultLevel2OutputHandler, self).__init__(output_def)
+        self.error.caller_id = self.__class__.__name__
+        self.log.name = self.__class__.__name__
+        self.subdirectory = subdirectory
+        self.overwrite_protection = overwrite_protection
+        self._init_product_directory()
+
+    def get_filename_from_l2(self, l2):
+        """ Return the filename for a defined level-2 data object
+        based on tag filenaming in output definition file """
+        filename_template = self.output_def.filenaming
+        return self.fill_template_string(filename_template, l2)
+
+    def get_directory_from_l2(self, l2, create=True):
+        """ Return the output directory based on information provided
+        in an l2 data object """
+        directory = self._get_directory_from_dt(l2.info.start_time)
+        if create:
+            self._create_directory(directory)
+        return directory
+
+    def get_fullpath_from_l2(self, l2):
+        """ Return export path and filename based on information
+        provided in the l2 data object """
+        export_directory = self.get_directory_from_l2(l2)
+        export_filename = self.get_filename_from_l2(l2)
+        return os.path.join(export_directory, export_filename)
+
+    def get_global_attribute_dict(self, l2):
+        attr_dict = {}
+        for attr_name in self.output_def.global_attributes.iterkeys():
+            attr_template = self.output_def.global_attributes[attr_name]
+            attribute = self.fill_template_string(attr_template, l2)
+            attr_dict[attr_name] = attribute
+        return attr_dict
+
+    def remove_old(self, time_range):
+        """ This method will erase all files in the target orbit for a
+        given time range. Use with care """
+
+        # Get the target directory
+        # XXX: Assumption time_range is monthly
+        directory = self._get_directory_from_dt(time_range.start)
+        # Get list of output files
+        search_pattern = os.path.join(directory, "*.*")
+        l2output_files = glob(search_pattern)
+
+        # Delete files
+        self.log.info("Removing %g l2 product files [ %s ] in %s" % (
+                len(l2output_files), self.id, directory))
+        for l2output_file in l2output_files:
+                os.remove(l2output_file)
+
+    def _init_product_directory(self):
+        """ Get main product directory from local_machine_def, add mandatory
+        runtag subdirectory, optional second subdirectory for overwrite
+        protection and product level id subfolder"""
+        pysiral_config = ConfigInfo()
+        basedir = pysiral_config.local_machine.product_repository
+        basedir = os.path.join(basedir, self.subdirectory)
+        if self.overwrite_protection:
+            basedir = os.path.join(basedir, self.now_directory)
+        basedir = os.path.join(basedir, self.product_level_subfolder)
+        self._set_basedir(basedir)
+
+    def _get_subdirectories(self, dt):
+        directory = self.basedir
+        for subfolder_tag in self.subfolders:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            directory = os.path.join(directory, subfolder)
+
+    def _get_directory_from_dt(self, dt):
+        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
+        return os.path.join(self.basedir, *subfolders)
+
+    @property
+    def default_output_def_filename(self):
+        pysiral_config = ConfigInfo()
+        local_settings_path = pysiral_config.pysiral_local_path
+        return os.path.join(local_settings_path, *self.default_file_location)
 
 
 class NCDateNumDef(object):
@@ -90,7 +289,7 @@ class NCDataFile(object):
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
-        for key in attdict.keys():
+        for key in sorted(attdict.keys()):
             self._rootgrp.setncattr(prefix+key, attdict[key])
 
     def _get_variable_attr_dict(self, parameter):
@@ -192,18 +391,16 @@ class L1bDataNC(NCDataFile):
                 self._missing_parameters)
 
 
-class L2iDataNC(NCDataFile):
+class Level2Output(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
     """
 
-    def __init__(self):
-        super(L2iDataNC, self).__init__()
-        self.parameter = []
-        self.base_export_path = None
-        self.l2 = None
-        self._missing_parameters = []
-        self.parameter_attributes = get_parameter_attributes("l2i")
+    def __init__(self, l2, output_handler):
+        super(Level2Output, self).__init__()
+        self.l2 = l2
+        self.output_handler = output_handler
+        self._export_l2()
 
     def set_base_export_path(self, path):
         self.base_export_path = path
@@ -212,58 +409,61 @@ class L2iDataNC(NCDataFile):
         self._get_full_export_path(startdt)
         return self.export_path
 
-    def write_to_file(self, l2):
-        self._get_full_export_path(l2.info.start_time)
-        self._get_export_filename(l2)
+    def _export_l2(self):
+        self.path = self.full_path
         self._open_file()
-        self._create_root_group(l2.info.attdict, prefix="input.")
-        self._populate_data_groups(l2)
-        self._write_processor_settings()
+        self._write_global_attributes()
+        self._populate_data_groups()
         self._write_to_file()
 
-    def _get_full_export_path(self, startdt):
-        # Comput und create the export directory
-        base_path = self.base_export_path
-        sub_folders = self._options.subfolders
-        folder = PysiralOutputFolder(load_config=False)
-        folder.l2i_from_startdt(startdt, base_path, sub_folders)
-        folder.create()
-        self.export_path = folder.path
+    def _write_global_attributes(self):
+        attr_dict = self.output_handler.get_global_attribute_dict(self.l2)
+        self._set_global_attributes(attr_dict)
 
-    def _get_export_filename(self, l2):
-        # get full output filename
-        filenaming = PysiralOutputFilenaming()
-        self.filename = filenaming.from_l2i(l2)
-        self.path = os.path.join(self.export_path, self.filename)
+    def _populate_data_groups(self):
 
-    def _populate_data_groups(self, l2):
-        dimdict = l2.dimdict
+        dimdict = self.l2.dimdict
         dims = dimdict.keys()
+
         for key in dims:
                 self._rootgrp.createDimension(key, dimdict[key])
-        for parameter_name in self._options.parameter:
-            data = l2.get_parameter_by_name(parameter_name)
+
+        for parameter_name, attribute_dict in self.output_handler.variable_def:
+
+            data = self.l2.get_parameter_by_name(parameter_name)
+
             # Convert datetime objects to number
             if type(data[0]) is datetime:
                 data = date2num(data, self.time_def.units,
                                 self.time_def.calendar)
+
             # Convert bool objects to integer
             if data.dtype.str == "|b1":
                 data = np.int8(data)
+
             dimensions = tuple(dims[0:len(data.shape)])
             var = self._rootgrp.createVariable(
                     parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
+
             # Add Parameter Attributes
-            attribute_dict = self._get_variable_attr_dict(parameter_name)
             for key in attribute_dict.keys():
                 setattr(var, key, attribute_dict[key])
 
-        # Report mission variable attributes (not in master release)
-        not_master = "master" not in PYSIRAL_VERSION
-        if not_master and len(self._missing_parameters) > 0:
-            print "Warning: Missing parameter attributes for "+"; ".join(
-                self._missing_parameters)
+    @property
+    def export_path(self):
+        """ Evoking this property will also create the directory if it
+        does not already exists """
+        return self.output_handler.get_directory_from_l2(self.l2, create=True)
+
+    @property
+    def export_filename(self):
+        """ Returns the filename for the level2 output file """
+        return self.output_handler.get_filename_from_l2(self.l2)
+
+    @property
+    def full_path(self):
+        return os.path.join(self.export_path, self.export_filename)
 
 
 class L3SDataNC(NCDataFile):

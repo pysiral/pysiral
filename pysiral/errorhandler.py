@@ -9,6 +9,10 @@ from collections import OrderedDict
 
 
 PYSIRAL_ERROR_CODES = OrderedDict([
+    ("auxdata_invalid_class", "Invalid auxdata class name [%s]"),
+    ("auxdata_invalid_class_name", "Auxdata class does not exist [%s]"),
+    ("auxdata_missing_definition", "auxdata_def: Missing definition [%s:%s]"),
+    ("auxdata_missing_localrepo_def", "local_machine_def: Missing definition [%s:%s]"),
     ("auxdata_missing_sic", "Missing sea ice concentration data set"),
     ("auxdata_missing_sitype", "Missing ice type/MYI fraction data set"),
     ("auxdata_missing_snow", "Missing snow depth data set(s)"),

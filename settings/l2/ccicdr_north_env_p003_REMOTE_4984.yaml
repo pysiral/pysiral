@@ -1,17 +1,13 @@
-# Level-2 settings for southern hemisphere CRDP release (ESA CCI on Sea Ice)
-# It is still deemed to be a prototype and one of two releases for the southern hemisphere
-# output data version: ccicdr-south-cs2-p002a [freeboard -> ice freeboard]
-
 # Level 2 processor settings are mission specific
 mission:
-    id: cryosat2
+    id: envisat
 
 # Regions Settings (for file selection and potential subsetting
 roi:
     pyclass: LowerLatLimit
-    hemisphere: south
+    hemisphere: north
     options:
-        latitude_threshold: -50.0
+        latitude_threshold: 50.0
 
 # Settings of Level-2 orbit processing
 level2:
@@ -27,29 +23,47 @@ level2:
             name: osisaf409
             options: null
         sitype:
-            name: fyi_default
+            name: icdc_nasateam
             options: null
         snow:
-            name: icdc_climatology_south
+            name: warren99
             options:
-                snow_density: 300
-                snow_density_uncertainty: 20
+                fyi_correction_factor: 0.5
                 smooth_snow_depth: true
                 smooth_filter_width_m: 25000.0
+                valid_snow_depth_range: [0, 0.6]
+                invalid_replace: nan
 
     # geophysical corrections applied to the l1b range window
-    # The following corrections have been deactivated for the southern hemisphere
-    # as they have proven to be discontinous at the SAR/SARin mode change
-    # - dry_troposphere
-    # - inverse_barometric
     corrections:
+        - dry_troposphere
         - wet_troposphere
+        - inverse_barometric
         - ionospheric
         - ocean_tide_elastic
         - ocean_tide_long_period
         - ocean_loading_tide
         - solid_earth_tide
         - geocentric_polar_tide
+
+    # Surface type classification algorithm
+    surface_type:
+        pyclass: SICCI2Envisat
+        options:
+            ocean:
+                peakiness_max: 5.0
+                ice_concentration_min: 5.0
+            lead:
+                peakiness_min: [46.90, 46.40, 46.20, 48.40, 0.00, 0.00, 0.00, 0.00, 0.00, 52.90, 51.00, 47.70]
+                sea_ice_backscatter_min: [28.80, 28.60, 28.50, 28.40, 0.00, 0.00, 0.00, 0.00, 0.00, 32.80, 30.80, 29.30]
+                leading_edge_width_max: [0.82, 0.82, 0.82, 0.82, 0.00, 0.00, 0.00, 0.00, 0.00, 0.82, 0.82, 0.82]
+                ice_concentration_min: 70.0
+            sea_ice:
+                peakiness_max: [16.00, 14.80, 14.10, 14.20, 0.00, 0.00, 0.00, 0.00, 0.00, 19.40, 19.30, 16.90]
+                sea_ice_backscatter_min: 2.5
+                sea_ice_backscatter_max: [22.50, 21.80, 21.30, 20.40, 0.00, 0.00, 0.00, 0.00, 0.00, 25.90, 24.60, 22.80]
+                leading_edge_width_min: [0.81, 0.83, 0.83, 0.83, 0.00, 0.00, 0.00, 0.00, 0.00, 0.78, 0.78, 0.80]
+                ice_concentration_min: 70.0
 
     # Mission specific range uncertainties
     uncertainty:
@@ -58,79 +72,50 @@ level2:
             sigma: [0.14, 0.10, 0.14]
             speckle_noise: 0.2
 
-    # Surface type classification algorithm
-    surface_type:
-        pyclass: SICCI2Cryosat2
-        options:
-            sar:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [80.70, 75.10, 73.20, 69.50, 69.70, 69.30, 69.20, 69.50, 69.70, 71.70, 76.00, 78.10]
-                    sea_ice_backscatter_min: [28.50, 26.80, 26.20, 24.60, 23.40, 22.80, 23.00, 23.00, 23.20, 24.00, 25.90, 27.30]
-                    leading_edge_width_max: [0.71, 0.73, 0.74, 0.77, 0.77, 0.77, 0.78, 0.77, 0.77, 0.76, 0.74, 0.72]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [40.10, 35.30, 32.90, 30.20, 28.70, 28.90, 28.10, 28.00, 28.40, 29.60, 34.10, 36.60]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [26.30, 24.10, 25.10, 26.20, 23.10, 20.90, 20.20, 19.10, 20.00, 20.60, 22.90, 23.90]
-                    leading_edge_width_min: [0.87, 0.95, 0.98, 1.02, 1.07, 1.07, 1.12, 1.13, 1.11, 1.08, 0.95, 0.92]
-                    ice_concentration_min: 70.0
-            sin:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [307.40, 300.70, 291.70, 288.50, 283.70, 284.20, 276.90, 284.40, 278.90, 289.40, 299.40, 307.70]
-                    sea_ice_backscatter_min: [29.20, 29.00, 28.50, 27.80, 26.90, 26.50, 26.30, 27.00, 26.20, 27.20, 27.50, 28.40]
-                    leading_edge_width_max: [1.00, 1.01, 1.03, 1.04, 1.06, 1.05, 1.07, 1.05, 1.07, 1.05, 1.02, 1.00]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [138.40, 126.10, 124.90, 127.30, 122.20, 121.00, 114.90, 115.80, 114.30, 121.20, 126.50, 135.20]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [26.40, 25.10, 27.60, 27.30, 24.90, 24.20, 24.10, 24.90, 23.70, 25.00, 25.20, 25.00]
-                    leading_edge_width_min: [1.31, 1.40, 1.37, 1.34, 1.37, 1.38, 1.41, 1.41, 1.42, 1.38, 1.36, 1.33]
-                    ice_concentration_min: 70.0
-
-
     # Retracking algorithm dependent on surface type
-    # mandatory entries for ocean, lead, sea ice
     retracker:
         ocean:
             pyclass: NoneRetracker
             options: null
+
         lead:
-            pyclass: cTFMRA
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]
-                threshold: 0.5
                 offset: 0.0
+                # type can be fixed, sigma_func and sitype_sigma_func
+                threshold:
+                    type: fixed
+                    value: 0.95
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 11]
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.25]
+                wfm_smoothing_window_size: [11, 11, 21]
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-                range_bias: [-0.022, 0.047, 0.017]
         sea_ice:
-            pyclass: cTFMRA
+            pyclass: SICCI2TfmraEnvisat
             options:
                 # if arrays than [lrm, sar, sin]
-                threshold: 0.5
+                # type can be fixed, sigma_func, sitype_sigma_func, and poly_plane_fit
+                threshold:
+                    type: poly_plane_fit
+                    intercept: 3.1074382427
+                    coef_lew: [-4.9959797381, 3.2814383311, -0.6999825163]
+                    coef_sig0: [-0.0807688831, 0.0064300121, -0.0001346437]
                 offset: 0.0
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 11]
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.25]
+                wfm_smoothing_window_size: [11, 11, 21]
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-                range_bias: [-0.022, 0.047, 0.017]
+ 
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     ssa:
         pyclass: SSASmoothedLinear
         options:
             use_ocean_wfm: False
-            smooth_filter_width_m: 100000.0
+            smooth_filter_width_m: 200000.0
             smooth_filter_width_footprint_size: 300.0
             pre_filtering: true
             pre_filter_maximum_mss_median_offset: 5.0 # in meter
@@ -166,15 +151,15 @@ level2:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -0.25
-                    valid_maximum_point_value: 2.25
+                    valid_minimum_point_value: -0.5
+                    valid_maximum_point_value: 2.5
 
         # Filters after thickness computation
         thickness:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -0.5
+                    valid_minimum_point_value: -1.0
                     valid_maximum_point_value: 10.5
 
     # Tests if l1b orbit file is valid

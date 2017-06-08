@@ -15,6 +15,7 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
+from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import month_iterator, get_month_time_range
 
@@ -22,19 +23,21 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
+import re
 import os
 import sys
 import yaml
 import socket
 from treedict import TreeDict
 
+import numpy as np
 
-PYSIRAL_VERSION = "0.3.0-dev"
-PYSIRAL_VERSION_FILENAME = "030dev"
+PYSIRAL_VERSION = "0.4.0-dev"
+PYSIRAL_VERSION_FILENAME = "040dev"
 HOSTNAME = socket.gethostname()
 
 
-class ConfigInfo(object):
+class ConfigInfo(DefaultLoggingClass):
     """
     Container for the content of the pysiral definition files
     (in pysiral/configration) and the local machine definition file
@@ -52,8 +55,13 @@ class ConfigInfo(object):
 
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
+    VALID_DATA_LEVEL_IDS = ["l2", "l3"]
+
     def __init__(self):
         """ Read all definition files """
+        super(ConfigInfo, self).__init__(self.__class__.__name__)
+
+        self.error = ErrorStatus(self.__class__.__name__)
         # Store the main path on this machine
         self.pysiral_local_path = get_pysiral_local_path()
         # read the definition files in the config folder
@@ -104,6 +112,65 @@ class ConfigInfo(object):
             mission_info.data_period.stop = datetime.utcnow()
         return mission_info
 
+    def get_setting_ids(self, data_level):
+        lookup_directory = self.get_local_setting_path(data_level)
+        ids, files = self.get_yaml_setting_filelist(lookup_directory)
+        return ids
+
+    def get_settings_file(self, data_level, setting_id_or_filename):
+        """ Returns a processor settings file for a given data level.
+        (data level: l2 or l3). The second argument can either be an
+        direct filename (which validity will be checked) or an id, for
+        which the corresponding file (id.yaml) will be looked up in
+        the default directory """
+
+        if data_level not in self.VALID_DATA_LEVEL_IDS:
+            return None
+
+        # Check if filename
+        if os.path.isfile(setting_id_or_filename):
+            return setting_id_or_filename
+
+        # Get all settings files in settings/{data_level} and its
+        # subdirectories
+        lookup_directory = self.get_local_setting_path(data_level)
+        ids, files = self.get_yaml_setting_filelist(lookup_directory)
+
+        # Test if ids are unique and return error for the moment
+        if len(np.unique(ids)) != len(ids):
+            msg = "Non-unique %s setting filename" % data_level
+            self.error.add_error("ambigous-setting-files", msg)
+            self.error.raise_on_error()
+
+        # Find filename to setting_id
+        try:
+            index = ids.index(setting_id_or_filename)
+            return files[index]
+        except:
+            return None
+
+    def get_yaml_setting_filelist(self, directory, ignore_obsolete=True):
+        """ Retrieve all yaml files from a given directory (including
+        subdirectories). Directories named "obsolete" are ignored if
+        ignore_obsolete=True (default) """
+        setting_ids = []
+        setting_files = []
+        for root, dirs, files in os.walk(directory):
+            if os.path.split(root)[-1] == "obsolete" and ignore_obsolete:
+                continue
+            for filename in files:
+                if re.search("yaml$", filename):
+                    setting_ids.append(filename.replace(".yaml", ""))
+                    setting_files.append(os.path.join(root, filename))
+        return setting_ids, setting_files
+
+    def get_local_setting_path(self, data_level):
+        if data_level in self.VALID_DATA_LEVEL_IDS:
+            return os.path.join(self.pysiral_local_path, "settings",
+                                data_level)
+        else:
+            return None
+
     def _read_config_files(self):
         for key in self._DEFINITION_FILES.keys():
             content = get_yaml_config(
@@ -150,16 +217,17 @@ class RadarModes(object):
         return len(self.flag_dict.keys())
 
 
-class TimeRangeRequest(object):
+class TimeRangeRequest(DefaultLoggingClass):
 
     _PERIODS = ["monthly", "custom"]
 
-    def __init__(self):
-        self._start_dt = None
-        self._stop_dt = None
-        self._period = self._default_period
-        self._exclude_month = []
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[]):
+        super(TimeRangeRequest, self).__init__(self.__class__.__name__)
+        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
+        self.set_range(start_dt, stop_dt)
+        self.set_period(period)
+        self.set_exclude_month(exclude_month)
 
     def __repr__(self):
         output = "TimeRangeRequest object:\n"
@@ -168,17 +236,24 @@ class TimeRangeRequest(object):
             output += "\n"
         return output
 
+    def clip_to_mission(self, mission_id):
+        mission_info = self.pysiral_config.get_mission_info(mission_id)
+        start = mission_info.data_period.start
+        stop = mission_info.data_period.stop
+        is_clipped = self.clip_to_range(start, stop)
+        if is_clipped:
+            self.log.info("Clipped to mission time range: %s till %s" % (
+                mission_info.data_period.start, mission_info.data_period.stop))
+
     def raise_if_empty(self):
         message = ""
         if self._start_dt is None:
-            message += "start time is invalid\n"
+            message += "start time is invalid"
         if self._stop_dt is None:
-            message += "stop time is invalid\n"
-
+            message += "; stop time is invalid"
         if len(message) > 0:
-            message += "Aborting ..."
-            print message
-            sys.exit(1)
+            self.error.add_error("empty-time-range", message)
+            self.error.raise_on_error()
 
     def set_range(self, start_date, stop_date):
 
@@ -197,19 +272,22 @@ class TimeRangeRequest(object):
             return
 
         # Check and decode integer lists
+        msg_template = "invalid %s time (not integer list or datetime)"
         if isinstance(start_date, list):
             if all(isinstance(item, int) for item in start_date):
                 self._start_dt = self._decode_int_list(start_date, "start")
             else:
-                error_message = "invalid start time (not integer list)"
-                self.error.append(self.__class__.__name__, error_message)
+                error_message = msg_template % "start"
+                self.error.add_error("invalid-timedef", error_message)
 
         if isinstance(stop_date, list):
             if all(isinstance(item, int) for item in stop_date):
                 self._stop_dt = self._decode_int_list(stop_date, "stop")
             else:
-                error_message = "invalid stop time (non integer list)"
-                self.error.append(self.__class__.__name__, error_message)
+                error_message = msg_template % "stop"
+                self.error.append("invalid-timedef", error_message)
+
+        self.error.raise_on_error()
 
     def clip_to_range(self, range_start, range_stop):
         """ Clip the current time range to an defined time range """
@@ -322,6 +400,9 @@ class TimeRangeRequest(object):
 
         return iterations
 
+    def get_id(self, dt_fmt="%Y%m%dT%H%M%S"):
+        return self.start_dt.strftime(dt_fmt)+"_"+self.stop_dt.strftime(dt_fmt)
+
     def _decode_int_list(self, int_list, start_or_stop):
 
         # XXX: Currently only yyyy mm [dd] (day is optional) are allowed
@@ -369,6 +450,10 @@ class TimeRangeRequest(object):
     @property
     def label(self):
         return str(self.start_dt)+" till "+str(self.stop_dt)
+
+    @property
+    def iterations(self):
+        return self.get_iterations()
 
 
 class TimeRangeIteration(object):

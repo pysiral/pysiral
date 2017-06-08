@@ -70,7 +70,6 @@ snow:
         options:
             fyi_correction_factor: 0.5
             valid_snow_depth_range: [0, 0.6]
-        local_machine_repository: none
         source: None
 
     constant:
@@ -80,7 +79,6 @@ snow:
         options:
             fixed_snow_depth: 0.3
             fixed_snow_density: 300.0
-        local_machine_repository: none
         source: None
 
     icdc_climatology_south:
@@ -304,7 +302,7 @@ sitype:
 
     icdc_nasateam:
         pyclass: ICDCNasaTeam
-        long_names: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
+        long_name: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
         filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v14__0.04__90.nc"
         local_repository: icdc_nasateam
         options:

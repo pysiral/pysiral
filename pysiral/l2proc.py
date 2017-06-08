@@ -8,15 +8,14 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
                             get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.datahandler import DefaultAuxdataHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
-from pysiral.sic import get_l2_sic_handler
-from pysiral.sitype import get_l2_sitype_handler
-from pysiral.snow import get_l2_snow_handler
 from pysiral.mss import get_l2_ssh_class
-from pysiral.output import PysiralOutputFilenaming
+from pysiral.output import (Level2Output, DefaultLevel2OutputHandler,
+                            PysiralOutputFilenaming)
 from pysiral.roi import get_roi_class
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
@@ -29,7 +28,6 @@ from pysiral.path import filename_from_path, file_basename
 
 from collections import deque, OrderedDict
 from datetime import datetime
-import numpy as np
 import time
 import glob
 import sys
@@ -38,15 +36,21 @@ import os
 
 class Level2Processor(DefaultLoggingClass):
 
-    def __init__(self, job):
+    def __init__(self, product_def, auxdata_handler=DefaultAuxdataHandler()):
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
         # Error Status Handler
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
-        # job definition
-        self._job = job
+#        # Level-2 Algorithm Defintion
+        self._l2def = product_def.l2def
+
+        # Auxiliary Data Handler
+        self._auxdata_handler = auxdata_handler
+
+        # Output_handler (can be one or many)
+        self._output_handler = product_def.output_handler
 
         # List of Level-2 (processed) orbit segments
         self._orbit = deque()
@@ -63,6 +67,9 @@ class Level2Processor(DefaultLoggingClass):
         # Processor summary report
         self.report = L2ProcessorReport()
 
+        # Initialize the class
+        self._initialize_processor()
+
 
 # %% Level2Processor: class properties
 
@@ -74,16 +81,30 @@ class Level2Processor(DefaultLoggingClass):
     def has_empty_file_list(self):
         return len(self._l1b_files) == 0
 
+    @property
+    def l2_auxdata_source_dict(self):
+        """ A dictionary that contains the descriptions of the auxiliary
+        data sources """
+        auxdata_dict = {}
+        for auxdata_type in ["mss", "sic", "sitype", "snow"]:
+            handler = getattr(self, "_"+auxdata_type)
+            auxdata_dict[auxdata_type] = handler.longname
+            try:
+                handler = getattr(self, "_"+auxdata_type)
+                auxdata_dict[auxdata_type] = handler.longname
+            except AttributeError:
+                auxdata_dict[auxdata_type] = "unspecified"
+        return auxdata_dict
 
 # %% Level2Processor: public methods
 
-    def initialize(self):
-        self._initialize_processor()
-        self._initialize_summary_report()
+#    def initialize(self):
+#        self._initialize_processor()
+#        self._initialize_summary_report()
 
     def get_input_files_local_machine_def(self, time_range, version="default"):
-        mission_id = self._job.mission_id
-        hemisphere = self._job.hemisphere
+        mission_id = self._l2def.mission_id
+        hemisphere = self._l2def.hemisphere
         l1b_files = get_local_l1bdata_files(
             mission_id, time_range, hemisphere, version=version)
         self.set_l1b_files(l1b_files)
@@ -105,8 +126,9 @@ class Level2Processor(DefaultLoggingClass):
 
     def remove_old_l2data(self, time_range):
         """ Clean up old l2 output data """
+        # TODO: Move data management out of processing class
         # can be several oututs
-        output_ids, output_defs = td_branches(self._job.config.output)
+        output_ids, output_defs = td_branches(self._l2def.output)
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
@@ -123,9 +145,12 @@ class Level2Processor(DefaultLoggingClass):
             for l2output_file in l2output_files:
                 os.remove(l2output_file)
 
+    def process_l1b_files(self, l1b_files):
+        self.set_l1b_files(l1b_files)
+        self.run()
+
     def run(self):
         """ Run the processor """
-        self._initialize_processor()
         self._l2_processing_of_orbit_files()
         self._l2proc_summary_to_file()
         self._clean_up()
@@ -137,7 +162,7 @@ class Level2Processor(DefaultLoggingClass):
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        output_ids, output_defs = td_branches(self._job.config.output)
+        output_ids, output_defs = td_branches(self._l2def.output)
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
@@ -161,15 +186,15 @@ class Level2Processor(DefaultLoggingClass):
             self._orbit.clear()
             return
 
-        self.log.info("Initializing processor")
+        self.log.info("Starting Initialization")
 
         self.log.info("Processor Settings - range correction list:")
-        for correction in self._job.config.corrections:
+        for correction in self._l2def.corrections:
             self.log.info("- %s" % correction)
         self.log.info("Processor Settings - surface type classificator: %s" % (
-            self._job.config.surface_type.pyclass))
+            self._l2def.surface_type.pyclass))
         self.log.info("Processor Settings - lead interpolator: %s" % (
-            self._job.config.ssa.pyclass))
+            self._l2def.ssa.pyclass))
 
         # Set the region of interest option
         # (required for MSS subsetting)
@@ -192,69 +217,72 @@ class Level2Processor(DefaultLoggingClass):
         # snow data handler (needs to provide snow depth and density)
         self._set_snow_handler()
 
+        # Report on output location
+        self._report_output_location()
+
         # All done
         self._initialized = True
-        self.log.info("Initializing done")
+        self.log.info("Initialization complete")
 
     def _set_roi(self):
-        self.log.info("Processor Settings - ROI: %s" % self._job.roi.pyclass)
-        self._roi = get_roi_class(self._job.roi.pyclass)
-        self._roi.set_options(**self._job.roi.options)
+        self.log.info("Processor Settings - ROI: %s" % self._l2def.roi.pyclass)
+        self._roi = get_roi_class(self._l2def.roi.pyclass)
+        self._roi.set_options(**self._l2def.roi.options)
 
     def _set_mss(self):
         """ Loading the mss product file from a static file """
-        settings = self._job.config.auxdata.mss
-        filename = os.path.join(settings.local_repository, settings.file)
-        self.log.info("Processor Settings - MSS: %s" % settings.pyclass)
-        self.log.info("- loading roi subset from: %s" % filename)
-        self._mss = get_l2_ssh_class(settings.pyclass)
-        self._mss.set_filename(filename)
+        settings = self._l2def.auxdata.mss
+        self._mss = self._auxdata_handler.get_pyclass("mss", settings.name)
+        self._auxdata_handler.error.raise_on_error()
+        self.log.info("Processor Settings - MSS: %s" % self._mss.pyclass)
+        self.log.info("- loading roi subset from: %s" % self._mss.filename)
         self._mss.set_roi(self._roi)
-        self._mss.parse()
+        self._mss.initialize()
 
     def _set_sic_handler(self):
         """ Set the sea ice concentration handler """
-        settings = self._job.config.auxdata.sic
-        self._sic = get_l2_sic_handler(settings.pyclass)
+        settings = self._l2def.auxdata.sic
+        self._sic = self._auxdata_handler.get_pyclass("sic", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._sic.set_options(**settings.options)
-        self._sic.set_local_repository(settings.local_repository)
-        self._sic.set_filenaming(settings.filenaming)
-        self._sic.set_subfolders(settings.subfolders)
         self._sic.initialize()
         self.log.info("Processor Settings - SIC handler: %s" % (
-            settings.pyclass))
+            self._sic.pyclass))
 
     def _set_sitype_handler(self):
         """ Set the sea ice type handler """
-        settings = self._job.config.auxdata.sitype
-        self._sitype = get_l2_sitype_handler(settings.pyclass)
+        settings = self._l2def.auxdata.sitype
+        self._sitype = self._auxdata_handler.get_pyclass(
+                "sitype", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._sitype.set_options(**settings.options)
-        self._sitype.set_local_repository(settings.local_repository)
-        self._sitype.set_filenaming(settings.filenaming)
-        self._sitype.set_subfolders(settings.subfolders)
         self.log.info("Processor Settings - SIType handler: %s" % (
-            settings.pyclass))
+            self._sitype.pyclass))
 
     def _set_snow_handler(self):
         """ Set the snow (depth and density) handler """
-        settings = self._job.config.auxdata.snow
-        self._snow = get_l2_snow_handler(settings.pyclass)
+        settings = self._l2def.auxdata.snow
+        self._snow = self._auxdata_handler.get_pyclass("snow", settings.name)
+        self._auxdata_handler.error.raise_on_error()
         if settings.options is not None:
             self._snow.set_options(**settings.options)
-        self._snow.set_local_repository(settings.local_repository)
-        self._snow.set_filenaming(settings.filenaming)
-        self._snow.set_subfolders(settings.subfolders)
         self.log.info("Processor Settings - Snow handler: %s" % (
-            settings.pyclass))
+            self._snow.pyclass))
+
+    def _report_output_location(self):
+        for output_handler in self._output_handler:
+            msg = "Level-2 Output [%s]: %s" % (
+                    str(output_handler.id), output_handler.basedir)
+            self.log.info(msg)
 
     def _initialize_summary_report(self):
         """
         Only add report parameter that are not time range specific
         (e.g. the processor l2 settings)
         """
-        self.report.l2_settings_file = self._job.l2_settings_file
+        self.report.l2_settings_file = self._l2def.l2_settings_file
 
 # %% Level2Processor: orbit processing
 
@@ -273,6 +301,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
+            source_primary_filename = os.path.split(l1b_file)[-1]
 
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
@@ -281,6 +310,9 @@ class Level2Processor(DefaultLoggingClass):
 
             # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
+            l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
+                            source_primary_filename=source_primary_filename,
+                            l2_algorithm_id=self._l2def.id)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)
@@ -344,28 +376,13 @@ class Level2Processor(DefaultLoggingClass):
             # Add data to orbit stack
             self._add_to_orbit_collection(l2)
 
-#            # XXX: Debug: Plots of uncertainties
-#            import matplotlib.pyplot as plt
-#            f, axarr = plt.subplots(5, sharex=True)
-#            axarr[0].plot(l2.sit.uncertainty)
-#            axarr[0].set_title("thickness uncertainty")
-#            axarr[1].plot(l2.frb.uncertainty)
-#            axarr[1].set_title("freeboard uncertainty")
-#            axarr[2].plot(l2.snow_depth.uncertainty)
-#            axarr[2].set_title("snow depth uncertainty")
-#            axarr[3].plot(l2.snow_dens.uncertainty)
-#            axarr[3].set_title("snow density uncertainty")
-#            axarr[4].plot(l2.ice_dens.uncertainty)
-#            axarr[4].set_title("ice density uncertainty")
-#            plt.show()
-
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
         filename = filename_from_path(l1b_file)
         self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
-        l1b.info.subset_region_name = self._job.roi.hemisphere
+        l1b.info.subset_region_name = self._l2def.roi.hemisphere
         return l1b
 
     def _discard_l1b_procedure(self, error_codes, l1b_file):
@@ -376,7 +393,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
-        for correction in self._job.config.corrections:
+        for correction in self._l2def.corrections:
             l1b.apply_range_correction(correction)
 
     def _get_sea_ice_concentration(self, l2):
@@ -442,15 +459,15 @@ class Level2Processor(DefaultLoggingClass):
 
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
-        pyclass = self._job.config.surface_type.pyclass
+        pyclass = self._l2def.surface_type.pyclass
         surface_type = get_surface_type_class(pyclass)
-        surface_type.set_options(**self._job.config.surface_type.options)
+        surface_type.set_options(**self._l2def.surface_type.options)
         surface_type.classify(l1b, l2)
         l2.set_surface_type(surface_type.result)
 
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
-        surface_type_validators = self._job.config.validator.surface_type
+        surface_type_validators = self._l2def.validator.surface_type
         names, validators = td_branches(surface_type_validators)
         error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
@@ -469,7 +486,7 @@ class Level2Processor(DefaultLoggingClass):
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        surface_types, retracker_def = td_branches(self._job.config.retracker)
+        surface_types, retracker_def = td_branches(self._l2def.retracker)
 
         for i, surface_type in enumerate(surface_types):
 
@@ -522,8 +539,8 @@ class Level2Processor(DefaultLoggingClass):
         l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
 
         # 2. get get sea surface anomaly
-        ssa = get_l2_ssh_class(self._job.config.ssa.pyclass)
-        ssa.set_options(**self._job.config.ssa.options)
+        ssa = get_l2_ssh_class(self._l2def.ssa.pyclass)
+        ssa.set_options(**self._l2def.ssa.options)
         ssa.interpolate(l2)
 
         # dedicated setters, else the uncertainty, bias attributes are broken
@@ -533,8 +550,8 @@ class Level2Processor(DefaultLoggingClass):
     def _get_altimeter_freeboard(self, l1b, l2):
         """ Compute radar freeboard and its uncertainty """
 
-        afrbalg = get_frb_algorithm(self._job.config.afrb.pyclass)
-        afrbalg.set_options(**self._job.config.rfrb.options)
+        afrbalg = get_frb_algorithm(self._l2def.afrb.pyclass)
+        afrbalg.set_options(**self._l2def.rfrb.options)
         afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
 
         # Check and return error status and codes
@@ -593,8 +610,8 @@ class Level2Processor(DefaultLoggingClass):
     def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
 
-        frbgeocorr = get_frb_algorithm(self._job.config.frb.pyclass)
-        frbgeocorr.set_options(**self._job.config.frb.options)
+        frbgeocorr = get_frb_algorithm(self._l2def.frb.pyclass)
+        frbgeocorr.set_options(**self._l2def.frb.options)
         frb, frb_unc = frbgeocorr.get_freeboard(l1b, l2)
 
         # Check and return error status and codes (e.g. missing file)
@@ -615,7 +632,7 @@ class Level2Processor(DefaultLoggingClass):
                 self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
-        freeboard_filters = self._job.config.filter.freeboard
+        freeboard_filters = self._l2def.filter.freeboard
         names, filters = td_branches(freeboard_filters)
         for name, filter_def in zip(names, filters):
             frbfilter = get_filter(filter_def.pyclass)
@@ -637,8 +654,8 @@ class Level2Processor(DefaultLoggingClass):
               (usually in the l2 settings)
         """
 
-        frb2sit = get_sit_algorithm(self._job.config.sit.pyclass)
-        frb2sit.set_options(**self._job.config.sit.options)
+        frb2sit = get_sit_algorithm(self._l2def.sit.pyclass)
+        frb2sit.set_options(**self._l2def.sit.options)
 
         sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
 
@@ -654,7 +671,7 @@ class Level2Processor(DefaultLoggingClass):
             l2.ice_dens.set_uncertainty(ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
-        thickness_filters = self._job.config.filter.thickness
+        thickness_filters = self._l2def.filter.thickness
         names, filters = td_branches(thickness_filters)
         for name, filter_def in zip(names, filters):
             sitfilter = get_filter(filter_def.pyclass)
@@ -670,15 +687,10 @@ class Level2Processor(DefaultLoggingClass):
             l2.sit.set_nan_indices(sitfilter.flag.indices)
 
     def _create_l2_outputs(self, l2):
-        output_ids, output_defs = td_branches(self._job.config.output)
-        for output_id, output_def in zip(output_ids, output_defs):
-            output = get_output_class(output_def.pyclass)
-            output.set_options(**output_def.options)
-            output.set_processor_settings(self._job.settings.level2)
-            output.set_base_export_path(output_def.path)
-            output.write_to_file(l2)
+        for output_handler in self._output_handler:
+            output = Level2Output(l2, output_handler)
             self.log.info("- Write %s data file: %s" % (
-                output_id, output.filename))
+                    output_handler.id, output.export_filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
@@ -855,28 +867,29 @@ class L2ProcJob(DefaultLoggingClass):
 
             # Specific type might not need a local repository, but update
             # anyway
-            if auxdata_id is None:
-                self.settings.level2.auxdata[auxtype].update(pysiral_def)
-                if self.settings.level2.auxdata[auxtype].has_key("source"):
-                    del self.settings.level2.auxdata[auxtype].source
-                continue
+#            if auxdata_id is None:
+#                self.settings.level2.auxdata[auxtype].update(pysiral_def)
+#                if self.settings.level2.auxdata[auxtype].has_key("source"):
+#                    del self.settings.level2.auxdata[auxtype].source
+#                continue
 
             # Check if entry is in local_machine_def.yaml
-            try:
-                local_repository = auxdata_def[auxtype][auxdata_id]
-                pysiral_def.local_repository = local_repository
-            except:
-                msg = "No auxdata definition in local_machine_def.yaml" + \
-                      " for %s:%s" % (auxtype, auxdata_id)
-                self.error.add_error("missing-auxdata-def", msg)
-                continue
+            if auxdata_id is not None:
+                try:
+                    local_repository = auxdata_def[auxtype][auxdata_id]
+                    pysiral_def.local_repository = local_repository
+                except:
+                    msg = "No auxdata definition in local_machine_def.yaml" + \
+                          " for %s:%s" % (auxtype, auxdata_id)
+                    self.error.add_error("missing-auxdata-def", msg)
+                    continue
 
             # Check if local directory (only main) does exist
             # XXX: Check for each iteration?
             if os.path.isdir(local_repository):
                 # Expand the settings with actual path
                 self.settings.level2.auxdata[auxtype].update(pysiral_def)
-                if self.settings.level2.auxdata[auxtype].has_key("source"):
+                if "source" in self.settings.level2.auxdata[auxtype]:
                     del self.settings.level2.auxdata[auxtype].source
             else:
                 msg = "Missing local auxiliary directory (%s:%s): %s " % (
@@ -961,6 +974,54 @@ class L2ProcJobOptions(object):
                 setattr(self, parameter, options_dict[parameter])
         if self.l1b_files_preset is not None:
             self.l1b_preset_is_active = True
+
+
+class Level2ProductDefinition(DefaultLoggingClass):
+    """ Main configuration class for the Level-2 Processor """
+
+    def __init__(self, run_tag, l2_settings_file):
+
+        super(Level2ProductDefinition, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus(self.__class__.__name__)
+
+        # Mandatory parameter
+        self._run_tag = str(run_tag)
+        self._l2_settings_file = l2_settings_file
+        self._parse_l2_settings()
+
+        # Optional parameters (may be set to default values if not specified)
+        self._output_handler = []
+
+    def add_output_definition(self, output_def_file,
+                              overwrite_protection=True):
+
+        # Set given or default output handler
+        self._output_handler.append(DefaultLevel2OutputHandler(
+            output_def=output_def_file, subdirectory=self.run_tag,
+            overwrite_protection=overwrite_protection))
+
+    def _parse_l2_settings(self):
+        try:
+            self._l2def = get_yaml_config(self._l2_settings_file)
+        except:
+            msg = "Error parsing l2 settings file: %s" % self._l2_settings_file
+            self.error.add_error("invalid-l2-settings", msg)
+            self.error.raise_on_error()
+
+    @property
+    def run_tag(self):
+        return str(self._run_tag)
+
+    @property
+    def l2def(self):
+        return self._l2def
+
+    @property
+    def output_handler(self):
+        # Revert to default output handler if non was specifically added
+        if len(self._output_handler) == 0:
+            self.add_output_definition("default")
+        return self._output_handler
 
 
 class L2ProcessorReport(DefaultLoggingClass):
