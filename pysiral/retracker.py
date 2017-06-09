@@ -92,14 +92,19 @@ class BaseRetracker(object):
             return None
 
     def _create_default_properties(self, n_records):
-        # XXX: Currently only range and status (true: ok)
-        self._range = np.ndarray(shape=(n_records))*np.nan
-        self._power = np.ndarray(shape=(n_records))*np.nan
+        # XXX: Currently only range and status (False: ok)
+        for parameter in ["_range", "_power"]:
+            setattr(self, parameter, np.full((n_records), np.nan))
+        self._uncertainty = np.full((n_records), 0.0, dtype=np.float32)
         self._flag = np.zeros(shape=(n_records), dtype=np.bool)
 
     @property
     def range(self):
         return self._range
+
+    @property
+    def uncertainty(self):
+        return self._uncertainty
 
     @property
     def power(self):
@@ -128,7 +133,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
     @property
     def default_options_dict(self):
         default_options_dict = {
-            "threshold": 0.5,
+            "threshold": dict(type="fixed", value=0.5),
             "offset": 0.0,
             "wfm_oversampling_factor": 10,
             "wfm_oversampling_method": "linear",
@@ -143,6 +148,14 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
         """ API Calling method """
+
+        # Get sigma0 information
+        sigma0 = self.get_l1b_parameter("classifier", "sigma0")
+        lew1 = self.get_l1b_parameter("classifier", "leading_edge_width_first_half")
+        lew2 = self.get_l1b_parameter("classifier", "leading_edge_width_second_half")
+        lew = lew1+lew2
+        sitype = self._l2.sitype
+        tfmra_threshold = self.get_tfmra_threshold(sigma0, lew, sitype, indices)
 
         for i in indices:
 
@@ -160,45 +173,68 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 self._power[i] = np.nan
                 return
 
-            # Get TFMRA threshold
-            tfmra_threshold = self._options.threshold
-
-            # Get sigma0 information
-            sigma0 = self.get_l1b_parameter("classifier","sigma0")
-            
-            # Adjust threshold based on sigma0 (2nd/3rd order polynomial fit)
-            if self._options.use_sigma0_threshold_dependency:
-                # Separate between first-year and multi-year ice type
-                if self._l2.sitype[i]<0.5:
-                    a0 = 0.2226346193 #0.2304690525
-                    a1 = 0.0116119105 #0.0102260586
-                    a2 = 0.0003187522  #0.0003467209
-                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
-                else:
-                    a0 = 2.410715e-01 #0.2392926
-                    a1 = 4.881797e-03 #4.885098e-03
-                    a2 = 1.381001e-04 #6.43679e-05
-                    a3 = 1.980877e-05 #2.420468e-05
-                    tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2 + a3 * sigma0[i]**3
-                    
-                    #a0 = 0.2104195466
-                    #a1 = 0.0044466796
-                    #a2 = 0.0006462485
-                    #tfmra_threshold = a0 + a1 * sigma0[i] + a2 * sigma0[i]**2
-
-            #if self._options.use_sigma0_dependency:
-            #    if sigma0[i]<8:
-            #          tfmra_threshold -= self._options.sigma0_modification_scaling
-            #    if sigma0[i]<15.5 and sigma0[i]>=8:
-            #          tfmra_threshold -= (-0.1272 * sigma0[i] + 1.9909) * self._options.sigma0_modification_scaling
-
             # Get track point and its power
             tfmra_range, tfmra_power = self.get_threshold_range(
-                filt_rng, filt_wfm, fmi, tfmra_threshold)
+                filt_rng, filt_wfm, fmi, tfmra_threshold[i])
 
             # Mandatory return function
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
+
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
+
+    def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
+
+        # short link to options
+        option = self._options.threshold
+
+        # scale sigma0 (may be necessary for inter-mission sigma0 biases)
+        if "sigma_scaling" in option:
+            sigma0 = sigma0 * option.sigma_scaling
+
+        threshold = np.full(sigma0.shape, np.nan)
+
+        # legacy option where threshold is float in settings file
+        if type(option) is float:
+            threshold[indices] = option
+            return threshold
+
+        # fixed threshold
+        if option.type == "fixed":
+            threshold[indices] = option.value
+
+        # depended on sigma0
+        elif option.type == "sigma_func":
+            value = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef):
+                value += coef * sigma0**i
+            threshold[indices] = value[indices]
+
+        # dependend in sitype and sigma0
+        elif option.type == "sitype_sigma_func":
+            value = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef_fyi):
+                value += coef * sigma0**i
+            value_myi = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef_myi):
+                value_myi += coef * sigma0**i
+            myi_list = np.where(sitype > 0.5)[0]
+            value[myi_list] = value_myi[myi_list]
+            threshold[indices] = value[indices]
+
+        # dependent on sigma0 and leading-edge width 3rd order polynomial fit
+        elif option.type == "poly_plane_fit":
+            value = np.zeros(sigma0.shape)
+            value += option.intercept
+            for i, coef in enumerate(option.coef_lew):
+                value += coef * lew**(i+1)
+            for i, coef in enumerate(option.coef_sig0):
+                value += coef * sigma0**(i+1)
+            threshold[indices] = value[indices]
+
+        return threshold
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
@@ -612,6 +648,10 @@ class cTFMRA(BaseRetracker):
                     continue
                 range_bias = self._options.range_bias[radar_mode_index]
                 self._range[indices] -= range_bias
+
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """

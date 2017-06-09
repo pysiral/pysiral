@@ -1,5 +1,32 @@
 # History of changes
 
+## Version 0.4.0 (9. June 2017)
+
+**New Features**
+* [visualization] Added mean filter for smooting in l3 maps (`create_l3s_map.py`: new option `-avfilt int:window_size`)
+* [auxdata] Auxiliary data handler added (default auxiliary handler needs type and id of data handler and gets all information from config file)
+* [output] Level-2 output handler added (reads new output definition files and automatically generates filenames and output folder for various output definitions)
+
+**Bugfixes**
+* [maptools] incorrect computation of pcolor grid corner coordinates
+
+**Changes**
+* [l2 processing] Option `-run-tag` has been made optional. If omitted, the run tag will be set to L2 settings id
+* [l2 processing] Larger internal overhaul of the l2 processing approach (modularization of auxdata, l2 processing settings and output definitions)
+* [l2 processing] new output definition files for generating output from the level-2 processor. Can be stacked. 
+* [retracker] Added polyplane fit option of SICCI TFMRA retracker
+* [uncertainties] computation of uncertainties improved
+* [config] various changes to TimeRangeRequest
+* [ssh] Added additional filters to SSASmoothedLinear
+
+
+**Settings**
+* [ccicdr] Finalized version 1 of ccicdr settings files (Envisat & CryoSat, North & South)
+* [general] separated l2 settings and output definitions
+* [general] settings files can now be put in subfolders for better organization
+* [general] settings in subfolders named `obsolete` will not be automatically recognized by the setting lookup mechanismen
+
+
 ## Version 0.3.0 (10. March 2017)
 
 **New Features**

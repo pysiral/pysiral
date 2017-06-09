@@ -73,35 +73,41 @@ level2:
             speckle_noise: 0.2
 
     # Retracking algorithm dependent on surface type
-    retracker: 
-        ocean: 
+    retracker:
+        ocean:
             pyclass: NoneRetracker
             options: null
 
-        lead: 
+        lead:
             pyclass: SICCI2TfmraEnvisat
             options:
-                # if arrays than [lrm, sar, sin]    
-                threshold: 0.95
+                # if arrays than [lrm, sar, sin]
                 offset: 0.0
+                # type can be fixed, sigma_func and sitype_sigma_func
+                threshold:
+                    type: fixed
+                    value: 0.95
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 21] 
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                wfm_smoothing_window_size: [11, 11, 21]
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-        sea_ice: 
+        sea_ice:
             pyclass: SICCI2TfmraEnvisat
-            options: 
-                # if arrays than [lrm, sar, sin]   
-                threshold: 0.5
+            options:
+                # if arrays than [lrm, sar, sin]
+                # type can be fixed, sigma_func, sitype_sigma_func, and poly_plane_fit
+                threshold:
+                    type: poly_plane_fit
+                    intercept: 3.4775697362
+                    coef_lew: [-5.9296875486, 4.3516498381, -1.0933131955]
+                    coef_sig0: [-0.0914747272, 0.0063983796, -0.0001237455]
                 offset: 0.0
-                use_sigma0_threshold_dependency: False
                 wfm_oversampling_factor: 10
                 wfm_oversampling_method: linear
-                wfm_smoothing_window_size: [11, 11, 21] 
-                first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+                wfm_smoothing_window_size: [11, 11, 21]
+                first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                 first_maximum_local_order: 1
-
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     ssa:
@@ -144,15 +150,15 @@ level2:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -0.5
-                    valid_maximum_point_value: 2.5
+                    valid_minimum_point_value: -0.25
+                    valid_maximum_point_value: 2.25
 
         # Filters after thickness computation
         thickness:
             frb_valid_range:
                 pyclass: L2ParameterValidRange
                 options:
-                    valid_minimum_point_value: -1.0
+                    valid_minimum_point_value: -0.5
                     valid_maximum_point_value: 10.5
 
     # Tests if l1b orbit file is valid

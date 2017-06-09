@@ -12,6 +12,10 @@ from pysiral.visualization.parameter import (
 
 from pysiral.path import (file_basename, folder_from_filename,
                           validate_directory)
+
+from astropy.convolution import convolve
+import numpy as np
+
 import glob
 import os
 
@@ -128,6 +132,21 @@ def l3s_map():
                 annotation_str + ".png"
             output = os.path.join(destination, map_filename)
 
+            # Average filter
+            if args.av_filter_width is not None:
+
+                # presever nan's and mask
+                nan_list = np.where(np.isnan(data.grid))
+                mask = data.grid.mask
+
+                # astropy concolve seems to be the only one treating nan's
+                # as missing values
+                kernel = np.ones((args.av_filter_width, args.av_filter_width))
+                convolved = convolve(data.grid, kernel, normalize_kernel=True)
+                data.grid = np.ma.array(convolved)
+                data.grid[nan_list] = np.nan
+                data.grid.mask = mask
+
             # Map Labels
             if args.cs2awi:
                 mission_id = "cryosat2"
@@ -236,6 +255,11 @@ def get_l3s_map_argparser():
         '-annotation',
         action='store', dest='annotation', default='',
         help='additional label')
+
+    parser.add_argument(
+        '-avfilt',
+        action='store', dest='av_filter_width', default=None, type=int,
+        help='Apply moving average filter')
 
     parser.add_argument(
         '--cs2awi',
