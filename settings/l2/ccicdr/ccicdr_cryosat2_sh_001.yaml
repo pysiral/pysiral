@@ -1,6 +1,4 @@
 # Level-2 settings for southern hemisphere CRDP release (ESA CCI on Sea Ice)
-# It is still deemed to be a prototype and one of two releases for the southern hemisphere
-# output data version: ccicdr-south-cs2-p002a [freeboard -> ice freeboard]
 
 id: "ESA CCI Phase-2 CryoSat-2 Antarctic climate data record v1 (ccicdr_cryosat2_sh_001)"
 
@@ -14,8 +12,6 @@ roi:
     hemisphere: south
     options:
         latitude_threshold: -50.0
-
-
 
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
@@ -136,8 +132,8 @@ ssa:
         pre_filtering: true
         pre_filter_maximum_mss_median_offset: 5.0 # in meter
         uncertainty_tiepoints_distance_max: 100000.
-        uncertainty_minimum: 0.1
-        uncertainty_maximum: 0.5
+        uncertainty_minimum: 0.02
+        uncertainty_maximum: 0.10
         marine_segment_filter:
             minimum_lead_number: 1
         tiepoint_maxdist_filter:
@@ -162,6 +158,9 @@ sit:
         water_density: 1024.0
         fyi_density: 916.7
         myi_density: 882.0
+        uncertainty:
+            fyi_density: 10.0
+            myi_density: 10.0
 
 # List of filter at different stages of l2 procesing
 # (can be list of filters)
