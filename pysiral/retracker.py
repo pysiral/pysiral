@@ -181,15 +181,11 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
-<<<<<<< HEAD
         if "uncertainty" in self._options:
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
 
-    def get_tfmra_threshold(self, sigma0, sitype, indices):
-=======
     def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
->>>>>>> 38f722f... [retracker] added a scheme for the Envisat adaptive retracker using a polynomial fit based on leading-edge width and sigma0 with related preliminary changes to the settings file
 
         # short link to options
         option = self._options.threshold
@@ -235,7 +231,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             for i, coef in enumerate(option.coef_lew):
                 value += coef * lew**(i+1)
             for i, coef in enumerate(option.coef_sig0):
-                value += coef * sigma0**(i+1)       
+                value += coef * sigma0**(i+1)
             threshold[indices] = value[indices]
 
         return threshold
