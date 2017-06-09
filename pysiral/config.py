@@ -32,8 +32,8 @@ from treedict import TreeDict
 
 import numpy as np
 
-PYSIRAL_VERSION = "0.4.0-dev"
-PYSIRAL_VERSION_FILENAME = "040dev"
+PYSIRAL_VERSION = "0.4.0"
+PYSIRAL_VERSION_FILENAME = "040"
 HOSTNAME = socket.gethostname()
 
 
