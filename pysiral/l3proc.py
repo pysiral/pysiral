@@ -5,6 +5,8 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
+from pysiral.config import get_yaml_config
+from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.output import L3SDataNC
@@ -17,10 +19,10 @@ import numpy as np
 
 class Level3Processor(DefaultLoggingClass):
 
-    def __init__(self, job):
-        super(Level3Processor, self).__init__("Level3Processor")
-        self.job = job
-        self._l2_files = []
+    def __init__(self, product_def):
+        super(Level3Processor, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+        self._job = product_def
         self._l3_progress_percent = 0.0
 
     def set_l2_files(self, l2_files):
@@ -587,3 +589,22 @@ class L3MetaData(object):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
         setattr(self, tag, value)
+
+
+class Level3ProductDefinition(DefaultLoggingClass):
+
+    def __init__(self, l3_settings_file, grid, output):
+        super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+        self._l3_settings_file = l3_settings_file
+        self._output = [output]
+        self._grid = grid
+        self._parse_l3_settings()
+        self.log.info("Output grid id: %s" % str(self._grid.grid_id))
+
+    def _parse_l3_settings(self):
+        self.log.info("Parsing settings: %s" % str(self._l3_settings_file))
+        self._l3 = get_yaml_config(self._l3_settings_file)
+
+    def validate(self):
+        pass
