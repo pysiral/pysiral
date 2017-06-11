@@ -269,6 +269,7 @@ class TimeRangeRequest(DefaultLoggingClass):
             valid_stop = True
 
         if valid_start and valid_stop:
+            self._validate_range()
             return
 
         # Check and decode integer lists
@@ -285,9 +286,13 @@ class TimeRangeRequest(DefaultLoggingClass):
                 self._stop_dt = self._decode_int_list(stop_date, "stop")
             else:
                 error_message = msg_template % "stop"
-                self.error.append("invalid-timedef", error_message)
+                self.error.add_error("invalid-timedef", error_message)
 
+        # Raise on parsing errors
         self.error.raise_on_error()
+
+        # Check range
+        self._validate_range()
 
     def clip_to_range(self, range_start, range_stop):
         """ Clip the current time range to an defined time range """
@@ -331,12 +336,6 @@ class TimeRangeRequest(DefaultLoggingClass):
         if exclude_month_list is None:
             exclude_month_list = []
         self._exclude_month = exclude_month_list
-
-    def raise_on_error(self):
-
-        if self.error.status:
-            print self.error.message
-            sys.exit(1)
 
     def get_iterations(self):
         """
@@ -409,7 +408,7 @@ class TimeRangeRequest(DefaultLoggingClass):
         n_entries = len(int_list)
         if n_entries < 2 or n_entries > 3:
             error_message = "%s date integer list must be yyyy mm [dd]"
-            self.error.append(self.__class__.__name__, error_message)
+            self.error.add_error("invalid-date-int-list", error_message)
             return None
 
         # Set the day
@@ -422,7 +421,7 @@ class TimeRangeRequest(DefaultLoggingClass):
         except:
             error_message = "cannot convert integer list to datetime: %s" % (
                 str(int_list))
-            self.error.add_error(self.__class__.__name__, error_message)
+            self.error.add_error("invalid-date-int-list", error_message)
             return None
 
         # if stop time: add one period
@@ -434,6 +433,14 @@ class TimeRangeRequest(DefaultLoggingClass):
             dt = dt + extra_period
 
         return dt
+
+    def _validate_range(self):
+        # Check if start and stop are in the right order
+        if self.stop_dt <= self.start_dt:
+            msg = "stop [%s] before start [%s]"
+            msg = msg % (str(self.stop_dt), str(self.start_dt))
+            self.error.add_error("invalid-period", msg)
+            self.error.raise_on_error()
 
     @property
     def _default_period(self):
