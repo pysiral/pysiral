@@ -8,7 +8,7 @@ metadata:
 
 # Output Definition
 filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_name:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv1.0.nc"
-product_level_subfolder: l3c
+product_level_subfolder: l3c_sicci2
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
@@ -18,10 +18,10 @@ global_attributes:
   source: "Satellite radar altimetry"
   history: ""
   references: ""
-  tracking_id: ""s
+  tracking_id: ""
   conventions: "CF-1.6"
   product_version: "1.0"
-  summary	string: ""
+  summary: ""
   keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
   id: ""
   naming: ""
@@ -32,9 +32,9 @@ global_attributes:
   date_issued: ""
   date_modified: ""
   creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
-  creator_url	string: "http://www.awi.de"
-  creator_email	string: "TBD"
-  project: "ESA Sea Ice CCI"s
+  creator_url: "http://www.awi.de"
+  creator_email: "TBD"
+  project: "ESA Sea Ice CCI"
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
@@ -44,7 +44,7 @@ global_attributes:
   time_coverage_duration: "13 years"
   time_coverage_resolution: Monthly" 
   standard_name_vocabulary: ""
-  license	string: "n.a."
+  license: "n.a."
   platform: "{mission_name}"
   sensor: "{mission_sensor}"
   snow_source: "{source_snow}"
