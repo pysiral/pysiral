@@ -55,7 +55,7 @@ class ConfigInfo(DefaultLoggingClass):
 
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
-    VALID_DATA_LEVEL_IDS = ["l2", "l3"]
+    VALID_DATA_LEVEL_IDS = ["l2", "l3", "griddef", "outputdef"]
 
     def __init__(self):
         """ Read all definition files """
