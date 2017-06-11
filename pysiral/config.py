@@ -626,7 +626,42 @@ class DefaultCommandLineArguments(object):
                 "default": True,
                 "required": False,
                 "help": 'enable writing Level-2 output to unique directory ' +
-                        '(default)'}}
+                        '(default)'},
+
+            "period": {
+                "action": "store",
+                "dest": "period",
+                "default": "monthly",
+                "required": False,
+                "help": 'data period tag (default: monthly)'},
+
+            "l2i-product-dir": {
+                "action": "store",
+                "dest": "l2i_product_dir",
+                "default": None,
+                "required": True,
+                "help": "l2i input directory"},
+
+            "l3-settings": {
+                "action": "store",
+                "dest": "l3_settings",
+                "default": "l3_default",
+                "required": False,
+                "help": "l3 settings definition id or filename"},
+
+            "l3-griddef": {
+                "action": "store",
+                "dest": "l3_griddef",
+                "default": None,
+                "required": True,
+                "help": "l3 grid definition id or filename"},
+
+            "l3-output": {
+                "action": "store",
+                "dest": "l3_output",
+                "default": "default",
+                "required": True,
+                "help": "l3 output id"}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
