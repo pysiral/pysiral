@@ -65,7 +65,11 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Adds the information for the output def yaml files (either
         full filename or treedict structure) """
         if os.path.isfile(output_def):
-            self._output_def = get_yaml_config(output_def)
+            try:
+                self._output_def = get_yaml_config(output_def)
+            except Exception, msg:
+                self.error.add_error("outputdef-parsers-error", msg)
+                self.error.raise_on_error()
         else:
             self._output_def = output_def
 
@@ -92,10 +96,12 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     @property
     def product_level_subfolder(self):
-        try:
-            return self._output_def.product_level_subfolder
-        except:
-            return ""
+        subfolder = self._output_def.product_level_subfolder
+        if type(subfolder) is not str:
+            msg = "root.product_level_subfolder missing"
+            self.error.add_error("outputdef-invalid", msg)
+            self.error.raise_on_error()
+        return subfolder
 
     @property
     def basedir(self):
