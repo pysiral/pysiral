@@ -25,6 +25,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     def __init__(self, output_def):
         super(OutputHandlerBase, self).__init__(self.__class__.__name__)
+        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
@@ -86,6 +87,17 @@ class OutputHandlerBase(DefaultLoggingClass):
         if not status:
             msg = "Unable to create directory: %s" % str(directory)
             self.error.add_error("directory-error", msg)
+
+    def _get_subdirectories(self, dt):
+        directory = self.basedir
+        for subfolder_tag in self.subfolders:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            directory = os.path.join(directory, subfolder)
+
+    def _get_directory_from_dt(self, dt):
+        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
+        return os.path.join(self.basedir, *subfolders)
 
     @property
     def id(self):
@@ -204,16 +216,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         basedir = os.path.join(basedir, self.product_level_subfolder)
         self._set_basedir(basedir)
 
-    def _get_subdirectories(self, dt):
-        directory = self.basedir
-        for subfolder_tag in self.subfolders:
-            parameter = getattr(dt, subfolder_tag)
-            subfolder = self.subfolder_format[subfolder_tag] % parameter
-            directory = os.path.join(directory, subfolder)
 
-    def _get_directory_from_dt(self, dt):
-        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
-        return os.path.join(self.basedir, *subfolders)
 
     @property
     def default_output_def_filename(self):
