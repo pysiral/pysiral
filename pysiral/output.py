@@ -216,7 +216,52 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         basedir = os.path.join(basedir, self.product_level_subfolder)
         self._set_basedir(basedir)
 
+    @property
+    def default_output_def_filename(self):
+        pysiral_config = ConfigInfo()
+        local_settings_path = pysiral_config.pysiral_local_path
+        return os.path.join(local_settings_path, *self.default_file_location)
 
+
+class DefaultLevel3OutputHandler(OutputHandlerBase):
+
+    # Some fixed parameters for this class
+    default_file_location = ["settings", "outputdef", "l3_default.yaml"]
+    subfolder_tags = ["year"]
+    applicable_data_level = 3
+
+    def __init__(self, output_def="default", base_directory="l3proc_default",
+                 overwrite_protection=True):
+
+        if output_def == "default":
+            output_def = self.default_output_def_filename
+
+        super(DefaultLevel3OutputHandler, self).__init__(output_def)
+        self.error.caller_id = self.__class__.__name__
+        self.log.name = self.__class__.__name__
+        self.overwrite_protection = overwrite_protection
+        self._init_product_directory(base_directory)
+        self.log.info("L3 product directory: %s" % str(self.basedir))
+
+    def _init_product_directory(self, base_directory_or_id):
+        """ Initializes the product directory. If `base_directory` is already
+        a directory, it is used as is. Else, it is treated as subfolder of
+        the default pysiral product directory. Product level id and
+        overwrite protection subfolders are added for both options"""
+        # argument is directory
+        if os.path.isdir(base_directory_or_id):
+            basedir = base_directory_or_id
+        # argument is id
+        else:
+            basedir = self.pysiral_config.local_machine.product_repository
+            basedir = os.path.join(basedir, base_directory_or_id)
+        # add product level subfolder
+        basedir = os.path.join(basedir, self.product_level_subfolder)
+        # optional (subfolder with current time)
+        if self.overwrite_protection:
+            basedir = os.path.join(basedir, self.now_directory)
+        # set the directory
+        self._set_basedir(basedir)
 
     @property
     def default_output_def_filename(self):
