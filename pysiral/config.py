@@ -517,6 +517,11 @@ class TimeRangeIteration(object):
     def label(self):
         return str(self.start)+" till "+str(self.stop)
 
+    @property
+    def date_label(self):
+        dt_fmt = "%Y-%m-%d"
+        return self.start.strftime(dt_fmt)+" till "+self.stop.strftime(dt_fmt)
+
 
 class DefaultCommandLineArguments(object):
 
