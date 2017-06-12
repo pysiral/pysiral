@@ -97,58 +97,108 @@ class Level3Processor(DefaultLoggingClass):
 
 # %% Data Containers
 
-class L2DataStack(DefaultLoggingClass):
+class L2iDataStack(DefaultLoggingClass):
 
-    def __init__(self):
-        super(L2DataStack, self).__init__(self.__class__.__name__)
-        self.griddef = None
-        self.l2_parameter = None
-        self.n_records = 0
-        self.stack = {}
-        self.l2_count = 0
+    def __init__(self, griddef, l2_parameter):
+        """ A container for stacking l2i variables (geophysical paramters
+        at sensor resolution) in L3 grid cells. For each parameters
+        a (numx, numy) array is created, with an list containing all
+        l2i data points that fall into the grid cell area. This list
+        can be averaged or used for histogram computation in later stages
+        of the Level-3 processor.
 
-    def set_grid_definition(self, griddef):
+        Args:
+            griddef (obj): pysiral.grid.GridDefinition or inheritated objects
+            l2_parameter (str list): list of l2i parameter names
+
+        Returns:
+            class instance
+
+        """
+        super(L2iDataStack, self).__init__(self.__class__.__name__)
+
+        # Grid Definition Type
         self.griddef = griddef
 
-    def set_l2_parameter(self, l2_parameter):
+        # A list of level-2 parameters to be stacked
         self.l2_parameter = l2_parameter
 
-    def initialize(self, n_files):
-        # attributes for grid metadata
-        self.start_time = np.ndarray(shape=(n_files), dtype=object)
-        self.stop_time = np.ndarray(shape=(n_files), dtype=object)
-        self.mission = np.ndarray(shape=(n_files), dtype=object)
-        # gridded parameter
-        dimx, dimy = self.griddef.extent.numx, self.griddef.extent.numy
-        self.stack["surface_type"] = \
-            [[[] for _ in range(dimx)] for _ in range(dimy)]
-        for parameter_name in self.l2_parameter:
-            self.stack[parameter_name] = \
-                [[[] for _ in range(dimx)] for _ in range(dimy)]
 
-    def append(self, orbit):
+
+        # Statistics
+        self._n_records = 0
+        self._l2i_count = 0
+        self.start_time = []
+        self.stop_time = []
+        self.mission = []
+
+        # Flags
+        self._has_surface_type = False
+
+        # Create parameter stacks
+        self._initialize_stacks()
+
+    def _initialize(self):
+        """ Create all data stacks, content will be added sequentially
+        with `add` method """
+
+        # Stack dictionary that will hold the data
+        self.stack = {}
+
+        # init stack arrays
+        # surface_type is mandatory for level-3 parameters
+        # (e.g. n_total_wave_forms, lead_fraction, ...)
+        self.stack["surface_type"] = self.parameter_stack
+
+        # create a stack for each l2 parameter
+        for parameter_name in self.l2_parameter:
+            self.stack[parameter_name] = self.parameter_stack
+
+    def add(self, l2i):
+        """ Add a l2i data object to the stack
+
+        Args:
+            l2i (obj): l2i object (currently: pysiral.l2data.L2iNCFileImport)
+
+        Returns:
+            None
+        """
+
         # Save the metadata from the orbit data
-        self.start_time[self.l2_count] = orbit.timestamp[0]
-        self.stop_time[self.l2_count] = orbit.timestamp[-1]
-        self.mission[self.l2_count] = orbit.mission
-        self.l2_count += 1
+        self.start_time.append(l2i.timestamp[0])
+        self.stop_time.append(l2i.timestamp[-1])
+        self.mission.append(l2i.mission)
+        self._l2i_count += 1
+        self._n_records += l2i.n_records
+
+        # Get projection coordinates for l2i locations
+        xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
+
         # Stack the l2 parameter in the corresponding grid cells
-        self.n_records += orbit.n_records
-#        import matplotlib.pyplot as plt
-#        plt.figure()
-#        plt.plot(orbit.surface_type)
-#        plt.show()
-        for i in np.arange(orbit.n_records):
+        for i in np.arange(l2i.n_records):
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
-            x, y = int(orbit.xi[i]), int(orbit.yj[i])
-            self.stack["surface_type"][y][x].append(orbit.surface_type[i])
+            x, y = int(xi[i]), int(yj[i])
+            self.stack["surface_type"][y][x].append(l2i.surface_type[i])
             for parameter_name in self.l2_parameter:
                 try:
-                    data = getattr(orbit, parameter_name)
+                    data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
                 except:
                     pass
+
+    @property
+    def n_total_records(self):
+        return self._n_records
+
+    @property
+    def l2i_count(self):
+        return self._l2i_count
+
+    @property
+    def parameter_stack(self):
+        dimx, dimy = self.griddef.extent.numx, self.griddef.extent.numy
+        return [[[] for _ in range(dimx)] for _ in range(dimy)]
 
 
 class L3DataGrid(DefaultLoggingClass):
