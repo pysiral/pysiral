@@ -99,6 +99,19 @@ class OutputHandlerBase(DefaultLoggingClass):
         subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
         return os.path.join(self.basedir, *subfolders)
 
+    def _validate_outputdef(self):
+        """ Run a series of tests to check if a valid output definition
+        has been passed. Note: theses tests will only check existing
+        items of the output definition. If the requested item is missing
+        a separate exception will be evoked """
+        # Test 1: Applicable data level needs
+        if self.applicable_data_level != self.data_level:
+            msg = "outputdef data level (%g) does not match %s reqirement (%g)"
+            msg = msg % (self.data_level, self.__class__.__name__,
+                         self.applicable_data_level)
+            self.error.add_error("datalevel-mismatch", msg)
+            self.error.raise_on_error()
+
     @property
     def id(self):
         try:

@@ -3,7 +3,7 @@
 # Metadata
 metadata: 
   output_id: l2i_default
-  applicable_data_level: 2
+  data_level: 2
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
 # Output Definition

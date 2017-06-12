@@ -3,7 +3,7 @@
 # Metadata
 metadata: 
   output_id: l3c_sicci2
-  applicable_data_level: 3
+  data_level: 3
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
