@@ -48,7 +48,20 @@ def pysiral_l3proc():
 
     # Loop over all iterations
     for time_range in period.iterations:
+
+        # Report processing period
+        msg = "# Processing %s period (%g of %g): %s"
+        msg = msg % (time_range.base_period, time_range.index,
+                     time_range.num_iterations, time_range.date_label)
+        l3proc.log.info(msg)
+
+        # Retrieve files
         l2i_files = l2i_handler.get_files_from_time_range(time_range)
+        l3proc.log.info("Num l2i files: %g" % len(l2i_files))
+        if len(l2i_files) == 0:
+            l3proc.log.info("Skip data period")
+
+        # Start the Level-3 processing
         l3proc.process_l2i_files(l2i_files)
 
     # Final reporting
