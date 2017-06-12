@@ -745,3 +745,9 @@ class Level3ProductDefinition(DefaultLoggingClass):
     @property
     def l3def(self):
         return self._l3
+
+    @property
+    def l2_parameter(self):
+        """ Extract a list of paramter names to be extracted from
+        l2i product files """
+        return sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
