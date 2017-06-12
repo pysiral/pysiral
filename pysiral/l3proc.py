@@ -27,22 +27,19 @@ class Level3Processor(DefaultLoggingClass):
         self._job = product_def
         self._l3_progress_percent = 0.0
 
-    def set_l2_files(self, l2_files):
-        self._l2_files = l2_files
-
-    def run(self):
+    def process_l2i_files(self, l2i_files):
 
         # Initialize the stack for the l2i orbit files
         self.log.info("Initialize l2i data stack")
         stack = L2DataStack()
         stack.set_grid_definition(self.job.grid)
         stack.set_l2_parameter(self.job.l2_parameter)
-        stack.initialize(len(self._l2_files))
+        stack.initialize(len(l2i_files))
 
         # Parse all orbit files and add to the stack
-        for i, l2_file in enumerate(self._l2_files):
+        for i, l2i_file in enumerate(l2i_files):
             self._log_progress(i)
-            l2data = L2iNCFileImport(l2_file)
+            l2data = L2iNCFileImport(l2i_file)
             l2data.project(self.job.grid)
             stack.append(l2data)
 
