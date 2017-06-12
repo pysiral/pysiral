@@ -9,7 +9,10 @@ from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 
+from treedict import TreeDict
 from pyproj import Proj
+
+import numpy as np
 
 
 class GridDefinition(DefaultLoggingClass):
@@ -35,6 +38,19 @@ class GridDefinition(DefaultLoggingClass):
         self._proj_dict = kwargs
         self._set_proj()
 
+    def proj(self, longitude, latitude):
+        projx, projy = self._proj(longitude, latitude)
+        return projx, projy
+
+    def grid_indices(self, longitude, latitude):
+        """ Computes the grid indices the given lon/lat pairs would be sorted
+        into (no clipping) """
+        projx, projy = self.proj(longitude, latitude)
+        extent = self.extent
+        xi = np.floor((projx + extent.xsize/2.0)/extent.dx)
+        yj = np.floor((projy + extent.ysize/2.0)/extent.dy)
+        return xi, yj
+
     def set_extent(self, **kwargs):
         self._extent_dict = kwargs
 
@@ -56,3 +72,7 @@ class GridDefinition(DefaultLoggingClass):
     @property
     def resolution_tag(self):
         return self._metadata["resolution_tag"]
+
+    @property
+    def extent(self):
+        return TreeDict.fromdict(self._extent_dict, expand_nested=True)
