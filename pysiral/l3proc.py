@@ -5,14 +5,16 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral.config import get_yaml_config
+from pysiral.config import ConfigInfo, get_yaml_config
 from pysiral.errorhandler import ErrorStatus
+from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
-from pysiral.output import L3SDataNC
+from pysiral.output import L3SDataNC, OutputHandlerBase
 from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
 import numpy as np
+import os
 
 
 # %% Level 3 Processor
@@ -591,20 +593,108 @@ class L3MetaData(object):
         setattr(self, tag, value)
 
 
+class Level3OutputHandler(OutputHandlerBase):
+
+    # Some fixed parameters for this class
+    default_file_location = ["settings", "outputdef", "l3_default.yaml"]
+    subfolder_tags = ["year"]
+    applicable_data_level = 3
+
+    def __init__(self, output_def="default", base_directory="l3proc_default",
+                 overwrite_protection=True):
+
+        if output_def == "default":
+            output_def = self.default_output_def_filename
+
+        super(Level3OutputHandler, self).__init__(output_def)
+        self.error.caller_id = self.__class__.__name__
+        self.log.name = self.__class__.__name__
+        self.overwrite_protection = overwrite_protection
+        self._init_product_directory(base_directory)
+
+    def _init_product_directory(self, base_directory_or_id):
+        """ Initializes the product directory. If `base_directory` is already
+        a directory, it is used as is. Else, it is treated as subfolder of
+        the default pysiral product directory. Product level id and
+        overwrite protection subfolders are added for both options"""
+        # argument is directory
+        if os.path.isdir(base_directory_or_id):
+            basedir = base_directory_or_id
+        # argument is id
+        else:
+            basedir = self.pysiral_config.local_machine.product_repository
+            basedir = os.path.join(basedir, base_directory_or_id)
+        # add product level subfolder
+        basedir = os.path.join(basedir, self.product_level_subfolder)
+        # optional (subfolder with current time)
+        if self.overwrite_protection:
+            basedir = os.path.join(basedir, self.now_directory)
+        # set the directory
+        self._set_basedir(basedir)
+
+    @property
+    def default_output_def_filename(self):
+        pysiral_config = ConfigInfo()
+        local_settings_path = pysiral_config.pysiral_local_path
+        return os.path.join(local_settings_path, *self.default_file_location)
+
+
+class Level3GridDefinition(GridDefinition):
+    """ This is a variation of GridDefinition with a mandatory link to
+    a griddef yaml file"""
+
+    def __init__(self, l3_settings_file):
+        super(Level3GridDefinition, self).__init__(self)
+        self.set_from_griddef_file(l3_settings_file)
+
+
 class Level3ProductDefinition(DefaultLoggingClass):
 
     def __init__(self, l3_settings_file, grid, output):
+        """ Container for the Level3Processor settings
+
+        Arguments:
+            l3_settings_file (str): Full filename to l3 settings file
+            grid (pysiral.grid.GridDefinition): Output grid class
+            output (Level-3 compliant output handler from pysiral.output)
+        """
         super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._l3_settings_file = l3_settings_file
         self._output = [output]
         self._grid = grid
         self._parse_l3_settings()
+
+        # Report settings to log handler
         self.log.info("Output grid id: %s" % str(self._grid.grid_id))
+        for output in self._output:
+            msg = "L3 product directory (%s): %s"
+            msg = msg % (str(output.id), str(output.basedir))
+            self.log.info(msg)
 
     def _parse_l3_settings(self):
         self.log.info("Parsing settings: %s" % str(self._l3_settings_file))
-        self._l3 = get_yaml_config(self._l3_settings_file)
+        try:
+            self._l3 = get_yaml_config(self._l3_settings_file)
+        except Exception, msg:
+            self.error.add_error("l3settings-parser-error", msg)
+            self.error.raise_on_error()
 
     def validate(self):
         pass
+
+    @property
+    def grid(self):
+        return self._grid
+
+    @property
+    def outputs(self):
+        return self._output
+
+    @property
+    def n_outputs(self):
+        return len(self._output)
+
+    @property
+    def l3def(self):
+        return self._l3
