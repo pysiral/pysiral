@@ -2,13 +2,14 @@
 
 from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
                             TimeRangeRequest)
+from pysiral.datahandler import L2iDataHandler
 from pysiral.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition
+from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
+                            Level3GridDefinition, Level3OutputHandler)
 from pysiral.logging import DefaultLoggingClass
-from pysiral.l3proc import Level3Processor, Level3ProductDefinition
-from pysiral.output import DefaultLevel3OutputHandler
 
-from datetime import datetime, timedelta
+
+from datetime import timedelta
 import argparse
 import time
 import sys
@@ -25,66 +26,35 @@ def pysiral_l3proc():
     t0 = time.clock()
 
     # Get monthly iterations from requested period
-    period = TimeRangeRequest(
-            args.start, args.stop,
-            period=args.period)
+    period = TimeRangeRequest(args.start, args.stop, period=args.period)
 
     # Get the output grid
-    grid = GridDefinition()
-    grid.set_from_griddef_file(args.l3_griddef)
+    grid = Level3GridDefinition(args.l3_griddef)
+
+    # Initialize the interface to the l2i products
+    l2i_handler = L2iDataHandler(args.l2i_product_directory)
 
     # Initialize the output handler
     # Currently the overwrite protection is disabled per default
-    output = DefaultLevel3OutputHandler(
-            output_def=args.l3_output_file,
-            base_directory=args.l3_product_basedir,
-            overwrite_protection=False)
+    output = Level3OutputHandler(output_def=args.l3_output_file,
+                                 base_directory=args.l3_product_basedir,
+                                 overwrite_protection=False)
 
     # Compile the product def
-    product_def = Level3ProductDefinition(
-            args.l3_settings_file, grid, output)
-    product_def.validate()
+    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output)
 
     # Initialize the Processor
     l3proc = Level3Processor(product_def)
 
     # Loop over all iterations
     for time_range in period.iterations:
-        print time_range
+        l2i_files = l2i_handler.get_files_from_time_range(time_range)
+        l3proc.process_l2i_files(l2i_files)
 
-
+    # Final reporting
     t1 = time.clock()
     seconds = int(t1-t0)
     l3proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
-
-    # validate date values
-    # XXX: This needs to be changed to TimeRangeRequest
-#    validate_year_month_list(args.start_date, "start date")
-#    validate_year_month_list(args.stop_date, "stop date")
-
-    # Assemble the job order
-    # This is actually not that bad, however needs to be extended with
-    # an output handler
-#    job = Level3Job()
-#    job.set_input_directory(args.input_directory)
-#    job.set_grid_definition(setting.grid_definition)
-#    job.set_parameter(
-#        l2=setting.l2_parameter, l3=setting.l3_parameter,
-#        frb_nanmask=setting.freeboard_nan_mask_targets,
-#        sic_mask=setting.sea_ice_concentration_mask_targets)
-#    job.validate()
-#
-#    # Start the processor
-#    l3proc = Level3Processor(job)
-#
-#    iterator = month_iterator(args.start_date[0], args.start_date[1],
-#                              args.stop_date[0], args.stop_date[1])
-#    for year, month in iterator:
-#        l2idata_files = job.get_monthly_l2idata_files(year, month)
-#        if len(l2idata_files) == 0:
-#            continue
-#        l3proc.set_l2_files(l2idata_files)
-#        l3proc.run()
 
 
 class Level3ProcArgParser(DefaultLoggingClass):
@@ -179,6 +149,10 @@ class Level3ProcArgParser(DefaultLoggingClass):
         return self._args.period
 
     @property
+    def l2i_product_directory(self):
+        return os.path.join(self.l3_product_basedir, "l2i")
+
+    @property
     def l3_settings_file(self):
         l3_settings = self._args.l3_settings
         filename = self.pysiral_config.get_settings_file("l3", l3_settings)
@@ -198,9 +172,9 @@ class Level3ProcArgParser(DefaultLoggingClass):
         filename = self.pysiral_config.get_settings_file("griddef", l3_griddef)
         if filename is None:
             msg = "Invalid griddef filename or id: %s\n" % l3_griddef
-            msg = msg + " \nRecognized grid definition ids:\n"
+            msg = msg + "    Recognized grid definition ids:\n"
             for griddef_id in self.pysiral_config.get_setting_ids("griddef"):
-                msg = msg + "  " + griddef_id+"\n"
+                msg = msg + "    - " + griddef_id+"\n"
             self.error.add_error("invalid-griddef", msg)
             self.error.raise_on_error()
         else:
@@ -212,11 +186,11 @@ class Level3ProcArgParser(DefaultLoggingClass):
         filename = self.pysiral_config.get_settings_file(
                 "outputdef", l3_output)
         if filename is None:
-            msg = "Invalid griddef filename or id: %s\n" % l3_output
-            msg = msg + " \nRecognized grid definition ids:\n"
+            msg = "Invalid output definition filename or id: %s\n" % l3_output
+            msg = msg + "    Recognized output definition ids:\n"
             for output_id in self.pysiral_config.get_setting_ids("outputdef"):
-                msg = msg + "  " + output_id+"\n"
-            self.error.add_error("invalid-outputdefdef", msg)
+                msg = msg + "    - " + output_id+"\n"
+            self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
         else:
             return filename
@@ -235,60 +209,6 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def remove_old(self):
         return self._args.remove_old and not self._args.overwrite_protection
-
-#def validate_year_month_list(year_month_list, label):
-#    try:
-#        datetime(year_month_list[0], year_month_list[1],  1)
-#    except ValueError:
-#        print "Error: Invalid "+label+" (%04g, %02g)" % (
-#            year_month_list[0], year_month_list[1])
-#        sys.exit(1)
-#
-#
-#def get_l1bdata_files(config, job, hemisphere, year, month):
-#    l1b_repo = config.local_machine.l1b_repository[job.mission.id].l1bdata
-#    directory = os.path.join(
-#        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-#    print directory
-#    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
-#    return l1bdata_files
-#
-#
-#def get_l3proc_argparser():
-#    """ Handle command line arguments """
-#    parser = argparse.ArgumentParser()
-#    # Mission id string: cryosat2, envisat, ...
-#    parser.add_argument(
-#        '-s', '-setting', action='store', dest='setting_id',
-#        help='setting id of yaml file in /settings/l3', required=True)
-#    # input directory
-#    parser.add_argument(
-#        '-i', action='store', dest='input_directory',
-#        help='link to directory with l2 netcdf files',
-#        required=True)
-#    # Start month as list: [yyyy, mm]
-#    parser.add_argument(
-#        '-start', action='store', dest='start_date',
-#        nargs='+', type=int, required=True,
-#        help='start date as year and month (-start yyyy mm)')
-#    # Stop month as list: [yyyy, mm]
-#    parser.add_argument(
-#        '-stop', action='store', dest='stop_date',
-#        nargs='+', type=int,  required=True,
-#        help='start date as year and month (-stop yyyy mm)')
-#    # Add an Option to skip a number of files (e.g. for a restart)
-#    parser.add_argument(
-#        "-skipmonth", action='store', type=int, const=[], nargs='?',
-#        dest='skip_month', help='month to skip (default: none)')
-#    # Show debug statements
-#    parser.add_argument(
-#        "-v", "--verbose", help="increase output verbosity",
-#        action="store_true")
-#    # show preprocessor version
-#    parser.add_argument(
-#        '--version', action='version', version='%(prog)s 0.1a')
-#
-#    return parser
 
 
 if __name__ == "__main__":
