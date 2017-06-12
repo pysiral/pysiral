@@ -29,25 +29,25 @@ class Level3Processor(DefaultLoggingClass):
 
     def process_l2i_files(self, l2i_files):
 
+        # Store l2i_files
+        self._l2i_files = l2i_files
+
         # Initialize the stack for the l2i orbit files
         self.log.info("Initialize l2i data stack")
-        stack = L2DataStack()
-        stack.set_grid_definition(self.job.grid)
-        stack.set_l2_parameter(self.job.l2_parameter)
+        stack = L2DataStack(self._job.grid, self._job.l2_parameter)
         stack.initialize(len(l2i_files))
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
             self._log_progress(i)
             l2data = L2iNCFileImport(l2i_file)
-            l2data.project(self.job.grid)
             stack.append(l2data)
 
         # Initialize the data grid
         self.log.info("Initialize l3 data grid")
-        grid = L3DataGrid(self.job.grid)
-        grid.init_parameter_fields(self.job.l2_parameter, "l2")
-        grid.init_parameter_fields(self.job.l3_parameter, "l3")
+        grid = L3DataGrid(self._job.grid)
+        grid.init_parameter_fields(self._job.l2_parameter, "l2")
+        grid.init_parameter_fields(self._job.l3_parameter, "l3")
         grid.init_mandatory_parameter_fields()
         grid.calculate_longitude_latitude_fields()
 
@@ -66,22 +66,22 @@ class Level3Processor(DefaultLoggingClass):
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
         self.log.info("Apply data masks")
-        grid.set_freeboard_nan_mask(self.job.freeboard_nan_mask_targets)
-        grid.set_sic_mask(self.job.sea_ice_concentration_mask_targets)
+        grid.set_freeboard_nan_mask(self._job.freeboard_nan_mask_targets)
+        grid.set_sic_mask(self._job.sea_ice_concentration_mask_targets)
 
         # Get the metadata information from the L2 stack
         self.log.info("Compile metadata")
         l3_metadata = L3MetaData()
         l3_metadata.get_missions_from_stack(stack)
         l3_metadata.get_data_period_from_stack(stack)
-        l3_metadata.get_projection_parameter(self.job.grid)
+        l3_metadata.get_projection_parameter(self._job.grid)
 
         # Write grid to L3S netcdf file:
-        self.log.info("Exporting file")
-        output = L3SDataNC()
-        output.set_metadata(l3_metadata)
-        output.set_export_folder(self.job.export_folder)
-        output.export(grid)
+#        self.log.info("Exporting file")
+#        output = L3SDataNC()
+#        output.set_metadata(l3_metadata)
+#        output.set_export_folder(self._job.export_folder)
+#        output.export(grid)
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
