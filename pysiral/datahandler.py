@@ -13,6 +13,8 @@ from pysiral.sic import get_l2_sic_handler
 from pysiral.sitype import get_l2_sitype_handler
 from pysiral.snow import get_l2_snow_handler
 from pysiral.mss import get_l2_ssh_class
+
+import glob
 import os
 
 
@@ -144,6 +146,8 @@ class DefaultL1bDataHandler(DefaultLoggingClass):
 class L2iDataHandler(DefaultLoggingClass):
     """ Class for retrieving default l1b directories and filenames """
 
+    l2i_file_pattern = "l2i*.nc"
+
     def __init__(self, base_directory, force_l2i_subfolder=True):
         super(L2iDataHandler, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
@@ -152,7 +156,15 @@ class L2iDataHandler(DefaultLoggingClass):
         self._validate_base_directory()
 
     def get_files_from_time_range(self, time_range):
-        return []
+        """ XXX: This currently hard-coded to monthly periods """
+        subfolders = ["%4g" % time_range.start.year,
+                      "%02g" % time_range.start.month]
+        lookup_directory = os.path.join(self.product_basedir, *subfolders)
+        if not os.path.isdir(lookup_directory):
+            return []
+        l2i_files = glob.glob(os.path.join(lookup_directory,
+                                           self.l2i_file_pattern))
+        return sorted(l2i_files)
 
     def _validate_base_directory(self):
         """ Performs sanity checks and enforces the l2i subfolder """
@@ -163,3 +175,7 @@ class L2iDataHandler(DefaultLoggingClass):
             msg = msg % str(self._base_directory)
             self.error.add_error("invalid-l2i-productdir", msg)
             self.error.raise_on_error()
+
+    @property
+    def product_basedir(self):
+        return self._base_directory
