@@ -10,34 +10,34 @@
 
 l2_parameter:
 
-    - radar_freeboard:
+    radar_freeboard:
         grid_method: average
 
-    - freeboard:
+    freeboard:
         grid_method: average
 
-    - sea_ice_thickness:
+    sea_ice_thickness:
         grid_method: average
 
-    - sea_surface_anomaly:
+    sea_surface_anomaly:
         grid_method: average
 
-    - mean_sea_surface:
+    mean_sea_surface:
         grid_method: average
 
-    - snow_depth:
+    snow_depth:
         grid_method: average
 
-    - snow_density:
+    snow_density:
         grid_method: average
 
-    - ice_density:
+    ice_density:
         grid_method: average
 
-    - sea_ice_type:
+    sea_ice_type:
         grid_method: average
 
-    - sea_ice_concentration:
+    sea_ice_concentration:
         grid_method: average
 
 # ==================================================
