@@ -129,6 +129,15 @@ class OutputHandlerBase(DefaultLoggingClass):
         return subfolder
 
     @property
+    def data_level(self):
+        data_level = self._output_def.metadata.data_level
+        if type(data_level) is not int:
+            msg = "root.metadata.data_level (int) missing or wrong dtype"
+            self.error.add_error("outputdef-invalid", msg)
+            self.error.raise_on_error()
+        return data_level
+
+    @property
     def basedir(self):
         return self._basedir
 
