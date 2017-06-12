@@ -69,10 +69,11 @@ class OutputHandlerBase(DefaultLoggingClass):
             try:
                 self._output_def = get_yaml_config(output_def)
             except Exception, msg:
-                self.error.add_error("outputdef-parsers-error", msg)
+                self.error.add_error("outputdef-parser-error", msg)
                 self.error.raise_on_error()
         else:
             self._output_def = output_def
+        self._validate_outputdef()
 
     def _set_basedir(self, basedir, create=True):
         """ Sets and and (per default) creates the main output directory """
@@ -123,7 +124,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def product_level_subfolder(self):
         subfolder = self._output_def.product_level_subfolder
         if type(subfolder) is not str:
-            msg = "root.product_level_subfolder missing"
+            msg = "root.product_level_subfolder (str) missing or wrong dtype"
             self.error.add_error("outputdef-invalid", msg)
             self.error.raise_on_error()
         return subfolder
