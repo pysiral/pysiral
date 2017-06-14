@@ -16,6 +16,10 @@ import numpy as np
 
 
 class GridDefinition(DefaultLoggingClass):
+    """ A container class for geospatial grids.  The main components are
+    a) the projection (based on pyproj) and b) the extent and grid size.
+    The class is currently designed for stereographic/equal area projection
+    types. """
 
     def __init__(self, preset=None):
         super(GridDefinition, self).__init__(self.__class__.__name__)
@@ -28,6 +32,8 @@ class GridDefinition(DefaultLoggingClass):
         self._extent_dict = {}
 
     def set_from_griddef_file(self, filename):
+        """ Initialize the object with a grid definition (.yaml) file.
+        Examples can be found in pysiral/settings/griddef """
         config = get_yaml_config(filename)
         for key in self._metadata.keys():
             self._metadata[key] = config[key]
