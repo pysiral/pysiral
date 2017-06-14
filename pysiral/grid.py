@@ -38,8 +38,8 @@ class GridDefinition(DefaultLoggingClass):
         self._proj_dict = kwargs
         self._set_proj()
 
-    def proj(self, longitude, latitude):
-        projx, projy = self._proj(longitude, latitude)
+    def proj(self, longitude, latitude, **kwargs):
+        projx, projy = self._proj(longitude, latitude, **kwargs)
         return projx, projy
 
     def grid_indices(self, longitude, latitude):
