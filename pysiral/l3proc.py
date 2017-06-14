@@ -5,14 +5,16 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral.config import ConfigInfo, get_yaml_config
+from pysiral.config import ConfigInfo, get_yaml_config, SENSOR_NAME_DICT
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
-from pysiral.output import L3SDataNC, OutputHandlerBase
+from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
+
+from datetime import datetime
 import numpy as np
 import os
 
@@ -64,43 +66,13 @@ class Level3Processor(DefaultLoggingClass):
 
         # Initialize the data grid
         self.log.info("Initialize l3 data grid")
-        grid = L3DataGrid(self._job.grid)
-        grid.init_parameter_fields(self._job.l2_parameter, "l2")
-        grid.init_parameter_fields(self._job.l3_parameter, "l3")
-        grid.init_mandatory_parameter_fields()
-        grid.calculate_longitude_latitude_fields()
+        l3 = L3DataGrid(self._job, stack)
 
-        # Average level-2 parameter for each grid cell
-        grid.set_l2i_stack(stack)
-        self.log.info("Compute masks and mandatory grid statistics")
-        grid.compute_l3_mandatory_parameter()
-
-        self.log.info("Compute l2i parameter averages")
-        grid.compute_l2_parameter_averages()
-
-        # Get the level-3 parameter
-        self.log.info("Compute level-3 ouput parameter")
-        grid.compute_l3_output_parameter()
-
-        # Set parameters nan if freeboard is nan
-        # (list in output definition file)
-        self.log.info("Apply data masks")
-        for mask_def in self._job.l3_masks:
-            grid.mask_l3(mask_def)
-
-        # Get the metadata information from the L2 stack
-        self.log.info("Compile metadata")
-        l3_metadata = L3MetaData()
-        l3_metadata.get_missions_from_stack(stack)
-        l3_metadata.get_data_period_from_stack(stack)
-        l3_metadata.get_projection_parameter(self._job.grid)
-
-        # Write grid to L3S netcdf file:
-#        self.log.info("Exporting file")
-#        output = L3SDataNC()
-#        output.set_metadata(l3_metadata)
-#        output.set_export_folder(self._job.export_folder)
-#        output.export(grid)
+        # Write output(s)
+        for output_handler in self._job.outputs:
+            output = Level3Output(l3, output_handler)
+            self.log.info("Write %s product: %s" % (output_handler.id,
+                                                    output.filename))
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -224,14 +196,15 @@ class L3DataGrid(DefaultLoggingClass):
     (averaged l2i parameter, grid cell statistics)
     """
 
-    def __init__(self, griddef):
+    def __init__(self, job, stack):
 
         super(L3DataGrid, self).__init__(self.__class__.__name__)
 
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
         # Grid size definition
-        self._griddef = griddef
+        self._griddef = job.grid
+        self._l3def = job.l3def
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -258,6 +231,53 @@ class L3DataGrid(DefaultLoggingClass):
 
         # container for gridded parameters
         self._l3 = {}
+
+        self._metadata = None
+
+        self.init_parameter_fields(job.l2_parameter, "l2")
+        self.init_parameter_fields(job.l3_parameter, "l3")
+        self.init_mandatory_parameter_fields()
+        self.calculate_longitude_latitude_fields()
+
+        # Average level-2 parameter for each grid cell
+        self.set_l2i_stack(stack)
+        self.log.info("Compute masks and mandatory grid statistics")
+        self.compute_l3_mandatory_parameter()
+
+        self.log.info("Grid l2i parameter")
+        self.grid_l2_parameter()
+
+        # Get the level-3 parameter
+        self.log.info("Compute level-3 ouput parameter")
+        self.compute_l3_output_parameter()
+
+        # Set parameters nan if freeboard is nan
+        # (list in output definition file)
+        self.log.info("Apply data masks")
+        for mask_def in job.l3_masks:
+            self.mask_l3(mask_def)
+
+        # Get the metadata information from the L2 stack
+        self.log.info("Compile metadata")
+        l3_metadata = L3MetaData()
+        l3_metadata.get_missions_from_stack(stack)
+        l3_metadata.get_data_period_from_stack(stack)
+        l3_metadata.get_projection_parameter(job.grid)
+        self.set_metadata(l3_metadata)
+
+    def set_metadata(self, metadata):
+        self._metadata = metadata
+
+    def get_attribute(self, attribute_name, *args):
+        """ Return a string for a given attribute name. This method is
+        required for the output data handler """
+
+        try:
+            attr_getter = getattr(self, "_get_attr_"+attribute_name)
+            attribute = attr_getter(*args)
+            return attribute
+        except AttributeError:
+            return "attr_unavailable"
 
     def init_parameter_fields(self, parameter_names, level):
         """ Initialize output parameter fields """
@@ -289,8 +309,8 @@ class L3DataGrid(DefaultLoggingClass):
         self.lon = np.ndarray(shape=shape, dtype='f4')*np.nan
         self.lat = np.ndarray(shape=shape, dtype='f4')*np.nan
 
-        self.log.info("Adding parameter: lon")
-        self.log.info("Adding parameter: lat")
+        self.log.info("Adding parameter: longitude")
+        self.log.info("Adding parameter: latitude")
 
         # Surface type statistics
         for surface_type_statistics_par in self._surface_type_l3par.keys():
@@ -310,18 +330,14 @@ class L3DataGrid(DefaultLoggingClass):
                 shape=shape, dtype='f4')*np.nan
 
     def calculate_longitude_latitude_fields(self):
-
+        """ Geographic coordinates from GridDefinition """
         lon, lat = self.griddef.get_grid_coordinates()
-
-        self._l3["lon"] = lon
-        self._l3["lat"] = lat
+        self._l3["longitude"] = lon
+        self._l3["latitude"] = lat
 
     def set_l2i_stack(self, l2i_stack):
-        """
-        Set the l2i data stack
-        (list of all individual measurements per grid cell
-         grouped by parameter)
-        """
+        """ Set the l2i data stack (list of all individual measurements
+        per grid cell grouped by parameter) """
         # Input validation
         if not isinstance(l2i_stack, L2iDataStack):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
@@ -329,29 +345,42 @@ class L3DataGrid(DefaultLoggingClass):
             raise ValueError(msg)
         self._l2 = l2i_stack
 
-    def compute_l2_parameter_averages(self):
-        """
-        Compute averages of all l2i parameter for each grid cell.
+    def grid_l2_parameter(self):
+        """ Compute averages of all l2i parameter for each grid cell.
         The list of l2i parameter is from the output format definition
-
         No averages are computed for grid cells that are tagged with
-        a land flag.
-        """
+        a land flag. """
+
+        settings = self.l3def.grid_settings
+
         # Loop over all grid cells
         # XXX: Is there a better way?
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
 
                 # Exclude land (or near land grid cells)
-                if self._l3["is_land"][xi, yj]:
+                if self._l3["is_land"][xi, yj] and settings.no_land_cells:
                     continue
 
                 for name in self._l2_parameter:
                     data = np.array(self._l2.stack[name][yj][xi])
 
                     # nanmean needs at least 2 valid items
-                    if len(np.where(np.isfinite(data))[0]) > 1:
+                    valid = np.where(np.isfinite(data))[0]
+                    if len(valid) < settings.minimum_valid_grid_points:
+                        continue
+
+                    grid_method = self.l3def.l2_parameter[name].grid_method
+                    if grid_method == "average":
                         self._l3[name][yj, xi] = np.nanmean(data)
+                    elif grid_method == "average_uncertainty":
+                        value = np.abs(np.sqrt(1./np.sum(data[valid])))
+                        self._l3[name][yj, xi] = value
+                    else:
+                        msg = "Invalid grid method (%s) for %s"
+                        msg = msg % (str(grid_method), name)
+                        self.error.add_error("invalid-l3def", msg)
+                        self.error.raise_on_error()
 
     def compute_l3_mandatory_parameter(self):
         """
@@ -516,58 +545,75 @@ class L3DataGrid(DefaultLoggingClass):
         self._l3["ice_fraction"][yj, xi] = ice_fraction
 
     def get_parameter_by_name(self, name):
-        return self._l3[name]
+        try:
+            parameter = self._l3[name]
+        except KeyError:
+            parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
+            self.log.warn("Parameter not availabe: %s" % name)
+        return parameter
 
-#        import matplotlib.pyplot as plt
-#
-#        plt.figure("sit")
-#        plt.imshow(
-#            np.flipud(self._l3["sea_ice_thickness"]), vmin=0, vmax=5,
-#            cmap=plt.get_cmap("plasma"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("frb")
-#        plt.imshow(
-#            np.flipud(self._l3["freeboard"]), vmin=0, vmax=0.5,
-#            cmap=plt.get_cmap("viridis"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("snow")
-#        plt.imshow(
-#            np.flipud(self._l3["snow_depth"]), vmin=0, vmax=0.6,
-#            cmap=plt.get_cmap("magma"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("ice_density")
-#        plt.imshow(
-#            np.flipud(self._l3["ice_density"]), vmin=800, vmax=1000,
-#            cmap=plt.get_cmap("magma"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("sea_surface_anomaly")
-#        plt.imshow(
-#            np.flipud(self._l3["sea_surface_anomaly"]), vmin=-1, vmax=1,
-#            cmap=plt.get_cmap("bwr"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("mean_sea_surface")
-#        plt.imshow(
-#            np.flipud(self._l3["mean_sea_surface"]), vmin=-10, vmax=30,
-#            cmap=plt.get_cmap("gist_earth"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.figure("sea_ice_type")
-#        plt.imshow(
-#            np.flipud(self._l3["sea_ice_type"]), vmin=0, vmax=1,
-#            cmap=plt.get_cmap("inferno"), interpolation="none")
-#        plt.colorbar()
-#
-#        plt.show()
-#        stop
+    def _get_attr_mission_id(self, *args):
+        mission_ids = self.metadata.mission_ids
+        if args[0] == "uppercase":
+            mission_ids = mission_ids.upper()
+        return mission_ids
+
+    def _get_attr_grid_id(self, *args):
+        grid_id = self.griddef.grid_id
+        if args[0] == "uppercase":
+            grid_id = grid_id.upper()
+        return grid_id
+
+    def _get_attr_mission_sensor(self, *args):
+        mission_sensor = self.metadata.mission_sensor
+        if args[0] == "uppercase":
+            mission_sensor = mission_sensor.upper()
+        return mission_sensor
+
+    def _get_attr_hemisphere(self, *args):
+        return self.hemisphere
+
+    def _get_attr_hemisphere_code(self, *args):
+        return self.hemisphere_code
+
+    def _get_attr_startdt(self, dtfmt):
+        return self.metadata.start_period.strftime(dtfmt)
+
+    def _get_attr_stopdt(self, dtfmt):
+        return self.info.stop_time.strftime(dtfmt)
+
+    def _get_attr_geospatial_lat_min(self, *args):
+        latitude = self._l3["latitude"]
+        return self._gett_attr_geospatial_str(np.nanmin(latitude))
+
+    def _get_attr_geospatial_lat_max(self, *args):
+        latitude = self._l3["latitude"]
+        return self._gett_attr_geospatial_str(np.nanmax(latitude))
+
+    def _get_attr_geospatial_lon_min(self, *args):
+        longitude = self._l3["longitude"]
+        return self._gett_attr_geospatial_str(np.nanmin(longitude))
+
+    def _get_attr_geospatial_lon_max(self, *args):
+        longitude = self._l3["longitude"]
+        return self._gett_attr_geospatial_str(np.nanmax(longitude))
+
+    def _gett_attr_geospatial_str(self, value):
+        return "%.4f" % value
+
+    def _get_attr_source_primary(self, *args):
+        return self._source_primary_filename
+
+    def _get_attr_utc_now(self, *args):
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def flipud(self):
         for parameter in self.parameters:
             setattr(self, parameter, np.flipud(getattr(self, parameter)))
+
+    @property
+    def metadata(self):
+        return self._metadata
 
     @property
     def grid_xi_range(self):
@@ -601,6 +647,10 @@ class L3DataGrid(DefaultLoggingClass):
     @property
     def griddef(self):
         return self._griddef
+
+    @property
+    def l3def(self):
+        return self._l3def
 
 
 class L3MetaData(object):
