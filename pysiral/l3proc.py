@@ -34,8 +34,8 @@ class Level3Processor(DefaultLoggingClass):
 
         # Initialize the stack for the l2i orbit files
         self.log.info("Initialize l2i data stack")
-        stack = L2DataStack(self._job.grid, self._job.l2_parameter)
-        stack.initialize(len(l2i_files))
+        stack = L2iDataStack(self._job.grid, self._job.l2_parameter)
+
         self.log.info("Parsing products (prefilter active: %s)" % (
                 str(self._job.l3def.l2i_prefilter.active)))
 
@@ -104,7 +104,7 @@ class Level3Processor(DefaultLoggingClass):
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
-        n = len(self._l2_files)
+        n = len(self._l2i_files)
         progress_percent = float(i)/float(n-1)*100.
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
@@ -142,8 +142,6 @@ class L2iDataStack(DefaultLoggingClass):
         # A list of level-2 parameters to be stacked
         self.l2_parameter = l2_parameter
 
-
-
         # Statistics
         self._n_records = 0
         self._l2i_count = 0
@@ -157,7 +155,7 @@ class L2iDataStack(DefaultLoggingClass):
         # Create parameter stacks
         self._initialize_stacks()
 
-    def _initialize(self):
+    def _initialize_stacks(self):
         """ Create all data stacks, content will be added sequentially
         with `add` method """
 
@@ -230,8 +228,10 @@ class L3DataGrid(DefaultLoggingClass):
 
         super(L3DataGrid, self).__init__(self.__class__.__name__)
 
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+
         # Grid size definition
-        self.griddef = griddef
+        self._griddef = griddef
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -323,7 +323,7 @@ class L3DataGrid(DefaultLoggingClass):
          grouped by parameter)
         """
         # Input validation
-        if not isinstance(l2i_stack, L2DataStack):
+        if not isinstance(l2i_stack, L2iDataStack):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
             msg = msg % type(l2i_stack)
             raise ValueError(msg)
@@ -596,6 +596,10 @@ class L3DataGrid(DefaultLoggingClass):
     def grid_shape(self):
         return (self.griddef.extent.numx, self.griddef.extent.numy)
 
+    @property
+    def griddef(self):
+        return self._griddef
+
 
 class L3MetaData(object):
 
@@ -787,4 +791,22 @@ class Level3ProductDefinition(DefaultLoggingClass):
     def l2_parameter(self):
         """ Extract a list of paramter names to be extracted from
         l2i product files """
-        return sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
+        l2_parameter = sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
+        if type(l2_parameter) is not list:
+            msg = "Missing or invalid parameter in l3 settings: %s"
+            msg = msg % "root.l2_parameter"
+            self.error.add_error("invalid-l3-settings", msg)
+            self.error.raise_on_error()
+        return l2_parameter
+
+    @property
+    def l3_parameter(self):
+        """ Extract a list of paramter names to be extracted from
+        l2i product files """
+        l3_parameter = self.l3def.l3_parameter
+        if type(l3_parameter) is not list:
+            msg = "Missing or invalid parameter in l3 settings: %s"
+            msg = msg % "root.l3_parameter"
+            self.error.add_error("invalid-l3-settings", msg)
+            self.error.raise_on_error()
+        return self.l3def.l3_parameter
