@@ -71,31 +71,36 @@ l3_parameter:
 # Post processing for gridded parameters
 # ==================================================
 
-# Mask grid cells
+# Mask grid cells 
+# Note: The masking is exectuted in the alphabetical order of the mask names.
+#       If there is a dependance between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
 
-l3_masking:
+l3_masks:
 
 # Apply freeboard filter to mss, ssa for visualization purposes
 
-    - source: freeboard
-      condition: "is_nan"
-      targets:
-        - sea_surface_anomaly
-        - mean_sea_surface
+    freeboard_nan_mask: 
+        source: freeboard
+        condition: "is_nan"
+        targets:
+            - sea_surface_anomaly
+            - mean_sea_surface
 
 # All these parameter will be set to nan if sea_ice_concentration is 0 or nan
 # Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
 #       is only a monthly average from the daily fields in the l2i orbits
 
-    - source: sea_ice_concentration
-      condition: "is_smaller; is_zero"
-      connect_conditions: "or"
-      targets:
-        - n_total_waveforms
-        - n_valid_waveforms
-        - valid_fraction
-        - lead_fraction
-        - ice_fraction
-        - sea_ice_type
-        - snow_depth
-        - snow_density
+    sea_ice_concentration_mask:
+        source: sea_ice_concentration
+        condition: "is_nan; is_zero"
+        connect_conditions: "or"
+        targets:
+            - n_total_waveforms
+            - n_valid_waveforms
+            - valid_fraction
+            - lead_fraction
+            - ice_fraction
+            - sea_ice_type
+            - snow_depth
+            - snow_density
