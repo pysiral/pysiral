@@ -405,7 +405,7 @@ class L3DataGrid(DefaultLoggingClass):
         """ Apply a parametrized mask to level 3 data """
 
         # Get the source parameter
-        source_param = self._l3[mask_def.source]
+        source = self._l3[mask_def.source]
 
         # Compute the masking condition
         conditions = mask_def.condition.split(";")
@@ -417,12 +417,12 @@ class L3DataGrid(DefaultLoggingClass):
             self.error.raise_on_error()
 
         # Start with the first (and maybe only condition)
-        filter_mask = self._get_l3_mask(source_param, conditions[0])
+        filter_mask = self._get_l3_mask(source, conditions[0], mask_def)
 
         # Add conditions
-        if n_conditions < 2:
+        if n_conditions >= 2:
             for i in range(1, n_conditions):
-                new_filter = self._get_l3_mask(source_param, conditions[i])
+                new_filter = self._get_l3_mask(source, conditions[i], mask_def)
                 if mask_def.connect_conditions == "or":
                     filter_mask = np.logical_or(filter_mask, new_filter)
                 elif mask_def.connect_conditions == "and":
@@ -440,13 +440,15 @@ class L3DataGrid(DefaultLoggingClass):
         for target in mask_def.targets:
             self._l3[target][masked_indices] = np.nan
 
-    def _get_l3_mask(self, source_param, condition):
+    def _get_l3_mask(self, source_param, condition, options):
         """ Returna bool array based on a parameter and a predefined
         masking operation """
-        if condition == "is_nan":
+        if condition.strip() == "is_nan":
             return np.isnan(source_param)
-        elif condition == "is_zero":
-            return np.array(source_param == 0.0)
+        elif condition.strip() == "is_zero":
+            return np.array(source_param <= 1.0e-9)
+        elif condition.strip() == "is_smaller":
+            return np.array(source_param < options.is_smaller_threshold)
         else:
             msg = "Unknown condition in l3 mask: %s" % condition
             self.error.add_error("invalid-l3mask-condition", msg)
