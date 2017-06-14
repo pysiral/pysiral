@@ -36,12 +36,31 @@ class Level3Processor(DefaultLoggingClass):
         self.log.info("Initialize l2i data stack")
         stack = L2DataStack(self._job.grid, self._job.l2_parameter)
         stack.initialize(len(l2i_files))
+        self.log.info("Parsing products (prefilter active: %s)" % (
+                str(self._job.l3def.l2i_prefilter.active)))
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
+
             self._log_progress(i)
-            l2data = L2iNCFileImport(l2i_file)
-            stack.append(l2data)
+
+            # Parse l2i source file
+            l2i = L2iNCFileImport(l2i_file)
+
+            # Prefilter l2i product
+            # Note: In the l2i product only the minimum set of nan are used
+            #       for different parameters (e.g. the radar freeboard mask
+            #       does not equal the thickness mask). This leads to
+            #       inconsistent results during gridding and therefore it is
+            #       highly recommended to harmonize the mask for thickness
+            #       and the different freeboard levels
+            prefilter = self._job.l3def.l2i_prefilter
+            if prefilter.active:
+                l2i.transfer_nan_mask(prefilter.nan_source,
+                                      prefilter.nan_targets)
+
+            # Add to stack
+            stack.add(l2i)
 
         # Initialize the data grid
         self.log.info("Initialize l3 data grid")

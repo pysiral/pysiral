@@ -403,6 +403,14 @@ class L2iNCFileImport(object):
         self.timestamp = num2date(self.timestamp, self.time_def.units,
                                   self.time_def.calendar)
 
+    def transfer_nan_mask(self, source, targets):
+        source_parameter = getattr(self, source)
+        nan_indices = np.where(np.isnan(source_parameter))
+        for target in targets:
+            parameter = getattr(self, target)
+            parameter[nan_indices] = np.nan
+            setattr(self, target, parameter)
+
     def project(self, griddef):
         from pyproj import Proj
         p = Proj(**griddef.projection)
