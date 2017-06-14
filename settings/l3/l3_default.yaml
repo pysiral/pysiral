@@ -46,10 +46,10 @@ l2_parameter:
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
-l2_prefilter:
+l2i_prefilter:
     active: True
-    l2_nan_source: sea_ice_thickness
-    l2_nan_targets:
+    nan_source: sea_ice_thickness
+    nan_targets:
         - freeboard
         - radar_freeboard
 
