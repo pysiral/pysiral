@@ -85,8 +85,8 @@ class Level3Processor(DefaultLoggingClass):
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
         self.log.info("Apply data masks")
-        grid.set_freeboard_nan_mask(self._job.freeboard_nan_mask_targets)
-        grid.set_sic_mask(self._job.sea_ice_concentration_mask_targets)
+        for mask_def in self._job.l3_masks:
+            grid.mask_l3(mask_def)
 
         # Get the metadata information from the L2 stack
         self.log.info("Compile metadata")
