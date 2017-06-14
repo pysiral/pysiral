@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_name:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv1.0.nc"
+filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv1.0.nc"
 product_level_subfolder: l3c_sicci2
 
 # A list of global attributes 
@@ -28,7 +28,7 @@ global_attributes:
   keywords_vocabulary: ""
   cdm_data_type: "grid"
   comment: ""
-  date_created: ""
+  date_created: "{utc_now}"
   date_issued: ""
   date_modified: ""
   creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
@@ -42,7 +42,7 @@ global_attributes:
   time_coverage_start: "20020501T000000Z"
   time_coverage_end: "20150331T235959Z"
   time_coverage_duration: "13 years"
-  time_coverage_resolution: Monthly" 
+  time_coverage_resolution: "Monthly" 
   standard_name_vocabulary: ""
   license: "n.a."
   platform: "{mission_name}"
@@ -221,6 +221,26 @@ variables:
     scale_factor: 1.0
     add_offset: 0.0  
 
+  n_total_waveforms:
+    long_name: "number of valid measurements per grid cell"
+    standard_name: n_total_waveforms
+    units: ""
+    coordinates: "latitude longitude time"
+    scale_factor: 1.0
+    add_offset: 0.0  
 
+  lead_fraction:
+    long_name: "lead waveforms per grid cell"
+    standard_name: lead_fraction
+    units: fraction
+    coordinates: "latitude longitude time"
+    scale_factor: 1.0
+    add_offset: 0.0  
 
-
+  ice_fraction:
+    long_name: "sea ice waveforms per grid cell"
+    standard_name: ice_fraction
+    units: fraction
+    coordinates: "latitude longitude time"
+    scale_factor: 1.0
+    add_offset: 0.0  
