@@ -292,24 +292,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def calculate_longitude_latitude_fields(self):
 
-        # TODO: Move all this into a grid definition container
-        from pyproj import Proj
-        proj = Proj(**self.griddef.projection)
-
-        x0 = self.griddef.extent.xoff
-        xsize = self.griddef.extent.xsize
-        numx = self.griddef.extent.numx
-        xmin, xmax = x0-(xsize/2.), x0+(xsize/2.)
-
-        y0 = self.griddef.extent.yoff
-        ysize = self.griddef.extent.ysize
-        numy = self.griddef.extent.numy
-        ymin, ymax = y0-ysize/2., y0+ysize/2.
-
-        x = np.linspace(xmin, xmax, num=numx)
-        y = np.linspace(ymin, ymax, num=numy)
-        xx, yy = np.meshgrid(x, y)
-        lon, lat = proj(xx, yy, inverse=True)
+        lon, lat = self.griddef.get_grid_coordinates()
 
         self._l3["lon"] = lon
         self._l3["lat"] = lat

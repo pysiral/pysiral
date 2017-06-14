@@ -51,6 +51,21 @@ class GridDefinition(DefaultLoggingClass):
         yj = np.floor((projy + extent.ysize/2.0)/extent.dy)
         return xi, yj
 
+    def get_grid_coordinates(self, mode="center"):
+        """ Returns longitude/latitude points for each grid cell
+        Note: mode keyword only for future use. center coordinates are
+        returned by default """
+        x0, y0 = self.extent.xoff, self.extent.yoff
+        xsize, ysize = self.extent.xsize, self.extent.ysize
+        numx, numy = self.extent.numx, self.extent.numy
+        xmin, xmax = x0-(xsize/2.), x0+(xsize/2.)
+        ymin, ymax = y0-ysize/2., y0+ysize/2.
+        x = np.linspace(xmin, xmax, num=numx)
+        y = np.linspace(ymin, ymax, num=numy)
+        xx, yy = np.meshgrid(x, y)
+        lon, lat = self.proj(xx, yy, inverse=True)
+        return lon, lat
+
     def set_extent(self, **kwargs):
         self._extent_dict = kwargs
 
