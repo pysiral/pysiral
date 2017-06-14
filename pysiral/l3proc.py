@@ -663,7 +663,7 @@ class L3MetaData(object):
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
         "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
-        "hemisphere"]
+        "hemisphere", "mission_sensor"]
 
     def __init__(self):
         # Init all fields
@@ -675,7 +675,10 @@ class L3MetaData(object):
         Get a list of missions that went into the stack
         (must be a list, since multi-mission grids are supported)
         """
-        self.set_attribute("mission_ids", ",".join(np.unique(stack.mission)))
+        missions = np.unique(stack.mission)
+        mission_sensor = [SENSOR_NAME_DICT[mission] for mission in missions]
+        self.set_attribute("mission_ids", ",".join(missions))
+        self.set_attribute("mission_sensor", ",".join(mission_sensor))
 
     def get_data_period_from_stack(self, stack):
         """ Get the first and last timestamp """
