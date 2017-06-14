@@ -382,27 +382,56 @@ class L3DataGrid(DefaultLoggingClass):
             raise ValueError("Unknown l3 parameter name: %s" %
                              l3_parameter_name)
 
-    def set_freeboard_nan_mask(self, nan_masks_targets):
-        """
-        Apply the freeboard nan mask to a selected number of parameters
-        see setting/l3/*.yaml for details
-        """
-        frb_is_nan = np.where(np.isnan(self._l3["freeboard"]))
-        for target in nan_masks_targets:
-            self.log.info("freeboard nan mask to %s" % target)
-            self._l3[target][frb_is_nan] = np.nan
+    def mask_l3(self, mask_def):
+        """ Apply a parametrized mask to level 3 data """
 
-    def set_sic_mask(self, nan_masks_targets, sic_threshold=5.0):
-        """
-        Apply the sea ice concentration mask (0 or nan) to a selected number
-        of parameters see setting/l3/*.yaml for details
-        """
-        sic_is_nan = np.isnan(self._l3["sea_ice_concentration"])
-        sic_is_zero = self._l3["sea_ice_concentration"] <= sic_threshold
-        sic_mask = np.logical_or(sic_is_nan, sic_is_zero)
-        for target in nan_masks_targets:
-            self.log.info("sea ice concentration mask to %s" % target)
-            self._l3[target][sic_mask] = np.nan
+        # Get the source parameter
+        source_param = self._l3[mask_def.source]
+
+        # Compute the masking condition
+        conditions = mask_def.condition.split(";")
+        n_conditions = len(conditions)
+
+        if n_conditions == 0:
+            msg = "Missing condition in %s" % str(mask_def)
+            self.error.add_error("invalid-l3mask-def", msg)
+            self.error.raise_on_error()
+
+        # Start with the first (and maybe only condition)
+        filter_mask = self._get_l3_mask(source_param, conditions[0])
+
+        # Add conditions
+        if n_conditions < 2:
+            for i in range(1, n_conditions):
+                new_filter = self._get_l3_mask(source_param, conditions[i])
+                if mask_def.connect_conditions == "or":
+                    filter_mask = np.logical_or(filter_mask, new_filter)
+                elif mask_def.connect_conditions == "and":
+                    filter_mask = np.logical_and(filter_mask, new_filter)
+                else:
+                    msg = "Invalid l3 mask operation: %s"
+                    msg = msg % mask_def.connect_conditions
+                    self.error.add_error("invalid-l3mask-def", msg)
+                    self.error.raise_on_error()
+
+        self.log.info("Apply l3 mask: %s" % mask_def.branchName())
+
+        # Apply mask
+        masked_indices = np.where(filter_mask)
+        for target in mask_def.targets:
+            self._l3[target][masked_indices] = np.nan
+
+    def _get_l3_mask(self, source_param, condition):
+        """ Returna bool array based on a parameter and a predefined
+        masking operation """
+        if condition == "is_nan":
+            return np.isnan(source_param)
+        elif condition == "is_zero":
+            return np.array(source_param == 0.0)
+        else:
+            msg = "Unknown condition in l3 mask: %s" % condition
+            self.error.add_error("invalid-l3mask-condition", msg)
+            self.error.raise_on_error()
 
     def _compute_surface_type_grid_statistics(self, xi, yj):
         """
@@ -728,6 +757,12 @@ class Level3ProductDefinition(DefaultLoggingClass):
     @property
     def l3def(self):
         return self._l3
+
+    @property
+    def l3_masks(self):
+        """ Return a sorted list of the masks applied to level 3 data """
+        mask_names = sorted(self.l3def.l3_masks.keys(branch_mode="only"))
+        return [self.l3def.l3_masks[name] for name in mask_names]
 
     @property
     def l2_parameter(self):
