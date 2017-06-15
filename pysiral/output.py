@@ -397,16 +397,24 @@ class NCDataFile(object):
         self._rootgrp.close()
 
 
-class L1bDataNC(NCDataFile):
+class L1bDataNC(DefaultLoggingClass):
     """
     Class to export a L1bdata object into a netcdf file
     """
 
     def __init__(self):
-        super(L1bDataNC, self).__init__()
+        super(L1bDataNC, self).__init__(self.__class__.__name__)
 
         self.datagroups = ["waveform", "surface_type", "time_orbit",
                            "classifier", "correction"]
+        self.filename = None
+        self.time_def = NCDateNumDef()
+        self.zlib = True
+        self._rootgrp = None
+        self._options = None
+        self._proc_settings = None
+        self.verbose = False
+
         self.output_folder = None
         self.l1b = None
         self.parameter_attributes = get_parameter_attributes("l1b")
@@ -427,6 +435,20 @@ class L1bDataNC(NCDataFile):
 
     def _create_filename(self):
         self.filename = file_basename(self.l1b.filename)+".nc"
+
+    def _set_global_attributes(self, attdict, prefix=""):
+        """ Save l1b.info dictionary as global attributes """
+        for key in sorted(attdict.keys()):
+            self._rootgrp.setncattr(prefix+key, attdict[key])
+
+    def _create_root_group(self, attdict, **global_attr_keyw):
+        """
+        Create the root group and add l1b metadata as global attributes
+        """
+        self._convert_datetime_attributes(attdict)
+        self._convert_bool_attributes(attdict)
+        self._convert_nonetype_attributes(attdict)
+        self._set_global_attributes(attdict, **global_attr_keyw)
 
     def _populate_data_groups(self):
         self._missing_parameters = []
@@ -468,93 +490,74 @@ class L1bDataNC(NCDataFile):
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
 
-    @property
-    def export_path(self):
-        """ Evoking this property will also create the directory if it
-        does not already exists """
-        return self.output_handler.get_directory_from_data(self.data,
-                                                           create=True)
+    def _convert_datetime_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type datetime.datetime by a double
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is datetime:
+                attdict[key] = date2num(
+                    content, self.time_def.units, self.time_def.calendar)
 
-    @property
-    def export_filename(self):
-        """ Returns the filename for the level2 output file """
-        return self.output_handler.get_filename_from_data(self.data)
+    def _convert_bool_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is bool:
+                attdict[key] = int(content)
 
-    @property
-    def full_path(self):
-        return os.path.join(self.export_path, self.export_filename)
+    def _get_variable_attr_dict(self, parameter):
+        """ Retrieve the parameter attributes """
+        default_attrs = {
+            "long_name": parameter,
+            "standard_name": parameter,
+            "scale_factor": 1.0,
+            "add_offset": 0.0}
+        if parameter not in self.parameter_attributes:
+            # self._missing_parameters.append(parameter)
+            return default_attrs
+        else:
+            return dict(self.parameter_attributes[parameter])
 
-#class L1bDataNC(NCDataFile):
-#    """
-#    Class to export a L1bdata object into a netcdf file
-#    """
-#
-#    def __init__(self):
-#        super(L1bDataNC, self).__init__()
-#
-#        self.datagroups = ["waveform", "surface_type", "time_orbit",
-#                           "classifier", "correction"]
-#        self.output_folder = None
-#        self.l1b = None
-#        self.parameter_attributes = get_parameter_attributes("l1b")
-#
-#    def export(self):
-#        self._validate()
-#        self._open_file()
-#        # Save the l1b info data group as global attributes
-#        attdict = self.l1b.info.attdict
-#        self._create_root_group(attdict)
-#        self._populate_data_groups()
-#        self._write_to_file()
-#
-#    def _validate(self):
-#        if self.filename is None:
-#            self._create_filename()
-#        self.path = os.path.join(self.output_folder, self.filename)
-#
-#    def _create_filename(self):
-#        self.filename = file_basename(self.l1b.filename)+".nc"
-#
-#    def _populate_data_groups(self):
-#        self._missing_parameters = []
-#        for datagroup in self.datagroups:
-#            if self.verbose:
-#                print datagroup.upper()
-#            # Create the datagroup
-#            dgroup = self._rootgrp.createGroup(datagroup)
-#            content = getattr(self.l1b, datagroup)
-#            # Create the dimensions
-#            # (must be available as OrderedDict in Datagroup Container
-#            dims = content.dimdict.keys()
-#            for key in dims:
-#                dgroup.createDimension(key, content.dimdict[key])
-#            # Now add variables for each parameter in datagroup
-#            for parameter in content.parameter_list:
-#                data = getattr(content, parameter)
-#                # Convert datetime objects to number
-#                if type(data[0]) is datetime:
-#                    data = date2num(data, self.time_def.units,
-#                                    self.time_def.calendar)
-#                # Convert bool objects to integer
-#                if data.dtype.str == "|b1":
-#                    data = np.int8(data)
-#                dimensions = tuple(dims[0:len(data.shape)])
-#                if self.verbose:
-#                    print " "+parameter, dimensions, data.dtype.str, data.shape
-#                var = dgroup.createVariable(
-#                    parameter, data.dtype.str, dimensions, zlib=self.zlib)
-#                var[:] = data
-#                # Add Parameter Attributes
-#                attribute_dict = self._get_variable_attr_dict(parameter)
-#                for key in attribute_dict.keys():
-#                    setattr(var, key, attribute_dict[key])
-#
-#        # Report mission variable attributes (not in master release)
-#        not_master = "master" not in PYSIRAL_VERSION
-#        if not_master:
-#            print "Warning: Missing parameter attributes for "+"; ".join(
-#                self._missing_parameters)
+    def _convert_nonetype_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if content is None:
+                attdict[key] = ""
 
+    def _open_file(self):
+        self._rootgrp = Dataset(self.path, "w")
+
+    def _write_to_file(self):
+        self._rootgrp.close()
+
+#    @property
+#    def export_path(self):
+#        """ Evoking this property will also create the directory if it
+#        does not already exists """
+#        return self.output_handler.get_directory_from_data(self.data,
+#                                                           create=True)
+#
+#    @property
+#    def export_filename(self):
+#        """ Returns the filename for the level2 output file """
+#        return self.output_handler.get_filename_from_data(self.data)
+#
+#    @property
+#    def full_path(self):
+#        return os.path.join(self.export_path, self.export_filename)
 
 class Level2Output(NCDataFile):
     """
