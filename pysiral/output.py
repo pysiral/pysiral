@@ -396,6 +396,78 @@ class NCDataFile(object):
     def _write_to_file(self):
         self._rootgrp.close()
 
+
+class L1bDataNC(NCDataFile):
+    """
+    Class to export a L1bdata object into a netcdf file
+    """
+
+    def __init__(self):
+        super(L1bDataNC, self).__init__()
+
+        self.datagroups = ["waveform", "surface_type", "time_orbit",
+                           "classifier", "correction"]
+        self.output_folder = None
+        self.l1b = None
+        self.parameter_attributes = get_parameter_attributes("l1b")
+
+    def export(self):
+        self._validate()
+        self._open_file()
+        # Save the l1b info data group as global attributes
+        attdict = self.l1b.info.attdict
+        self._create_root_group(attdict)
+        self._populate_data_groups()
+        self._write_to_file()
+
+    def _validate(self):
+        if self.filename is None:
+            self._create_filename()
+        self.path = os.path.join(self.output_folder, self.filename)
+
+    def _create_filename(self):
+        self.filename = file_basename(self.l1b.filename)+".nc"
+
+    def _populate_data_groups(self):
+        self._missing_parameters = []
+        for datagroup in self.datagroups:
+            if self.verbose:
+                print datagroup.upper()
+            # Create the datagroup
+            dgroup = self._rootgrp.createGroup(datagroup)
+            content = getattr(self.l1b, datagroup)
+            # Create the dimensions
+            # (must be available as OrderedDict in Datagroup Container
+            dims = content.dimdict.keys()
+            for key in dims:
+                dgroup.createDimension(key, content.dimdict[key])
+            # Now add variables for each parameter in datagroup
+            for parameter in content.parameter_list:
+                data = getattr(content, parameter)
+                # Convert datetime objects to number
+                if type(data[0]) is datetime:
+                    data = date2num(data, self.time_def.units,
+                                    self.time_def.calendar)
+                # Convert bool objects to integer
+                if data.dtype.str == "|b1":
+                    data = np.int8(data)
+                dimensions = tuple(dims[0:len(data.shape)])
+                if self.verbose:
+                    print " "+parameter, dimensions, data.dtype.str, data.shape
+                var = dgroup.createVariable(
+                    parameter, data.dtype.str, dimensions, zlib=self.zlib)
+                var[:] = data
+                # Add Parameter Attributes
+                attribute_dict = self._get_variable_attr_dict(parameter)
+                for key in attribute_dict.keys():
+                    setattr(var, key, attribute_dict[key])
+
+        # Report mission variable attributes (not in master release)
+        not_master = "master" not in PYSIRAL_VERSION
+        if not_master:
+            print "Warning: Missing parameter attributes for "+"; ".join(
+                self._missing_parameters)
+
     @property
     def export_path(self):
         """ Evoking this property will also create the directory if it
