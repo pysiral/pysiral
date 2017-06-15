@@ -60,6 +60,7 @@ def pysiral_l3proc():
         l3proc.log.info("Num l2i files: %g" % len(l2i_files))
         if len(l2i_files) == 0:
             l3proc.log.info("Skip data period")
+            continue
 
         # Start the Level-3 processing
         l3proc.process_l2i_files(l2i_files)
