@@ -611,6 +611,14 @@ class DefaultCommandLineArguments(object):
                 "required": True,
                 "help": 'id or path to Level-2 settings file'},
 
+            # fetch the level-2 settings file
+            "l2-output": {
+                "action": "store",
+                "dest": "l2_output",
+                "default": "default",
+                "required": False,
+                "help": 'l2 outputdef id'},
+
             # set the run tag for the Level-2 Processor
             "run-tag": {
                 "action": "store",
