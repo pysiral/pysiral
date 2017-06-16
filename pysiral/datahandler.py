@@ -51,6 +51,11 @@ class DefaultAuxdataHandler(DefaultLoggingClass):
         # Clear errors
         self.error.reset()
 
+        # Allow l2 settings to not specify a data handler
+        # In this case a dummy data handler is returned
+        if auxdata_id is None:
+            return self.getcls[auxdata_class]("NoneHandler")
+
         # perform sanity check
         if auxdata_class not in self.valid_auxdata_classes:
             error_id = "auxdata_invalid_class"
