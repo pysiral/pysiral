@@ -257,9 +257,10 @@ class NCDateNumDef(object):
         self.calendar = "standard"
 
 
-class NCDataFile(object):
+class NCDataFile(DefaultLoggingClass):
 
     def __init__(self):
+        super(NCDataFile, self).__init__(self.__class__.__name__)
         self.filename = None
         self.time_def = NCDateNumDef()
         self.zlib = True
@@ -306,16 +307,20 @@ class NCDataFile(object):
             if data.dtype.str == "|b1":
                 data = np.int8(data)
 
-            # Add time axis
-            if level3 and parameter_name not in ["longitude", "latitude"]:
-                data = np.array([data])
-                dimensions = tuple(dims[0:len(data.shape)])
+            # Set dimensions (dependend on product level)
+            if level3:
+                if parameter_name not in ["longitude", "latitude"]:
+                    data = np.array([data])
+                    dimensions = tuple(dims[0:len(data.shape)])
+                else:
+                    dimensions = tuple(dims[1:len(data.shape)+1])
             else:
-                dimensions = tuple(dims[1:len(data.shape)+1])
+                dimensions = tuple(dims[0:len(data.shape)])
 
+            # Create and set the variable
             var = self._rootgrp.createVariable(
-                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-
+                    parameter_name, data.dtype.str,
+                    dimensions, zlib=self.zlib)
             var[:] = data
 
             # Add Parameter Attributes
@@ -395,6 +400,22 @@ class NCDataFile(object):
 
     def _write_to_file(self):
         self._rootgrp.close()
+
+    @property
+    def export_path(self):
+        """ Evoking this property will also create the directory if it
+        does not already exists """
+        return self.output_handler.get_directory_from_data(self.data,
+                                                           create=True)
+
+    @property
+    def export_filename(self):
+        """ Returns the filename for the level2 output file """
+        return self.output_handler.get_filename_from_data(self.data)
+
+    @property
+    def full_path(self):
+        return os.path.join(self.export_path, self.export_filename)
 
 
 class L1bDataNC(DefaultLoggingClass):
@@ -543,21 +564,6 @@ class L1bDataNC(DefaultLoggingClass):
     def _write_to_file(self):
         self._rootgrp.close()
 
-#    @property
-#    def export_path(self):
-#        """ Evoking this property will also create the directory if it
-#        does not already exists """
-#        return self.output_handler.get_directory_from_data(self.data,
-#                                                           create=True)
-#
-#    @property
-#    def export_filename(self):
-#        """ Returns the filename for the level2 output file """
-#        return self.output_handler.get_filename_from_data(self.data)
-#
-#    @property
-#    def full_path(self):
-#        return os.path.join(self.export_path, self.export_filename)
 
 class Level2Output(NCDataFile):
     """
