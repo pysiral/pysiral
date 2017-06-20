@@ -239,6 +239,12 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
         dates = self.dates
         return([np.amin(dates)-paddays, np.amax(dates)+paddays])
 
+    def get_monthly_means(self, month):
+        data = [l4.array for l4 in self.l4_points if l4.date.month == month]
+        dates = [l4.datenum for l4 in self.l4_points if l4.date.month == month]
+        means = [np.nanmean(points) for points in data]
+        return means, dates
+
     def get_boxplot_data(self, mission):
         data = [l4.array for l4 in self.l4_points if l4.mission == mission]
         dates = [l4.datenum for l4 in self.l4_points if l4.mission == mission]
@@ -280,6 +286,11 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
     def n_missions(self):
         return len(self.missions)
 
+    @property
+    def month_list(self):
+        all_month = [l4.date.month for l4 in self.l4_points]
+        return np.sort(np.unique(all_month))
+
 
 class Level4DataPoint(object):
 
@@ -307,7 +318,7 @@ class Level4DataPoint(object):
 
     @property
     def label(self):
-        return self.date.strftime("%b")
+        return self.date.strftime("%b")[0]
 
     @property
     def date(self):
@@ -412,10 +423,10 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
             boxprops=dict(color=color, linewidth=1),
             whiskerprops=dict(linestyle="-", color=color, linewidth=0.75),
             capprops=dict(linestyle="-", color=color, linewidth=0.75),
-            meanprops=dict(zorder=101, mec="1.0", markerfacecolor=color,
-                           linewidth=1),
+            meanprops=dict(zorder=101, markeredgecolor="#4b4b4d",
+                           markerfacecolor=color, linewidth=1, marker="o"),
             medianprops=dict(linewidth=0), showmeans=True, widths=5,
-            showfliers=False)
+            showfliers=False, whis=[50, 50])
         return boxplot_props
 
     def get_boxfillprops(self, mission):
@@ -454,11 +465,11 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
         # Get font size
         years = np.floor((xlim[1]-xlim[0])/365.)
         if years <= 2:
-            fs = 11
+            fs = 14
         if years >= 5:
-            fs = 5
+            fs = 10
         else:
-            fs = 8
+            fs = 12
         return dict(color="#4b4b4d",
                     fontproperties=get_custom_font(fontsize=fs, awi_font=True))
 
@@ -467,9 +478,18 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
         return dict(ec="#4b4b4d", fc="0.94", lw=0.05)
 
     @property
+    def yticksboxprops(self):
+        return dict(ec="#4b4b4d", fc="0.9", lw=0.05, alpha=0.5)
+
+    @property
     def parlabelfontprops(self):
         return dict(color="#4b4b4d",
                     fontproperties=get_custom_font(fontsize=12, awi_font=True))
+
+    @property
+    def mean_line_props(self):
+        return dict(color="#4b4b4d", linewidth=0.5, linestyle="--",
+                    zorder=1)
 
     @property
     def mission_colors(self):
@@ -524,6 +544,12 @@ class Level4ParameterPlot(DefaultLoggingClass):
             data, dates = self.l4.get_boxplot_data(mission)
             bp = plt.boxplot(data, positions=dates, **boxplotprops)
 
+            # Plot mean for monthes
+            mean_line_props = self.plotdef.mean_line_props
+            for month in self.l4.month_list:
+                means, dates = self.l4.get_monthly_means(month)
+                self.ax.plot(dates, means, **mean_line_props)
+
             # Fill boxes (for better visibility)
             for box in bp["boxes"]:
                 xdata, ydata = box.get_xdata(), box.get_ydata()
@@ -548,12 +574,12 @@ class Level4ParameterPlot(DefaultLoggingClass):
         self.ax.set_xticklabels(xticklabels)
 
         # Set plot ranges
-#        if self.plotdef.custom_plot_xlim is None:
-#            plt.xlim(self.l4.get_data_range(paddays=30))
-#        else:
-#            plt.xlim(self.plotdef.custom_plot_xlim)
+        if self.plotdef.custom_plot_xlim is None:
+            plt.xlim(self.l4.get_data_range(paddays=30))
+        else:
+            plt.xlim(self.plotdef.custom_plot_xlim)
 
-        plt.ylim(-0.5, 4)
+        plt.ylim(0.5, 3.0)
 
     def _set_plot_style(self):
         """ Axis Style """
@@ -561,7 +587,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
         # Add year rectangles for better visibility
         for year in self.l4.years:
             labelx = date2num(datetime(year, 7, 1))
-            plt.annotate(str(year), (labelx, 3.8), xycoords="data",
+            plt.annotate(str(year), (labelx, 2.85), xycoords="data",
                          ha="center", **self.plotdef.yearfontprops)
             if np.mod(year, 2) == 0:
                 continue
@@ -569,6 +595,16 @@ class Level4ParameterPlot(DefaultLoggingClass):
             ymin, width, height = -0.5, 365, 4.5
             rect = Rectangle([xmin, ymin], width, height,
                              **self.plotdef.yearboxprops)
+            self.ax.add_patch(rect)
+
+        # Add light horizontal rectangles
+        xlim = self.ax.get_xlim()
+        yticks = self.ax.yaxis.get_ticklocs()
+        for i in np.arange(1, len(yticks)-1, 2):
+            xmin, width = xlim[0], xlim[1]-xlim[0]
+            ymin, height = yticks[i], yticks[i]-yticks[i-1]
+            rect = Rectangle([xmin, ymin], width, height,
+                             **self.plotdef.yticksboxprops)
             self.ax.add_patch(rect)
 
         # Remove missor axis
