@@ -76,18 +76,27 @@ retracker:
         pyclass: SICCI2TfmraEnvisat
         options:
             # if arrays than [lrm, sar, sin]    
-            threshold: 0.95
+            threshold:
+                type: fixed
+                value: 0.95
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
             wfm_smoothing_window_size: [11, 11, 21] 
             first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
             first_maximum_local_order: 1
+            uncertainty:
+                type: fixed
+                value: 0.1            
     sea_ice: 
         pyclass: SICCI2TfmraEnvisat
         options: 
             # if arrays than [lrm, sar, sin]   
-            threshold: 0.5
+            threshold:
+                type: poly_plane_fit
+                intercept: 0.8147895184
+                coef_lew: [-0.5555823623, 0.1347526920]
+                coef_sig0: [0.0055934198, -0.0001431595]
             offset: 0.0
             use_sigma0_threshold_dependency: False
             wfm_oversampling_factor: 10
