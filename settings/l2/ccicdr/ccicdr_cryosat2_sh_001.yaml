@@ -95,7 +95,7 @@ retracker:
         pyclass: cTFMRA
         options:
             # if arrays than [lrm, sar, sin]
-            threshold: 0.95
+            threshold: 0.5
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
@@ -111,7 +111,7 @@ retracker:
         pyclass: cTFMRA
         options:
             # if arrays than [lrm, sar, sin]
-            threshold: 0.75
+            threshold: 0.5
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
