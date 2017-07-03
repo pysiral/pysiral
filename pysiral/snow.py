@@ -6,8 +6,6 @@ Created on Sun Apr 24 13:57:56 2016
 """
 
 from pysiral.auxdata import AuxdataBaseClass
-from pysiral.errorhandler import ErrorStatus
-from pysiral.config import options_from_dictionary
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
 
@@ -24,8 +22,23 @@ class SnowBaseClass(AuxdataBaseClass):
         super(SnowBaseClass, self).__init__()
 
     def get_along_track_snow(self, l2):
-        snow = self._get_along_track_snow(l2)
-        return snow
+        snow, msg = self._get_along_track_snow(l2)
+        return snow, msg
+
+
+class NoneHandler(SnowBaseClass):
+
+    def __init__(self):
+        super(NoneHandler, self).__init__()
+
+    def _get_along_track_snow(self, l2):
+        dummy = np.full((l2.n_records), np.nan)
+        snow = SnowParameterContainer()
+        snow.depth = dummy
+        snow.density = dummy
+        snow.depth_uncertainty = dummy
+        snow.density_uncertainty = dummy
+        return snow, ""
 
 
 class Warren99(SnowBaseClass):

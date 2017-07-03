@@ -42,6 +42,9 @@ class Level2Data(object):
         "sea_ice_thickness": "sit",
         "sea_ice_concentration": "sic"}
 
+    _PROPERTY_CATALOG = {
+        "sea_surface_height": "ssh"}
+
     def __init__(self, l1b):
 
         # Copy necessary fields form l1b
@@ -104,18 +107,22 @@ class Level2Data(object):
     def get_parameter_by_name(self, parameter_name):
         """ Method to retrieve a level-2 parameter """
 
+        # Combine parameter and property catalogs
+        catalog = self._PARAMETER_CATALOG
+        catalog.update(self._PROPERTY_CATALOG)
+
         if "_uncertainty" in parameter_name:
             parameter_name = parameter_name.replace("_uncertainty", "")
-            source = self._PARAMETER_CATALOG[parameter_name]
+            source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.uncertainty
         elif "_bias" in parameter_name:
             parameter_name = parameter_name.replace("_bias", "")
-            source = self._PARAMETER_CATALOG[parameter_name]
+            source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.bias
         else:
-            source = self._PARAMETER_CATALOG[parameter_name]
+            source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter
 
@@ -298,6 +305,13 @@ class Level2Data(object):
     def surface_type_flag(self):
         return self.surface_type.flag
 
+    @property
+    def ssh(self):
+        ssh = L2ElevationArray(shape=self._n_records)
+        ssh.set_value(self.mss+self.ssa)
+        ssh.set_uncertainty(self.ssa.uncertainty)
+        return ssh
+
 
 class L2ElevationArray(np.ndarray):
     """
@@ -402,6 +416,14 @@ class L2iNCFileImport(object):
 
         self.timestamp = num2date(self.timestamp, self.time_def.units,
                                   self.time_def.calendar)
+
+    def transfer_nan_mask(self, source, targets):
+        source_parameter = getattr(self, source)
+        nan_indices = np.where(np.isnan(source_parameter))
+        for target in targets:
+            parameter = getattr(self, target)
+            parameter[nan_indices] = np.nan
+            setattr(self, target, parameter)
 
     def project(self, griddef):
         from pyproj import Proj

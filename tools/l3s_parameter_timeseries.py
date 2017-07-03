@@ -8,7 +8,7 @@ Created on Tue Dec 06 09:50:05 2016
 from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.iotools import NCMaskedGridData
-from pysiral.path import validate_directory
+from pysiral.path import validate_directory, file_basename
 from pysiral.visualization.mapstyle import get_custom_font
 from pysiral.visualization.mapstyle import GridMapPaperStyle
 from pysiral.maptools import get_landcoastlines
@@ -25,15 +25,15 @@ import glob
 import os
 
 
-class L3sParameterTimeSeries(DefaultLoggingClass):
+class L3ParameterTimeSeries(DefaultLoggingClass):
 
     def __init__(self):
-        super(L3sParameterTimeSeries, self).__init__(self.__class__.__name__)
+        super(L3ParameterTimeSeries, self).__init__(self.__class__.__name__)
         self.latlonbox = LatLonBox(area="world")
         self.output_folder = "auto"
         self.parameter_list = []
         self.l4roimap = Level4ROIMap()
-        self.l3s_stack = L3sSourceList()
+        self.l3_stack = L3SourceList()
         self.l4plotdef = Level4ParameterPlotSettings()
 
     def init_from_args(self):
@@ -70,18 +70,18 @@ class L3sParameterTimeSeries(DefaultLoggingClass):
 
         # Get output folder
         # XXX: Automatic folder generation assumes that lowest level folder
-        #      is 'l3s'
+        #      is 'l3'
         if self.args.output_folder != "auto":
             self.output_folder = self.args.output_folder
         else:
-            dirs = os.path.split(self.args.l3s_folders[0])
+            dirs = os.path.split(self.args.l3_folders[0])
             self.output_folder = os.path.join(os.sep.join(dirs[0:-1]), "l4")
         self.log.info("Output Folder: %s" % self.output_folder)
 
     def execute(self):
 
         # Get all files
-        self.l3s_stack.get_files(self.args.l3s_folders)
+        self.l3_stack.get_files(self.args.l3_folders)
 
         # Loop over all Parameter
         for parameter_name in self.parameter_list:
@@ -91,7 +91,7 @@ class L3sParameterTimeSeries(DefaultLoggingClass):
                           parameter_name, self.latlonbox.full_name))
             l4par = Level4MultiMissionParameter()
             l4par.set_roi(self.latlonbox)
-            l4par.get_from_l3s(self.l3s_stack.list, parameter_name)
+            l4par.get_from_l3(self.l3_stack.list, parameter_name)
 
             # Create output plots
             self.l4plotdef.set_parameter_name(parameter_name)
@@ -107,12 +107,12 @@ class L3sParameterTimeSeries(DefaultLoggingClass):
 
     @property
     def arg_parser(self):
-        """ Return the Argument parser for l3s_time_series """
+        """ Return the Argument parser for l3_time_series """
 
         parser = argparse.ArgumentParser()
 
-        parser.add_argument(action='store', dest='l3s_folders',
-                            nargs="+", help='l3s product folder')
+        parser.add_argument(action='store', dest='l3_folders',
+                            nargs="+", help='l3 product folder')
 
         parser.add_argument("-label", action='store', dest='plot_label',
                             type=str, required=False,
@@ -148,37 +148,37 @@ class L3sParameterTimeSeries(DefaultLoggingClass):
         return parser
 
 
-class L3sSourceList(DefaultLoggingClass):
+class L3SourceList(DefaultLoggingClass):
 
     def __init__(self):
-        super(L3sSourceList, self).__init__(self.__class__.__name__)
-        self._l3s_file_list = []
+        super(L3SourceList, self).__init__(self.__class__.__name__)
+        self._l3_file_list = []
 
     def get_files(self, folders):
 
         for folder in folders:
-            self._l3s_recursive_search(folder)
-        self._l3s_file_list = sorted(self._l3s_file_list)
+            self._l3_recursive_search(folder)
+        self._l3_file_list = sorted(self._l3_file_list)
 
-    def _l3s_recursive_search(self, folder):
-        self.log.info("Search L3s netCDF files in %s" % folder)
+    def _l3_recursive_search(self, folder):
+        self.log.info("Search L3 netCDF files in %s" % folder)
         for root, dirs, files in os.walk(folder):
             for directory in dirs:
-                l3s_query = os.path.join(root, directory, self.search_pattern)
-                l3s_files = glob.glob(l3s_query)
-                n_l3s_files = len(l3s_files)
-                if n_l3s_files > 0:
-                    self._l3s_file_list.extend(l3s_files)
-                    self.log.info("- Subfolder %s: found %g" % (
-                                  directory, n_l3s_files))
+                l3_query = os.path.join(root, directory, self.search_pattern)
+                l3_files = glob.glob(l3_query)
+                n_l3_files = len(l3_files)
+                if n_l3_files > 0:
+                    self._l3_file_list.extend(l3_files)
+                self.log.info("- Subfolder %s: found %g" % (
+                              directory, n_l3_files))
 
     @property
     def search_pattern(self):
-        return "L3S*.nc"
+        return "*L3C*.nc"
 
     @property
     def list(self):
-        return self._l3s_file_list
+        return self._l3_file_list
 
 
 class Level4MultiMissionParameter(DefaultLoggingClass):
@@ -195,33 +195,42 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
         self.roi = roi
         self.region_name = roi.full_name
 
-    def get_from_l3s(self, l3s_filenames, parameter_name):
-        """ Extract parameter in roi for each l3s file """
+    def get_from_l3(self, l3_filenames, parameter_name):
+        """ Extract parameter in roi for each l3 file """
 
         # loop over files
-        for l3s_filename in l3s_filenames:
+        for l3_filename in l3_filenames:
 
             # Read data
-            l3s = NCMaskedGridData(l3s_filename)
+            l3 = NCMaskedGridData(l3_filename)
 
-            # Compute the mask (may be different for each l3s file in stack)
+            # Compute the mask (may be different for each l3 file in stack)
             # If no roi is specified, use entire grid
             if self.roi is not None:
-                roi_mask = self.roi.get_grid_mask(l3s.longitude, l3s.latitude)
+                roi_mask = self.roi.get_grid_mask(l3.longitude, l3.latitude)
             else:
-                roi_mask = np.full(l3s.longitude.shape, True)
-                self.region_name = l3s.hemisphere
+                roi_mask = np.full(l3.longitude.shape, True)
+                self.region_name = l3.hemisphere
 
             # Extract the parameter
-            parameter_grid = l3s.get_by_name(parameter_name)
+            parameter_grid = l3.get_by_name(parameter_name)
             roi_indices = np.where(roi_mask)
             parameter = parameter_grid[roi_indices]
 
             # Create a L4 data point
             l4dat = Level4DataPoint()
             # XXX: Hard coded to monthly data
-            period = (l3s.start_time.year, l3s.start_time.month)
-            l4dat.set_metadata(mission=l3s.mission_ids, period=period,
+            # start_time = dateutil.parser.parse(l3.time_coverage_start)
+            # period = (start_time.year, start_time.month)
+            basename = file_basename(l3_filename)
+            strarr = basename.split("-")
+            year = int(strarr[7][0:4])
+            month = int(strarr[7][4:6])
+            period = (year, month)
+            # XXX: Hotfix for SICCI2 L3C v0.9
+            sensor_catalog = {"RA2": "envisat", "SIRAL": "cryosat2"}
+            mission_id = sensor_catalog[l3.sensor]
+            l4dat.set_metadata(mission=mission_id, period=period,
                                parameter_name=parameter_name)
             l4dat.set_parameter_data(parameter)
             self.l4_points.append(l4dat)
@@ -229,6 +238,12 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
     def get_data_range(self, paddays=0):
         dates = self.dates
         return([np.amin(dates)-paddays, np.amax(dates)+paddays])
+
+    def get_monthly_means(self, month):
+        data = [l4.array for l4 in self.l4_points if l4.date.month == month]
+        dates = [l4.datenum for l4 in self.l4_points if l4.date.month == month]
+        means = [np.nanmean(points) for points in data]
+        return means, dates
 
     def get_boxplot_data(self, mission):
         data = [l4.array for l4 in self.l4_points if l4.mission == mission]
@@ -271,6 +286,11 @@ class Level4MultiMissionParameter(DefaultLoggingClass):
     def n_missions(self):
         return len(self.missions)
 
+    @property
+    def month_list(self):
+        all_month = [l4.date.month for l4 in self.l4_points]
+        return np.sort(np.unique(all_month))
+
 
 class Level4DataPoint(object):
 
@@ -298,7 +318,7 @@ class Level4DataPoint(object):
 
     @property
     def label(self):
-        return self.date.strftime("%b")
+        return self.date.strftime("%b")[0]
 
     @property
     def date(self):
@@ -403,10 +423,10 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
             boxprops=dict(color=color, linewidth=1),
             whiskerprops=dict(linestyle="-", color=color, linewidth=0.75),
             capprops=dict(linestyle="-", color=color, linewidth=0.75),
-            meanprops=dict(zorder=101, mec="1.0", markerfacecolor=color,
-                           linewidth=1),
+            meanprops=dict(zorder=101, markeredgecolor="#4b4b4d",
+                           markerfacecolor=color, linewidth=1, marker="o"),
             medianprops=dict(linewidth=0), showmeans=True, widths=5,
-            showfliers=False)
+            showfliers=False, whis=[50, 50])
         return boxplot_props
 
     def get_boxfillprops(self, mission):
@@ -445,11 +465,11 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
         # Get font size
         years = np.floor((xlim[1]-xlim[0])/365.)
         if years <= 2:
-            fs = 11
+            fs = 14
         if years >= 5:
-            fs = 5
+            fs = 10
         else:
-            fs = 8
+            fs = 12
         return dict(color="#4b4b4d",
                     fontproperties=get_custom_font(fontsize=fs, awi_font=True))
 
@@ -458,9 +478,18 @@ class Level4ParameterPlotSettings(DefaultLoggingClass):
         return dict(ec="#4b4b4d", fc="0.94", lw=0.05)
 
     @property
+    def yticksboxprops(self):
+        return dict(ec="#4b4b4d", fc="0.9", lw=0.05, alpha=0.5)
+
+    @property
     def parlabelfontprops(self):
         return dict(color="#4b4b4d",
                     fontproperties=get_custom_font(fontsize=12, awi_font=True))
+
+    @property
+    def mean_line_props(self):
+        return dict(color="#4b4b4d", linewidth=0.5, linestyle="--",
+                    zorder=1)
 
     @property
     def mission_colors(self):
@@ -515,6 +544,12 @@ class Level4ParameterPlot(DefaultLoggingClass):
             data, dates = self.l4.get_boxplot_data(mission)
             bp = plt.boxplot(data, positions=dates, **boxplotprops)
 
+            # Plot mean for monthes
+            mean_line_props = self.plotdef.mean_line_props
+            for month in self.l4.month_list:
+                means, dates = self.l4.get_monthly_means(month)
+                self.ax.plot(dates, means, **mean_line_props)
+
             # Fill boxes (for better visibility)
             for box in bp["boxes"]:
                 xdata, ydata = box.get_xdata(), box.get_ydata()
@@ -544,7 +579,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
         else:
             plt.xlim(self.plotdef.custom_plot_xlim)
 
-        plt.ylim(-0.5, 4)
+        plt.ylim(0.5, 3.0)
 
     def _set_plot_style(self):
         """ Axis Style """
@@ -552,7 +587,7 @@ class Level4ParameterPlot(DefaultLoggingClass):
         # Add year rectangles for better visibility
         for year in self.l4.years:
             labelx = date2num(datetime(year, 7, 1))
-            plt.annotate(str(year), (labelx, 3.8), xycoords="data",
+            plt.annotate(str(year), (labelx, 2.85), xycoords="data",
                          ha="center", **self.plotdef.yearfontprops)
             if np.mod(year, 2) == 0:
                 continue
@@ -560,6 +595,16 @@ class Level4ParameterPlot(DefaultLoggingClass):
             ymin, width, height = -0.5, 365, 4.5
             rect = Rectangle([xmin, ymin], width, height,
                              **self.plotdef.yearboxprops)
+            self.ax.add_patch(rect)
+
+        # Add light horizontal rectangles
+        xlim = self.ax.get_xlim()
+        yticks = self.ax.yaxis.get_ticklocs()
+        for i in np.arange(1, len(yticks)-1, 2):
+            xmin, width = xlim[0], xlim[1]-xlim[0]
+            ymin, height = yticks[i], yticks[i]-yticks[i-1]
+            rect = Rectangle([xmin, ymin], width, height,
+                             **self.plotdef.yticksboxprops)
             self.ax.add_patch(rect)
 
         # Remove missor axis
@@ -665,6 +710,6 @@ class Level4ROIMap(object):
 
 
 if __name__ == "__main__":
-    job = L3sParameterTimeSeries()
+    job = L3ParameterTimeSeries()
     job.init_from_args()
     job.execute()

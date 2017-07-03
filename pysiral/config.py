@@ -32,9 +32,12 @@ from treedict import TreeDict
 
 import numpy as np
 
-PYSIRAL_VERSION = "0.4.0"
-PYSIRAL_VERSION_FILENAME = "040"
+PYSIRAL_VERSION = "0.4.1-dev"
+PYSIRAL_VERSION_FILENAME = "041dev"
 HOSTNAME = socket.gethostname()
+
+SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
+                    "cryosat2": "SIRAL", "sentinel3a": "SRAL"}
 
 
 class ConfigInfo(DefaultLoggingClass):
@@ -55,7 +58,7 @@ class ConfigInfo(DefaultLoggingClass):
 
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
-    VALID_DATA_LEVEL_IDS = ["l2", "l3"]
+    VALID_DATA_LEVEL_IDS = ["l2", "l3", "griddef", "outputdef"]
 
     def __init__(self):
         """ Read all definition files """
@@ -269,6 +272,7 @@ class TimeRangeRequest(DefaultLoggingClass):
             valid_stop = True
 
         if valid_start and valid_stop:
+            self._validate_range()
             return
 
         # Check and decode integer lists
@@ -285,9 +289,13 @@ class TimeRangeRequest(DefaultLoggingClass):
                 self._stop_dt = self._decode_int_list(stop_date, "stop")
             else:
                 error_message = msg_template % "stop"
-                self.error.append("invalid-timedef", error_message)
+                self.error.add_error("invalid-timedef", error_message)
 
+        # Raise on parsing errors
         self.error.raise_on_error()
+
+        # Check range
+        self._validate_range()
 
     def clip_to_range(self, range_start, range_stop):
         """ Clip the current time range to an defined time range """
@@ -331,12 +339,6 @@ class TimeRangeRequest(DefaultLoggingClass):
         if exclude_month_list is None:
             exclude_month_list = []
         self._exclude_month = exclude_month_list
-
-    def raise_on_error(self):
-
-        if self.error.status:
-            print self.error.message
-            sys.exit(1)
 
     def get_iterations(self):
         """
@@ -409,7 +411,7 @@ class TimeRangeRequest(DefaultLoggingClass):
         n_entries = len(int_list)
         if n_entries < 2 or n_entries > 3:
             error_message = "%s date integer list must be yyyy mm [dd]"
-            self.error.append(self.__class__.__name__, error_message)
+            self.error.add_error("invalid-date-int-list", error_message)
             return None
 
         # Set the day
@@ -422,7 +424,7 @@ class TimeRangeRequest(DefaultLoggingClass):
         except:
             error_message = "cannot convert integer list to datetime: %s" % (
                 str(int_list))
-            self.error.add_error(self.__class__.__name__, error_message)
+            self.error.add_error("invalid-date-int-list", error_message)
             return None
 
         # if stop time: add one period
@@ -434,6 +436,14 @@ class TimeRangeRequest(DefaultLoggingClass):
             dt = dt + extra_period
 
         return dt
+
+    def _validate_range(self):
+        # Check if start and stop are in the right order
+        if self.stop_dt <= self.start_dt:
+            msg = "stop [%s] before start [%s]"
+            msg = msg % (str(self.stop_dt), str(self.start_dt))
+            self.error.add_error("invalid-period", msg)
+            self.error.raise_on_error()
 
     @property
     def _default_period(self):
@@ -509,6 +519,11 @@ class TimeRangeIteration(object):
     @property
     def label(self):
         return str(self.start)+" till "+str(self.stop)
+
+    @property
+    def date_label(self):
+        dt_fmt = "%Y-%m-%d"
+        return self.start.strftime(dt_fmt)+" till "+self.stop.strftime(dt_fmt)
 
 
 class DefaultCommandLineArguments(object):
@@ -596,6 +611,14 @@ class DefaultCommandLineArguments(object):
                 "required": True,
                 "help": 'id or path to Level-2 settings file'},
 
+            # fetch the level-2 settings file
+            "l2-output": {
+                "action": "store",
+                "dest": "l2_output",
+                "default": "default",
+                "required": False,
+                "help": 'l2 outputdef id'},
+
             # set the run tag for the Level-2 Processor
             "run-tag": {
                 "action": "store",
@@ -619,7 +642,42 @@ class DefaultCommandLineArguments(object):
                 "default": True,
                 "required": False,
                 "help": 'enable writing Level-2 output to unique directory ' +
-                        '(default)'}}
+                        '(default)'},
+
+            "period": {
+                "action": "store",
+                "dest": "period",
+                "default": "monthly",
+                "required": False,
+                "help": 'data period tag (default: monthly)'},
+
+            "l2i-product-dir": {
+                "action": "store",
+                "dest": "l2i_product_dir",
+                "default": None,
+                "required": True,
+                "help": "l2i input directory"},
+
+            "l3-settings": {
+                "action": "store",
+                "dest": "l3_settings",
+                "default": "l3_default",
+                "required": False,
+                "help": "l3 settings definition id or filename"},
+
+            "l3-griddef": {
+                "action": "store",
+                "dest": "l3_griddef",
+                "default": None,
+                "required": True,
+                "help": "l3 grid definition id or filename"},
+
+            "l3-output": {
+                "action": "store",
+                "dest": "l3_output",
+                "default": "default",
+                "required": True,
+                "help": "l3 output id"}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]

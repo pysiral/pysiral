@@ -1,0 +1,144 @@
+# Default Level-3 processor settings suitable for default l2i input files
+# 
+# Version 1.0
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method. 
+
+l2_parameter:
+
+    radar_freeboard:
+        grid_method: average
+
+    radar_freeboard_uncertainty:
+        grid_method: average
+
+    freeboard:
+        grid_method: average
+
+    freeboard_uncertainty:
+        grid_method: average
+
+    sea_ice_thickness:
+        grid_method: average
+
+    sea_ice_thickness_uncertainty:
+        grid_method: average
+
+    sea_surface_anomaly:
+        grid_method: average
+
+    sea_surface_anomaly_uncertainty:
+        grid_method: average
+
+    mean_sea_surface:
+        grid_method: average
+
+    snow_depth:
+        grid_method: average
+
+    snow_depth_uncertainty:
+        grid_method: average
+
+    snow_density:
+        grid_method: average
+
+    snow_density_uncertainty:
+        grid_method: average
+
+    ice_density:
+        grid_method: average
+
+    ice_density_uncertainty:
+        grid_method: average
+
+    sea_ice_type:
+        grid_method: average
+
+    sea_ice_type_uncertainty:
+        grid_method: average
+
+    sea_ice_concentration:
+        grid_method: average
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+
+l2i_prefilter:
+    active: True
+    nan_source: sea_ice_thickness
+    nan_targets:
+        - freeboard
+        - radar_freeboard
+
+# ==================================================
+# Level-3 Parameter
+# ==================================================
+
+# l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
+# of valid l3 parameter names. (l2 parameter surface type is mandatory)
+
+l3_parameter:
+    - n_total_waveforms
+    - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
+
+# ==================================================
+# Grid settings
+# ==================================================
+grid_settings:
+    no_land_cells: True
+    minimum_valid_grid_points: 2
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells 
+# Note: The masking is exectuted in the alphabetical order of the mask names.
+#       If there is a dependance between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+l3_masks:
+
+# Apply freeboard filter to mss, ssa for visualization purposes
+
+    freeboard_nan_mask: 
+        source: freeboard
+        condition: "is_nan"
+        targets:
+            - freeboard_uncertainty
+            - radar_freeboard_uncertainty
+            - sea_surface_anomaly
+            - sea_surface_anomaly_uncertainty
+            - mean_sea_surface
+
+# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
+# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
+#       is only a monthly average from the daily fields in the l2i orbits
+
+    sea_ice_concentration_mask:
+        source: sea_ice_concentration
+        condition: "is_nan; is_smaller"
+        is_smaller_threshold: 15.0
+        connect_conditions: "or"
+        targets:
+            - n_total_waveforms
+            - n_valid_waveforms
+            - valid_fraction
+            - lead_fraction
+            - ice_fraction
+            - sea_ice_type
+            - snow_depth
+            - snow_depth_uncertainty
+            - snow_density
+            - snow_density_uncertainty
+            - sea_ice_concentration

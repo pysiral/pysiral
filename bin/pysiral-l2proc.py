@@ -50,7 +50,7 @@ def pysiral_l2proc_time_range_job(args):
 
     # Specifically add an output handler
     product_def.add_output_definition(
-            "default", overwrite_protection=args.overwrite_protection)
+            args.l2_output, overwrite_protection=args.overwrite_protection)
 
     # Break down the time range in individual month
     start, stop = args.start, args.stop
@@ -166,6 +166,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-l1b-files", "l1b_files", "l1b_files_preset", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
+            ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt",
              "no_critical_prompt", False),
@@ -233,6 +234,22 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l1b_version(self):
         return self._args.input_version
+
+    @property
+    def l2_output(self):
+        l2_output = self._args.l2_output
+        filename = self.pysiral_config.get_settings_file(
+                "outputdef", l2_output)
+        if filename is None:
+            msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
+            msg = msg + " \nRecognized Level-2 output definitions ids:\n"
+            l2_output_ids = self.pysiral_config.get_setting_ids("outputdef")
+            for l2_output_id in l2_output_ids:
+                msg = msg + "    - " + l2_output_id+"\n"
+            self.error.add_error("invalid-l2-outputdef", msg)
+            self.error.raise_on_error()
+        else:
+            return filename
 
     @property
     def is_time_range_request(self):

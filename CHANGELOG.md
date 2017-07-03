@@ -1,5 +1,30 @@
 # History of changes
 
+## Version 0.4.1 (3. July 2017)
+
+**New Features**
+* [grid] New `grid` module for grid related tasks (work in progress)
+* [l2 data] Added `sea_surface_height` property (ssh = mss + ssa)
+* [auxdata] Added a `NoneHandler` (dummy handler that only returns NaN's)
+* [l3 processing] Added masking of l2i data before gridding
+
+**Bugfixes**
+* [l3 processing] Level-3 processor crash when no l2i data was available for given iteration
+
+**Changes**
+* [l2 processing] Updated uncertainty description
+* [l2 processing] Can now chose output handler (option `-l2-output` for `pysiral-l3proc.py`)
+* [l3 processing] Updated `pysiral-l3proc` command line arguments (use `python pysiral-l3proc.py -help` for description)
+* [l3 processing] Level-3 processor settings are now splitted in output definition and grid settings
+* [l3 processing] Numerous changes to Level3Processing workflow
+* [config] Update API of TimeRangeRequest
+
+**Settings**
+* [auxdata] Added definition for OSI-SAF 430 SIC data
+* [l2 settings] Added definition (l2 settings & outputdef) for SPICES NRT ssh product
+* [outputdef] Minor updated in SICCI-2 output definition
+
+
 ## Version 0.4.0 (9. June 2017)
 
 **New Features**
