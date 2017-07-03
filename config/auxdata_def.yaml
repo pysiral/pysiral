@@ -65,7 +65,7 @@ snow:
     # Warren99 snow climatology
     warren99:
         pyclass: Warren99
-        long_name: Warren99 snow depth and density climatology
+        long_name: Warren, S.G., Rigor, I.G., Untersteiner, N., Radionov, V.F., Bryazgin, N.N., Aleksandrov, Y.I., and Colony, R.. Snow depth on Arctic sea ice. Journal of Climate, 12, 1814-1829, 1999
         local_repository: null
         options:
             fyi_correction_factor: 0.5
@@ -159,6 +159,49 @@ sic:
         long_name: OSI-SAF Global Sea Ice Concentration (OSI-409)
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_reproc_{year}{month}{day}1200.nc4"
         local_repository: osisaf409
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 760
+                    n_lines: 1120
+                    dx: 10000
+                    dy: 10000
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: null
+
+    osisaf430:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration continuous reprocessing offline product (OSI-430)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_cont-reproc_{year}{month}{day}1200.nc"
+        local_repository: osisaf430
         options:
             north:
                 projection:

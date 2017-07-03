@@ -25,6 +25,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     def __init__(self, output_def):
         super(OutputHandlerBase, self).__init__(self.__class__.__name__)
+        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
@@ -65,9 +66,14 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Adds the information for the output def yaml files (either
         full filename or treedict structure) """
         if os.path.isfile(output_def):
-            self._output_def = get_yaml_config(output_def)
+            try:
+                self._output_def = get_yaml_config(output_def)
+            except Exception, msg:
+                self.error.add_error("outputdef-parser-error", msg)
+                self.error.raise_on_error()
         else:
             self._output_def = output_def
+        self._validate_outputdef()
 
     def _set_basedir(self, basedir, create=True):
         """ Sets and and (per default) creates the main output directory """
@@ -83,6 +89,30 @@ class OutputHandlerBase(DefaultLoggingClass):
             msg = "Unable to create directory: %s" % str(directory)
             self.error.add_error("directory-error", msg)
 
+    def _get_subdirectories(self, dt):
+        directory = self.basedir
+        for subfolder_tag in self.subfolders:
+            parameter = getattr(dt, subfolder_tag)
+            subfolder = self.subfolder_format[subfolder_tag] % parameter
+            directory = os.path.join(directory, subfolder)
+
+    def _get_directory_from_dt(self, dt):
+        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
+        return os.path.join(self.basedir, *subfolders)
+
+    def _validate_outputdef(self):
+        """ Run a series of tests to check if a valid output definition
+        has been passed. Note: theses tests will only check existing
+        items of the output definition. If the requested item is missing
+        a separate exception will be evoked """
+        # Test 1: Applicable data level needs
+        if self.applicable_data_level != self.data_level:
+            msg = "outputdef data level (%g) does not match %s reqirement (%g)"
+            msg = msg % (self.data_level, self.__class__.__name__,
+                         self.applicable_data_level)
+            self.error.add_error("datalevel-mismatch", msg)
+            self.error.raise_on_error()
+
     @property
     def id(self):
         try:
@@ -92,10 +122,21 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     @property
     def product_level_subfolder(self):
-        try:
-            return self._output_def.product_level_subfolder
-        except:
-            return ""
+        subfolder = self._output_def.product_level_subfolder
+        if type(subfolder) is not str:
+            msg = "root.product_level_subfolder (str) missing or wrong dtype"
+            self.error.add_error("outputdef-invalid", msg)
+            self.error.raise_on_error()
+        return subfolder
+
+    @property
+    def data_level(self):
+        data_level = self._output_def.metadata.data_level
+        if type(data_level) is not int:
+            msg = "root.metadata.data_level (int) missing or wrong dtype"
+            self.error.add_error("outputdef-invalid", msg)
+            self.error.raise_on_error()
+        return data_level
 
     @property
     def basedir(self):
@@ -140,13 +181,13 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
 
-    def get_filename_from_l2(self, l2):
+    def get_filename_from_data(self, l2):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
         filename_template = self.output_def.filenaming
         return self.fill_template_string(filename_template, l2)
 
-    def get_directory_from_l2(self, l2, create=True):
+    def get_directory_from_data(self, l2, create=True):
         """ Return the output directory based on information provided
         in an l2 data object """
         directory = self._get_directory_from_dt(l2.info.start_time)
@@ -154,7 +195,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             self._create_directory(directory)
         return directory
 
-    def get_fullpath_from_l2(self, l2):
+    def get_fullpath_from_data(self, l2):
         """ Return export path and filename based on information
         provided in the l2 data object """
         export_directory = self.get_directory_from_l2(l2)
@@ -198,17 +239,6 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         basedir = os.path.join(basedir, self.product_level_subfolder)
         self._set_basedir(basedir)
 
-    def _get_subdirectories(self, dt):
-        directory = self.basedir
-        for subfolder_tag in self.subfolders:
-            parameter = getattr(dt, subfolder_tag)
-            subfolder = self.subfolder_format[subfolder_tag] % parameter
-            directory = os.path.join(directory, subfolder)
-
-    def _get_directory_from_dt(self, dt):
-        subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
-        return os.path.join(self.basedir, *subfolders)
-
     @property
     def default_output_def_filename(self):
         pysiral_config = ConfigInfo()
@@ -227,9 +257,10 @@ class NCDateNumDef(object):
         self.calendar = "standard"
 
 
-class NCDataFile(object):
+class NCDataFile(DefaultLoggingClass):
 
     def __init__(self):
+        super(NCDataFile, self).__init__(self.__class__.__name__)
         self.filename = None
         self.time_def = NCDateNumDef()
         self.zlib = True
@@ -243,6 +274,58 @@ class NCDataFile(object):
 
     def set_processor_settings(self, proc_settings):
         self._proc_settings = proc_settings
+
+    def set_base_export_path(self, path):
+        self.base_export_path = path
+
+    def get_full_export_path(self, startdt):
+        self._get_full_export_path(startdt)
+        return self.export_path
+
+    def _write_global_attributes(self):
+        attr_dict = self.output_handler.get_global_attribute_dict(self.data)
+        self._set_global_attributes(attr_dict)
+
+    def _populate_data_groups(self, level3=False):
+
+        dimdict = self.data.dimdict
+        dims = dimdict.keys()
+
+        for key in dims:
+                self._rootgrp.createDimension(key, dimdict[key])
+
+        for parameter_name, attribute_dict in self.output_handler.variable_def:
+
+            data = self.data.get_parameter_by_name(parameter_name)
+
+            # Convert datetime objects to number
+            if type(data[0]) is datetime:
+                data = date2num(data, self.time_def.units,
+                                self.time_def.calendar)
+
+            # Convert bool objects to integer
+            if data.dtype.str == "|b1":
+                data = np.int8(data)
+
+            # Set dimensions (dependend on product level)
+            if level3:
+                if parameter_name not in ["longitude", "latitude"]:
+                    data = np.array([data])
+                    dimensions = tuple(dims[0:len(data.shape)])
+                else:
+                    dimensions = tuple(dims[1:len(data.shape)+1])
+            else:
+                dimensions = tuple(dims[0:len(data.shape)])
+
+            # Create and set the variable
+            var = self._rootgrp.createVariable(
+                    parameter_name, data.dtype.str,
+                    dimensions, zlib=self.zlib)
+            var[:] = data
+
+            # Add Parameter Attributes
+            for key in attribute_dict.keys():
+                setattr(var, key, attribute_dict[key])
 
     def _create_root_group(self, attdict, **global_attr_keyw):
         """
@@ -313,22 +396,46 @@ class NCDataFile(object):
             self._rootgrp.setncattr(item, str(settings[item]))
 
     def _open_file(self):
-        self._rootgrp = Dataset(self.path, "w")
+        self._rootgrp = Dataset(self.full_path, "w")
 
     def _write_to_file(self):
         self._rootgrp.close()
 
+    @property
+    def export_path(self):
+        """ Evoking this property will also create the directory if it
+        does not already exists """
+        return self.output_handler.get_directory_from_data(self.data,
+                                                           create=True)
 
-class L1bDataNC(NCDataFile):
+    @property
+    def export_filename(self):
+        """ Returns the filename for the level2 output file """
+        return self.output_handler.get_filename_from_data(self.data)
+
+    @property
+    def full_path(self):
+        return os.path.join(self.export_path, self.export_filename)
+
+
+class L1bDataNC(DefaultLoggingClass):
     """
     Class to export a L1bdata object into a netcdf file
     """
 
     def __init__(self):
-        super(L1bDataNC, self).__init__()
+        super(L1bDataNC, self).__init__(self.__class__.__name__)
 
         self.datagroups = ["waveform", "surface_type", "time_orbit",
                            "classifier", "correction"]
+        self.filename = None
+        self.time_def = NCDateNumDef()
+        self.zlib = True
+        self._rootgrp = None
+        self._options = None
+        self._proc_settings = None
+        self.verbose = False
+
         self.output_folder = None
         self.l1b = None
         self.parameter_attributes = get_parameter_attributes("l1b")
@@ -349,6 +456,20 @@ class L1bDataNC(NCDataFile):
 
     def _create_filename(self):
         self.filename = file_basename(self.l1b.filename)+".nc"
+
+    def _set_global_attributes(self, attdict, prefix=""):
+        """ Save l1b.info dictionary as global attributes """
+        for key in sorted(attdict.keys()):
+            self._rootgrp.setncattr(prefix+key, attdict[key])
+
+    def _create_root_group(self, attdict, **global_attr_keyw):
+        """
+        Create the root group and add l1b metadata as global attributes
+        """
+        self._convert_datetime_attributes(attdict)
+        self._convert_bool_attributes(attdict)
+        self._convert_nonetype_attributes(attdict)
+        self._set_global_attributes(attdict, **global_attr_keyw)
 
     def _populate_data_groups(self):
         self._missing_parameters = []
@@ -390,161 +511,96 @@ class L1bDataNC(NCDataFile):
             print "Warning: Missing parameter attributes for "+"; ".join(
                 self._missing_parameters)
 
+    def _convert_datetime_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type datetime.datetime by a double
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is datetime:
+                attdict[key] = date2num(
+                    content, self.time_def.units, self.time_def.calendar)
+
+    def _convert_bool_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if type(content) is bool:
+                attdict[key] = int(content)
+
+    def _get_variable_attr_dict(self, parameter):
+        """ Retrieve the parameter attributes """
+        default_attrs = {
+            "long_name": parameter,
+            "standard_name": parameter,
+            "scale_factor": 1.0,
+            "add_offset": 0.0}
+        if parameter not in self.parameter_attributes:
+            # self._missing_parameters.append(parameter)
+            return default_attrs
+        else:
+            return dict(self.parameter_attributes[parameter])
+
+    def _convert_nonetype_attributes(self, attdict):
+        """
+        Replace l1b info parameters of type bool ['b1'] by a integer
+        representation to match requirements for netCDF attribute data type
+        rules
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if content is None:
+                attdict[key] = ""
+
+    def _open_file(self):
+        self._rootgrp = Dataset(self.path, "w")
+
+    def _write_to_file(self):
+        self._rootgrp.close()
+
 
 class Level2Output(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
     """
 
-    def __init__(self, l2, output_handler):
+    def __init__(self, data, output_handler):
         super(Level2Output, self).__init__()
-        self.l2 = l2
+        self.data = data
         self.output_handler = output_handler
-        self._export_l2()
+        self._export_content()
 
-    def set_base_export_path(self, path):
-        self.base_export_path = path
-
-    def get_full_export_path(self, startdt):
-        self._get_full_export_path(startdt)
-        return self.export_path
-
-    def _export_l2(self):
+    def _export_content(self):
         self.path = self.full_path
         self._open_file()
         self._write_global_attributes()
         self._populate_data_groups()
         self._write_to_file()
 
-    def _write_global_attributes(self):
-        attr_dict = self.output_handler.get_global_attribute_dict(self.l2)
-        self._set_global_attributes(attr_dict)
 
-    def _populate_data_groups(self):
+class Level3Output(NCDataFile):
+    """ Class to export a Level-3 data object into a netcdf file.
+    Differences to Level2Output are small but substantial (e.g.
+    with the additional time dimension) """
 
-        dimdict = self.l2.dimdict
-        dims = dimdict.keys()
+    def __init__(self, data, output_handler):
+        super(Level3Output, self).__init__()
+        self.data = data
+        self.output_handler = output_handler
+        self._export_content()
 
-        for key in dims:
-                self._rootgrp.createDimension(key, dimdict[key])
-
-        for parameter_name, attribute_dict in self.output_handler.variable_def:
-
-            data = self.l2.get_parameter_by_name(parameter_name)
-
-            # Convert datetime objects to number
-            if type(data[0]) is datetime:
-                data = date2num(data, self.time_def.units,
-                                self.time_def.calendar)
-
-            # Convert bool objects to integer
-            if data.dtype.str == "|b1":
-                data = np.int8(data)
-
-            dimensions = tuple(dims[0:len(data.shape)])
-            var = self._rootgrp.createVariable(
-                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-            var[:] = data
-
-            # Add Parameter Attributes
-            for key in attribute_dict.keys():
-                setattr(var, key, attribute_dict[key])
-
-    @property
-    def export_path(self):
-        """ Evoking this property will also create the directory if it
-        does not already exists """
-        return self.output_handler.get_directory_from_l2(self.l2, create=True)
-
-    @property
-    def export_filename(self):
-        """ Returns the filename for the level2 output file """
-        return self.output_handler.get_filename_from_l2(self.l2)
-
-    @property
-    def full_path(self):
-        return os.path.join(self.export_path, self.export_filename)
-
-
-class L3SDataNC(NCDataFile):
-    """
-    Class to export a l2data object into a netcdf file
-    """
-
-    def __init__(self):
-        super(L3SDataNC, self).__init__()
-        self.parameter = []
-        self.export_path = None
-        self.metadata = None
-        self.l2 = None
-        self.parameter_attributes = get_parameter_attributes("l3c")
-
-    def set_export_folder(self, path):
-        self.export_path = path
-
-    def set_metadata(self, metadata):
-        self.metadata = metadata
-
-    def export(self, l3):
-        self._validate()
+    def _export_content(self):
         self._open_file()
-        self._create_root_group(self.metadata.attdict)
-        self._populate_data_groups(l3)
+        self._write_global_attributes()
+        self._populate_data_groups(level3=True)
         self._add_time_dummy_variable()
         self._write_to_file()
-
-    def export_parameter_dict(self, pardict, dimdict=None):
-        self._validate()
-        self._open_file()
-        self._create_root_group(self.metadata.attdict)
-        self._add_time_dummy_variable()
-        self._populate_data_groups_from_dict(pardict, dimdict)
-        self._write_to_file()
-
-    def _validate(self):
-        # Validate the export directory
-        path = self.export_path
-        validate_directory(path)
-        # get full output filename
-        filenaming = PysiralOutputFilenaming()
-        filename = filenaming.from_l3s(self.metadata)
-        self.path = os.path.join(path, filename)
-
-    def _populate_data_groups(self, l3):
-        dimdict = l3.dimdict
-        dims = dimdict.keys()
-        for key in dims:
-                self._rootgrp.createDimension(key, dimdict[key])
-        for parameter_name in l3.parameter_list:
-            data = l3.get_parameter_by_name(parameter_name)
-            # Add time axis
-            if parameter_name not in ["lon", "lat"]:
-                data = np.array([data])
-                dimensions = tuple(dims[0:len(data.shape)])
-            else:
-                dimensions = tuple(dims[1:len(data.shape)+1])
-            var = self._rootgrp.createVariable(
-                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-            var[:] = data
-            # Add Parameter Attributes
-            attribute_dict = self._get_variable_attr_dict(parameter_name)
-            for key in attribute_dict.keys():
-                setattr(var, key, attribute_dict[key])
-
-    def _populate_data_groups_from_dict(self, pardict, dimdict):
-        dims = dimdict.keys()
-        for key in dims:
-                self._rootgrp.createDimension(key, dimdict[key])
-        for parameter_name in sorted(pardict.keys()):
-            data = pardict[parameter_name]
-            dimensions = tuple(dims[0:len(data.shape)])
-            var = self._rootgrp.createVariable(
-                    parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-            var[:] = np.array([data])
-            # Add Parameter Attributes
-            attribute_dict = self._get_variable_attr_dict(parameter_name)
-            for key in attribute_dict.keys():
-                setattr(var, key, attribute_dict[key])
 
     def _add_time_dummy_variable(self):
         var = self._rootgrp.createVariable("time", "f8", ('time'),

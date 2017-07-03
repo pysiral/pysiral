@@ -1,8 +1,12 @@
+# This is the default grid definition for northern hemisphere radar altimeter data
+
 hemisphere: north
- 
-grid_tag: EASE2
-    
+
+grid_tag: ease2nh
+
 resolution_tag: 25km
+
+grid_id: NH25kmEASE2
 
 projection:
     proj: laea
@@ -21,4 +25,3 @@ extent:
     dy: 25000
     numx: 432
     numy: 432
-

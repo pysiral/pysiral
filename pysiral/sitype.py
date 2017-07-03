@@ -25,6 +25,15 @@ class SITypeBaseClass(AuxdataBaseClass):
         return sitype, msg
 
 
+class NoneHandler(SITypeBaseClass):
+    """ Dummy handler only returning NaN's """
+    def __init__(self):
+        super(NoneHandler, self).__init__()
+
+    def _get_along_track_sitype(self, l2):
+        return np.full((l2.n_records), np.nan), ""
+
+
 class OsiSafSIType(SITypeBaseClass):
 
     def __init__(self):

@@ -402,7 +402,7 @@ class L1bPreProcJob(DefaultLoggingClass):
         self.pysiral_config = ConfigInfo()
 
         # Initialize the time range and set to monthly per default
-        self.time_range = TimeRangeRequest()
+        self.time_range = None
 
         # Error Status
         self.error = ErrorStatus()
@@ -436,7 +436,7 @@ class L1bPreProcJob(DefaultLoggingClass):
 
         # Set and validate the time range
         start_date, stop_date = self.options.start_date, self.options.stop_date
-        self.time_range.set_range(start_date, stop_date)
+        self.time_range = TimeRangeRequest(start_date, stop_date)
 
         # Check if any errors in definitions
         self.time_range.error.raise_on_error()
