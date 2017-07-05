@@ -204,10 +204,6 @@ class SICCI2TfmraEnvisat(BaseRetracker):
         # short link to options
         option = self._options.threshold
 
-        # scale sigma0 (may be necessary for inter-mission sigma0 biases)
-        if "sigma_scaling" in option:
-            sigma0 = sigma0 * option.sigma_scaling
-
         threshold = np.full(sigma0.shape, np.nan)
         
         # correct for sigma0 drift in Envisat Data
