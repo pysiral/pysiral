@@ -346,7 +346,7 @@ sitype:
     icdc_nasateam:
         pyclass: ICDCNasaTeam
         long_name: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
-        filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v14__0.04__90.nc"
+        filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v15__0.04__90.nc"
         local_repository: icdc_nasateam
         options:
             variable_name: my_sea_ice_area_fraction_0to100_limitedexpansion
