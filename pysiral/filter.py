@@ -5,15 +5,17 @@ Created on Sat Apr 23 15:30:53 2016
 @author: Stefan
 """
 from pysiral.config import options_from_dictionary
+from pysiral.logging import DefaultLoggingClass
 from pysiral.flag import FlagContainer, ORCondition
 
 from scipy.interpolate import interp1d
 import numpy as np
 
 
-class FilterBaseClass(object):
+class FilterBaseClass(DefaultLoggingClass):
 
     def __init__(self):
+        super(FilterBaseClass, self).__init__(self.__class__.__name__)
         self._flag = None
 
     def set_options(self, **opt_dict):
@@ -26,12 +28,42 @@ class FilterBaseClass(object):
     def flag(self):
         return self._flag
 
+    @property
+    def options(self):
+        return self._options
+
 
 # %% Filter for Level2Processor
 
+class L1bBackscatterDriftCorrection(FilterBaseClass):
+    """ Very specific filter to correct backscatter drift. The filter
+    applies a monthly linear correction based on the drift factor and
+    base period. """
+
+    def __init__(self):
+        super(L1bBackscatterDriftCorrection, self).__init__()
+        self.log.name = self.__class__.__name__
+
+    def _apply_filter(self, l1b):
+        """ Apply the backscatter correction """
+        # Get the backscatter value
+        datagroup = self.options.l1b_data_group
+        name = self.options.l1b_parameter_name
+        value = l1b.get_parameter_by_name(datagroup, name)
+        # Compute the drift correction
+        year_base, month_base = self.options.backscatter_base_period
+        year, month = l1b.info.start_time.year, l1b.info.start_time.month
+        time_shift_factor = (year_base - year) * 12 + \
+            (month_base - month)
+        sigma0_drift_factor = self.options.backscatter_drift_factor
+        sigma0_drift = time_shift_factor * sigma0_drift_factor
+        # Apply and update the backscatter
+        value += sigma0_drift
+        l1b.set_parameter_by_name(datagroup, name, value)
+
+
 class L2ParameterValidRange(FilterBaseClass):
-    """
-    Filters freeboard outliers by simple min/max thresholding
+    """ Filters freeboard outliers by simple min/max thresholding
     Requires l2 data container and target (either: "afrb", "rfrb")
     """
 
