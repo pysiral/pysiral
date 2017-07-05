@@ -308,6 +308,9 @@ class Level2Processor(DefaultLoggingClass):
             # TODO: move to level1bData class
             self._apply_range_corrections(l1b)
 
+            # Apply a pre-filter of the l1b data (can be none)
+            self._apply_l1b_prefilter(l1b)
+
             # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
@@ -395,6 +398,19 @@ class Level2Processor(DefaultLoggingClass):
         """ Apply the range corrections """
         for correction in self._l2def.corrections:
             l1b.apply_range_correction(correction)
+
+    def _apply_l1b_prefilter(self, l1b):
+        """ Apply filtering of l1b variables """
+        # Backward compatibility with older l2 setting files
+        if "l1b_pre_filtering" not in self._l2def:
+            return
+        # Apply filters
+        names, filters = td_branches(self._l2def.l1b_pre_filtering)
+        for name, filter_def in zip(names, filters):
+            self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
+            l1bfilter = get_filter(filter_def.pyclass)
+            l1bfilter.set_options(**filter_def.options)
+            l1bfilter.apply_filter(l1b)
 
     def _get_sea_ice_concentration(self, l2):
         """ Get sea ice concentration along track from auxdata """
