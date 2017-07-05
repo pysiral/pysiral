@@ -1020,8 +1020,7 @@ class Level2ProductDefinition(DefaultLoggingClass):
     def _parse_l2_settings(self):
         try:
             self._l2def = get_yaml_config(self._l2_settings_file)
-        except:
-            msg = "Error parsing l2 settings file: %s" % self._l2_settings_file
+        except Exception, msg:
             self.error.add_error("invalid-l2-settings", msg)
             self.error.raise_on_error()
 
