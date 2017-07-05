@@ -431,7 +431,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Get sea ice type (myi fraction) along track from auxdata """
 
         # Call the sitype handler
-        sitype, msg = self._sitype.get_along_track_sitype(l2)
+        sitype, sitype_unc, msg = self._sitype.get_along_track_sitype(l2)
 
         # Report any messages from the sitype handler
         if not msg == "":
@@ -444,6 +444,7 @@ class Level2Processor(DefaultLoggingClass):
         # Add to l2data
         if not error_status:
             l2.sitype.set_value(sitype)
+            l2.sitype.set_uncertainty(sitype_unc)
 
         # on error: display error messages as warning and return status flag
         # (this will cause the processor to report and skip this orbit segment)

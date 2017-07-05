@@ -21,8 +21,8 @@ class SITypeBaseClass(AuxdataBaseClass):
         self._msg = ""
 
     def get_along_track_sitype(self, l2):
-        sitype, msg = self._get_along_track_sitype(l2)
-        return sitype, msg
+        sitype, sitype_uncertainty, msg = self._get_along_track_sitype(l2)
+        return sitype, sitype_uncertainty, msg
 
 
 class NoneHandler(SITypeBaseClass):
@@ -125,7 +125,8 @@ class OsiSafSIType(SITypeBaseClass):
         fillvalues = np.where(sitype == -1)[0]
         sitype[fillvalues] = 5
         sitype = np.array([translator[value] for value in sitype])
-        return sitype
+        sitype_uncertainty = np.full(sitype.shape, 0.0)
+        return sitype, sitype_uncertainty, self._msg
 
 
 class ICDCNasaTeam(SITypeBaseClass):
@@ -154,8 +155,8 @@ class ICDCNasaTeam(SITypeBaseClass):
         self._get_data(l2)
         if self.error.status:
             return None, self.error.message
-        sic = self._get_sitype_track(l2)
-        return sic, self._msg
+        sitype, sitype_uncertainty = self._get_sitype_track(l2)
+        return sitype, sitype_uncertainty, self._msg
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -167,6 +168,9 @@ class ICDCNasaTeam(SITypeBaseClass):
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
 
+        opt = self._options
+
+        # Check if file is already loaded
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
             self._msg = "ICDCNasaTeam: Daily grid already present"
@@ -257,7 +261,15 @@ class MYIDefault(SITypeBaseClass):
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
         is_ice = np.where(l2.sic > 0)[0]
         sitype[is_ice] = 1.0
-        return sitype, ""
+        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        return sitype, sitype_uncertainty, ""
+
+    @property
+    def uncertainty_default(self):
+        if "uncertainty_default" in self._options:
+            return self._options.uncertainty_default
+        else:
+            return 0.0
 
 
 class FYIDefault(SITypeBaseClass):
@@ -269,7 +281,15 @@ class FYIDefault(SITypeBaseClass):
     def _get_along_track_sitype(self, l2):
         """ Every ice is fyi (sitype = 0) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
-        return sitype, ""
+        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        return sitype, sitype_uncertainty, ""
+
+    @property
+    def uncertainty_default(self):
+        if "uncertainty_default" in self._options:
+            return self._options.uncertainty_default
+        else:
+            return 0.0
 
 
 def get_l2_sitype_handler(name):
