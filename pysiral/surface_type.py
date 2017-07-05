@@ -246,7 +246,7 @@ class SurfaceTypeClassifier(object):
 
             # Obtain radar mode specific options
             # (with failsaife for older settings files)
-            if self._options.has_key(radar_mode):
+            if radar_mode in self._options:
                 options = self._options[radar_mode]
             else:
                 options = self._options
@@ -363,18 +363,6 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         self._classify_ocean(options)
         self._classify_leads(options)
         self._classify_sea_ice(options)
-        
-    def _sigma0_drift_correction(self):
-        # estimate time shift in months to the given base period
-        year_base = self._options.envisat_backscatter_base_period[0] 
-        month_base = self._options.envisat_backscatter_base_period[1] 
-        time_shift_factor = (year_base - self._year) * 12 + \
-            (month_base - self._month)
-            
-        # calculate sigma0 drift shift
-        sigma0_drift_factor = self._options.envisat_backscatter_drift_factor
-        sigma0_drift = time_shift_factor * sigma0_drift_factor
-        return sigma0_drift
 
     def _classify_ocean(self, options):
         opt = options.ocean
@@ -393,13 +381,7 @@ class SICCI2Envisat(SurfaceTypeClassifier):
 
         opt = options.lead
         parameter = self._classifier
-
         lead = ANDCondition()
-        
-        # correct for sigma0 drift in Envisat Data
-        if "envisat_backscatter_drift_factor" in self._options:
-            sigma0_drift = self._sigma0_drift_correction()
-            parameter.sigma0 += sigma0_drift
 
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
@@ -439,11 +421,6 @@ class SICCI2Envisat(SurfaceTypeClassifier):
 
         ice = ANDCondition()
 
-        # correct for sigma0 drift in Envisat Data
-        if "envisat_backscatter_drift_factor" in self._options:
-            sigma0_drift = self._sigma0_drift_correction()
-            parameter.sigma0 += sigma0_drift
-            
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
 
