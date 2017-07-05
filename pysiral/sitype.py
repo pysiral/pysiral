@@ -175,19 +175,30 @@ class ICDCNasaTeam(SITypeBaseClass):
         # construct filename
         path = self._get_local_repository_filename(l2)
 
-        # Validation
+        # Check if the file exists, add an error if not
+        # (error is not raised at this point)
         if not os.path.isfile(path):
             self._msg = "ICDCNasaTeam: File not found: %s " % path
             self.error.add_error("auxdata_missing_sitype", self._msg)
             return
 
+        # Bulk read the netcdf file
         self._data = ReadNC(path)
-        myi_fraction = getattr(self._data, self._options.variable_name)
+
+        # There are multiple myi concentrations fields in the product
+        # The one used here is defined in the auxdata definition file
+        # in the pysiral config folder (`auxdata_def.yaml`)
+        # -> root.sitype.icdc_nasateam.options.variable_name
+        myi_fraction = getattr(self._data, opt.variable_name)
         self._data.ice_type = myi_fraction[0, :, :]
 
-        # This step is important for calculation of image coordinates
-        # self._data.ice_type = np.flipud(self._data.ice_type)
-        # self._data.confidence_level = np.flipud(self._data.confidence_level)
+        # Same for the uncertainty variable
+        # (see description directly above for how to access variable namde
+        #  definition)
+        myi_fraction_unc = getattr(self._data, opt.uncertainty_variable_name)
+        self._data.ice_type_uncertainty = myi_fraction_unc[0, :, :]
+
+        # Report and save current data period
         self._msg = "ICDCNasaTeam: Loaded SIType file: %s" % path
         self._current_date = self._requested_date
 
@@ -218,17 +229,21 @@ class ICDCNasaTeam(SITypeBaseClass):
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract along track data from grid
-        myi_fraction_percent = ndimage.map_coordinates(
+        myi_concentration_percent = ndimage.map_coordinates(
             self._data.ice_type, [iy, ix], order=0)
 
+        myi_concentration_uncertainty = ndimage.map_coordinates(
+            self._data.ice_type_uncertainty, [iy, ix], order=0)
+
         # Convert percent [0-100] into fraction [0-1]
-        sitype = myi_fraction_percent/100.
+        sitype = myi_concentration_percent/100.
+        sitype_uncertainty = myi_concentration_uncertainty/100.
 
         # Remove invalid parameter
         invalid = np.where(sitype < 0)[0]
         sitype[invalid] = 0.0
 
-        return sitype
+        return sitype, sitype_uncertainty
 
 
 class MYIDefault(SITypeBaseClass):
