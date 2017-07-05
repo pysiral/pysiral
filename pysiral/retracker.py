@@ -185,6 +185,20 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
 
+    def _sigma0_drift_correction(self):
+        # estimate time shift in months to the given base period
+        year_base = self._options.envisat_backscatter_base_period[0] 
+        month_base = self._options.envisat_backscatter_base_period[1]
+        year_current = self._l1b.info.start_time.year
+        month_current = self._l1b.info.start_time.month
+        time_shift_factor = (year_base - year_current) * 12 + \
+            (month_base - month_current)
+            
+        # calculate sigma0 drift shift
+        sigma0_drift_factor = self._options.envisat_backscatter_drift_factor
+        sigma0_drift = time_shift_factor * sigma0_drift_factor
+        return sigma0_drift
+
     def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
 
         # short link to options
@@ -195,6 +209,11 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             sigma0 = sigma0 * option.sigma_scaling
 
         threshold = np.full(sigma0.shape, np.nan)
+        
+        # correct for sigma0 drift in Envisat Data
+        if "envisat_backscatter_drift_factor" in self._options:
+            sigma0_drift = self._sigma0_drift_correction()
+            sigma0 += sigma0_drift
 
         # legacy option where threshold is float in settings file
         if type(option) is float:

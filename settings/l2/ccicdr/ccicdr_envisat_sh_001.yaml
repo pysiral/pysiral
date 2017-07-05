@@ -51,6 +51,8 @@ corrections:
 surface_type:
     pyclass: SICCI2Envisat
     options:
+        envisat_backscatter_drift_factor: -0.003269253
+        envisat_backscatter_base_period: [2011, 6]
         ocean:
             peakiness_max: 5.0
             ice_concentration_min: 5.0
@@ -71,7 +73,6 @@ retracker:
     ocean: 
         pyclass: NoneRetracker
         options: null
-
     lead: 
         pyclass: SICCI2TfmraEnvisat
         options:
@@ -88,6 +89,9 @@ retracker:
             uncertainty:
                 type: fixed
                 value: 0.1            
+            # correction factor and reference period for backscatter drift 
+            envisat_backscatter_drift_factor: -0.003269253
+            envisat_backscatter_base_period: [2011, 6]
     sea_ice: 
         pyclass: SICCI2TfmraEnvisat
         options: 
@@ -107,7 +111,10 @@ retracker:
             uncertainty:
                 type: fixed
                 value: 0.1            
-
+            # correction factor and reference period for backscatter drift 
+            envisat_backscatter_drift_factor: -0.003269253
+            envisat_backscatter_base_period: [2011, 6]
+            
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
 ssa:
     pyclass: SSASmoothedLinear
