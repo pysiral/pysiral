@@ -249,6 +249,10 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 value += coef * sigma0**(i+1)
             threshold[indices] = value[indices]
 
+        else:
+            msg = "treshold type not recognized: %s" % str(option.type)
+            raise ValueError(msg)
+
         return threshold
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
