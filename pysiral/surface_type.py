@@ -227,7 +227,8 @@ class SurfaceTypeClassifier(object):
             classifier = getattr(l1b.classifier, classifier_name)
             self.add_classifiers(classifier, classifier_name)
 
-        # add month from L1b
+        # add year/month from L1b
+        self._year = l1b.info.start_time.year
         self._month = l1b.info.start_time.month
 
         # add sea ice concentration
@@ -362,6 +363,18 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         self._classify_ocean(options)
         self._classify_leads(options)
         self._classify_sea_ice(options)
+        
+    def _sigma0_drift_correction(self):
+        # estimate time shift in months to the given base period
+        year_base = self._options.envisat_backscatter_base_period[0] 
+        month_base = self._options.envisat_backscatter_base_period[1] 
+        time_shift_factor = (year_base - self._year) * 12 + \
+            (month_base - self._month)
+            
+        # calculate sigma0 drift shift
+        sigma0_drift_factor = self._options.envisat_backscatter_drift_factor
+        sigma0_drift = time_shift_factor * sigma0_drift_factor
+        return sigma0_drift
 
     def _classify_ocean(self, options):
         opt = options.ocean
@@ -382,6 +395,11 @@ class SICCI2Envisat(SurfaceTypeClassifier):
         parameter = self._classifier
 
         lead = ANDCondition()
+        
+        # correct for sigma0 drift in Envisat Data
+        if "envisat_backscatter_drift_factor" in self._options:
+            sigma0_drift = self._sigma0_drift_correction()
+            parameter.sigma0 += sigma0_drift
 
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
@@ -421,6 +439,11 @@ class SICCI2Envisat(SurfaceTypeClassifier):
 
         ice = ANDCondition()
 
+        # correct for sigma0 drift in Envisat Data
+        if "envisat_backscatter_drift_factor" in self._options:
+            sigma0_drift = self._sigma0_drift_correction()
+            parameter.sigma0 += sigma0_drift
+            
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
 
