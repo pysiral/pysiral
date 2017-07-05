@@ -615,7 +615,7 @@ class DefaultCommandLineArguments(object):
             "l2-output": {
                 "action": "store",
                 "dest": "l2_output",
-                "default": "default",
+                "default": "l2i_default",
                 "required": False,
                 "help": 'l2 outputdef id'},
 
