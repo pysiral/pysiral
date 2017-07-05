@@ -25,7 +25,8 @@ auxdata:
         options: null
     sitype:
         name: fyi_default
-        options: null
+        options: 
+            uncertainty_default: 0.1
     snow:
         name: icdc_climatology_south
         options:
