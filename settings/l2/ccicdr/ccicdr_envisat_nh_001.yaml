@@ -46,12 +46,27 @@ corrections:
     - solid_earth_tide
     - geocentric_polar_tide
 
+# Apply corrections of filters to the l1b input data
+# All pyclasses must be present in the pysiral.filter module
+l1b_pre_filtering:
+
+    # Apply a drift correction to Envisat backcatter
+    # NOTE: 
+    #   The backscatter correction is not part of the Envisat l1bdata v030. In future updates the correction
+    #   will be applied in the actual pre-processor and this correction should be removed from the Level-2
+    #   processor recipe
+    envisat_backscatter_drift_correction: 
+        pyclass: L1bBackscatterDriftCorrection
+        options: 
+            l1b_data_group: classifier
+            l1b_parameter_name: sigma0
+            backscatter_drift_factor: -0.003269253
+            backscatter_base_period: [2011, 6]
+
 # Surface type classification algorithm
 surface_type:
     pyclass: SICCI2Envisat
     options:
-        envisat_backscatter_drift_factor: -0.003269253
-        envisat_backscatter_base_period: [2011, 6]
         ocean:
             peakiness_max: 5.0
             ice_concentration_min: 5.0
@@ -89,9 +104,10 @@ retracker:
             uncertainty:
                 type: fixed
                 value: 0.1
-            # correction factor and reference period for backscatter drift    
-            envisat_backscatter_drift_factor: -0.003269253
-            envisat_backscatter_base_period: [2011, 6]
+            # correction factor and reference period for backscatter drift
+            # backscatter_drift_correction:
+            #     backscatter_drift_factor: *backscatter_drift_factor
+            #     backscatter_base_period: *backscatter_base_period
     sea_ice:
         pyclass: SICCI2TfmraEnvisat
         options:
@@ -112,8 +128,9 @@ retracker:
                 type: fixed
                 value: 0.1
             # correction factor and reference period for backscatter drift 
-            envisat_backscatter_drift_factor: -0.003269253
-            envisat_backscatter_base_period: [2011, 6]
+            # backscatter_drift_correction:
+            #     backscatter_drift_factor: *backscatter_drift_factor
+            #     backscatter_base_period: *backscatter_base_period
 
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
 ssa:
