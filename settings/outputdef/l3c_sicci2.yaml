@@ -229,6 +229,14 @@ variables:
     scale_factor: 1.0
     add_offset: 0.0  
 
+  valid_fraction:
+    long_name: "fraction of either lead or ice waveforms"
+    standard_name: n_valid_waveforms
+    units: fraction
+    coordinates: "latitude longitude time"
+    scale_factor: 1.0
+    add_offset: 0.0  
+
   lead_fraction:
     long_name: "lead waveforms per grid cell"
     standard_name: lead_fraction
