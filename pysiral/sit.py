@@ -73,15 +73,26 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         rho_i = rho_i_fyi - myi_fraction * (rho_i_fyi - rho_i_myi)
 
         # Compute uncertainty of sea ice density
+        # Note: it has been decided to use a simplified computation of
+        # sea ice density uncertainty, since a simple Gaussion error
+        # propagation does not cut it, as the the two (fyi & myi) reference
+        # uncertainties are not independent (linked via scaling factor).
+        # One could add the covariance matrix, but this is hardly justified
+        # given the already very basic assumptions for fyi and myi density
+        # uncertainty
         if "uncertainty" in self._options:
             unc = self._options.uncertainty
-            deriv_myi_fraction = rho_i_myi - rho_i_fyi
-            deriv_fyi_density = 1. - myi_fraction
-            deriv_myi_density = myi_fraction
-            rho_i_unc = np.sqrt(
-                    (deriv_myi_fraction*myi_fraction.uncertainty)**2. +
-                    (deriv_fyi_density*unc.fyi_density)**2. +
-                    (deriv_myi_density*unc.myi_density)**2.)
+            rho_i_unc = unc.fyi_density
+            rho_i_unc += myi_fraction * (unc.myi_density - unc.fyi_density)
+
+            # Old gaussian error propagation code
+#            deriv_myi_fraction = rho_i_myi - rho_i_fyi
+#            deriv_fyi_density = 1. - myi_fraction
+#            deriv_myi_density = myi_fraction
+#            rho_i_unc = np.sqrt(
+#                    (deriv_myi_fraction*myi_fraction.uncertainty)**2. +
+#                    (deriv_fyi_density*unc.fyi_density)**2. +
+#                    (deriv_myi_density*unc.myi_density)**2.)
         # Use fixed value for uncertainty (or 0 if unspecified)
         else:
             unc = 0.0
