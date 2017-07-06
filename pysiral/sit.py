@@ -79,11 +79,17 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         # uncertainties are not independent (linked via scaling factor).
         # One could add the covariance matrix, but this is hardly justified
         # given the already very basic assumptions for fyi and myi density
-        # uncertainty
+        # uncertainty.
+        # Here, the uncertainty is based on the fyi and myi density
+        # uncertainties scaled with the myi fraction. To reflect the
+        # myi_fraction uncertainty, the sea ice density uncertainty is
+        # slightly increased in regions of higher myi_fraction uncertainty
         if "uncertainty" in self._options:
             unc = self._options.uncertainty
             rho_i_unc = unc.fyi_density
             rho_i_unc += myi_fraction * (unc.myi_density - unc.fyi_density)
+            rho_i_unc += (unc.fyi_density - unc.myi_density) * (
+                    myi_fraction.uncertainty)
 
             # Old gaussian error propagation code
 #            deriv_myi_fraction = rho_i_myi - rho_i_fyi
