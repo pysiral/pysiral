@@ -65,7 +65,7 @@ l1b_pre_filtering:
 
 # Surface type classification algorithm
 surface_type:
-    pyclass: SICCI2Envisat
+    pyclass: SICCI2
     options:
         ocean:
             peakiness_max: 5.0

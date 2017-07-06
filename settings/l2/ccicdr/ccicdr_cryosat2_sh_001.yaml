@@ -51,7 +51,7 @@ corrections:
 
 # Surface type classification algorithm
 surface_type:
-    pyclass: SICCI2Cryosat2
+    pyclass: SICCI2
     options:
         sar:
             ocean:
