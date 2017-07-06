@@ -82,8 +82,12 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
                     (deriv_myi_fraction*myi_fraction.uncertainty)**2. +
                     (deriv_fyi_density*unc.fyi_density)**2. +
                     (deriv_myi_density*unc.myi_density)**2.)
+        # Use fixed value for uncertainty (or 0 if unspecified)
         else:
-            rho_i_unc = np.full(rho_i.shape, 0.0, dtype=np.float32)
+            unc = 0.0
+            if "uncertainty_fixed_value" in self._options:
+                unc = self._options.uncertainty_fixed_value
+            rho_i_unc = np.full(rho_i.shape, unc, dtype=np.float32)
 
         return rho_i, rho_i_unc
 
