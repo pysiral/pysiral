@@ -243,9 +243,9 @@ class ICDCNasaTeam(SITypeBaseClass):
         sitype = myi_concentration_percent/100.
         sitype_uncertainty = myi_concentration_uncertainty/100.
 
-        # Remove invalid parameter
-        invalid = np.where(sitype < 0)[0]
-        sitype[invalid] = 0.0
+        # Remove invalid (negative) values
+        sitype[np.where(sitype < 0)] = 0.0
+        sitype_uncertainty[np.where(sitype_uncertainty < 0)] = 0.0
 
         return sitype, sitype_uncertainty
 
