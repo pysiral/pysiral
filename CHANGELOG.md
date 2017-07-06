@@ -1,5 +1,23 @@
 # History of changes
 
+## Version 0.4.2 (TBD)
+
+**New Features**
+* [sitype]  MYI concentration uncertainty support added
+* [l2 processing] Added l1b prefilter to the l2proc workflow
+
+**Bugfixes**
+* [l3 processing] #396: sea ice type uncertainty not filtered by freeboard mask in default l3 settings
+* [output] #397: valid_fraction missing in SICCI-2 L3C output
+
+**Changes**
+* [sit] computation of sea ice density uncertainty updated
+* [surface_type] Merged SICCI2Envisat and SICCI2CryoSat2 surface type classes
+
+**Settings**
+* [l2 processing] Added Envisat backscatter drift correction as l1b prefilter
+
+
 ## Version 0.4.1 (3. July 2017)
 
 **New Features**
