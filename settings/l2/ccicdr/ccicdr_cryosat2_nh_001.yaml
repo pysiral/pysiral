@@ -21,7 +21,7 @@ auxdata:
         name: dtu15
         options: null
     sic:
-        name: osisaf409
+        name: osisafcdr
         options: null
     sitype:
         name: icdc_nasateam
