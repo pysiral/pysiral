@@ -313,9 +313,6 @@ class Level2Processor(DefaultLoggingClass):
 
             # Initialize the orbit level-2 data container
             l2 = Level2Data(l1b)
-            l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
-                            source_primary_filename=source_primary_filename,
-                            l2_algorithm_id=self._l2def.id)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)
@@ -374,6 +371,9 @@ class Level2Processor(DefaultLoggingClass):
             self._apply_thickness_filter(l2)
 
             # Create output files
+            l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
+                            source_primary_filename=source_primary_filename,
+                            l2_algorithm_id=self._l2def.id)
             self._create_l2_outputs(l2)
 
             # Add data to orbit stack
