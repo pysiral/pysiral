@@ -70,4 +70,5 @@ class AuxdataBaseClass(object):
 
     @property
     def options(self):
-        return self._options.makeReport()
+        return self._options
+
