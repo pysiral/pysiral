@@ -287,11 +287,32 @@ class Level1bData(object):
         self.waveform.set_waveform_data(power, range, self.radar_modes)
 
     def get_parameter_by_name(self, data_group, parameter_name):
+        """ API method to retrieve any parameter from any data group """
         try:
             data_group = getattr(self, data_group)
             return getattr(data_group, parameter_name)
         except:
             return None
+
+    def set_parameter_by_name(self, data_group_name, parameter_name, value):
+        """ API method to set any parameter in any data group """
+        # Sanity check
+        if len(value) != self.n_records:
+            raise ValueError(
+                    "value for %s.%s has wrong shape: %s" % (
+                            data_group_name,
+                            parameter_name,
+                            str(value.shape)))
+        try:
+            # Get data group
+            data_group = getattr(self, data_group_name)
+            # Update data group
+            setattr(data_group, parameter_name, value)
+            # Update l1b container
+            setattr(self, data_group_name, data_group)
+        except:
+            raise ValueError("Could not set value for %s.%s" % (
+                   data_group_name, parameter_name))
 
     @property
     def n_records(self):
@@ -305,6 +326,7 @@ class Level1bData(object):
         for radar_mode_flag in radar_mode_flag_list:
             radar_mode_list.append(radar_modes.name(radar_mode_flag))
         return ";".join(radar_mode_list)
+
 
 class L1bConstructor(Level1bData):
     """

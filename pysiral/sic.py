@@ -90,7 +90,18 @@ class OsiSafSIC(SICBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
+        # Unique to this class is the possiblity to auto merge
+        # products. The current implementation supports only two products
         path = self._local_repository
+        # The path needs to be completed if two products shall be used
+        if "auto_product_change" in self.options:
+            opt = self.options.auto_product_change
+            product_index = int(l2.info.start_time > opt.date_product_change)
+            product_def = opt.osisaf_product_def[product_index]
+            path = os.path.join(path, product_def["subfolder"])
+            self.set_filenaming(product_def["filenaming"])
+            self.set_long_name(product_def["long_name"])
+
         for subfolder_tag in self._subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)

@@ -21,7 +21,7 @@ auxdata:
         name: dtu15
         options: null
     sic:
-        name: osisaf409
+        name: osisafcdr
         options: null
     sitype:
         name: icdc_nasateam
@@ -49,7 +49,7 @@ corrections:
     
 # Surface type classification algorithm
 surface_type: 
-    pyclass: SICCI2Cryosat2
+    pyclass: SICCI2
     options: 
         sar:
             ocean:
@@ -154,9 +154,10 @@ sit:
         water_density: 1024.0
         fyi_density: 916.7
         myi_density: 882.0
+        # Base values for pure ice type uncertainties from Alexandrov et al., 2010, The Cryosphere
         uncertainty:
-            fyi_density: 10.0
-            myi_density: 10.0
+            fyi_density: 35.7
+            myi_density: 23.0
         
 # List of filter at different stages of l2 procesing 
 # (can be list of filters)

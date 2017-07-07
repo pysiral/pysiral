@@ -22,7 +22,7 @@ auxdata:
         name: dtu15
         options: null
     sic:
-        name: osisaf409
+        name: osisafcdr
         options: null
     sitype:
         name: fyi_default
@@ -47,9 +47,26 @@ corrections:
     - solid_earth_tide
     - geocentric_polar_tide
 
+# Apply corrections of filters to the l1b input data
+# All pyclasses must be present in the pysiral.filter module
+l1b_pre_filtering:
+
+    # Apply a drift correction to Envisat backcatter
+    # NOTE: 
+    #   The backscatter correction is not part of the Envisat l1bdata v030. In future updates the correction
+    #   will be applied in the actual pre-processor and this correction should be removed from the Level-2
+    #   processor recipe
+    envisat_backscatter_drift_correction: 
+        pyclass: L1bBackscatterDriftCorrection
+        options: 
+            l1b_data_group: classifier
+            l1b_parameter_name: sigma0
+            backscatter_drift_factor: -0.003269253
+            backscatter_base_period: [2011, 6]
+
 # Surface type classification algorithm
 surface_type:
-    pyclass: SICCI2Envisat
+    pyclass: SICCI2
     options:
         ocean:
             peakiness_max: 5.0
@@ -71,7 +88,6 @@ retracker:
     ocean: 
         pyclass: NoneRetracker
         options: null
-
     lead: 
         pyclass: SICCI2TfmraEnvisat
         options:
@@ -87,7 +103,7 @@ retracker:
             first_maximum_local_order: 1
             uncertainty:
                 type: fixed
-                value: 0.1            
+                value: 0.15
     sea_ice: 
         pyclass: SICCI2TfmraEnvisat
         options: 
@@ -106,8 +122,9 @@ retracker:
             first_maximum_local_order: 1
             uncertainty:
                 type: fixed
-                value: 0.1            
+                value: 0.15
 
+            
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
 ssa:
     pyclass: SSASmoothedLinear
@@ -144,9 +161,10 @@ sit:
         water_density: 1024.0
         fyi_density: 916.7
         myi_density: 882.0
+        # Base values for pure ice type uncertainties from Alexandrov et al., 2010, The Cryosphere
         uncertainty:
-            fyi_density: 10.0
-            myi_density: 10.0        
+            fyi_density: 35.7
+            myi_density: 23.0
 
 # List of filter at different stages of l2 procesing
 # (can be list of filters)

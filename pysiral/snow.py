@@ -99,7 +99,18 @@ class Warren99(SnowBaseClass):
 
         # Apply ice_type (myi_fraction correction)
         scaling = l2.sitype * self._options.fyi_correction_factor + 0.5
+
+        # The scaling factor affects the snow depth ...
         snow.depth *= scaling
+
+        # ... and the uncertainty. Here it is assumed that the uncertainty
+        # is similar affected by the scaling factor.
+        snow.depth_uncertainty *= scaling
+        # the uncertainty of the myi fraction is ackknowledged by adding
+        # an additional term that depennds on snow depth, the magnitude of
+        # scaling and the sea ice type uncertainty
+        scaling_uncertainty = snow.depth*(1.0-scaling)*l2.sitype.uncertainty
+        snow.depth_uncertainty += scaling_uncertainty
 
         # Smooth snow depth (if applicable)
         if self._options.smooth_snow_depth:
@@ -130,6 +141,7 @@ class Warren99(SnowBaseClass):
 
         # Get the uncertainties
         sd_unc, sdens_unc = self._get_warren_uncertainty(month, sd)
+
 
         # Put everything in a container
         snow = SnowParameterContainer()

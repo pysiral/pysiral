@@ -2,13 +2,13 @@
 """
 Created on Fri Sep 09 17:33:45 2016
 
-@author: Stefan
+@author: Stefan Hendricks
+
+This module is dedicatet to convert between different time standards
 """
 
 from pysiral.config import get_pysiral_local_path
-
 from datetime import datetime, timedelta
-#from netCDF4 import date2num, num2date
 
 import numpy as np
 
@@ -88,7 +88,7 @@ class UTCTAIConverter(object):
         for line in content:
             if re.match("^#", line):
                 continue
-            arr =  line.strip().split()
+            arr = line.strip().split()
             self.epoch_seconds = np.append(self.epoch_seconds, int(arr[0]))
             self.leap_seconds = np.append(self.leap_seconds, int(arr[1]))
             # Compute datetime timestamp of leap seconds occurence
@@ -96,18 +96,16 @@ class UTCTAIConverter(object):
             self.leap_seconds_timestamp = np.append(
                 self.leap_seconds_timestamp, timestamp)
 
-
     def _get_leap_seconds_for_utc_time(self, datetime):
         """ Returns applicable leap seconds for given datetime """
         # find the closet leap seconds change
-        timedeltas =  datetime - self.leap_seconds_timestamp
+        timedeltas = datetime - self.leap_seconds_timestamp
         positive_day_offsets = np.array([td.days > 0 for td in timedeltas])
         applicable_ls_indices = np.where(positive_day_offsets)[0]
         try:
             return self.leap_seconds[applicable_ls_indices[-1]]
         except:
             return 0
-
 
     @property
     def local_ls_ietf_definition(self):
@@ -117,10 +115,9 @@ class UTCTAIConverter(object):
 
 
 if __name__ == "__main__":
-
+    # XXX: test code
     converter = UTCTAIConverter()
     tai = np.array([datetime(1981, 1, 2)], dtype=object)
     utc = converter.tai2utc(tai)
     print tai
     print utc
-

@@ -251,7 +251,7 @@ class Level2Data(object):
     def _get_attr_l2_algorithm_id(self, *args):
         return self._l2_algorithm_id
 
-    def _get_attr_utc_now(self, *args):
+    def _get_attr_utcnow(self, *args):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _get_attr_time_resolution(self, *args):

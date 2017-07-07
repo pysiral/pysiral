@@ -120,6 +120,10 @@ l3_masks:
             - sea_surface_anomaly
             - sea_surface_anomaly_uncertainty
             - mean_sea_surface
+            - ice_density
+            - ice_density_uncertainty
+            - sea_ice_type
+            - sea_ice_type_uncertainty
 
 # All these parameter will be set to nan if sea_ice_concentration is 0 or nan
 # Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
