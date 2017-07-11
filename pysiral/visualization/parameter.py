@@ -133,13 +133,12 @@ class GridMapAverageParameter(GridMapParameterBase):
         return self.pardef.cmap
 
     def get_label(self):
-        return "$\Delta$ "+self.pardef.label+" ("+self.pardef.unit+")"
+        return self.pardef.label+" ("+self.pardef.unit+")"
 
     def set_parameter(self, grid_stack, parameter_name):
-        stop
+        self.grid = np.nanmean(grid_stack, axis=0)
         self.pardef = self._parameter_definitions[parameter_name]
 
     @property
     def short_name(self):
         return self.pardef.short_name + "_average"
-
