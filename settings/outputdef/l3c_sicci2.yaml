@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv0.9.nc"
+filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv1.0.nc"
 product_level_subfolder: l3c_sicci2
 
 # A list of global attributes 
