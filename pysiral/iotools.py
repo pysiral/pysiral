@@ -135,7 +135,7 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
 
 
 def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
-                      version="default"):
+                            version="default", allow_multiple_baselines=False):
     """
     Returns a list of l1bdata files for a given mission, hemisphere, version
     and time range
@@ -156,22 +156,36 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
         error = ErrorStatus()
         msg = "Invalid type of time_range, required: %s, was %s" % (
             type(time_range), type(TimeRangeIteration))
-        error.add("invalid-timerange-type", msg)
+        error.add_error("invalid-timerange-type", msg)
         error.raise_on_error()
 
-    # 1) get list of full month
+    # 1) get list of all files for monthly folders
     yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
     l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
     directory = os.path.join(l1b_repo, hemisphere, yyyy, mm)
-    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+    all_l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
 
-    # 2) check if month subset is requested
-    tr = time_range
-    if time_range.is_full_month:
-        return l1bdata_files
-    else:
-        subset = [f for f in l1bdata_files if l1bdata_in_trange(f, tr)]
-        return subset
+    # 2) First filtering step: Check if different algorithm baseline values
+    # exist in the list of l1bdata files
+    algorithm_baselines = [l1bdata_get_baseline(f) for f in all_l1bdata_files]
+    baselines = np.unique(np.array(algorithm_baselines))
+    n_baselines = len(baselines)
+    if not allow_multiple_baselines and n_baselines > 1:
+        error = ErrorStatus()
+        baseline_str_list = ", ".join(baselines)
+        msg = "Multiple l1bdata baselines (%g) [%s] found in directory: %s" % (
+                n_baselines, baseline_str_list, directory)
+        error.add_error("multiple-l1b-baselines", msg)
+        error.raise_on_error()
+
+    # 3) Check if files are in requested time range
+    # This serves two purporses: a) filter out files with timestamps that do
+    # not belong in the directory. b) get a subset if required
+    l1bdata_files_checked = [l1bdata_file for l1bdata_file in all_l1bdata_files
+                             if l1bdata_in_trange(l1bdata_file, time_range)]
+
+    # Done return list (empty or not)
+    return l1bdata_files_checked
 
 
 def l1bdata_in_trange(fn, tr):
@@ -182,3 +196,11 @@ def l1bdata_in_trange(fn, tr):
     # Compute overlap between two start/stop pairs
     is_overlap = fnattr.start <= tr.stop and fnattr.stop >= tr.start
     return is_overlap
+
+
+def l1bdata_get_baseline(filename):
+    """ Returns version string in l1bdata filename  """
+    # Parse infos from l1bdata filename
+    fnattr = PysiralOutputFilenaming()
+    fnattr.parse_filename(filename)
+    return fnattr.version
