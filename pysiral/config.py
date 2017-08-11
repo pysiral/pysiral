@@ -619,6 +619,14 @@ class DefaultCommandLineArguments(object):
                 "required": False,
                 "help": 'l2 outputdef id'},
 
+            # fetch the level-2 settings file
+            "l2p-output": {
+                "action": "store",
+                "dest": "l2p_output",
+                "default": "l2p_default",
+                "required": False,
+                "help": 'l2p outputdef id'},
+
             # set the run tag for the Level-2 Processor
             "run-tag": {
                 "action": "store",
