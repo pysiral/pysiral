@@ -40,7 +40,9 @@ def pysiral_l2preproc():
 
     # Specifically add an output handler
     product_def.add_output_definition(
-            args.l2p_output, overwrite_protection=args.overwrite_protection)
+            args.l2i_product_dir,
+            args.l2p_output,
+            overwrite_protection=args.overwrite_protection)
 
     # Prepare DataHandler
     # The l2 pre-processor requires l2i input files
