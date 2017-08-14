@@ -7,7 +7,6 @@ from pysiral.datahandler import L2iDataHandler
 from pysiral.l2preproc import (Level2PreProcessor,
                                Level2PreProcProductDefinition)
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import file_basename
 
 from datetime import timedelta
 import argparse
