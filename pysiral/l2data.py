@@ -443,6 +443,19 @@ class Level2PContainer(DefaultLoggingClass):
         # Set up a metadata container
         metadata = Level2iMetadata()
         metadata.set_attribute("n_records", len(data["timestamp"]))
+        metadata.set_attribute("start_time", data["timestamp"][0])
+        metadata.set_attribute("stop_time", data["timestamp"][-1])
+
+        # XXX: Very ugly, but required due to a non-standard use of
+        #      region_subset_set (originally idea to crop regions in
+        #      Level-2 Processor)
+        region_name = "north" if np.nanmean(data["latitude"]) > 0 else "south"
+        metadata.subset_region_name = region_name
+
+        # Retrieve the following constant attributes from the first
+        # l2i object in the stack
+        info = self.l2i_stack[0].info
+        metadata.set_attribute("mission", info.mission_id)
 
         # Set up a timeorbit group
         timeorbit = Level2iTimeOrbit()
