@@ -222,7 +222,7 @@ class RadarModes(object):
 
 class TimeRangeRequest(DefaultLoggingClass):
 
-    _PERIODS = ["monthly", "custom"]
+    _PERIODS = ["monthly", "daily", "custom"]
 
     def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
                  raise_if_empty=False):
