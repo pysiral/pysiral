@@ -57,8 +57,8 @@ class Level2Data(object):
 
         # Metadata
         self._auxdata_source_dict = {}
-        self._source_primary_filename = "unavailable"
-        self._l2_algorithm_id = "unavailable"
+        self._source_primary_filename = "unkown"
+        self._l2_algorithm_id = "unkown"
 
         # Create Level2 Data Groups
         self._create_l2_data_items()
@@ -137,7 +137,7 @@ class Level2Data(object):
             attribute = attr_getter(*args)
             return attribute
         except AttributeError:
-            return "attr_unavailable"
+            return "unkown"
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
@@ -236,16 +236,16 @@ class Level2Data(object):
         return "%.4f" % value
 
     def _get_attr_source_sic(self, *args):
-        return self._auxdata_source_dict["sic"]
+        return self._auxdata_source_dict.get("sic", "unkown")
 
     def _get_attr_source_sitype(self, *args):
-        return self._auxdata_source_dict["sitype"]
+        return self._auxdata_source_dict.get("sitype", "unkown")
 
     def _get_attr_source_mss(self, *args):
-        return self._auxdata_source_dict["mss"]
+        return self._auxdata_source_dict.get("mss", "unkown")
 
     def _get_attr_source_snow(self, *args):
-        return self._auxdata_source_dict["snow"]
+        return self._auxdata_source_dict.get("snow", "unkown")
 
     def _get_attr_source_primary(self, *args):
         return self._source_primary_filename
