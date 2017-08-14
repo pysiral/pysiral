@@ -346,8 +346,8 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         self.timestamp = l2i_stack["timestamp"]
         # Set the position
         dummy_altitude = np.full(l2i_stack["longitude"].shape, np.nan)
-        self.set_position(self, l2i_stack["longitude"],
-                          l2i_stack["latitude"], dummy_altitude)
+        self.set_position(l2i_stack["longitude"], l2i_stack["latitude"],
+                          dummy_altitude)
 
     def from_l2i_nc_import(self, l2i):
         """ Creates a TimeOrbit group object from l2i import. This is
@@ -467,6 +467,7 @@ class Level2PContainer(DefaultLoggingClass):
         data = {}
         for parameter in self._parameter_to_merge:
             data[parameter] = np.array([], dtype=np.float32)
+        return data
 
     @property
     def l2i_stack(self):
