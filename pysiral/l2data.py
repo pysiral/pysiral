@@ -10,6 +10,8 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
+from pysiral.logging import DefaultLoggingClass
+from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 
 import numpy as np
 from datetime import datetime
@@ -317,6 +319,47 @@ class Level2Data(object):
         return ssh
 
 
+class Level2iMetadata(L1bMetaData):
+    """ Container for Level-2 intermediate meta data (Essentially
+    mimicks the L1bdata equivalent since the data location
+    are idential. This also allows to directly use the l1b.info
+    object directly) """
+
+    def __init__(self):
+        super(Level2iMetadata, self).__init__()
+
+
+class Level2iTimeOrbit(L1bTimeOrbit):
+    """ Container for Level-2 intermediate time orbit group (Essentially
+    mimicks the L1bdata equivalent since the data location
+    are idential. This also allows to directly use the l1b.time_orbit
+    oject directly) """
+
+    def __init__(self):
+        super(Level2iTimeOrbit, self).__init__(None)
+
+    def from_l2i_stack(self, l2i_stack):
+        """ Creates a TimeOrbit group object from l2i import. This is
+        necessary when the Level2Data object shall be constructed from an
+        l2i netcdf product """
+        # Set the timestamp
+        self.timestamp = l2i_stack["timestamp"]
+        # Set the position
+        dummy_altitude = np.full(l2i_stack["longitude"].shape, np.nan)
+        self.set_position(self, l2i_stack["longitude"],
+                          l2i_stack["latitude"], dummy_altitude)
+
+    def from_l2i_nc_import(self, l2i):
+        """ Creates a TimeOrbit group object from l2i import. This is
+        necessary when the Level2Data object shall be constructed from an
+        l2i netcdf product """
+        # Set the timestamp
+        self.timestamp = l2i.timestamp
+        # Set the position
+        dummy_altitude = np.full(l2i.longitude.shape, np.nan)
+        self.set_position(self, l2i.longitude, l2i.latitude, dummy_altitude)
+
+
 class L2ElevationArray(np.ndarray):
     """
     Recipe from:
@@ -373,6 +416,65 @@ class L2ElevationArray(np.ndarray):
         self.set_value(value)
         self.uncertainty[indices] = np.nan
         self.bias[indices] = np.nan
+
+
+class Level2PContainer(DefaultLoggingClass):
+
+    _parameter_to_merge = ["timestamp", "longitude", "latitude",
+                           "radar_freeboard", "radar_freeboard_uncertainty",
+                           "freeboard", "freeboard_uncertainty",
+                           "sea_ice_thickness",
+                           "sea_ice_thickness_uncertainty"]
+
+    def __init__(self):
+        super(Level2PContainer, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+        self._l2i_stack = []
+
+    def append_l2i(self, l2i):
+        self._l2i_stack.append(l2i)
+
+    def get_merged_l2(self):
+        """ Returns a Level2Data object with data from all l2i objects """
+
+        # Merge the parameter
+        data = self._get_merged_data()
+
+        # Set up a metadata container
+        metadata = Level2iMetadata()
+        metadata.set_attribute("n_records", len(data["timestamp"]))
+
+        # Set up a timeorbit group
+        timeorbit = Level2iTimeOrbit()
+        timeorbit.from_l2i_stack(data)
+
+        l2 = Level2Data(metadata, timeorbit)
+
+        return l2
+
+    def _get_merged_data(self):
+        data = self._empty_data_group
+        for l2i in self.l2i_stack:
+            is_valid_frb = np.where(np.isfinite(l2i.freeboard))[0]
+            for parameter in self._parameter_to_merge:
+                stack_data = getattr(l2i, parameter)
+                stack_data = stack_data[is_valid_frb]
+                data[parameter] = np.append(data[parameter], stack_data)
+        return data
+
+    @property
+    def _empty_data_group(self):
+        data = {}
+        for parameter in self._parameter_to_merge:
+            data[parameter] = np.array([], dtype=np.float32)
+
+    @property
+    def l2i_stack(self):
+        return self._l2i_stack
+
+    @property
+    def n_l2i_objects(self):
+        return len(self.l2i_stack)
 
 
 class AttributeList(object):
