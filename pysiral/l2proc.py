@@ -312,7 +312,7 @@ class Level2Processor(DefaultLoggingClass):
             self._apply_l1b_prefilter(l1b)
 
             # Initialize the orbit level-2 data container
-            l2 = Level2Data(l1b)
+            l2 = Level2Data(l1b.info, l1b.time_orbit)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)
