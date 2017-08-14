@@ -45,13 +45,13 @@ class Level2Data(object):
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
 
-    def __init__(self, l1b):
+    def __init__(self, metadata, time_orbit):
 
         # Copy necessary fields form l1b
         self.error = ErrorStatus()
-        self._n_records = l1b.n_records
-        self.info = l1b.info
-        self.track = l1b.time_orbit
+        self._n_records = metadata.n_records
+        self.info = metadata
+        self.track = time_orbit
 
         # Metadata
         self._auxdata_source_dict = {}
@@ -91,7 +91,7 @@ class Level2Data(object):
         ii = retracker.indices
         self.range[ii] = retracker.range[ii]
         self.range.uncertainty[ii] = retracker.uncertainty[ii]
-        self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
+        self.elev[ii] = self.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
     def set_metadata(self, auxdata_source_dict=None,
@@ -139,7 +139,7 @@ class Level2Data(object):
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
-            setattr(self, item, L2ElevationArray(shape=(self._n_records)))
+            setattr(self, item, L2ElevationArray(shape=(self.n_records)))
 
     def _check_if_valid_parameter(self, parameter_name):
         """ Performs a test if parameter name is a valid level-2 parameter
@@ -279,8 +279,8 @@ class Level2Data(object):
     @property
     def footprint_spacing(self):
         spacing = great_circle(
-            (self.track.latitude[1], self.track.longitude[1]),
-            (self.track.latitude[0], self.track.longitude[0])).meters
+            (self.latitude[1], self.longitude[1]),
+            (self.latitude[0], self.longitude[0])).meters
         return spacing
 
     @property
@@ -299,6 +299,10 @@ class Level2Data(object):
 
     @property
     def latitude(self):
+        return self.track.latitude
+
+    @property
+    def altitude(self):
         return self.track.latitude
 
     @property
