@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "l2p_{pysiral_version:filename}_{mission_id}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}.nc"
+filenaming: "l2p_{mission_id}_{hemisphere_code}_{startdt:%Y%m%d}_{pysiral_version:filename}.nc"
 product_level_subfolder: l2p
 
 # A list of global attributes 

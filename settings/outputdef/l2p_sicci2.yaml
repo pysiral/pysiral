@@ -2,7 +2,7 @@
 
 # Metadata
 metadata: 
-  output_id: l2p_default
+  output_id: l2p_sicci2
   data_level: 2
   data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
