@@ -224,13 +224,16 @@ class TimeRangeRequest(DefaultLoggingClass):
 
     _PERIODS = ["monthly", "custom"]
 
-    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[]):
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
+                 raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
         self.set_range(start_dt, stop_dt)
         self.set_period(period)
         self.set_exclude_month(exclude_month)
+        if raise_if_empty:
+            self.raise_if_empty()
 
     def __repr__(self):
         output = "TimeRangeRequest object:\n"
