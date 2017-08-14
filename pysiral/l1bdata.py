@@ -601,7 +601,8 @@ class L1bTimeOrbit(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        self._info.check_n_records(len(value))
+        if self._info is not None:
+            self._info.check_n_records(len(value))
         self._timestamp = value
 
     @property
@@ -616,9 +617,10 @@ class L1bTimeOrbit(object):
 
     def set_position(self, longitude, latitude, altitude):
         # Check dimensions
-        self._info.check_n_records(len(longitude))
-        self._info.check_n_records(len(latitude))
-        self._info.check_n_records(len(altitude))
+        if self._info is not None:
+            self._info.check_n_records(len(longitude))
+            self._info.check_n_records(len(latitude))
+            self._info.check_n_records(len(altitude))
         # All fine => set values
         self._longitude = longitude
         self._latitude = latitude
