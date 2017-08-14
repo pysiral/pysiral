@@ -77,6 +77,7 @@ def pysiral_l2preproc():
         l2i_daily_files = l2i_handler.get_files_for_day(day.start)
         if len(l2i_daily_files) == 0:
             l2preproc.log.info("- no l2i products, skip day")
+            continue
 
         # Process the orbits
         l2preproc.process_l2i_files(l2i_daily_files)
