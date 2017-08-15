@@ -7,14 +7,14 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L3C-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}-fv1.0.nc"
+filenaming: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv1.0.nc"
 product_level_subfolder: l3c_sicci2
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   title: "ESA-CCI Sea Ice ECV: Arctic Ocean Sea Ice Thickness; Antarctic Ocean Sea Ice Thickness"
-  institution: "AWI"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI)"
   source: "Satellite radar altimetry"
   history: ""
   references: ""
@@ -39,19 +39,18 @@ global_attributes:
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
   geospatial_lon_max: "{geospatial_lon_max}"
-  time_coverage_start: "20020501T000000Z"
-  time_coverage_end: "20150331T235959Z"
-  time_coverage_duration: "13 years"
-  time_coverage_resolution: "Monthly" 
+  time_coverage_start: "{time_coverage_start}"
+  time_coverage_end: "{time_coverage_end}"
+  time_coverage_duration: "{time_coverage_duration}"
   standard_name_vocabulary: ""
-  license: "n.a."
-  platform: "{mission_name}"
-  sensor: "{mission_sensor}"
-  snow_source: "{source_snow}"
-  sic_source: "{source_sic}"
-  water_density: "1023.9 kg/m^3"
-  ice_density: "variable"
-  snow_density: "variable"
+  license: "freely distributed"
+  source_mission_name: "{source_mission_name}"
+  source_mission_id: "{source_mission_id}"
+  source_mission_sensor: "{source_mission_sensor}"
+  source_hemisphere: "{source_hemisphere}"
+  source_auxdata_snow: "{source_auxdata_snow}"
+  source_auxdata_sic: "{source_auxdata_sic}"
+  source_auxdata_sitype: "{source_auxdata_sitype}"  
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-3 parameter
