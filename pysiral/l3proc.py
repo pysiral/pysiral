@@ -550,13 +550,21 @@ class L3DataGrid(DefaultLoggingClass):
         except KeyError:
             parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
             self.log.warn("Parameter not availabe: %s" % name)
+        except Exception, msg:
+            print msg
+            sys.exit(1)
         return parameter
 
-    def _get_attr_mission_id(self, *args):
+    def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
         if args[0] == "uppercase":
             mission_ids = mission_ids.upper()
         return mission_ids
+
+    def _get_attr_source_mission_name(self, *args):
+        ids = self.metadata.mission_ids
+        names = ",".join([MISSION_NAME_DICT[m] for m in ids.split(",")])
+        return names
 
     def _get_attr_grid_id(self, *args):
         grid_id = self.griddef.grid_id
@@ -564,17 +572,14 @@ class L3DataGrid(DefaultLoggingClass):
             grid_id = grid_id.upper()
         return grid_id
 
-    def _get_attr_mission_sensor(self, *args):
+    def _get_attr_source_mission_sensor(self, *args):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
         return mission_sensor
 
-    def _get_attr_hemisphere(self, *args):
+    def _get_attr_source_hemisphere(self, *args):
         return self.hemisphere
-
-    def _get_attr_hemisphere_code(self, *args):
-        return self.hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
         return self.metadata.start_period.strftime(dtfmt)
@@ -598,14 +603,39 @@ class L3DataGrid(DefaultLoggingClass):
         longitude = self._l3["longitude"]
         return self._gett_attr_geospatial_str(np.nanmax(longitude))
 
-    def _gett_attr_geospatial_str(self, value):
+    def _get_attr_geospatial_str(self, value):
         return "%.4f" % value
 
-    def _get_attr_source_primary(self, *args):
-        return self._source_primary_filename
+    def _get_attr_source_auxdata_sic(self, *args):
+        return self.metadata.source_auxdata_sic
+
+    def _get_attr_source_auxdata_snow(self, *args):
+        return self.metadata.source_auxdata_snow
+
+    def _get_attr_source_auxdata_sitype(self, *args):
+        return self.metadata.source_auxdata_sitype
 
     def _get_attr_utc_now(self, *args):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.now().isoformat()
+
+    def _get_attr_time_coverage_start(self, *args):
+        datetime = self.metadata.time_coverage_start
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_end(self, *args):
+        datetime = self.metadata.time_coverage_end
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_duration(self, *args):
+        return self.metadata.time_coverage_duration
 
     def flipud(self):
         for parameter in self.parameters:
@@ -651,6 +681,10 @@ class L3DataGrid(DefaultLoggingClass):
     @property
     def l3def(self):
         return self._l3def
+
+    @property
+    def hemisphere(self):
+        return self.metadata.hemisphere
 
 
 class L3MetaData(object):
