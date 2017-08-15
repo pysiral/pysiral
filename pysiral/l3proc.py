@@ -5,7 +5,8 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral.config import ConfigInfo, get_yaml_config, SENSOR_NAME_DICT
+from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
+                            MISSION_NAME_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -16,7 +17,9 @@ from pysiral.surface_type import SurfaceType
 
 from datetime import datetime
 import numpy as np
+import sys
 import os
+import re
 
 
 # %% Level 3 Processor
@@ -60,7 +63,6 @@ class Level3Processor(DefaultLoggingClass):
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source,
                                       prefilter.nan_targets)
-
             # Add to stack
             stack.add(l2i)
 
@@ -280,6 +282,9 @@ class L3DataGrid(DefaultLoggingClass):
             return attribute
         except AttributeError:
             return "attr_unavailable"
+        except Exception, msg:
+            print msg
+            sys.exit(1)
 
     def init_parameter_fields(self, parameter_names, level):
         """ Initialize output parameter fields """
@@ -591,19 +596,19 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_geospatial_lat_min(self, *args):
         latitude = self._l3["latitude"]
-        return self._gett_attr_geospatial_str(np.nanmin(latitude))
+        return self._get_attr_geospatial_str(np.nanmin(latitude))
 
     def _get_attr_geospatial_lat_max(self, *args):
         latitude = self._l3["latitude"]
-        return self._gett_attr_geospatial_str(np.nanmax(latitude))
+        return self._get_attr_geospatial_str(np.nanmax(latitude))
 
     def _get_attr_geospatial_lon_min(self, *args):
         longitude = self._l3["longitude"]
-        return self._gett_attr_geospatial_str(np.nanmin(longitude))
+        return self._get_attr_geospatial_str(np.nanmin(longitude))
 
     def _get_attr_geospatial_lon_max(self, *args):
         longitude = self._l3["longitude"]
-        return self._gett_attr_geospatial_str(np.nanmax(longitude))
+        return self._get_attr_geospatial_str(np.nanmax(longitude))
 
     def _get_attr_geospatial_str(self, value):
         return "%.4f" % value
@@ -760,14 +765,6 @@ class L3MetaData(object):
     def mission(self):
         mission_ids = self.mission_ids.split(",")
         return "_".join(mission_ids)
-
-    @property
-    def start_period(self):
-        return self.start_time
-
-    @property
-    def stop_period(self):
-        return self.stop_time
 
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
