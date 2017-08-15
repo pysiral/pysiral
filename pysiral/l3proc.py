@@ -205,6 +205,7 @@ class L3DataGrid(DefaultLoggingClass):
         # Grid size definition
         self._griddef = job.grid
         self._l3def = job.l3def
+        self._period = job.period
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -262,6 +263,7 @@ class L3DataGrid(DefaultLoggingClass):
         l3_metadata = L3MetaData()
         l3_metadata.get_missions_from_stack(stack)
         l3_metadata.get_data_period_from_stack(stack)
+        l3_metadata.get_time_coverage_from_period(self._period)
         l3_metadata.get_projection_parameter(job.grid)
         self.set_metadata(l3_metadata)
 
@@ -696,8 +698,10 @@ class L3MetaData(object):
 
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
+        "time_coverage_start", "time_coverage_end", "time_coverage_duration",
         "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
-        "hemisphere", "mission_sensor"]
+        "hemisphere", "mission_sensor", "source_auxdata_sic",
+        "source_auxdata_sitype", "source_auxdata_snow"]
 
     def __init__(self):
         # Init all fields
@@ -720,6 +724,13 @@ class L3MetaData(object):
         self.set_attribute("stop_time", np.amax(stack.stop_time))
         # XXX: Only monthly periods are currently supported
         self.set_attribute("period_label", self.start_time.strftime("%B %Y"))
+
+    def get_time_coverage_from_period(self, period):
+        """ Get the start and end of requested data period """
+        self.set_attribute("time_coverage_start", period.start_dt)
+        self.set_attribute("time_coverage_end", period.stop_dt)
+        self.set_attribute("time_coverage_duration",
+                           period.base_duration_isoformat)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
@@ -850,7 +861,7 @@ class Level3GridDefinition(GridDefinition):
 
 class Level3ProductDefinition(DefaultLoggingClass):
 
-    def __init__(self, l3_settings_file, grid, output):
+    def __init__(self, l3_settings_file, grid, output, period):
         """ Container for the Level3Processor settings
 
         Arguments:
@@ -863,6 +874,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         self._l3_settings_file = l3_settings_file
         self._output = [output]
         self._grid = grid
+        self._period = period
         self._parse_l3_settings()
 
         # Report settings to log handler
@@ -898,6 +910,10 @@ class Level3ProductDefinition(DefaultLoggingClass):
     @property
     def l3def(self):
         return self._l3
+
+    @property
+    def period(self):
+        return self._period
 
     @property
     def l3_masks(self):
