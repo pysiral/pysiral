@@ -126,6 +126,11 @@ class L2iDataStack(DefaultLoggingClass):
         # Flags
         self._has_surface_type = False
 
+        # Save global attricbutes from l2i (will be overwritten for each
+        # l2i file, but it is assumed that general information, e.g.
+        # on auxdata remains the same)
+        self._l2i_info = None
+
         # Create parameter stacks
         self._initialize_stacks()
 
@@ -162,6 +167,8 @@ class L2iDataStack(DefaultLoggingClass):
         self._l2i_count += 1
         self._n_records += l2i.n_records
 
+        self._l2i_info = l2i.info
+
         # Get projection coordinates for l2i locations
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
@@ -190,6 +197,10 @@ class L2iDataStack(DefaultLoggingClass):
     def parameter_stack(self):
         dimx, dimy = self.griddef.extent.numx, self.griddef.extent.numy
         return [[[] for _ in range(dimx)] for _ in range(dimy)]
+
+    @property
+    def l2i_info(self):
+        return self._l2i_info
 
 
 class L3DataGrid(DefaultLoggingClass):
@@ -264,8 +275,11 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Compile metadata")
         l3_metadata = L3MetaData()
         l3_metadata.get_missions_from_stack(stack)
+        # Actual data coverage
         l3_metadata.get_data_period_from_stack(stack)
+        # Requested time coverage (might not be the actual coverage)
         l3_metadata.get_time_coverage_from_period(self._period)
+        l3_metadata.get_auxdata_infos(stack.l2i_info)
         l3_metadata.get_projection_parameter(job.grid)
         self.set_metadata(l3_metadata)
 
@@ -736,6 +750,13 @@ class L3MetaData(object):
         self.set_attribute("time_coverage_end", period.stop_dt)
         self.set_attribute("time_coverage_duration",
                            period.base_duration_isoformat)
+
+    def get_auxdata_infos(self, l2i_info):
+        """ Get information on auxiliary data sources from l2i global
+        attributes """
+        self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
+        self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
+        self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
