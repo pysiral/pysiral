@@ -21,7 +21,8 @@ from pysiral.helper import month_iterator, get_month_time_range
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
+from isodate.duration import Duration
+from isodate import duration_isoformat
 
 import re
 import os
@@ -468,6 +469,27 @@ class TimeRangeRequest(DefaultLoggingClass):
     def iterations(self):
         return self.get_iterations()
 
+    @property
+    def base_period(self):
+        return self._period
+
+    @property
+    def base_duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def base_duration_isoformat(self):
+        return duration_isoformat(self.base_duration)
+
 
 class TimeRangeIteration(object):
 
@@ -527,6 +549,23 @@ class TimeRangeIteration(object):
     def date_label(self):
         dt_fmt = "%Y-%m-%d"
         return self.start.strftime(dt_fmt)+" till "+self.stop.strftime(dt_fmt)
+
+    @property
+    def duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def duration_isoformat(self):
+        return duration_isoformat(self.duration)
 
 
 class DefaultCommandLineArguments(object):
