@@ -5,7 +5,8 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral.config import ConfigInfo, get_yaml_config, SENSOR_NAME_DICT
+from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
+                            MISSION_NAME_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -16,7 +17,9 @@ from pysiral.surface_type import SurfaceType
 
 from datetime import datetime
 import numpy as np
+import sys
 import os
+import re
 
 
 # %% Level 3 Processor
@@ -60,7 +63,6 @@ class Level3Processor(DefaultLoggingClass):
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source,
                                       prefilter.nan_targets)
-
             # Add to stack
             stack.add(l2i)
 
@@ -124,6 +126,11 @@ class L2iDataStack(DefaultLoggingClass):
         # Flags
         self._has_surface_type = False
 
+        # Save global attricbutes from l2i (will be overwritten for each
+        # l2i file, but it is assumed that general information, e.g.
+        # on auxdata remains the same)
+        self._l2i_info = None
+
         # Create parameter stacks
         self._initialize_stacks()
 
@@ -160,6 +167,8 @@ class L2iDataStack(DefaultLoggingClass):
         self._l2i_count += 1
         self._n_records += l2i.n_records
 
+        self._l2i_info = l2i.info
+
         # Get projection coordinates for l2i locations
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
@@ -189,6 +198,10 @@ class L2iDataStack(DefaultLoggingClass):
         dimx, dimy = self.griddef.extent.numx, self.griddef.extent.numy
         return [[[] for _ in range(dimx)] for _ in range(dimy)]
 
+    @property
+    def l2i_info(self):
+        return self._l2i_info
+
 
 class L3DataGrid(DefaultLoggingClass):
     """
@@ -205,6 +218,7 @@ class L3DataGrid(DefaultLoggingClass):
         # Grid size definition
         self._griddef = job.grid
         self._l3def = job.l3def
+        self._period = job.period
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -261,7 +275,11 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Compile metadata")
         l3_metadata = L3MetaData()
         l3_metadata.get_missions_from_stack(stack)
+        # Actual data coverage
         l3_metadata.get_data_period_from_stack(stack)
+        # Requested time coverage (might not be the actual coverage)
+        l3_metadata.get_time_coverage_from_period(self._period)
+        l3_metadata.get_auxdata_infos(stack.l2i_info)
         l3_metadata.get_projection_parameter(job.grid)
         self.set_metadata(l3_metadata)
 
@@ -278,6 +296,9 @@ class L3DataGrid(DefaultLoggingClass):
             return attribute
         except AttributeError:
             return "attr_unavailable"
+        except Exception, msg:
+            print msg
+            sys.exit(1)
 
     def init_parameter_fields(self, parameter_names, level):
         """ Initialize output parameter fields """
@@ -550,13 +571,21 @@ class L3DataGrid(DefaultLoggingClass):
         except KeyError:
             parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
             self.log.warn("Parameter not availabe: %s" % name)
+        except Exception, msg:
+            print msg
+            sys.exit(1)
         return parameter
 
-    def _get_attr_mission_id(self, *args):
+    def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
         if args[0] == "uppercase":
             mission_ids = mission_ids.upper()
         return mission_ids
+
+    def _get_attr_source_mission_name(self, *args):
+        ids = self.metadata.mission_ids
+        names = ",".join([MISSION_NAME_DICT[m] for m in ids.split(",")])
+        return names
 
     def _get_attr_grid_id(self, *args):
         grid_id = self.griddef.grid_id
@@ -564,17 +593,14 @@ class L3DataGrid(DefaultLoggingClass):
             grid_id = grid_id.upper()
         return grid_id
 
-    def _get_attr_mission_sensor(self, *args):
+    def _get_attr_source_mission_sensor(self, *args):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
         return mission_sensor
 
-    def _get_attr_hemisphere(self, *args):
+    def _get_attr_source_hemisphere(self, *args):
         return self.hemisphere
-
-    def _get_attr_hemisphere_code(self, *args):
-        return self.hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
         return self.metadata.start_period.strftime(dtfmt)
@@ -584,28 +610,53 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_geospatial_lat_min(self, *args):
         latitude = self._l3["latitude"]
-        return self._gett_attr_geospatial_str(np.nanmin(latitude))
+        return self._get_attr_geospatial_str(np.nanmin(latitude))
 
     def _get_attr_geospatial_lat_max(self, *args):
         latitude = self._l3["latitude"]
-        return self._gett_attr_geospatial_str(np.nanmax(latitude))
+        return self._get_attr_geospatial_str(np.nanmax(latitude))
 
     def _get_attr_geospatial_lon_min(self, *args):
         longitude = self._l3["longitude"]
-        return self._gett_attr_geospatial_str(np.nanmin(longitude))
+        return self._get_attr_geospatial_str(np.nanmin(longitude))
 
     def _get_attr_geospatial_lon_max(self, *args):
         longitude = self._l3["longitude"]
-        return self._gett_attr_geospatial_str(np.nanmax(longitude))
+        return self._get_attr_geospatial_str(np.nanmax(longitude))
 
-    def _gett_attr_geospatial_str(self, value):
+    def _get_attr_geospatial_str(self, value):
         return "%.4f" % value
 
-    def _get_attr_source_primary(self, *args):
-        return self._source_primary_filename
+    def _get_attr_source_auxdata_sic(self, *args):
+        return self.metadata.source_auxdata_sic
+
+    def _get_attr_source_auxdata_snow(self, *args):
+        return self.metadata.source_auxdata_snow
+
+    def _get_attr_source_auxdata_sitype(self, *args):
+        return self.metadata.source_auxdata_sitype
 
     def _get_attr_utc_now(self, *args):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.now().isoformat()
+
+    def _get_attr_time_coverage_start(self, *args):
+        datetime = self.metadata.time_coverage_start
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_end(self, *args):
+        datetime = self.metadata.time_coverage_end
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_duration(self, *args):
+        return self.metadata.time_coverage_duration
 
     def flipud(self):
         for parameter in self.parameters:
@@ -652,6 +703,10 @@ class L3DataGrid(DefaultLoggingClass):
     def l3def(self):
         return self._l3def
 
+    @property
+    def hemisphere(self):
+        return self.metadata.hemisphere
+
 
 class L3MetaData(object):
 
@@ -662,8 +717,10 @@ class L3MetaData(object):
 
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
+        "time_coverage_start", "time_coverage_end", "time_coverage_duration",
         "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
-        "hemisphere", "mission_sensor"]
+        "hemisphere", "mission_sensor", "source_auxdata_sic",
+        "source_auxdata_sitype", "source_auxdata_snow"]
 
     def __init__(self):
         # Init all fields
@@ -686,6 +743,20 @@ class L3MetaData(object):
         self.set_attribute("stop_time", np.amax(stack.stop_time))
         # XXX: Only monthly periods are currently supported
         self.set_attribute("period_label", self.start_time.strftime("%B %Y"))
+
+    def get_time_coverage_from_period(self, period):
+        """ Get the start and end of requested data period """
+        self.set_attribute("time_coverage_start", period.start_dt)
+        self.set_attribute("time_coverage_end", period.stop_dt)
+        self.set_attribute("time_coverage_duration",
+                           period.base_duration_isoformat)
+
+    def get_auxdata_infos(self, l2i_info):
+        """ Get information on auxiliary data sources from l2i global
+        attributes """
+        self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
+        self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
+        self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
@@ -715,14 +786,6 @@ class L3MetaData(object):
     def mission(self):
         mission_ids = self.mission_ids.split(",")
         return "_".join(mission_ids)
-
-    @property
-    def start_period(self):
-        return self.start_time
-
-    @property
-    def stop_period(self):
-        return self.stop_time
 
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
@@ -816,7 +879,7 @@ class Level3GridDefinition(GridDefinition):
 
 class Level3ProductDefinition(DefaultLoggingClass):
 
-    def __init__(self, l3_settings_file, grid, output):
+    def __init__(self, l3_settings_file, grid, output, period):
         """ Container for the Level3Processor settings
 
         Arguments:
@@ -829,6 +892,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         self._l3_settings_file = l3_settings_file
         self._output = [output]
         self._grid = grid
+        self._period = period
         self._parse_l3_settings()
 
         # Report settings to log handler
@@ -864,6 +928,10 @@ class Level3ProductDefinition(DefaultLoggingClass):
     @property
     def l3def(self):
         return self._l3
+
+    @property
+    def period(self):
+        return self._period
 
     @property
     def l3_masks(self):

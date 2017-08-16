@@ -41,7 +41,8 @@ def pysiral_l3proc():
                                  overwrite_protection=False)
 
     # Compile the product def
-    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output)
+    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output,
+                                          period)
 
     # Initialize the Processor
     l3proc = Level3Processor(product_def)

@@ -21,7 +21,8 @@ from pysiral.helper import month_iterator, get_month_time_range
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
+from isodate.duration import Duration
+from isodate import duration_isoformat
 
 import re
 import os
@@ -32,12 +33,15 @@ from treedict import TreeDict
 
 import numpy as np
 
-PYSIRAL_VERSION = "0.4.5"
-PYSIRAL_VERSION_FILENAME = "045"
+PYSIRAL_VERSION = "0.5.0-dev"
+PYSIRAL_VERSION_FILENAME = "050dev"
 HOSTNAME = socket.gethostname()
 
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
                     "cryosat2": "SIRAL", "sentinel3a": "SRAL"}
+
+MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
+                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A"}
 
 
 class ConfigInfo(DefaultLoggingClass):
@@ -465,6 +469,27 @@ class TimeRangeRequest(DefaultLoggingClass):
     def iterations(self):
         return self.get_iterations()
 
+    @property
+    def base_period(self):
+        return self._period
+
+    @property
+    def base_duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def base_duration_isoformat(self):
+        return duration_isoformat(self.base_duration)
+
 
 class TimeRangeIteration(object):
 
@@ -524,6 +549,23 @@ class TimeRangeIteration(object):
     def date_label(self):
         dt_fmt = "%Y-%m-%d"
         return self.start.strftime(dt_fmt)+" till "+self.stop.strftime(dt_fmt)
+
+    @property
+    def duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def duration_isoformat(self):
+        return duration_isoformat(self.duration)
 
 
 class DefaultCommandLineArguments(object):
@@ -618,6 +660,14 @@ class DefaultCommandLineArguments(object):
                 "default": "l2i_default",
                 "required": False,
                 "help": 'l2 outputdef id'},
+
+            # fetch the level-2 settings file
+            "l2p-output": {
+                "action": "store",
+                "dest": "l2p_output",
+                "default": "l2p_default",
+                "required": False,
+                "help": 'l2p outputdef id'},
 
             # set the run tag for the Level-2 Processor
             "run-tag": {

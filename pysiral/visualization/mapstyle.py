@@ -168,18 +168,20 @@ class BasemapGridDef(object):
 class BasemapOrthoCrop(object):
 
     def __init__(self):
-        self.width_fract = 0.60
-        self.height_fract = 0.60
-        self.xpad_fact = 0.40
-        self.ypad_fact = 0.50
+        self.width_fract = 0.6
+        self.height_fract = 0.6
+        self.xpad_fact = 0.4
+        self.ypad_fact = 0.5
+        self.ypad_modifier = 0.4
         self.size = (0, 0)
 
     def get_crop_region(self, orig_size):
         self.size = orig_size
         self.width = int(self.width_fract*self.size[0])
         self.height = int(self.height_fract*self.size[1])
-        xpad, ypad = 0.40*(1.-self.width_fract), 0.5*(1.-self.height_fract)
-        ypad -= 0.4*(1.-self.height_fract)
+        xpad = self.xpad_fact*(1.-self.width_fract)
+        ypad = self.ypad_fact*(1.-self.height_fract)
+        ypad -= self.ypad_modifier*(1.-self.height_fract)
         xoff = int(xpad*self.size[0])
         yoff = int(ypad*self.size[1])
         x1, x2 = xoff, xoff+self.width
@@ -189,14 +191,30 @@ class BasemapOrthoCrop(object):
 
 class BasemapImageClip(object):
 
-    def __init__(self):
+    def __init__(self, patch_type="circle", patch_keyw={}):
         self.is_active = False
+        self.patch_type = patch_type
+        self.patch_keyw = patch_keyw
 
     def get_patch(self, x1, x2, y1, y2, ax):
         import matplotlib.patches as patches
         width, height = x2-x1, y2-y1
-        patch = patches.Circle((width/2, height/2), radius=width/2,
-                               transform=ax.transData)
+        if self.patch_type == "circle":
+            patch = patches.Circle((width/2, height/2), radius=width/2,
+                                   transform=ax.transData,
+                                   **self.patch_keyw)
+        elif self.patch_type == "fancybox":
+            pad_fact = 0.04
+            pad = pad_fact*width
+            x0, y0 = pad_fact*width, pad_fact*height
+            patch = patches.FancyBboxPatch(
+                        (x0, y0),
+                        (1.-2*pad_fact)*width,
+                        (1.-2*pad_fact)*height,
+                        boxstyle=patches.BoxStyle("Round", pad=pad),
+                        transform=ax.transData, **self.patch_keyw)
+        else:
+            raise ValueError("Unknown patch type: %s" % str(self.patch_type))
         return patch
 
 

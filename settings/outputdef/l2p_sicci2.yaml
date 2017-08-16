@@ -1,20 +1,20 @@
-# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+# This is the default output definition for the Level2Processor
 
 # Metadata
 metadata: 
-  output_id: l3c_sicci2
-  data_level: 3
-  data_level_description: Level-3 super-colocated (gridded geophysical parameters)
+  output_id: l2p_default
+  data_level: 2
+  data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv1.0.nc"
-product_level_subfolder: l3c_sicci2
+filenaming: "ESACCI-SEAICE-L2P-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{startdt:%Y%m%d}-fv1.0.nc"
+product_level_subfolder: l2p
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   title: "ESA-CCI Sea Ice ECV: Arctic Ocean Sea Ice Thickness; Antarctic Ocean Sea Ice Thickness"
-  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI)"
+  institution: "AWI"
   source: "Satellite radar altimetry"
   history: ""
   references: ""
@@ -39,27 +39,36 @@ global_attributes:
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
   geospatial_lon_max: "{geospatial_lon_max}"
-  time_coverage_start: "{time_coverage_start}"
-  time_coverage_end: "{time_coverage_end}"
-  time_coverage_duration: "{time_coverage_duration}"
+  time_coverage_start: "{startdt:%Y-%m-%d %H:%M:%S UTC}"
+  time_coverage_end: "{stopdt:%Y-%m-%d %H:%M:%S UTC}"
+  time_coverage_duration: "13 years"
+  time_coverage_resolution: "Monthly" 
   standard_name_vocabulary: ""
-  license: "freely distributed"
-  source_mission_name: "{source_mission_name}"
-  source_mission_id: "{source_mission_id}"
-  source_mission_sensor: "{source_mission_sensor}"
-  source_hemisphere: "{source_hemisphere}"
-  source_auxdata_snow: "{source_auxdata_snow}"
-  source_auxdata_sic: "{source_auxdata_sic}"
-  source_auxdata_sitype: "{source_auxdata_sitype}"  
+  license: "n.a."
+  platform: "{mission_name}"
+  sensor: "{mission_sensor}"
+  snow_source: "{source_snow}"
+  sic_source: "{source_sic}"
+  water_density: "1023.9 kg/m^3"
+  ice_density: "variable"
+  snow_density: "variable"
 
 # A list of variables and their attributes
-# The variable subtag must match the name of the level-3 parameter
+# The variable subtag must match the name of the level-2 parameter
 variables:
+  
+  timestamp:
+    long_name: utc timestamp
+    standard_name: timestamp
+    units: seconds since 1970-01-01
+    scale_factor: 1.0
+    add_offset: 0.0
 
   longitude:
     long_name: longitude of satellite / nadir measurement point
     standard_name: longitude
     units: degrees
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -67,30 +76,7 @@ variables:
     long_name: latitude of satellite / nadir measurement point
     standard_name: latitude
     units: degrees
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  mean_sea_surface:
-    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-    standard_name: mean_sea_surface_elevation
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_surface_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
-    standard_name: sea_surface_elevation_anomaly
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_surface_anomaly_uncertainty:
-    long_name: "uncertainty of instantaneous sea surface height"
-    standard_name: sea_surface_elevation_anomaly_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -98,7 +84,7 @@ variables:
     long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
     standard_name: radar_freeboard
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -106,7 +92,7 @@ variables:
     long_name: "uncertainty of radar freeboard"
     standard_name: radar_freeboard_uncertainty
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -114,7 +100,7 @@ variables:
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -122,7 +108,7 @@ variables:
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard_uncertainty
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -132,7 +118,7 @@ variables:
     units: fraction
     valid_min: 0.0
     valid_max: 1.0
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -142,7 +128,7 @@ variables:
     units: fraction
     valid_min: 0.0
     valid_max: 1.0
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -152,7 +138,7 @@ variables:
     units: percent
     valid_min: 0.0
     valid_max: 100.0
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -160,7 +146,7 @@ variables:
     long_name: "thickness of the snow layer"
     standard_name: snow_depth
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -168,7 +154,7 @@ variables:
     long_name: "uncertainty of the snow layer thickness"
     standard_name: snow_depth_uncertainty
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -176,7 +162,7 @@ variables:
     long_name: "density of the snow layer"
     standard_name: snow_density
     units: kg/m^3
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0
 
@@ -184,7 +170,7 @@ variables:
     long_name: "uncertainty of the snow layer density"
     standard_name: snow_density_uncertainty
     units: kg/m^3
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -192,7 +178,7 @@ variables:
     long_name: "density of the sea ice layer"
     standard_name: sea_ice_density
     units: kg/m^3
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -200,7 +186,7 @@ variables:
     long_name: "uncertainty of the sea ice layer density"
     standard_name: sea_ice_density_uncertainty
     units: kg/m^3
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -208,7 +194,7 @@ variables:
     long_name: "thickness of the sea ice layer"
     standard_name: sea_ice_thickness
     units: m
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -216,38 +202,6 @@ variables:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness_uncertainty
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  n_total_waveforms:
-    long_name: "number of valid measurements per grid cell"
-    standard_name: n_total_waveforms
-    units: ""
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  valid_fraction:
-    long_name: "fraction of either lead or ice waveforms"
-    standard_name: n_valid_waveforms
-    units: fraction
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  lead_fraction:
-    long_name: "lead waveforms per grid cell"
-    standard_name: lead_fraction
-    units: fraction
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_fraction:
-    long_name: "sea ice waveforms per grid cell"
-    standard_name: ice_fraction
-    units: fraction
-    coordinates: "latitude longitude time"
+    coordinates: timestamp
     scale_factor: 1.0
     add_offset: 0.0  

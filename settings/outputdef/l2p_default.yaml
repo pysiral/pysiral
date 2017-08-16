@@ -1,0 +1,196 @@
+# This is the default output definition for the Level2Processor
+
+# Metadata
+metadata: 
+  output_id: l2p_default
+  data_level: 2
+  data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming: "l2p_{pysiral_version:filename}_{mission_id}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}.nc"
+product_level_subfolder: l2p
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  Metadata_Conventions: "Unidata Dataset Discovery v1.0"
+  title: "Geophysical sea ice parameters from {mission_id} radar altimeter data"  
+  summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
+  keywords: "sea ice, radar altimetry"
+  product_version: "{l2_algorithm_id}"
+  mission_id: "{mission_id}"
+  source_primary: "{source_primary}"
+  source_mss: "{source_mss}"
+  source_sic: "{source_sic}"
+  source_sitype: "{source_sitype}"
+  source_snow: "{source_snow}"
+  references: "pysiral version: {pysiral_version:default}"
+  cdm_data_type: Trajectory
+  date_created: "{utcnow}"
+  creator_name: "Stefan Hendricks"
+  creator_url: "www.awi.de"
+  creator_email: "stefan.hendricks@awi.de"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
+  processing_level: "Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)"
+  acknowledgment: "ESA Climate Change Initiative on Sea Ice - Phase 2"
+  geospatial_lat_min: "{geospatial_lat_min}"
+  geospatial_lat_max: "{geospatial_lat_max}"
+  geospatial_lon_min: "{geospatial_lon_min}"
+  geospatial_lon_max: "{geospatial_lon_max}"
+  time_coverage_start: "{startdt:%Y-%m-%d %H:%M:%S UTC}"
+  time_coverage_end: "{stopdt:%Y-%m-%d %H:%M:%S UTC}"
+  time_coverage_resolution: "variable"
+  license: "Freely Distributed"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+  
+  timestamp:
+    long_name: utc timestamp
+    standard_name: timestamp
+    units: seconds since 1970-01-01
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  longitude:
+    long_name: longitude of satellite / nadir measurement point
+    standard_name: longitude
+    units: degrees
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  latitude:
+    long_name: latitude of satellite / nadir measurement point
+    standard_name: latitude
+    units: degrees
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+    standard_name: radar_freeboard
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  radar_freeboard_uncertainty:
+    long_name: "uncertainty of radar freeboard"
+    standard_name: radar_freeboard_uncertainty
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  freeboard_uncertainty:
+    long_name: "freeboard uncertainty"
+    standard_name: sea_ice_freeboard_uncertainty
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: fraction
+    valid_min: 0.0
+    valid_max: 1.0
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification_uncertainty
+    units: fraction
+    valid_min: 0.0
+    valid_max: 1.0
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    standard_name: sea_ice_area_fraction
+    units: percent
+    valid_min: 0.0
+    valid_max: 100.0
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: snow_depth
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: snow_depth_uncertainty
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  snow_density:
+    long_name: "density of the snow layer"
+    standard_name: snow_density
+    units: kg/m^3
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    standard_name: snow_density_uncertainty
+    units: kg/m^3
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  ice_density:
+    long_name: "density of the sea ice layer"
+    standard_name: sea_ice_density
+    units: kg/m^3
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    standard_name: sea_ice_density_uncertainty
+    units: kg/m^3
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  sea_ice_thickness:
+    long_name: "thickness of the sea ice layer"
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
+
+  sea_ice_thickness_uncertainty:
+    long_name: "uncertainty of the sea ice layer thickness"
+    standard_name: sea_ice_thickness_uncertainty
+    units: m
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0  
