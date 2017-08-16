@@ -1,9 +1,37 @@
 # History of changes
 
+## Version 0.4.6 (16 August 2017)
+
+**New Features**
+* [l2proc] Added input validation for l1bdata files (time coverage and versions)
+
+**Settings**
+* [l3proc] Changed SICCI-2 L3C global attributes towards pysiral and Data Discovery standards
+
+
+## Version 0.4.5 (24 July 2017)
+
+**Bugfixes**
+* [settings] Default uncertainty value for sitype south was missing
+
+
+## Version 0.4.4 (24 July 2017)
+
+**Bugfixes**
+* [settings] Wrong SICCI-2 L3C version
+* [l2proc] ICDC sitype class crashed on missing file
+
+
+## Version 0.4.3 (17 July 2017)
+
+**Bugfixes**
+* [settings] Invalid default l2i settings solved
+
+
 ## Version 0.4.2 (7 July 2017)
 
 **New Features**
-* [sitype]  MYI concentration uncertainty support added
+* [sitype] MYI concentration uncertainty support added
 * [l2 processing] Added l1b prefilter to the l2proc workflow
 * [l2 processing] OsiSafSIC now allows auto switch between products (e.g. osisaf-409 until 2015-04-15 and osisaf-430 after)
 
