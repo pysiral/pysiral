@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L2P-SIT-{mission_sensor:uppercase}-{mission_id:uppercase}-{startdt:%Y%m%d}-fv1.0.nc"
+filenaming: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%d}-fv1.0.nc"
 product_level_subfolder: l2p
 
 # A list of global attributes 
@@ -26,7 +26,7 @@ global_attributes:
   id: ""
   naming: ""
   keywords_vocabulary: ""
-  cdm_data_type: "grid"
+  cdm_data_type: "trajectory"
   comment: ""
   date_created: "{utc_now}"
   date_issued: ""
@@ -39,19 +39,18 @@ global_attributes:
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
   geospatial_lon_max: "{geospatial_lon_max}"
-  time_coverage_start: "{startdt:%Y-%m-%d %H:%M:%S UTC}"
-  time_coverage_end: "{stopdt:%Y-%m-%d %H:%M:%S UTC}"
-  time_coverage_duration: "13 years"
-  time_coverage_resolution: "Monthly" 
-  standard_name_vocabulary: ""
-  license: "n.a."
-  platform: "{mission_name}"
-  sensor: "{mission_sensor}"
-  snow_source: "{source_snow}"
-  sic_source: "{source_sic}"
-  water_density: "1023.9 kg/m^3"
-  ice_density: "variable"
-  snow_density: "variable"
+  time_coverage_start: "{time_coverage_start}"
+  time_coverage_end: "{time_coverage_end}"
+  time_coverage_duration: "{time_coverage_duration:period}"
+  license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  source_mission_name: "{source_mission_name}"
+  source_mission_id: "{source_mission_id}"
+  source_mission_sensor: "{source_mission_sensor}"
+  source_hemisphere: "{source_hemisphere}"
+  source_auxdata_snow: "{source_auxdata_snow}"
+  source_auxdata_mss: "{source_auxdata_mss}"  
+  source_auxdata_sic: "{source_auxdata_sic}"
+  source_auxdata_sitype: "{source_auxdata_sitype}"
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
