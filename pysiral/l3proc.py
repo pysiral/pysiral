@@ -32,10 +32,13 @@ class Level3Processor(DefaultLoggingClass):
         self._job = product_def
         self._l3_progress_percent = 0.0
 
-    def process_l2i_files(self, l2i_files):
+    def process_l2i_files(self, l2i_files, period):
 
         # Store l2i_files
         self._l2i_files = l2i_files
+
+        # Store
+        self._period = period
 
         # Initialize the stack for the l2i orbit files
         self.log.info("Initialize l2i data stack")
@@ -68,7 +71,7 @@ class Level3Processor(DefaultLoggingClass):
 
         # Initialize the data grid
         self.log.info("Initialize l3 data grid")
-        l3 = L3DataGrid(self._job, stack)
+        l3 = L3DataGrid(self._job, stack, period)
 
         # Write output(s)
         for output_handler in self._job.outputs:
@@ -209,7 +212,7 @@ class L3DataGrid(DefaultLoggingClass):
     (averaged l2i parameter, grid cell statistics)
     """
 
-    def __init__(self, job, stack):
+    def __init__(self, job, stack, period):
 
         super(L3DataGrid, self).__init__(self.__class__.__name__)
 
@@ -218,7 +221,7 @@ class L3DataGrid(DefaultLoggingClass):
         # Grid size definition
         self._griddef = job.grid
         self._l3def = job.l3def
-        self._period = job.period
+        self._period = period
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
