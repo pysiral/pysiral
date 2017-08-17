@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 0.4.7 (17 August 2017) [bugfix release]
+
+**Bugfixes**
+* [settings] L3C filename was incorrectly written (request period start time instead of iteration period start time)
+
+
 ## Version 0.4.6 (16 August 2017)
 
 **New Features**
@@ -9,20 +15,20 @@
 * [l3proc] Changed SICCI-2 L3C global attributes towards pysiral and Data Discovery standards
 
 
-## Version 0.4.5 (24 July 2017)
+## Version 0.4.5 (24 July 2017) [bugfix release]
 
 **Bugfixes**
 * [settings] Default uncertainty value for sitype south was missing
 
 
-## Version 0.4.4 (24 July 2017)
+## Version 0.4.4 (24 July 2017) [bugfix release]
 
 **Bugfixes**
 * [settings] Wrong SICCI-2 L3C version
 * [l2proc] ICDC sitype class crashed on missing file
 
 
-## Version 0.4.3 (17 July 2017)
+## Version 0.4.3 (17 July 2017) [bugfix release]
 
 **Bugfixes**
 * [settings] Invalid default l2i settings solved

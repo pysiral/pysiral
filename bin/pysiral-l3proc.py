@@ -64,7 +64,7 @@ def pysiral_l3proc():
             continue
 
         # Start the Level-3 processing
-        l3proc.process_l2i_files(l2i_files)
+        l3proc.process_l2i_files(l2i_files, time_range)
 
     # Final reporting
     t1 = time.clock()
