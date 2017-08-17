@@ -749,10 +749,10 @@ class L3MetaData(object):
 
     def get_time_coverage_from_period(self, period):
         """ Get the start and end of requested data period """
-        self.set_attribute("time_coverage_start", period.start_dt)
-        self.set_attribute("time_coverage_end", period.stop_dt)
+        self.set_attribute("time_coverage_start", period.start)
+        self.set_attribute("time_coverage_end", period.stop)
         self.set_attribute("time_coverage_duration",
-                           period.base_duration_isoformat)
+                           period.duration_isoformat)
 
     def get_auxdata_infos(self, l2i_info):
         """ Get information on auxiliary data sources from l2i global
