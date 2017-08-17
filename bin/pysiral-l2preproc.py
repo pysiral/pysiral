@@ -81,7 +81,7 @@ def pysiral_l2preproc():
             continue
 
         # Process the orbits
-        l2preproc.process_l2i_files(l2i_daily_files)
+        l2preproc.process_l2i_files(l2i_daily_files, day)
 
     # All done, log processor time
     t1 = time.clock()

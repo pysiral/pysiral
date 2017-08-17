@@ -28,12 +28,12 @@ class Level2PreProcessor(DefaultLoggingClass):
             self.error.raise_on_error()
         self._job = product_def
 
-    def process_l2i_files(self, l2i_files):
+    def process_l2i_files(self, l2i_files, period):
         """ Reads all l2i files and merges the valid data into a l2p
         summary file """
 
         # l2p: Container for storing l2i objects
-        l2p = Level2PContainer()
+        l2p = Level2PContainer(period)
 
         # Add all l2i objects to the l2p container.
         # NOTE: Only memory is the limit
