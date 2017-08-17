@@ -5,7 +5,8 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
-from pysiral.config import PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
+                            SENSOR_NAME_DICT, MISSION_NAME_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.path import filename_from_path
@@ -17,6 +18,7 @@ import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
+import re
 
 
 class Level2Data(object):
@@ -47,13 +49,14 @@ class Level2Data(object):
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
 
-    def __init__(self, metadata, time_orbit):
+    def __init__(self, metadata, time_orbit, period=None):
 
         # Copy necessary fields form l1b
         self.error = ErrorStatus()
         self._n_records = metadata.n_records
         self.info = metadata
         self.track = time_orbit
+        self.period = period
 
         # Metadata
         self._auxdata_source_dict = {}
@@ -206,18 +209,44 @@ class Level2Data(object):
         return versions[target]
 
     def _get_attr_mission_id(self, *args):
+        # XXX: Deprecated
         return self.info.mission
 
+    def _get_attr_source_mission_id(self, *args):
+        mission_id = self.info.mission
+        if args[0] == "uppercase":
+            mission_id = mission_id.upper()
+        return mission_id
+
+    def _get_attr_source_mission_name(self, *args):
+        mission_name = MISSION_NAME_DICT[self.info.mission]
+        if args[0] == "uppercase":
+            mission_name = mission_name.upper()
+        return mission_name
+
+    def _get_attr_source_mission_sensor(self, *args):
+        mission_sensor = SENSOR_NAME_DICT[self.info.mission]
+        if args[0] == "uppercase":
+            mission_sensor = mission_sensor.upper()
+        return mission_sensor
+
+    def _get_attr_source_hemisphere(self, *args):
+        return self.hemisphere
+
     def _get_attr_hemisphere(self, *args):
+        # XXX: Deprecated
         return self.hemisphere
 
     def _get_attr_hemisphere_code(self, *args):
+        # XXX: Deprecated
         return self.hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
+        # XXX: Deprecated
         return self.info.start_time.strftime(dtfmt)
 
     def _get_attr_stopdt(self, dtfmt):
+        # XXX: Deprecated
         return self.info.stop_time.strftime(dtfmt)
 
     def _get_attr_geospatial_lat_min(self, *args):
@@ -235,16 +264,44 @@ class Level2Data(object):
     def _gett_attr_geospatial_str(self, value):
         return "%.4f" % value
 
+    def _get_attr_source_auxdata_sic(self, *args):
+        value = self._auxdata_source_dict.get("sic", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_sic
+        return value
+
+    def _get_attr_source_auxdata_sitype(self, *args):
+        value = self._auxdata_source_dict.get("sitype", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_sitype
+        return value
+
+    def _get_attr_source_auxdata_mss(self, *args):
+        value = self._auxdata_source_dict.get("mss", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_mss
+        return value
+
+    def _get_attr_source_auxdata_snow(self, *args):
+        value = self._auxdata_source_dict.get("snow", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_snow
+        return value
+
     def _get_attr_source_sic(self, *args):
+        # XXX: Deprecated
         return self._auxdata_source_dict.get("sic", "unkown")
 
     def _get_attr_source_sitype(self, *args):
+        # XXX: Deprecated
         return self._auxdata_source_dict.get("sitype", "unkown")
 
     def _get_attr_source_mss(self, *args):
+        # XXX: Deprecated
         return self._auxdata_source_dict.get("mss", "unkown")
 
     def _get_attr_source_snow(self, *args):
+        # XXX: Deprecated
         return self._auxdata_source_dict.get("snow", "unkown")
 
     def _get_attr_source_primary(self, *args):
@@ -255,6 +312,25 @@ class Level2Data(object):
 
     def _get_attr_utcnow(self, *args):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def _get_attr_time_coverage_start(self, *args):
+        datetime = self.period.start
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_end(self, *args):
+        datetime = self.period.stop
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_duration(self, *args):
+        return self.period.duration_isoformat
 
     def _get_attr_time_resolution(self, *args):
         tdelta = self.timestamp[-1]-self.timestamp[0]
@@ -426,9 +502,10 @@ class Level2PContainer(DefaultLoggingClass):
                            "sea_ice_thickness",
                            "sea_ice_thickness_uncertainty"]
 
-    def __init__(self):
+    def __init__(self, period):
         super(Level2PContainer, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
+        self._period = period
         self._l2i_stack = []
 
     def append_l2i(self, l2i):
@@ -439,6 +516,9 @@ class Level2PContainer(DefaultLoggingClass):
 
         # Merge the parameter
         data = self._get_merged_data()
+
+        # Use the first l2i object in stack to retrieve metadata
+        l2i = self._l2i_stack[0]
 
         # Set up a metadata container
         metadata = Level2iMetadata()
@@ -456,12 +536,20 @@ class Level2PContainer(DefaultLoggingClass):
         # l2i object in the stack
         info = self.l2i_stack[0].info
         metadata.set_attribute("mission", info.mission_id)
+        mission_sensor = SENSOR_NAME_DICT[info.mission_id]
+        metadata.set_attribute("mission_sensor", mission_sensor)
+
+        # Transfer auxdata information
+        metadata.source_auxdata_sic = l2i.info.source_sic
+        metadata.source_auxdata_snow = l2i.info.source_snow
+        metadata.source_auxdata_sitype = l2i.info.source_sitype
+        metadata.source_auxdata_mss = l2i.info.source_mss
 
         # Set up a timeorbit group
         timeorbit = Level2iTimeOrbit()
         timeorbit.from_l2i_stack(data)
 
-        l2 = Level2Data(metadata, timeorbit)
+        l2 = Level2Data(metadata, timeorbit, period=self._period)
 
         return l2
 
@@ -489,6 +577,10 @@ class Level2PContainer(DefaultLoggingClass):
     @property
     def n_l2i_objects(self):
         return len(self.l2i_stack)
+
+    @property
+    def period(self):
+        return self._period
 
 
 class AttributeList(object):
