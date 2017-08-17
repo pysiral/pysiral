@@ -442,7 +442,7 @@ class TimeRangeRequest(DefaultLoggingClass):
 
             # set final time range
             # iteration will be a of type TimeRangeIteration
-            time_range = TimeRangeIteration()
+            time_range = TimeRangeIteration(base_period=self.base_period)
             time_range.set_range(period_start, period_stop)
             time_range.set_indices(index, n_iterations)
             iterations.append(time_range)
@@ -467,7 +467,7 @@ class TimeRangeRequest(DefaultLoggingClass):
             stop = start + relativedelta(days=1, microseconds=-1)
 
             # Create the iteration
-            time_range = TimeRangeIteration()
+            time_range = TimeRangeIteration(base_period=self.base_period)
             time_range.set_range(start, stop)
             time_range.set_indices(index, n_iterations)
             iterations.append(time_range)
