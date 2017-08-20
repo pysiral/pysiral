@@ -39,10 +39,8 @@ class CryoSat2PreProc(L1bPreProc):
         self._l1b_file_list = cryosat2_files.sorted_list
 
     def _get_l1bdata_ocean_segments(self, filename):
-        """
-        Returns the source CryoSat-2 l1b data as a list of
-        pysiral.L1bdata objects.
-        """
+        """ Returns the source CryoSat-2 l1b data as a list of
+        pysiral.L1bdata objects. """
 
         # Read CryoSat-2 Header
         try:
