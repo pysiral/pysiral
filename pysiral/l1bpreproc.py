@@ -460,6 +460,7 @@ class L1bPreProcJob(DefaultLoggingClass):
         from pysiral.envisat.preproc import EnvisatPreProc
         from pysiral.ers.preproc import ERSPreProc
         from pysiral.sentinel3.preproc import Sentinel3PreProc
+        from pysiral.icesat.preproc import ICESatPreProc
 
         if self.mission_id == "cryosat2":
             return CryoSat2PreProc
@@ -469,10 +470,13 @@ class L1bPreProcJob(DefaultLoggingClass):
             return ERSPreProc
         elif self.mission_id == "sentinel3a":
             return Sentinel3PreProc
+        elif self.mission_id == "icesat":
+            return ICESatPreProc
         else:
             error_code = self.__class__.__name__+" (01)"
             error_message = "Invalid mission_id: %s" % self.mission_id
             self.error.add_error(error_code, error_message)
+            self.error.raise_on_error()
 
     @property
     def mission_id(self):
