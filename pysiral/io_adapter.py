@@ -9,6 +9,7 @@ from pysiral.config import PYSIRAL_VERSION
 from pysiral.cryosat2.l1bfile import CryoSatL1B
 from pysiral.envisat.sgdrfile import EnvisatSGDR
 from pysiral.ers.sgdrfile import ERSSGDR
+from pysiral.icesat.glah13 import GLAH13HDF
 from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 
 from pysiral.cryosat2.functions import (
@@ -26,6 +27,9 @@ from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
                               get_sar_sigma0)
 
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import pytz
 from netCDF4 import num2date
 import numpy as np
 
@@ -362,7 +366,7 @@ class L1bAdapterEnvisat(object):
         parameter = EnvisatWaveformParameter(wfm)
         self.l1b.classifier.add(parameter.peakiness, "peakiness")
         self.l1b.classifier.add(parameter.peakiness_old, "peakiness_old")
-        
+
         sigma0 = self.sgdr.mds_18hz.sea_ice_backscatter
         self.l1b.classifier.add(sigma0, "sigma0")
 
@@ -377,6 +381,7 @@ class L1bAdapterEnvisat(object):
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
         self.l1b.classifier.add(lew.fmi, "first_maximum_index")
+
 
 class L1bAdapterERS(object):
     """ Converts a Envisat SGDR object into a L1bData object """
@@ -674,3 +679,255 @@ class L1bAdapterSentinel3A(L1bAdapterSentinel3):
 
     def __init__(self, config):
         super(L1bAdapterSentinel3A, self).__init__(config, "sentinel3a")
+
+
+class L1bAdapterICESat(object):
+    """ Class for GLAS/ICESat L2 Sea Ice Altimetry Data (HDF5) """
+
+    def __init__(self, config):
+        self.filename = None
+        self._mission = "icesat"
+        self._config = config
+        self.settings = config.get_mission_settings("icesat")
+        self.error_status = False
+
+    def construct_l1b(self, l1b, header_only=False):
+        """
+        Read the Envisat SGDR file and transfers its content to a
+        Level1bData instance
+        """
+        self.l1b = l1b
+        self._read_icesat_glah13()
+        self._transfer_metadata()
+        self._compute_equal_distance_indices()
+
+        if not header_only and not self.l1b.error_status:
+            self._transfer_timeorbit()
+            self._transfer_waveform_collection()
+            self._transfer_range_corrections()
+            self._transfer_surface_type_data()
+            self._transfer_classifiers()
+            self.l1b.update_l1b_metadata()
+
+    def _read_icesat_glah13(self):
+        """ Parse the GLAH13 file (global attributes, all parameters in
+        all data groups)."""
+        self.glah13 = GLAH13HDF(self.filename)
+
+    def _transfer_metadata(self):
+
+        info = self.l1b.info
+        glah13 = self.glah13
+
+        # Processing System info
+        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
+
+        # General CryoSat-2 metadata
+        info.set_attribute("mission", self._mission)
+        info.set_attribute("mission_data_version", glah13.product_version)
+        info.set_attribute("orbit", glah13.get_attr("OrbitNumber"))
+        info.set_attribute("is_merged_orbit", True)
+        info.set_attribute("cycle", glah13.get_attr("Cycle"))
+        info.set_attribute("mission_data_source",
+                           glah13.get_attr("LocalGranuleID"))
+
+        # Time-Orbit Metadata
+        start_time = parse_datetime_str(glah13.get_attr("time_coverage_start"))
+        stop_time = parse_datetime_str(glah13.get_attr("time_coverage_end"))
+        info.set_attribute("start_time", start_time)
+        info.set_attribute("stop_time", stop_time)
+
+    def _compute_equal_distance_indices(self):
+        """ One main assumption in pysiral is that the input data
+        has a more or less equidistant spacing along the orbit. The GLAH13
+        data only consists of data for valid freeboards, therefore we
+        need to fill the gaps with nodata values """
+
+        # Get 40 Hz time and position
+        time_40Hz = self.glah13.get_parameter("Time", "d_UTCTime_40")
+        lons_40Hz = self.glah13.get_parameter("Geolocation", "d_lon")
+        lons_40Hz[np.where(lons_40Hz > 360.0)] = np.nan
+        lats_40Hz = self.glah13.get_parameter("Geolocation", "d_lat")
+        lats_40Hz[np.where(np.abs(lats_40Hz) > 90.0)] = np.nan
+
+        # Get 1 Hz time and track indices
+        time_1Hz = self.glah13.timestamp_1Hz
+        track_id_1Hz = np.array(self.glah13.track_id_1Hz, dtype=int)
+
+        # Interpolate track id to 40Hz data
+        track_id_40Hz = np.interp(time_40Hz, time_1Hz, track_id_1Hz)
+        track_id_40Hz = np.round(track_id_40Hz).astype(int)
+
+        # Estimate segments in the data that could be continous
+        # tracks over sea ice
+        segments_start = np.array([0])
+        segments_start_indices = np.where(np.ediff1d(time_40Hz) > 300)[0]+1
+        segments_start = np.append(segments_start, segments_start_indices)
+
+        segments_stop = segments_start[1:]-1
+        segments_stop = np.append(segments_stop, len(time_40Hz)-1)
+
+        # Iteratively estimate the index map for segment wise interpolated
+        # 40 Hz output (only interpolated for orbital passes)
+        full_40Hz_segments_n_records = 0
+        full_40Hz_segments_index = np.array([], dtype=np.int32)
+        full_40Hz_segments_index_map = np.array([], dtype=np.int32)
+        segment_index_id = 0
+        segment_offset = 0
+        for start_id, stop_id in zip(segments_start, segments_stop):
+
+            # The data indices of the original data for this segment
+            segment_indices = np.arange(start_id, stop_id+1)
+
+            # Convert time to a 40 Hz counter
+            time_40hz_segment_raw = time_40Hz[segment_indices]
+            segment_counter_40Hz = 40 * (time_40hz_segment_raw -
+                                         time_40hz_segment_raw[0])
+            segment_counter_40Hz = np.round(segment_counter_40Hz)
+            segment_counter_40Hz = segment_counter_40Hz.astype(np.int32)
+
+            # The maximum counter indicates the number of records for
+            # the full 40Hz segment
+            full_40Hz_segment_records = segment_counter_40Hz[-1] + 1
+            full_40Hz_segments_n_records += full_40Hz_segment_records
+
+            # Save the indices maps
+            full_40Hz_segments_index = np.append(
+                    full_40Hz_segments_index,
+                    np.full(full_40Hz_segment_records, segment_index_id))
+            segment_index_map = segment_counter_40Hz + segment_offset
+            full_40Hz_segments_index_map = np.append(
+                    full_40Hz_segments_index_map,
+                    segment_index_map)
+
+            # Increase segment index id
+            segment_index_id += 1
+
+            # Compute the full index offset for next iteration
+            segment_offset += full_40Hz_segment_records
+
+        # Save results to class
+        self.full_40Hz_segments_n_records = full_40Hz_segments_n_records
+        self.full_40Hz_segments_index = full_40Hz_segments_index
+        self.full_40Hz_segments_index_map = full_40Hz_segments_index_map
+
+    def _get_40Hz_full_variable(self, variable, interpolate=False,
+                                interpolation_variable=None, dtype=None,
+                                default=None):
+        # Set output type
+        if dtype is None:
+            dtype = np.float32
+
+        if default is None:
+            default = np.nan
+
+        # Map the current variable via an index map on the gap-filled
+        # 40 Hz data. Gaps will remain nan
+        indices = self.full_40Hz_segments_index_map
+        full_variable = np.full(self.full_40Hz_shape, default, dtype=dtype)
+        full_variable[indices] = variable
+
+        # Fill Gaps with linear interpolation
+        if interpolate:
+            if interpolation_variable is None:
+                target_x = np.arange(self.full_40Hz_segments_n_records)
+                source_x = indices
+            else:
+                target_x = interpolation_variable
+                source_x = interpolation_variable[indices]
+            valid = np.where(np.isfinite(variable))[0]
+            full_variable = np.interp(target_x, source_x[valid],
+                                      variable[valid])
+        return full_variable
+
+    def _transfer_timeorbit(self):
+        """ Extracts the time/orbit data group from the GLAH13 data """
+
+        # Get 40 Hz time and position
+        time_40Hz = self.glah13.get_parameter("Time", "d_UTCTime_40")
+        lons_40Hz = self.glah13.get_parameter("Geolocation", "d_lon")
+        lons_40Hz[np.where(lons_40Hz > 360.0)] = np.nan
+        lats_40Hz = self.glah13.get_parameter("Geolocation", "d_lat")
+        lats_40Hz[np.where(np.abs(lats_40Hz) > 90.0)] = np.nan
+
+        # Interpolate variables
+        time = self._get_40Hz_full_variable(time_40Hz, interpolate=True)
+
+        # Use interpolated time to assist lat/lon interpolation
+        # Note: Linear interpolation is an approximation only, but
+        #       we do not loose much, since position gaps do not have
+        #       valid ranges
+        lon = self._get_40Hz_full_variable(lons_40Hz, interpolate=True,
+                                           interpolation_variable=time)
+        lat = self._get_40Hz_full_variable(lats_40Hz, interpolate=True,
+                                           interpolation_variable=time)
+
+        # pysiral l1bdata requires altitude, however this is not available
+        # in the glah13 files. Therefore we have to create an artificial one
+        # that gives us an easy way to compute the sea ice surface
+        # elevation in the Level-2 processor. For simplicity we assume
+        # a constant orbit altitude of 590 km (average between perigee and
+        # apogee) and later compute a matching range for the predefined
+        # sea ice surface elevation
+        alt = np.full(time.shape, 590000.)
+
+
+        # Transfer the orbit position
+        self.l1b.time_orbit.set_position(lon, lat, alt)
+
+        # Transfer the timestamp (needs to be datetime)
+        # time in glah13 is: seconds since 2000-01-01 12:00:00 UTC
+        timestamp = np.ndarray(time.shape, dtype=object)
+        datum = datetime(2000, 1, 1, 12, 0, 0, tzinfo=pytz.utc)
+        for i in np.arange(len(timestamp)):
+            timestamp[i] = datum + relativedelta(seconds=time[i])
+
+        self.l1b.time_orbit.timestamp = timestamp
+
+        # Update meta data container
+        self.l1b.update_data_limit_attributes()
+
+    def _transfer_waveform_collection(self):
+        """ Transfer dummy values (no waveform data in glah13) """
+
+        # Waveform Dummy Data
+        dtype = np.float32
+        n_records = self.full_40Hz_segments_n_records
+        n_range_bins = 3
+        radar_mode = "lrm"
+        echo_power = np.full((n_records, n_range_bins), 0.0, dtype=dtype)
+        echo_range = np.full((n_records, n_range_bins), 0.0, dtype=dtype)
+        self.l1b.waveform.set_waveform_data(echo_power, echo_range, radar_mode)
+
+        # Transfer valid flag
+        valid_glah13 = self.glah13.get_parameter("Quality", "elev_use_flg")
+        valid_glah13 = valid_glah13.astype(bool)
+        valid = self._get_40Hz_full_variable(valid_glah13, dtype=bool,
+                                             default=False)
+        self.l1b.waveform.set_valid_flag(valid)
+
+    def _transfer_range_corrections(self):
+        """ Transfer glah13 range correction, though might not be used """
+        keys = ["d_eqEl", "d_erElv", "d_ldElv", "d_ocElv", "d_poTide"]
+        targets = ["equlibrium_tide", "solid_earth_tide", "load_tide",
+                   "ocean_tide", "pole_tide"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter("Geophysical", "key")
+            value = self._get_40Hz_full_variable(value_glah13)
+            self.l1b.correction.set_parameter(target, value)
+
+    def _transfer_surface_type_data(self):
+        """ We can only assume here that all data is over oceans """
+        flag = np.full(self.full_40Hz_shape, ESA_SURFACE_TYPE_DICT["ocean"])
+        self.l1b.surface_type.add_flag(flag, "ocean")
+
+    def _transfer_classifiers(self):
+        pass
+
+    @property
+    def segment_ids(self):
+        return np.unique(self.full_40Hz_segments_index)
+
+    @property
+    def full_40Hz_shape(self):
+        return (self.full_40Hz_segments_n_records)
