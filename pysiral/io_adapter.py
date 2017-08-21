@@ -925,6 +925,7 @@ class L1bAdapterICESat(object):
         # Transfer valid flag
         valid_glah13 = self.glah13.get_parameter("Quality", "elev_use_flg")
         valid_glah13 = valid_glah13.astype(bool)
+        valid_glah13 = np.logical_not(valid_glah13)
         valid = self._get_40Hz_full_variable(valid_glah13, dtype=bool,
                                              default=False)
         self.l1b.waveform.set_valid_flag(valid)
