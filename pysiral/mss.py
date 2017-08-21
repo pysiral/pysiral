@@ -164,25 +164,33 @@ class SSASmoothedLinear(SSAInterpolator):
         ssa = idl_smooth(ssa_filter2, self.filter_width)
         self._value = ssa
 
-
 ##        # TODO: Make example plot of individual filter steps
 #        import matplotlib.pyplot as plt
 #        x = np.arange(l2.n_records)
 #
-#        plt.figure("land")
-#        plt.plot(l2.surface_type.land.flag)
+##        plt.figure("land")
+##        plt.plot(l2.surface_type.land.flag)
+#
+#        lead = l2.surface_type.lead
 #
 #        plt.figure()
-#        plt.plot(x, l2.mss)
-#        plt.plot(x, l2.mss+ssa)
-#        plt.scatter(x, l2.elev, marker="+", alpha=0.5)
+#        plt.plot(x, l2.mss, label="mss")
+#        plt.plot(x, l2.mss+ssa, label="mss+ssa")
+#        plt.scatter(x, l2.elev, marker="+", alpha=0.5, label="elev")
+#        plt.scatter(x[lead.indices], l2.elev[lead.indices],
+#                    marker="o", alpha=0.5, label="leads")
+#        plt.legend()
 #
-#        plt.figure(facecolor="white")
-#        # plt.scatter(x, ssa_raw, color="black")
-#        plt.scatter(x, ssa_filter1, color="red", alpha=0.5)
-#        plt.plot(x, ssa_filter2, color="blue", lw=2, alpha=0.5)
-#        plt.plot(x, ssa, color="orange", lw=3)
+#        plt.figure()
+#        plt.scatter(x, l2.surface_type.flag)
+#
+##        plt.figure(facecolor="white")
+##        # plt.scatter(x, ssa_raw, color="black")
+##        plt.scatter(x, ssa_filter1, color="red", alpha=0.5)
+##        plt.plot(x, ssa_filter2, color="blue", lw=2, alpha=0.5)
+##        plt.plot(x, ssa, color="orange", lw=3)
 #        plt.show()
+#        stop
 
     def _calculate_uncertainty(self, l2):
         """
