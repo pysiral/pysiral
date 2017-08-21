@@ -921,12 +921,25 @@ class L1bAdapterICESat(object):
 
     def _transfer_range_corrections(self):
         """ Transfer glah13 range correction, though might not be used """
+
+        # Transfer parameters from Geophysical Group
+        default = 0.0
         keys = ["d_eqEl", "d_erElv", "d_ldElv", "d_ocElv", "d_poTide"]
         targets = ["equlibrium_tide", "solid_earth_tide", "load_tide",
                    "ocean_tide", "pole_tide"]
         for key, target in zip(keys, targets):
-            value_glah13 = self.glah13.get_parameter("Geophysical", "key")
-            value = self._get_40Hz_full_variable(value_glah13)
+            value_glah13 = self.glah13.get_parameter("Geophysical", key)
+            value = self._get_40Hz_full_variable(value_glah13, default=default)
+            self.l1b.correction.set_parameter(target, value)
+
+        # Transfer parameters from Elevation_Corrections group
+        group_name = "Elevation_Corrections"
+        keys = ["d_dTrop", "d_wTrop", "d_satElevCorr", "d_ElevBiasCorr"]
+        targets = ["dry_troposphere", "wet_troposphere",
+                   "elevation_saturation", "elevation_bias"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter(group_name, key)
+            value = self._get_40Hz_full_variable(value_glah13, default=default)
             self.l1b.correction.set_parameter(target, value)
 
     def _transfer_surface_type_data(self):
