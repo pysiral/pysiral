@@ -812,6 +812,16 @@ class L1bAdapterICESat(object):
         self.full_40Hz_segments_index = full_40Hz_segments_index
         self.full_40Hz_segments_index_map = full_40Hz_segments_index_map
 
+    def _get_40Hz_from_1Hz(self, variable_1Hz, full=False):
+        if full:
+            time_ref = self._get_40Hz_full_variable(
+                    self.time_40Hz, interpolate=True)
+        else:
+            time_ref = self.time_40Hz
+
+        variable_40Hz = np.interp(time_ref, self.time_1Hz, variable_1Hz)
+        return variable_40Hz
+
     def _get_40Hz_full_variable(self, variable, interpolate=False,
                                 interpolation_variable=None, dtype=None,
                                 default=None):
