@@ -954,9 +954,39 @@ class L1bAdapterICESat(object):
             self.l1b.correction.set_parameter(target, value)
 
     def _transfer_surface_type_data(self):
-        """ We can only assume here that all data is over oceans """
-        flag = np.full(self.full_40Hz_shape, ESA_SURFACE_TYPE_DICT["ocean"])
-        self.l1b.surface_type.add_flag(flag, "ocean")
+        """ We need to oversample the 1Hz surface type data """
+
+        # Map the pysiral-recognized surface type codes to 1Hz flag
+        # parameters
+        # Notes:
+        # 1) We map here also the sea ice flag to ocean. This is
+        #    because the Level-2 Processor decides what sea ice is and
+        #    only looks for ocean "waveforms"
+        # 2) We put land as the last one to avoid land elevation
+        #    spilling into ocean areas due to ocean flag interpolation
+        #    errors
+        flag_targets = [("ocean", "is_ocean_1Hz"),
+                        ("ocean", "is_seaice_1Hz"),
+                        ("land_ice", "is_icesheet_1Hz"),
+                        ("land", "is_land_1Hz")]
+
+        # Retrieve the 1Hz data, interpolate to full 40Hz and set the
+        # pysiral compliant surface type flag
+        for surface_code, glah13_parameter_name in flag_targets:
+            flag_1Hz = getattr(self.glah13, glah13_parameter_name)
+            flag_1Hz = flag_1Hz.astype(bool)
+            flag_40Hz = self._get_40Hz_from_1Hz(flag_1Hz)
+            flag_40Hz = flag_40Hz.astype(int)
+            flag_full_40Hz = self._get_40Hz_full_variable(
+                    flag_40Hz, dtype=bool, default=False)
+            self.l1b.surface_type.add_flag(flag_full_40Hz, surface_code)
+
+#        x = np.arange(self.full_40Hz_segments_n_records)
+#        import matplotlib.pyplot as plt
+#        plt.figure()
+#        plt.scatter(x, self.l1b.surface_type.flag)
+#        plt.show()
+#        stop
 
     def _transfer_classifiers(self):
         """ Transfer parameter that can be used for surface type
