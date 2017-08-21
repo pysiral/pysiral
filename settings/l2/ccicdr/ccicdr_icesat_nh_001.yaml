@@ -93,13 +93,15 @@ ssa:
 # Estimation of Radar Freeboard (Does not make much sense for laser altimetry, but required and also identical step)
 afrb:
     pyclass: RadarFreeboardDefault
-    options: null
+    options: 
+        dummy_option: null
 
 # Algorithm for converting radar freeboard into freeboard 
 # For ICESat no correction necessary 
 frb: 
     pyclass: SnowFreeboardAssumption
-    options: null
+    options: 
+        dummy_option: null
         
 # Algorithm for getting sea ice thickness from other l2 parameters
 sit: 
