@@ -858,9 +858,7 @@ class L1bAdapterICESat(object):
         # Get 40 Hz time and position
         time_40Hz = self.glah13.get_parameter("Time", "d_UTCTime_40")
         lons_40Hz = self.glah13.get_parameter("Geolocation", "d_lon")
-        lons_40Hz[np.where(lons_40Hz > 360.0)] = np.nan
         lats_40Hz = self.glah13.get_parameter("Geolocation", "d_lat")
-        lats_40Hz[np.where(np.abs(lats_40Hz) > 90.0)] = np.nan
 
         # Interpolate variables
         time = self._get_40Hz_full_variable(time_40Hz, interpolate=True)
