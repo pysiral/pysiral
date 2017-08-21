@@ -948,7 +948,47 @@ class L1bAdapterICESat(object):
         self.l1b.surface_type.add_flag(flag, "ocean")
 
     def _transfer_classifiers(self):
-        pass
+        """ Transfer parameter that can be used for surface type
+        classification """
+
+        # Transfer parameters from Waveform group
+        group_name = "Waveform"
+        keys = ["d_kurt2", "d_maxRecAmp", "d_maxSmAmp", "d_skew2",
+                "i_gval_rcv", "i_numPk"]
+        targets = ["echo_kurtosis", "echo_peak_power",
+                   "smoothed_echo_peak_power", "echo_skewness",
+                   "echo_gain", "echo_n_peaks"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter(group_name, key)
+            value = self._get_40Hz_full_variable(value_glah13)
+            self.l1b.classifier.add(value, target)
+
+        # Transfer parameters from the Reflectivity group
+        group_name = "Reflectivity"
+        keys = ["d_RecNrgAll", "d_reflctUC", "d_satNrgCorr", "d_sDevNsOb1"]
+        targets = ["received_energy", "reflectivity",
+                   "energy_saturation_correction", "background_noise_sdev"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter(group_name, key)
+            value = self._get_40Hz_full_variable(value_glah13)
+            self.l1b.classifier.add(value, target)
+
+        # Transfer parameters from the Elevation_Flags group
+        group_name = "Elevation_Flags"
+        keys = ["elv_cloud_flg"]
+        targets = ["cloud_flag"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter(group_name, key)
+            value = self._get_40Hz_full_variable(value_glah13)
+            self.l1b.classifier.add(value, target)
+
+        # Add track & orbit segment id (for preprocessor)
+        self.l1b.classifier.add(self.full_40Hz_segments_index,
+                                "orbit_segment_id")
+
+        track_id = self._get_40Hz_full_variable(
+                self.track_id_40Hz, interpolate=True, dtype=np.int16)
+        self.l1b.classifier.add(track_id, "track_id")
 
     @property
     def segment_ids(self):
