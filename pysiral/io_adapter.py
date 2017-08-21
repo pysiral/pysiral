@@ -817,7 +817,7 @@ class L1bAdapterICESat(object):
                                 default=None):
         # Set output type
         if dtype is None:
-            dtype = np.float32
+            dtype = np.float64
 
         if default is None:
             default = np.nan
@@ -838,7 +838,8 @@ class L1bAdapterICESat(object):
                 source_x = interpolation_variable[indices]
             valid = np.where(np.isfinite(variable))[0]
             full_variable = np.interp(target_x, source_x[valid],
-                                      variable[valid])
+                                      variable[valid]).astype(dtype)
+
         return full_variable
 
     def _transfer_timeorbit(self):
