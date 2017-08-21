@@ -896,8 +896,20 @@ class L1bAdapterICESat(object):
         n_records = self.full_40Hz_segments_n_records
         n_range_bins = 3
         radar_mode = "lrm"
-        echo_power = np.full((n_records, n_range_bins), 0.0, dtype=dtype)
+        echo_power = np.full((n_records, n_range_bins), 1.0, dtype=dtype)
         echo_range = np.full((n_records, n_range_bins), 0.0, dtype=dtype)
+
+        # Compute range that produces the sea ice surface elevation in
+        # the glah13 files with the artificial altitude
+        altitude = self.l1b.time_orbit.altitude
+        si_elev_40hz = self.glah13.get_parameter("Elevation_Surfaces",
+                                                 "d_elev")
+        sea_ice_surface_elev = self._get_40Hz_full_variable(si_elev_40hz)
+        laser_range = altitude - sea_ice_surface_elev
+        for i in range(3):
+            echo_range[:, i] = laser_range + float(i)*10.
+
+        # Set Waveform data
         self.l1b.waveform.set_waveform_data(echo_power, echo_range, radar_mode)
 
         # Transfer valid flag
