@@ -56,6 +56,31 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         return freeboard, freeboard_uncertainty
 
 
+class SnowFreeboardAssumption(L2FreeboardAlgorithmBaseClass):
+    # TODO: Add functionality to use snow density
+    """ Applies geometric corrections for snow wave progagation """
+
+    def __init__(self):
+        super(SnowFreeboardAssumption, self).__init__()
+
+    def _get_freeboard(self, l1b, l2):
+        """ Compute the freeboard and its uncertainty """
+
+        # Init parameter arrays
+        shape = l2.afrb.shape
+        freeboard = np.full(shape, np.nan, dtype=np.float32)
+        freeboard_uncertainty = np.full(shape, np.nan, dtype=np.float32)
+
+        # Transfer freeboard only for sea ice waveforms
+        is_ice = l2.surface_type.sea_ice.indices
+        freeboard[is_ice] = l2.afrb[is_ice]
+
+        # Also just transfer "radar" freeboard uncertainty
+        freeboard_uncertainty[is_ice] = l2.afrb.uncertainty[is_ice]
+
+        return freeboard, freeboard_uncertainty
+
+
 class L2RadarFreeboardAlgorithmBaseClass(object):
 
     def __init__(self):
