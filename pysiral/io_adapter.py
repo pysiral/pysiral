@@ -997,3 +997,11 @@ class L1bAdapterICESat(object):
     @property
     def full_40Hz_shape(self):
         return (self.full_40Hz_segments_n_records)
+
+    @property
+    def time_1Hz(self):
+        return self.glah13.timestamp_1Hz
+
+    @property
+    def time_40Hz(self):
+        return self.glah13.get_parameter("Time", "d_UTCTime_40")
