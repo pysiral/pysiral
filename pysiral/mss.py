@@ -128,9 +128,18 @@ class SSASmoothedLinear(SSAInterpolator):
         # corrected by the median offset of all tiepoints from the mss
         # exceeds a certain threshold
         if self._options.pre_filtering:
+
+            # Startup
             index_dict = np.arange(l2.surface_type.lead.num)
             threshold = self._options.pre_filter_maximum_mss_median_offset
-            median_mss_offset = np.median(mss_frb[self._ssh_tiepoints])
+
+            # Compute the mean distance to the mss
+            tiepoint_mss_distance = mss_frb[self._ssh_tiepoints]
+            valid_points = np.where(np.isfinite(tiepoint_mss_distance))[0]
+            tiepoint_mss_distance = tiepoint_mss_distance[valid_points]
+            median_mss_offset = np.median(tiepoint_mss_distance)
+
+            # Filter points for outliers
             offset = np.abs(mss_frb[self._ssh_tiepoints] - median_mss_offset)
             valid = np.where(offset < threshold)
             self._ssh_tiepoints = self._ssh_tiepoints[index_dict[valid]]
