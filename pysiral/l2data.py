@@ -281,6 +281,10 @@ class Level2Data(object):
         spacing = great_circle(
             (self.track.latitude[1], self.track.longitude[1]),
             (self.track.latitude[0], self.track.longitude[0])).meters
+        if np.isclose(spacing, 0.0):
+            spacing = great_circle(
+                (self.track.latitude[-1], self.track.longitude[-1]),
+                (self.track.latitude[-2], self.track.longitude[-2])).meters
         return spacing
 
     @property
