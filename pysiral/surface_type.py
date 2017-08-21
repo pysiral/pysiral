@@ -510,5 +510,60 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
+class ICESatFarellEtAl2009(SurfaceTypeClassifier):
+    """
+    Surface Type classification algorithm from
+
+    SICCI code base (Envisat surface type classification)
+    """
+
+    def __init__(self):
+        super(ICESatFarellEtAl2009, self).__init__()
+        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
+
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
+
+    def _classify_ocean(self, options):
+        opt = options.ocean
+        parameter = self._classifier
+        ocean = ANDCondition()
+        # Ice Concentration
+        ocean.add(parameter.sic < opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self, options):
+        opt = options.lead
+        parameter = self._classifier
+        lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
+        # Reflectivity
+        lead.add(parameter.reflectivity <= opt.reflectivity_max)
+        # Echo Gain
+        lead.add(parameter.echo_gain <= opt.echo_gain_max)
+        lead.add(parameter.echo_gain >= opt.echo_gain_min)
+        # Ice Concentration
+        lead.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self, options):
+        opt = options.sea_ice
+        parameter = self._classifier
+        ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
+        # Reflectivity min
+        ice.add(parameter.reflectivity > opt.reflectivity_min)
+        # Ice Concentration
+        ice.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
+
+
 def get_surface_type_class(name):
     return globals()[name]()
