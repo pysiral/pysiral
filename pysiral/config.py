@@ -38,10 +38,12 @@ PYSIRAL_VERSION_FILENAME = "050dev"
 HOSTNAME = socket.gethostname()
 
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
-                    "cryosat2": "SIRAL", "sentinel3a": "SRAL"}
+                    "cryosat2": "SIRAL", "sentinel3a": "SRAL",
+                    "icesat": "ICESat"}
 
 MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
-                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A"}
+                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
+                     "icesat": "GLAS"}
 
 
 class ConfigInfo(DefaultLoggingClass):
