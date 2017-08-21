@@ -542,10 +542,12 @@ class ICESatFarellEtAl2009(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
         # Reflectivity
-        lead.add(parameter.reflectivity <= opt.reflectivity_max)
+#        lead.add(parameter.reflectivity <= opt.reflectivity_max)
         # Echo Gain
-        lead.add(parameter.echo_gain <= opt.echo_gain_max)
-        lead.add(parameter.echo_gain >= opt.echo_gain_min)
+#        lead.add(parameter.echo_gain <= opt.echo_gain_max)
+#         lead.add(parameter.echo_gain >= opt.echo_gain_min)
+        lead.add(parameter.echo_gain >= 150.)
+
         # Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
@@ -558,7 +560,12 @@ class ICESatFarellEtAl2009(SurfaceTypeClassifier):
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
         # Reflectivity min
-        ice.add(parameter.reflectivity > opt.reflectivity_min)
+#        reflectivity = np.array(parameter.reflectivity)
+#        reflectivity[np.isnan(reflectivity)] = 999.
+#        ice.add(reflectivity > opt.reflectivity_min)
+
+        ice.add(parameter.echo_gain < 100.)
+
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
