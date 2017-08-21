@@ -873,14 +873,13 @@ class L1bAdapterICESat(object):
         # sea ice surface elevation
         alt = np.full(time.shape, 590000.)
 
-
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(lon, lat, alt)
 
         # Transfer the timestamp (needs to be datetime)
         # time in glah13 is: seconds since 2000-01-01 12:00:00 UTC
         timestamp = np.ndarray(time.shape, dtype=object)
-        datum = datetime(2000, 1, 1, 12, 0, 0, tzinfo=pytz.utc)
+        datum = datetime(2000, 1, 1, 12, 0, 0)
         for i in np.arange(len(timestamp)):
             timestamp[i] = datum + relativedelta(seconds=time[i])
 
