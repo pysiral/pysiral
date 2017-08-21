@@ -1061,6 +1061,37 @@ class SICCIOcog(BaseRetracker):
 #        plt.show(block=True)
 #        # stop
 
+
+class ICESatGLAH13Elevation(BaseRetracker):
+    """ Pseudo-retracker for ICESat GLAH13 data """
+
+    DOCSTR = r"Pseudo-retracker for ICESat GLAH13 data"
+
+    def __init__(self):
+        super(ICESatGLAH13Elevation, self).__init__()
+
+    def set_default_options(self):
+        self.set_options(**self.default_options_dict)
+
+    def create_retracker_properties(self, n_records):
+        pass
+
+    def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
+        """ API Calling method """
+
+        # For l1bdata files from glah13 data, the range that leads to
+        # the sea ice surface elevation is encoded in the first entry
+        # for record in the waveform range array
+        for i in indices:
+            # Mandatory return function
+            self._range[i] = rng[i, 0]
+            self._power[i] = 1.0
+
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
+
+
 # %% Function for CryoSat-2 based retracker
 
 def wfm_get_noise_level(wfm, oversample_factor):
