@@ -1014,6 +1014,13 @@ class L1bAdapterICESat(object):
             value = self._get_40Hz_full_variable(value_glah13)
             self.l1b.classifier.add(value, target)
 
+        # Add reflectivity correction
+        reflect_corr_1Hz = self.glah13.reflect_corr_1Hz
+        reflect_corr_40Hz_full = self._get_40Hz_from_1Hz(
+                reflect_corr_1Hz, full=True)
+        self.l1b.classifier.add(reflect_corr_40Hz_full,
+                                "reflectivity_correction")
+
         # Transfer parameters from the Elevation_Flags group
         group_name = "Elevation_Flags"
         keys = ["elv_cloud_flg"]
