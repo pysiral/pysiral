@@ -807,6 +807,7 @@ class L1bAdapterICESat(object):
             segment_offset += full_40Hz_segment_records
 
         # Save results to class
+        self.track_id_40Hz = track_id_40Hz
         self.full_40Hz_segments_n_records = full_40Hz_segments_n_records
         self.full_40Hz_segments_index = full_40Hz_segments_index
         self.full_40Hz_segments_index_map = full_40Hz_segments_index_map
