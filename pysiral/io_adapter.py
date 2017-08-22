@@ -909,10 +909,20 @@ class L1bAdapterICESat(object):
 
         # Compute range that produces the sea ice surface elevation in
         # the glah13 files with the artificial altitude
-        altitude = self.l1b.time_orbit.altitude
+
+        # Get the elevation
         si_elev_40hz = self.glah13.get_parameter("Elevation_Surfaces",
                                                  "d_elev")
         sea_ice_surface_elev = self._get_40Hz_full_variable(si_elev_40hz)
+
+        # Get and apply elecation saturation correction
+        elev_sat_corr_40Hz = self.glah13.get_parameter(
+                "Elevation_Corrections", "d_satElevCorr")
+        elev_sat_corr = self._get_40Hz_full_variable(elev_sat_corr_40Hz)
+        sea_ice_surface_elev += elev_sat_corr
+
+        # Compute range with altitude from time_orbit group
+        altitude = self.l1b.time_orbit.altitude
         laser_range = altitude - sea_ice_surface_elev
         for i in range(3):
             echo_range[:, i] = laser_range + float(i)*10.
