@@ -40,20 +40,22 @@ corrections: []
 
 # Surface type classification algorithm
 surface_type: 
-    pyclass: ICESatFarellEtAl2009
+    pyclass: ICESatKhvorostovskyTPEnhanced
     options: 
         lrm:
             ocean:
                 ice_concentration_min: 5.0
             lead:
-                reflectivity_max: 0.5
-                echo_gain_min: 13
-                echo_gain_max: 28
+                reflectivity_diff_max: 0.3
+                elevation_offset_sdev_factor: 0.5
                 ice_concentration_min: 70.0
-            sea_ice:
-                reflectivity_min: 0.5
+                filter_width_m: 25000.
+                footprint_spacing_m: 175.
+            sea_ice: 
+                echo_gain_max: 50.0           # "High indicates low SNR"
                 ice_concentration_min: 70.0
-        
+                # Will also have a criterion: is not lead
+
 # Retracking algorithm dependent on surface type
 retracker: 
     ocean: 

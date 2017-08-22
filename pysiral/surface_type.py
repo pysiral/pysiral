@@ -572,5 +572,132 @@ class ICESatFarellEtAl2009(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
+class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
+    """ Classifier based on TC paper from Kirill (lead detection part)
+    which uses coincident local dips in reflectivity and elevation
+    to identify ssh tie points (see Section 3.3.2 An improved algorithm
+    for the TP method). Ocean is identified from sea ice concentration
+    and ice identified as every valid elevation that is neither ocean
+    nor lead.
+
+    Reference:
+        Khvorostovsky, K. and Rampal, P.: On retrieving sea ice freeboard from
+        ICESat laser altimeter, The Cryosphere, 10, 2329-2346,
+        https://doi.org/10.5194/tc-10-2329-2016, 2016.
+    """
+
+    REQUIRED_CLASSIFIERS = [
+            'reflectivity',               # ICESat uncorrected refletivity
+            'sea_ice_surface_elevation'   # ICESat surface elevation
+            'sic',                        # from l2
+            'mss']                        # from l2
+
+    CLASSES = ["unkown", "ocean", "lead", "sea_ice"]
+
+    def __init__(self):
+        super(ICESatKhvorostovskyTPEnhanced, self).__init__()
+
+    def _classify(self, options):
+        self._classify_ocean(options)
+        self._classify_leads(options)
+        self._classify_sea_ice(options)
+
+    def _classify_ocean(self, options):
+        """ Ocean classification based on sea ice concentration only
+        since land will be excluded anyway """
+        opt = options.ocean
+        parameter = self._classifier
+        ocean = ANDCondition()
+        # Ice Concentration
+        ocean.add(parameter.sic < opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ocean.flag, "ocean")
+
+    def _classify_leads(self, options):
+        """ Follow the procedure proposed by Kirill: Identification of
+        colocated dips in local elevation & reflectivity """
+
+        # Translate window size in km to indices
+        window_size = self.get_filter_width(
+                options.filter_width_m,
+                options.footprint_spacing_m)
+
+        # get local dips in reflectivity
+        delta_r = self.get_delta_r(reflectivity, window_size, sdev_factor)
+
+        opt = options.lead
+        parameter = self._classifier
+        lead = ANDCondition()
+        # Mandatory radar mode flag
+        lead.add(self._is_radar_mode)
+        # Reflectivity
+        lead.add(parameter.reflectivity <= opt.reflectivity_max)
+#         lead.add(parameter.echo_gain >= 150.)
+        # Ice Concentration
+        lead.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(lead.flag, "lead")
+
+    def _classify_sea_ice(self, options):
+        """ Sea ice is essentially the valid rest (not-ocean & not lead) """
+        opt = options.sea_ice
+        parameter = self._classifier
+        ice = ANDCondition()
+        # Mandatory radar mode flag
+        ice.add(self._is_radar_mode)
+        # Should not be a lead
+        ice.add(np.logical_not(self._surface_type.lead.flag))
+        # High gain value indicates low SNR
+        ice.add(parameter.echo_gain <= opt.echo_gain_max)
+        # Ice Concentration
+        ice.add(parameter.sic > opt.ice_concentration_min)
+        # Done, add flag
+        self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def get_filter_width(self, filter_width_m, footprint_spacing_m):
+        filter_width = filter_width_m / footprint_spacing_m
+        # Make sure filter width is odd integer
+        filter_width = np.floor(filter_width) // 2 * 2 + 1
+        filter_width = filter_width.astype(int)
+        return filter_width
+
+    def get_delta_r(self, reflectivity, window_size, sdev_factor):
+        """ Compute delta_r (\Delta R) as measure for local reflectivity
+        dips """
+
+        # 1. Compute background reflectivity
+        background_reflectivity = np.full(reflectivity.shape, np.nan)
+
+        # Support Varaibles (Debug purposes only)
+        filter_mean = np.full(reflectivity.shape, np.nan)
+        filter_sdev = np.full(reflectivity.shape, np.nan)
+
+        # First try: simple loop (is there a better way?)
+        n = len(reflectivity)
+        filter_pad = int((window_size-1)/2)
+        for i in np.arange(n):
+
+            # Get indices
+            i0, i1 = i-filter_pad, i+filter_pad+1
+            i0 = i0 if i0 >= 0 else 0
+            i1 = i1 if i1 <= n-1 else n
+
+            # Get statistics of filter subset
+            reflectivity_subset = reflectivity[i0:i1]
+            filter_mean[i] = np.nanmean(reflectivity_subset)
+            filter_sdev[i] = np.nanstd(reflectivity_subset)
+
+            # Background reflectivity is mean of filter values above
+            # certain threshold to exclude other leads
+            threshold = filter_mean[i] - sdev_factor * filter_sdev[i]
+            background_values = np.where(reflectivity_subset > threshold)[0]
+            background_reflectivity[i] = np.nanmean(background_values)
+
+        # Compute local reflectivity offset from background reflectivity
+        delta_r = background_reflectivity - reflectivity
+
+        return delta_r
+
+
 def get_surface_type_class(name):
     return globals()[name]()
