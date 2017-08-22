@@ -156,7 +156,6 @@ class SurfaceType(object):
 #        if name in ["__getnewargs_ex__", "__deepcopy__"]:
 #            raise AttributeError("%r has no attribute %r" % (type(self), name))
 
-
 class IceType(object):
     """
     Container for ice type information
@@ -233,6 +232,7 @@ class SurfaceTypeClassifier(object):
 
         # add sea ice concentration
         self.add_classifiers(l2.sic, "sic")
+        self.add_classifiers(l2.sic, "mss")
 
         # add radar mode
         self.add_classifiers(l1b.waveform.radar_mode, "radar_mode")

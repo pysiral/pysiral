@@ -326,6 +326,10 @@ class Level2Processor(DefaultLoggingClass):
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
+            # get mss for orbit (this is necessary e.g. for icesat)
+            l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
+
+
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
             # TODO: Add L2 classifiers (ice concentration, ice type)
@@ -618,9 +622,6 @@ class Level2Processor(DefaultLoggingClass):
         return False, None
 
     def _estimate_sea_surface_height(self, l2):
-
-        # 1. get mss for orbit
-        l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
 
         # 2. get get sea surface anomaly
         ssa = get_l2_ssh_class(self._l2def.ssa.pyclass)
