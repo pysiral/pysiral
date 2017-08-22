@@ -1084,7 +1084,7 @@ class ICESatGLAH13Elevation(BaseRetracker):
         # for record in the waveform range array
         for i in indices:
             # Mandatory return function
-            self._range[i] = rng[i, 0] # if is_valid[i] else np.nan
+            self._range[i] = rng[i, 0] if is_valid[i] else np.nan
             self._power[i] = 1.0
 
         if "uncertainty" in self._options:
