@@ -561,10 +561,11 @@ class ICESatFarellEtAl2009(SurfaceTypeClassifier):
         # Reflectivity min
 #        reflectivity = np.array(parameter.reflectivity)
 #        reflectivity[np.isnan(reflectivity)] = 999.
-#        ice.add(reflectivity > opt.reflectivity_min)
+        ice.add(parameter.reflectivity > opt.reflectivity_min)
 
-        ice.add(parameter.echo_gain < 100.)
+        ice.add(parameter.echo_gain <= opt.echo_gain_max)
 
+#        ice.add(parameter.echo_gain < 100.)
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
         # Done, add flag
