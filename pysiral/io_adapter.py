@@ -1022,6 +1022,15 @@ class L1bAdapterICESat(object):
             value = self._get_40Hz_full_variable(value_glah13)
             self.l1b.classifier.add(value, target)
 
+        # Add Gaussian fit standard deviation
+        group_name = "Elevation_Surfaces"
+        keys = ["d_SeaIceVar", "d_elev"]
+        targets = ["gaussian_variance", "sea_ice_surface_elevation"]
+        for key, target in zip(keys, targets):
+            value_glah13 = self.glah13.get_parameter(group_name, key)
+            value = self._get_40Hz_full_variable(value_glah13)
+            self.l1b.classifier.add(value, target)
+
         # Add reflectivity correction
         reflect_corr_1Hz = self.glah13.reflect_corr_1Hz
         reflect_corr_40Hz_full = self._get_40Hz_from_1Hz(
