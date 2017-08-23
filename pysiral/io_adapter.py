@@ -920,6 +920,7 @@ class L1bAdapterICESat(object):
                 "Elevation_Corrections", "d_satElevCorr")
         elev_sat_corr = self._get_40Hz_full_variable(elev_sat_corr_40Hz)
         sea_ice_surface_elev += elev_sat_corr
+        self.sea_ice_surface_elevation_corrected = sea_ice_surface_elev
 
         # Compute range with altitude from time_orbit group
         altitude = self.l1b.time_orbit.altitude
@@ -1024,12 +1025,29 @@ class L1bAdapterICESat(object):
 
         # Add Gaussian fit standard deviation
         group_name = "Elevation_Surfaces"
-        keys = ["d_SeaIceVar", "d_elev"]
-        targets = ["gaussian_variance", "sea_ice_surface_elevation"]
+        keys = ["d_SeaIceVar"]
+        targets = ["gaussian_variance"]
         for key, target in zip(keys, targets):
             value_glah13 = self.glah13.get_parameter(group_name, key)
             value = self._get_40Hz_full_variable(value_glah13)
             self.l1b.classifier.add(value, target)
+
+        # Add corrected sea ice surface elevation
+        value = self.sea_ice_surface_elevation_corrected
+
+        # Remove elevations over land
+        is_land = self.l1b.surface_type.land.indices
+        value[is_land] = np.nan
+
+        # Remove invalid elevations
+        is_valid = self.l1b.waveform.is_valid
+        value[np.where(np.logical_not(is_valid))[0]] = np.nan
+
+        # Last sanity check
+        invalid = np.where(value > 100.)[0]
+        value[invalid] = np.nan
+
+        self.l1b.classifier.add(value, "sea_ice_surface_elevation_corrected")
 
         # Add reflectivity correction
         reflect_corr_1Hz = self.glah13.reflect_corr_1Hz
