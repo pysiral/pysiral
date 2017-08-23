@@ -102,6 +102,9 @@ class ICESatPreProc(L1bPreProc):
             segment_orbit = track_orbit_dict[segment_track_ids[0]]
             l1b_subset.info.set_attribute("orbit", segment_orbit)
 
+            # Trim subset
+            l1b_subset_trimmed = self.trim_non_ocean_data(l1b_subset)
+
 #            import matplotlib.pyplot as plt
 #
 #            plt.figure()
@@ -110,8 +113,10 @@ class ICESatPreProc(L1bPreProc):
 #            plt.show()
 #            stop
 
+            if l1b_subset_trimmed is None:
+                continue
 
             # Store subset in output list
-            l1b_list.append(l1b_subset)
+            l1b_list.append(l1b_subset_trimmed)
 
         return l1b_list
