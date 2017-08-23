@@ -46,7 +46,8 @@ surface_type:
             ocean:
                 ice_concentration_min: 5.0
             lead:
-                reflectivity_diff_max: 0.3
+                reflectivity_diff_min: 0.2
+                reflectivity_offset_sdev_factor: 1.5
                 elevation_offset_sdev_factor: 0.5
                 ice_concentration_min: 70.0
                 filter_width_m: 25000.
