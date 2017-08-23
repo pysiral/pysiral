@@ -587,10 +587,10 @@ class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
     """
 
     REQUIRED_CLASSIFIERS = [
-            'reflectivity',               # ICESat uncorrected refletivity
-            'sea_ice_surface_elevation'   # ICESat surface elevation
-            'sic',                        # from l2
-            'mss']                        # from l2
+            'reflectivity',                        # ICESat refletivity
+            'sea_ice_surface_elevation_corrected'  # ICESat surface elevation
+            'sic',                                 # from l2
+            'mss']                                 # from l2
 
     CLASSES = ["unkown", "ocean", "lead", "sea_ice"]
 
@@ -598,6 +598,7 @@ class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
         super(ICESatKhvorostovskyTPEnhanced, self).__init__()
 
     def _classify(self, options):
+        """ Class API method """
         self._classify_ocean(options)
         self._classify_leads(options)
         self._classify_sea_ice(options)
@@ -617,40 +618,97 @@ class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
         """ Follow the procedure proposed by Kirill: Identification of
         colocated dips in local elevation & reflectivity """
 
-        # Translate window size in km to indices
-        window_size = self.get_filter_width(
-                options.filter_width_m,
-                options.footprint_spacing_m)
-
-        # get local dips in reflectivity
-        delta_r = self.get_delta_r(reflectivity, window_size, sdev_factor)
-
+        # Aliases
         opt = options.lead
         parameter = self._classifier
+
+        # Translate window size in km to indices
+        window_size = self.get_filter_width(
+                opt.filter_width_m,
+                opt.footprint_spacing_m)
+
+        # get local dips in elevation
+        elevation = parameter.sea_ice_surface_elevation_corrected
+        elevation -= parameter.mss
+        hr, hr_mean, hr_sigma, index_list = self.get_elevation_parameters(
+                elevation, window_size)
+
+        # get local dips in reflectivity
+        delta_r = self.get_delta_r(
+                parameter.reflectivity,
+                window_size,
+                opt.reflectivity_offset_sdev_factor,
+                index_list)
+
+        # All criterias needs to be fullfilled
         lead = ANDCondition()
+
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
-        # Reflectivity
-        lead.add(parameter.reflectivity <= opt.reflectivity_max)
-#         lead.add(parameter.echo_gain >= 150.)
-        # Ice Concentration
+
+        # Local Reflectivity Minimum
+        lead.add(delta_r >= opt.reflectivity_diff_min)
+
+        # Local Elevation Minimum
+        hr_max = hr_mean - opt.elevation_offset_sdev_factor * hr_sigma
+        lead.add(hr < hr_max)
+
+        # Obligatory Ice Concentration
         lead.add(parameter.sic > opt.ice_concentration_min)
+
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
+#
+#        import matplotlib.pyplot as plt
+#
+#        x = np.arange(len(elevation))
+#        lead_indices = self._surface_type.lead.indices
+#
+#        plt.figure()
+#        plt.plot(x, hr, label="hr")
+#        plt.plot(x, hr_mean, label="hr_mean")
+#        plt.plot(x, hr_max, label="hr_max")
+#        plt.legend()
+
+#        plt.figure("reflectivity")
+#        plt.plot(x, parameter.reflectivity)
+#        plt.scatter(x[lead_indices], parameter.reflectivity[lead_indices],
+#                    color="red", alpha=0.5)
+#
+#        plt.figure("delta_r")
+#        plt.plot(x, delta_r)
+#        plt.scatter(x[lead_indices], delta_r[lead_indices],
+#                    color="red", alpha=0.5)
+#        plt.hlines(0.3, x[0], x[-1])
+#
+#        plt.figure("elevation")
+#        plt.plot(x, elevation, label="elevation")
+#        plt.plot(x, background_elevation, label="background_elevation")
+#        plt.scatter(x[lead_indices], elevation[lead_indices],
+#                    alpha=0.5, color="red")
+#        plt.legend()
+#
+#        plt.show()
+#        stop
 
     def _classify_sea_ice(self, options):
         """ Sea ice is essentially the valid rest (not-ocean & not lead) """
         opt = options.sea_ice
         parameter = self._classifier
         ice = ANDCondition()
+
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
+
         # Should not be a lead
         ice.add(np.logical_not(self._surface_type.lead.flag))
+
         # High gain value indicates low SNR
         ice.add(parameter.echo_gain <= opt.echo_gain_max)
+
         # Ice Concentration
         ice.add(parameter.sic > opt.ice_concentration_min)
+
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
@@ -661,21 +719,26 @@ class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
         filter_width = filter_width.astype(int)
         return filter_width
 
-    def get_delta_r(self, reflectivity, window_size, sdev_factor):
+    def get_delta_r(self, reflectivity, window_size, sdev_factor, index_list):
         """ Compute delta_r (\Delta R) as measure for local reflectivity
         dips """
 
-        # 1. Compute background reflectivity
+        # Compute background reflectivity
         background_reflectivity = np.full(reflectivity.shape, np.nan)
+
+        # Filter reflectivity
+        invalid = np.where(reflectivity > 1)[0]
+        reflectivity[invalid] = np.nan
 
         # Support Varaibles (Debug purposes only)
         filter_mean = np.full(reflectivity.shape, np.nan)
         filter_sdev = np.full(reflectivity.shape, np.nan)
+        filter_threshold = np.full(reflectivity.shape, np.nan)
 
         # First try: simple loop (is there a better way?)
         n = len(reflectivity)
         filter_pad = int((window_size-1)/2)
-        for i in np.arange(n):
+        for i in index_list:
 
             # Get indices
             i0, i1 = i-filter_pad, i+filter_pad+1
@@ -690,13 +753,69 @@ class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
             # Background reflectivity is mean of filter values above
             # certain threshold to exclude other leads
             threshold = filter_mean[i] - sdev_factor * filter_sdev[i]
+            filter_threshold[i] = threshold
             background_values = np.where(reflectivity_subset > threshold)[0]
-            background_reflectivity[i] = np.nanmean(background_values)
+            background_reflectivity[i] = np.nanmean(
+                    reflectivity_subset[background_values])
 
         # Compute local reflectivity offset from background reflectivity
         delta_r = background_reflectivity - reflectivity
 
+
+
+#        import matplotlib.pyplot as plt
+#        plt.figure("delta_r debug")
+##        plt.plot(filter_mean, label="filter_mean")
+##        plt.plot(filter_sdev, label="filter_sdev")
+#        plt.plot(reflectivity, label="reflectivity", alpha=0.5)
+#        plt.plot(filter_threshold, label="filter_threshold")
+#        plt.plot(background_reflectivity, label="background_reflectivity")
+#        plt.plot(background_reflectivity-0.3, linestyle="dashed",
+#                 label="background_reflectivity")
+#        plt.legend()
+#        plt.show()
+#        stop
+
         return delta_r
+
+    def get_elevation_parameters(self, elevation, window_size):
+        """ The background elevation is defined as the running mean
+        over a filter window (usually 25km) minus a certain fraction
+        of the elevation standard deviation (`sdev_factor`) of this window """
+
+        # Output variables
+        hr = np.full(elevation.shape, np.nan)
+        hr_mean = np.full(elevation.shape, np.nan)
+        hr_sigma = np.full(elevation.shape, np.nan)
+
+        # Only compute for valid elevations
+        index_list = np.where(np.isfinite(elevation))[0]
+
+        n = len(elevation)
+        filter_pad = int((window_size-1)/2)
+
+        # First pass: compute hr
+        for i in index_list:
+            # Get indices
+            i0, i1 = i-filter_pad, i+filter_pad+1
+            i0 = i0 if i0 >= 0 else 0
+            i1 = i1 if i1 <= n-1 else n
+            # Get statistics of filter subset
+            elevation_subset = elevation[i0:i1]
+            hr[i] = elevation[i] - np.nanmean(elevation_subset)
+
+        # second pass: compute hr statistics
+        for i in index_list:
+            # Get indices
+            i0, i1 = i-filter_pad, i+filter_pad+1
+            i0 = i0 if i0 >= 0 else 0
+            i1 = i1 if i1 <= n-1 else n
+            # Get statistics of filter subset
+            hr_subset = hr[i0:i1]
+            hr_mean[i] = np.nanmean(hr_subset)
+            hr_sigma[i] = np.nanstd(hr_subset)
+
+        return hr, hr_mean, hr_sigma, index_list
 
 
 def get_surface_type_class(name):
