@@ -63,6 +63,9 @@ class Level2Data(object):
         self._source_primary_filename = "unkown"
         self._l2_algorithm_id = "unkown"
 
+        # Other Class properties
+        self._is_evenly_spaced = time_orbit.is_evenly_spaced
+
         # Create Level2 Data Groups
         self._create_l2_data_items()
 

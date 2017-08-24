@@ -574,13 +574,15 @@ class L1bMetaData(object):
 
 
 class L1bTimeOrbit(object):
+
     """ Container for Time and Orbit Information of L1b Data """
-    def __init__(self, info):
+    def __init__(self, info, is_evenly_spaced=True):
         self._info = info  # Pointer to metadata container
         self._timestamp = None
         self._longitude = None
         self._latitude = None
         self._altitude = None
+        self._is_evenly_spaced = is_evenly_spaced
 
     @property
     def longitude(self):
@@ -613,6 +615,10 @@ class L1bTimeOrbit(object):
         """ Returns dictionary with dimensions"""
         dimdict = OrderedDict([("n_records", len(self._timestamp))])
         return dimdict
+
+    @property
+    def is_evenly_spaced(self):
+        return self._is_evenly_spaced
 
     def set_position(self, longitude, latitude, altitude):
         # Check dimensions
