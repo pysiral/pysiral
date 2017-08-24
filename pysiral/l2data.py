@@ -422,19 +422,39 @@ class Level2iTimeOrbit(L1bTimeOrbit):
     are idential. This also allows to directly use the l1b.time_orbit
     oject directly) """
 
-    def __init__(self):
-        super(Level2iTimeOrbit, self).__init__(None)
+    def __init__(self, **kwargs):
+        """ Accepts `is_evenly_spaced` keyword (default: True).
+        This based on the assumption that l2i data is evenly spaced (all
+        along-track data points). For l2p data which excludes nan's
+        this must be explicetely set to false """
 
-    def from_l2i_stack(self, l2i_stack):
+        super(Level2iTimeOrbit, self).__init__(None, **kwargs)
+
+    def from_l2i_stack(self, l2i_stack, index_list=None):
         """ Creates a TimeOrbit group object from l2i import. This is
         necessary when the Level2Data object shall be constructed from an
-        l2i netcdf product """
+        l2i netcdf product.
+        The index list can be used for subsetting (e.g. only use positions
+        with valid freeboard, etc) """
+
+        # Extract parameters from l2i stack
+        timestamp = l2i_stack["timestamp"]
+        longitude = l2i_stack["longitude"]
+        latitude = l2i_stack["latitude"]
+
+        # Subset (if necessary)
+        if index_list is not None:
+            timestamp = timestamp[index_list]
+            longitude = longitude[index_list]
+            latitude = latitude[index_list]
+
+        # Get dummy altitude
+        dummy_altitude = np.full(longitude.shape, np.nan)
+
         # Set the timestamp
-        self.timestamp = l2i_stack["timestamp"]
+        self.timestamp = timestamp
         # Set the position
-        dummy_altitude = np.full(l2i_stack["longitude"].shape, np.nan)
-        self.set_position(l2i_stack["longitude"], l2i_stack["latitude"],
-                          dummy_altitude)
+        self.set_position(longitude, latitude, dummy_altitude)
 
     def from_l2i_nc_import(self, l2i):
         """ Creates a TimeOrbit group object from l2i import. This is
