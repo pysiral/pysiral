@@ -207,7 +207,7 @@ class Level2Data(object):
 
         # if array, check if correct size
         else:
-            is_np_array = np.isinstance(value, (np.ndarray, np.array))
+            is_np_array = isinstance(value, (np.ndarray, np.array))
             is_correct_size = self._check_valid_size(value)
             if is_np_array and is_correct_size:
                 return value
