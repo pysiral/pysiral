@@ -502,10 +502,10 @@ class TimeRangeRequest(DefaultLoggingClass):
             monthly_days = days_iterator(*month)
             # Clip potential omitted days in the start request
             if i == 0:
-                monthly_days = [d for d in monthly_days if d[2] <= start_day]
+                monthly_days = [d for d in monthly_days if d[2] >= start_day]
             # Clip potential omitted days in the stop request
             if i == n_month-1:
-                monthly_days = [d for d in monthly_days if d[2] >= stop_day]
+                monthly_days = [d for d in monthly_days if d[2] <= stop_day]
             days.extend(monthly_days)
         return days
 
