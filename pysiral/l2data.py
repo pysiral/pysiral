@@ -78,9 +78,19 @@ class Level2Data(object):
 
         # Sanity checks
         is_valid = self._check_if_valid_parameter(target)
+
+        # Check if the full name has been passed
+        if not is_valid and target in self._PARAMETER_CATALOG.keys():
+            target = self._PARAMETER_CATALOG[target]
+            is_valid = True
+
+        # Next check: Needs to be of correct shape
         is_correct_size = self._check_valid_size(value)
         if not is_valid or not is_correct_size:
-            return
+            msg = "Invalid parameter name: %s (See self._L2_DATA_ITEMS)"
+            msg = msg % str(target)
+            self.error.add_error("l2-invalid-parameter_name", msg)
+            self.error.raise_on_error()
 
         # Set values, uncertainty bias
         parameter = getattr(self, target)
@@ -154,8 +164,6 @@ class Level2Data(object):
         name. Adds error if result negative and returns flag (valid: True,
         invalid: False) """
         if parameter_name not in self._L2_DATA_ITEMS:
-            msg = "Invalid level-2 parameter: %s" % parameter_name
-            self.error.add_error("l2-invalid-parameter", msg)
             return False
         else:
             return True
