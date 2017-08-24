@@ -14,34 +14,46 @@ product_level_subfolder: l2p
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   title: "ESA-CCI Sea Ice ECV: Arctic Ocean Sea Ice Thickness; Antarctic Ocean Sea Ice Thickness"
-  institution: "AWI"
+  institution: "Alfred Wegener Institute Helmholtz Center for Polar and Marine Research"
   source: "Satellite radar altimetry"
-  history: ""
-  references: ""
-  tracking_id: ""
+  history: "TBD"
+  references: "TBD"
+  tracking_id: "TBD"
   conventions: "CF-1.6"
   product_version: "0.9"
-  summary: ""
-  keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
-  id: ""
-  naming: ""
-  keywords_vocabulary: ""
-  cdm_data_type: "trajectory"
-  comment: ""
-  date_created: "{utc_now}"
-  date_issued: ""
-  date_modified: ""
+  summary: "TBD"
+  keywords: "Sea ice thickness,Arctic Ocean,Antarctic Ocean,radar altimetry"
+  acknowledgements: "TBD"
+  processing_level: "Level-2 Pre-Processed (l2p)"
+  id: "TBD"
+  naming_authority: "TBD"
+  keywords_vocabulary: "TBD"
+  standard_name_vocabulary: "TBD"
+  cdm_data_type: "vector"
+  comment: "TBD"
+  date_created: "{utcnow}"
+  date_issued: "{utcnow}"
+  date_modified: "{utcnow}"
   creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
   creator_url: "http://www.awi.de"
   creator_email: "TBD"
+  contributor_name: "TBD"
+  contributor_role: "TBD"
+  publisher_name: "TBD"
+  publisher_url: "TBD"
+  publisher_email: "TBD"
   project: "ESA Sea Ice CCI"
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: "{geospatial_lat_max}"
   geospatial_lon_min: "{geospatial_lon_min}"
   geospatial_lon_max: "{geospatial_lon_max}"
+  geospatial_vertical_min: "0.0"
+  geospatial_vertical_max: "0.0"
+  geospatial_bounds: "TBD"
   time_coverage_start: "{time_coverage_start}"
   time_coverage_end: "{time_coverage_end}"
   time_coverage_duration: "{time_coverage_duration:period}"
+  time_coverage_resolution: "TBD"
   license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   source_mission_name: "{source_mission_name}"
   source_mission_id: "{source_mission_id}"
@@ -58,7 +70,7 @@ variables:
   
   timestamp:
     long_name: utc timestamp
-    standard_name: timestamp
+    standard_name: time
     units: seconds since 1970-01-01
     scale_factor: 1.0
     add_offset: 0.0
@@ -68,6 +80,8 @@ variables:
     standard_name: longitude
     units: degrees
     coordinates: timestamp
+    valid_min: 0.0
+    valid_max: 360.0
     scale_factor: 1.0
     add_offset: 0.0  
 
@@ -76,6 +90,8 @@ variables:
     standard_name: latitude
     units: degrees
     coordinates: timestamp
+    valid_min: -90.0
+    valid_max: 90.0
     scale_factor: 1.0
     add_offset: 0.0
 
