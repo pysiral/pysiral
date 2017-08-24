@@ -3,10 +3,10 @@
 from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
                             TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import DefaultL1bDataHandler
-from pysiral.l2proc import Level2Processor, Level2ProductDefinition
+from pysiral.datahandler import L2iDataHandler
+from pysiral.l2preproc import (Level2PreProcessor,
+                               Level2PreProcProductDefinition)
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import file_basename
 
 from datetime import timedelta
 import argparse
@@ -16,6 +16,10 @@ import os
 
 
 def pysiral_l2preproc():
+    """ Caller for converting Level-2 Intermediate (l2i) into
+    Level-2 Pre-Processed (l2p) data products.
+    NOTE: At the moment that only means summary of valid freeboard/thickness
+          data points into daily summary files. """
 
     # Collect job settings from pysiral configuration data and
     # command line arguments
@@ -27,70 +31,68 @@ def pysiral_l2preproc():
     # Get confirmation for critical choices (if necessary)
     args.critical_prompt_confirmation()
 
-    # From here on there are two options
-    # a. Time range given -> Get l1bdata input with datahandler
-    # b. Predefined set of l1b input files
-    # Splitting into functions for clarity
-    if args.is_time_range_request:
-        pysiral_l2proc_time_range_job(args)
-    else:
-        pysiral_l2proc_l1b_predef_job(args)
-
-
-def pysiral_l2proc_time_range_job(args):
-    """ This is a Level-2 Processor job for a given time range """
-
+    # Start the level-2 pre-processor
     # Get start time of processor run
     t0 = time.clock()
 
     # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
-    mission_id = product_def.l2def.mission.id
-    hemisphere = product_def.l2def.roi.hemisphere
+    product_def = Level2PreProcProductDefinition()
 
     # Specifically add an output handler
     product_def.add_output_definition(
-            args.l2_output, overwrite_protection=args.overwrite_protection)
-
-    # Break down the time range in individual month
-    start, stop = args.start, args.stop
-    job = TimeRangeRequest(start, stop, exclude_month=args.exclude_month)
-    job.clip_to_mission(mission_id)
-    job.raise_if_empty()
+            args.l2i_product_dir,
+            args.l2p_output,
+            overwrite_protection=args.overwrite_protection)
 
     # Prepare DataHandler
-    l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere,
-                                             version=args.l1b_version)
-    # Processor Initialization
-    l2proc = Level2Processor(product_def)
+    # The l2 pre-processor requires l2i input files
+    l2i_handler = L2iDataHandler(args.l2i_product_dir)
 
-#    # Loop over iterations (one per month)
-    for time_range in job.iterations:
+    # Get list of days for processing
+    # start and/or stop can be ommitted. In this case fall back to the
+    # start and/or stop of l2i product availability
+    start = args.start if args.start is not None else l2i_handler.start_month
+    stop = args.stop if args.stop is not None else l2i_handler.stop_month
+    days = TimeRangeRequest(start, stop, period="daily",
+                            exclude_month=args.exclude_month,
+                            raise_if_empty=True)
+
+    # Processor Initialization
+    # NOTE: This is only for later cases. Not much is done here at this
+    #       point
+    l2preproc = Level2PreProcessor(product_def)
+
+#    # Loop over iterations (one per day)
+    for day in days.iterations:
 
         # Do some extra logging
-        l2proc.log.info("Processing period: %s" % time_range.label)
+        l2preproc.log.info("Processing Day [%s]" % day.start_date_label)
 
-        # Product Data Management
-        if args.remove_old:
-            for output_handler in product_def.output_handler:
-                output_handler.remove_old(time_range)
+#        XXX: This needs a bit more thought
+#        # Product Data Management
+#        if args.remove_old:
+#            for output_handler in product_def.output_handler:
+#                output_handler.remove_old(day)
 
         # Get input files
-        l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
+        l2i_daily_files = l2i_handler.get_files_for_day(day.start)
+        if len(l2i_daily_files) == 0:
+            l2preproc.log.info("- no l2i products, skip day")
+            continue
 
         # Process the orbits
-        l2proc.process_l1b_files(l1b_files)
+        l2preproc.process_l2i_files(l2i_daily_files, day)
 
-    # All done
+    # All done, log processor time
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    l2preproc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class Level2PreProcArgParser(DefaultLoggingClass):
 
     def __init__(self):
-        super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
+        super(Level2PreProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
         self.pysiral_config = ConfigInfo()
         self._args = None
@@ -99,18 +101,6 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         # use python module argparse to parse the command line arguments
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
-
-        # Add addtional check to make sure either `l1b-files` or
-        # `start ` and `stop` are set
-        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
-        start_and_stop_is_set = self._args.start_date is not None and \
-            self._args.stop_date is not None
-
-        if l1b_file_preset_is_set and start_and_stop_is_set:
-            self.parser.error("-start & -stop and -l1b-files are exclusive")
-
-        if not l1b_file_preset_is_set and not start_and_stop_is_set:
-            self.parser.error("either -start & -stop or -l1b-files required")
 
     def critical_prompt_confirmation(self):
 
@@ -121,7 +111,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         # erased for all month
         if self._args.remove_old and not no_prompt:
             message = "You have selected to remove all previous " + \
-                "l2 files for the requested period\n" + \
+                "l2p files for the requested period\n" + \
                 "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                 "Enter \"YES\" to confirm and continue: "
             result = raw_input(message)
@@ -142,7 +132,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         options = [
             ("-start", "date", "start_date", False),
             ("-stop", "date", "stop_date", False),
-            ("-l2i-product-dir", "l2i-product-dir", "l2i_basedir", True),
+            ("-l2i-product-dir", "l2i-product-dir", "l2i_product_dir", True),
             ("-l2p-output", "l2p-output", "l2p_output", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("--remove-old", "remove-old", "remove_old", False),
@@ -187,17 +177,27 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         return self._args.overwrite_protection
 
     @property
-    def l2_output(self):
-        l2_output = self._args.l2_output
+    def l2i_product_dir(self):
+        l2i_product_dir = self._args.l2i_product_dir
+        if os.path.isdir(l2i_product_dir):
+            return os.path.normpath(l2i_product_dir)
+        else:
+            msg = "Invalid l2i product dir: %s" % str(l2i_product_dir)
+            self.error.add_error("invalid-l2i-product-dir", msg)
+            self.error.raise_on_error()
+
+    @property
+    def l2p_output(self):
+        l2p_output = self._args.l2p_output
         filename = self.pysiral_config.get_settings_file(
-                "outputdef", l2_output)
+                "outputdef", l2p_output)
         if filename is None:
-            msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
+            msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2_output_ids = self.pysiral_config.get_setting_ids("outputdef")
-            for l2_output_id in l2_output_ids:
-                msg = msg + "    - " + l2_output_id+"\n"
-            self.error.add_error("invalid-l2-outputdef", msg)
+            l2p_output_ids = self.pysiral_config.get_setting_ids("outputdef")
+            for l2p_output_id in l2p_output_ids:
+                msg = msg + "    - " + l2p_output_id+"\n"
+            self.error.add_error("invalid-l2p-outputdef", msg)
             self.error.raise_on_error()
         else:
             return filename

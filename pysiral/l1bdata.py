@@ -504,11 +504,10 @@ class L1bMetaData(object):
 
     _attribute_list = [
         "pysiral_version", "mission", "mission_data_version",
-        "mission_data_source", "n_records", "orbit", "cycle",
-        "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
-        "is_orbit_subset", "is_merged_orbit",
-        "start_time", "stop_time", "region_name",
-        "lat_min", "lat_max", "lon_min", "lon_max",
+        "mission_sensor", "mission_data_source", "n_records", "orbit",
+        "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
+        "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
+        "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
         "open_ocean_percent"]
 
     def __init__(self):
@@ -575,13 +574,15 @@ class L1bMetaData(object):
 
 
 class L1bTimeOrbit(object):
+
     """ Container for Time and Orbit Information of L1b Data """
-    def __init__(self, info):
+    def __init__(self, info, is_evenly_spaced=True):
         self._info = info  # Pointer to metadata container
         self._timestamp = None
         self._longitude = None
         self._latitude = None
         self._altitude = None
+        self._is_evenly_spaced = is_evenly_spaced
 
     @property
     def longitude(self):
@@ -601,7 +602,8 @@ class L1bTimeOrbit(object):
 
     @timestamp.setter
     def timestamp(self, value):
-        self._info.check_n_records(len(value))
+        if self._info is not None:
+            self._info.check_n_records(len(value))
         self._timestamp = value
 
     @property
@@ -614,11 +616,16 @@ class L1bTimeOrbit(object):
         dimdict = OrderedDict([("n_records", len(self._timestamp))])
         return dimdict
 
+    @property
+    def is_evenly_spaced(self):
+        return self._is_evenly_spaced
+
     def set_position(self, longitude, latitude, altitude):
         # Check dimensions
-        self._info.check_n_records(len(longitude))
-        self._info.check_n_records(len(latitude))
-        self._info.check_n_records(len(altitude))
+        if self._info is not None:
+            self._info.check_n_records(len(longitude))
+            self._info.check_n_records(len(latitude))
+            self._info.check_n_records(len(altitude))
         # All fine => set values
         self._longitude = longitude
         self._latitude = latitude

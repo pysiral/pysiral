@@ -38,6 +38,8 @@ class OutputHandlerBase(DefaultLoggingClass):
         for attribute in attributes:
             attribute_name, option, placeholder = attribute
             attribute = dataset.get_attribute(attribute_name, *option)
+            if attribute is None:
+                attribute = "unknown"
             result = result.replace(placeholder, attribute)
         return result
 

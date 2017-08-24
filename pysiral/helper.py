@@ -8,8 +8,10 @@ Created on Tue Jul 21 18:04:43 2015
 from dateutil import parser as dtparser
 import numpy as np
 import time
+import calendar
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from dateutil.rrule import rrule, MONTHLY, DAILY
 
 
 def parse_datetime_str(dtstr):
@@ -59,11 +61,18 @@ def rle(inarray):
 
 def month_iterator(start_year, start_month, end_year, end_month):
     """ returns an iterator over months """
-    from dateutil.rrule import rrule, MONTHLY
-    from datetime import datetime
     start = datetime(start_year, start_month, 1)
     end = datetime(end_year, end_month, 1)
     return [(d.year, d.month) for d in rrule(MONTHLY,
+            dtstart=start, until=end)]
+
+
+def days_iterator(year, month):
+    """ returns an iterator over all days in given month """
+    all_days = calendar.monthrange(year, month)
+    start = datetime(year, month, 1)
+    end = datetime(year, month, all_days[-1])
+    return [(d.year, d.month, d.day) for d in rrule(DAILY,
             dtstart=start, until=end)]
 
 

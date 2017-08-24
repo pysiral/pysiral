@@ -17,7 +17,7 @@ Created on Mon Jul 06 10:38:41 2015
 
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
-from pysiral.helper import month_iterator, get_month_time_range
+from pysiral.helper import month_iterator, days_iterator, get_month_time_range
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -44,6 +44,9 @@ SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
 MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
                      "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
                      "icesat": "GLAS"}
+
+MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
+                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A"}
 
 
 class ConfigInfo(DefaultLoggingClass):
@@ -228,15 +231,18 @@ class RadarModes(object):
 
 class TimeRangeRequest(DefaultLoggingClass):
 
-    _PERIODS = ["monthly", "custom"]
+    _PERIODS = ["monthly", "daily", "custom"]
 
-    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[]):
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
+                 raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
         self.set_range(start_dt, stop_dt)
         self.set_period(period)
         self.set_exclude_month(exclude_month)
+        if raise_if_empty:
+            self.raise_if_empty()
 
     def __repr__(self):
         output = "TimeRangeRequest object:\n"
@@ -265,10 +271,10 @@ class TimeRangeRequest(DefaultLoggingClass):
             self.error.raise_on_error()
 
     def set_range(self, start_date, stop_date):
+        """ Set the range of the request, start_date and stop_data can
+        be either int lists (year, month, [day]) or datetime objects """
 
-        # Decode start and stop time definition
-
-        # Check if datetime objects
+        # 1. Check if datetime objects
         valid_start, valid_stop = False, False
         if isinstance(start_date, datetime):
             self._start_dt = start_date
@@ -281,7 +287,7 @@ class TimeRangeRequest(DefaultLoggingClass):
             self._validate_range()
             return
 
-        # Check and decode integer lists
+        # 2. Check and decode integer lists
         msg_template = "invalid %s time (not integer list or datetime)"
         if isinstance(start_date, list):
             if all(isinstance(item, int) for item in start_date):
@@ -297,10 +303,10 @@ class TimeRangeRequest(DefaultLoggingClass):
                 error_message = msg_template % "stop"
                 self.error.add_error("invalid-timedef", error_message)
 
-        # Raise on parsing errors
+        # 3. Raise on parsing errors
         self.error.raise_on_error()
 
-        # Check range
+        # 4. Check range
         self._validate_range()
 
     def clip_to_range(self, range_start, range_stop):
@@ -327,89 +333,56 @@ class TimeRangeRequest(DefaultLoggingClass):
         return is_clipped
 
     def set_period(self, period):
-        """
-        Set the period (monthly, weekly, etc) for the generation of
-        iterations for the time range
-        """
-
+        """ Set the period (monthly, weekly, etc) for the generation of
+        iterations for the time range """
         if period in self._PERIODS:
             self._period = period
         else:
             raise ValueError("Invalid TimeRangeRequest period: %s" % period)
 
     def set_exclude_month(self, exclude_month_list):
-        """
-        Set a list of month, that shall be ignored during the generation of
-        iterations for the time range
-        """
+        """ Set a list of month, that shall be ignored during the generation of
+        iterations for the time range """
         if exclude_month_list is None:
             exclude_month_list = []
         self._exclude_month = exclude_month_list
 
-    def get_iterations(self):
-        """
-        Return a list of iterations for the number of periods in the
-        time range
-        """
+    def get_id(self, dt_fmt="%Y%m%dT%H%M%S"):
+        return self.start_dt.strftime(dt_fmt)+"_"+self.stop_dt.strftime(dt_fmt)
 
-        iterations = []
+    def _get_iterations(self):
+        """ Return a list of iterations for the number of periods in the
+        time range """
+
+        # Return empty list if no start/stop are set
         if self._start_dt is None or self._stop_dt is None:
-            return iterations
+            return []
 
         # monthly periods: return a list of time ranges that cover the full
         # month from the first to the last month
         if self._period == "monthly":
+            iterations = self._get_monthly_iterations()
 
-            # Get an iterator for integer year and month
-            month_list = month_iterator(
-                self._start_dt.year, self._start_dt.month,
-                self._stop_dt.year, self._stop_dt.month)
+        # daily periods: return a list of time ranges for each day
+        # in the requested period (exclude_month still applies)
+        elif self._period == "daily":
+            iterations = self._get_daily_iterations()
 
-            # Filter month that are excluded from processing
-            month_list = [entry for entry in month_list if (
-                entry[1] not in self._exclude_month)]
-
-            # Create Iterations
-            n_iterations = len(month_list)
-            index = 1
-            for year, month in month_list:
-
-                # iteration will be a of type TimeRangeIteration
-                time_range = TimeRangeIteration()
-
-                # Per default get the full month
-                month_start, month_stop = get_month_time_range(year, month)
-
-                # limit the time range for first and last iteration
-                # (only if the first and the last month are not in the
-                #  exclude_month list)
-
-                first_month = self._start_dt.month
-                first_month_excluded = first_month in self._exclude_month
-                if index == 1 and not first_month_excluded:
-                    month_start = self._start_dt
-
-                last_month = self._stop_dt.month
-                last_month_excluded = last_month in self._exclude_month
-                if index == n_iterations and not last_month_excluded:
-                    month_stop = self.stop_dt
-
-                # set final time range
-                time_range.set_range(month_start, month_stop)
-                time_range.set_indices(index, n_iterations)
-                iterations.append(time_range)
-                index += 1
-
+        # Just return one iteration with custom time range
         elif self._period == "custom":
             time_range = TimeRangeIteration(base_period="custom")
             time_range.set_range(self.start_dt, self.stop_dt)
             time_range.set_indices(1, 1)
             iterations = [time_range]
 
-        return iterations
+        # This should be caught before, but always terminate an
+        # an if-elif-else
+        else:
+            msg = "Invalid period: %s" % str(self._period)
+            self.error.add_error("invalid-period", msg)
+            self.error.raise_on_error()
 
-    def get_id(self, dt_fmt="%Y%m%dT%H%M%S"):
-        return self.start_dt.strftime(dt_fmt)+"_"+self.stop_dt.strftime(dt_fmt)
+        return iterations
 
     def _decode_int_list(self, int_list, start_or_stop):
 
@@ -451,6 +424,96 @@ class TimeRangeRequest(DefaultLoggingClass):
             self.error.add_error("invalid-period", msg)
             self.error.raise_on_error()
 
+    def _get_monthly_iterations(self):
+        """ Create iterator with monthly period """
+        # Create Iterations
+        iterations = []
+        n_iterations = len(self.month_list)
+        index = 1
+        for year, month in self.month_list:
+
+            # Per default get the full month
+            period_start, period_stop = get_month_time_range(year, month)
+
+            # Clip time range to actual days for first and last iteration
+            # (only if the first and the last month are not in the
+            #  exclude_month list)
+            first_month = self._start_dt.month
+            first_month_excluded = first_month in self._exclude_month
+            if index == 1 and not first_month_excluded:
+                period_start = self.start_dt
+
+            last_month = self._stop_dt.month
+            last_month_excluded = last_month in self._exclude_month
+            if index == n_iterations and not last_month_excluded:
+                period_stop = self.stop_dt
+
+            # set final time range
+            # iteration will be a of type TimeRangeIteration
+            time_range = TimeRangeIteration(base_period=self.base_period)
+            time_range.set_range(period_start, period_stop)
+            time_range.set_indices(index, n_iterations)
+            iterations.append(time_range)
+            index += 1
+
+        return iterations
+
+    def _get_daily_iterations(self):
+        """ Create iterator with daily period """
+
+        # Get list of days
+        day_list = self.days_list
+        iterations = []
+        n_iterations = len(day_list)
+        index = 1
+
+        # Loop over days
+        for year, month, day in day_list:
+
+            # Start and stop are beginning/end of day
+            start = datetime(year, month, day)
+            stop = start + relativedelta(days=1, microseconds=-1)
+
+            # Create the iteration
+            time_range = TimeRangeIteration(base_period=self.base_period)
+            time_range.set_range(start, stop)
+            time_range.set_indices(index, n_iterations)
+            iterations.append(time_range)
+            index += 1
+
+        return iterations
+
+    @property
+    def month_list(self):
+        """ Returns a list of all month (exclude_month applies) """
+        # Get an iterator for integer year and month
+        month_list = month_iterator(
+            self._start_dt.year, self._start_dt.month,
+            self._stop_dt.year, self._stop_dt.month)
+
+        # Filter month that are excluded from processing
+        month_list = [entry for entry in month_list if (
+            entry[1] not in self._exclude_month)]
+        return month_list
+
+    @property
+    def days_list(self):
+        days = []
+        month_list = self.month_list
+        n_month = len(month_list)
+        start_day, stop_day = self.start_dt.day, self.stop_dt.day
+        for i, month in enumerate(month_list):
+            # List of all days in given month
+            monthly_days = days_iterator(*month)
+            # Clip potential omitted days in the start request
+            if i == 0:
+                monthly_days = [d for d in monthly_days if d[2] >= start_day]
+            # Clip potential omitted days in the stop request
+            if i == n_month-1:
+                monthly_days = [d for d in monthly_days if d[2] <= stop_day]
+            days.extend(monthly_days)
+        return days
+
     @property
     def _default_period(self):
         return self._PERIODS[0]
@@ -469,7 +532,28 @@ class TimeRangeRequest(DefaultLoggingClass):
 
     @property
     def iterations(self):
-        return self.get_iterations()
+        return self._get_iterations()
+
+    @property
+    def base_period(self):
+        return self._period
+
+    @property
+    def base_duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def base_duration_isoformat(self):
+        return duration_isoformat(self.base_duration)
 
     @property
     def base_period(self):
@@ -549,8 +633,34 @@ class TimeRangeIteration(object):
 
     @property
     def date_label(self):
+        return self.start_date_label+" till "+self.stop_date_label
+
+    @property
+    def start_date_label(self):
         dt_fmt = "%Y-%m-%d"
-        return self.start.strftime(dt_fmt)+" till "+self.stop.strftime(dt_fmt)
+        return self.start.strftime(dt_fmt)
+
+    @property
+    def stop_date_label(self):
+        dt_fmt = "%Y-%m-%d"
+        return self.stop.strftime(dt_fmt)
+
+    @property
+    def duration(self):
+        """ Return a duration object """
+        if self.base_period == "monthly":
+            return Duration(months=1)
+        elif self.base_period == "daily":
+            return Duration(days=1)
+        else:
+            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            return Duration(months=timedelta.months, days=timedelta.days,
+                            hours=timedelta.hours, minutes=timedelta.minutes,
+                            seconds=timedelta.seconds)
+
+    @property
+    def duration_isoformat(self):
+        return duration_isoformat(self.duration)
 
     @property
     def duration(self):

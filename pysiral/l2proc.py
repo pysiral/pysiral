@@ -15,7 +15,7 @@ from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
 from pysiral.mss import get_l2_ssh_class
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler,
-                            PysiralOutputFilenaming)
+                            PysiralOutputFilenaming, get_output_class)
 from pysiral.roi import get_roi_class
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
@@ -23,7 +23,6 @@ from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
-from pysiral.output import get_output_class
 from pysiral.path import filename_from_path, file_basename
 
 from collections import deque, OrderedDict
@@ -312,7 +311,7 @@ class Level2Processor(DefaultLoggingClass):
             self._apply_l1b_prefilter(l1b)
 
             # Initialize the orbit level-2 data container
-            l2 = Level2Data(l1b)
+            l2 = Level2Data(l1b.info, l1b.time_orbit)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)

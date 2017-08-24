@@ -5,16 +5,20 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
-from pysiral.config import PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
+                            SENSOR_NAME_DICT, MISSION_NAME_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
+from pysiral.logging import DefaultLoggingClass
+from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 
 import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
+import re
 
 
 class Level2Data(object):
@@ -45,18 +49,22 @@ class Level2Data(object):
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
 
-    def __init__(self, l1b):
+    def __init__(self, metadata, time_orbit, period=None):
 
         # Copy necessary fields form l1b
         self.error = ErrorStatus()
-        self._n_records = l1b.n_records
-        self.info = l1b.info
-        self.track = l1b.time_orbit
+        self._n_records = metadata.n_records
+        self.info = metadata
+        self.track = time_orbit
+        self.period = period
 
         # Metadata
         self._auxdata_source_dict = {}
-        self._source_primary_filename = "unavailable"
-        self._l2_algorithm_id = "unavailable"
+        self._source_primary_filename = "unkown"
+        self._l2_algorithm_id = "unkown"
+
+        # Other Class properties
+        self._is_evenly_spaced = time_orbit.is_evenly_spaced
 
         # Create Level2 Data Groups
         self._create_l2_data_items()
@@ -70,9 +78,19 @@ class Level2Data(object):
 
         # Sanity checks
         is_valid = self._check_if_valid_parameter(target)
+
+        # Check if the full name has been passed
+        if not is_valid and target in self._PARAMETER_CATALOG.keys():
+            target = self._PARAMETER_CATALOG[target]
+            is_valid = True
+
+        # Next check: Needs to be of correct shape
         is_correct_size = self._check_valid_size(value)
         if not is_valid or not is_correct_size:
-            return
+            msg = "Invalid parameter name: %s (See self._L2_DATA_ITEMS)"
+            msg = msg % str(target)
+            self.error.add_error("l2-invalid-parameter_name", msg)
+            self.error.raise_on_error()
 
         # Set values, uncertainty bias
         parameter = getattr(self, target)
@@ -91,7 +109,7 @@ class Level2Data(object):
         ii = retracker.indices
         self.range[ii] = retracker.range[ii]
         self.range.uncertainty[ii] = retracker.uncertainty[ii]
-        self.elev[ii] = self.track.altitude[ii] - retracker.range[ii]
+        self.elev[ii] = self.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
     def set_metadata(self, auxdata_source_dict=None,
@@ -135,19 +153,17 @@ class Level2Data(object):
             attribute = attr_getter(*args)
             return attribute
         except AttributeError:
-            return "attr_unavailable"
+            return "unkown"
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
-            setattr(self, item, L2ElevationArray(shape=(self._n_records)))
+            setattr(self, item, L2ElevationArray(shape=(self.n_records)))
 
     def _check_if_valid_parameter(self, parameter_name):
         """ Performs a test if parameter name is a valid level-2 parameter
         name. Adds error if result negative and returns flag (valid: True,
         invalid: False) """
         if parameter_name not in self._L2_DATA_ITEMS:
-            msg = "Invalid level-2 parameter: %s" % parameter_name
-            self.error.add_error("l2-invalid-parameter", msg)
             return False
         else:
             return True
@@ -191,7 +207,7 @@ class Level2Data(object):
 
         # if array, check if correct size
         else:
-            is_np_array = np.isinstance(value, (np.ndarray, np.array))
+            is_np_array = isinstance(value, (np.ndarray, np.array))
             is_correct_size = self._check_valid_size(value)
             if is_np_array and is_correct_size:
                 return value
@@ -204,18 +220,44 @@ class Level2Data(object):
         return versions[target]
 
     def _get_attr_mission_id(self, *args):
+        # XXX: Deprecated
         return self.info.mission
 
+    def _get_attr_source_mission_id(self, *args):
+        mission_id = self.info.mission
+        if args[0] == "uppercase":
+            mission_id = mission_id.upper()
+        return mission_id
+
+    def _get_attr_source_mission_name(self, *args):
+        mission_name = MISSION_NAME_DICT[self.info.mission]
+        if args[0] == "uppercase":
+            mission_name = mission_name.upper()
+        return mission_name
+
+    def _get_attr_source_mission_sensor(self, *args):
+        mission_sensor = SENSOR_NAME_DICT[self.info.mission]
+        if args[0] == "uppercase":
+            mission_sensor = mission_sensor.upper()
+        return mission_sensor
+
+    def _get_attr_source_hemisphere(self, *args):
+        return self.hemisphere
+
     def _get_attr_hemisphere(self, *args):
+        # XXX: Deprecated
         return self.hemisphere
 
     def _get_attr_hemisphere_code(self, *args):
+        # XXX: Deprecated
         return self.hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
+        # XXX: Deprecated
         return self.info.start_time.strftime(dtfmt)
 
     def _get_attr_stopdt(self, dtfmt):
+        # XXX: Deprecated
         return self.info.stop_time.strftime(dtfmt)
 
     def _get_attr_geospatial_lat_min(self, *args):
@@ -233,17 +275,45 @@ class Level2Data(object):
     def _gett_attr_geospatial_str(self, value):
         return "%.4f" % value
 
+    def _get_attr_source_auxdata_sic(self, *args):
+        value = self._auxdata_source_dict.get("sic", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_sic
+        return value
+
+    def _get_attr_source_auxdata_sitype(self, *args):
+        value = self._auxdata_source_dict.get("sitype", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_sitype
+        return value
+
+    def _get_attr_source_auxdata_mss(self, *args):
+        value = self._auxdata_source_dict.get("mss", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_mss
+        return value
+
+    def _get_attr_source_auxdata_snow(self, *args):
+        value = self._auxdata_source_dict.get("snow", "unkown")
+        if value == "unkown":
+            value = self.info.source_auxdata_snow
+        return value
+
     def _get_attr_source_sic(self, *args):
-        return self._auxdata_source_dict["sic"]
+        # XXX: Deprecated
+        return self._auxdata_source_dict.get("sic", "unkown")
 
     def _get_attr_source_sitype(self, *args):
-        return self._auxdata_source_dict["sitype"]
+        # XXX: Deprecated
+        return self._auxdata_source_dict.get("sitype", "unkown")
 
     def _get_attr_source_mss(self, *args):
-        return self._auxdata_source_dict["mss"]
+        # XXX: Deprecated
+        return self._auxdata_source_dict.get("mss", "unkown")
 
     def _get_attr_source_snow(self, *args):
-        return self._auxdata_source_dict["snow"]
+        # XXX: Deprecated
+        return self._auxdata_source_dict.get("snow", "unkown")
 
     def _get_attr_source_primary(self, *args):
         return self._source_primary_filename
@@ -252,7 +322,26 @@ class Level2Data(object):
         return self._l2_algorithm_id
 
     def _get_attr_utcnow(self, *args):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.now().isoformat()
+
+    def _get_attr_time_coverage_start(self, *args):
+        datetime = self.period.start
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_end(self, *args):
+        datetime = self.period.stop
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
+
+    def _get_attr_time_coverage_duration(self, *args):
+        return self.period.duration_isoformat
 
     def _get_attr_time_resolution(self, *args):
         tdelta = self.timestamp[-1]-self.timestamp[0]
@@ -279,12 +368,8 @@ class Level2Data(object):
     @property
     def footprint_spacing(self):
         spacing = great_circle(
-            (self.track.latitude[1], self.track.longitude[1]),
-            (self.track.latitude[0], self.track.longitude[0])).meters
-        if np.isclose(spacing, 0.0):
-            spacing = great_circle(
-                (self.track.latitude[-1], self.track.longitude[-1]),
-                (self.track.latitude[-2], self.track.longitude[-2])).meters
+            (self.latitude[1], self.longitude[1]),
+            (self.latitude[0], self.longitude[0])).meters
         return spacing
 
     @property
@@ -306,6 +391,10 @@ class Level2Data(object):
         return self.track.latitude
 
     @property
+    def altitude(self):
+        return self.track.latitude
+
+    @property
     def surface_type_flag(self):
         return self.surface_type.flag
 
@@ -315,6 +404,67 @@ class Level2Data(object):
         ssh.set_value(self.mss+self.ssa)
         ssh.set_uncertainty(self.ssa.uncertainty)
         return ssh
+
+
+class Level2iMetadata(L1bMetaData):
+    """ Container for Level-2 intermediate meta data (Essentially
+    mimicks the L1bdata equivalent since the data location
+    are idential. This also allows to directly use the l1b.info
+    object directly) """
+
+    def __init__(self):
+        super(Level2iMetadata, self).__init__()
+
+
+class Level2iTimeOrbit(L1bTimeOrbit):
+    """ Container for Level-2 intermediate time orbit group (Essentially
+    mimicks the L1bdata equivalent since the data location
+    are idential. This also allows to directly use the l1b.time_orbit
+    oject directly) """
+
+    def __init__(self, **kwargs):
+        """ Accepts `is_evenly_spaced` keyword (default: True).
+        This based on the assumption that l2i data is evenly spaced (all
+        along-track data points). For l2p data which excludes nan's
+        this must be explicetely set to false """
+
+        super(Level2iTimeOrbit, self).__init__(None, **kwargs)
+
+    def from_l2i_stack(self, l2i_stack, index_list=None):
+        """ Creates a TimeOrbit group object from l2i import. This is
+        necessary when the Level2Data object shall be constructed from an
+        l2i netcdf product.
+        The index list can be used for subsetting (e.g. only use positions
+        with valid freeboard, etc) """
+
+        # Extract parameters from l2i stack
+        timestamp = l2i_stack["timestamp"]
+        longitude = l2i_stack["longitude"]
+        latitude = l2i_stack["latitude"]
+
+        # Subset (if necessary)
+        if index_list is not None:
+            timestamp = timestamp[index_list]
+            longitude = longitude[index_list]
+            latitude = latitude[index_list]
+
+        # Get dummy altitude
+        dummy_altitude = np.full(longitude.shape, np.nan)
+
+        # Set the timestamp
+        self.timestamp = timestamp
+        # Set the position
+        self.set_position(longitude, latitude, dummy_altitude)
+
+    def from_l2i_nc_import(self, l2i):
+        """ Creates a TimeOrbit group object from l2i import. This is
+        necessary when the Level2Data object shall be constructed from an
+        l2i netcdf product """
+        # Set the timestamp
+        self.timestamp = l2i.timestamp
+        # Set the position
+        dummy_altitude = np.full(l2i.longitude.shape, np.nan)
+        self.set_position(self, l2i.longitude, l2i.latitude, dummy_altitude)
 
 
 class L2ElevationArray(np.ndarray):
@@ -375,6 +525,131 @@ class L2ElevationArray(np.ndarray):
         self.bias[indices] = np.nan
 
 
+class Level2PContainer(DefaultLoggingClass):
+
+    def __init__(self, period):
+        super(Level2PContainer, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+        self._period = period
+        self._l2i_stack = []
+
+    def append_l2i(self, l2i):
+        self._l2i_stack.append(l2i)
+
+    def get_merged_l2(self):
+        """ Returns a Level2Data object with data from all l2i objects """
+
+        # Merge the parameter
+        data = self._get_merged_data(valid_mask="freeboard")
+
+        # Set up a timeorbit group
+        timeorbit = Level2iTimeOrbit()
+        timeorbit.from_l2i_stack(data)
+
+        # Use the first l2i object in stack to retrieve metadata
+        l2i = self._l2i_stack[0]
+
+        # Set up a metadata container
+        metadata = Level2iMetadata()
+        metadata.set_attribute("n_records", len(timeorbit.timestamp))
+        metadata.set_attribute("start_time", timeorbit.timestamp[0])
+        metadata.set_attribute("stop_time", timeorbit.timestamp[-1])
+
+        # XXX: Very ugly, but required due to a non-standard use of
+        #      region_subset_set (originally idea to crop regions in
+        #      Level-2 Processor)
+        region_name = "north" if np.nanmean(data["latitude"]) > 0 else "south"
+        metadata.subset_region_name = region_name
+
+        # Retrieve the following constant attributes from the first
+        # l2i object in the stack
+        info = self.l2i_stack[0].info
+        metadata.set_attribute("mission", info.mission_id)
+        mission_sensor = SENSOR_NAME_DICT[info.mission_id]
+        metadata.set_attribute("mission_sensor", mission_sensor)
+
+        # Transfer auxdata information
+        metadata.source_auxdata_sic = l2i.info.source_sic
+        metadata.source_auxdata_snow = l2i.info.source_snow
+        metadata.source_auxdata_sitype = l2i.info.source_sitype
+        metadata.source_auxdata_mss = l2i.info.source_mss
+
+        # Construct level-2 object
+        l2 = Level2Data(metadata, timeorbit, period=self._period)
+
+        #  Transfer the level-2 data items
+
+        # 1. Get the list of parameters
+        # (assumuning all l2i files share the same)
+        parameter_list_all = l2i.parameter_list
+
+        # 2. Exclude variables that end with `_uncertainty`
+        parameter_list = [p for p in parameter_list_all
+                          if not re.search("_uncertainty", p)]
+
+        # 3. Remove parameters from the timeorbit group, surface type &
+        # orbit id. This will be added to level 2 object by other means
+        # or do not make sense (surface type for valid freeboard will
+        # always be sea ice)
+        for parameter_name in ["timestamp", "longitude", "latitude",
+                               "surface_type"]:
+            parameter_list.remove(parameter_name)
+
+        # 4. Set parameters
+        for parameter_name in parameter_list:
+
+            # Get the parameter
+            value = data[parameter_name]
+
+            # Test if uncertainty exists
+            uncertainty_name = parameter_name+"_uncertainty"
+            if uncertainty_name in parameter_list:
+                uncertainty = data[uncertainty_name]
+            else:
+                uncertainty = np.full(value.shape, 0.0)
+
+            # Add to l2 object
+            l2.set_parameter(parameter_name, value, uncertainty=uncertainty)
+
+        return l2
+
+    def _get_merged_data(self, valid_mask=None):
+        """ Returns a dict with merged data groups for all parameters
+        in the l2i file (assumed to be identical for all files in the stack
+        """
+        parameter_list = self.l2i_stack[0].parameter_list
+        data = self._get_empty_data_group(parameter_list)
+        for l2i in self.l2i_stack:
+            if valid_mask is not None:
+                valid_mask_parameter = getattr(l2i, valid_mask)
+                is_valid = np.where(np.isfinite(valid_mask_parameter))[0]
+            else:
+                is_valid = np.arange(l2i.n_records)
+            for parameter in parameter_list:
+                stack_data = getattr(l2i, parameter)
+                stack_data = stack_data[is_valid]
+                data[parameter] = np.append(data[parameter], stack_data)
+        return data
+
+    def _get_empty_data_group(self, parameter_list):
+        data = {}
+        for parameter_name in parameter_list:
+            data[parameter_name] = np.array([], dtype=np.float32)
+        return data
+
+    @property
+    def l2i_stack(self):
+        return self._l2i_stack
+
+    @property
+    def n_l2i_objects(self):
+        return len(self.l2i_stack)
+
+    @property
+    def period(self):
+        return self._period
+
+
 class AttributeList(object):
 
     def __init__(self):
@@ -394,6 +669,7 @@ class L2iNCFileImport(object):
         self.time_def = NCDateNumDef()
         self.info = AttributeList()
         self.attribute_list = []
+        self.parameter_list = []
         self._parse()
 
     def _parse(self):
@@ -408,6 +684,7 @@ class L2iNCFileImport(object):
                                     getattr(content, attribute_name))
 
         for parameter_name in content.parameters:
+            self.parameter_list.append(parameter_name)
             setattr(self, parameter_name, getattr(content, parameter_name))
 
         self._n_records = len(self.longitude)
