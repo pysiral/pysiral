@@ -527,12 +527,6 @@ class L2ElevationArray(np.ndarray):
 
 class Level2PContainer(DefaultLoggingClass):
 
-    _parameter_to_merge = ["timestamp", "longitude", "latitude",
-                           "radar_freeboard", "radar_freeboard_uncertainty",
-                           "freeboard", "freeboard_uncertainty",
-                           "sea_ice_thickness",
-                           "sea_ice_thickness_uncertainty"]
-
     def __init__(self, period):
         super(Level2PContainer, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
@@ -546,16 +540,20 @@ class Level2PContainer(DefaultLoggingClass):
         """ Returns a Level2Data object with data from all l2i objects """
 
         # Merge the parameter
-        data = self._get_merged_data()
+        data = self._get_merged_data(valid_mask="freeboard")
+
+        # Set up a timeorbit group
+        timeorbit = Level2iTimeOrbit()
+        timeorbit.from_l2i_stack(data)
 
         # Use the first l2i object in stack to retrieve metadata
         l2i = self._l2i_stack[0]
 
         # Set up a metadata container
         metadata = Level2iMetadata()
-        metadata.set_attribute("n_records", len(data["timestamp"]))
-        metadata.set_attribute("start_time", data["timestamp"][0])
-        metadata.set_attribute("stop_time", data["timestamp"][-1])
+        metadata.set_attribute("n_records", len(timeorbit.timestamp))
+        metadata.set_attribute("start_time", timeorbit.timestamp[0])
+        metadata.set_attribute("stop_time", timeorbit.timestamp[-1])
 
         # XXX: Very ugly, but required due to a non-standard use of
         #      region_subset_set (originally idea to crop regions in
@@ -576,29 +574,67 @@ class Level2PContainer(DefaultLoggingClass):
         metadata.source_auxdata_sitype = l2i.info.source_sitype
         metadata.source_auxdata_mss = l2i.info.source_mss
 
-        # Set up a timeorbit group
-        timeorbit = Level2iTimeOrbit()
-        timeorbit.from_l2i_stack(data)
-
+        # Construct level-2 object
         l2 = Level2Data(metadata, timeorbit, period=self._period)
+
+        #  Transfer the level-2 data items
+
+        # 1. Get the list of parameters
+        # (assumuning all l2i files share the same)
+        parameter_list_all = l2i.parameter_list
+
+        # 2. Exclude variables that end with `_uncertainty`
+        parameter_list = [p for p in parameter_list_all
+                          if not re.search("_uncertainty", p)]
+
+        # 3. Remove parameters from the timeorbit group, surface type &
+        # orbit id. This will be added to level 2 object by other means
+        # or do not make sense (surface type for valid freeboard will
+        # always be sea ice)
+        for parameter_name in ["timestamp", "longitude", "latitude",
+                               "surface_type"]:
+            parameter_list.remove(parameter_name)
+
+        # 4. Set parameters
+        for parameter_name in parameter_list:
+
+            # Get the parameter
+            value = data[parameter_name]
+
+            # Test if uncertainty exists
+            uncertainty_name = parameter_name+"_uncertainty"
+            if uncertainty_name in parameter_list:
+                uncertainty = data[uncertainty_name]
+            else:
+                uncertainty = np.full(value.shape, 0.0)
+
+            # Add to l2 object
+            l2.set_parameter(parameter_name, value, uncertainty=uncertainty)
 
         return l2
 
-    def _get_merged_data(self):
-        data = self._empty_data_group
+    def _get_merged_data(self, valid_mask=None):
+        """ Returns a dict with merged data groups for all parameters
+        in the l2i file (assumed to be identical for all files in the stack
+        """
+        parameter_list = self.l2i_stack[0].parameter_list
+        data = self._get_empty_data_group(parameter_list)
         for l2i in self.l2i_stack:
-            is_valid_frb = np.where(np.isfinite(l2i.freeboard))[0]
-            for parameter in self._parameter_to_merge:
+            if valid_mask is not None:
+                valid_mask_parameter = getattr(l2i, valid_mask)
+                is_valid = np.where(np.isfinite(valid_mask_parameter))[0]
+            else:
+                is_valid = np.arange(l2i.n_records)
+            for parameter in parameter_list:
                 stack_data = getattr(l2i, parameter)
-                stack_data = stack_data[is_valid_frb]
+                stack_data = stack_data[is_valid]
                 data[parameter] = np.append(data[parameter], stack_data)
         return data
 
-    @property
-    def _empty_data_group(self):
+    def _get_empty_data_group(self, parameter_list):
         data = {}
-        for parameter in self._parameter_to_merge:
-            data[parameter] = np.array([], dtype=np.float32)
+        for parameter_name in parameter_list:
+            data[parameter_name] = np.array([], dtype=np.float32)
         return data
 
     @property
