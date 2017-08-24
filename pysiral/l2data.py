@@ -322,7 +322,7 @@ class Level2Data(object):
         return self._l2_algorithm_id
 
     def _get_attr_utcnow(self, *args):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.now().isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         datetime = self.period.start
