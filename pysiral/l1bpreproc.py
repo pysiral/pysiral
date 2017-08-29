@@ -422,7 +422,7 @@ class L1bPreProcJob(DefaultLoggingClass):
         self.log.info("Pre-processor Period is monthly")
         self.time_range.set_exclude_month(self.options.exclude_month)
         self.log.info("Excluding month: %s" % str(self.options.exclude_month))
-        self.iterations = self.time_range.get_iterations()
+        self.iterations = self.time_range.iterations
         self.log.info("Number of iterations: %g" % len(self.iterations))
 
     def process_requested_time_range(self):
