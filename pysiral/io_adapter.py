@@ -576,7 +576,7 @@ class L1bAdapterSentinel3(object):
         info.set_attribute("open_ocean_percent", product.open_ocean_percentage)
 
     def _test_ku_data_present(self):
-        if len(self.sral.nc.time_l1b_echo_sar_ku) == 0:
+        if not hasattr(self.sral.nc, "time_20_ku"):
             self.error_status = True
             self.l1b.error_status = True
 
@@ -586,14 +586,14 @@ class L1bAdapterSentinel3(object):
 
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(
-            self.sral.nc.lon_l1b_echo_sar_ku,
-            self.sral.nc.lat_l1b_echo_sar_ku,
-            self.sral.nc.alt_l1b_echo_sar_ku)
+            self.sral.nc.lon_20_ku,
+            self.sral.nc.lat_20_ku,
+            self.sral.nc.alt_20_ku)
 
         # Transfer the timestamp
         units = self.settings.time_units
         calendar = self.settings.time_calendar
-        seconds = self.sral.nc.time_l1b_echo_sar_ku
+        seconds = self.sral.nc.time_20_ku
         timestamp = num2date(seconds, units, calendar)
         self.l1b.time_orbit.timestamp = timestamp
 
@@ -601,14 +601,16 @@ class L1bAdapterSentinel3(object):
         """ Transfers the waveform data (power & range for each range bin) """
 
         # self.wfm_power = self.nc.waveform_20_ku
-        wfm_power = self.sral.nc.i2q2_meas_ku_l1b_echo_sar_ku
+        wfm_power = self.sral.nc.waveform_20_ku
         n_records, n_range_bins = shape = wfm_power.shape
 
         # Get the window delay
         # "The tracker_range_20hz is the range measured by the onboard tracker
         #  as the window delay, corrected for instrumental effects and
         #  CoG offset"
-        tracker_range = self.sral.nc.range_ku_l1b_echo_sar_ku
+        tracker_range = self.sral.nc.tracker_range_20_ku
+        net_instr_corrections = self.sral.nc.net_instr_cor_range_20_ku
+        tracker_range += net_instr_corrections
 
         # Compute the range for each range bin
         wfm_range = np.ndarray(shape=shape, dtype=np.float32)
@@ -630,14 +632,17 @@ class L1bAdapterSentinel3(object):
         # The definition of which parameter to choose is set in
         # config/mission_def.yaml
         # (see sentinel3x.options.input_dataset.range_correction_target_dict)
-        grc_target_dict = self.settings.range_correction_targets
+        grc_target_dict = self.settings.range_correction_targets_1Hz
         dummy_val = np.zeros(shape=(self.l1b.n_records), dtype=np.float32)
+        time_1Hz = self.sral.nc.time_01
+        time_20Hz = self.sral.nc.time_20_ku
         for name in grc_target_dict.keys():
             target_parameter = grc_target_dict[name]
-            if target_parameter is None:
-                correction = dummy_val
+            if target_parameter is not None:
+                correction_1Hz = getattr(self.sral.nc, target_parameter)
+                correction = np.interp(time_20Hz, time_1Hz, correction_1Hz)
             else:
-                correction = getattr(self.sral.nc, target_parameter)
+                correction = dummy_val
             self.l1b.correction.set_parameter(name, correction)
 
     def _transfer_classifiers(self):
@@ -667,8 +672,11 @@ class L1bAdapterSentinel3(object):
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
 
+        if len(pulse.peakiness) != self.l1b.n_records:
+            stop
+
     def _transfer_surface_type_data(self):
-        surface_type = self.sral.nc.surf_type_l1b_echo_sar_ku
+        surface_type = self.sral.nc.surf_type_20_ku
         for key in ESA_SURFACE_TYPE_DICT.keys():
             flag = surface_type == ESA_SURFACE_TYPE_DICT[key]
             self.l1b.surface_type.add_flag(flag, key)

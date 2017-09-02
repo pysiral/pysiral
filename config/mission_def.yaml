@@ -215,26 +215,28 @@ sentinel3a:
             sralProductInformation: 7
 
         # Selection for geophysical corrections
-        range_correction_targets:
-            dry_troposphere: null
-            wet_troposphere: null
-            inverse_barometric: null
+        range_correction_targets_1Hz:
+            dry_troposphere: mod_dry_tropo_cor_meas_altitude_01
+            wet_troposphere: mod_wet_tropo_cor_meas_altitude_01
+            inverse_barometric: inv_bar_cor_01
             dynamic_atmosphere: null
-            ionosphere: null
-            ocean_tide_elastic: null
-            ocean_tide_long_period: null
-            ocean_loading_tide: null
-            solid_earth_tide: null
-            geocentric_polar_tide: null
+            ionosphere: iono_cor_gim_01_ku
+            ocean_tide_elastic: ocean_tide_non_eq_01
+            ocean_tide_long_period: ocean_tide_eq_01
+            ocean_loading_tide: load_tide_sol1_01
+            solid_earth_tide: solid_earth_tide_01
+            geocentric_polar_tide: pole_tide_01
             total_geocentric_ocean_tide: null
 
         # Classifier
         classifier_targets:
-            stack_standard_deviation: stdev_stack_l1b_echo_sar_ku
-            stack_skewness: skew_stack_l1b_echo_sar_ku
-            stack_kurtosis: kurt_stack_l1b_echo_sar_ku
-            stack_maximum_power: max_stack_l1b_echo_sar_ku
-            num_stack_waveforms: nb_stack_l1b_echo_sar_ku
+            ku_mode: mode_id_20_ku
+            agc_quality_flag: agc_qual_20_ku
+            num_stack_waveforms: nb_stack_20_ku
+            peakiness_envisat: peakiness_1_20_ku
+            peakiness_laxon: peakiness_2_20_ku
+            l2_ice_range: range_ice_20_ku
+            sigma0: sig0_ocog_20_ku
 
         # Pre processors
         polar_threshold: 50.0

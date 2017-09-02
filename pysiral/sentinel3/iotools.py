@@ -20,7 +20,7 @@ class Sentinel3FileList(DefaultLoggingClass):
         self.folder = None
         self.year = None
         self.month = None
-        self.target = "measurement.nc"
+        self.target = "enhanced_measurement.nc"
         self._sorted_list = []
 
     def search(self, time_range):
@@ -71,7 +71,7 @@ class Sentinel3FileList(DefaultLoggingClass):
             len(self._sorted_list)))
 
 
-def get_sentinel3_l1b_filelist(folder, target="measurement.nc"):
+def get_sentinel3_l1b_filelist(folder, target="enhanced_measurement.nc"):
     """ Returns a list with measurement.nc files for given month """
     s3_l1b_file_list = []
     for root, dirs, files in os.walk(folder):
@@ -83,7 +83,8 @@ def get_sentinel3_l1b_filelist(folder, target="measurement.nc"):
     return s3_l1b_file_list
 
 
-def get_sentinel3_sral_l1_from_l2(l2_filename, target="measurement.nc"):
+def get_sentinel3_sral_l1_from_l2(l2_filename,
+                                  target="enhanced_measurement.nc"):
     """ Returns the corresponding sral l1 file to a given l2 filename """
 
     # XXX: This is based on the data structure of the early access
