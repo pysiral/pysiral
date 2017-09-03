@@ -93,11 +93,14 @@ from pysiral.surface_type import SurfaceType
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
 
-from netCDF4 import Dataset, num2date
+from netCDF4 import Dataset, num2date, date2num
 from collections import OrderedDict
 import numpy as np
 import copy
 import os
+
+
+DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 
 
 class Level1bData(object):
@@ -172,6 +175,63 @@ class Level1bData(object):
         else:
             l1b = Level1bData()
         return l1b
+
+    def detect_and_fill_gaps(self, gap_tolerance=0.02):
+        """ Some radar altimeter input products are not provided with a
+        regular time/sample spacing, e.g. by omitting short sections of the
+        along-track data. This method is supposed to rectify that by
+        1. Compute the nominal data repitition rate (in seconds)
+        2. Detect gaps in the timestamp value
+        3. Fills all arrays in all data groups with empty values
+           (no interpolation) """
+
+        # Get the time stamp and the time increment in seconds
+        time = self.time_orbit.timestamp
+        timedelta = np.ediff1d(time)
+        timedelta_secs = [td.seconds+td.microseconds/1e6 for td in timedelta]
+
+        # Compute thresholds
+        median_timedelta_secs = np.nanmedian(timedelta_secs)
+        threshold_tolerance = median_timedelta_secs * gap_tolerance
+        gap_sec_threshold = median_timedelta_secs + threshold_tolerance
+
+        # Detect thresholds
+        gap_start_indices = np.where(timedelta_secs > gap_sec_threshold)[0]
+
+        # No gaps -> nothing to do
+        if len(gap_start_indices) == 0:
+            return
+
+        # timedelta is [1:] because of np.ediff1d
+        gap_start_indices += 1
+
+        # indices_map' maps from the current indices to the corrected
+        # indices and gap_indices contains the indices of the corrected
+        # gap-filled arrays that need to be interpalated / filles with nodata
+        # values.
+        #
+        # Example usage:
+        #   timestamp_corrected[indices_map] = timestamp_old
+        #   timestamp_corrected[gap_indices] = interpolated timestamp_old ...
+        indices_map = np.arange(self.n_records)
+        gap_indices = []
+        for gap_start_index in gap_start_indices:
+            gap_seconds = timedelta_secs[gap_start_index-1]
+            gap_width = int(np.round(gap_seconds / median_timedelta_secs))
+            gap_indices.extend(
+                    np.arange(gap_width) + gap_start_index + len(gap_indices))
+            indices_map[gap_start_index:] += gap_width
+
+        # Get corrected n_records
+        corrected_n_records = indices_map[-1]+1
+
+        # Update metadata
+        self.info.set_attribute("n_records", corrected_n_records)
+
+        # Loop over all data groups and fill gaps
+        for data_group in self.data_groups:
+            content = getattr(self, data_group)
+            content.fill_gaps(corrected_n_records, gap_indices, indices_map)
 
     def update_l1b_metadata(self):
         self.update_data_limit_attributes()
@@ -611,6 +671,10 @@ class L1bTimeOrbit(object):
         return ["timestamp", "longitude", "latitude", "altitude"]
 
     @property
+    def geolocation_parameter_list(self):
+        return ["longitude", "latitude", "altitude"]
+
+    @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
         dimdict = OrderedDict([("n_records", len(self._timestamp))])
@@ -643,6 +707,35 @@ class L1bTimeOrbit(object):
             data = getattr(self, "_"+parameter)
             data = data[subset_list]
             setattr(self,  "_"+parameter, data)
+
+    def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
+        """ API gap filler method. Note: It is assumed that this method is
+        only evoked for filling small gaps. Therefore we use simple linear
+        interpolation for the parameters of the time orbit group """
+
+        # Set the geolocation parameters first (lon, lat, alt)
+        geoloc_parameters = []
+        corrected_indices = np.arange(corrected_n_records)
+        for i, parameter_name in enumerate(self.geolocation_parameter_list):
+            data_old = getattr(self, parameter_name)
+            data_corr = np.interp(corrected_indices, indices_map, data_old)
+            geoloc_parameters.append(data_corr)
+        self.set_position(*geoloc_parameters)
+
+        # Update the timestamp
+        time_old_num = date2num(self.timestamp, DATE2NUM_UNIT)
+        time_num = np.interp(corrected_indices, indices_map, time_old_num)
+        self.timestamp = num2date(time_num, DATE2NUM_UNIT)
+
+#        import matplotlib.pyplot as plt
+#        plt.figure("time")
+#        plt.scatter(corrected_indices[indices_map], time_old_num, alpha=0.5,
+#                    marker="+", s=80)
+#        plt.scatter(corrected_indices, time_num, alpha=0.5)
+#        plt.scatter(corrected_indices[gap_indices], time_num[gap_indices],
+#                    alpha=0.5, s=120)
+#        plt.show()
+#        stop
 
     def __getstate__(self):
         return self.__dict__
@@ -702,6 +795,16 @@ class L1bRangeCorrections(object):
             data = data[subset_list]
             setattr(self, parameter, data)
 
+    def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
+        """ API gap filler method. Note: Gaps will be filled with
+        the nodata=0.0 value"""
+
+        for parameter_name in self.parameter_list:
+            data_corr = np.full((corrected_n_records), 0.0)
+            data_old = self.get_parameter_by_name(parameter_name)
+            data_corr[indices_map] = data_old
+            self.set_parameter(parameter_name, data_corr)
+
 
 class L1bClassifiers(object):
     """ Containier for parameters that can be used as classifiers """
@@ -759,6 +862,16 @@ class L1bClassifiers(object):
             data = getattr(self, parameter)
             data = data[subset_list]
             setattr(self, parameter, data)
+
+    def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
+        """ API gap filler method. Note: Gaps will be filled with
+        the nodata=nan value"""
+
+        for parameter_name in self.parameter_list:
+            data_corr = np.full((corrected_n_records), np.nan)
+            data_old = self.get_parameter(parameter_name)
+            data_corr[indices_map] = data_old
+            self.add(data_corr, parameter_name)
 
 
 class L1bWaveforms(object):
@@ -876,6 +989,29 @@ class L1bWaveforms(object):
         range_delta_reshaped = range_delta_reshaped.reshape(
             self.n_records, self.n_range_bins)
         self._range += range_delta_reshaped
+
+    def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
+        """ API gap filler method. Note: Gaps will be filled with
+        custom values for each parameter, see below"""
+
+        # is_valid flag: False for gaps
+        is_valid = np.full((corrected_n_records), False)
+        is_valid[indices_map] = self.is_valid
+        self.set_valid_flag(is_valid)
+
+        # Power/range: set gaps to nan
+        power = np.full((corrected_n_records, self.n_range_bins), np.nan)
+        power[indices_map, :] = self.power
+        range = np.full((corrected_n_records, self.n_range_bins), np.nan)
+        range[indices_map, :] = self.range
+
+        # Radar map: set gaps to lrm
+        radar_mode = np.full((corrected_n_records), 1,
+                             dtype=self.radar_mode.dtype)
+        radar_mode[indices_map] = self.radar_mode
+
+        # And set new values
+        self.set_waveform_data(power, range, radar_mode)
 
     def _get_wfm_shape(self, index):
         shape = np.shape(self._power)

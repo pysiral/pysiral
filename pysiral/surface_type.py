@@ -127,6 +127,15 @@ class SurfaceType(object):
         self._surface_type = self._surface_type[subset_list]
         self._n_records = len(subset_list)
 
+    def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
+        """ API gap filler method. Note: Gaps will be filled with
+        the nodata=unkown (8) surface_type"""
+        self._n_records = corrected_n_records
+        dtype = self.flag.dtype
+        surface_type_corrected = np.full((corrected_n_records), 8, dtype=dtype)
+        surface_type_corrected[indices_map] = self._surface_type
+        self._surface_type = surface_type_corrected
+
     def _invalid_n_records(self, n):
         """ Check if flag array has the correct length """
         if self._n_records is None:  # New flag, ok
