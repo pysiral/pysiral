@@ -672,6 +672,18 @@ class L1bAdapterSentinel3(object):
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
 
+        # Compute the leading edge width (requires TFMRA retracking)
+        wfm = self.l1b.waveform.power
+        rng = self.l1b.waveform.range
+        radar_mode = self.l1b.waveform.radar_mode
+        is_ocean = self.l1b.surface_type.get_by_name("ocean").flag
+        lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        lew1 = lew.get_width_from_thresholds(0.05, 0.5)
+        lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+        self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
+        self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
+        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
+
         if len(pulse.peakiness) != self.l1b.n_records:
             stop
 
