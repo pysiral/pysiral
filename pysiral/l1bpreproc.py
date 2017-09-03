@@ -15,6 +15,7 @@ from pysiral.output import (PysiralOutputFilenaming, PysiralOutputFolder,
                             L1bDataNC)
 from pysiral.path import filename_from_path
 
+from datetime import timedelta
 import numpy as np
 import os
 import glob
@@ -238,6 +239,49 @@ class L1bPreProc(DefaultLoggingClass):
         l1b_segments.append(l1b.extract_subset(last_subset_list))
 
         # Return a list of segments
+        return l1b_segments
+
+    def split_at_time_discontinuities(self, l1b_list, seconds_threshold,
+                                      trim_non_ocean=False):
+        """ Split l1b object(s) at discontinuities of the timestamp value and
+        return an (updated) list with l1b segments """
+
+        # Prepare input (should always be list)
+        if not isinstance(l1b_list, list):
+            l1b_list = [l1b_list]
+        dt_threshold = timedelta(seconds=seconds_threshold)
+
+        # Output (list with l1b segments)
+        l1b_segments = []
+
+        for l1b in l1b_list:
+
+            # Get timestamp discontinuities (if any)
+            time = l1b.time_orbit.timestamp
+
+            # Get start start/stop indices pairs
+            segments_start = np.array([0])
+            segments_start_indices = np.where(
+                    np.ediff1d(time) > dt_threshold)[0]+1
+            segments_start = np.append(segments_start, segments_start_indices)
+
+            segments_stop = segments_start[1:]-1
+            segments_stop = np.append(segments_stop, len(time)-1)
+
+            # Check if only one segment found
+            if len(segments_start) == 1:
+                l1b_segments.append(l1b)
+                continue
+
+            # Extract subsets
+            segment_indices = zip(segments_start, segments_stop)
+            for start_index, stop_index in segment_indices:
+                subset_indices = np.arange(start_index, stop_index+1)
+                l1b_segment = l1b.extract_subset(subset_indices)
+                if trim_non_ocean:
+                    l1b_segment = self.trim_non_ocean_data(l1b_segment)
+                l1b_segments.append(l1b_segment)
+
         return l1b_segments
 
     def extract_polar_segments_from_halforbit(self, l1b):
