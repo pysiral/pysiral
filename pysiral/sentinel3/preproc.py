@@ -38,10 +38,8 @@ class Sentinel3PreProc(L1bPreProc):
         self._l1b_file_list = s3_files.sorted_list
 
     def _get_l1bdata_ocean_segments(self, filename):
-        """
-        Returns the source Sentinel-3 l1b data as a list of
-        pysiral.L1bdata objects.
-        """
+        """ Returns the source Sentinel-3 l1b data as a list of
+        pysiral.L1bdata objects. """
 
         # Read CryoSat-2 Header
         l1b = L1bConstructor(self._pysiral_config)
@@ -67,15 +65,45 @@ class Sentinel3PreProc(L1bPreProc):
         if not has_polar_ocean or not matches_region:
             return None
 
-        # This step is CryoSat-2 specific, since orbit segments do not cover
-        # both hemisphere
-        l1b_roi = self.trim_single_hemisphere_segment_to_polar_region(l1b)
+        # Sentinel-3a WAT files cover a half-orbit from pole to plot
+        # (with gaps). This approach is adapted from pre-processing
+        # the Envisat half-orbits
+        l1b_list = []
+        seg1, seg2 = self.extract_polar_segments_from_halforbit(l1b)
 
-        # Trim non ocean margins
-        l1b_roi = self.trim_non_ocean_data(l1b_roi)
+        # Threshold for splitting
+        seconds_threshold = self._mdef.max_connected_files_timedelta_seconds
 
-        # Split orbits at larger non-ocean segments
-        l1b_list = self.split_at_large_non_ocean_segments(l1b_roi)
+        for seg in [seg1, seg2]:
+
+            # Get polar ocean segments
+            if seg is not None:
+
+                # Trim non ocean margins
+                l1b_roi = self.trim_non_ocean_data(seg)
+
+                # Test for unlikely case of no ocean data
+                if l1b_roi is None:
+                    return []
+
+                # Split orbits at larger non-ocean segments
+                l1b_segments = self.split_at_large_non_ocean_segments(l1b_roi)
+
+                # There are data gaps in the L2WAT files, therefore split
+                # at timestamp discontinuities
+                l1b_segments = self.split_at_time_discontinuities(
+                        l1b_segments, seconds_threshold, trim_non_ocean=True)
+
+                # Some minor gaps seem to remain in the data
+                # -> bring to regular grid
+                for l1b_segment in l1b_segments:
+                    l1b_segment.detect_and_fill_gaps()
+
+                # Add to l1b stack
+                try:
+                    l1b_list.extend(l1b_segments)
+                except TypeError:
+                    self.log.info("- no ocean data in file")
 
         return l1b_list
 
