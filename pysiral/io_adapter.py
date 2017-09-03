@@ -570,10 +570,12 @@ class L1bAdapterSentinel3(object):
         product = self.sral.product_info
         info.set_attribute("mission", self._mission)
         info.set_attribute("pysiral_version", PYSIRAL_VERSION)
-        mission_data_source = filename_from_path(self.sral.filename)
-        info.set_attribute("mission_data_source", mission_data_source)
+        info.set_attribute("mission_data_source", self.sral.nc.product_name)
         info.set_attribute("sar_mode_percent", product.sar_mode_percentage)
         info.set_attribute("open_ocean_percent", product.open_ocean_percentage)
+        info.set_attribute("orbit", self.sral.nc.absolute_pass_number)
+        info.set_attribute("cycle", self.sral.nc.cycle_number)
+        info.set_attribute("mission_data_version", self.sral.nc.source)
 
     def _test_ku_data_present(self):
         if not hasattr(self.sral.nc, "time_20_ku"):
