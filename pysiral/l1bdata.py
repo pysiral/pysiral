@@ -661,7 +661,8 @@ class L1bRangeCorrections(object):
     def set_parameter(self, tag, value):
         self._info.check_n_records(len(value))
         setattr(self, tag, value)
-        self._parameter_list.append(tag)
+        if tag not in self._parameter_list:
+            self._parameter_list.append(tag)
 
     @property
     def parameter_list(self):
@@ -716,7 +717,8 @@ class L1bClassifiers(object):
     def add(self, value, name, classifier_type="surface_type"):
         """ Add a parameter for a given classifier type """
         setattr(self, name, np.array(value))
-        self._list[classifier_type].append(name)
+        if name not in self._list[classifier_type]:
+            self._list[classifier_type].append(name)
 
     @property
     def parameter_list(self):
