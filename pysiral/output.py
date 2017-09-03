@@ -474,34 +474,45 @@ class L1bDataNC(DefaultLoggingClass):
         self._set_global_attributes(attdict, **global_attr_keyw)
 
     def _populate_data_groups(self):
+
         self._missing_parameters = []
+
         for datagroup in self.datagroups:
+
             if self.verbose:
                 print datagroup.upper()
+
             # Create the datagroup
             dgroup = self._rootgrp.createGroup(datagroup)
             content = getattr(self.l1b, datagroup)
+
             # Create the dimensions
             # (must be available as OrderedDict in Datagroup Container
             dims = content.dimdict.keys()
             for key in dims:
                 dgroup.createDimension(key, content.dimdict[key])
+
             # Now add variables for each parameter in datagroup
             for parameter in content.parameter_list:
+
                 data = getattr(content, parameter)
+
                 # Convert datetime objects to number
                 if type(data[0]) is datetime:
                     data = date2num(data, self.time_def.units,
                                     self.time_def.calendar)
+
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
                 dimensions = tuple(dims[0:len(data.shape)])
                 if self.verbose:
                     print " "+parameter, dimensions, data.dtype.str, data.shape
+
                 var = dgroup.createVariable(
-                    parameter, data.dtype.str, dimensions, zlib=self.zlib)
+                        parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
+
                 # Add Parameter Attributes
                 attribute_dict = self._get_variable_attr_dict(parameter)
                 for key in attribute_dict.keys():
