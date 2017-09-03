@@ -586,19 +586,19 @@ class L1bTimeOrbit(object):
 
     @property
     def longitude(self):
-        return self._longitude
+        return np.array(self._longitude)
 
     @property
     def latitude(self):
-        return self._latitude
+        return np.array(self._latitude)
 
     @property
     def altitude(self):
-        return self._altitude
+        return np.array(self._altitude)
 
     @property
     def timestamp(self):
-        return self._timestamp
+        return np.array(self._timestamp)
 
     @timestamp.setter
     def timestamp(self, value):
