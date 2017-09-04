@@ -39,14 +39,11 @@ HOSTNAME = socket.gethostname()
 
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
                     "cryosat2": "SIRAL", "sentinel3a": "SRAL",
-                    "icesat": "ICESat"}
+                    "icesat": "GLAS"}
 
 MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
                      "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
-                     "icesat": "GLAS"}
-
-MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
-                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A"}
+                     "icesat": "ICESat"}
 
 
 class ConfigInfo(DefaultLoggingClass):
@@ -555,27 +552,6 @@ class TimeRangeRequest(DefaultLoggingClass):
     def base_duration_isoformat(self):
         return duration_isoformat(self.base_duration)
 
-    @property
-    def base_period(self):
-        return self._period
-
-    @property
-    def base_duration(self):
-        """ Return a duration object """
-        if self.base_period == "monthly":
-            return Duration(months=1)
-        elif self.base_period == "daily":
-            return Duration(days=1)
-        else:
-            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
-            return Duration(months=timedelta.months, days=timedelta.days,
-                            hours=timedelta.hours, minutes=timedelta.minutes,
-                            seconds=timedelta.seconds)
-
-    @property
-    def base_duration_isoformat(self):
-        return duration_isoformat(self.base_duration)
-
 
 class TimeRangeIteration(object):
 
@@ -663,21 +639,8 @@ class TimeRangeIteration(object):
         return duration_isoformat(self.duration)
 
     @property
-    def duration(self):
-        """ Return a duration object """
-        if self.base_period == "monthly":
-            return Duration(months=1)
-        elif self.base_period == "daily":
-            return Duration(days=1)
-        else:
-            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
-            return Duration(months=timedelta.months, days=timedelta.days,
-                            hours=timedelta.hours, minutes=timedelta.minutes,
-                            seconds=timedelta.seconds)
 
     @property
-    def duration_isoformat(self):
-        return duration_isoformat(self.duration)
 
 
 class DefaultCommandLineArguments(object):
