@@ -482,34 +482,11 @@ class TimeRangeRequest(DefaultLoggingClass):
 
     @property
     def month_list(self):
-        """ Returns a list of all month (exclude_month applies) """
-        # Get an iterator for integer year and month
-        month_list = month_iterator(
-            self._start_dt.year, self._start_dt.month,
-            self._stop_dt.year, self._stop_dt.month)
-
-        # Filter month that are excluded from processing
-        month_list = [entry for entry in month_list if (
-            entry[1] not in self._exclude_month)]
-        return month_list
+        return month_list(self.start_dt, self.stop_dt, self._exclude_month)
 
     @property
     def days_list(self):
-        days = []
-        month_list = self.month_list
-        n_month = len(month_list)
-        start_day, stop_day = self.start_dt.day, self.stop_dt.day
-        for i, month in enumerate(month_list):
-            # List of all days in given month
-            monthly_days = days_iterator(*month)
-            # Clip potential omitted days in the start request
-            if i == 0:
-                monthly_days = [d for d in monthly_days if d[2] >= start_day]
-            # Clip potential omitted days in the stop request
-            if i == n_month-1:
-                monthly_days = [d for d in monthly_days if d[2] <= stop_day]
-            days.extend(monthly_days)
-        return days
+        return days_list(self.start_dt, self.stop_dt, self._exclude_month)
 
     @property
     def _default_period(self):
@@ -639,8 +616,12 @@ class TimeRangeIteration(object):
         return duration_isoformat(self.duration)
 
     @property
+    def month_list(self):
+        return month_list(self.start, self.stop_dt, [])
 
     @property
+    def days_list(self):
+        return days_list(self.start, self.stop, [])
 
 
 class DefaultCommandLineArguments(object):
@@ -861,6 +842,38 @@ def options_from_dictionary(**opt_dict):
     """ Function for converting option dictionary in Treedict """
     return TreeDict.fromdict(opt_dict, expand_nested=True)
 
+
 def get_parameter_attributes(target):
     config = ConfigInfo()
     return config.parameter[target]
+
+
+def month_list(start_dt, stop_dt, exclude_month):
+    """ Returns a list of all month (exclude_month applies) """
+    # Get an iterator for integer year and month
+    month_list = month_iterator(
+        start_dt.year, start_dt.month,
+        stop_dt.year, stop_dt.month)
+    # Filter month that are excluded from processing
+    month_list = [entry for entry in month_list if (
+        entry[1] not in exclude_month)]
+    return month_list
+
+
+def days_list(start_dt, stop_dt, exclude_month):
+    """ Returns a list of all days (exclude_month applies) """
+    days = []
+    months = month_list(start_dt, stop_dt, exclude_month)
+    n_month = len(months)
+    start_day, stop_day = start_dt.day, stop_dt.day
+    for i, month in enumerate(months):
+        # List of all days in given month
+        monthly_days = days_iterator(*month)
+        # Clip potential omitted days in the start request
+        if i == 0:
+            monthly_days = [d for d in monthly_days if d[2] >= start_day]
+        # Clip potential omitted days in the stop request
+        if i == n_month-1:
+            monthly_days = [d for d in monthly_days if d[2] <= stop_day]
+        days.extend(monthly_days)
+    return days
