@@ -21,7 +21,8 @@ import os
 
 
 mission_name_dict = {"cryosat2": "CryoSat-2", "envisat": "Envisat",
-                     "ers2": "ERS-2", "sentinel3a": "Sentinel-3A"}
+                     "ers2": "ERS-2", "sentinel3a": "Sentinel-3A",
+                     "icesat": "ICESat"}
 
 cs2awi_naming = {"sea_ice_freeboard": "freeboard",
                  "sea_ice_thickness": "sea_ice_thickness",
@@ -155,8 +156,14 @@ def l3s_map():
                 month, year = period.split("/")
                 period_label = "%s %s" % (month_names[month], year)
             else:
-                mission_id = ncdata.mission_ids
-                period_label = ncdata.period_label
+                try:
+                    mission_id = ncdata.mission_ids
+                except AttributeError:
+                    mission_id = ncdata.source_mission_id
+                try:
+                    period_label = ncdata.period_label
+                except AttributeError:
+                    period_label = ncdata.time_coverage_duration
 
             # Map Title
             title = mission_name_dict[mission_id]
