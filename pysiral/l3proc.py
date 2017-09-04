@@ -82,7 +82,7 @@ class Level3Processor(DefaultLoggingClass):
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
         n = len(self._l2i_files)
-        progress_percent = float(i)/float(n-1)*100.
+        progress_percent = float(i+1)/float(n)*100.
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
@@ -292,7 +292,6 @@ class L3DataGrid(DefaultLoggingClass):
     def get_attribute(self, attribute_name, *args):
         """ Return a string for a given attribute name. This method is
         required for the output data handler """
-
         try:
             attr_getter = getattr(self, "_get_attr_"+attribute_name)
             attribute = attr_getter(*args)
@@ -300,7 +299,7 @@ class L3DataGrid(DefaultLoggingClass):
         except AttributeError:
             return "attr_unavailable"
         except Exception, msg:
-            print msg
+            print "L3DataGrid.get_attribute Exception: "+str(msg)
             sys.exit(1)
 
     def init_parameter_fields(self, parameter_names, level):
@@ -575,7 +574,7 @@ class L3DataGrid(DefaultLoggingClass):
             parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
             self.log.warn("Parameter not availabe: %s" % name)
         except Exception, msg:
-            print msg
+            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
             sys.exit(1)
         return parameter
 
