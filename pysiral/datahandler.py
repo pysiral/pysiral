@@ -154,8 +154,6 @@ class DefaultL1bDataHandler(DefaultLoggingClass):
 class L2iDataHandler(DefaultLoggingClass):
     """ Class for retrieving default l1b directories and filenames """
 
-    l2i_file_pattern = "l2i*.nc"
-
     def __init__(self, base_directory, force_l2i_subfolder=True):
         super(L2iDataHandler, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
@@ -165,13 +163,18 @@ class L2iDataHandler(DefaultLoggingClass):
         self._validate_base_directory()
 
     def get_files_from_time_range(self, time_range):
-        """ XXX: This currently hard-coded to monthly periods """
-        lookup_directory = self.get_lookup_directory(time_range.start)
-        if not os.path.isdir(lookup_directory):
-            return []
-        l2i_files = glob.glob(os.path.join(lookup_directory,
-                                           self.l2i_file_pattern))
-        return sorted(l2i_files)
+        """ Get all files that fall into time range (May be spread over
+        the different year/ month subfolders """
+        l2i_files = []
+        for year, month, day in time_range.days_list:
+            lookup_directory = self.get_lookup_directory(year, month)
+            if not os.path.isdir(lookup_directory):
+                continue
+            l2i_pattern = self.get_l2i_search_str(
+                    year=year, month=month, day=day)
+            result = glob.glob(os.path.join(lookup_directory, l2i_pattern))
+            l2i_files.extend(sorted(result))
+        return l2i_files
 
     def get_files_for_day(self, day_dt):
         """ Retrieve a list of l2i files with data points for a given day.
@@ -179,15 +182,15 @@ class L2iDataHandler(DefaultLoggingClass):
         previous day """
 
         # Get the lookup directory
-        lookup_directory = self.get_lookup_directory(day_dt)
+        lookup_directory = self.get_lookup_directory(day_dt.year, day_dt.month)
 
         # XXX: We are not evaluating the netCDF attributes at this point
         #      but assuming that the filename contains start and stop
         #      time. This is a pretty safe assumption, but this approach
         #      should be replaced as soon as a proper inspection tool is
         #      available
-        day_search = "*%s*" % day_dt.strftime("%Y%m%d")
-        day_search = self.l2i_file_pattern.replace("*", day_search)
+        day_search = self.get_l2i_search_str(
+                year=day_dt.year, month=day_dt.month, day=day_dt.day)
         search_str = os.path.join(lookup_directory, day_search)
         l2i_files = glob.glob(search_str)
 
@@ -196,7 +199,8 @@ class L2iDataHandler(DefaultLoggingClass):
         #        for the target day
         if day_dt.day == 1:
             previous_day = day_dt - timedelta(days=1)
-            lookup_directory = self.get_lookup_directory(previous_day)
+            lookup_directory = self.get_lookup_directory(
+                    previous_day.year, previous_day.month)
             search_str = os.path.join(lookup_directory, day_search)
             additional_l2i_files = glob.glob(search_str)
             l2i_files.extend(additional_l2i_files)
@@ -213,9 +217,9 @@ class L2iDataHandler(DefaultLoggingClass):
             self.error.add_error("invalid-l2i-productdir", msg)
             self.error.raise_on_error()
 
-    def get_lookup_directory(self, dt):
+    def get_lookup_directory(self, year, month):
         """ Return the sub folders for a given time (datetime object) """
-        subfolders = ["%4g" % dt.year, "%02g" % dt.month]
+        subfolders = ["%4g" % year, "%02g" % month]
         lookup_directory = os.path.join(self.product_basedir, *subfolders)
         return lookup_directory
 
@@ -232,6 +236,32 @@ class L2iDataHandler(DefaultLoggingClass):
             months = [m for m in months if re.match(r'[0-1][0-9]', m)]
             subdirectory_list.extend([[year, m] for m in months])
         return subdirectory_list
+
+    def get_l2i_search_str(self, year=None, month=None, day=None):
+        """ Returns a search pattern for l2i files with optional refined
+        search for year, month, day. Note: month & day can only be set,
+        if the year & year + month respectively is set
+        Examples:
+            l2i*.nc
+            l2i*2017*.nc
+            l2i*201704*.nc
+            l2i*20170401*.nc
+        """
+        date_str = "*"
+        if year is not None:
+            date_str += "%04g" % year
+        if month is not None and year is not None:
+            date_str += "%02g" % month
+        else:
+            raise ValueError("year must be set if month is set")
+        if day is not None and month is not None:
+            date_str += "%02g" % day
+        else:
+            raise ValueError("year & month must be set if day is set")
+        if len(date_str) > 1:
+            date_str += "*"
+        l2i_file_pattern = "l2i%s.nc" % date_str
+        return l2i_file_pattern
 
     @property
     def product_basedir(self):
