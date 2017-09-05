@@ -555,6 +555,12 @@ class TimeRangeIteration(object):
         self._index = i
         self._num_iterations = n
 
+    def get_days_for_month(self, year, month):
+        """ Get a list of days for particular year and month. """
+        days_list = self.days_list
+        days = [d[2] for d in days_list if d[0] == year and d[1] == month]
+        return days
+
     @property
     def start(self):
         return self._start
