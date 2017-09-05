@@ -617,7 +617,7 @@ class TimeRangeIteration(object):
 
     @property
     def month_list(self):
-        return month_list(self.start, self.stop_dt, [])
+        return month_list(self.start, self.stop, [])
 
     @property
     def days_list(self):
