@@ -664,16 +664,22 @@ class L1bAdapterSentinel3(object):
 
         # Compute sar specific waveform classifiers after Ricker et al. 2014
         wfm = self.l1b.waveform.power
-        ocog = CS2OCOGParameter(wfm)
-        self.l1b.classifier.add(ocog.width, "ocog_width")
-        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+#        ocog = CS2OCOGParameter(wfm)
+#        self.l1b.classifier.add(ocog.width, "ocog_width")
+#        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
 
+        import time
+
+        tick = time.clock()
         # Calculate the Peakiness (CryoSat-2 notation)
         pulse = CS2PulsePeakiness(wfm)
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+        tock = time.clock()
+        print "CS2PulsePeakiness completed in %.1f seconds" % (tock-tick)
 
+        tick = time.clock()
         # Compute the leading edge width (requires TFMRA retracking)
         wfm = self.l1b.waveform.power
         rng = self.l1b.waveform.range
@@ -685,9 +691,8 @@ class L1bAdapterSentinel3(object):
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
         self.l1b.classifier.add(lew.fmi, "first_maximum_index")
-
-        if len(pulse.peakiness) != self.l1b.n_records:
-            stop
+        tock = time.clock()
+        print "TFMRALeadingEdgeWidth completed in %.1f seconds" % (tock-tick)
 
     def _transfer_surface_type_data(self):
         surface_type = self.sral.nc.surf_type_20_ku
