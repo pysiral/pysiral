@@ -97,7 +97,10 @@ class Sentinel3PreProc(L1bPreProc):
                 # Some minor gaps seem to remain in the data
                 # -> bring to regular grid
                 for l1b_segment in l1b_segments:
-                    l1b_segment.detect_and_fill_gaps()
+                    try:
+                        l1b_segment.detect_and_fill_gaps()
+                    except AttributeError:
+                        stop
 
                 # Add to l1b stack
                 try:

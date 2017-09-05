@@ -280,7 +280,8 @@ class L1bPreProc(DefaultLoggingClass):
                 l1b_segment = l1b.extract_subset(subset_indices)
                 if trim_non_ocean:
                     l1b_segment = self.trim_non_ocean_data(l1b_segment)
-                l1b_segments.append(l1b_segment)
+                if l1b_segment is not None:
+                    l1b_segments.append(l1b_segment)
 
         return l1b_segments
 
