@@ -71,7 +71,7 @@ def pysiral_l1bpreproc():
 
         # Empty output folder (if --remove_old is set)
         if jobdef.remove_old:
-            job.remove_old_l1bdata()
+            job.remove_old_l1bdata(time_range)
 
         # Pre-process data for one month
         job.execute()
