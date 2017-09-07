@@ -392,7 +392,7 @@ class Level2Data(object):
 
     @property
     def altitude(self):
-        return self.track.latitude
+        return self.track.altitude
 
     @property
     def surface_type_flag(self):
