@@ -185,7 +185,7 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
                              if l1bdata_in_trange(l1bdata_file, time_range)]
 
     # Done return list (empty or not)
-    return l1bdata_files_checked
+    return l1bdata_files_checked, directory
 
 
 def l1bdata_in_trange(fn, tr):

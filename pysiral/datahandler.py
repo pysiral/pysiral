@@ -144,11 +144,18 @@ class DefaultL1bDataHandler(DefaultLoggingClass):
         self._mission_id = mission_id
         self._hemisphere = hemisphere
         self._version = version
+        self._last_directory = None
 
     def get_files_from_time_range(self, time_range):
-        return get_local_l1bdata_files(
+        files, search_directory = get_local_l1bdata_files(
                 self._mission_id, time_range, self._hemisphere,
                 version=self._version)
+        self._last_directory = search_directory
+        return files
+
+    @property
+    def last_directory(self):
+        return str(self._last_directory)
 
 
 class L2iDataHandler(DefaultLoggingClass):
