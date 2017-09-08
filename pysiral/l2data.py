@@ -370,6 +370,12 @@ class Level2Data(object):
         spacing = great_circle(
             (self.latitude[1], self.longitude[1]),
             (self.latitude[0], self.longitude[0])).meters
+
+        if np.isclose(spacing, 0.0):
+            spacing = great_circle(
+                (self.latitude[-2], self.longitude[-2]),
+                (self.latitude[-1], self.longitude[-1])).meters
+
         return spacing
 
     @property
