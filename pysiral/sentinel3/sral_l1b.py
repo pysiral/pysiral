@@ -53,7 +53,7 @@ class Sentinel3SRALL1b(object):
         self._validate()
 
         # Read the L2 netCDF file
-        self.nc = ReadNC(self.filename)
+        self.nc = ReadNC(self.filename, nan_fill_value=True)
 
     def get_status(self):
         # XXX: Not much functionality here
