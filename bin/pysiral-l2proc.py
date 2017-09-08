@@ -77,6 +77,8 @@ def pysiral_l2proc_time_range_job(args):
 
         # Get input files
         l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
+        l2proc.log.info("Found %g files in %s" % (
+                len(l1b_files), l1b_data_handler.last_directory))
 
         # Process the orbits
         l2proc.process_l1b_files(l1b_files)

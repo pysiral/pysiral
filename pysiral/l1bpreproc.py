@@ -81,7 +81,7 @@ class L1bPreProc(DefaultLoggingClass):
         # -> have to be set by the mission specific processor
         self.merge_and_export_polar_ocean_subsets()
 
-    def remove_old_l1bdata(self):
+    def remove_old_l1bdata(self, time_range):
         """
         Remove all l1b data files in current l1bdata export directory
         defined by the job definition
@@ -105,8 +105,8 @@ class L1bPreProc(DefaultLoggingClass):
                 self._jobdef.mission_id,
                 self._jobdef.input_version,
                 hemisphere,
-                self._jobdef.time_range.start_dt.year,
-                self._jobdef.time_range.start_dt.month)
+                time_range.start.year,
+                time_range.start.month)
 
             # Get list of netcdf files
             search_pattern = os.path.join(export_folder.path, "*.nc")
