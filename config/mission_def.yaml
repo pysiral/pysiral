@@ -236,7 +236,8 @@ sentinel3a:
             peakiness_envisat: peakiness_1_20_ku
             peakiness_laxon: peakiness_2_20_ku
             l2_ice_range: range_ice_20_ku
-            sigma0: sig0_ocog_20_ku
+            sigma0_ocog: sig0_ocog_20_ku
+            sigma0_sea_ice: sig0_sea_ice_sheet_20_ku
 
         # Pre processors
         polar_threshold: 50.0

@@ -606,6 +606,30 @@ class L1bAdapterSentinel3(object):
         wfm_power = self.sral.nc.waveform_20_ku
         n_records, n_range_bins = shape = wfm_power.shape
 
+        # Convert wfm counts to power
+
+        # Code from Amandine :
+        # waveforms_scaling_dB(k,:) = 10.*log10(waveforms(k,:) * \
+        #                             10.^(scale_factor_20_ku'./10));
+
+        # 1. set counts with 0 values to very minor value
+        wfm_power[np.where(wfm_power == 0)] = 1e-12
+
+        # 2. get scaling factor
+        scale_factor = self.sral.nc.scale_factor_20_ku
+
+        # 3. apply count to power scaling
+        for k in np.arange(n_range_bins):
+            wfm_power[:, k] = 10. * np.log10(wfm_power[:, k] *
+                     10.**(scale_factor/10.))
+#
+#        import matplotlib.pyplot as plt
+#        plt.figure()
+#        plt.imshow(np.transpose(np.log(wfm_power)), aspect=100)
+#        plt.show()
+#        plt.colorbar()
+#        stop
+
         # Get the window delay
         # "The tracker_range_20hz is the range measured by the onboard tracker
         #  as the window delay, corrected for instrumental effects and
@@ -662,11 +686,19 @@ class L1bAdapterSentinel3(object):
             classifier = getattr(self.sral.nc, target_parameter)
             self.l1b.classifier.add(classifier, name)
 
+
         # Compute sar specific waveform classifiers after Ricker et al. 2014
         wfm = self.l1b.waveform.power
 #        ocog = CS2OCOGParameter(wfm)
 #        self.l1b.classifier.add(ocog.width, "ocog_width")
 #        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
+
+        # Get sigma0 (as peak power)
+        n_records, n_range_bins = wfm.shape
+        sigma0 = np.full((n_records), np.nan)
+        for i in np.arange(n_records):
+            sigma0[i] = np.nanmax(wfm[i, :])
+        self.l1b.classifier.add(sigma0, "sigma0")
 
         import time
 
