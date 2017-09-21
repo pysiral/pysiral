@@ -65,7 +65,7 @@ class Sentinel3PreProc(L1bPreProc):
             matches_region = False
 
         if not has_polar_ocean or not matches_region:
-            return None
+            return []
 
         # Only now read the full data set
         try:
