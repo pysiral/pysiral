@@ -29,7 +29,6 @@ from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import pytz
 from netCDF4 import num2date
 import numpy as np
 
@@ -625,8 +624,7 @@ class L1bAdapterSentinel3(object):
 
         # 3. apply count to power scaling
         for k in np.arange(n_range_bins):
-            wfm_power[:, k] = 10. * np.log10(wfm_power[:, k] *
-                     10.**(scale_factor/10.))
+            wfm_power[:, k] = wfm_power[:, k] * 10.**(scale_factor/10.)
 #
 #        import matplotlib.pyplot as plt
 #        plt.figure()
@@ -691,18 +689,11 @@ class L1bAdapterSentinel3(object):
             classifier = getattr(self.sral.nc, target_parameter)
             self.l1b.classifier.add(classifier, name)
 
-
         # Compute sar specific waveform classifiers after Ricker et al. 2014
         wfm = self.l1b.waveform.power
-#        ocog = CS2OCOGParameter(wfm)
-#        self.l1b.classifier.add(ocog.width, "ocog_width")
-#        self.l1b.classifier.add(ocog.amplitude, "ocog_amplitude")
 
         # Get sigma0 (as peak power)
-        n_records, n_range_bins = wfm.shape
-        sigma0 = np.full((n_records), np.nan)
-        for i in np.arange(n_records):
-            sigma0[i] = np.nanmax(wfm[i, :])
+        sigma0 = get_waveforms_peak_power(wfm, dB=True)
         self.l1b.classifier.add(sigma0, "sigma0")
 
         import time
