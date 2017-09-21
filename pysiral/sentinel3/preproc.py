@@ -9,6 +9,9 @@ from pysiral.l1bpreproc import L1bPreProc
 from pysiral.l1bdata import L1bConstructor
 from pysiral.sentinel3.iotools import Sentinel3FileList
 
+from pysiral.classifier import CS2PulsePeakiness
+from pysiral.waveform import TFMRALeadingEdgeWidth
+
 import time
 
 
@@ -119,6 +122,41 @@ class Sentinel3PreProc(L1bPreProc):
                     l1b_list.extend(l1b_segments)
                 except TypeError:
                     self.log.info("- no ocean data in file")
+
+        # Compute waveform based classifiers
+        # The reason why this is done here is that it is very inefficient to
+        # compute pulse peakiness and leading edge width for the entire
+        # half-orbits. Doing it here means that this is done only for the
+        # final data subset
+
+        for l1b in l1b_list:
+
+            # Get waveform data
+            wfm = l1b.waveform.power
+            rng = l1b.waveform.range
+            radar_mode = l1b.waveform.radar_mode
+            is_ocean = l1b.surface_type.get_by_name("ocean").flag
+
+            tick = time.clock()
+            # Calculate the Peakiness (CryoSat-2 notation)
+
+            pulse = CS2PulsePeakiness(wfm)
+            l1b.classifier.add(pulse.peakiness, "peakiness")
+            l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
+            l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+            tock = time.clock()
+            print "CS2PulsePeakiness completed in %.1f seconds" % (tock-tick)
+
+            tick = time.clock()
+            # Compute the leading edge width (requires TFMRA retracking)
+            lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+            lew1 = lew.get_width_from_thresholds(0.05, 0.5)
+            lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+            l1b.classifier.add(lew1, "leading_edge_width_first_half")
+            l1b.classifier.add(lew2, "leading_edge_width_second_half")
+            l1b.classifier.add(lew.fmi, "first_maximum_index")
+            tock = time.clock()
+            print "TFMRALeadingEdgeWidth completed in %.1f seconds" % (tock-tick)
 
         return l1b_list
 
