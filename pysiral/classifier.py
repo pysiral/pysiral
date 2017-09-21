@@ -67,17 +67,22 @@ class CS2PulsePeakiness(BaseClassifier):
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
-            y = wfm_counts[i, :].flatten().astype(np.float32)
-            y -= np.nanmean(y[0:11])  # Remove Noise
-            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
-            yp = np.nanmax(y)  # Waveform peak value
-            ypi = np.nanargmax(y)  # Waveform peak index
-            if ypi > 3*self._pad and ypi < self._n_range_bins-4*self._pad:
-                self._peakiness_l[i] = yp/np.nanmean(
-                    y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
-                self._peakiness_r[i] = yp/np.nanmean(y[
-                    ypi+1*self._pad:ypi+3*self._pad+1])*3.0
-                self._peakiness[i] = yp/y.sum()*self._n_range_bins
+            try:
+                y = wfm_counts[i, :].flatten().astype(np.float32)
+                y -= np.nanmean(y[0:11])  # Remove Noise
+                y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+                yp = np.nanmax(y)  # Waveform peak value
+                ypi = np.nanargmax(y)  # Waveform peak index
+                if ypi > 3*self._pad and ypi < self._n_range_bins-4*self._pad:
+                    self._peakiness_l[i] = yp/np.nanmean(
+                        y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
+                    self._peakiness_r[i] = yp/np.nanmean(y[
+                        ypi+1*self._pad:ypi+3*self._pad+1])*3.0
+                    self._peakiness[i] = yp/y.sum()*self._n_range_bins
+            except ValueError:
+                self._peakiness_l[i] = np.nan
+                self._peakiness_r[i] = np.nan
+                self._peakiness[i] = np.nan
 
     @property
     def peakiness(self):
@@ -126,7 +131,7 @@ class EnvisatWaveformParameter(BaseClassifier):
             except ZeroDivisionError:
                 pp = np.nan
             self.peakiness_old[i] = pp
-            
+
             ## new peakiness
             try:
                 self.peakiness[i] = float(max(wave))/float(sum(wave))*self._n_range_bins
