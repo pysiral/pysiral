@@ -576,6 +576,11 @@ class L1bAdapterSentinel3(object):
         info.set_attribute("orbit", self.sral.nc.absolute_pass_number)
         info.set_attribute("cycle", self.sral.nc.cycle_number)
         info.set_attribute("mission_data_version", self.sral.nc.source)
+        info.set_attribute("timeliness", product.timeliness)
+        info.set_attribute("lon_min", product.lon_min)
+        info.set_attribute("lon_max", product.lon_max)
+        info.set_attribute("lat_min", product.lat_min)
+        info.set_attribute("lat_max", product.lat_max)
 
     def _test_ku_data_present(self):
         if not hasattr(self.sral.nc, "time_20_ku"):

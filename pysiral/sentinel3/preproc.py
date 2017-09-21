@@ -41,15 +41,14 @@ class Sentinel3PreProc(L1bPreProc):
         """ Returns the source Sentinel-3 l1b data as a list of
         pysiral.L1bdata objects. """
 
-        # Read CryoSat-2 Header
-        l1b = L1bConstructor(self._pysiral_config)
-        l1b.mission = self.mission_id
-        l1b.filename = filename
-
-        t0 = time.time()
-        l1b.construct()
-        t1 = time.time()
-        self.log.info("- Parsed source file in %.3g seconds" % (t1 - t0))
+        # Read the header information firsts
+        try:
+            l1b = L1bConstructor(self._pysiral_config)
+            l1b.mission = self.mission_id
+            l1b.filename = filename
+            l1b.get_header_info()
+        except:
+            return []
 
         # 1) Check if file has ocean data in the polar regions at all
         has_polar_ocean = self.region_is_arctic_or_antarctic_ocean(l1b)
@@ -65,16 +64,29 @@ class Sentinel3PreProc(L1bPreProc):
         if not has_polar_ocean or not matches_region:
             return None
 
-        # Sentinel-3a WAT files cover a half-orbit from pole to plot
+        # Only now read the full data set
+        try:
+            t0 = time.time()
+            l1b.construct()
+            t1 = time.time()
+            self.log.info("- Parsed source file in %.3g seconds" % (t1 - t0))
+        except:
+            self.log.warning(" - Error reading l1b file")
+            return []
+
+        # Sentinel-3a WAT STC/NTC files cover a half-orbit from pole to plot
         # (with gaps). This approach is adapted from pre-processing
         # the Envisat half-orbits
         l1b_list = []
-        seg1, seg2 = self.extract_polar_segments_from_halforbit(l1b)
+        if l1b.info.timeliness != "NR":
+            segments = self.extract_polar_segments_from_halforbit(l1b)
+        else:
+            segments = [l1b]
 
         # Threshold for splitting
         seconds_threshold = self._mdef.max_connected_files_timedelta_seconds
 
-        for seg in [seg1, seg2]:
+        for seg in segments:
 
             # Get polar ocean segments
             if seg is not None:

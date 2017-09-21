@@ -568,7 +568,7 @@ class L1bMetaData(object):
         "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
         "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
         "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
-        "open_ocean_percent"]
+        "open_ocean_percent", "timeliness"]
 
     def __init__(self):
         # Init all fields
