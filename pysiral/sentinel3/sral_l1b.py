@@ -39,7 +39,10 @@ class Sentinel3SRALL1b(object):
         index = xml_metadata_object_index["generalProductInformation"]
         product_info = metadata[index]["metadataWrap"]["xmlData"]
         product_info = product_info["sentinel3:generalProductInformation"]
-        self.product_info.timeliness = product_info["sentinel3:timeliness"]
+
+        timeliness_dict = dict(NR="NRT", ST="STC", NT="NTC")
+        timeliness = timeliness_dict[product_info["sentinel3:timeliness"]]
+        self.product_info.timeliness = timeliness
 
         # Extract SRAL Product Info
         index = xml_metadata_object_index["sralProductInformation"]

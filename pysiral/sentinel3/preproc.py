@@ -81,8 +81,11 @@ class Sentinel3PreProc(L1bPreProc):
         # (with gaps). This approach is adapted from pre-processing
         # the Envisat half-orbits
         l1b_list = []
-        if l1b.info.timeliness != "NR":
+        if l1b.info.timeliness != "NRT":
             segments = self.extract_polar_segments_from_halforbit(l1b)
+
+        # the NRT timeliness product however comes in 10 minute granules
+        # therefore the content will be either arctic or antarctic data
         else:
             segments = [l1b]
 
