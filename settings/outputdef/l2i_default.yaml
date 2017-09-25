@@ -18,12 +18,14 @@ global_attributes:
   summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
   keywords: "sea ice, radar altimetry"
   product_version: "{l2_algorithm_id}"
-  mission_id: "{mission_id}"
-  source_primary: "{source_primary}"
-  source_mss: "{source_mss}"
-  source_sic: "{source_sic}"
-  source_sitype: "{source_sitype}"
-  source_snow: "{source_snow}"
+  source_mission_name: "{source_mission_name}"
+  source_mission_id: "{source_mission_id}"
+  source_mission_sensor: "{source_mission_sensor}"
+  source_hemisphere: "{source_hemisphere}"
+  source_auxdata_snow: "{source_auxdata_snow}"
+  source_auxdata_mss: "{source_auxdata_mss}"
+  source_auxdata_sic: "{source_auxdata_sic}"
+  source_auxdata_sitype: "{source_auxdata_sitype}"
   references: "pysiral version: {pysiral_version:default}"
   cdm_data_type: Trajectory
   date_created: "{utcnow}"
@@ -39,8 +41,10 @@ global_attributes:
   geospatial_lon_max: "{geospatial_lon_max}"
   time_coverage_start: "{startdt:%Y-%m-%d %H:%M:%S UTC}"
   time_coverage_end: "{stopdt:%Y-%m-%d %H:%M:%S UTC}"
+  time_coverage_duration: "{time_coverage_duration:period}"
   time_coverage_resolution: "{time_resolution}"
-  license: "Freely Distributed"
+  license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
