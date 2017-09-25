@@ -612,7 +612,7 @@ class TimeRangeIteration(object):
         elif self.base_period == "daily":
             return Duration(days=1)
         else:
-            timedelta = relativedelta(dt1=self.start, dt2=self.stop)
+            timedelta = relativedelta(dt1=self.stop, dt2=self.start)
             return Duration(months=timedelta.months, days=timedelta.days,
                             hours=timedelta.hours, minutes=timedelta.minutes,
                             seconds=timedelta.seconds)
