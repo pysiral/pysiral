@@ -10,6 +10,7 @@ from pysiral.path import file_basename
 
 from datetime import timedelta
 import argparse
+import glob
 import time
 import sys
 import os
@@ -97,6 +98,10 @@ def pysiral_l2proc_l1b_predef_job(args):
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
+
+    # Specifically add an output handler
+    product_def.add_output_definition(
+            args.l2_output, overwrite_protection=args.overwrite_protection)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)
@@ -236,6 +241,11 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l1b_version(self):
         return self._args.input_version
+
+    @property
+    def l1b_predef_files(self):
+        l1b_files = glob.glob(self._args.l1b_files_preset)
+        return l1b_files
 
     @property
     def l2_output(self):
