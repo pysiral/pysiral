@@ -298,6 +298,7 @@ sic:
             link: null
 
 
+
     # OSI-SAf
     ifremer:
         pyclass: IfremerSIC
@@ -401,6 +402,40 @@ sitype:
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
 
+    # OSI-SAf
+    osisaf_c3s_v1:
+        pyclass: OsiSafSIType
+        long_names: OSI-SAF Reprocessed (CDR) Sea Ice Type
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_cdr-v1p0_{year}{month}{day}1200.nc"
+        local_repository: osisaf_c3s_v1
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: http://thredds.met.no//thredds/fileServer/c3s/reproc_ice_type_files
+            type: daily
+            
     icdc_nasateam:
         pyclass: ICDCNasaTeam
         long_name: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
