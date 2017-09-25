@@ -123,7 +123,7 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         deriv_fb = rho_w/(rho_w-rho_i)
         deriv_rho_s = l2.snow_depth/(rho_w-rho_i)
         deriv_rho_i = (l2.frb*rho_w + l2.snow_depth * l2.snow_dens) / \
-            (rho_w-rho_i)
+            (rho_w-rho_i)**2.
         deriv_sd = (l2.snow_dens)/(rho_w-rho_i)
 
         # Error propagation for statistical and systematic errors
