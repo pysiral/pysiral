@@ -25,6 +25,9 @@ from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
 from pysiral.path import filename_from_path, file_basename
 
+from dateutil.relativedelta import relativedelta
+from isodate.duration import Duration
+
 from collections import deque, OrderedDict
 from datetime import datetime
 import time
@@ -311,7 +314,11 @@ class Level2Processor(DefaultLoggingClass):
             self._apply_l1b_prefilter(l1b)
 
             # Initialize the orbit level-2 data container
-            l2 = Level2Data(l1b.info, l1b.time_orbit)
+            time_range = TimeRangeRequest(l1b.info.start_time,
+                                          l1b.info.stop_time,
+                                          period="custom")
+            period = time_range.iterations[0]
+            l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
             # Add sea ice concentration (can be used as classifier)
             error_status, error_codes = self._get_sea_ice_concentration(l2)
@@ -327,7 +334,6 @@ class Level2Processor(DefaultLoggingClass):
 
             # get mss for orbit (this is necessary e.g. for icesat)
             l2.mss = self._mss.get_track(l2.track.longitude, l2.track.latitude)
-
 
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
