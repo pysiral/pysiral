@@ -34,6 +34,7 @@ class Level2Data(object):
         "longitude": "longitude",
         "latitude": "latitude",
         "surface_type": "surface_type_flag",
+        "radar_mode": "radar_mode",
         "elevation": "elev",
         "mean_sea_surface": "mss",
         "sea_surface_anomaly": "ssa",
@@ -71,6 +72,9 @@ class Level2Data(object):
 
     def set_surface_type(self, surface_type):
         self.surface_type = surface_type
+
+    def set_radar_mode(self, radar_mode):
+        self.radar_mode = radar_mode
 
     def set_parameter(self, target, value, uncertainty=None, bias=None):
         """ Convienience method to safely add a parameter with optional

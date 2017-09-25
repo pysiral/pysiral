@@ -77,6 +77,14 @@ variables:
     scale_factor: 1.0
     add_offset: 0.0
 
+  radar_mode:
+    long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
+    standard_name: radar_mode
+    units: flag
+    coordinates: timestamp
+    scale_factor: 1.0
+    add_offset: 0.0
+
   elevation:
     long_name: "elevation of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
     standard_name: elevation

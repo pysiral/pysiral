@@ -609,6 +609,7 @@ class Level2Processor(DefaultLoggingClass):
             l2.update_retracked_range(retracker)
 
             # XXX: Let the retracker return other parameters?
+            l2.set_radar_mode(l1b.waveform.radar_mode)
 
             # retrieve potential error status and update surface type flag
             if retracker.error_flag.num > 0:
