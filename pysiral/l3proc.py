@@ -756,9 +756,21 @@ class L3MetaData(object):
     def get_auxdata_infos(self, l2i_info):
         """ Get information on auxiliary data sources from l2i global
         attributes """
-        self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
-        self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
-        self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
+        try:
+            self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
+        except AttributeError:
+            self.set_attribute("source_auxdata_sic",
+                               l2i_info.source_auxdata_sic)
+        try:
+            self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
+        except AttributeError:
+            self.set_attribute("source_auxdata_sitype",
+                               l2i_info.source_auxdata_sitype)
+        try:
+            self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
+        except AttributeError:
+            self.set_attribute("source_auxdata_snow",
+                               l2i_info.source_auxdata_snow)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
