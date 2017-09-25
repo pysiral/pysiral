@@ -240,6 +240,42 @@ sic:
             type: daily
             link: null
 
+    osisaf450:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Reprocessed (CDR) Sea Ice Concentration v2.0 (OSI-450)
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_cdr-v2p0_{year}{month}{day}1200.nc"
+        local_repository: osisaf450
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: null
+
     # This SIC data product definition is a customization that automatically merges the 
     # the OSI-SAF 409 and OSI-SAF 430 products. This functionality is a unique feature
     # of the OsiSafSIC class and is not generally available for auxdata products
@@ -296,8 +332,6 @@ sic:
             pwdfile: null
             type: daily
             link: null
-
-
 
     # OSI-SAf
     ifremer:
@@ -404,22 +438,25 @@ sitype:
 
     # OSI-SAf
     osisaf_c3s_v1:
-        pyclass: OsiSafSIType
+        pyclass: OsiSafSITypeCDR
         long_names: OSI-SAF Reprocessed (CDR) Sea Ice Type
         filenaming: "ice_type_{hemisphere_code}_ease2-250_cdr-v1p0_{year}{month}{day}1200.nc"
         local_repository: osisaf_c3s_v1
         options:
+            variable_name: ice_type
+            uncertainty_variable_name: uncertainty
             north:
                 projection:
                     proj: laea
                     lon_0: 0.0
-                    lat_0: 90
+                    lat_0: 90.0
                 dimension:
                     n_cols: 432
                     n_lines: 432
                     dx: 25000
                     dy: 25000
             south:
+                projection:
                     proj: laea
                     lon_0: 0.0
                     lat_0: -90
