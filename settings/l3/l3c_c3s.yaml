@@ -1,0 +1,102 @@
+# Level-3 processor settings suitable for default l2i input files and output for C3S ICDR/CDR 
+# 
+# Version 1.0
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method. 
+
+l2_parameter:
+
+    sea_ice_thickness:
+        grid_method: average
+
+    sea_ice_thickness_uncertainty:
+        grid_method: average
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+
+l2i_prefilter:
+    active: False
+    nan_source: Null
+    nan_targets: Null
+
+# ==================================================
+# Level-3 Parameter
+# ==================================================
+
+# l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
+# of valid l3 parameter names. (l2 parameter surface type is mandatory)
+
+l3_parameter:
+    - radar_mode_flag
+    - quality_indicator_flag 
+    - n_total_waveforms
+    - n_valid_waveforms
+    - valid_fraction
+    - lead_fraction
+    - ice_fraction
+
+# ==================================================
+# External Masks
+# ==================================================
+
+external_masks:
+    - warren99_valid_mask
+
+# ==================================================
+# Grid settings
+# ==================================================
+grid_settings:
+    no_land_cells: True
+    minimum_valid_grid_points: 2
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells 
+# Note: The masking is exectuted in the alphabetical order of the mask names.
+#       If there is a dependance between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+l3_masks: Null
+
+
+# Methods that can only be applied when the entire grid 
+
+l3_post_processing:
+
+  # Compute the quality indicator flag
+  quality_indicator_flag:
+    rules:
+      
+      # Mark everything outside of the Warren99 Climatology as biased
+      # Note: This method requires loading the external mask with id `warren99_is_valid`
+      - type: method
+        method_name: qif_warren99_valid_flag
+        options: 
+          target_flag: 3
+      
+      # Check for lead fractions not only in the grid cell but also in the adjacent 
+      # grid cells. Idea is that grid cell with low lead fractions have still high 
+      # confidence if enough leads in the neighbourhood
+      - type: method
+        method_name: qif_lead_availability
+        options: 
+          search_radius_m: 100000.
+          target_flag: 2
+          area_lead_fraction_minimum: 0.1
+
+      # Check radar mode for SARin mode (only applicable for CryoSat-2)
+      - type: method
+        method_name: qif_cs2_radar_mode_is_sin
+        options: 
+          condition: 
+          target_flag: 2
