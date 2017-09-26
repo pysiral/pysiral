@@ -233,7 +233,9 @@ class L3DataGrid(DefaultLoggingClass):
             "valid_fraction": "f4",
             "lead_fraction": "f4",
             "ice_fraction": "f4",
-            "is_land": "i2"}
+            "is_land": "i2",
+            "radar_mode_flag": "i1",
+            "quality_indicator_flag": "i1"}
 
         # List of level-2 parameter
         # (gridded parameter that are already in l2i)
@@ -447,6 +449,7 @@ class L3DataGrid(DefaultLoggingClass):
         """
         # Surface type based parameter are computed anyway, skip
         if l3_parameter_name in self._surface_type_l3par:
+            # XXX: Add radar mode flag here
             return None
         # No other l3 parameter computations at the moment
         else:
