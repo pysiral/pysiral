@@ -92,6 +92,12 @@ l3_parameter:
     - ice_fraction
 
 # ==================================================
+# External Masks
+# ==================================================
+
+external_masks: Null
+
+# ==================================================
 # Grid settings
 # ==================================================
 grid_settings:
@@ -146,3 +152,5 @@ l3_masks:
             - snow_density
             - snow_density_uncertainty
             - sea_ice_concentration
+
+l3_post_processing: Null
