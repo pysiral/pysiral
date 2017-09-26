@@ -31,7 +31,9 @@ class NoneHandler(SITypeBaseClass):
         super(NoneHandler, self).__init__()
 
     def _get_along_track_sitype(self, l2):
-        return np.full((l2.n_records), np.nan), ""
+        sitype = np.full((l2.n_records), np.nan)
+        uncertainty = np.full((l2.n_records), np.nan)
+        return sitype, uncertainty, ""
 
 
 class OsiSafSIType(SITypeBaseClass):
@@ -59,8 +61,9 @@ class OsiSafSIType(SITypeBaseClass):
         self._get_data(l2)
         if self.error.status:
             return None, self.error.message
-        sic = self._get_sitype_track(l2)
-        return sic, self._msg
+        sitype = self._get_sitype_track(l2)
+        uncertainty = np.full(sitype.shape, 0.0)
+        return sitype, uncertainty, self._msg
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -156,7 +159,7 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         self._get_requested_date(l2)
         self._get_data(l2)
         if self.error.status:
-            return None, self.error.message
+            return None, None, self.error.message
         sitype, uncertainty = self._get_sitype_track(l2)
         return sitype, uncertainty, self._msg
 
