@@ -12,9 +12,18 @@ l2_parameter:
 
     sea_ice_thickness:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_thickness_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    radar_mode:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
 # ==================================================
 # Level-2 Pre-Filter
@@ -35,13 +44,30 @@ l2i_prefilter:
 # of valid l3 parameter names. (l2 parameter surface type is mandatory)
 
 l3_parameter:
-    - radar_mode_flag
-    - quality_indicator_flag 
-    - n_total_waveforms
-    - n_valid_waveforms
-    - valid_fraction
-    - lead_fraction
-    - ice_fraction
+
+    quality_indicator_flag:
+        dtype: i1
+        fillvalue: 0
+
+    n_total_waveforms:
+        dtype: f4
+        fillvalue: .NAN
+
+    n_valid_waveforms:
+        dtype: f4
+        fillvalue: .NAN
+
+    valid_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    lead_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    ice_fraction:
+        dtype: f4
+        fillvalue: .NAN
 
 # ==================================================
 # External Masks
@@ -75,28 +101,34 @@ l3_post_processing:
 
   # Compute the quality indicator flag
   quality_indicator_flag:
-    rules:
-      
-      # Mark everything outside of the Warren99 Climatology as biased
-      # Note: This method requires loading the external mask with id `warren99_is_valid`
-      - type: method
-        method_name: qif_warren99_valid_flag
-        options: 
-          target_flag: 3
-      
-      # Check for lead fractions not only in the grid cell but also in the adjacent 
-      # grid cells. Idea is that grid cell with low lead fractions have still high 
-      # confidence if enough leads in the neighbourhood
-      - type: method
-        method_name: qif_lead_availability
-        options: 
-          search_radius_m: 100000.
-          target_flag: 2
-          area_lead_fraction_minimum: 0.1
 
-      # Check radar mode for SARin mode (only applicable for CryoSat-2)
-      - type: method
-        method_name: qif_cs2_radar_mode_is_sin
-        options: 
-          condition: 
-          target_flag: 2
+    options:
+
+        # This setting is currently without effect
+        add_rule_flags: maximum_value
+
+        # A list of rules that will be checked
+        rules: 
+
+            # Mark everything outside of the Warren99 Climatology as biased
+            # Note: This method requires loading the external mask with id `warren99_is_valid`
+            qif_warren99_valid_flag:
+                type: method
+                target_flag: 3
+        
+            # Check for lead fractions not only in the grid cell but also in the adjacent 
+            # grid cells. Idea is that grid cell with low lead fractions have still high 
+            # confidence if enough leads in the neighbourhood
+            qif_lead_availability:
+                search_radius_m: 100000.
+                area_lead_fraction_minimum: 0.1
+                target_flag: 2
+
+            # Check radar mode for SARin mode (only applicable for CryoSat-2)
+            qif_cs2_radar_mode_is_sin:
+                target_flag: 2
+
+            # Check number of waveforms and raise flag if low
+            qif_n_waveforms:
+                thresholds: [50, 10]
+                target_flags: [2, 3]

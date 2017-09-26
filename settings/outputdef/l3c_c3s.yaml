@@ -70,84 +70,6 @@ variables:
     scale_factor: 1.0
     add_offset: 0.0
 
-  radar_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
-    standard_name: radar_freeboard
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  radar_freeboard_uncertainty:
-    long_name: "uncertainty of radar freeboard"
-    standard_name: radar_freeboard_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
-    standard_name: sea_ice_freeboard
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  freeboard_uncertainty:
-    long_name: "freeboard uncertainty"
-    standard_name: sea_ice_freeboard_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type:
-    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
-    standard_name: sea_ice_classification
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type_uncertainty:
-    long_name: "uncertainty of sea ice classification"
-    standard_name: sea_ice_classification_uncertainty
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_concentration:
-    long_name: "sea ice concentration"
-    standard_name: sea_ice_area_fraction
-    units: percent
-    valid_min: 0.0
-    valid_max: 100.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth:
-    long_name: "thickness of the snow layer"
-    standard_name: snow_depth
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth_uncertainty:
-    long_name: "uncertainty of the snow layer thickness"
-    standard_name: snow_depth_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
   sea_ice_thickness:
     long_name: "thickness of the sea ice layer"
     standard_name: sea_ice_thickness
@@ -163,3 +85,10 @@ variables:
     coordinates: "latitude longitude time"
     scale_factor: 1.0
     add_offset: 0.0 
+
+  quality_indicator_flag:
+    long_name: "quality flag (0: no data; 1: nominal, no biases expected, 2: intermediate, bias likely, 3: low, bias expected)"
+    standard_name: quality_flag
+    coordinates: "latitude longitude time"
+    scale_factor: 1.0
+    add_offset: 0.0     
