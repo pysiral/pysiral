@@ -57,14 +57,14 @@ global_attributes:
 variables:
 
   longitude:
-    long_name: longitude of satellite / nadir measurement point
+    long_name: longitude of grid cell center
     standard_name: longitude
     units: degrees
     scale_factor: 1.0
     add_offset: 0.0  
 
   latitude:
-    long_name: latitude of satellite / nadir measurement point
+    long_name: latitude of grid cell center
     standard_name: latitude
     units: degrees
     scale_factor: 1.0
