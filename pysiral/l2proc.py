@@ -314,10 +314,16 @@ class Level2Processor(DefaultLoggingClass):
             self._apply_l1b_prefilter(l1b)
 
             # Initialize the orbit level-2 data container
-            time_range = TimeRangeRequest(l1b.info.start_time,
-                                          l1b.info.stop_time,
-                                          period="custom")
-            period = time_range.iterations[0]
+            try:
+                time_range = TimeRangeRequest(l1b.info.start_time,
+                                              l1b.info.stop_time,
+                                              period="custom")
+                period = time_range.iterations[0]
+            except SystemExit:
+                msg = "Computation of data period caused exception"
+                self.log.warning("[invalid-l1b]", msg)
+                continue
+
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
             # Add sea ice concentration (can be used as classifier)
