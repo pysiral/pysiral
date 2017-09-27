@@ -150,8 +150,8 @@ class L2iDataStack(DefaultLoggingClass):
         self.stack["surface_type"] = self.parameter_stack
 
         # create a stack for each l2 parameter
-        for parameter_name in self.l2_parameter:
-            self.stack[parameter_name] = self.parameter_stack
+        for pardef in self.l2_parameter:
+            self.stack[pardef.branchName()] = self.parameter_stack
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
@@ -181,7 +181,8 @@ class L2iDataStack(DefaultLoggingClass):
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
             self.stack["surface_type"][y][x].append(l2i.surface_type[i])
-            for parameter_name in self.l2_parameter:
+            for pardef in self.l2_parameter:
+                parameter_name = pardef.branchName()
                 try:
                     data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
@@ -255,6 +256,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         self.init_parameter_fields(job.l2_parameter, "l2")
         self.init_parameter_fields(job.l3_parameter, "l3")
+
         self.init_mandatory_parameter_fields()
         self.calculate_longitude_latitude_fields()
 
@@ -275,6 +277,10 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Apply data masks")
         for mask_def in job.l3_masks:
             self.mask_l3(mask_def)
+
+        self.log.info("Post-Processing")
+        for name, options in job.l3_post_processors:
+            self.apply_post_processor(name, options)
 
         # Get the metadata information from the L2 stack
         self.log.info("Compile metadata")
@@ -304,15 +310,17 @@ class L3DataGrid(DefaultLoggingClass):
             print "L3DataGrid.get_attribute Exception: "+str(msg)
             sys.exit(1)
 
-    def init_parameter_fields(self, parameter_names, level):
+    def init_parameter_fields(self, pardefs, level):
         """ Initialize output parameter fields """
+        parameter_names = sorted([pd.branchName() for pd in pardefs])
         setattr(self, "_"+level+"_parameter", parameter_names)
         shape = self.grid_shape
-        for parameter_name in parameter_names:
-            msg = "Adding %s parameter: %s" % (level, parameter_name)
+        for pardef in pardefs:
+            msg = "Adding %s parameter: %s" % (level, pardef.branchName())
             self.log.info(msg)
-            self._l3[parameter_name] = np.ndarray(
-                shape=shape, dtype='f4')*np.nan
+            fillvalue = pardef.fillvalue
+            self._l3[pardef.branchName()] = np.full(
+                    shape, fillvalue, dtype=pardef.dtype)
 
     def init_mandatory_parameter_fields(self):
         """
@@ -380,18 +388,22 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Loop over all grid cells
         # XXX: Is there a better way?
-        for xi in self.grid_xi_range:
-            for yj in self.grid_yj_range:
 
-                # Exclude land (or near land grid cells)
-                if self._l3["is_land"][xi, yj] and settings.no_land_cells:
-                    continue
+        for name in self._l2_parameter:
+            self.log.info("Gridding parameter: %s" % name)
 
-                for name in self._l2_parameter:
+            for xi in self.grid_xi_range:
+                for yj in self.grid_yj_range:
+
                     data = np.array(self._l2.stack[name][yj][xi])
+
+                    # Exclude land (or near land grid cells)
+                    if self._l3["is_land"][xi, yj] and settings.no_land_cells:
+                        continue
 
                     # nanmean needs at least 2 valid items
                     valid = np.where(np.isfinite(data))[0]
+
                     if len(valid) < settings.minimum_valid_grid_points:
                         continue
 
@@ -401,6 +413,8 @@ class L3DataGrid(DefaultLoggingClass):
                     elif grid_method == "average_uncertainty":
                         value = np.abs(np.sqrt(1./np.sum(data[valid])))
                         self._l3[name][yj, xi] = value
+                    elif grid_method == "unique":
+                        self._l3[name][yj, xi] = np.unique(data)
                     else:
                         msg = "Invalid grid method (%s) for %s"
                         msg = msg % (str(grid_method), name)
@@ -495,8 +509,67 @@ class L3DataGrid(DefaultLoggingClass):
         for target in mask_def.targets:
             self._l3[target][masked_indices] = np.nan
 
+    def apply_post_processor(self, name, options):
+        """ Caller for post-processing methods """
+        try:
+            method = getattr(self, "_api_l3pp_"+name)
+        except AttributeError:
+            msg = "l3 post processor method not found: %s" % name
+            self.error.add_error("l3-postproc-error", msg)
+            self.error.raise_on_error()
+        method(options)
+
+    def _api_l3pp_quality_indicator_flag(self, options):
+        """ Computation of quality flag indicator based on several rules
+        defined in the l3 settings file
+        NOTE: Currently very limited implementation for C3S ICDR/CDR """
+
+        # Get the quality flag indicator array
+        # This array will be continously updated by the quality check rules
+        qif = np.copy(self._l3["quality_indicator_flag"])
+        sit = np.copy(self._l3["sea_ice_thickness"])
+        nvw = np.copy(self._l3["n_valid_waveforms"])
+
+        # As first step set qif to 1 where data is availabe
+        qif[np.where(np.isfinite(sit))] = 1
+
+        # Get a list of all the rules
+        quality_flag_rules = options.rules.keys(branch_mode="only")
+
+        # Simple way of handling rules (for now)
+
+
+        # Use the Warren99 validity masl
+        # XXX: Not implemented yet
+        if "qif_warren99_valid_flag" in quality_flag_rules:
+            pass
+
+        # Elevate the quality flag for SARin or mixed SAR/SARin regions
+        # (only sensible for CryoSat-2)
+        if "qif_cs2_radar_mode_is_sin" in quality_flag_rules:
+            radar_modes = self._l3["radar_mode"]
+            rule_options = options.rules.qif_cs2_radar_mode_is_sin
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            flag[np.where(radar_modes >= 2.)] = rule_options.target_flag
+            qif = np.maximum(qif, flag)
+
+        if "qif_n_waveforms" in quality_flag_rules:
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            rule_options = options.rules.qif_n_waveforms
+            for threshold, target_flag in zip(rule_options.thresholds,
+                                              rule_options.target_flags):
+                flag[np.where(nvw < threshold)] = target_flag
+            qif = np.maximum(qif, flag)
+
+        # Set all flags with no data to zero again
+        qif[np.where(np.isnan(nvw))] = 0
+        qif[np.where(nvw == 0)] = 0
+
+        # Set flag again
+        self._l3["quality_indicator_flag"] = qif
+
     def _get_l3_mask(self, source_param, condition, options):
-        """ Returna bool array based on a parameter and a predefined
+        """ Return bool array based on a parameter and a predefined
         masking operation """
         if condition.strip() == "is_nan":
             return np.isnan(source_param)
@@ -953,29 +1026,34 @@ class Level3ProductDefinition(DefaultLoggingClass):
     @property
     def l3_masks(self):
         """ Return a sorted list of the masks applied to level 3 data """
-        mask_names = sorted(self.l3def.l3_masks.keys(branch_mode="only"))
-        return [self.l3def.l3_masks[name] for name in mask_names]
+        try:
+            mask_names = sorted(self.l3def.l3_masks.keys(branch_mode="only"))
+            return [self.l3def.l3_masks[name] for name in mask_names]
+        except AttributeError:
+            return []
+
+    @property
+    def l3_post_processors(self):
+        try:
+            names = sorted(self.l3def.l3_post_processing.keys(
+                            recursive=False, branch_mode="only"))
+        except AttributeError:
+            return []
+        options = [self.l3def.l3_post_processing[n].options for n in names]
+        return zip(names, options)
 
     @property
     def l2_parameter(self):
         """ Extract a list of paramter names to be extracted from
         l2i product files """
         l2_parameter = sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
-        if type(l2_parameter) is not list:
-            msg = "Missing or invalid parameter in l3 settings: %s"
-            msg = msg % "root.l2_parameter"
-            self.error.add_error("invalid-l3-settings", msg)
-            self.error.raise_on_error()
-        return l2_parameter
+        l2_param_def = [self.l3def.l2_parameter[n] for n in l2_parameter]
+        return l2_param_def
 
     @property
     def l3_parameter(self):
-        """ Extract a list of paramter names to be extracted from
-        l2i product files """
-        l3_parameter = self.l3def.l3_parameter
-        if type(l3_parameter) is not list:
-            msg = "Missing or invalid parameter in l3 settings: %s"
-            msg = msg % "root.l3_parameter"
-            self.error.add_error("invalid-l3-settings", msg)
-            self.error.raise_on_error()
-        return self.l3def.l3_parameter
+        """ Extract a list of paramter names to be computed by the
+        Level-3 processor """
+        l3_parameter = sorted(self.l3def.l3_parameter.keys(branch_mode="only"))
+        l3_param_def = [self.l3def.l3_parameter[n] for n in l3_parameter]
+        return l3_param_def
