@@ -75,6 +75,7 @@ l3_post_processing:
 
   # Compute the quality indicator flag
   quality_indicator_flag:
+  
     rules:
       
       # Mark everything outside of the Warren99 Climatology as biased
