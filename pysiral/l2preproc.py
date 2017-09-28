@@ -46,7 +46,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
-        self.log.info("- Write %s data file: %s" % (
+        self.log.info("- Wrote %s data file: %s" % (
                 self.job.output_handler.id, output.export_filename))
 
     @property
@@ -108,6 +108,7 @@ class Level2POutputHandler(OutputHandlerBase):
         directory = self._get_directory_from_dt(l2p.info.start_time)
         if create:
             self._create_directory(directory)
+        self.error.raise_on_error()
         return directory
 
     def get_fullpath_from_data(self, l2):
