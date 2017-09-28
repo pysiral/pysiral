@@ -2,11 +2,13 @@
 
 hemisphere: south
 
-grid_id: SH50kmEASE2
+grid_id: sh50kmEASE2
 
 grid_tag: ease2sh
 
 resolution_tag: 50km
+
+name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 50km
 
 projection:
     proj: laea
