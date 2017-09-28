@@ -96,8 +96,14 @@ class Level2Data(object):
             self.error.add_error("l2-invalid-parameter_name", msg)
             self.error.raise_on_error()
 
+        # Test if parameter exists
+        # (older l2i files might not have all parameters)
+        try:
+            parameter = getattr(self, target)
+        except AttributeError:
+            return
+
         # Set values, uncertainty bias
-        parameter = getattr(self, target)
         parameter.set_value(value)
         if uncertainty is not None:
             uncertainty_value = self._get_as_array(uncertainty)
@@ -574,15 +580,28 @@ class Level2PContainer(DefaultLoggingClass):
         # Retrieve the following constant attributes from the first
         # l2i object in the stack
         info = self.l2i_stack[0].info
-        metadata.set_attribute("mission", info.mission_id)
-        mission_sensor = SENSOR_NAME_DICT[info.mission_id]
-        metadata.set_attribute("mission_sensor", mission_sensor)
 
-        # Transfer auxdata information
-        metadata.source_auxdata_sic = l2i.info.source_sic
-        metadata.source_auxdata_snow = l2i.info.source_snow
-        metadata.source_auxdata_sitype = l2i.info.source_sitype
-        metadata.source_auxdata_mss = l2i.info.source_mss
+        # Old notation (for backward compability)
+        try:
+            mission_id = info.mission_id
+            # Transfer auxdata information
+            metadata.source_auxdata_sic = l2i.info.source_sic
+            metadata.source_auxdata_snow = l2i.info.source_snow
+            metadata.source_auxdata_sitype = l2i.info.source_sitype
+            metadata.source_auxdata_mss = l2i.info.source_mss
+
+        # New (fall 2017) pysiral product notaion
+        except AttributeError:
+            mission_id = info.source_mission_id
+            # Transfer auxdata information
+            metadata.source_auxdata_sic = l2i.info.source_auxdata_sic
+            metadata.source_auxdata_snow = l2i.info.source_auxdata_snow
+            metadata.source_auxdata_sitype = l2i.info.source_auxdata_sitype
+            metadata.source_auxdata_mss = l2i.info.source_auxdata_mss
+
+        metadata.set_attribute("mission", mission_id)
+        mission_sensor = SENSOR_NAME_DICT[mission_id]
+        metadata.set_attribute("mission_sensor", mission_sensor)
 
         # Construct level-2 object
         l2 = Level2Data(metadata, timeorbit, period=self._period)
