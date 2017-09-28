@@ -262,7 +262,9 @@ class NCDateNumDef(object):
 class NCDataFile(DefaultLoggingClass):
 
     def __init__(self):
-        super(NCDataFile, self).__init__(self.__class__.__name__)
+        class_name = self.__class__.__name__
+        super(NCDataFile, self).__init__(class_name)
+        self.error = ErrorStatus(caller_id=class_name)
         self.filename = None
         self.time_def = NCDateNumDef()
         self.zlib = True
@@ -398,7 +400,12 @@ class NCDataFile(DefaultLoggingClass):
             self._rootgrp.setncattr(item, str(settings[item]))
 
     def _open_file(self):
-        self._rootgrp = Dataset(self.full_path, "w")
+        try:
+            self._rootgrp = Dataset(self.full_path, "w")
+        except RuntimeError:
+            msg = "Unable to create netCDF file: %s" % self.full_path
+            self.error.add_error("nc-runtime-error", msg)
+            self.error.raise_on_error()
 
     def _write_to_file(self):
         self._rootgrp.close()
