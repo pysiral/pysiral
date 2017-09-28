@@ -12,57 +12,93 @@ l2_parameter:
 
     radar_freeboard:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     radar_freeboard_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     freeboard:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     freeboard_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_thickness:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_thickness_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_surface_anomaly:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_surface_anomaly_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     mean_sea_surface:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     snow_depth:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     snow_depth_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     snow_density:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     snow_density_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     ice_density:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     ice_density_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_type:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_type_uncertainty:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
     sea_ice_concentration:
         grid_method: average
+        dtype: f4
+        fillvalue: .NAN
 
 # ==================================================
 # Level-2 Pre-Filter
@@ -85,11 +121,26 @@ l2i_prefilter:
 # of valid l3 parameter names. (l2 parameter surface type is mandatory)
 
 l3_parameter:
-    - n_total_waveforms
-    - n_valid_waveforms
-    - valid_fraction
-    - lead_fraction
-    - ice_fraction
+
+    n_total_waveforms:
+        dtype: f4
+        fillvalue: .NAN
+
+    n_valid_waveforms:
+        dtype: f4
+        fillvalue: .NAN
+
+    valid_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    lead_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    ice_fraction:
+        dtype: f4
+        fillvalue: .NAN
 
 # ==================================================
 # External Masks
