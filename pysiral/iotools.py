@@ -18,13 +18,14 @@ import uuid
 import numpy as np
 
 
-class ReadNC():
+class ReadNC(object):
     """
     Quick & dirty method to parse content of netCDF file into a python object
     with attributes from file variables
     """
     def __init__(self, filename, verbose=False, autoscale=True,
                  nan_fill_value=False):
+        self.error = ErrorStatus()
         self.time_def = NCDateNumDef()
         self.parameters = []
         self.attributes = []
@@ -46,7 +47,15 @@ class ReadNC():
     def read_content(self):
 
         self.keys = []
-        f = Dataset(self.filename)
+
+        # Open the file
+        try:
+            f = Dataset(self.filename)
+        except RuntimeError:
+            msg = "Cannot option netCDF file: %s" % self.filename
+            self.error.add_error("nc-runtime-error", msg)
+            self.error.raise_on_error()
+
         f.set_auto_scale(self.autoscale)
 
         # Get the global attributes
