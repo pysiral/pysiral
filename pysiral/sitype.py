@@ -414,10 +414,13 @@ class FYIDefault(SITypeBaseClass):
 
     @property
     def uncertainty_default(self):
-        if "uncertainty_default" in self._options:
-            return self._options.uncertainty_default
-        else:
-            return 0.0
+        try:
+            if "uncertainty_default" in self._options:
+                return self._options.uncertainty_default
+        except TypeError:
+            pass
+
+        return 0.0
 
 
 def get_l2_sitype_handler(name):
