@@ -8,6 +8,7 @@ Created on Sun Jun 11 19:24:04 2017
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
+from pyresample import geometry
 
 from treedict import TreeDict
 from pyproj import Proj
@@ -26,7 +27,8 @@ class GridDefinition(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._preset = preset
         self._metadata = {"grid_id": "n/a", "grid_tag": "n/a",
-                          "hemisphere": "n/a", "resolution_tag": "n/a"}
+                          "hemisphere": "n/a", "resolution_tag": "n/a",
+                          "name": "n/a"}
         self._proj = None
         self._proj_dict = {}
         self._extent_dict = {}
@@ -36,7 +38,10 @@ class GridDefinition(DefaultLoggingClass):
         Examples can be found in pysiral/settings/griddef """
         config = get_yaml_config(filename)
         for key in self._metadata.keys():
-            self._metadata[key] = config[key]
+            try:
+                self._metadata[key] = config[key]
+            except KeyError:
+                continue
         self.set_projection(**config.projection)
         self.set_extent(**config.extent)
 
@@ -91,9 +96,39 @@ class GridDefinition(DefaultLoggingClass):
         return self._metadata["grid_tag"]
 
     @property
+    def grid_name(self):
+        return self._metadata["name"]
+
+    @property
     def resolution_tag(self):
         return self._metadata["resolution_tag"]
 
     @property
+    def proj_dict(self):
+        return dict(self._proj_dict)
+
+    @property
     def extent(self):
         return TreeDict.fromdict(self._extent_dict, expand_nested=True)
+
+    @property
+    def area_extent(self):
+        xmin, ymin = -1*self.extent.xsize/2.0, -1*self.extent.ysize/2.0
+        xmax, ymax = self.extent.xsize/2.0, self.extent.ysize/2.0
+        return [xmin, ymin, xmax, ymax]
+
+    @property
+    def pyresample_area_def(self):
+        """ Returns a pyresample.geometry.AreaDefinition instance """
+
+        # Instance can be empty
+        if self._proj is None:
+            return None
+
+        # construct area definition
+        area_def = geometry.AreaDefinition(
+                self.grid_id, self.grid_name, self.grid_id,
+                self.proj_dict, self.extent.numx, self.extent.numy,
+                self.area_extent)
+
+        return area_def
