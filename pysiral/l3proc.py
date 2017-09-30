@@ -1056,6 +1056,14 @@ class Level3ProductDefinition(DefaultLoggingClass):
             return []
 
     @property
+    def l3_external_masks(self):
+        try:
+            extmask_names = self.l3def.external_masks
+        except AttributeError:
+            extmask_names = []
+        return extmask_names
+
+    @property
     def l3_post_processors(self):
         try:
             names = sorted(self.l3def.l3_post_processing.keys(
