@@ -18,7 +18,7 @@ from netCDF4 import Dataset
 
 from pyresample import image, geometry, kd_tree
 import numpy as np
-
+import struct
 import os
 
 
@@ -220,14 +220,70 @@ class MaskSourceBase(DefaultLoggingClass):
 
 
 class MaskLandSea2Min(MaskSourceBase):
-    """ A land/sea mask based on a binary file on a 2 minute grid """
+    """ A land/sea mask based on a binary file on a 2 minute grid.
+    Content of orignial mask: (0: sea, 1: lakes, 2: land ice: 3: land)
+    There seems to be a few issues with the land ice mask in some places,
+    therefore we limit the mask to 0: sea, 1: mixed, 2: non-sea (land) """
 
     def __init__(self, mask_dir, mask_name, cfg):
         super(MaskLandSea2Min, self).__init__(mask_dir, mask_name, cfg)
         self.construct_source_mask()
 
     def construct_source_mask(self):
-        stop
+        """ Read the binary file and set the mask """
+
+        # Settings for the binary file
+        xdim, ydim = 10800, 5400
+        mask_struct_fmt = "<%0.fB" % (xdim * ydim)
+        n_bytes_header = 1392
+
+        # Read the content of the landmask in a string
+        with open(self.mask_filepath, "rb") as fh:
+            # Skip header
+            fh.seek(n_bytes_header)
+            content = fh.read(xdim*ydim)
+
+        # decode string & order to array
+        mask_val = np.array(struct.unpack(mask_struct_fmt, content))
+        mask = mask_val.reshape((xdim, ydim))
+        mask = mask.transpose()
+
+        # Convert to only land/sea flag
+        # Note: mask must be a byte data type since netCDF does not handle
+        #       variables of type bool very well
+        mask = np.int8(mask > 0)
+
+        # Compute longitude/latitude grids
+        lons_1d = np.linspace(0., 360., xdim)
+        lats_1d = np.linspace(-90, 90, ydim)
+        lons, lats = np.meshgrid(lons_1d, lats_1d)
+
+        # Create geometry definitions
+        area_def = geometry.GridDefinition(lons=lons, lats=lats)
+
+        # Set the mask
+        self.set_mask(mask, area_def)
+
+    def pp_classify(self, resampled_mask):
+        """ Post-processing method after resampling to target grid
+        The resampled mask contains a land fraction (datatype float), which
+        needs to be simplified to the flags (0: ocean, 1: mixed, 2: land) """
+
+        # Input array is range [0:1], scale to [0:2]
+        pp_mask = np.copy(resampled_mask*2)
+
+        # Get indices that are neither 0 or 2 and set them to mixed flag
+        is_not_sea = np.logical_not(np.isclose(pp_mask, 0.))
+        is_not_land = np.logical_not(np.isclose(pp_mask, 2.))
+        is_mixed = np.logical_and(is_not_sea, is_not_land)
+        pp_mask[np.where(is_mixed)] = 1.
+
+        # Return as byte array (also needs to be flipped)
+        return np.flipud(pp_mask.astype(np.int8))
+
+    @property
+    def mask_filepath(self):
+        return os.path.join(self.mask_dir, self.cfg.filename)
 
 
 class MaskW99Valid(MaskSourceBase):
