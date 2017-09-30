@@ -131,16 +131,6 @@ class MaskSourceBase(DefaultLoggingClass):
         self.log.info("Export mask file: %s" % nc_filepath)
         self._write_netcdf(nc_filepath, griddef, target_mask)
 
-#        import matplotlib.pyplot as plt
-#
-#        plt.figure("source", dpi=300)
-#        plt.imshow(self.source_mask, interpolation="none")
-#
-#        plt.figure("target", dpi=300)
-#        plt.imshow(target_mask, interpolation="none")
-#        plt.show()
-#        stop
-
     def _write_netcdf(self, nc_filepath, griddef, mask):
         """ Write a netCDF file with the mask in the target
         grid projections"""
