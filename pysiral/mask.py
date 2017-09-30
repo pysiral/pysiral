@@ -16,7 +16,7 @@ from pysiral.iotools import ReadNC
 from collections import OrderedDict
 from netCDF4 import Dataset
 
-from pyresample import image, geometry
+from pyresample import image, geometry, kd_tree
 import numpy as np
 
 import os
@@ -62,16 +62,22 @@ class MaskSourceBase(DefaultLoggingClass):
     def set_mask(self, mask, area_def):
         """ Set grid definition for the mask source grid using pyresample.
         The argument area_def needs to have the attributes needed as arguments
-        for pyresample.geometry.AreaDefinition """
+        for pyresample.geometry.AreaDefinition or be of the pyresampe types
+        (geometry.AreaDefinition, geometry.GridDefinition) """
 
         # Set the Mask
         self._mask = mask
 
         # Set the area definition
-        self._area_def = geometry.AreaDefinition(
-                area_def.area_id, area_def.name, area_def.proj_id,
-                dict(area_def.proj_dict), area_def.x_size, area_def.y_size,
-                area_def.area_extent)
+        pyresample_instances = (geometry.AreaDefinition,
+                                geometry.GridDefinition)
+        if isinstance(area_def, pyresample_instances):
+            self._area_def = area_def
+        else:
+            self._area_def = geometry.AreaDefinition(
+                    area_def.area_id, area_def.name, area_def.proj_id,
+                    dict(area_def.proj_dict), area_def.x_size, area_def.y_size,
+                    area_def.area_extent)
 
     def export_l3_mask(self, griddef, nc_filepath=None):
         """ Create a gridded mask product in pysiral compliant filenaming.
@@ -84,15 +90,37 @@ class MaskSourceBase(DefaultLoggingClass):
             self.error.add_error("value-error", msg)
 
         # Resample the mask
-        resample = image.ImageContainerNearest(
-            self.source_mask, self.source_area_def,
-            radius_of_influence=self.cfg.resample_radius_of_influence,
-            fill_value=None)
-        resample_result = resample.resample(griddef.pyresample_area_def)
+        if self.cfg.pyresample_method == "ImageContainerNearest":
+            resample = image.ImageContainerNearest(
+                    self.source_mask, self.source_area_def,
+                    **self.cfg.pyresample_keyw)
+            resample_result = resample.resample(griddef.pyresample_area_def)
+            target_mask = resample_result.image_data
 
-        # pyresample uses masked arrays -> set nan's to missing data
-        target_mask = resample_result.image_data
-        target_mask[np.where(target_mask.mask)] = np.nan
+        elif self.cfg.pyresample_method == "resample_gauss":
+
+            result, stddev, count = kd_tree.resample_gauss(
+                    self.source_area_def, self.source_mask,
+                    griddef.pyresample_area_def, with_uncert=True,
+                    **self.cfg.pyresample_keyw)
+            target_mask = result
+
+        else:
+            msg = "Unrecognized opt pyresample_method: %s need to be %s" % (
+                    str(self.cfg.pyresample_method),
+                    "(ImageContainerNearest, resample_gauss)")
+            self.error.add_error("invalid-pr-method", msg)
+            self.error.add_error()
+
+        # pyresample may use masked arrays -> set nan's to missing data
+        try:
+            target_mask[np.where(target_mask.mask)] = np.nan
+        except AttributeError:
+            pass
+
+        if "post_processing" in self.cfg:
+            pp_method = getattr(self, self.cfg.post_processing)
+            target_mask = pp_method(target_mask)
 
         # Write the mask to a netCDF file
         # (the filename will be automatically generated if not specifically
