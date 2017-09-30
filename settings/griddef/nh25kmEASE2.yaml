@@ -1,13 +1,9 @@
 # This is the default grid definition for northern hemisphere radar altimeter data
 
 hemisphere: north
-
 grid_tag: ease2nh
-
 resolution_tag: 25km
-
 grid_id: nh25kmEASE2
-
 name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
 
 projection:
@@ -27,3 +23,21 @@ extent:
     dy: 25000
     numx: 432
     numy: 432
+
+area_def: 
+    ease2nh:
+        description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
+        projection:
+            proj: laea
+            lat_0: 90.0
+            lon_0: 0.0
+            ellps: WGS84
+            datum: WGS84
+            units: m
+        shape:
+            height: 432
+            width: 432
+        area_extent:
+            lower_left_xy: [-5400000.0, -5400000.0]
+            upper_right_xy: [5400000.0, 5400000.0]
+            units: m

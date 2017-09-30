@@ -1,13 +1,9 @@
 # This is the default grid definition for southern hemisphere radar altimeter data
 
 hemisphere: south
-
 grid_id: sh50kmEASE2
-
 grid_tag: ease2sh
-
 resolution_tag: 50km
-
 name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 50km
 
 projection:
@@ -27,3 +23,21 @@ extent:
     dy: 50000
     numx: 216
     numy: 216
+
+area_def: 
+    ease2sh:
+        description: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 50km
+        projection:
+            proj: laea
+            lat_0: -90.0
+            lon_0: 0.0
+            ellps: WGS84
+            datum: WGS84
+            units: m
+        shape:
+            height: 216
+            width: 216
+        area_extent:
+            lower_left_xy: [-5400000.0, -5400000.0]
+            upper_right_xy: [5400000.0, 5400000.0]
+            units: m
