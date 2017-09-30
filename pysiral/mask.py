@@ -120,7 +120,7 @@ class MaskSourceBase(DefaultLoggingClass):
 
         if "post_processing" in self.cfg:
             pp_method = getattr(self, self.cfg.post_processing)
-            target_mask = pp_method(target_mask)
+            target_mask = pp_method(target_mask, griddef)
 
         # Write the mask to a netCDF file
         # (the filename will be automatically generated if not specifically
@@ -264,7 +264,7 @@ class MaskLandSea2Min(MaskSourceBase):
         # Set the mask
         self.set_mask(mask, area_def)
 
-    def pp_classify(self, resampled_mask):
+    def pp_classify(self, resampled_mask, griddef):
         """ Post-processing method after resampling to target grid
         The resampled mask contains a land fraction (datatype float), which
         needs to be simplified to the flags (0: ocean, 1: mixed, 2: land) """
@@ -293,10 +293,34 @@ class MaskW99Valid(MaskSourceBase):
         super(MaskW99Valid, self).__init__(mask_dir, mask_name, cfg)
 
         # Read the data and transfer the ice_mask (1: valid, 0: invalid)
-        mask_source_filename = os.path.join(mask_dir, cfg.filename)
-        content = ReadNC(mask_source_filename)
+        content = ReadNC(self.mask_filepath)
         mask = content.ice_mask
         mask = np.flipud(mask)
 
         # Set the mask (pyresample area definition from config file)
         self.set_mask(mask, self.cfg.area_def)
+
+    def pp_limit_lat(self, resampled_mask, griddef):
+        """ There are some artefacts in the source mask that need to be
+        filtered out based on a simple latitude threshold filter.
+        We also set all NaN values to 0 and fix a small problem at the
+        north pole """
+
+        # Get longitude/latitude valies for target grid
+        lons, lats = griddef.get_grid_coordinates()
+
+        # Set mask to false for all grid cells south of 65N
+        resampled_mask[np.where(lats <= 65.)] = 0
+
+        # Fix north pole issue
+        resampled_mask[np.where(lats >= 89.)] = 1
+
+        # Set all NaN's to 0
+        resampled_mask[np.where(np.isnan(resampled_mask))] = 0
+
+        # Done
+        return resampled_mask
+
+    @property
+    def mask_filepath(self):
+        return os.path.join(self.mask_dir, self.cfg.filename)
