@@ -324,3 +324,66 @@ class MaskW99Valid(MaskSourceBase):
     @property
     def mask_filepath(self):
         return os.path.join(self.mask_dir, self.cfg.filename)
+
+
+class L3Mask(DefaultLoggingClass):
+    """ Container for Level-3 mask compliant netCDF files
+    (see output of pysiral.mask.MaskSourceBase.export_l3_mask) """
+
+    def __init__(self, mask_name, grid_id):
+        """ Mask container for Level3Processor. Arguments are the
+        name (id) of the mask (e.g. warren99_is_valid) and the id of the
+        grid (e.g. nh25kmEASE2) """
+
+        super(L3Mask, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus()
+
+        # Save input
+        self._mask_name = mask_name
+        self._grid_id = grid_id
+
+        # Read the mask
+        self._read_mask_netcdf()
+
+    def _read_mask_netcdf(self):
+        """ Read the mask """
+        if self.mask_filepath is not None:
+            self._nc = ReadNC(self.mask_filepath)
+
+    @property
+    def mask(self):
+        return self._nc.mask
+
+    @property
+    def mask_name(self):
+        return str(self._mask_name)
+
+    @property
+    def grid_id(self):
+        return str(self._grid_id)
+
+    @property
+    def mask_filepath(self):
+
+        # Get config info
+        pysiral_cfg = ConfigInfo()
+
+        # Get the path to the mask file
+        # (needs to be in local_machine_def.yaml)
+        mask_dir = pysiral_cfg.local_machine.auxdata_repository.mask
+        try:
+            mask_dir = mask_dir[self.mask_name]
+        except KeyError:
+            msg = "cannot find mask entry [%s] in local_machine_def.yaml"
+            self.error.add_error("lmd-error", msg % self.mask_name)
+            return None
+
+        mask_filename = "%s_%s.nc" % (self.mask_name, self.grid_id)
+        filepath = os.path.join(mask_dir, mask_filename)
+
+        if not os.path.isfile(filepath):
+            msg = "cannot find mask file: %s" % filepath
+            self.error.add_error("io-error", msg)
+            return None
+
+        return filepath

@@ -11,6 +11,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
+from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
@@ -223,6 +224,7 @@ class L3DataGrid(DefaultLoggingClass):
         self._griddef = job.grid
         self._l3def = job.l3def
         self._period = period
+        self._external_masks = {}
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -271,6 +273,13 @@ class L3DataGrid(DefaultLoggingClass):
         # Get the level-3 parameter
         self.log.info("Compute level-3 ouput parameter")
         self.compute_l3_output_parameter()
+
+        # Load external data masks
+        # NOTE: This is done for each file, but we assume it does not take
+        #       much time compared to the gridding
+        self.log.info("Load external masks")
+        for external_mask_name in job.l3_external_masks:
+            self.load_external_mask(external_mask_name)
 
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
@@ -469,6 +478,20 @@ class L3DataGrid(DefaultLoggingClass):
         else:
             raise ValueError("Unknown l3 parameter name: %s" %
                              l3_parameter_name)
+
+    def load_external_mask(self, external_mask_name):
+        """ Get mask netCDF filename and load into instance for later use """
+
+        # Read the file
+        mask = L3Mask(external_mask_name, self.griddef.grid_id)
+
+        if not mask.error.status:
+            self._external_masks[external_mask_name] = mask
+        else:
+            error_msgs = mask.error.get_all_messages()
+            for error_msg in error_msgs:
+                self.log.error(error_msg)
+            self._external_masks[external_mask_name] = None
 
     def mask_l3(self, mask_def):
         """ Apply a parametrized mask to level 3 data """
