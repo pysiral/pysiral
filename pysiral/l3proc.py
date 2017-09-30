@@ -561,11 +561,25 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Simple way of handling rules (for now)
 
-
         # Use the Warren99 validity masl
         # XXX: Not implemented yet
         if "qif_warren99_valid_flag" in quality_flag_rules:
-            pass
+
+            try:
+                w99 = self._external_masks["warren99_is_valid"]
+                assert w99 is not None
+            # breaks if either warren99 is not in external mask or None
+            # Note: can be None
+            except (KeyError, AssertionError):
+                msg = "Missing external mask: warren99_is_valid"
+                self.error.add_error("missing-extmask", msg)
+                self.error.raise_on_error()
+
+            # mask = 0 means warren99 is invalid
+            rule_options = options.rules.qif_warren99_valid_flag
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            flag[np.where(w99.mask == 0)] = rule_options.target_flag
+            qif = np.maximum(qif, flag)
 
         # Elevate the quality flag for SARin or mixed SAR/SARin regions
         # (only sensible for CryoSat-2)
@@ -585,8 +599,8 @@ class L3DataGrid(DefaultLoggingClass):
             qif = np.maximum(qif, flag)
 
         # Set all flags with no data to zero again
-        qif[np.where(np.isnan(nvw))] = 0
-        qif[np.where(nvw == 0)] = 0
+        qif[np.where(np.isnan(sit))] = 0
+
 
         # Set flag again
         self._l3["quality_indicator_flag"] = qif
