@@ -74,7 +74,7 @@ l3_parameter:
 # ==================================================
 
 external_masks:
-    - warren99_valid_mask
+    - warren99_is_valid
 
 # ==================================================
 # Grid settings
