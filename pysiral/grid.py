@@ -8,7 +8,7 @@ Created on Sun Jun 11 19:24:04 2017
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-from pyresample import geometry
+from pyresample import geometry, utils
 
 from treedict import TreeDict
 from pyproj import Proj
@@ -29,6 +29,7 @@ class GridDefinition(DefaultLoggingClass):
         self._metadata = {"grid_id": "n/a", "grid_tag": "n/a",
                           "hemisphere": "n/a", "resolution_tag": "n/a",
                           "name": "n/a"}
+        self._griddef_filename = None
         self._proj = None
         self._proj_dict = {}
         self._extent_dict = {}
@@ -121,14 +122,13 @@ class GridDefinition(DefaultLoggingClass):
     def pyresample_area_def(self):
         """ Returns a pyresample.geometry.AreaDefinition instance """
 
-        # Instance can be empty
-        if self._proj is None:
-            return None
+        area_def = None
 
-        # construct area definition
-        area_def = geometry.AreaDefinition(
-                self.grid_id, self.grid_name, self.grid_id,
-                self.proj_dict, self.extent.numx, self.extent.numy,
-                self.area_extent)
+        if self._proj is not None:
+            # construct area definition
+            area_def = geometry.AreaDefinition(
+                    self.grid_id, self.grid_name, self.grid_id,
+                    self.proj_dict, self.extent.numx, self.extent.numy,
+                    self.area_extent)
 
         return area_def
