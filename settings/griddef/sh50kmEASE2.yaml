@@ -6,6 +6,18 @@ grid_tag: ease2sh
 resolution_tag: 50km
 name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 50km
 
+netcdf_grid_description: 
+    Lambert_Azimuthal_Grid:
+        grid_mapping_name: "lambert_azimuthal_equal_area"
+        longitude_of_projection_origin: 0.0
+        latitude_of_projection_origin: -90.0
+        false_easting: 0.0
+        false_northing: 0.0
+        semi_major_axis: 6378137.0
+        inverse_flattening: 298.257223563
+        proj4_string: "+proj=laea +lon_0=0 +datum=WGS84 +ellps=WGS84 +lat_0=-90.0"
+
+
 projection:
     proj: laea
     lat_0: -90.0

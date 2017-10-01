@@ -28,7 +28,7 @@ class GridDefinition(DefaultLoggingClass):
         self._preset = preset
         self._metadata = {"grid_id": "n/a", "grid_tag": "n/a",
                           "hemisphere": "n/a", "resolution_tag": "n/a",
-                          "name": "n/a"}
+                          "name": "n/a", "netcdf_grid_description": "n/a"}
         self._griddef_filename = None
         self._proj = None
         self._proj_dict = {}
