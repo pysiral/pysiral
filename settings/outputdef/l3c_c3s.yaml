@@ -90,5 +90,8 @@ variables:
     long_name: "quality flag (0: no data; 1: nominal, no biases expected, 2: intermediate, bias likely, 3: low, bias expected)"
     standard_name: quality_flag
     coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0     
+
+  status_flag:
+    long_name: "status flag (0: no input data, 1: outside sea ice mask, 2: latitude above orbit inclination, 3: land or lake or land ice, 4: retrieval failed, 5: retrieval nominal)"
+    standard_name: status_flag
+    coordinates: "latitude longitude time"

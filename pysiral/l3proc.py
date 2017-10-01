@@ -238,7 +238,8 @@ class L3DataGrid(DefaultLoggingClass):
             "ice_fraction": "f4",
             "is_land": "i2",
             "radar_mode_flag": "i1",
-            "quality_indicator_flag": "i1"}
+            "quality_indicator_flag": "i1",
+            "status_flag": "i1"}
 
         # List of level-2 parameter
         # (gridded parameter that are already in l2i)
@@ -604,6 +605,54 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Set flag again
         self._l3["quality_indicator_flag"] = qif
+
+    def _api_l3pp_status_flag(self, options):
+        """ Create a status flag that describes the availability of l2i
+        input data, orbit properties, land mask etc """
+
+        # Get status flag (fill value should be set to zero)
+        sf = np.copy(self._l3["status_flag"])
+
+        # get input parameters
+        par = np.copy(self._l3[options.retrieval_status_target])
+        sic = self._l3["sea_ice_concentration"]
+        nvw = self._l3["n_valid_waveforms"]
+        lnd = self._external_masks["landsea"]
+
+        # Compute conditions for flags
+        is_below_sic_thrs = np.logical_and(sic >= 0., sic < options.sic_thrs)
+        is_pole_hole = self._l3["latitude"] > options.orbit_inclination
+        is_land = lnd.mask > 0
+        has_data = nvw > 0
+        has_retrieval = np.isfinite(par)
+        retrieval_failed = np.logical_and(
+                np.logical_and(has_data, np.logical_not(is_below_sic_thrs)),
+                np.logical_not(has_retrieval))
+
+        # Set sic threshold
+        sf[np.where(is_below_sic_thrs)] = 1
+
+        # Set pole hole (Antarctica: Will be overwritten below)
+        sf[np.where(is_pole_hole)] = 2
+
+        # Set land mask
+        sf[np.where(is_land)] = 3
+
+        # Set failed retrieval
+        sf[np.where(retrieval_failed)] = 4
+
+        # Set retrieval successful
+        sf[np.where(has_retrieval)] = 5
+
+        # Write Status flag
+        self._l3["status_flag"] = sf
+
+#        import matplotlib.pyplot as plt
+#        plt.figure("is_land", dpi=300)
+#        plt.imshow(sic, interpolation="none")
+#        plt.colorbar()
+#        plt.show()
+#        stop
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined
