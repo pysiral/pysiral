@@ -119,6 +119,10 @@ class GridDefinition(DefaultLoggingClass):
         return [xmin, ymin, xmax, ymax]
 
     @property
+    def resolution(self):
+        return self.extent.dx
+
+    @property
     def pyresample_area_def(self):
         """ Returns a pyresample.geometry.AreaDefinition instance """
 

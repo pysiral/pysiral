@@ -16,6 +16,8 @@ from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
 
+from scipy.ndimage.filters import maximum_filter
+
 from datetime import datetime
 import numpy as np
 import sys
@@ -553,6 +555,7 @@ class L3DataGrid(DefaultLoggingClass):
         qif = np.copy(self._l3["quality_indicator_flag"])
         sit = np.copy(self._l3["sea_ice_thickness"])
         nvw = np.copy(self._l3["n_valid_waveforms"])
+        lfr = np.copy(self._l3["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
         qif[np.where(np.isfinite(sit))] = 1
@@ -599,9 +602,30 @@ class L3DataGrid(DefaultLoggingClass):
                 flag[np.where(nvw < threshold)] = target_flag
             qif = np.maximum(qif, flag)
 
+        if "qif_lead_availability" in quality_flag_rules:
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            rule_options = options.rules.qif_lead_availability
+            # get the window size
+            grid_res = self.griddef.resolution
+            window_size = np.ceil(rule_options.search_radius_m/grid_res)
+            window_size = int(2*window_size+1)
+            # Use a maximum filter to get best lead fraction in area
+            area_lfr = maximum_filter(lfr, size=window_size)
+            thrs = rule_options.area_lead_fraction_minimum
+            flag[np.where(area_lfr <= thrs)] = rule_options.target_flag
+            qif = np.maximum(qif, flag)
+
+#            import matplotlib.pyplot as plt
+#            plt.figure("lead fraction")
+#            plt.imshow(lfr, vmin=0, vmax=0.5)
+#
+#            plt.figure("area lead fraction")
+#            plt.imshow(area_lfr, vmin=0, vmax=0.5)
+#            plt.show()
+#            stop
+
         # Set all flags with no data to zero again
         qif[np.where(np.isnan(sit))] = 0
-
 
         # Set flag again
         self._l3["quality_indicator_flag"] = qif
