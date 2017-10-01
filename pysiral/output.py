@@ -157,6 +157,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def variable_def(self):
         t = self.output_def.variables
         variables = list(t.iterkeys(recursive=False, branch_mode='only'))
+        variables = sorted(variables)
         attribute_dicts = [self.output_def.variables[a] for a in variables]
         return zip(variables, attribute_dicts)
 
@@ -292,15 +293,27 @@ class NCDataFile(DefaultLoggingClass):
 
     def _populate_data_groups(self, level3=False):
 
+
+        lonlat_parameter_names = ["lon", "lat", "longitude", "latitude"]
+
         dimdict = self.data.dimdict
         dims = dimdict.keys()
 
         for key in dims:
-                self._rootgrp.createDimension(key, dimdict[key])
+            self._rootgrp.createDimension(key, dimdict[key])
 
         for parameter_name, attribute_dict in self.output_handler.variable_def:
 
-            data = self.data.get_parameter_by_name(parameter_name)
+            # Check if parameter name is also the the name or the source
+            # parameter
+
+            if "var_source_name" in attribute_dict.keys():
+                attribute_dict = dict(attribute_dict)
+                var_source_name = attribute_dict.pop("var_source_name")
+            else:
+                var_source_name = parameter_name
+
+            data = self.data.get_parameter_by_name(var_source_name)
 
             # Convert datetime objects to number
             if type(data[0]) is datetime:
@@ -313,7 +326,7 @@ class NCDataFile(DefaultLoggingClass):
 
             # Set dimensions (dependend on product level)
             if level3:
-                if parameter_name not in ["longitude", "latitude"]:
+                if parameter_name not in lonlat_parameter_names:
                     data = np.array([data])
                     dimensions = tuple(dims[0:len(data.shape)])
                 else:
@@ -328,7 +341,7 @@ class NCDataFile(DefaultLoggingClass):
             var[:] = data
 
             # Add Parameter Attributes
-            for key in attribute_dict.keys():
+            for key in sorted(attribute_dict.keys()):
                 setattr(var, key, attribute_dict[key])
 
     def _create_root_group(self, attdict, **global_attr_keyw):
