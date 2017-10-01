@@ -895,6 +895,11 @@ class L3DataGrid(DefaultLoggingClass):
     def hemisphere(self):
         return self.metadata.hemisphere
 
+    @property
+    def time_bounds(self):
+        return [self.metadata.time_coverage_start,
+                self.metadata.time_coverage_end]
+
 
 class L3MetaData(object):
 
