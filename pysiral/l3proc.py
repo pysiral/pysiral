@@ -733,7 +733,7 @@ class L3DataGrid(DefaultLoggingClass):
         # Fractions of leads on valid_waveforms
         try:
             valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
-        except:
+        except ZeroDivisionError:
             valid_fraction = np.nan
         self._l3["valid_fraction"][yj, xi] = valid_fraction
 
@@ -741,7 +741,7 @@ class L3DataGrid(DefaultLoggingClass):
         n_leads = len(np.where(surface_type == stflags["lead"])[0])
         try:
             lead_fraction = float(n_leads)/float(n_valid_waveforms)
-        except:
+        except ZeroDivisionError:
             lead_fraction = np.nan
         self._l3["lead_fraction"][yj, xi] = lead_fraction
 
@@ -749,7 +749,7 @@ class L3DataGrid(DefaultLoggingClass):
         n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
         try:
             ice_fraction = float(n_ice)/float(n_valid_waveforms)
-        except:
+        except ZeroDivisionError:
             ice_fraction = np.nan
         self._l3["ice_fraction"][yj, xi] = ice_fraction
 
