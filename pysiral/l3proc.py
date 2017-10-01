@@ -875,8 +875,8 @@ class L3DataGrid(DefaultLoggingClass):
     def dimdict(self):
         from collections import OrderedDict
         dimdict = OrderedDict([("time", 1),
-                               ("lat", self.griddef.extent.numx),
-                               ("lon", self.griddef.extent.numy)])
+                               ("yc", self.griddef.extent.numx),
+                               ("xc", self.griddef.extent.numy)])
         return dimdict
 
     @property
