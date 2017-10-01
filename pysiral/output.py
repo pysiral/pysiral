@@ -632,15 +632,60 @@ class Level3Output(NCDataFile):
         self._open_file()
         self._write_global_attributes()
         self._populate_data_groups(level3=True)
-        self._add_time_dummy_variable()
+        self._add_time_variables()
+        self._add_grid_variables()
         self._write_to_file()
 
-    def _add_time_dummy_variable(self):
-        var = self._rootgrp.createVariable("time", "f8", ('time'),
-                                           zlib=self.zlib)
+    def _add_time_variables(self):
+
+        rgrp = self._rootgrp
+
+        # Set Time Variable
+        var = rgrp.createVariable("time", "f8", ('time'), zlib=self.zlib)
         var.standard_name = "time"
-        var.long_name = self.time_def.units
-        var.units = "seconds"
+        var.units = self.time_def.units
+        var.long_name = "reference time of product"
+        var.axis = "T"
+        var.calendar = self.time_def.calendar
+        var.bounds = "time_bnds"
+        var[:] = date2num(self.data.metadata.time_coverage_start,
+                          self.time_def.units, self.time_def.calendar)
+
+        # Set Time Bounds
+        rgrp.createDimension("nv", 2)
+        time_bounds_dt = self.data.time_bounds
+        td_units, td_cal = self.time_def.units, self.time_def.calendar
+        time_bnds = [date2num(dt, td_units, td_cal) for dt in time_bounds_dt]
+        dims = ('time', "nv")
+        var = rgrp.createVariable("time_bnds", "f8", dims, zlib=self.zlib)
+        var.units = self.time_def.units
+        var[:] = time_bnds
+
+    def _add_grid_variables(self):
+
+        rgrp = self._rootgrp
+
+        # Set x coordinate
+        var = rgrp.createVariable("xc", "f8", ('xc'), zlib=self.zlib)
+        var.standard_name = "projection_x_coordinate"
+        var.units = "km"
+        var.long_name = "x coordinate of projection (eastings)"
+        var[:] = self.data.griddef.xc_km
+
+        # Set y coordinate
+        var = rgrp.createVariable("yc", "f8", ('yc'), zlib=self.zlib)
+        var.standard_name = "projection_y_coordinate"
+        var.units = "km"
+        var.long_name = "y coordinate of projection (eastings)"
+        var[:] = self.data.griddef.yc_km
+
+        # Set grid definition
+        grid_nc_cfg = self.data.griddef.netcdf_vardef
+        name = grid_nc_cfg.keys(branch_mode="only")[0]
+        attrs = grid_nc_cfg[name]
+        var = rgrp.createVariable(name, "i1", ())
+        for key in sorted(attrs.keys()):
+            setattr(var, key, attrs[key])
 
 
 class PysiralOutputFilenaming(object):
