@@ -21,7 +21,7 @@ global_attributes:
   source: "Satellite radar altimetry"
   history: ""
   references: ""
-  tracking_id: ""s
+  tracking_id: ""
   conventions: "CF-1.6"
   product_version: "1.0"
   summary	string: ""
