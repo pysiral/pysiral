@@ -6,6 +6,9 @@ metadata:
   data_level: 3
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
+grid_options: 
+  flip_yc: False
+
 # Output Definition
 filenaming: "L3C-{mission_sensor:uppercase}-{mission_name:uppercase}-{grid_id:uppercase}-{startdt:%Y%m}.nc"
 product_level_subfolder: l3c

@@ -293,7 +293,6 @@ class NCDataFile(DefaultLoggingClass):
 
     def _populate_data_groups(self, level3=False):
 
-
         lonlat_parameter_names = ["lon", "lat", "longitude", "latitude"]
 
         dimdict = self.data.dimdict
@@ -626,7 +625,18 @@ class Level3Output(NCDataFile):
         super(Level3Output, self).__init__()
         self.data = data
         self.output_handler = output_handler
+        self._preprocess_data()
         self._export_content()
+
+    def _preprocess_data(self):
+        if self.output_handler.flip_yc:
+            for name, attr_dict in self.output_handler.variable_def:
+                if "var_source_name" in attr_dict.keys():
+                    par_name = attr_dict["var_source_name"]
+                else:
+                    par_name = name
+                var = self.data.get_parameter_by_name(par_name)
+                self.data.set_parameter_by_name(par_name, np.flipud(var))
 
     def _export_content(self):
         self._open_file()
@@ -673,11 +683,14 @@ class Level3Output(NCDataFile):
         var[:] = self.data.griddef.xc_km
 
         # Set y coordinate
+        yc_km = self.data.griddef.yc_km
+        if self.output_handler.flip_yc:
+            yc_km = np.flip(yc_km, 0)
         var = rgrp.createVariable("yc", "f8", ('yc'), zlib=self.zlib)
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
         var.long_name = "y coordinate of projection (eastings)"
-        var[:] = self.data.griddef.yc_km
+        var[:] = yc_km
 
         # Set grid definition
         grid_nc_cfg = self.data.griddef.netcdf_vardef

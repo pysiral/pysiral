@@ -764,6 +764,16 @@ class L3DataGrid(DefaultLoggingClass):
             sys.exit(1)
         return parameter
 
+    def set_parameter_by_name(self, name, var):
+        try:
+            self._l3[name] = var
+        except KeyError:
+            parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
+            self.log.warn("Parameter not availabe: %s" % name)
+        except Exception, msg:
+            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
+            sys.exit(1)
+
     def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
         if args[0] == "uppercase":
@@ -1071,6 +1081,13 @@ class Level3OutputHandler(OutputHandlerBase):
         pysiral_config = ConfigInfo()
         local_settings_path = pysiral_config.pysiral_local_path
         return os.path.join(local_settings_path, *self.default_file_location)
+
+    @property
+    def flip_yc(self):
+        flip_yc = self.output_def.grid_options.flip_yc
+        if not isinstance(flip_yc, bool):
+            flip_yc = False
+        return flip_yc
 
 
 class Level3GridDefinition(GridDefinition):

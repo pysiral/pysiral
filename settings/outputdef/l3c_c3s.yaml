@@ -10,6 +10,9 @@ metadata:
 filenaming: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m}.nc"
 product_level_subfolder: l3c_c3s
 
+grid_options: 
+  flip_yc: True
+
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
