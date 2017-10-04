@@ -61,8 +61,7 @@ class OsiSafSIType(SITypeBaseClass):
         self._get_data(l2)
         if self.error.status:
             return None, self.error.message
-        sitype = self._get_sitype_track(l2)
-        uncertainty = np.full(sitype.shape, 0.0)
+        sitype, uncertainty, self._msg = self._get_sitype_track(l2)
         return sitype, uncertainty, self._msg
 
     def _get_requested_date(self, l2):
