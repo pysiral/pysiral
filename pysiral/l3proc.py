@@ -768,7 +768,6 @@ class L3DataGrid(DefaultLoggingClass):
         try:
             self._l3[name] = var
         except KeyError:
-            parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
             self.log.warn("Parameter not availabe: %s" % name)
         except Exception, msg:
             print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
