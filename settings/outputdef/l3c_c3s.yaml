@@ -95,7 +95,7 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  quality_indicator_flag:
+  quality_flag:
     long_name: quality indicator flag for the sea ice thickness retrieval
     standard_name: "sea_ice_thickness quality_flag"
     valid_min: 0

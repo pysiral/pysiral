@@ -240,7 +240,7 @@ class L3DataGrid(DefaultLoggingClass):
             "ice_fraction": "f4",
             "is_land": "i2",
             "radar_mode_flag": "i1",
-            "quality_indicator_flag": "i1",
+            "quality_flag": "i1",
             "status_flag": "i1"}
 
         # List of level-2 parameter
@@ -552,7 +552,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Get the quality flag indicator array
         # This array will be continously updated by the quality check rules
-        qif = np.copy(self._l3["quality_indicator_flag"])
+        qif = np.copy(self._l3["quality_flag"])
         sit = np.copy(self._l3["sea_ice_thickness"])
         nvw = np.copy(self._l3["n_valid_waveforms"])
         lfr = np.copy(self._l3["lead_fraction"])
@@ -628,7 +628,7 @@ class L3DataGrid(DefaultLoggingClass):
         qif[np.where(np.isnan(sit))] = 0
 
         # Set flag again
-        self._l3["quality_indicator_flag"] = qif
+        self._l3["quality_flag"] = qif
 
     def _api_l3pp_status_flag(self, options):
         """ Create a status flag that describes the availability of l2i

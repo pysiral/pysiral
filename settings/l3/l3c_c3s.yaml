@@ -50,7 +50,7 @@ l2i_prefilter:
 
 l3_parameter:
 
-    quality_indicator_flag:
+    quality_flag:
         dtype: i1
         fillvalue: 0
 
