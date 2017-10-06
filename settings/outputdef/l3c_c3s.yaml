@@ -89,14 +89,14 @@ variables:
 
   uncertainty:
     var_source_name: sea_ice_thickness_uncertainty
-    long_name: uncertainty of the sea ice layer thickness
+    long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval
     standard_name: sea_ice_thickness_uncertainty
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   quality_indicator_flag:
-    long_name: quality indicator flag of the sea ice thickness retrievals
+    long_name: quality indicator flag for the sea ice thickness retrieval
     standard_name: "sea_ice_thickness quality_flag"
     valid_min: 0
     valid_max: 3
@@ -105,7 +105,7 @@ variables:
     coordinates: "time lat lon"
 
   status_flag:
-    long_name: status flag of the sea ice thickness retrievals
+    long_name: status flag for the sea ice thickness retrieval
     valid_min: 0
     valid_max: 5
     flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
