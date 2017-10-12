@@ -60,7 +60,7 @@ class OsiSafSIType(SITypeBaseClass):
         self._get_requested_date(l2)
         self._get_data(l2)
         if self.error.status:
-            return None, self.error.message
+            return None, None, self.error.message
         sitype, uncertainty, self._msg = self._get_sitype_track(l2)
         return sitype, uncertainty, self._msg
 
