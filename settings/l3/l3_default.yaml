@@ -146,7 +146,7 @@ l3_parameter:
 # External Masks
 # ==================================================
 
-external_masks: Null
+external_masks: []
 
 # ==================================================
 # Grid settings
