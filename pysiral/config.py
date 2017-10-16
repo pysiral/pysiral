@@ -595,6 +595,14 @@ class TimeRangeIteration(object):
         return self.start_date_label+" till "+self.stop_date_label
 
     @property
+    def start_isoformat(self):
+        return self.start.isoformat()
+
+    @property
+    def stop_isoformat(self):
+        return self.stop.isoformat()
+
+    @property
     def start_date_label(self):
         dt_fmt = "%Y-%m-%d"
         return self.start.strftime(dt_fmt)
