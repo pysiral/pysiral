@@ -623,6 +623,8 @@ class L1bAdapterSentinel3(object):
         scale_factor = self.sral.nc.scale_factor_20_ku
 
         # 3. apply count to power scaling
+        # Formular to compute sigma0 (from Jason ALT_PHY_BAC_01 algorithm)
+        # sigma0 = K_cal * 10. * log10(power)
         for k in np.arange(n_range_bins):
             wfm_power[:, k] = wfm_power[:, k] * 10.**(scale_factor/10.)
 #
