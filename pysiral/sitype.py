@@ -116,9 +116,10 @@ class OsiSafSIType(SITypeBaseClass):
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self._options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]
-        y_min = y[dim.n_lines-1, 0]
+        x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
+        y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+
         # Extract along track data from grid
         sitype = ndimage.map_coordinates(
             self._data.ice_type, [iy, ix], order=0)
@@ -216,8 +217,8 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self._options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]
-        y_min = y[dim.n_lines-1, 0]
+        x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
+        y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract along track data from grid
@@ -355,8 +356,9 @@ class ICDCNasaTeam(SITypeBaseClass):
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self._options[l2.hemisphere].dimension
-        x_min = x[0, 0]
-        y_min = y[0, 0]
+
+        x_min = x[0, 0]-(0.5*dim.dx)
+        y_min = y[0, 0]-(0.5*dim.dy)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract along track data from grid
