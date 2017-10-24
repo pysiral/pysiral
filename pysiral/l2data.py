@@ -741,8 +741,12 @@ class L2iNCFileImport(object):
 #        filenaming.parse_filename(l2i_filename)
 #        self.mission = filenaming.mission_id
 
-
-        self.timestamp = num2date(self.timestamp, self.time_def.units,
+        # Get timestamp (can be either time or timestamp in l2i files)
+        if hasattr(self, "time"):
+            time = self.time
+        else:
+            time = self.timestamp
+        self.timestamp = num2date(time, self.time_def.units,
                                   self.time_def.calendar)
 
     def transfer_nan_mask(self, source, targets):
