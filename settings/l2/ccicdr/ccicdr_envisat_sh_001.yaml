@@ -1,6 +1,7 @@
 # Level 2 processor settings are mission specific
 
-id: "ESA CCI Phase-2 Envisat Antarctic climate data record v1 (ccicdr_envisat_sh_001)"
+id: "ESA CCI Phase-2 Envisat Antarctic climate data record v1 (ccicdr_envisat_sh_010)"
+version_tag: "v1.0cci"
 
 mission:
     id: envisat

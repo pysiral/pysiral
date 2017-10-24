@@ -1,6 +1,7 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 
-id: "ESA CCI Phase-2 Sentinel-3a Arctic climate data record v1 (ccicdr_cryosat2_nh_001)"
+id: "ESA CCI Phase-2 Sentinel-3a Arctic climate data record v1 (ccicdr_sentinel3a_nh_010)"
+version_tag: "v1.0cci"
 
 # Level 2 processor settings are mission specific
 mission:
@@ -24,7 +25,7 @@ auxdata:
         name: osisafcdr
         options: null
     sitype:
-        name: icdc_nasateam
+        name: fyi_default
         options: null
     snow: 
         name: warren99

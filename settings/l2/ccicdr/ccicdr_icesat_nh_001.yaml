@@ -1,6 +1,7 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 
-id: "ESA CCI Phase-2 CryoSat-2 Arctic climate data record v1 (ccicdr_cryosat2_nh_001)"
+id: "ESA CCI Phase-2 CryoSat-2 Arctic climate data record v1 (ccicdr_cryosat2_nh_010)"
+version_tag: "v1.0cci"
 
 # Level 2 processor settings are mission specific
 mission:
