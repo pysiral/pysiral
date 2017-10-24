@@ -128,6 +128,7 @@ class L2iDataStack(DefaultLoggingClass):
         self.start_time = []
         self.stop_time = []
         self.mission = []
+        self.timeliness = []
 
         # Flags
         self._has_surface_type = False
@@ -170,6 +171,7 @@ class L2iDataStack(DefaultLoggingClass):
         self.start_time.append(l2i.timestamp[0])
         self.stop_time.append(l2i.timestamp[-1])
         self.mission.append(l2i.mission)
+        self.timeliness.append(l2i.timeliness)
         self._l2i_count += 1
         self._n_records += l2i.n_records
 
@@ -784,6 +786,12 @@ class L3DataGrid(DefaultLoggingClass):
         names = ",".join([MISSION_NAME_DICT[m] for m in ids.split(",")])
         return names
 
+    def _get_attr_source_timeliness(self, *args):
+        timeliness = self.metadata.source_timeliness
+        if args[0] == "lowercase":
+            timeliness = timeliness.lower()
+        return timeliness
+
     def _get_attr_grid_id(self, *args):
         grid_id = self.griddef.grid_id
         if args[0] == "uppercase":
@@ -922,7 +930,7 @@ class L3MetaData(object):
         "time_coverage_start", "time_coverage_end", "time_coverage_duration",
         "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
         "hemisphere", "mission_sensor", "source_auxdata_sic",
-        "source_auxdata_sitype", "source_auxdata_snow"]
+        "source_auxdata_sitype", "source_auxdata_snow", "source_timeliness"]
 
     def __init__(self):
         # Init all fields
@@ -938,6 +946,12 @@ class L3MetaData(object):
         mission_sensor = [SENSOR_NAME_DICT[mission] for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
+
+        source_timeliness = np.unique(stack.timeliness)[0]
+        if len(timeliness) != 1:
+            # XXX: Different timeliness should not be mixed
+            pass
+        self.set_attribute("source_timeliness", source_timeliness)
 
     def get_data_period_from_stack(self, stack):
         """ Get the first and last timestamp """

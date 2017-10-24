@@ -736,10 +736,11 @@ class L2iNCFileImport(object):
         self._n_records = len(self.longitude)
 
         # Get mission id from filename
-        l2i_filename = filename_from_path(self.filename)
-        filenaming = PysiralOutputFilenaming()
-        filenaming.parse_filename(l2i_filename)
-        self.mission = filenaming.mission_id
+#        l2i_filename = filename_from_path(self.filename)
+#        filenaming = PysiralOutputFilenaming()
+#        filenaming.parse_filename(l2i_filename)
+#        self.mission = filenaming.mission_id
+
 
         self.timestamp = num2date(self.timestamp, self.time_def.units,
                                   self.time_def.calendar)
@@ -764,3 +765,26 @@ class L2iNCFileImport(object):
     @property
     def n_records(self):
         return self._n_records
+
+    @property
+    def mission(self):
+        if not hasattr(self, "info"):
+            return None
+        try:
+            return self.info.mission_id
+        except AttributeError:
+            pass
+        try:
+            return self.info.source_mission_id
+        except AttributeError:
+            pass
+        return None
+
+    @property
+    def timeliness(self):
+        if not hasattr(self, "info"):
+            return None
+        try:
+            return self.info.source_timeliness
+        except AttributeError:
+            return "NTC"
