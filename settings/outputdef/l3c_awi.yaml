@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
-filenaming: "l3c-awi-seaice-{source_mission_id}-{timeliness_id}-{grid_id}-{time_coverage_start:%Y%m}-fv2.0.nc"
+filenaming: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2.0.nc"
 product_level_subfolder: l3c_grid
 
 grid_options: 
