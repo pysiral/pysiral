@@ -22,6 +22,7 @@ global_attributes:
   source_mission_id: "{source_mission_id}"
   source_mission_sensor: "{source_mission_sensor}"
   source_hemisphere: "{source_hemisphere}"
+  source_timeliness: "{source_timeliness}"
   source_auxdata_snow: "{source_auxdata_snow}"
   source_auxdata_mss: "{source_auxdata_mss}"
   source_auxdata_sic: "{source_auxdata_sic}"
