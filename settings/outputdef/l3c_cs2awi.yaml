@@ -72,16 +72,12 @@ variables:
     long_name: longitude coordinate
     standard_name: longitude
     units: degrees_east
-    valid_min: -180
-    valid_max: 180
     
   lat:
     var_source_name: latitude
     long_name: latitude coordinate
     standard_name: latitude
     units: degrees_north
-    valid_min: -90
-    valid_max: 90
 
   mean_sea_surface:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
