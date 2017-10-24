@@ -455,7 +455,8 @@ class Level2Processor(DefaultLoggingClass):
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
                             source_primary_filename=source_primary_filename,
-                            l2_algorithm_id=self._l2def.id)
+                            l2_algorithm_id=self._l2def.id,
+                            l2_version_tag=self._l2def.version_tag)
             self._create_l2_outputs(l2)
 
             # Add data to orbit stack

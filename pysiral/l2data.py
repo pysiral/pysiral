@@ -63,6 +63,7 @@ class Level2Data(object):
         self._auxdata_source_dict = {}
         self._source_primary_filename = "unkown"
         self._l2_algorithm_id = "unkown"
+        self._l2_version_tag = "unkown"
 
         # Other Class properties
         self._is_evenly_spaced = time_orbit.is_evenly_spaced
@@ -124,13 +125,15 @@ class Level2Data(object):
 
     def set_metadata(self, auxdata_source_dict=None,
                      source_primary_filename=None,
-                     l2_algorithm_id=None):
+                     l2_algorithm_id=None, l2_version_tag=None):
         if auxdata_source_dict is not None:
             self._auxdata_source_dict = auxdata_source_dict
         if source_primary_filename is not None:
             self._source_primary_filename = source_primary_filename
         if l2_algorithm_id is not None:
             self._l2_algorithm_id = l2_algorithm_id
+        if l2_version_tag is not None:
+            self._l2_version_tag = l2_version_tag
 
     def get_parameter_by_name(self, parameter_name):
         """ Method to retrieve a level-2 parameter """
@@ -330,6 +333,9 @@ class Level2Data(object):
 
     def _get_attr_l2_algorithm_id(self, *args):
         return self._l2_algorithm_id
+
+    def _get_attr_l2_version_tag(self, *args):
+        return self._l2_version_tag
 
     def _get_attr_utcnow(self, *args):
         return datetime.now().isoformat()
