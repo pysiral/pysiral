@@ -948,7 +948,7 @@ class L3MetaData(object):
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
 
         source_timeliness = np.unique(stack.timeliness)[0]
-        if len(timeliness) != 1:
+        if len(source_timeliness) != 1:
             # XXX: Different timeliness should not be mixed
             pass
         self.set_attribute("source_timeliness", source_timeliness)
