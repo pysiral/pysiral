@@ -223,7 +223,7 @@ class CryoSatL1B(object):
             self._error.format_not_supported = True
 
     def _parse_header_file(self):
-        self._xmlh = parse_cryosat_l1b_xml_header(self._filename_header)
+        self.xmlh = parse_cryosat_l1b_xml_header(self._filename_header)
 
     def _parse_product_header(self):
         """

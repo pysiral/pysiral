@@ -135,6 +135,20 @@ class L1bAdapterCryoSat(object):
         mission_data_source = filename_from_path(self.cs2l1b.filename)
         info.set_attribute("mission_data_source", mission_data_source)
 
+        # Get the product timeliness from the processor stage code
+        # `proc_stage` in the L1b main product header uses the following
+        # conventions:  N=Near-Real Time, T=Test, O=Off Line (Systematic),
+        # R=Reprocessing, L=Long Term Archive
+        #
+        # We do want to use the following timelines codes adopted from the
+        # S3 notation: NRT: Near-real time, STC: short-time critical
+        # NTC: Non-Time Critical, REP: Reprocessed
+        #
+        # We therefore define a dictionary and use NTC as default value
+        timeliness_dct = {"N": "NRT", "O": "NTC", "R": "REP", "L": "REP"}
+        proc_stage = self.cs2l1b.mph.get_by_fieldname("proc_stage")[0]
+        info.set_attribute("timeliness", timeliness_dct.get(proc_stage, "NTC"))
+
         # Time-Orbit Metadata
         start_time = parse_datetime_str(self.cs2l1b.sph.start_record_tai_time)
         stop_time = parse_datetime_str(self.cs2l1b.sph.stop_record_tai_time)
@@ -308,6 +322,7 @@ class L1bAdapterEnvisat(object):
         info.set_attribute("orbit", sgdr.mph.abs_orbit)
         info.set_attribute("cycle", sgdr.mph.cycle)
         info.set_attribute("cycle", sgdr.mph.cycle)
+        info.set_attribute("timeliness", "REP")
         mission_data_source = filename_from_path(sgdr.filename)
         info.set_attribute("mission_data_source", mission_data_source)
 
@@ -431,6 +446,7 @@ class L1bAdapterERS(object):
         info.set_attribute("cycle", sgdr.nc.cycle)
         mission_data_source = filename_from_path(sgdr.nc.filename)
         info.set_attribute("mission_data_source", mission_data_source)
+        info.set_attribute("timeliness", "REP")
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
@@ -787,6 +803,7 @@ class L1bAdapterICESat(object):
         info.set_attribute("cycle", glah13.get_attr("Cycle"))
         info.set_attribute("mission_data_source",
                            glah13.get_attr("LocalGranuleID"))
+        info.set_attribute("timeliness", "REP")
 
         # Time-Orbit Metadata
         start_time = parse_datetime_str(glah13.get_attr("time_coverage_start"))
