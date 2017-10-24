@@ -359,6 +359,17 @@ class Level2Data(object):
         resolution = seconds/self.n_records
         return "%.2f seconds" % resolution
 
+    def _get_attr_source_timeliness(self, *args):
+        """ Return the timeliness of the l1b source data. Set default to
+        NTC for backwark compability """
+        try:
+            timeliness = self.info.timeliness
+        except AttributeError:
+            timeliness = "NTC"
+        if args[0] == "lowercase":
+            timeliness = timeliness.lower()
+        return timeliness
+
     @property
     def arrshape(self):
         return (self.n_records)
