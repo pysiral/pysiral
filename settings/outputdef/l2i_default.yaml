@@ -7,7 +7,7 @@ metadata:
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "l2i_seaice_{mission_id}_{timeliness:lowercase}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc"
+filenaming: "l2i_seaice_{mission_id}_{source_timeliness:lowercase}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc"
 product_level_subfolder: l2i
 
 # A list of global attributes 
@@ -50,7 +50,7 @@ global_attributes:
 variables:
   
   time:
-    var_source_name: longitude
+    var_source_name: timestamp
     long_name: utc timestamp
     units: seconds since 1970-01-01
 
