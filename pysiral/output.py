@@ -29,6 +29,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
+        self.output_def_filename = output_def
 
     def fill_template_string(self, template, dataset):
         """ Fill an template string with information of a dataset

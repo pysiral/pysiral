@@ -38,6 +38,7 @@ def pysiral_l3proc():
     # Currently the overwrite protection is disabled per default
     output = Level3OutputHandler(output_def=args.l3_output_file,
                                  base_directory=args.l3_product_basedir,
+                                 period=args.period,
                                  overwrite_protection=False)
 
     # Compile the product def

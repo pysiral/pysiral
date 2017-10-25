@@ -1029,7 +1029,7 @@ class Level3OutputHandler(OutputHandlerBase):
     applicable_data_level = 3
 
     def __init__(self, output_def="default", base_directory="l3proc_default",
-                 overwrite_protection=True):
+                 overwrite_protection=True, period="default"):
 
         if output_def == "default":
             output_def = self.default_output_def_filename
@@ -1039,12 +1039,26 @@ class Level3OutputHandler(OutputHandlerBase):
         self.log.name = self.__class__.__name__
         self.overwrite_protection = overwrite_protection
         self._init_product_directory(base_directory)
+        self._period = period
 
     def get_filename_from_data(self, l3):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
-        filename_template = self.output_def.filenaming
-        return self.fill_template_string(filename_template, l3)
+
+        # Get the filenaming definition
+        try:
+            template_ids = self.output_def.filenaming.keys()
+            filename_template = self.output_def.filenaming[self._period]
+        except AttributeError:
+            filename_template = self.output_def.filenaming
+        except KeyError:
+            msg = "Missing filenaming convention for period [%s] in [%s]"
+            msg = msg % (str(self._period), self.output_def_filename)
+            self.error.add_error("invalid-outputdef", msg)
+            self.error.raise_on_error()
+
+        filename = self.fill_template_string(filename_template, l3)
+        return filename
 
     def get_directory_from_data(self, l3, create=True):
         """ Return the output directory based on information provided
