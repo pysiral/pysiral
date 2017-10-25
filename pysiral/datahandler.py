@@ -233,7 +233,11 @@ class L2iDataHandler(DefaultLoggingClass):
     def get_subdirectory_list(self):
         """ Returns a list of all subdirectories of type yyyy/mm """
         subdirectory_list = list()
-        years = sorted(next(os.walk(self.product_basedir))[1])
+        try:
+            years = sorted(next(os.walk(self.product_basedir))[1])
+        except StopIteration:
+            self.log.warning("No subdirectories in %s" % self.product_basedir)
+            return []
         # filter any invalid directories
         years = [y for y in years if re.match(r'[1-3][0-9]{3}', y)]
         for year in years:
