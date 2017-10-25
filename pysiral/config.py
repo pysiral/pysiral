@@ -228,7 +228,27 @@ class RadarModes(object):
 
 class TimeRangeRequest(DefaultLoggingClass):
 
-    _PERIODS = ["monthly", "daily", "custom"]
+    # Defintion of periods:
+    #
+    # monthly:
+    #   from 00:00:00.000000 of first day in month to 23:59:59.99999 of
+    #   last day per month for each month in time range
+    #
+    # default_week:
+    #   from Monday 00:00:00.00000 to Sunday 23:59:59.99999 for all weeks
+    #   in the time range including partially covered weeks
+    #
+    # daily:
+    #   from 00:00:00.000000 to 23:59:59.99999 for each day in time range
+    #
+    # custom:
+    #   from 00:00:00.000000 of first day to 23:59:59.99999 of last day
+    #   in timer range
+
+    _PERIODS = ["monthly", "default_week", "daily", "custom"]
+
+    # TODO: Future planned option (weekly: 7 days from start day) and
+    #       (week_of_year: self explanatory)
 
     def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
                  raise_if_empty=False):
@@ -360,6 +380,11 @@ class TimeRangeRequest(DefaultLoggingClass):
         if self._period == "monthly":
             iterations = self._get_monthly_iterations()
 
+        # default week periods: return a list of time ranges for each default
+        # week definition (from Monday to Sunday)
+        elif self._period == "default_week":
+            iterations = self._get_default_week_iterations()
+
         # daily periods: return a list of time ranges for each day
         # in the requested period (exclude_month still applies)
         elif self._period == "daily":
@@ -449,6 +474,46 @@ class TimeRangeRequest(DefaultLoggingClass):
             # iteration will be a of type TimeRangeIteration
             time_range = TimeRangeIteration(base_period=self.base_period)
             time_range.set_range(period_start, period_stop)
+            time_range.set_indices(index, n_iterations)
+            iterations.append(time_range)
+            index += 1
+
+        return iterations
+
+    def _get_default_week_iterations(self):
+        """ Create iterator with default_week (Monday throught Sunday)
+        period """
+
+        # Start with empty iteration
+        iterations = []
+        index = 1
+
+        # Get the start date: period start date (if is monday) or previous
+        # monday. If the day is not monday we can use the isoweekday
+        # (monday=1m sundy=7) to compute the number days we have to subtract
+        # from the start day of the period
+        start_offset_days = self.start_dt.isoweekday() - 1
+        week_start_day = self.start_dt - relativedelta(days=start_offset_days)
+
+        # Same for the stop date: Make sure the end date either a Sunday
+        # already or a Sunday after the stop date of the period
+        stop_offset_days = 7 - self.stop_dt.isoweekday()
+        week_stop_day = self.stop_dt + relativedelta(days=stop_offset_days)
+
+        # Get the list of weeks
+        weeks = weeks_list(week_start_day, week_stop_day, self._exclude_month)
+        n_iterations = len(weeks)
+
+        for start_day, stop_day in weeks:
+
+            # weeks list provide only a
+            start = datetime(start_day[0], start_day[1], start_day[2])
+            stop = start + relativedelta(days=7, microseconds=-1)
+
+            # set final time range
+            # iteration will be a of type TimeRangeIteration
+            time_range = TimeRangeIteration(base_period=self.base_period)
+            time_range.set_range(start, stop)
             time_range.set_indices(index, n_iterations)
             iterations.append(time_range)
             index += 1
@@ -872,6 +937,34 @@ def month_list(start_dt, stop_dt, exclude_month):
     month_list = [entry for entry in month_list if (
         entry[1] not in exclude_month)]
     return month_list
+
+
+def weeks_list(start_dt, stop_dt, exclude_month):
+    """ Returns a list of all weeks (start_dt + 7 days) in the period.
+    exclude_month is applied, but partial overlap of weeks and exclude_month
+    is allowed """
+
+    weeks = []
+    # Get the number of weeks (without exclude month)
+    list_of_days = days_list(start_dt, stop_dt, [])
+    n_weeks = np.ceil(float(len(list_of_days))/7.).astype(int)
+
+    for i in np.arange(n_weeks):
+
+        # Compute start and stop date for each week
+        d1 = start_dt + relativedelta(days=i*7)
+        d2 = start_dt + relativedelta(days=(i+1)*7-1)
+
+        # exclude month only applies when both start and stop day of the week
+        # are in an excluded month (partial overlap is allowed)
+        if d1.month in exclude_month and d2.month in exclude_month:
+            continue
+
+        # store start and stop day for each week
+        weeks.append([[d1.year, d1.month, d1.day],
+                      [d2.year, d2.month, d2.day]])
+
+    return weeks
 
 
 def days_list(start_dt, stop_dt, exclude_month):
