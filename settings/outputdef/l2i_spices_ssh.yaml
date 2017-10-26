@@ -7,7 +7,8 @@ metadata:
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "l2i_ssh_nrt_{mission_id}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}.nc"
+filenaming: 
+  default: "l2i_ssh_nrt_{mission_id}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}.nc"
 product_level_subfolder: l2i_ssh
 
 # A list of global attributes 

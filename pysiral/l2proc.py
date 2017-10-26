@@ -811,12 +811,13 @@ class Level2ProductDefinition(DefaultLoggingClass):
         self._output_handler = []
 
     def add_output_definition(self, output_def_file,
+                              period="default",
                               overwrite_protection=True):
 
         # Set given or default output handler
         self._output_handler.append(DefaultLevel2OutputHandler(
             output_def=output_def_file, subdirectory=self.run_tag,
-            overwrite_protection=overwrite_protection))
+            period=period, overwrite_protection=overwrite_protection))
 
     def _parse_l2_settings(self):
         try:

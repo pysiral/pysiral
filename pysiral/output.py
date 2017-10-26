@@ -173,7 +173,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
     applicable_data_level = 2
 
     def __init__(self, output_def="default", subdirectory="default_output",
-                 overwrite_protection=True):
+                 overwrite_protection=True, period="default"):
         # Fall back to default output if no output_def is given
         # (allows default initialization for the Level2 processor)
         if output_def == "default":
@@ -183,13 +183,30 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         self.log.name = self.__class__.__name__
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
+        self._period = period
         self._init_product_directory()
 
     def get_filename_from_data(self, l2):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
-        filename_template = self.output_def.filenaming
-        return self.fill_template_string(filename_template, l2)
+        # Get the filenaming definition (depending on period definition)
+        try:
+            template_ids = self.output_def.filenaming.keys()
+            period_id = self._period
+            # Fall back to default if no filenaming convention for given
+            # data period
+            if period_id not in template_ids:
+                period_id = "default"
+            filename_template = self.output_def.filenaming[period_id]
+        except AttributeError:
+            filename_template = self.output_def.filenaming
+        except KeyError:
+            msg = "Missing filenaming convention for period [%s] in [%s]"
+            msg = msg % (str(self._period), self.output_def_filename)
+            self.error.add_error("invalid-outputdef", msg)
+            self.error.raise_on_error()
+        filename = self.fill_template_string(filename_template, l2)
+        return filename
 
     def get_directory_from_data(self, l2, create=True):
         """ Return the output directory based on information provided

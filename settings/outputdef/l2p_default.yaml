@@ -7,7 +7,9 @@ metadata:
   data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "l2p-awi-seaice-{mission_id}-{hemisphere_code}-{startdt:%Y%m%d}-v1.0.nc"
+filenaming: 
+  daily: "l2p-awi-seaice-{mission_id}-{hemisphere_code}-{startdt:%Y%m%d}-v1.0.nc"
+  default: "l2p-awi-seaice-{mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}-v1.0.nc"
 product_level_subfolder: l2p
 
 # A list of global attributes 

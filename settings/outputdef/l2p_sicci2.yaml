@@ -7,7 +7,9 @@ metadata:
   data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%d}-fv1.0.nc"
+filenaming: 
+  daily: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%d}-fv1.0.nc"
+  default: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv1.0.nc"
 product_level_subfolder: l2p
 
 # A list of global attributes 

@@ -61,11 +61,12 @@ class Level2PreProcProductDefinition(DefaultLoggingClass):
         super(Level2PreProcProductDefinition, self).__init__(class_name)
 
     def add_output_definition(self, l2i_product_dir, output_def_file,
-                              overwrite_protection=True):
+                              period="default", overwrite_protection=True):
                 # Set given or default output handler
         self._output_handler = Level2POutputHandler(
             l2i_product_dir,
             output_def=output_def_file,
+            period=period,
             overwrite_protection=overwrite_protection)
 
     @property
@@ -83,7 +84,8 @@ class Level2POutputHandler(OutputHandlerBase):
     applicable_data_level = 2
 
     def __init__(self, l2i_product_dir, output_def="default",
-                 subdirectory=None, overwrite_protection=True):
+                 subdirectory=None, period="default",
+                 overwrite_protection=True):
         # Fall back to default output if no output_def is given
         # (allows default initialization for the Level2 processor)
         if output_def == "default":
@@ -92,6 +94,7 @@ class Level2POutputHandler(OutputHandlerBase):
         self.error.caller_id = self.__class__.__name__
         self.log.name = self.__class__.__name__
         self.l2i_product_dir = l2i_product_dir
+        self._period = period
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
@@ -99,8 +102,24 @@ class Level2POutputHandler(OutputHandlerBase):
     def get_filename_from_data(self, l2p):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
-        filename_template = self.output_def.filenaming
-        return self.fill_template_string(filename_template, l2p)
+
+        try:
+            template_ids = self.output_def.filenaming.keys()
+            period_id = self._period
+            # Fall back to default if no filenaming convention for given
+            # data period
+            if period_id not in template_ids:
+                period_id = "default"
+            filename_template = self.output_def.filenaming[period_id]
+        except AttributeError:
+            filename_template = self.output_def.filenaming
+        except KeyError:
+            msg = "Missing filenaming convention for period [%s] in [%s]"
+            msg = msg % (str(self._period), self.output_def_filename)
+            self.error.add_error("invalid-outputdef", msg)
+            self.error.raise_on_error()
+        filename = self.fill_template_string(filename_template, l2p)
+        return filename
 
     def get_directory_from_data(self, l2p, create=True):
         """ Return the output directory based on information provided

@@ -1045,10 +1045,15 @@ class Level3OutputHandler(OutputHandlerBase):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
 
-        # Get the filenaming definition
+        # Get the filenaming definition (depending on period definition)
         try:
             template_ids = self.output_def.filenaming.keys()
-            filename_template = self.output_def.filenaming[self._period]
+            period_id = self._period
+            # Fall back to default if no filenaming convention for given
+            # data period
+            if period_id not in template_ids:
+                period_id = "default"
+            filename_template = self.output_def.filenaming[period_id]
         except AttributeError:
             filename_template = self.output_def.filenaming
         except KeyError:

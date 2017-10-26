@@ -42,6 +42,7 @@ def pysiral_l2preproc():
     product_def.add_output_definition(
             args.l2i_product_dir,
             args.l2p_output,
+            period="daily",
             overwrite_protection=args.overwrite_protection)
 
     # Prepare DataHandler
