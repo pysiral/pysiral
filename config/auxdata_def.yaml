@@ -395,7 +395,7 @@ sitype:
     # OSI-SAf
     osisaf:
         pyclass: OsiSafSIType
-        long_names: OSI-SAF Global Sea Ice Type (OSI-403-b)
+        long_name: OSI-SAF Global Sea Ice Type (OSI-403-b)
         filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
         local_repository: osisaf
         options:
@@ -439,7 +439,7 @@ sitype:
     # OSI-SAf
     osisaf_c3s_v1:
         pyclass: OsiSafSITypeCDR
-        long_names: OSI-SAF Reprocessed (CDR) Sea Ice Type
+        long_name: OSI-SAF Reprocessed (CDR) Sea Ice Type
         filenaming: "ice_type_{hemisphere_code}_ease2-250_cdr-v1p0_{year}{month}{day}1200.nc"
         local_repository: osisaf_c3s_v1
         options:
