@@ -372,6 +372,8 @@ class Level2Data(object):
             timeliness = self.info.timeliness
         except AttributeError:
             timeliness = "NTC"
+        if timeliness is None:
+            timeliness = "NTC"
         if args[0] == "lowercase":
             timeliness = timeliness.lower()
         return timeliness
