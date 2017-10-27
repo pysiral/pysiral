@@ -25,7 +25,7 @@ class Level2Data(object):
 
     _L2_DATA_ITEMS = ["mss", "ssa", "elev",  "afrb", "frb", "range", "sic",
                       "sitype", "snow_depth",  "snow_dens",  "ice_dens",
-                      "sit"]
+                      "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
@@ -45,7 +45,8 @@ class Level2Data(object):
         "snow_density": "snow_dens",
         "ice_density": "ice_dens",
         "sea_ice_thickness": "sit",
-        "sea_ice_concentration": "sic"}
+        "sea_ice_concentration": "sic",
+        "radar_mode": "radar_mode"}
 
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
