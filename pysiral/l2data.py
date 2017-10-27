@@ -66,6 +66,11 @@ class Level2Data(object):
         self._l2_algorithm_id = "unkown"
         self._l2_version_tag = "unkown"
 
+        # Define time of dataset creation as the time of object initialization
+        # to avoid slightly different timestamps for repated calls of
+        # datatime.now()
+        self._creation_time = datetime.now()
+
         # Other Class properties
         self._is_evenly_spaced = time_orbit.is_evenly_spaced
 
@@ -339,7 +344,7 @@ class Level2Data(object):
         return self._l2_version_tag
 
     def _get_attr_utcnow(self, *args):
-        return datetime.now().isoformat()
+        return self._creation_time.isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         datetime = self.period.start
