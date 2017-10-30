@@ -332,6 +332,13 @@ class NCDataFile(DefaultLoggingClass):
 
             data = self.data.get_parameter_by_name(var_source_name)
 
+            if data is None:
+                msg = "Invalid parameter name for data object: %s"
+                msg = msg % parameter_name
+                self.log.error(msg)
+                self.error.add_error("invalid-paramater", msg)
+                self.error.raise_on_error()
+
             # Convert datetime objects to number
             if type(data[0]) is datetime:
                 data = date2num(data, self.time_def.units,

@@ -31,6 +31,7 @@ class Level2Data(object):
 
     _PARAMETER_CATALOG = {
         "timestamp": "timestamp",
+        "time": "time",
         "longitude": "longitude",
         "latitude": "latitude",
         "surface_type": "surface_type_flag",
@@ -421,7 +422,11 @@ class Level2Data(object):
 
     @property
     def timestamp(self):
-        return self.track.timestamp
+        try:
+            time = self.track.time
+        except AttributeError:
+            time = self.track.timestamp
+        return time
 
     @property
     def longitude(self):
@@ -479,13 +484,16 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         with valid freeboard, etc) """
 
         # Extract parameters from l2i stack
-        timestamp = l2i_stack["timestamp"]
+        try:
+            time = l2i_stack["timestamp"]
+        except KeyError:
+            time = l2i_stack["time"]
         longitude = l2i_stack["longitude"]
         latitude = l2i_stack["latitude"]
 
         # Subset (if necessary)
         if index_list is not None:
-            timestamp = timestamp[index_list]
+            time = time[index_list]
             longitude = longitude[index_list]
             latitude = latitude[index_list]
 
@@ -493,7 +501,7 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         dummy_altitude = np.full(longitude.shape, np.nan)
 
         # Set the timestamp
-        self.timestamp = timestamp
+        self.time = time
         # Set the position
         self.set_position(longitude, latitude, dummy_altitude)
 
@@ -502,7 +510,7 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         necessary when the Level2Data object shall be constructed from an
         l2i netcdf product """
         # Set the timestamp
-        self.timestamp = l2i.timestamp
+        self.time = l2i.timestamp
         # Set the position
         dummy_altitude = np.full(l2i.longitude.shape, np.nan)
         self.set_position(self, l2i.longitude, l2i.latitude, dummy_altitude)
@@ -592,9 +600,9 @@ class Level2PContainer(DefaultLoggingClass):
 
         # Set up a metadata container
         metadata = Level2iMetadata()
-        metadata.set_attribute("n_records", len(timeorbit.timestamp))
-        metadata.set_attribute("start_time", timeorbit.timestamp[0])
-        metadata.set_attribute("stop_time", timeorbit.timestamp[-1])
+        metadata.set_attribute("n_records", len(timeorbit.time))
+        metadata.set_attribute("start_time", timeorbit.time[0])
+        metadata.set_attribute("stop_time", timeorbit.time[-1])
 
         # XXX: Very ugly, but required due to a non-standard use of
         #      region_subset_set (originally idea to crop regions in
@@ -645,9 +653,12 @@ class Level2PContainer(DefaultLoggingClass):
         # orbit id. This will be added to level 2 object by other means
         # or do not make sense (surface type for valid freeboard will
         # always be sea ice)
-        for parameter_name in ["timestamp", "longitude", "latitude",
+        for parameter_name in ["timestamp", "time", "longitude", "latitude",
                                "surface_type"]:
-            parameter_list.remove(parameter_name)
+            try:
+                parameter_list.remove(parameter_name)
+            except ValueError:
+                pass
 
         # 4. Set parameters
         for parameter_name in parameter_list:
@@ -752,10 +763,12 @@ class L2iNCFileImport(object):
         # Get timestamp (can be either time or timestamp in l2i files)
         if hasattr(self, "time"):
             time = self.time
+            time_parameter_name = "time"
         else:
             time = self.timestamp
-        self.timestamp = num2date(time, self.time_def.units,
-                                  self.time_def.calendar)
+            time_parameter_name = "time"
+        dt = num2date(time, self.time_def.units, self.time_def.calendar)
+        setattr(self, time_parameter_name, dt)
 
     def transfer_nan_mask(self, source, targets):
         source_parameter = getattr(self, source)

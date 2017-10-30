@@ -168,8 +168,12 @@ class L2iDataStack(DefaultLoggingClass):
         """
 
         # Save the metadata from the orbit data
-        self.start_time.append(l2i.timestamp[0])
-        self.stop_time.append(l2i.timestamp[-1])
+        if hasattr(l2i, "time"):
+            time = l2i.time
+        else:
+            time = l2i.timestamp
+        self.start_time.append(time[0])
+        self.stop_time.append(time[-1])
         self.mission.append(l2i.mission)
         self.timeliness.append(l2i.timeliness)
         self._l2i_count += 1
