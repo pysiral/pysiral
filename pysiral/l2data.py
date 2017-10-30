@@ -766,9 +766,11 @@ class L2iNCFileImport(object):
             time_parameter_name = "time"
         else:
             time = self.timestamp
-            time_parameter_name = "time"
+            time_parameter_name = "timestamp"
+        self._time_parameter_name = time_parameter_name
         dt = num2date(time, self.time_def.units, self.time_def.calendar)
-        setattr(self, time_parameter_name, dt)
+        setattr(self, "time", dt)
+        self.timestamp = self.time
 
     def transfer_nan_mask(self, source, targets):
         source_parameter = getattr(self, source)
