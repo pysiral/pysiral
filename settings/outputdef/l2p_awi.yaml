@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming: 
-  daily: "l2p-awi-seaice-{mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{startdt:%Y%m%d}-v2.0.nc"
-  default: "l2p-awi-seaice-{mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}-v2.0.nc"
+  daily: "l2p-awi-seaice-{mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-v2.0.nc"
+  default: "l2p-awi-seaice-{mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%dT%H%M%S}_{time_coverage_end:%Y%m%dT%H%M%S}-v2.0.nc"
 product_level_subfolder: l2p_daily
 
 # A list of global attributes 
