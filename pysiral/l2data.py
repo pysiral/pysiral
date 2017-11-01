@@ -632,6 +632,11 @@ class Level2PContainer(DefaultLoggingClass):
             metadata.source_auxdata_sitype = l2i.info.source_auxdata_sitype
             metadata.source_auxdata_mss = l2i.info.source_auxdata_mss
 
+        try:
+            metadata.timeliness = l2i.info.source_timeliness
+        except AttributeError:
+            pass
+
         metadata.set_attribute("mission", mission_id)
         mission_sensor = SENSOR_NAME_DICT[mission_id]
         metadata.set_attribute("mission_sensor", mission_sensor)
