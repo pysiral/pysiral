@@ -18,11 +18,11 @@ grid_options:
 global_attributes:
   title: "Monthly sea-ice thickness climate data record from radar altimeter data"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI), Bremerhaven, Germany"
-  project: "Copernicus Climate Change Service (C3S 312a Lot1)"  
+  project: "Copernicus Climate Change Service (C3S 312a Lot1) - ECMWF"  
   comment: "This is a test dataset of the C3S sea-ice thickness climate data record"
   source: "Satellite radar altimetry"
   history: "{utc_now} (created)"
-  references: "ATDB?"
+  references: "Sea Ice Thickness, Algorithm Theoretical Baseline Document (C3S_D312a_Lot1.2.2.6-v1_201710_atbd_sea-ice-thickness_v1)"
   tracking_id: "None"
   conventions: "CF-1.6"
   product_version: "1.0 (test dataset)"  
@@ -36,12 +36,12 @@ global_attributes:
   date_created: "{utc_now}"
   date_issued: ""
   date_modified: ""
-  creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
+  creator_name: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
   creator_url: "http://www.awi.de"
-  creator_email: "stefan.hendricks@awi.de"
-  publisher_name: "met.no??"
-  publisher_url: "http://met.no??"
-  publisher_email: "??"  
+  creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de"
+  publisher_name: "Norwegian Meteorological Institute"
+  publisher_url: "http://met.no"
+  publisher_email: ""  
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: 90.0
   geospatial_lon_min: -180.0
@@ -89,26 +89,30 @@ variables:
 
   uncertainty:
     var_source_name: sea_ice_thickness_uncertainty
-    long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval
-    standard_name: sea_ice_thickness_uncertainty
+    long_name: algorithm uncertainty of the sea ice thickness retrieval
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "algorithm uncertainty based on error propagation describes the maximum uncertainty for each grid cell"
 
   quality_flag:
     long_name: quality indicator flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness quality_flag"
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
     valid_min: 0
     valid_max: 3
-    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    flag_meaning: "0: no thickness data; 1: nominal retrieval quality, no biases expected; 2: intermediate retrieval quality, bias likely; 3: low retrieval quality, bias expected"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval (status flag: 5)"
 
   status_flag:
     long_name: status flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
     valid_min: 0
     valid_max: 5
-    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
-    standard_name: "sea_ice_thickness status_flag"
+    flag_meaning: "0: no input data; 1: outside sea ice concentration mask; 2: latitude above orbit inclination; 3: land, lake or land ice; 4: sea ice thickness retrieval failed; 5: sea ice thickness retrieval successful"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "Describes the status of the sea-ice thickness retrieval"
