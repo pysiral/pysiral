@@ -479,6 +479,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
+        # XXX: This should be applied to the L2 data not l1b
         for correction in self._l2def.corrections:
             l1b.apply_range_correction(correction)
 
