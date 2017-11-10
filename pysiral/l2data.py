@@ -673,7 +673,7 @@ class Level2PContainer(DefaultLoggingClass):
 
             # Test if uncertainty exists
             uncertainty_name = parameter_name+"_uncertainty"
-            if uncertainty_name in parameter_list:
+            if uncertainty_name in parameter_list_all:
                 uncertainty = data[uncertainty_name]
             else:
                 uncertainty = np.full(value.shape, 0.0)
