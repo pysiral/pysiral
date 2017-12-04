@@ -45,7 +45,14 @@ level2:
         - ocean_loading_tide
         - solid_earth_tide
         - geocentric_polar_tide
-        
+
+    # Mission specific range uncertainties
+    uncertainty:
+        # These values come from cs2awi (for cryosat2)
+        range:
+            sigma: [0.14, 0.10, 0.14]
+            speckle_noise: 0.2
+
     # Surface type classification algorithm
     surface_type: 
         pyclass: RickerTC2014
@@ -106,16 +113,23 @@ level2:
                 first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
                 first_maximum_local_order: 1
                 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
-    ssa: 
+    # Algorithm for instantaneos sea surface height (mss + ssa)
+    ssa:
         pyclass: SSASmoothedLinear
-        options: 
+        options:
             use_ocean_wfm: False
             smooth_filter_width_m: 25000.0
             smooth_filter_width_footprint_size: 300.0
             pre_filtering: true
-            pre_filter_maximum_mss_median_offset: 1.0 # in meter            
-            
+            pre_filter_maximum_mss_median_offset: 1.0 # in meter
+            uncertainty_tiepoints_distance_max: 100000.
+            uncertainty_minimum: 0.1
+            uncertainty_maximum: 0.5
+
+    afrb:
+        pyclass: RadarFreeboardDefault
+        options: null
+
     # Algorithm for converting radar freeboard into freeboard
     frb: 
         pyclass: SnowGeometricCorrection
