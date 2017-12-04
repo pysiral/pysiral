@@ -62,7 +62,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         for attr_def in attr_defs:
             attr_name, _, optstr = attr_def[1:-1].partition(":")
             attrs.append(attr_name)
-            options.append(optstr.split(","))
+            options.append(optstr.split(";"))
         return zip(attrs, options, attr_defs)
 
     def _init_from_output_def(self, output_def):

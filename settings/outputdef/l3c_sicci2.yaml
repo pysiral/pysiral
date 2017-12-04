@@ -7,36 +7,37 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 grid_options: 
-  flip_yc: False
+  flip_yc: True
 
 # Output Definition
-filenaming: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv1.0.nc"
-product_level_subfolder: l3c_sicci2
+filenaming: 
+  monthly: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv1.0.nc"
+  custom: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv1.0.nc"
+  default: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv1.0.nc"
+product_level_subfolder: l3c
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  title: "ESA-CCI Sea Ice ECV: Arctic Ocean Sea Ice Thickness; Antarctic Ocean Sea Ice Thickness"
+  title: "Monthly gridded sea thickness climate data record from {source_mission_name} radar altimeter data ({time_coverage_start:%Y-%m})"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI)"
   source: "Satellite radar altimetry"
-  history: ""
-  references: ""
-  tracking_id: ""
+  history: "{utc_now} (created)"
+  references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
+  tracking_id: "None"
   conventions: "CF-1.6"
-  product_version: "0.9"
-  summary: ""
+  product_version: "1.0"
+  summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017}"
   keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
-  id: ""
-  naming: ""
-  keywords_vocabulary: ""
-  cdm_data_type: "grid"
+  id: "N/A"
+  cdm_data_type: "Grid"
   comment: ""
   date_created: "{utc_now}"
   date_issued: ""
   date_modified: ""
-  creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
+  creator_name: "Stefan Hendricks, Stephan Paul (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine (Finnish Meteorological Institute, Helsinke, Finland)"
   creator_url: "http://www.awi.de"
-  creator_email: "TBD"
+  creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de, eero.rinne@fmi.fi"
   project: "ESA Sea Ice CCI"
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: "{geospatial_lat_max}"
@@ -45,11 +46,12 @@ global_attributes:
   time_coverage_start: "{time_coverage_start}"
   time_coverage_end: "{time_coverage_end}"
   time_coverage_duration: "{time_coverage_duration}"
-  standard_name_vocabulary: ""
-  license: "freely distributed"
+  geospatial_bounds_crs: "EPSG:6931"  
+  license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   source_mission_name: "{source_mission_name}"
   source_mission_id: "{source_mission_id}"
   source_mission_sensor: "{source_mission_sensor}"
+  source_timeliness: "{source_timeliness}"
   source_hemisphere: "{source_hemisphere}"
   source_auxdata_snow: "{source_auxdata_snow}"
   source_auxdata_sic: "{source_auxdata_sic}"
@@ -59,198 +61,59 @@ global_attributes:
 # The variable subtag must match the name of the level-3 parameter
 variables:
 
-  longitude:
+  lon:
+    var_source_name: longitude
     long_name: longitude of grid cell center
     standard_name: longitude
-    units: degrees
-    scale_factor: 1.0
-    add_offset: 0.0  
+    units: degrees_east
 
-  latitude:
+  lat:
+    var_source_name: latitude
     long_name: latitude of grid cell center
     standard_name: latitude
-    units: degrees
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  mean_sea_surface:
-    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-    standard_name: mean_sea_surface_elevation
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_surface_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
-    standard_name: sea_surface_elevation_anomaly
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_surface_anomaly_uncertainty:
-    long_name: "uncertainty of instantaneous sea surface height"
-    standard_name: sea_surface_elevation_anomaly_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
+    units: degrees_north
 
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
-    standard_name: radar_freeboard
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: "time lon lat"
 
   radar_freeboard_uncertainty:
     long_name: "uncertainty of radar freeboard"
-    standard_name: radar_freeboard_uncertainty
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: "time lon lat"
 
   freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: "time lon lat"
 
   freeboard_uncertainty:
     long_name: "freeboard uncertainty"
-    standard_name: sea_ice_freeboard_uncertainty
+    standard_name: sea_ice_freeboard standard_error
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type:
-    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
-    standard_name: sea_ice_classification
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type_uncertainty:
-    long_name: "uncertainty of sea ice classification"
-    standard_name: sea_ice_classification_uncertainty
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_concentration:
-    long_name: "sea ice concentration"
-    standard_name: sea_ice_area_fraction
-    units: percent
-    valid_min: 0.0
-    valid_max: 100.0
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth:
-    long_name: "thickness of the snow layer"
-    standard_name: snow_depth
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth_uncertainty:
-    long_name: "uncertainty of the snow layer thickness"
-    standard_name: snow_depth_uncertainty
-    units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  snow_density:
-    long_name: "density of the snow layer"
-    standard_name: snow_density
-    units: kg/m^3
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_density_uncertainty:
-    long_name: "uncertainty of the snow layer density"
-    standard_name: snow_density_uncertainty
-    units: kg/m^3
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_density:
-    long_name: "density of the sea ice layer"
-    standard_name: sea_ice_density
-    units: kg/m^3
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_density_uncertainty:
-    long_name: "uncertainty of the sea ice layer density"
-    standard_name: sea_ice_density_uncertainty
-    units: kg/m^3
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
+    coordinates: "time lon lat"
 
   sea_ice_thickness:
     long_name: "thickness of the sea ice layer"
     standard_name: sea_ice_thickness
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
+    ancillary_variables: "sea_ice_thickness_uncertainty status_flag"
+    coordinates: "time lon lat"
 
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness_uncertainty
     units: m
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
+    coordinates: "time lon lat"
 
-  n_total_waveforms:
-    long_name: "number of valid measurements per grid cell"
-    standard_name: n_total_waveforms
-    units: ""
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  valid_fraction:
-    long_name: "fraction of either lead or ice waveforms"
-    standard_name: n_valid_waveforms
-    units: fraction
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  lead_fraction:
-    long_name: "lead waveforms per grid cell"
-    standard_name: lead_fraction
-    units: fraction
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_fraction:
-    long_name: "sea ice waveforms per grid cell"
-    standard_name: ice_fraction
-    units: fraction
-    coordinates: "latitude longitude time"
-    scale_factor: 1.0
-    add_offset: 0.0  
+  status_flag:
+    long_name: status flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
+    valid_min: 0
+    valid_max: 101
+    flag_meaning: "0: nominal; 1: retrieval unsuccessful; 2: no input data; 100: land, lake or land ice; 101: latitude above orbit inclination;"
+    coordinates: "time lat lon"
+    comment: "Describes the status of the sea-ice thickness retrieval"

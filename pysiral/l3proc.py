@@ -809,7 +809,11 @@ class L3DataGrid(DefaultLoggingClass):
         return mission_sensor
 
     def _get_attr_source_hemisphere(self, *args):
-        return self.hemisphere
+        if args[0] == "select":
+            choices = {"north": args[1], "south": args[2]}
+            return choices.get(self.hemisphere, "n/a")
+        else:
+            return self.hemisphere
 
     def _get_attr_startdt(self, dtfmt):
         return self.metadata.start_period.strftime(dtfmt)
