@@ -10,40 +10,30 @@ metadata:
 filenaming: 
   daily: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%d}-fv1.0.nc"
   default: "ESACCI-SEAICE-L2P-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv1.0.nc"
+
 product_level_subfolder: l2p
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   title: "ESA-CCI Sea Ice ECV: Arctic Ocean Sea Ice Thickness; Antarctic Ocean Sea Ice Thickness"
-  institution: "Alfred Wegener Institute Helmholtz Center for Polar and Marine Research"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI)"
   source: "Satellite radar altimetry"
-  history: "None, Initial Version"
-  references: "TBD"
-  tracking_id: "TBD"
+  history: "{utc_now} (created)"
+  references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
+  tracking_id: "None"
   conventions: "CF-1.6"
-  product_version: "0.9"
-  summary: "TBD"
-  keywords: "Sea ice thickness,Arctic Ocean,Antarctic Ocean,radar altimetry"
-  acknowledgements: "TBD"
+  product_version: "1.0"
+  summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017}"
+  keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
   processing_level: "Level-2 Pre-Processed (l2p)"
-  id: "TBD"
-  naming_authority: "TBD"
-  keywords_vocabulary: "TBD"
-  standard_name_vocabulary: "TBD"
-  cdm_data_type: "vector"
-  comment: "TBD"
+  cdm_data_type: "Trajectory"
   date_created: "{utcnow}"
-  date_issued: "{utcnow}"
-  date_modified: "{utcnow}"
-  creator_name: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research"
+  date_issued: ""
+  date_modified: ""
+  creator_name: "Stefan Hendricks, Stephan Paul (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine (Finnish Meteorological Institute, Helsinke, Finland)"
   creator_url: "http://www.awi.de"
-  creator_email: "stefan.hendricks@awi.de"
-  contributor_name: "TBD"
-  contributor_role: "TBD"
-  publisher_name: "TBD"
-  publisher_url: "TBD"
-  publisher_email: "TBD"
+  creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de, eero.rinne@fmi.fi"
   project: "ESA Sea Ice CCI"
   geospatial_lat_min: "{geospatial_lat_min}"
   geospatial_lat_max: "{geospatial_lat_max}"
@@ -51,11 +41,9 @@ global_attributes:
   geospatial_lon_max: "{geospatial_lon_max}"
   geospatial_vertical_min: "0.0"
   geospatial_vertical_max: "0.0"
-  geospatial_bounds: "TBD"
   time_coverage_start: "{time_coverage_start}"
   time_coverage_end: "{time_coverage_end}"
   time_coverage_duration: "{time_coverage_duration:period}"
-  time_coverage_resolution: "TBD"
   license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   source_mission_name: "{source_mission_name}"
   source_mission_id: "{source_mission_id}"
@@ -70,155 +58,54 @@ global_attributes:
 # The variable subtag must match the name of the level-2 parameter
 variables:
   
-  timestamp:
+  time:
+    var_source_name: timestamp
     long_name: utc timestamp
-    standard_name: time
     units: seconds since 1970-01-01
-    scale_factor: 1.0
-    add_offset: 0.0
 
   longitude:
-    long_name: longitude of satellite / nadir measurement point
+    long_name: longitude of satellite nadir measurement point
     standard_name: longitude
-    units: degrees
-    coordinates: timestamp
-    valid_min: 0.0
-    valid_max: 360.0
-    scale_factor: 1.0
-    add_offset: 0.0  
+    units: degrees east
+    coordinates: time
 
   latitude:
-    long_name: latitude of satellite / nadir measurement point
+    long_name: latitude of satellite nadir measurement point
     standard_name: latitude
-    units: degrees
-    coordinates: timestamp
-    valid_min: -90.0
-    valid_max: 90.0
-    scale_factor: 1.0
-    add_offset: 0.0
+    units: degrees north
+    coordinates: time
 
   radar_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
-    standard_name: radar_freeboard
+    long_name: "elevation of retracked point above instantaneous sea surface height"
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: time
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
-    long_name: "uncertainty of radar freeboard"
-    standard_name: radar_freeboard_uncertainty
+    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: time
 
   freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
+    coordinates: time
 
   freeboard_uncertainty:
     long_name: "freeboard uncertainty"
-    standard_name: sea_ice_freeboard_uncertainty
+    standard_name: sea_ice_freeboard standard_error
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type:
-    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
-    standard_name: sea_ice_classification
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_type_uncertainty:
-    long_name: "uncertainty of sea ice classification"
-    standard_name: sea_ice_classification_uncertainty
-    units: fraction
-    valid_min: 0.0
-    valid_max: 1.0
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  sea_ice_concentration:
-    long_name: "sea ice concentration"
-    standard_name: sea_ice_area_fraction
-    units: percent
-    valid_min: 0.0
-    valid_max: 100.0
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth:
-    long_name: "thickness of the snow layer"
-    standard_name: snow_depth
-    units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_depth_uncertainty:
-    long_name: "uncertainty of the snow layer thickness"
-    standard_name: snow_depth_uncertainty
-    units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  snow_density:
-    long_name: "density of the snow layer"
-    standard_name: snow_density
-    units: kg/m^3
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0
-
-  snow_density_uncertainty:
-    long_name: "uncertainty of the snow layer density"
-    standard_name: snow_density_uncertainty
-    units: kg/m^3
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_density:
-    long_name: "density of the sea ice layer"
-    standard_name: sea_ice_density
-    units: kg/m^3
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
-
-  ice_density_uncertainty:
-    long_name: "uncertainty of the sea ice layer density"
-    standard_name: sea_ice_density_uncertainty
-    units: kg/m^3
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
+    coordinates: time
 
   sea_ice_thickness:
     long_name: "thickness of the sea ice layer"
     standard_name: sea_ice_thickness
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
-
+    coordinates: time
+    
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
-    standard_name: sea_ice_thickness_uncertainty
+    standard_name: sea_ice_thickness standard_error
     units: m
-    coordinates: timestamp
-    scale_factor: 1.0
-    add_offset: 0.0  
+    coordinates: time
