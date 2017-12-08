@@ -22,7 +22,6 @@ global_attributes:
   history: "{utc_now} (created)"
   references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
   tracking_id: "None"
-  conventions: "CF-1.6"
   product_version: "1.0"
   summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - March 2017}"
   keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
