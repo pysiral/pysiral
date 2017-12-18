@@ -56,7 +56,11 @@ class Level3Processor(DefaultLoggingClass):
             self._log_progress(i)
 
             # Parse l2i source file
-            l2i = L2iNCFileImport(l2i_file)
+            try: 
+                l2i = L2iNCFileImport(l2i_file)
+            except AttributeError:
+                self.log.warning("Attribute Error encountered in %s" % l2i_file)
+                continue
 
             # Prefilter l2i product
             # Note: In the l2i product only the minimum set of nan are used
