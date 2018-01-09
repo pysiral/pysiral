@@ -504,6 +504,7 @@ class Level2iTimeOrbit(L1bTimeOrbit):
 
         # Set the timestamp
         self.time = time
+
         # Set the position
         self.set_position(longitude, latitude, dummy_altitude)
 
@@ -592,6 +593,10 @@ class Level2PContainer(DefaultLoggingClass):
 
         # Merge the parameter
         data = self._get_merged_data(valid_mask="freeboard")
+
+        # There are rare occasion, where no valid freeboard data is found for an entire day
+        if len(data["longitude"]) == 0:
+            return None
 
         # Set up a timeorbit group
         timeorbit = Level2iTimeOrbit()

@@ -12,6 +12,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level2Output, OutputHandlerBase
 
 import os
+import sys
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -43,6 +44,9 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Merge the l2i object to a single L2Data object
         l2 = l2p.get_merged_l2()
+        if l2 is None:
+            self.log.warning("- No valid freeboard data found for, skip day")
+            return
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
