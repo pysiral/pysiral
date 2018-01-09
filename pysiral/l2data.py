@@ -269,8 +269,10 @@ class Level2Data(object):
         return self.hemisphere
 
     def _get_attr_hemisphere_code(self, *args):
-        # XXX: Deprecated
-        return self.hemisphere_code
+        hemisphere_code = self.hemisphere_code
+        if args[0] == "uppercase":
+            hemisphere_code = hemisphere_code.upper()
+        return hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
         # XXX: Deprecated
