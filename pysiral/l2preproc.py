@@ -10,6 +10,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.l2data import Level2PContainer, L2iNCFileImport
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level2Output, OutputHandlerBase
+from pysiral.path import filename_from_path
 
 import os
 import sys
@@ -39,7 +40,13 @@ class Level2PreProcessor(DefaultLoggingClass):
         # Add all l2i objects to the l2p container.
         # NOTE: Only memory is the limit
         for l2i_file in l2i_files:
-            l2i = L2iNCFileImport(l2i_file)
+            try:
+                l2i = L2iNCFileImport(l2i_file)
+            except Exception, errmsg: 
+                msg = "Error (%s) in l2i file: %s"
+                msg = msg % (errmsg, filename_from_path(l2i_file))
+                self.log.error(msg)
+                continue
             l2p.append_l2i(l2i)
 
         # Merge the l2i object to a single L2Data object
