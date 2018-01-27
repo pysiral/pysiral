@@ -40,6 +40,7 @@ class L2PProductCatalog(DefaultLoggingClass):
 
         check_passed = np.zeros(np.shape(check_list), dtype=bool)
         for index, check in enumerate(check_list):
+            check_passed[index] = getattr(self, check)
             try: 
                 check_passed[index] = getattr(self, check)
             except AttributeError:
@@ -52,11 +53,11 @@ class L2PProductCatalog(DefaultLoggingClass):
 
         return check_passed
 
-    def query_day(self, day, return_value="bool"):
+    def query_datetime(self, dt, return_value="bool"):
         """ Searches the repository for products for a given day
         
         Arguments:
-            day {datetime} -- day definition for the query
+            dt {datetime} -- datetime definition for the query
         
         Keyword Arguments:
             return_value {str} -- Defines the type of output: `bool` for True/False flag and `products` for
@@ -66,10 +67,10 @@ class L2PProductCatalog(DefaultLoggingClass):
             [bool or str] -- see keyword `return`
         """
 
-        if not isinstance(day, datetime.datetime):
-            raise ValueError("Argument day needs to be datetime (was: %s)" % (type(day)))
+        if not isinstance(dt, datetime.datetime):
+            raise ValueError("Argument day needs to be datetime (was: %s)" % (type(dt)))
 
-        product_files = [prd.path for prd in self.product_list if prd.has_coverage(day)]
+        product_files = [prd.path for prd in self.product_list if prd.has_coverage(dt)]
 
         if return_value == "products":
             result = product_files
@@ -123,7 +124,7 @@ class L2PProductCatalog(DefaultLoggingClass):
 
     @property
     def hemispheres(self):
-        return [prd.product_hemisphere for prd in self.product_list]
+        return [prd.source_hemisphere for prd in self.product_list]
 
     @property
     def hemisphere_list(self):
@@ -135,7 +136,7 @@ class L2PProductCatalog(DefaultLoggingClass):
 
     @property
     def is_single_hemisphere(self):
-        return self.hemisphere_list == 1
+        return len(self.hemisphere_list) == 1
 
     @property
     def is_north(self):
@@ -167,14 +168,6 @@ class L2PProductCatalog(DefaultLoggingClass):
         """ Abbrevivation for self.coverage_end """
         return self.time_coverage_end
 
-    @property
-    def hemisphere_coverage(self):
-        """A list of hemispherical coverage: `north` and/or `south`
-        
-        Returns:
-            [str list] -- hemisphere list
-        """
-        return np.unique([prd.product_hemisphere for prd in self.product_list])
 
 class ProductMetadata(DefaultLoggingClass):
     """Metadata data container for pysiral product files."""
@@ -184,7 +177,7 @@ class ProductMetadata(DefaultLoggingClass):
     NC_PRODUCT_ATTRIBUTES = [
         "processing_level", "product_version", "cdm_data_level", 
         "time_coverage_start", "time_coverage_end", "product_timeliness",
-        "time_coverage_duration", "source_mission_id", "source_hemishere"]
+        "time_coverage_duration", "source_mission_id", "source_hemisphere"]
 
     def __init__(self, path, target_processing_level=None):
         """
