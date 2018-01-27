@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Catalog module for Level-2 and Level-2 product repositories"""
 
 import os
@@ -5,7 +6,8 @@ import sys
 import fnmatch
 import uuid
 import time
-
+import datetime
+import dateutil
 import numpy as np
 
 from pysiral.iotools import ReadNC
@@ -22,6 +24,58 @@ class L2PProductCatalog(DefaultLoggingClass):
         self.repo_path = repo_path
         self._catalog = {}
         self._catalogize()
+
+    def run_checks(self, check_list, raise_on_failure=True):
+        """Runs a list of built-in queries. Valid checks: `is_single_hemisphere`, `is_single_version`
+        
+        Arguments:
+            check_list {str list} -- list of checks to run
+        
+        Keyword Arguments:
+            raise_on_failure {bool} -- Raise an SystemExi exception if a check is negative (default: {True})
+        
+        Returns:
+            [bool list] -- flag list with check results (True: check passed) Only returned when `raise` keyword is set to `False`)
+        """
+
+        check_passed = np.zeros(np.shape(check_list), dtype=bool)
+        for index, check in enumerate(check_list):
+            try: 
+                check_passed[index] = getattr(self, check)
+            except AttributeError:
+                self.log.error("invalid check: %s" % str(check))
+                check_passed[index] = False
+            finally:
+                if raise_on_failure and not check_passed[index]:
+                    self.log.error("failed check: %s" % str(check))
+                    sys.exit()
+
+        return check_passed
+
+    def query_day(self, day, return_value="bool"):
+        """ Searches the repository for products for a given day
+        
+        Arguments:
+            day {datetime} -- day definition for the query
+        
+        Keyword Arguments:
+            return_value {str} -- Defines the type of output: `bool` for True/False flag and `products` for
+                                  product path (list) (default: {"bool"})
+        
+        Returns:
+            [bool or str] -- see keyword `return`
+        """
+
+        if not isinstance(day, datetime.datetime):
+            raise ValueError("Argument day needs to be datetime (was: %s)" % (type(day)))
+
+        product_files = [prd.path for prd in self.product_list if prd.has_coverage(day)]
+
+        if return_value == "products":
+            result = product_files
+        else:
+            result = len(product_files) > 0
+        return result
 
     def _catalogize(self):
         """Create the product catalog of the repository"""
@@ -68,9 +122,59 @@ class L2PProductCatalog(DefaultLoggingClass):
         return [prd.product_version for prd in self.product_list]
 
     @property
-    def has_unique_version(self):
+    def hemispheres(self):
+        return [prd.product_hemisphere for prd in self.product_list]
+
+    @property
+    def hemisphere_list(self):
+        return np.unique(self.hemispheres)
+
+    @property
+    def is_single_version(self):
         return len(np.unique(self.versions)) == 1
 
+    @property
+    def is_single_hemisphere(self):
+        return self.hemisphere_list == 1
+
+    @property
+    def is_north(self):
+        hemisphere_list = self.hemisphere_list
+        return self.is_single_hemisphere and hemisphere_list[0] == "north" 
+
+    @property
+    def is_south(self):
+        hemisphere_list = self.hemisphere_list
+        return self.is_single_hemisphere and hemisphere_list[0] == "south" 
+
+    @property
+    def time_coverage_start(self):
+        tcs = [prd.time_coverage_start for prd in self.product_list]
+        return np.min(tcs)
+
+    @property
+    def tcs(self):
+        """ Abbrevivation for self.coverage_start """
+        return self.time_coverage_start
+
+    @property
+    def time_coverage_end(self):
+        tce = [prd.time_coverage_end for prd in self.product_list]
+        return np.max(tce)
+
+    @property
+    def tce(self):
+        """ Abbrevivation for self.coverage_end """
+        return self.time_coverage_end
+
+    @property
+    def hemisphere_coverage(self):
+        """A list of hemispherical coverage: `north` and/or `south`
+        
+        Returns:
+            [str list] -- hemisphere list
+        """
+        return np.unique([prd.product_hemisphere for prd in self.product_list])
 
 class ProductMetadata(DefaultLoggingClass):
     """Metadata data container for pysiral product files."""
@@ -82,7 +186,7 @@ class ProductMetadata(DefaultLoggingClass):
         "time_coverage_start", "time_coverage_end", "product_timeliness",
         "time_coverage_duration", "source_mission_id", "source_hemishere"]
 
-    def __init__(self, local_path, target_processing_level=None):
+    def __init__(self, path, target_processing_level=None):
         """
         Arguments:
             local_path {str} -- local path to the product netcdf
@@ -94,7 +198,7 @@ class ProductMetadata(DefaultLoggingClass):
         """
         super(ProductMetadata, self).__init__(self.__class__.__name__)
 
-        self.local_path = local_path
+        self.path = path
 
         if target_processing_level in self.VALID_PROCESSING_LEVELS or target_processing_level is None:
             self._targ_proc_lvl = target_processing_level
@@ -102,7 +206,7 @@ class ProductMetadata(DefaultLoggingClass):
             raise ValueError("Invalid target processing level: %s" % str(target_processing_level))
 
         # Fetch attributes (if possible) from netcdf
-        nc = ReadNC(self.local_path)
+        nc = ReadNC(self.path)
         for attribute in self.NC_PRODUCT_ATTRIBUTES:
             
             # Extract value from netcdf global attributes
@@ -115,8 +219,35 @@ class ProductMetadata(DefaultLoggingClass):
             if attribute == "processing_level":
                 value = self._validate_proc_lvl(value)
 
-            # Save the attributes
+            if attribute in ["time_coverage_start", "time_coverage_end"]:
+                value = self._parse_datetime_definition(value)
+
             setattr(self, attribute, value)
+
+    def has_coverage(self, dt):
+        """Test if datetime object is covered by product time coverage
+        
+        Arguments:
+            dt {datetime} -- A datetime object that will be tested for coverage
+
+        Returns:
+            [bool] -- A True/False flag
+        """
+        flag = dt >= self.time_coverage_start and dt <= self.time_coverage_end
+        return flag
+
+    def _parse_datetime_definition(self, value):
+        """Converts the string representation of a date & time into a 
+        datetime instance
+        
+        Arguments:
+            value {str} -- [description]
+        
+        Returns:
+            [datetime] -- [description]
+        """
+        value = dateutil.parser.parse(value)
+        return value
 
     def _validate_proc_lvl(self, value):
         """Validates the processing level str from the netcdf file: a) only save the id and 
