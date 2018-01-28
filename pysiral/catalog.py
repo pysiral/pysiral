@@ -19,9 +19,11 @@ class L2PProductCatalog(DefaultLoggingClass):
     Arguments:
             repo_path {str} -- path to repository"""
     
-    def __init__(self, repo_path):
+    def __init__(self, repo_path, auto_id=True):
         super(L2PProductCatalog, self).__init__(self.__class__.__name__)
         self.repo_path = repo_path
+        self.auto_id = auto_id
+        self._repo_id = None
         self._catalog = {}
         self._catalogize()
 
@@ -86,6 +88,17 @@ class L2PProductCatalog(DefaultLoggingClass):
 
         # Create the catalog entries as dictionary with product id as keys
         self.log.info("Catalogizing l2p repository: %s (%g files)" % (str(self.repo_path), len(nc_files)))
+
+        if self.auto_id:
+            subfolders = self.repo_path.split(os.sep)
+            try: 
+                index = subfolders.index("l2p")
+                self._repo_id = subfolders[index-1]
+            except:
+                self.log.warning("Auto id failed, did not find `l2p` in list of subfolders")
+            self.log.info("L2P repository ID %s" % self.repo_id)
+                
+
         t0 = time.clock()
         for nc_file in self.nc_files:
             product_info = ProductMetadata(nc_file, target_processing_level="l2p")
@@ -105,6 +118,10 @@ class L2PProductCatalog(DefaultLoggingClass):
             for filename in fnmatch.filter(filenames, "*.nc"):
                 nc_files.append(os.path.join(root, filename))
         return sorted(nc_files)
+
+    @property
+    def repo_id(self):
+        return str(self._repo_id)
 
     @property
     def n_product_files(self):
