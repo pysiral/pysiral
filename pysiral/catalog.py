@@ -12,6 +12,8 @@ import numpy as np
 
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
+from pysiral.config import TimeRangeRequest
+
 
 class L2PProductCatalog(DefaultLoggingClass):
     """Catalog class for L2P product repositories
@@ -19,11 +21,11 @@ class L2PProductCatalog(DefaultLoggingClass):
     Arguments:
             repo_path {str} -- path to repository"""
     
-    def __init__(self, repo_path, auto_id=True):
+    def __init__(self, repo_path, auto_id=True, repo_id=None):
         super(L2PProductCatalog, self).__init__(self.__class__.__name__)
         self.repo_path = repo_path
         self.auto_id = auto_id
-        self._repo_id = None
+        self._repo_id = repo_id
         self._catalog = {}
         self._catalogize()
 
@@ -79,6 +81,33 @@ class L2PProductCatalog(DefaultLoggingClass):
         else:
             result = len(product_files) > 0
         return result
+
+    def get_northern_winter_netcdfs(self, start_year):
+        """Returns a list for northern winter data for the period october through april
+        
+        Arguments:
+            start_year {int} -- start year for the winter (yyyy-oct till yyyy+1-apr)
+
+        Returns: 
+            l2p_files {str list} -- list of l2p files for specified winter season
+        """
+
+        l2p_files = []
+        winter_start_tuple = [start_year, 10]
+        winter_end_tuple = [start_year+1, 4]
+        time_range = TimeRangeRequest(winter_start_tuple, winter_end_tuple, period="daily")
+        all_days = time_range.iterations
+
+        for day in all_days:
+            l2p_path = self.query_datetime(day.center_time, return_value="products")
+            l2p_files.extend(l2p_path)
+
+        # Reporting
+        msg = "Found %g l2p files for winter season %g/%g"
+        msg = msg % (len(l2p_files), start_year, start_year+1)
+        self.log.info(msg)
+
+        return l2p_files
 
     def _catalogize(self):
         """Create the product catalog of the repository"""
