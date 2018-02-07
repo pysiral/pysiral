@@ -19,7 +19,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import month_iterator, days_iterator, get_month_time_range
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from isodate.duration import Duration
 from isodate import duration_isoformat
@@ -637,6 +637,14 @@ class TimeRangeIteration(object):
     @property
     def index(self):
         return self._index
+
+    @property
+    def center_time(self):
+        duration = self.stop - self.start
+        total_seconds = duration.total_seconds()
+        half_duration_seconds = np.ceil(total_seconds/2)
+        center_time =  self.start + timedelta(seconds=half_duration_seconds)
+        return center_time
 
     @property
     def num_iterations(self):
