@@ -248,6 +248,12 @@ class Level2Data(object):
         mission_id = self.info.mission
         if args[0] == "uppercase":
             mission_id = mission_id.upper()
+        if args[0] == "select":
+            for entry in args[1:]:
+                mission_id_code, label = entry.split(":")
+                if mission_id == mission_id_code:
+                    return label
+            return "Error (mission id %s not in select statement)" % mission_id
         return mission_id
 
     def _get_attr_source_mission_name(self, *args):
