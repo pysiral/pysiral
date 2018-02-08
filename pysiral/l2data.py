@@ -18,6 +18,7 @@ import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
+import uuid
 import re
 
 
@@ -386,6 +387,10 @@ class Level2Data(object):
         if args[0] == "lowercase":
             timeliness = timeliness.lower()
         return timeliness
+
+    def _get_attr_uuid(self, *args):
+        """ Provide an uuid code (for tracking id's) """
+        return str(uuid.uuid4())
 
     @property
     def arrshape(self):
