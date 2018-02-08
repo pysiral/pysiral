@@ -13,6 +13,7 @@ from glob import glob
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
+from collections import OrderedDict
 import numpy as np
 import parse
 import os
@@ -224,11 +225,11 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         return os.path.join(export_directory, export_filename)
 
     def get_global_attribute_dict(self, l2):
-        attr_dict = {}
-        for attr_name in self.output_def.global_attributes.iterkeys():
-            attr_template = self.output_def.global_attributes[attr_name]
-            attribute = self.fill_template_string(attr_template, l2)
-            attr_dict[attr_name] = attribute
+        attr_dict = OrderedDict()
+        for attr_entry in self.output_def.global_attributes:
+            attr_name, attr_template = zip(*attr_entry.items())
+            attribute = self.fill_template_string(attr_template[0], l2)
+            attr_dict[attr_name[0]] = attribute
         return attr_dict
 
     def remove_old(self, time_range):
@@ -413,7 +414,7 @@ class NCDataFile(DefaultLoggingClass):
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
-        for key in sorted(attdict.keys()):
+        for key in attdict.keys():
             self._rootgrp.setncattr(prefix+key, attdict[key])
 
     def _get_variable_attr_dict(self, parameter):

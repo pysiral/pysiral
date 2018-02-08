@@ -12,6 +12,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level2Output, OutputHandlerBase
 from pysiral.path import filename_from_path
 
+from collections import OrderedDict
 import os
 import sys
 
@@ -149,11 +150,11 @@ class Level2POutputHandler(OutputHandlerBase):
         return os.path.join(export_directory, export_filename)
 
     def get_global_attribute_dict(self, l2):
-        attr_dict = {}
-        for attr_name in self.output_def.global_attributes.iterkeys():
-            attr_template = self.output_def.global_attributes[attr_name]
-            attribute = self.fill_template_string(attr_template, l2)
-            attr_dict[attr_name] = attribute
+        attr_dict = OrderedDict()
+        for attr_entry in self.output_def.global_attributes:
+            attr_name, attr_template = zip(*attr_entry.items())
+            attribute = self.fill_template_string(attr_template[0], l2)
+            attr_dict[attr_name[0]] = attribute
         return attr_dict
 
     def remove_old(self, time_range):
