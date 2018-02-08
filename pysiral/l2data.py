@@ -263,6 +263,9 @@ class Level2Data(object):
         return mission_sensor
 
     def _get_attr_source_hemisphere(self, *args):
+        if args[0] == "select":
+            choices = {"north": args[1], "south": args[2]}
+            return choices.get(self.hemisphere, "n/a")
         return self.hemisphere
 
     def _get_attr_hemisphere(self, *args):
