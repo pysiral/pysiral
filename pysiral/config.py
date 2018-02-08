@@ -37,7 +37,7 @@ PYSIRAL_VERSION = "0.4.7"
 PYSIRAL_VERSION_FILENAME = "047"
 HOSTNAME = socket.gethostname()
 
-SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA2",
+SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
                     "cryosat2": "SIRAL", "sentinel3a": "SRAL",
                     "icesat": "GLAS"}
 
