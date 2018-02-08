@@ -357,7 +357,12 @@ class Level2Data(object):
         return self._l2_version_tag
 
     def _get_attr_utcnow(self, *args):
-        return self._creation_time.isoformat()
+        datetime = self._creation_time
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
 
     def _get_attr_time_coverage_start(self, *args):
         datetime = self.period.start
