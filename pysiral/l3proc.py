@@ -18,7 +18,9 @@ from pysiral.surface_type import SurfaceType
 
 from scipy.ndimage.filters import maximum_filter
 
+from collections import OrderedDict
 from datetime import datetime
+import uuid
 import numpy as np
 import sys
 import os
@@ -237,6 +239,11 @@ class L3DataGrid(DefaultLoggingClass):
         self._l3def = job.l3def
         self._period = period
         self._external_masks = {}
+
+        # Define time of dataset creation as the time of object initialization
+        # to avoid slightly different timestamps for repated calls of
+        # datatime.now()
+        self._creation_time = datetime.now()
 
         # Shortcut to the surface type flag dictionalry
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
@@ -819,6 +826,9 @@ class L3DataGrid(DefaultLoggingClass):
         else:
             return self.hemisphere
 
+    def _get_attr_uuid(self, *args):
+        return str(uuid.uuid4())
+
     def _get_attr_startdt(self, dtfmt):
         return self.metadata.start_period.strftime(dtfmt)
 
@@ -853,8 +863,13 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_source_auxdata_sitype(self, *args):
         return self.metadata.source_auxdata_sitype
 
-    def _get_attr_utc_now(self, *args):
-        return datetime.now().isoformat()
+    def _get_attr_utcnow(self, *args):
+        datetime = self._creation_time
+        if re.match("%", args[0]):
+            time_string = datetime.strftime(args[0])
+        else:
+            time_string = datetime.isoformat()
+        return time_string
 
     def _get_attr_time_coverage_start(self, *args):
         datetime = self.metadata.time_coverage_start
@@ -1093,11 +1108,11 @@ class Level3OutputHandler(OutputHandlerBase):
         return os.path.join(export_directory, export_filename)
 
     def get_global_attribute_dict(self, l3):
-        attr_dict = {}
-        for attr_name in self.output_def.global_attributes.iterkeys():
-            attr_template = self.output_def.global_attributes[attr_name]
-            attribute = self.fill_template_string(attr_template, l3)
-            attr_dict[attr_name] = attribute
+        attr_dict = OrderedDict()
+        for attr_entry in self.output_def.global_attributes:
+            attr_name, attr_template = zip(*attr_entry.items())
+            attribute = self.fill_template_string(attr_template[0], l3)
+            attr_dict[attr_name[0]] = attribute
         return attr_dict
 
     def _init_product_directory(self, base_directory_or_id):
