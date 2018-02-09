@@ -1,5 +1,79 @@
 # History of changes
 
+## Version 0.5.0 (9 February 2018) 
+
+**Bugfixes**
+* [auxdata] Longnames of sitype in `auxdata_def.yaml` were not recognized properly (incorrect key)
+* [datahandler] Catch exception caused by feeding empty directory to datahandler
+* [l1bpreproc] catch a rare exception when the l1b input file is just 1 data point
+* [l2data] radar_mode information was lost during the Level-2 processing
+* [l2proc] bugfix: Improper handling of pysiral-l2proc call for specific list of l1b input files
+* [l2preproc] Catch exception if error during parsing a l2i file
+* [l2preproc] Catch exception if l2i file(s) exist for a single day but none contains valid freeboard data
+* [l2preproc] Fixed a bug that caused all uncertainties in l2p products to be zeros
+* [l3proc] Catch exception if error during parsing a l2i file
+* [l3proc] Fixed a bug in the generation of lat/lon grid coordinates that caused the grid to be incorrect by 50% of the grid size at the outer grid limits
+* [sentinel3] Fixed several issues in the Sentinel-3A preprocessor
+* [sitype] sitype api method did not return value, uncertainty, msg
+* [general] Fixed a few of incorrect variable names
+
+**New Features**
+* [catalog] Added catalog module for cataloging/querying pysiral product files.(Currently only working for l2p files, that will be extend to all data levels)
+* [config] Added default_week (Monday - Sunday) as period in TimeRangeRequest
+* [config] Added duration string in ISO format to TimeRangeRequest
+* [config] Added monthly, weekly and daily iterators to TimeRangeRequest
+* [config] Added isodate labels to TimeRangeRequest
+* [datahandler] Added capability to find all l2i files for an arbitrary time_range
+* [general] Implement timeliness attribute throughout the processing chain
+* [general] pysiral-wide disabling of python warnings
+* [general] keep internal record of official mission names (platform)
+* [grid] new grid definition property: pyresample area definition
+* [icesat] Added icesat module for converting GLAH13 data into a pysiral compliant data format
+* [icesat] Added ICESat pre-processor
+* [l1dbata] Added method to fill gaps in Level-1 data 
+* [l1dbata] Added method to split l1bdata objects at discontinuities 
+* [l2proc] Added class for snow freeboard class for converting radar freeboard to freeboard (pysiral.frb.SnowFreeboardAssumption)
+* [l2proc] Added surface type classificator for ICESat based on (Khvorostovsky, K. and Rampal, P.: On retrieving sea ice freeboard from ...)
+* [l2data] Added method to init l2data object from l2i netcdf file
+* [l3proc] Added option to export grid description parameters as variable in netcdf output
+* [l3proc] Added time bound property for Level-3 netcdf output
+* [l3proc] Added default time and grid parameters to Level-3 netcdf output
+* [l3proc] Allow flipping of Level-3 variable in netcdf output (to be consistent with osisaf cdr)
+* [mask] new module handling masks
+* [mask] Add mechanic to compute fixed masks for each l3 grid definition 
+* [mask] Add l3 mask for Arctic area in which Warren99 is considered valid
+* [mask] Add land/sea mask with is_land, is_sea & is_mixed flag
+* [sentinel3] Add parser for EUMETSAT L2_WAT product
+* [settings] New attribute template {uuid} to assign universally unique identifier (uuid) tracking id for l2/l3 products
+* [settings] Attribute template {source_hemisphere} has now a select option to select text based on the hemisphere. (Usage: {source_mission_id:select;id1:Text id1;id2:Text id2;...}`)
+* [settings] Attribute template {source_mission_id} has now a select option to select text based on the mission id. (Usage: {source_hemisphere:select;Text north;Text south}`)
+* [sitype] Added sitype class for osi-saf sitype cdr products
+
+**Changes**
+* [l2data] Renamed `timestamp` variable to `time` due to variable naming conventions (backward compability with older files exist)
+* [l2data] Added version tag of the algorithm (required in all l2 settings files)
+* [l3proc] Expanded the list of possible Level-3 parameters in preparation to status/quality flags
+* [l3proc] Expanded the options for default Level-3 processing with external masks and post-processing
+* [l3proc] Allowed to load external masks in Level-3 processor
+* [l3proc] Allowed computation of quality indicator flags
+* [l3proc] Allowed computation of status flags
+* [l3proc] Updated Level-3 settings with improved variable initializuation (init value, dtype)
+* [settings] Global attributes in l2/l3 products now follow the order prescribed in the output definition files (was alphabetic)
+* [settings] Attribute template options are now separated by semikolon (was comma)
+* [settings] Time coverage start/end in l2p files are now always defined by requested data period (full day) and not actually available data points
+* [settings] Filenaming in settings files is now depends on data period (e.g. different filenaming for weekly or monthly l3c products)
+* [general] Set the creation time for products once at the initialization of the python class (was multiple calls of datetime.now() during output generation)
+* [griddef] Added grid name in grid definitions
+* [general] Countless code documentation, style and logging improvements
+
+**Settings**
+* [l2proc] Added Sentinel-3 l2proc setting files
+* [l2proc] Added Level-2 algorithm settings recipe for C3S cdr v1
+* [l3proc] Added default Level-3 settings for southern hemisphere without Warren99 is_valid check. Needs to be selected manually with the `-l3-settings` option. 
+* [output] Added L3C output definition for C3S
+* [output] Added l2p/l3c definition for AWI product in version 2.0
+* [output] ccicdr output definitions (l2p/l3c) now follow CCI data standard requirements
+
 ## Version 0.4.7 (17 August 2017) [bugfix release]
 
 **Bugfixes**
@@ -37,7 +111,7 @@
 ## Version 0.4.2 (7 July 2017)
 
 **New Features**
-* [sitype] MYI concentration uncertainty support added
+* [sitype] MYI concentration uncertainty support Added
 * [l2 processing] Added l1b prefilter to the l2proc workflow
 * [l2 processing] OsiSafSIC now allows auto switch between products (e.g. osisaf-409 until 2015-04-15 and osisaf-430 after)
 
@@ -84,8 +158,8 @@
 
 **New Features**
 * [visualization] Added mean filter for smooting in l3 maps (`create_l3s_map.py`: new option `-avfilt int:window_size`)
-* [auxdata] Auxiliary data handler added (default auxiliary handler needs type and id of data handler and gets all information from config file)
-* [output] Level-2 output handler added (reads new output definition files and automatically generates filenames and output folder for various output definitions)
+* [auxdata] Auxiliary data handler Added (default auxiliary handler needs type and id of data handler and gets all information from config file)
+* [output] Level-2 output handler Added (reads new output definition files and automatically generates filenames and output folder for various output definitions)
 
 **Bugfixes**
 * [maptools] incorrect computation of pcolor grid corner coordinates
