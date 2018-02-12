@@ -33,8 +33,8 @@ from treedict import TreeDict
 
 import numpy as np
 
-PYSIRAL_VERSION = "0.5.0"
-PYSIRAL_VERSION_FILENAME = "050"
+PYSIRAL_VERSION = "0.6.0dev"
+PYSIRAL_VERSION_FILENAME = "060dev"
 HOSTNAME = socket.gethostname()
 
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
