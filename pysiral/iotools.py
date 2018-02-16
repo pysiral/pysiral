@@ -144,7 +144,7 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
 
 
 def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
-                            version="default", allow_multiple_baselines=False):
+                            version="default", allow_multiple_baselines=True):
     """
     Returns a list of l1bdata files for a given mission, hemisphere, version
     and time range
