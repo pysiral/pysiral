@@ -5,7 +5,7 @@ import numpy
 import os
 
 extensions = [
-    Extension("cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
+    Extension("pysiral.bnfunc.cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
 
 setup(
     name = "cysiral",
