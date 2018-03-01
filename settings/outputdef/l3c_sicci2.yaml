@@ -11,9 +11,9 @@ grid_options:
 
 # Output Definition
 filenaming: 
-  monthly: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv2.0.nc"
-  custom: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
-  default: "ESACCI-SEAICE-L3C-SIT-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
+  monthly: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv2.0.nc"
+  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
+  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
 product_level_subfolder: l3c
 
 # A list of global attributes 
@@ -52,6 +52,7 @@ global_attributes:
   - time_coverage_start: "{time_coverage_start:%Y%m%dT%H%M%SZ}"
   - time_coverage_end: "{time_coverage_end:%Y%m%dT%H%M%SZ}"
   - time_coverage_duration: "{time_coverage_duration:period}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
   - spatial_resolution: "{source_hemisphere:select;25 km;50 km}"
   - standard_name_vocabulary: "CF"
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
@@ -76,23 +77,26 @@ variables:
     long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
     units: m
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   radar_freeboard_uncertainty:
     long_name: "uncertainty of radar freeboard"
     units: m
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   freeboard_uncertainty:
     long_name: "freeboard uncertainty"
-    standard_name: sea_ice_freeboard standard_error
     units: m
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   sea_ice_thickness:
     long_name: "thickness of the sea ice layer"
@@ -100,12 +104,13 @@ variables:
     units: m
     ancillary_variables: "sea_ice_thickness_uncertainty status_flag"
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
-    standard_name: sea_ice_thickness_uncertainty
     units: m
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   sea_ice_concentration:
     long_name: "sea ice contration"
@@ -115,6 +120,7 @@ variables:
     valid_min: 0.0
     valid_max: 100.0
     coordinates: "time lon lat"
+    grid_mapping: "Lambert Azimuthal Grid"
 
   status_flag:
     long_name: status flag for the sea ice thickness retrieval
@@ -122,6 +128,8 @@ variables:
     unit: 1
     valid_min: 0
     valid_max: 5
+    flag_values: 0b,1b,2b,3b,4b,5b
     flag_meaning: "0: no input data; 1: outside sea ice concentration mask; 2: latitude above orbit inclination; 3: land, lake or land ice; 4: sea ice thickness retrieval failed; 5: sea ice thickness retrieval successful"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
+    grid_mapping: "Lambert Azimuthal Grid"
