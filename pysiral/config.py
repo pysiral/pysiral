@@ -45,6 +45,10 @@ MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
                      "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
                      "icesat": "ICESat"}
 
+ORBIT_INCLINATION_DICT = {"ers1": 81.5, "ers2": 81.5, "envisat": 81.45,
+                          "cryosat2": 88.0, "sentinel3a": 81.35,
+                          "icesat": 86.0}
+
 
 class ConfigInfo(DefaultLoggingClass):
     """
