@@ -268,6 +268,15 @@ class Level2Data(object):
             mission_sensor = mission_sensor.upper()
         return mission_sensor
 
+    def _get_attr_source_mission_sensor_fn(self, *args):
+        """ Same as source mission sensor, only a sanitized version for filenames """
+        mission_sensor = SENSOR_NAME_DICT[self.info.mission]
+        for character in ["-"]:
+            mission_sensor = mission_sensor.replace(character, "")
+        if args[0] == "uppercase":
+            mission_sensor = mission_sensor.upper()
+        return mission_sensor
+
     def _get_attr_source_hemisphere(self, *args):
         if args[0] == "select":
             choices = {"north": args[1], "south": args[2]}
