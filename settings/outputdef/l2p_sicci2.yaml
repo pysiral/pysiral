@@ -8,7 +8,7 @@ metadata:
 
 # Output Definition
 filenaming: 
-  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv2.0.nc"
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv2.0.nc"
   default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv2.0.nc"
 
 product_level_subfolder: l2p
@@ -17,14 +17,14 @@ product_level_subfolder: l2p
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
-  - institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research (AWI)"
+  - institution: "Alfred-Wegener-Institut, Helmholtz Zentrum fuer Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"  
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
   - tracking_id: "{uuid}"
-  - Conventions: "CF 1.6"
+  - conventions: "CF 1.6"
   - product_version: "2.0"
   - processing_level: "Level-2 Pre-processed (l2p)"
   - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2017.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2017.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
