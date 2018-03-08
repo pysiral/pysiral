@@ -226,7 +226,6 @@ l3_post_processing:
 
         options: 
             retrieval_status_target: sea_ice_thickness
-            orbit_inclination: 88.
             sic_thrs: 70.
 
     # Compute the quality indicator flag
