@@ -240,6 +240,12 @@ class L3DataGrid(DefaultLoggingClass):
         self._period = period
         self._external_masks = {}
 
+        # Check if any output definition requires an unlimited dimension
+        # XXX: This is an unsatisfying solution resulting from the current solution that the L3DataGrid
+        #      provides fix dimensions for potentially more than one output handler. This need 
+        #      consideration in the future
+        self._time_dim_is_unlimited = [handler.time_dim_is_unlimited for handler in job.outputs]
+
         # Define time of dataset creation as the time of object initialization
         # to avoid slightly different timestamps for repated calls of
         # datatime.now()
@@ -917,8 +923,10 @@ class L3DataGrid(DefaultLoggingClass):
 
     @property
     def dimdict(self):
-        from collections import OrderedDict
-        dimdict = OrderedDict([("time", 1),
+        time_dim = 1
+        if True in self._time_dim_is_unlimited:
+            time_dim = 0
+        dimdict = OrderedDict([("time", time_dim),
                                ("yc", self.griddef.extent.numx),
                                ("xc", self.griddef.extent.numy)])
         return dimdict
@@ -1148,6 +1156,24 @@ class Level3OutputHandler(OutputHandlerBase):
             flip_yc = False
         return flip_yc
 
+    @property
+    def time_dim_is_unlimited(self):
+        
+        # This property has been added. Older L3 output definitions may not have it, 
+        # -> Catch attribute error and return false if attribute does not exist
+        try: 
+            time_dim_is_unlimited = self.output_def.grid_options.time_dim_is_unlimited
+        except AttributeError:
+            time_dim_is_unlimited = False
+
+        # Verification: Value must be bool
+        if not isinstance(time_dim_is_unlimited, bool):
+            msg = "Invalid value type for `grid_options.time_dim_is_unlimited` in %s. (Must be bool, value was %s: Set to False)"
+            msg = msg % (self.output_def_filename, str(time_dim_is_unlimited))
+            self.log.error("Invalid value type for grid_options.time_dim_is_unlimited")
+            time_dim_is_unlimited = False
+        
+        return time_dim_is_unlimited
 
 class Level3GridDefinition(GridDefinition):
     """ This is a variation of GridDefinition with a mandatory link to

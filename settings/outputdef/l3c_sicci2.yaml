@@ -8,6 +8,7 @@ metadata:
 
 grid_options:
   flip_yc: True
+  time_dim_is_unlimited: True
 
 # Output Definition
 filenaming: 
