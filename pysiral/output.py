@@ -691,8 +691,8 @@ class Level3Output(NCDataFile):
         rgrp.createDimension("nv", 2)
         time_bounds_dt = self.data.time_bounds
         td_units, td_cal = self.time_def.units, self.time_def.calendar
-        time_bnds = [date2num(dt, td_units, td_cal) for dt in time_bounds_dt]
-        dims = ('time', "nv")
+        time_bnds = [[date2num(dt, td_units, td_cal) for dt in time_bounds_dt]]
+        dims = ("time", "nv")
         var = rgrp.createVariable("time_bnds", "f8", dims, zlib=self.zlib)
         var.units = self.time_def.units
         var[:] = time_bnds
