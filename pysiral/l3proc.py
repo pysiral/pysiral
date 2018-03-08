@@ -6,7 +6,7 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
-                            MISSION_NAME_DICT)
+                            MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -282,6 +282,18 @@ class L3DataGrid(DefaultLoggingClass):
 
         self._metadata = None
 
+        # Get the metadata information from the L2 stack
+        self.log.info("Compile metadata")
+        l3_metadata = L3MetaData()
+        l3_metadata.get_missions_from_stack(stack)
+        # Actual data coverage
+        l3_metadata.get_data_period_from_stack(stack)
+        # Requested time coverage (might not be the actual coverage)
+        l3_metadata.get_time_coverage_from_period(self._period)
+        l3_metadata.get_auxdata_infos(stack.l2i_info)
+        l3_metadata.get_projection_parameter(job.grid)
+        self.set_metadata(l3_metadata)
+
         self.init_parameter_fields(job.l2_parameter, "l2")
         self.init_parameter_fields(job.l3_parameter, "l3")
 
@@ -316,18 +328,6 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Post-Processing")
         for name, options in job.l3_post_processors:
             self.apply_post_processor(name, options)
-
-        # Get the metadata information from the L2 stack
-        self.log.info("Compile metadata")
-        l3_metadata = L3MetaData()
-        l3_metadata.get_missions_from_stack(stack)
-        # Actual data coverage
-        l3_metadata.get_data_period_from_stack(stack)
-        # Requested time coverage (might not be the actual coverage)
-        l3_metadata.get_time_coverage_from_period(self._period)
-        l3_metadata.get_auxdata_infos(stack.l2i_info)
-        l3_metadata.get_projection_parameter(job.grid)
-        self.set_metadata(l3_metadata)
 
     def set_metadata(self, metadata):
         self._metadata = metadata
@@ -668,7 +668,9 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Compute conditions for flags
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < options.sic_thrs)
-        is_pole_hole = self._l3["latitude"] > options.orbit_inclination
+        mission_ids = self._metadata.mission_ids.split(",")
+        orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
+        is_pole_hole = np.abs(self._l3["latitude"]) > np.amin(orbit_inclinations)
         is_land = lnd.mask > 0
         has_data = nvw > 0
         has_retrieval = np.isfinite(par)
