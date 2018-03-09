@@ -447,7 +447,7 @@ class Level2Data(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
+        dimdict = OrderedDict([("time", self.n_records)])
         return dimdict
 
     @property
