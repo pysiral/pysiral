@@ -36,7 +36,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Fill an template string with information of a dataset
         object (in this case Level2Data) """
         attributes = self.get_template_attrs(template)
-        result = str(template)
+        result = template.encode("utf-8")
         for attribute in attributes:
             attribute_name, option, placeholder = attribute
             attribute = dataset.get_attribute(attribute_name, *option)
@@ -58,7 +58,8 @@ class OutputHandlerBase(DefaultLoggingClass):
     def get_template_attrs(self, template):
         """ Extract attribute names and options (if defined) for a
         give template string """
-        attr_defs = re.findall("{.*?}", str(template))
+        template = template.encode('utf-8').strip()
+        attr_defs = re.findall("{.*?}", template)
         attrs, options = [], []
         for attr_def in attr_defs:
             attr_name, _, optstr = attr_def[1:-1].partition(":")
