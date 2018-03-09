@@ -657,8 +657,14 @@ class L3DataGrid(DefaultLoggingClass):
         """ Create a status flag that describes the availability of l2i
         input data, orbit properties, land mask etc """
 
+        # Get the flag values from the l3 settings file
+        flag_values = options.flag_values
+
         # Get status flag (fill value should be set to zero)
         sf = np.copy(self._l3["status_flag"])
+
+        # Init the flag with not data flag value
+        sf[:] = flag_values.no_data
 
         # get input parameters
         par = np.copy(self._l3[options.retrieval_status_target])
@@ -679,29 +685,22 @@ class L3DataGrid(DefaultLoggingClass):
                 np.logical_not(has_retrieval))
 
         # Set sic threshold
-        sf[np.where(is_below_sic_thrs)] = 1
+        sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
 
         # Set pole hole (Antarctica: Will be overwritten below)
-        sf[np.where(is_pole_hole)] = 2
+        sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
 
         # Set land mask
-        sf[np.where(is_land)] = 3
+        sf[np.where(is_land)] = flag_values.is_land
 
         # Set failed retrieval
-        sf[np.where(retrieval_failed)] = 4
+        sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
 
         # Set retrieval successful
-        sf[np.where(has_retrieval)] = 5
+        sf[np.where(has_retrieval)] = flag_values.has_retrieval
 
         # Write Status flag
         self._l3["status_flag"] = sf
-
-#        import matplotlib.pyplot as plt
-#        plt.figure("is_land", dpi=300)
-#        plt.imshow(sic, interpolation="none")
-#        plt.colorbar()
-#        plt.show()
-#        stop
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined
