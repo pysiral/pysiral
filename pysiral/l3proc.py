@@ -1177,16 +1177,18 @@ class Level3OutputHandler(OutputHandlerBase):
         
         # This property has been added. Older L3 output definitions may not have it, 
         # -> Catch attribute error and return false if attribute does not exist
-        try: 
-            time_dim_is_unlimited = self.output_def.grid_options.time_dim_is_unlimited
-        except AttributeError:
+        if not self.output_def.grid_options.has_key("time_dim_is_unlimited"):
+            msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
+            self.log.warning(msg % self.output_def_filename)
             time_dim_is_unlimited = False
+        else:
+            time_dim_is_unlimited = self.output_def.grid_options.time_dim_is_unlimited
 
         # Verification: Value must be bool
         if not isinstance(time_dim_is_unlimited, bool):
-            msg = "Invalid value type for `grid_options.time_dim_is_unlimited` in %s. (Must be bool, value was %s: Set to False)"
+            msg = "Invalid value type for `grid_options.time_dim_is_unlimited` in %s. Must be bool, value was %s. (Using default: False)"
             msg = msg % (self.output_def_filename, str(time_dim_is_unlimited))
-            self.log.error("Invalid value type for grid_options.time_dim_is_unlimited")
+            self.log.error(msg)
             time_dim_is_unlimited = False
         
         return time_dim_is_unlimited
