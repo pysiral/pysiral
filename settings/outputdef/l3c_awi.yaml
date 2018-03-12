@@ -18,6 +18,7 @@ product_level_subfolder: l3c_grid
 
 grid_options: 
   flip_yc: True
+  time_dim_is_unlimited: False
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
