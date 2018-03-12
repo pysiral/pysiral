@@ -820,6 +820,12 @@ class L2iNCFileImport(object):
             parameter[nan_indices] = np.nan
             setattr(self, target, parameter)
 
+    def mask_variables(self, indices, targets, value=np.nan):
+        for target in targets:
+            parameter = getattr(self, target)
+            parameter[indices] = value
+            setattr(self, target, parameter)
+
     def project(self, griddef):
         from pyproj import Proj
         p = Proj(**griddef.projection)

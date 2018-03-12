@@ -72,6 +72,12 @@ class Level3Processor(DefaultLoggingClass):
             #       highly recommended to harmonize the mask for thickness
             #       and the different freeboard levels
             prefilter = self._job.l3def.l2i_prefilter
+
+            # ascending
+            # ascending_indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
+            # descending_indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
+            # l2i.mask_variables(descending_indices, ["radar_freeboard", "freeboard", "sea_ice_thickness"])
+
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source,
                                       prefilter.nan_targets)
