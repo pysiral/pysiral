@@ -823,7 +823,10 @@ class L2iNCFileImport(object):
     def mask_variables(self, indices, targets, value=np.nan):
         for target in targets:
             parameter = getattr(self, target)
-            parameter[indices] = value
+            try: 
+                parameter[indices] = value
+            except ValueError:
+                pass
             setattr(self, target, parameter)
 
     def project(self, griddef):
