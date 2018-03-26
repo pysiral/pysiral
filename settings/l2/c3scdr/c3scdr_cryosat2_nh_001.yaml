@@ -34,7 +34,7 @@ auxdata:
             smooth_snow_depth: true
             smooth_filter_width_m: 25000.0
             valid_snow_depth_range: [0, 0.6]
-            invalid_replace: .0
+            invalid_replace: .NAN
 
 # geophysical corrections applied to the l1b range window
 corrections: 
