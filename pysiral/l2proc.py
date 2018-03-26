@@ -664,18 +664,55 @@ class Level2Processor(DefaultLoggingClass):
                 self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
+        """ Apply freeboard filters as defined in the level-2 settings file 
+        under `root.filter.freeboard`
+
+        Filtering means: 
+        - setting the freeboard value to nan
+        - setting the surface type classification to invalid
+        """
+
+        # Extract filters from settings structure
         freeboard_filters = self._l2def.filter.freeboard
         names, filters = td_branches(freeboard_filters)
+
+        # Loop over freeboard filters
         for name, filter_def in zip(names, filters):
+
+            # Get corresponding class name in pysiral.filter and transfer options
+            # XXX: This should be rewritten as (e.g.)
+            #   `frbfilter = VariableFilter(filter_def.pyclass, **filter_def.options)`
             frbfilter = get_filter(filter_def.pyclass)
             frbfilter.set_options(**filter_def.options)
-            frbfilter.apply_filter(l2, "afrb")
+
+            # XXX: This is a temporary fix of an error in the algorithm
+            #
+            # Explanation: The filter target was wrongly set to radar freeboard,
+            # meaning that whether a freeboard value was filtered was determined on 
+            # the wrong parameter. Both values differ by the geometric snow propagation
+            # correction (22% of snow depth). While the impact on the high freeboard end 
+            # is negligible, at the lower (negative) end more freeboard where filtered 
+            # than necessary since radar freeboard is always lower. 
+            # 
+            # The `afrb` filter target was hard coded, thus an option is added to replace
+            # the filter target (`root.filter.freeboard.frb_valid_range.filter_target`).
+            # The default option is the wrong one only for consistency reasons. 
+            filter_target = "afrb"
+            if filter_def.options.has_key("filter_target"):
+                filter_target = filter_def.options.filter_target
+
+            # Check if action is required
+            frbfilter.apply_filter(l2, filter_target)
             if frbfilter.flag.num == 0:
                 continue
+
+            # Logging
             self.log.info("- Filter message: %s has flagged %g waveforms" % (
                 filter_def.pyclass, frbfilter.flag.num))
+            
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
+            
             # Remove invalid elevations / freeboards
             l2.frb.set_nan_indices(frbfilter.flag.indices)
 
