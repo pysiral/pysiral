@@ -264,7 +264,7 @@ variables:
     coordinates: "time lat lon"
 
   negative_thickness_fraction:
-    long_name: "fraction per valid waveforms of sea ice waveforms with negative sea ice thickness in grid cell"
+    long_name: "fraction of negative sea ice thickness in grid cell"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"    
