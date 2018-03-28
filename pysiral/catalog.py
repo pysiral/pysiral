@@ -130,6 +130,36 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         return product_files
 
+    def get_month_netcdfs(self, month):
+        """Returns a list all products that have coverage for a given month
+        
+        Arguments:
+            month {int} -- month number (1-Jan, ..., 12:Dec)
+
+        Returns: 
+            product_files {tuple list} -- ((year, month), [list of files month])
+        """
+
+        # Query time range
+        years = self.years
+        product_files = []
+
+        n_files = 0
+        for year in self.years:
+            time_range = TimeRangeRequest((year, month), (year, month))
+            tcs, tce = time_range.start_dt, time_range.stop_dt
+            files = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
+            n_files += len(files)
+            product_files.append(((year, month), files))
+
+        # Reporting
+        msg = "Found %g %s files for %s"
+        month_name = datetime(2000, month, 1).strftime("%B")
+        msg = msg % (n_files, self.processing_level, month_name)
+        self.log.info(msg)
+
+        return product_files
+
     def _catalogize(self):
         """Create the product catalog of the repository"""
 
@@ -216,6 +246,12 @@ class SIRALProductCatalog(DefaultLoggingClass):
     def is_south(self):
         hemisphere_list = self.hemisphere_list
         return self.is_single_hemisphere and hemisphere_list[0] == "south" 
+
+    @property
+    def years(self):
+        years = sorted([prd.time_coverage_start.year for prd in self.product_list])
+        return np.unique(years)
+
 
     @property
     def time_coverage_start(self):
@@ -334,7 +370,6 @@ class ProductMetadata(DefaultLoggingClass):
         Returns:
             [bool] -- A True/False flag
         """
-
 
         # Validity check
         if tce <= tcs:
