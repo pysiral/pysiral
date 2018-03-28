@@ -64,6 +64,38 @@ class Level3Processor(DefaultLoggingClass):
                 self.log.warning("Attribute Error encountered in %s" % l2i_file)
                 continue
 
+            # Apply the orbit filter (for masking descending or ascending orbit segments)
+            # NOTE: This tag may not be present in all level-3 settings files, as it has
+            #       been added as a test case
+            try: 
+                orbitfilter = self._job.l3def.l2i_prefilter
+                orbitfilter_is_active = orbitfilter.active
+            except AttributeError:
+                orbitfilter_is_active = False
+            
+            if orbitfilter_is_active:
+
+                # Display warning if filter is active
+                self.log.warning("Orbit filter is active [%s]" % str(orbitfilter.mask_orbits))
+
+                # Get indices to filter
+                if orbitfilter.mask_orbits == "ascending":
+                    indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
+                elif orbitfilter.mask_orbits == "descending":
+                    indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
+                else: 
+                    self.log.error("Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
+                    indices = []
+                
+                # Filter geophysical parameters only
+                targets = l2i.parameter_list
+                for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
+                 try: 
+                     targets.remove(non_target)
+                 except ValueError:
+                     pass
+                l2i.mask_variables(indices, targets)
+
             # Prefilter l2i product
             # Note: In the l2i product only the minimum set of nan are used
             #       for different parameters (e.g. the radar freeboard mask
@@ -72,11 +104,6 @@ class Level3Processor(DefaultLoggingClass):
             #       highly recommended to harmonize the mask for thickness
             #       and the different freeboard levels
             prefilter = self._job.l3def.l2i_prefilter
-
-            # ascending
-            # ascending_indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
-            # descending_indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
-            # l2i.mask_variables(descending_indices, ["radar_freeboard", "freeboard", "sea_ice_thickness"])
 
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source,

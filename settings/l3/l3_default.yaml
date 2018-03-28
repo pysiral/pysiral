@@ -118,6 +118,18 @@ l2i_prefilter:
         - freeboard
         - radar_freeboard
 
+# The orbit filter should in test cases only! It has been added
+# to investigate ascending/descending biases, thus the only
+# valid options for the `mask_orbits` key are [`ascending`, `descending`]
+
+orbit_filter:
+    active: False
+    mask_orbits: "ascending"
+    nan_targets:
+        - freeboard
+        - radar_freeboard
+        - sea_ice_thickness
+
 # ==================================================
 # Level-3 Parameter
 # ==================================================
