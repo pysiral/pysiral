@@ -10,6 +10,26 @@
 
 l2_parameter:
 
+    radar_freeboard:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    radar_freeboard_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    freeboard:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    freeboard_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
     sea_ice_thickness:
         grid_method: average
         dtype: f4
@@ -21,6 +41,66 @@ l2_parameter:
         fillvalue: .NAN
 
     sea_ice_thickness_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_surface_anomaly:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_surface_anomaly_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    mean_sea_surface:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    ice_density:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    ice_density_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_type:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_type_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_concentration:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -78,6 +158,10 @@ l3_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    negative_thickness_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
 # ==================================================
 # External Masks
 # ==================================================
@@ -105,7 +189,55 @@ grid_settings:
 l3_masks: Null
 
 
-# Methods that can only be applied when the entire grid 
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells 
+# Note: The masking is exectuted in the alphabetical order of the mask names.
+#       If there is a dependance between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+l3_masks:
+
+# Apply freeboard filter to mss, ssa for visualization purposes
+
+    freeboard_nan_mask: 
+        source: freeboard
+        condition: "is_nan"
+        targets:
+            - freeboard_uncertainty
+            - radar_freeboard_uncertainty
+            - sea_surface_anomaly
+            - sea_surface_anomaly_uncertainty
+            - mean_sea_surface
+            - ice_density
+            - ice_density_uncertainty
+            - sea_ice_type
+            - sea_ice_type_uncertainty
+
+# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
+# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
+#       is only a monthly average from the daily fields in the l2i orbits
+
+    sea_ice_concentration_mask:
+        source: sea_ice_concentration
+        condition: "is_nan; is_smaller"
+        is_smaller_threshold: 15.0
+        connect_conditions: "or"
+        targets:
+            - n_total_waveforms
+            - n_valid_waveforms
+            - valid_fraction
+            - lead_fraction
+            - ice_fraction
+            - negative_thickness_fraction
+            - sea_ice_type
+            - snow_depth
+            - snow_depth_uncertainty
+            - snow_density
+            - snow_density_uncertainty
+            - sea_ice_concentration
 
 l3_post_processing:
 
