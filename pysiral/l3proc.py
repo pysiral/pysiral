@@ -261,12 +261,14 @@ class L3DataGrid(DefaultLoggingClass):
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
 
         # Name and data type of mandatory surface type statistics
+        # XXX: This seems to outdated (definitions in l3 settings)
         self._surface_type_l3par = {
             "n_total_waveforms": "i4",
             "n_valid_waveforms": "i4",
             "valid_fraction": "f4",
             "lead_fraction": "f4",
             "ice_fraction": "f4",
+            "negative_thickness_fraction": "f4",
             "is_land": "i2",
             "radar_mode_flag": "i1",
             "quality_flag": "i1",
@@ -734,6 +736,9 @@ class L3DataGrid(DefaultLoggingClass):
           - valid_fraction (n_valid/n_total)
           - lead_fraction (n_leads/n_valid)
           - ice_fraction (n_ice/n_valid)
+
+        Optional (parameter name needs to in l3 settings file)
+          - negative_thickness_fraction  (fraction of negatice sea ice thicknesses in grid cell)
         """
         surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
 
@@ -782,6 +787,16 @@ class L3DataGrid(DefaultLoggingClass):
         except ZeroDivisionError:
             ice_fraction = np.nan
         self._l3["ice_fraction"][yj, xi] = ice_fraction
+
+        # Fractions of negative thickness values
+        if "negative_thickness_fraction" in self._l3.keys():
+            sit = np.array(self._l2.stack["sea_ice_thickness"][yj][xi])
+            n_negative_thicknesses = len(np.where(sit < 0.0)[0])
+            try:
+                negative_thickness_fraction = float(n_negative_thicknesses)/float(n_ice)
+            except ZeroDivisionError:
+                negative_thickness_fraction = np.nan
+            self._l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
 
     def get_parameter_by_name(self, name):
         try:
