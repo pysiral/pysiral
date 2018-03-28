@@ -15,19 +15,16 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.config import TimeRangeRequest
 
 
-class L2PProductCatalog(DefaultLoggingClass):
-    """Catalog class for L2P product repositories
+class SIRALProductCatalog(DefaultLoggingClass):
+    """ Parent catalog class for product catalogs for different
+    data processing levels """
 
-    Arguments:
-            repo_path {str} -- path to repository"""
-    
     def __init__(self, repo_path, auto_id=True, repo_id=None):
-        super(L2PProductCatalog, self).__init__(self.__class__.__name__)
+        super(SIRALProductCatalog, self).__init__(self.__class__.__name__)
         self.repo_path = repo_path
         self.auto_id = auto_id
         self._repo_id = repo_id
         self._catalog = {}
-        self._catalogize()
 
     def run_checks(self, check_list, raise_on_failure=True):
         """Runs a list of built-in queries. Valid checks: `is_single_hemisphere`, `is_single_version`
@@ -58,7 +55,7 @@ class L2PProductCatalog(DefaultLoggingClass):
         return check_passed
 
     def query_datetime(self, dt, return_value="bool"):
-        """ Searches the repository for products for a given day
+        """ Searches the repository for products for a given datetime
         
         Arguments:
             dt {datetime} -- datetime definition for the query
@@ -72,7 +69,7 @@ class L2PProductCatalog(DefaultLoggingClass):
         """
 
         if not isinstance(dt, datetime.datetime):
-            raise ValueError("Argument day needs to be datetime (was: %s)" % (type(dt)))
+            raise ValueError("Argument dt needs to be datetime (was: %s)" % (type(dt)))
 
         product_files = [prd.path for prd in self.product_list if prd.has_coverage(dt)]
 
@@ -82,6 +79,32 @@ class L2PProductCatalog(DefaultLoggingClass):
             result = len(product_files) > 0
         return result
 
+    def query_overlap(self, tcs, tce):
+        """ Searches the repository for products that have overlapping coverage
+        with a given time range
+        
+        Arguments:
+            tcs {datetime} -- time coverage start of search period
+            tce {datetime} -- time coverage end of search period
+        
+        Keyword Arguments:
+            return_value {str} -- Defines the type of output: `bool` for True/False flag and `products` for
+                                  product path (list) (default: {"bool"})
+        
+        Returns:
+            [bool or str] -- see keyword `return`
+        """
+
+        if not isinstance(tcs, datetime.datetime):
+            raise ValueError("Argument tcs needs to be datetime (was: %s)" % (type(tce)))
+
+        if not isinstance(tce, datetime.datetime):
+            raise ValueError("Argument tce needs to be datetime (was: %s)" % (type(tce)))
+
+        # Search files
+        product_files = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
+        return product_files
+
     def get_northern_winter_netcdfs(self, start_year):
         """Returns a list for northern winter data for the period october through april
         
@@ -89,25 +112,23 @@ class L2PProductCatalog(DefaultLoggingClass):
             start_year {int} -- start year for the winter (yyyy-oct till yyyy+1-apr)
 
         Returns: 
-            l2p_files {str list} -- list of l2p files for specified winter season
+            product_files {str list} -- list of files for specified winter season
         """
 
-        l2p_files = []
+        # Construct time range 
         winter_start_tuple = [start_year, 10]
         winter_end_tuple = [start_year+1, 4]
-        time_range = TimeRangeRequest(winter_start_tuple, winter_end_tuple, period="daily")
-        all_days = time_range.iterations
+        time_range = TimeRangeRequest(winter_start_tuple, winter_end_tuple, period="custom")
 
-        for day in all_days:
-            l2p_path = self.query_datetime(day.center_time, return_value="products")
-            l2p_files.extend(l2p_path)
+        # Query time range
+        product_files = self.query_overlap(time_range.start_dt, time_range.stop_dt)
 
         # Reporting
-        msg = "Found %g l2p files for winter season %g/%g"
-        msg = msg % (len(l2p_files), start_year, start_year+1)
+        msg = "Found %g %s files for winter season %g/%g"
+        msg = msg % (len(product_files), self.processing_level, start_year, start_year+1)
         self.log.info(msg)
 
-        return l2p_files
+        return product_files
 
     def _catalogize(self):
         """Create the product catalog of the repository"""
@@ -116,21 +137,23 @@ class L2PProductCatalog(DefaultLoggingClass):
         nc_files = self.nc_files
 
         # Create the catalog entries as dictionary with product id as keys
-        self.log.info("Catalogizing l2p repository: %s (%g files)" % (str(self.repo_path), len(nc_files)))
+        self.log.info("Catalogizing %s repository: %s (%g files)" % (self.processing_level, str(self.repo_path), len(nc_files)))
 
         if self.auto_id:
             subfolders = self.repo_path.split(os.sep)
-            try: 
-                index = subfolders.index("l2p")
-                self._repo_id = subfolders[index-1]
+            try:
+                search  = [self.processing_level in subfolder for subfolder in subfolders]
+                index = search.index(True)
+                repo_id = subfolders[index-1]
             except:
-                self.log.warning("Auto id failed, did not find `l2p` in list of subfolders")
-            self.log.info("L2P repository ID %s" % self.repo_id)
+                self.log.warning("Auto id failed, did not find `%s` in list of subfolders" % (self.processing_level))
+                repo_id = None
+            self._repo_id = repo_id
+            self.log.info("%s repository ID: %s" % (self.processing_level, str(self.repo_id)))
                 
-
         t0 = time.clock()
         for nc_file in self.nc_files:
-            product_info = ProductMetadata(nc_file, target_processing_level="l2p")
+            product_info = ProductMetadata(nc_file, target_processing_level=self.processing_level)
             self._catalog[product_info.id] = product_info
         t1 = time.clock()
         self.log.info("... done in %.1f seconds" % (t1-t0))
@@ -215,6 +238,32 @@ class L2PProductCatalog(DefaultLoggingClass):
         return self.time_coverage_end
 
 
+class L2PProductCatalog(SIRALProductCatalog):
+    """Catalog class for L2P product repositories
+
+    Arguments:
+            repo_path {str} -- path to repository"""
+    
+    processing_level = "l2p"
+    
+    def __init__(self, *args, **kwargs):
+        super(L2PProductCatalog, self).__init__(*args, **kwargs)
+        self._catalogize()
+
+
+class L3CProductCatalog(SIRALProductCatalog):
+    """Catalog class for L3C product repositories
+
+    Arguments:
+            repo_path {str} -- path to repository"""
+    
+    processing_level = "l3c"
+    
+    def __init__(self, *args, **kwargs):
+        super(L3CProductCatalog, self).__init__(*args, **kwargs)
+        self._catalogize()
+
+
 class ProductMetadata(DefaultLoggingClass):
     """Metadata data container for pysiral product files."""
 
@@ -275,6 +324,26 @@ class ProductMetadata(DefaultLoggingClass):
         flag = dt >= self.time_coverage_start and dt <= self.time_coverage_end
         return flag
 
+    def has_overlap(self, tcs, tce):
+        """Test if product has overlap with period defined by start & end datetime
+        
+        Arguments:
+            tcs {datetime} -- A datetime object that defines start of time coverage test
+            tce {datetime} -- A datetime object that defines end of time coverage test
+
+        Returns:
+            [bool] -- A True/False flag
+        """
+
+
+        # Validity check
+        if tce <= tcs:
+            raise ValueError("Invalid overlap test: tce <= tcs")
+
+        no_coverage = tce <= self.time_coverage_start or tcs >= self.time_coverage_end
+        flag = not no_coverage
+        return flag
+
     def _parse_datetime_definition(self, value):
         """Converts the string representation of a date & time into a 
         datetime instance
@@ -303,15 +372,17 @@ class ProductMetadata(DefaultLoggingClass):
         """
 
         # Make sure the value for processing level is only the id
-        # (search for the occurance of all valid processing levels in the processing_level attribute)
+        # search for the occurance of all valid processing levels in the processing_level attribute
         pl_match = [pl in str(value).lower() for pl in self.VALID_PROCESSING_LEVELS]
         try: 
             index = pl_match.index(True)
-        except ValueError:
-            self.log.error("Invalid processing level str (%s) in product: %s" % (str(value), self.local_path))
-            sys.exit()
-        value = self.VALID_PROCESSING_LEVELS[index]
 
+        # NOTE: if the processing_level attribute does not exist, there is no choice but to trust the repo
+        except ValueError:
+            return self._targ_proc_lvl
+
+        # Check if processing level in file matches target processing level
+        value = self.VALID_PROCESSING_LEVELS[index]
         if value != self._targ_proc_lvl and self._targ_proc_lvl is not None:
             msg = "Invalid product processing level: %s (target: %s)"
             raise ValueError(msg % (value, self._targ_proc_lvl))
