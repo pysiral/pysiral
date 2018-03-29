@@ -154,7 +154,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         # Reporting
         msg = "Found %g %s files for %s"
-        month_name = datetime(2000, month, 1).strftime("%B")
+        month_name = datetime.datetime(2000, month, 1).strftime("%B")
         msg = msg % (n_files, self.processing_level, month_name)
         self.log.info(msg)
 
@@ -180,13 +180,16 @@ class SIRALProductCatalog(DefaultLoggingClass):
                 repo_id = None
             self._repo_id = repo_id
             self.log.info("%s repository ID: %s" % (self.processing_level, str(self.repo_id)))
-                
+        
+        nc_access_times = []
         t0 = time.clock()
         for nc_file in self.nc_files:
             product_info = ProductMetadata(nc_file, target_processing_level=self.processing_level)
+            nc_access_times.append(product_info.nc_access_time)
             self._catalog[product_info.id] = product_info
         t1 = time.clock()
         self.log.info("... done in %.1f seconds" % (t1-t0))
+        self.log.info("... average netCDF access time: %.4f sec" % np.mean(nc_access_times))
 
     @property
     def nc_files(self):
@@ -330,7 +333,11 @@ class ProductMetadata(DefaultLoggingClass):
             raise ValueError("Invalid target processing level: %s" % str(target_processing_level))
 
         # Fetch attributes (if possible) from netcdf
-        nc = ReadNC(self.path)
+        t0 = time.clock()
+        nc = ReadNC(self.path, global_attrs_only=True)
+        t1 = time.clock()
+        self.nc_access_time = t1-t0
+
         for attribute in self.NC_PRODUCT_ATTRIBUTES:
             
             # Extract value from netcdf global attributes

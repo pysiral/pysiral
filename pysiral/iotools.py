@@ -24,13 +24,14 @@ class ReadNC(object):
     with attributes from file variables
     """
     def __init__(self, filename, verbose=False, autoscale=True,
-                 nan_fill_value=False):
+                 nan_fill_value=False, global_attrs_only=False):
         self.error = ErrorStatus()
         self.time_def = NCDateNumDef()
         self.parameters = []
         self.attributes = []
         self.verbose = verbose
         self.autoscale = autoscale
+        self.global_attrs_only = global_attrs_only
         self.nan_fill_value = nan_fill_value
         self.filename = filename
         self.parameters = []
@@ -73,26 +74,27 @@ class ReadNC(object):
             setattr(self, attribute_name, attribute_value)
 
         # Get the variables
-        for key in f.variables.keys():
+        if not self.global_attrs_only:
+            for key in f.variables.keys():
 
-            variable = f.variables[key][:]
+                variable = f.variables[key][:]
 
-            try:
-                is_float = variable.dtype in ["float32", "float64"]
-                has_mask = hasattr(variable, "mask")
-            except:
-                is_float, has_mask = False, False
+                try:
+                    is_float = variable.dtype in ["float32", "float64"]
+                    has_mask = hasattr(variable, "mask")
+                except:
+                    is_float, has_mask = False, False
 
-            if self.nan_fill_value and has_mask and is_float:
-                is_fill_value = np.where(variable.mask)
-                variable[is_fill_value] = np.nan
+                if self.nan_fill_value and has_mask and is_float:
+                    is_fill_value = np.where(variable.mask)
+                    variable[is_fill_value] = np.nan
 
-            setattr(self, key, variable)
-            self.keys.append(key)
-            self.parameters.append(key)
-            if self.verbose:
-                print key
-        self.parameters = f.variables.keys()
+                setattr(self, key, variable)
+                self.keys.append(key)
+                self.parameters.append(key)
+                if self.verbose:
+                    print key
+            self.parameters = f.variables.keys()
         f.close()
 
 
