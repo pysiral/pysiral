@@ -68,10 +68,14 @@ class Level3Processor(DefaultLoggingClass):
             # NOTE: This tag may not be present in all level-3 settings files, as it has
             #       been added as a test case
             try: 
-                orbitfilter = self._job.l3def.l2i_prefilter
+                orbitfilter = self._job.l3def.orbit_filter
                 orbitfilter_is_active = orbitfilter.active
             except AttributeError:
                 orbitfilter_is_active = False
+            finally:
+                if orbitfilter.isDangling():
+                     orbitfilter_is_active = False
+            
             
             if orbitfilter_is_active:
 
