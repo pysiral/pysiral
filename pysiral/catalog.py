@@ -111,8 +111,8 @@ class SIRALProductCatalog(DefaultLoggingClass):
             dt {datetime} -- datetime definition for the query
         
         Keyword Arguments:
-            return_value {str} -- Defines the type of output: `bool` for True/False flag and `products` for
-                                  product path (list) (default: {"bool"})
+            return_value {str} -- Defines the type of output: `bool` for True/False flag, `products` for
+                                  product path (list) and id for ids (default: {"bool"})
         
         Returns:
             [bool or str] -- see keyword `return`
@@ -121,15 +121,18 @@ class SIRALProductCatalog(DefaultLoggingClass):
         if not isinstance(dt, datetime.datetime):
             raise ValueError("Argument dt needs to be datetime (was: %s)" % (type(dt)))
 
-        product_files = [prd.path for prd in self.product_list if prd.has_coverage(dt)]
+        product_ids = [prd.id for prd in self.product_list if prd.has_coverage(dt)]
+        product_path = [prd.path for prd in self.product_list if prd.has_coverage(dt)]
 
         if return_value == "products":
-            result = product_files
+            result = product_path
+        elif return_value == "ids":
+            result = product_ids
         else:
-            result = len(product_files) > 0
+            result = len(product_ids) > 0
         return result
 
-    def query_overlap(self, tcs, tce):
+    def query_overlap(self, tcs, tce, return_value="path"):
         """ Searches the repository for products that have overlapping coverage
         with a given time range
         
@@ -152,8 +155,12 @@ class SIRALProductCatalog(DefaultLoggingClass):
             raise ValueError("Argument tce needs to be datetime (was: %s)" % (type(tce)))
 
         # Search files
-        product_files = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
-        return product_files
+        product_ids = [prd.id for prd in self.product_list if prd.has_overlap(tcs, tce)]
+        product_path = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
+        if return_value == "path":
+            return product_path
+        else:
+            return product_ids
 
     def get_northern_winter_netcdfs(self, start_year):
         """Returns a list for northern winter data for the period october through april
@@ -180,7 +187,12 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         return product_files
 
-    def get_month_netcdfs(self, month):
+    def get_time_range_ids(self, tcs, tce):
+        time_range = TimeRangeRequest(tcs, tce, period="custom")
+        product_ids = self.query_overlap(time_range.start_dt, time_range.stop_dt, return_value="ids")
+        return product_ids
+
+    def get_month_products(self, month_num):
         """Returns a list all products that have coverage for a given month
         
         Arguments:
@@ -192,23 +204,23 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         # Query time range
         years = self.years
-        product_files = []
+        product_ids = []
 
-        n_files = 0
+        n_products = 0
         for year in self.years:
-            time_range = TimeRangeRequest((year, month), (year, month))
+            time_range = TimeRangeRequest([year, month_num], [year, month_num])
             tcs, tce = time_range.start_dt, time_range.stop_dt
-            files = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
-            n_files += len(files)
-            product_files.append(((year, month), files))
+            ids = [prd.id for prd in self.product_list if prd.has_overlap(tcs, tce)]
+            n_products += len(ids)
+            product_ids.extend(ids)
 
         # Reporting
         msg = "Found %g %s files for %s"
-        month_name = datetime.datetime(2000, month, 1).strftime("%B")
-        msg = msg % (n_files, self.processing_level, month_name)
+        month_name = datetime.datetime(2000, month_num, 1).strftime("%B")
+        msg = msg % (n_products, self.processing_level, month_name)
         self.log.info(msg)
 
-        return product_files
+        return product_ids
 
     def _catalogize(self):
         """Create the product catalog of the repository"""
