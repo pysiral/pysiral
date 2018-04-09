@@ -315,7 +315,6 @@ class SIRALProductCatalog(DefaultLoggingClass):
         years = sorted([prd.time_coverage_start.year for prd in self.product_list])
         return np.unique(years)
 
-
     @property
     def time_coverage_start(self):
         tcs = [prd.time_coverage_start for prd in self.product_list]
@@ -357,6 +356,7 @@ class L3CProductCatalog(SIRALProductCatalog):
             repo_path {str} -- path to repository"""
     
     processing_level = "l3c"
+    period_id_level = "daily"
     
     def __init__(self, *args, **kwargs):
         super(L3CProductCatalog, self).__init__(*args, **kwargs)
@@ -386,6 +386,7 @@ class ProductMetadata(DefaultLoggingClass):
         super(ProductMetadata, self).__init__(self.__class__.__name__)
 
         self.path = path
+        self.unique_str = str(uuid.uuid4())[0:8]
 
         if target_processing_level in self.VALID_PROCESSING_LEVELS or target_processing_level is None:
             self._targ_proc_lvl = target_processing_level
@@ -504,13 +505,10 @@ class ProductMetadata(DefaultLoggingClass):
         Returns:
             [str] -- id str of the product
         """
-        random_str = str(uuid.uuid4())
+        
         identifier = (
             self.processing_level, str(self.source_mission_id),
-            self.time_coverage_start, self.time_coverage_end,
-            random_str[0:8])
-        idstr = "%s-%s-%s-%s-%s" % identifier
-        return idstr    @property            self.period_id, self.unique_str)
+            self.period_id, self.unique_str)
         idstr = "%s-%s-%s-%s" % identifier
         return idstr
 
