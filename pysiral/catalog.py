@@ -57,6 +57,53 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         return check_passed
 
+    def append(self, ctlg, duplication=False):
+        """Add the information from another catalog with rules for handling of duplicates 
+        (same period, same mission)
+        
+        Arguments:
+            ctlg {object} -- of type SIRALProductCatalog
+        
+        Keyword Arguments:
+            duplication {bool} -- Allows (True) / Prevents (False) duplicate entries (same platform, same period) in the merged catalog (default: {False})
+        
+        Returns:
+            
+        """
+
+        # Perform Consistency checks
+        # 1. argument need to be of type SIRALProductCatalog
+        if not isinstance(ctlg, (L2PProductCatalog, L3CProductCatalog)):
+            msg = "Invalid catalog (%s), must be from pysiral.catalog module"
+            msg = msg % (str(ctlg.__class__.__name__))
+            self.error.add_error("ctlg-invld-ctlg", msg)
+            self.error.raise_on_error()
+
+        # 2. Catalogs need to be of the same processing level (l2p, l3c, ....)
+        if self.processing_level != ctlg.processing_level:
+            msg = "Invalid processing level (%s) of new catalog, %s required for appending"
+            msg = msg % (str(ctlg.processing_level), str(self.processing_level))
+            self.error.add_error("ctlg-proclevel-mismatch", msg)
+            self.error.raise_on_error()
+
+        # Merge the catalogs
+        for new_product in ctlg.product_list:
+            
+            # Check if new product is duplication in current catalog
+            is_duplication = self._is_duplication(new_product)
+
+            # if duplication ok & is duplication -> add
+            if duplication and is_duplication:
+                self._catalog[new_product.id] = new_product
+
+            # if not duplication -> add
+            elif not is_duplication:
+                self._catalog[new_product.id] = new_product
+
+            # don't add (is duplication and duplication not ok)
+            else:
+                continue
+
     def query_datetime(self, dt, return_value="bool"):
         """ Searches the repository for products for a given datetime
         
@@ -194,6 +241,12 @@ class SIRALProductCatalog(DefaultLoggingClass):
         self.log.info("... done in %.1f seconds" % (t1-t0))
         self.log.info("... average netCDF access time: %.4f sec" % np.mean(nc_access_times))
 
+    def _is_duplication(self, product_info):
+        """ Tests if specified product is a duplicate to the current catalog """
+        
+        # Condition 1: period exists in current catalog
+        period_exists = product_info.period_id
+
     @property
     def nc_files(self):
         """Lists all netcdf files (*.nc) in the repository.
@@ -218,6 +271,10 @@ class SIRALProductCatalog(DefaultLoggingClass):
     @property
     def product_ids(self):
         return sorted(self._catalog.keys())
+
+    @property
+    def period_ids(self):
+        return [self._catalog[idstr].period_id for idstr in self.product_ids]
 
     @property
     def product_list(self):
@@ -434,6 +491,12 @@ class ProductMetadata(DefaultLoggingClass):
 
         return value
 
+    def _get_datetime_label(self, dt):
+        if self.processing_level in ["l2p", "l3c", "l3s"]:
+            return dt.strftime("%Y%m%d")
+        else:
+            return dt.strftime("%Y%m%d%H%M%S")
+
     @property
     def id(self):
         """Generates an id string for the product.
@@ -447,4 +510,21 @@ class ProductMetadata(DefaultLoggingClass):
             self.time_coverage_start, self.time_coverage_end,
             random_str[0:8])
         idstr = "%s-%s-%s-%s-%s" % identifier
+        return idstr    @property            self.period_id, self.unique_str)
+        idstr = "%s-%s-%s-%s" % identifier
         return idstr
+
+    @property
+    def tcs_label(self):
+        return self._get_datetime_label(self.time_coverage_start)
+
+    @property
+    def tce_label(self):
+        return self._get_datetime_label(self.time_coverage_end)
+
+    @property
+    def period_id(self):
+        """ Generates a period id """
+        identifier = (self.tcs_label, self.tce_label, self.time_coverage_duration)
+        period_id = "%sT%s-%s" % identifier
+        return period_id
