@@ -2,6 +2,7 @@
 """ Catalog module for Level-2 and Level-2 product repositories"""
 
 import os
+import re
 import sys
 import fnmatch
 import uuid
@@ -172,7 +173,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
         if self.auto_id:
             subfolders = self.repo_path.split(os.sep)
             try:
-                search  = [self.processing_level in subfolder for subfolder in subfolders]
+                search  = [bool(re.search(self.processing_level, subfolder)) for subfolder in subfolders]
                 index = search.index(True)
                 repo_id = subfolders[index-1]
             except:
