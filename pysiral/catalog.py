@@ -14,6 +14,7 @@ import numpy as np
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
 from pysiral.config import TimeRangeRequest
+from pysiral.errorhandler import ErrorStatus
 
 
 class SIRALProductCatalog(DefaultLoggingClass):
@@ -22,6 +23,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
     def __init__(self, repo_path, auto_id=True, repo_id=None):
         super(SIRALProductCatalog, self).__init__(self.__class__.__name__)
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self.repo_path = repo_path
         self.auto_id = auto_id
         self._repo_id = repo_id
