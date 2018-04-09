@@ -9,6 +9,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.flag import FlagContainer, ORCondition
 
 from scipy.interpolate import interp1d
+from astropy.convolution import convolve
 import numpy as np
 
 
@@ -166,3 +167,28 @@ def fill_nan(y):
     if valid1 != len(y)-1:
         result[valid1+1:len(y)+1] = y[valid1]
     return result
+
+
+def smooth_2darray(array, filter_width=5, preserve_gaps=True):
+    """ A simple smoothing filter """
+    
+    # presever nan's and mask
+    nan_list = np.where(np.isnan(array))
+    
+    try: 
+        mask = array.mask
+        has_mask = True
+    except AttributeError:
+        mask = np.zeros(array.shape)
+
+    # astropy concolve seems to be the only one treating nan's
+    # as missing values
+    kernel = np.ones((filter_width, filter_width))
+    convolved = convolve(array, kernel, normalize_kernel=True)
+    output = np.ma.array(convolved)
+
+    if preserve_gaps:
+        output[nan_list] = np.nan
+        output.mask = mask
+
+    return output
