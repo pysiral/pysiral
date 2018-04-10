@@ -47,9 +47,9 @@ class L3ParameterCollection(DefaultLoggingClass):
             self._product[product.id] = L3Parameter(self.variable_name, var)
             self.log.info("Add product: %s"% product.id)
 
-    def get_monthly_mean(self, month_num, **kwargs):
+    def get_monthly_mean(self, month_num, exclude_years=None, **kwargs):
         # Get list of product ids for given month
-        product_ids = self.ctlg.get_month_products(month_num)
+        product_ids = self.ctlg.get_month_products(month_num, exclude_years=exclude_years)
         return self._get_product_ids_mean(product_ids, **kwargs)
 
     def get_month(self, year_num, month_num, **kwargs):
@@ -65,11 +65,15 @@ class L3ParameterCollection(DefaultLoggingClass):
         else:
             return self._get_product_ids_mean(product_ids, **kwargs)
 
-    def get_monthly_anomaly(self, year_num, month_num, exlude_ref_month=False, filter_width=None):
+    def get_monthly_anomaly(self, year_num, month_num, exclude_ref_month=False, filter_width=None):
         
         # Get mean conditions
         # TODO: Add exclude_ref_month
-        mean_grid = self.get_monthly_mean(month_num)
+        if exclude_ref_month:
+            exclude_year = [year_num]
+        else:
+            exclude_year = False
+        mean_grid = self.get_monthly_mean(month_num, exclude_years=exclude_year)
 
         # Get target month
         month_grid = self.get_month(year_num, month_num)

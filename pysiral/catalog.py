@@ -192,7 +192,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
         product_ids = self.query_overlap(time_range.start_dt, time_range.stop_dt, return_value="ids")
         return product_ids
 
-    def get_month_products(self, month_num):
+    def get_month_products(self, month_num, exclude_years=None):
         """Returns a list all products that have coverage for a given month
         
         Arguments:
@@ -206,8 +206,15 @@ class SIRALProductCatalog(DefaultLoggingClass):
         years = self.years
         product_ids = []
 
+        if exclude_years is None:
+            years_to_include = []
+        else:
+            years_to_include = exclude_years
+
         n_products = 0
         for year in self.years:
+            if year in years_to_include:
+                continue
             time_range = TimeRangeRequest([year, month_num], [year, month_num])
             tcs, tce = time_range.start_dt, time_range.stop_dt
             ids = [prd.id for prd in self.product_list if prd.has_overlap(tcs, tce)]
