@@ -65,7 +65,7 @@ class L3ParameterCollection(DefaultLoggingClass):
         else:
             return self._get_product_ids_mean(product_ids, **kwargs)
 
-    def get_monthly_anomaly(self, year_num, month_num, exclude_ref_month=False, filter_width=None):
+    def get_monthly_anomaly(self, year_num, month_num, exclude_ref_month=True, filter_width=None):
         
         # Get mean conditions
         # TODO: Add exclude_ref_month
