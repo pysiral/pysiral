@@ -155,6 +155,11 @@ l3_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    negative_thickness_fraction:
+        dtype: f4
+        fillvalue: .NAN
+        
+
 # ==================================================
 # External Masks
 # ==================================================
@@ -212,6 +217,7 @@ l3_masks:
             - valid_fraction
             - lead_fraction
             - ice_fraction
+            - negative_thickness_fraction
             - sea_ice_type
             - snow_depth
             - snow_depth_uncertainty
