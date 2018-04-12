@@ -305,7 +305,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
     @property
     def hemispheres(self):
-        return [prd.source_hemisphere for prd in self.product_list]
+        return [prd.hemisphere for prd in self.product_list]
 
     @property
     def hemisphere_list(self):
@@ -390,7 +390,9 @@ class ProductMetadata(DefaultLoggingClass):
     NC_PRODUCT_ATTRIBUTES = [
         "processing_level", "product_version", "cdm_data_level", 
         "time_coverage_start", "time_coverage_end", "product_timeliness",
-        "time_coverage_duration", "source_mission_id", "source_hemisphere"]
+        "time_coverage_duration", "source_mission_id", "source_hemisphere",
+        "geospatial_lat_min", "geospatial_lat_max",
+        "geospatial_lon_min", "geospatial_lon_max"]
 
     def __init__(self, path, target_processing_level=None):
         """
@@ -432,6 +434,9 @@ class ProductMetadata(DefaultLoggingClass):
 
             if attribute in ["time_coverage_start", "time_coverage_end"]:
                 value = self._parse_datetime_definition(value)
+
+            if re.search("geospatial", attribute):
+                value = float(value)
 
             setattr(self, attribute, value)
 
@@ -545,3 +550,16 @@ class ProductMetadata(DefaultLoggingClass):
         identifier = (self.tcs_label, self.tce_label, self.time_coverage_duration)
         period_id = "%sT%s-%s" % identifier
         return period_id
+
+    @property
+    def hemisphere(self):
+        """ Determine the hemisphere based on the geospatial attributes """
+
+        if self.geospatial_lat_min > 0.0:
+            hemisphere = "north"
+        elif self.geospatial_lat_max < 0.0:
+            hemisphere = "south"
+        else:
+            hemisphere = "global"
+
+        return hemisphere
