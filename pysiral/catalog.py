@@ -481,8 +481,14 @@ class ProductMetadata(DefaultLoggingClass):
         Returns:
             [datetime] -- [description]
         """
-        value = dateutil.parser.parse(value)
-        return value
+        d = dateutil.parser.parse(value)
+        
+        # Test if datetime is timezone aware
+        # (true) -> remove time zone
+        if d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None:
+            d = d.replace(tzinfo=None)
+
+        return d
 
     def _validate_proc_lvl(self, value):
         """Validates the processing level str from the netcdf file: a) only save the id and 
