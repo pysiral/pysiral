@@ -621,6 +621,7 @@ class L3DataGrid(DefaultLoggingClass):
         qif = np.copy(self._l3["quality_flag"])
         sit = np.copy(self._l3["sea_ice_thickness"])
         nvw = np.copy(self._l3["n_valid_waveforms"])
+        ntf = np.copy(self._l3["negative_thickness_fraction"])
         lfr = np.copy(self._l3["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
@@ -681,14 +682,14 @@ class L3DataGrid(DefaultLoggingClass):
             flag[np.where(area_lfr <= thrs)] = rule_options.target_flag
             qif = np.maximum(qif, flag)
 
-#            import matplotlib.pyplot as plt
-#            plt.figure("lead fraction")
-#            plt.imshow(lfr, vmin=0, vmax=0.5)
-#
-#            plt.figure("area lead fraction")
-#            plt.imshow(area_lfr, vmin=0, vmax=0.5)
-#            plt.show()
-#            stop
+        # Check the negative thickness fraction (higher value -> higher warnung flag)
+        if "qif_high_negative_thickness_fraction" in quality_flag_rules:
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            rule_options = options.rules.qif_high_negative_thickness_fraction
+            for threshold, target_flag in zip(rule_options.thresholds,
+                                              rule_options.target_flags):
+                flag[np.where(ntf > threshold)] = target_flag
+            qif = np.maximum(qif, flag)
 
         # Set all flags with no data to zero again
         qif[np.where(np.isnan(sit))] = 0
