@@ -73,12 +73,14 @@ class Level2PreProcProductDefinition(DefaultLoggingClass):
         super(Level2PreProcProductDefinition, self).__init__(class_name)
 
     def add_output_definition(self, l2i_product_dir, output_def_file,
-                              period="default", overwrite_protection=True):
+                              period="default", overwrite_protection=True,
+                              doi=None):
                 # Set given or default output handler
         self._output_handler = Level2POutputHandler(
             l2i_product_dir,
             output_def=output_def_file,
             period=period,
+            doi=doi,
             overwrite_protection=overwrite_protection)
 
     @property
@@ -97,7 +99,7 @@ class Level2POutputHandler(OutputHandlerBase):
 
     def __init__(self, l2i_product_dir, output_def="default",
                  subdirectory=None, period="default",
-                 overwrite_protection=True):
+                 overwrite_protection=True, doi=None):
         # Fall back to default output if no output_def is given
         # (allows default initialization for the Level2 processor)
         if output_def == "default":
@@ -107,6 +109,7 @@ class Level2POutputHandler(OutputHandlerBase):
         self.log.name = self.__class__.__name__
         self.l2i_product_dir = l2i_product_dir
         self._period = period
+        self._doi = doi
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
@@ -176,6 +179,14 @@ class Level2POutputHandler(OutputHandlerBase):
         if self.overwrite_protection:
             basedir = os.path.join(basedir, self.now_directory)
         self._set_basedir(basedir)
+
+    @property
+    def has_doi(self):
+        return self._doi is not None
+
+    @property
+    def doi(self):
+        return self._doi
 
     @property
     def default_output_def_filename(self):

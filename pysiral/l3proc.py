@@ -272,6 +272,7 @@ class L3DataGrid(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
         # Grid size definition
+        self._doi = ""
         self._griddef = job.grid
         self._l3def = job.l3def
         self._period = period
@@ -370,6 +371,9 @@ class L3DataGrid(DefaultLoggingClass):
 
     def set_metadata(self, metadata):
         self._metadata = metadata
+
+    def set_doi(self, doi):
+        self._doi = doi
 
     def get_attribute(self, attribute_name, *args):
         """ Return a string for a given attribute name. This method is
@@ -958,6 +962,9 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_time_coverage_duration(self, *args):
         return self.metadata.time_coverage_duration
 
+    def _get_attr_doi(self, *args):
+        return self._doi
+
     def flipud(self):
         for parameter in self.parameters:
             setattr(self, parameter, np.flipud(getattr(self, parameter)))
@@ -1126,7 +1133,7 @@ class Level3OutputHandler(OutputHandlerBase):
     applicable_data_level = 3
 
     def __init__(self, output_def="default", base_directory="l3proc_default",
-                 overwrite_protection=True, period="default"):
+                 overwrite_protection=True, period="default", doi=None):
 
         if output_def == "default":
             output_def = self.default_output_def_filename
@@ -1137,6 +1144,7 @@ class Level3OutputHandler(OutputHandlerBase):
         self.overwrite_protection = overwrite_protection
         self._init_product_directory(base_directory)
         self._period = period
+        self._doi = doi
 
     def get_filename_from_data(self, l3):
         """ Return the filename for a defined level-2 data object
@@ -1206,6 +1214,10 @@ class Level3OutputHandler(OutputHandlerBase):
         self._set_basedir(basedir)
 
     @property
+    def has_doi(self):
+        return self._doi is not None
+
+    @property
     def default_output_def_filename(self):
         pysiral_config = ConfigInfo()
         local_settings_path = pysiral_config.pysiral_local_path
@@ -1217,6 +1229,10 @@ class Level3OutputHandler(OutputHandlerBase):
         if not isinstance(flip_yc, bool):
             flip_yc = False
         return flip_yc
+
+    @property
+    def doi(self):
+        return self._doi
 
     @property
     def time_dim_is_unlimited(self):

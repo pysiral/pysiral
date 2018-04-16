@@ -67,6 +67,7 @@ class Level2Data(object):
         self._source_primary_filename = "unkown"
         self._l2_algorithm_id = "unkown"
         self._l2_version_tag = "unkown"
+        self._doi = ""
 
         # Define time of dataset creation as the time of object initialization
         # to avoid slightly different timestamps for repated calls of
@@ -142,6 +143,9 @@ class Level2Data(object):
             self._l2_algorithm_id = l2_algorithm_id
         if l2_version_tag is not None:
             self._l2_version_tag = l2_version_tag
+
+    def set_doi(self, doi):
+        self._doi = doi
 
     def get_parameter_by_name(self, parameter_name):
         """ Method to retrieve a level-2 parameter """
@@ -414,6 +418,9 @@ class Level2Data(object):
     def _get_attr_uuid(self, *args):
         """ Provide an uuid code (for tracking id's) """
         return str(uuid.uuid4())
+
+    def _get_attr_doi(self, *args):
+        return self._doi
 
     @property
     def arrshape(self):

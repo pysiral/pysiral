@@ -43,6 +43,7 @@ def pysiral_l2preproc():
             args.l2i_product_dir,
             args.l2p_output,
             period="daily",
+            doi=args.doi, 
             overwrite_protection=args.overwrite_protection)
 
     # Prepare DataHandler
@@ -137,6 +138,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
             ("-l2i-product-dir", "l2i-product-dir", "l2i_product_dir", True),
             ("-l2p-output", "l2p-output", "l2p_output", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
+            ("-doi", "doi", "doi", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt",
              "no_critical_prompt", False),
@@ -173,6 +175,10 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def exclude_month(self):
         return self._args.exclude_month
+
+    @property
+    def doi(self):
+        return self._args.doi
 
     @property
     def overwrite_protection(self):

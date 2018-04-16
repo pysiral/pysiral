@@ -39,6 +39,7 @@ def pysiral_l3proc():
     output = Level3OutputHandler(output_def=args.l3_output_file,
                                  base_directory=args.l3_product_basedir,
                                  period=args.period,
+                                 doi=args.doi, 
                                  overwrite_protection=False)
 
     # Compile the product def
@@ -133,6 +134,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
             ("-start", "date", "start_date", True),
             ("-stop", "date", "stop_date", True),
             ("-period", "period", "period", False),
+            ("-doi", "doi", "doi", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt",
              "no_critical_prompt", False)]
@@ -163,6 +165,10 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def period(self):
         return self._args.period
+
+    @property
+    def doi(self):
+        return self._args.doi
 
     @property
     def l2i_product_directory(self):

@@ -874,7 +874,15 @@ class DefaultCommandLineArguments(object):
                 "dest": "l3_output",
                 "default": "default",
                 "required": True,
-                "help": "l3 output id"}}
+                "help": "l3 output id"},
+                
+            "doi": {
+                "action": "store",
+                "dest": "doi",
+                "default": "None",
+                "required": False,
+                "type": str, 
+                "help": "doi number to be written in global attributes"}}
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]
