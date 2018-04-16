@@ -164,7 +164,7 @@ variables:
 
   snow_depth:
     long_name: "thickness of the snow layer"
-    standard_name: snow_depth
+    standard_name: surface_snow_thickness
     units: m
     valid_min: 0.0
     valid_max: 0.6

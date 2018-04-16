@@ -160,7 +160,7 @@ variables:
 
   snow_depth:
     long_name: "thickness of the snow layer"
-    standard_name: snow_depth
+    standard_name: surface_snow_thickness
     units: m
     valid_min: 0.0
     valid_max: 0.6
@@ -169,7 +169,7 @@ variables:
 
   snow_depth_uncertainty:
     long_name: "uncertainty of the snow layer thickness"
-    standard_name: snow_depth standard_error
+    standard_name: surface_snow_thickness standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
