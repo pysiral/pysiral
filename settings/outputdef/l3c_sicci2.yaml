@@ -129,7 +129,7 @@ variables:
     unit: 1
     valid_min: 0
     valid_max: 5
-    flag_values: 0b,1b,2b,3b,4b,5b
+    flag_values: [!!int 0, !!int 1, !!int 2, !!int 3, !!int 4, !!int 5]
     flag_meaning: "0: nominal sea ice thickness retrieval; 1: no input data; 2: outside sea ice concentration mask; 3: latitude above orbit inclination; 4: land, lake or land ice; 5: sea ice thickness retrieval failed;"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
