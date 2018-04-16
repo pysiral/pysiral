@@ -288,3 +288,8 @@ l3_post_processing:
                 qif_n_waveforms:
                     thresholds: [50, 10]
                     target_flags: [2, 3]
+
+                # Check the negative thickness fraction and raise flag if high
+                qif_high_negative_thickness_fraction:
+                    thresholds: [0.2, 0.4]
+                    target_flags: [2, 3]
