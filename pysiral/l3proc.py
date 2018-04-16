@@ -661,6 +661,7 @@ class L3DataGrid(DefaultLoggingClass):
             flag[np.where(radar_modes >= 2.)] = rule_options.target_flag
             qif = np.maximum(qif, flag)
 
+        # Check the number of waveforms (less valid waveforms -> higher warning flag)
         if "qif_n_waveforms" in quality_flag_rules:
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             rule_options = options.rules.qif_n_waveforms
@@ -669,6 +670,7 @@ class L3DataGrid(DefaultLoggingClass):
                 flag[np.where(nvw < threshold)] = target_flag
             qif = np.maximum(qif, flag)
 
+        # Check the availiability of leads in an area adjacent to the grid cell
         if "qif_lead_availability" in quality_flag_rules:
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             rule_options = options.rules.qif_lead_availability
