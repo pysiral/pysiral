@@ -78,26 +78,26 @@ variables:
     long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
     units: m
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   radar_freeboard_uncertainty:
     long_name: "uncertainty of radar freeboard"
     units: m
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     units: m
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   sea_ice_thickness:
     long_name: "thickness of the sea ice layer"
@@ -105,13 +105,13 @@ variables:
     units: m
     ancillary_variables: "sea_ice_thickness_uncertainty status_flag"
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
     units: m
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   sea_ice_concentration:
     long_name: "sea ice contration"
@@ -121,7 +121,7 @@ variables:
     valid_min: 0.0
     valid_max: 100.0
     coordinates: "time lon lat"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   status_flag:
     long_name: status flag for the sea ice thickness retrieval
@@ -133,4 +133,4 @@ variables:
     flag_meaning: "0: nominal sea ice thickness retrieval; 1: no input data; 2: outside sea ice concentration mask; 3: latitude above orbit inclination; 4: land, lake or land ice; 5: sea ice thickness retrieval failed;"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
-    grid_mapping: "Lambert Azimuthal Grid"
+    grid_mapping: "Lambert_Azimuthal_Grid"
