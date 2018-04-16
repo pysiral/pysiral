@@ -36,7 +36,7 @@ global_attributes:
   - id: "esacci-seaice-l3c-sit-{source_mission_sensor}-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2.0"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: ""
+  - doi: "{doi}"
   - cdm_data_type: "Grid"
   - comment: "{source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
