@@ -1,7 +1,7 @@
 # Level-2 settings for southern hemisphere CRDP release (ESA CCI on Sea Ice)
 
 id: "ESA CCI Phase-2 Sentinel-3a Antarctic climate data record v1 (ccicdr_sentinel3a_sh_010)"
-version_tag: "v1.0cci"
+version_tag: "exp-v1p0"
 
 # Level 2 processor settings are mission specific
 mission:
