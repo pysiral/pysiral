@@ -28,7 +28,7 @@ global_attributes:
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
   - tracking_id: "{uuid}"
-  - conventions: "CF 1.6"
+  - conventions: "CF-1.6"
   - product_version: "2.0"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Monthly gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2017.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2017.}"
