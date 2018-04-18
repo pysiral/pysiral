@@ -21,10 +21,10 @@ auxdata:
         name: dtu15
         options: null
     sic:
-        name: osisafcdr
+        name: c3s_v1p2
         options: null
     sitype:
-        name: osisaf_c3s_v1
+        name: c3s_v1p0
         options: null
     snow:
         name: warren99
