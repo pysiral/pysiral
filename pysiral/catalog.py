@@ -229,6 +229,23 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         return product_ids
 
+    def has_unique_doi(self, ref_doi):
+        """ Returns True/False if all products have the reference doi """
+
+        # 2 Step Procedure
+        #  1. Test if DOI is unique (true means only one value, but could be None (default values))
+        #  2. Test if unique doi is the reference doi
+
+        dois_in_ctlg = self.dois_in_catalog
+        prd_dois_are_unique = len(dois_in_ctlg) == 1
+
+        # More than one doi in catalog -> test failed
+        if not prd_dois_are_unique:
+            return False
+
+        return dois_in_ctlg[0] == ref_doi
+
+
     def _catalogize(self):
         """Create the product catalog of the repository"""
 
@@ -282,6 +299,14 @@ class SIRALProductCatalog(DefaultLoggingClass):
     @property
     def repo_id(self):
         return str(self._repo_id)
+
+    @property
+    def dois(self):
+        return [prd.doi for prd in self.product_list]
+
+    @property
+    def dois_in_catalog(self):
+        return np.unique(self.dois)
 
     @property
     def n_product_files(self):
@@ -392,7 +417,8 @@ class ProductMetadata(DefaultLoggingClass):
         "time_coverage_start", "time_coverage_end", "product_timeliness",
         "time_coverage_duration", "source_mission_id", "source_hemisphere",
         "geospatial_lat_min", "geospatial_lat_max",
-        "geospatial_lon_min", "geospatial_lon_max"]
+        "geospatial_lon_min", "geospatial_lon_max",
+        "doi"]
 
     def __init__(self, path, target_processing_level=None):
         """
