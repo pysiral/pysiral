@@ -1217,10 +1217,6 @@ class Level3OutputHandler(OutputHandlerBase):
         self._set_basedir(basedir)
 
     @property
-    def has_doi(self):
-        return self._doi is not None
-
-    @property
     def default_output_def_filename(self):
         pysiral_config = ConfigInfo()
         local_settings_path = pysiral_config.pysiral_local_path

@@ -125,6 +125,13 @@ class OutputHandlerBase(DefaultLoggingClass):
             self.error.raise_on_error()
 
     @property
+    def has_doi(self):
+        try: 
+            return self._doi is not None
+        except AttributeError:
+            return False
+
+    @property
     def id(self):
         try:
             return self._output_def.metadata.output_id
