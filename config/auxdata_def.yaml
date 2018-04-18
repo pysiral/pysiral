@@ -449,7 +449,52 @@ sic:
         source:
             transfer: thredds
             server_url: http://thredds.met.no/thredds/fileServer/c3s/contreproc_ice_conc_files/
-            
+
+    c3s_v1p2:
+        pyclass: OsiSafSIC
+        # The final product directory is computed in the auxdata handler, therefore the local machine definition key 
+        # `osisafcdr` must be the root directory of the subfolders defined below
+        local_repository: c3s_v1p2
+        options:
+            auto_product_change: 
+                # The date defines the time, when the second product will be used
+                date_product_change: 2016-01-01T00:00:00
+                osisaf_product_def:
+                    - subfolder: c3s_cdr_v1p2
+                      long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v1p2
+                      filenaming: "ice_conc_{hemisphere_code}_ease-125_reproc_{year}{month}{day}1200.nc4"
+                    - subfolder: c3s_icdr_v1p2
+                      long_name: C3S Sea Ice Concentration Interim Climate Data Record (CDR) - v1p2
+                      filenaming: "ice_conc_{hemisphere_code}_ease-125_cont-reproc_{year}{month}{day}1200.nc4"
+            variable_name: ice_conc
+            uncertainty_variable_name: uncertainty
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 849
+                    n_lines: 849
+                    dx: 12500
+                    dy: 12500
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 849
+                    n_lines: 849
+                    dx: 12500
+                    dy: 12500
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: Null
+
 
 # List of sea ice type products
 sitype:
