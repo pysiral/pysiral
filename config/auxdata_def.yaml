@@ -510,12 +510,12 @@ sitype:
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
 
-    # OSI-SAf
-    osisaf_c3s_v1:
+    # C3S climate data record c1.0
+    c3s_cdr_v1p0:
         pyclass: OsiSafSITypeCDR
-        long_name: OSI-SAF Reprocessed (CDR) Sea Ice Type
+        long_name: C3S Sea Ice Type Climate Data Record (CDR) - v1p0
         filenaming: "ice_type_{hemisphere_code}_ease2-250_cdr-v1p0_{year}{month}{day}1200.nc"
-        local_repository: osisaf_c3s_v1
+        local_repository: c3s_icdr_v1p0
         options:
             variable_name: ice_type
             uncertainty_variable_name: uncertainty
@@ -544,9 +544,45 @@ sitype:
             - month
         source:
             transfer: thredds
-            server_url: http://thredds.met.no//thredds/fileServer/c3s/reproc_ice_type_files
+            server_url: http://thredds.met.no/thredds/fileServer/c3s/reproc_ice_type_files
+
+    # C3S interim climate data record c1.0
+    c3s_icdr_v1p0:
+        pyclass: OsiSafSITypeCDR
+        long_name: C3S Sea Ice Type Interim Climate Data Record (ICDR) - v1p0
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_icdr-v1p0_{year}{month}{day}1200.nc"
+        local_repository: osisaf_c3s_icdr_v1p0
+        options:
+            variable_name: ice_type
+            uncertainty_variable_name: uncertainty
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: http://thredds.met.no/thredds/fileServer/c3s/contreproc_ice_type_files
             type: daily
-            
+
     icdc_nasateam:
         pyclass: ICDCNasaTeam
         long_name: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
