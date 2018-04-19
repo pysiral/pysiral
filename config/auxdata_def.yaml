@@ -632,8 +632,9 @@ sitype:
         pyclass: OsiSafSITypeCDR
         long_name: C3S Sea Ice Type Interim Climate Data Record (ICDR) - v1p0
         filenaming: "ice_type_{hemisphere_code}_ease2-250_icdr-v1p0_{year}{month}{day}1200.nc"
-        local_repository: osisaf_c3s_icdr_v1p0
-        auto_product_change: 
+        local_repository: c3s_v1p0
+        options:
+            auto_product_change: 
                 # The date defines the time, when the second product will be used
                 date_product_change: 2015-04-16T00:00:00
                 osisaf_product_def:
