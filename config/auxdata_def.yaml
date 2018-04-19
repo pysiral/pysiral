@@ -418,7 +418,7 @@ sic:
     c3s_icdr_v1p2:
         pyclass: OsiSafSIC
         long_name: C3S Sea Ice Concentration Interim Climate Data Record (CDR) - v1p2
-        filenaming: "ice_conc_{hemisphere_code}_ease-125_cont-reproc_{year}{month}{day}1200.nc4"
+        filenaming: "ice_conc_{hemisphere_code}_ease-125_cont-reproc_{year}{month}{day}1200.nc"
         local_repository: c3s_icdr_v1p2
         options:
             variable_name: ice_conc
