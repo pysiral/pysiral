@@ -196,6 +196,15 @@ class OsiSafSITypeCDR(SITypeBaseClass):
 
     def _get_local_repository_filename(self, l2):
         path = self._local_repository
+
+        if "auto_product_change" in self.options:
+            opt = self.options.auto_product_change
+            product_index = int(l2.info.start_time > opt.date_product_change)
+            product_def = opt.osisaf_product_def[product_index]
+            path = os.path.join(path, product_def["subfolder"])
+            self.set_filenaming(product_def["filenaming"])
+            self.set_long_name(product_def["long_name"])
+
         for subfolder_tag in self._subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
