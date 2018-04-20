@@ -275,8 +275,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
-            msg = "Level-2 Output [%s]: %s" % (
-                    str(output_handler.id), output_handler.basedir)
+            msg = "Level-2 Output [%s]: %s" % (str(output_handler.id), output_handler.basedir)
             self.log.info(msg)
 
     def _initialize_summary_report(self):
@@ -774,7 +773,7 @@ class Level2ProductDefinition(DefaultLoggingClass):
         self.error = ErrorStatus(self.__class__.__name__)
 
         # Mandatory parameter
-        self._run_tag = str(run_tag)
+        self._run_tag = run_tag
         self._l2_settings_file = l2_settings_file
         self._parse_l2_settings()
 
@@ -799,7 +798,7 @@ class Level2ProductDefinition(DefaultLoggingClass):
 
     @property
     def run_tag(self):
-        return str(self._run_tag)
+        return self._run_tag
 
     @property
     def l2def(self):

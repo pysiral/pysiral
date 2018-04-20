@@ -14,6 +14,7 @@ import glob
 import time
 import sys
 import os
+import re
 
 
 def pysiral_l2proc():
@@ -209,11 +210,31 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
     @property
     def run_tag(self):
+        """ run_tag is a str or relative path that determines the output directory for
+        the Level-2 processor. If the -run-tag option is not specified, the output 
+        directory will be the `product_repository` specification in `local_machine_def` 
+        with the l2 settings file basename as subfolder. 
+
+        One can however specify a custom string, or a relative path, with subfolders 
+        defined by `\` or `/`, e.g.
+
+        Examples:
+            -run-tag cs2awi_v2p0_nrt
+            -run-tag c3s/cdr/cryosat2/v1p0/nh
+        """
+
+        # Get from command line arguments (default: None)
         run_tag = self._args.run_tag
+
+        # If argument is empty use the basename of the l2 settings file
         if run_tag is None:
             run_tag = self._args.l2_settings
+            # Settings file may be specified as full path and not just the id
             if os.path.isfile(run_tag):
                 run_tag = file_basename(run_tag)
+
+        # split the run-tag on potential path seperators
+        run_tag = re.split(r'[\\|/]', run_tag)
         return run_tag
 
     @property

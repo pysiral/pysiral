@@ -16,6 +16,7 @@ from dateutil import parser as dtparser
 from collections import OrderedDict
 import numpy as np
 import parse
+import sys
 import os
 import re
 
@@ -269,7 +270,10 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         protection and product level id subfolder"""
         pysiral_config = ConfigInfo()
         basedir = pysiral_config.local_machine.product_repository
-        basedir = os.path.join(basedir, self.subdirectory)
+        if not isinstance(self.subdirectory, list): 
+            basedir = os.path.join(basedir, self.subdirectory)
+        else:
+            basedir = os.path.join(basedir, *self.subdirectory)
         if self.overwrite_protection:
             basedir = os.path.join(basedir, self.now_directory)
         basedir = os.path.join(basedir, self.product_level_subfolder)
