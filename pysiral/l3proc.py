@@ -385,7 +385,7 @@ class L3DataGrid(DefaultLoggingClass):
         except AttributeError:
             return "attr_unavailable"
         except Exception, msg:
-            print "L3DataGrid.get_attribute Exception: "+str(msg)
+            print "L3DataGrid.get_attribute Exception: "+str(msg)+" for attribute: %s" % attribute_name
             sys.exit(1)
 
     def init_parameter_fields(self, pardefs, level):
