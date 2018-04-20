@@ -2,7 +2,7 @@
 
 # Metadata
 metadata: 
-  output_id: l3c_c3s
+  output_id: l3c
   data_level: 3
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
@@ -12,6 +12,7 @@ product_level_subfolder: l3c_debug
 
 grid_options: 
   flip_yc: True
+  time_dim_is_unlimited: False
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
@@ -55,7 +56,7 @@ global_attributes:
   - time_coverage_end: "{time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
   - time_coverage_resolution: "{time_coverage_duration:period}"
-  - spatial_resolution: "{source_hemisphere:select;25 km;50 km}"
+  - spatial_resolution: "{source_hemisphere:select;25 km;None}"
   - standard_name_vocabulary: "CF"
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
 
