@@ -228,3 +228,6 @@ def get_custom_font(fontsize=20, awi_font=True):
         font_path = os.path.join(folder, "font", "OpenSans-Regular.ttf")
     prop = fm.FontProperties(fname=font_path, size=fontsize)
     return prop
+
+def custom_font(fontsize, color="#4b4b4d"):
+    return dict(color=color, fontproperties=get_custom_font(fontsize=fontsize))
