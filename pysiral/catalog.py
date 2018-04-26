@@ -569,6 +569,14 @@ class ProductMetadata(DefaultLoggingClass):
         return idstr
 
     @property
+    def tcs(self):
+        return self.time_coverage_start
+
+    @property
+    def tce(self):
+        return self.time_coverage_end
+
+    @property
     def tcs_label(self):
         return self._get_datetime_label(self.time_coverage_start)
 
