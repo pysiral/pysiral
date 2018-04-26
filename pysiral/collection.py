@@ -44,7 +44,7 @@ class L3ParameterCollection(DefaultLoggingClass):
             var = getattr(nc, self.variable_name)
             if self.squeeze_empty_dims:
                 var = np.squeeze(var)
-            self._product[product.id] = L3Parameter(self.variable_name, var)
+            self._product[product.id] = L3Parameter(self.variable_name, var, product)
             self.log.info("Add product: %s"% product.id)
 
     def get_monthly_mean(self, month_num, exclude_years=None, **kwargs):
@@ -85,6 +85,21 @@ class L3ParameterCollection(DefaultLoggingClass):
             
         return anomaly
 
+    def get_by_period_id(self, period_id, raise_if_multiple=True):
+        """ Returns product(s) for a given period id (see catalog.ProductMetadata) """
+        prd_list = [prd for prd in self.products if prd.ctlg.period_id == period_id]
+        # Post processing
+        if len(prd_list) == 0:
+            value = None
+        elif len(prd_list) == 1:
+            value = prd_list[0]
+        else:
+            value = prd_list
+            if raise_if_multiple:
+                self.error.add_error("l3collect-multiple-products-per-period-id", "Multiple entries for period_id: %s" % period_id)
+                self.error.raise_on_error()
+        return value 
+
     def _get_product_ids_mean(self, product_ids, filter_width=None):
         """ Return the mean of a list of product ids """
         dims = self.grid_dims
@@ -102,13 +117,82 @@ class L3ParameterCollection(DefaultLoggingClass):
         product_id = self.ctlg.product_ids
         return self._product[product_id[0]].grid_dims
 
+    @property
+    def products(self):
+        return [self._product[prd] for prd in sorted(self._product.keys())]
+
 
 class L3Parameter(DefaultLoggingClass):
 
-    def __init__(self, variable_name, variable):
+    def __init__(self, variable_name, variable, ctlg):
         self.variable_name = variable_name
         self.variable = variable
+        self.ctlg = ctlg
 
     @property
     def grid_dims(self):
         return self.variable.shape
+
+class L3ParameterPair(DefaultLoggingClass):
+
+    def __init__(self, param_a, param_b):
+        self.param_a = param_a
+        self.param_b = param_b
+
+    def get_common_grid_points(self):
+        """ Return a vector of all grid values with coverage in both pairs """
+        a_has_data = np.isfinite(self.param_a.variable)
+        b_has_data = np.isfinite(self.param_b.variable)
+        common_grid_indices = np.where(np.logical_and(a_has_data, b_has_data))
+        return np.ravel(self.param_a.variable[common_grid_indices]), np.ravel(self.param_b.variable[common_grid_indices])
+
+    @property
+    def grid_dims(self):
+        return self.variable.shape
+
+
+class L3ParamPairCollection(DefaultLoggingClass):
+
+    def __init__(self, collect_a, collect_b):
+
+        super(L3ParamPairCollection, self).__init__(self.__class__.__name__)
+        
+        # Init parameters
+        self._l3_pairs = {}
+
+        # Store parameters
+        self._collect_a = collect_a
+        self._collect_b = collect_b
+
+        # Search for overlap between both collections
+        self._get_pairs()
+
+    def get_all_pairs(self):
+        return self._get_point_list(self.pairs)
+
+    def get_month_pairs(self, month_num):
+        pairs = [pair for pair in self.pairs if pair.param_a.ctlg.tcs.month == month_num]
+        return self._get_point_list(pairs)
+
+    def _get_point_list(self, pair_list):
+        a = np.array([])
+        b = np.array([])
+        for pair in pair_list:
+            prd_a, prd_b = pair.get_common_grid_points()
+            a, b = np.append(a, prd_a), np.append(b, prd_b)
+        return a, b
+
+    def _get_pairs(self):
+        # Loop over all product in collection A and see if counterpart exists in collection B
+        for prd_a in self._collect_a.products:
+            prd_b = self._collect_b.get_by_period_id(prd_a.ctlg.period_id)
+            if prd_b is not None:
+                self._l3_pairs[prd_a.ctlg.period_id] = L3ParameterPair(prd_a, prd_b)
+
+    @property
+    def pairs(self):
+        return [self._l3_pairs[period_id] for period_id in self.period_ids]
+
+    @property
+    def period_ids(self):
+        return sorted(self._l3_pairs.keys())
