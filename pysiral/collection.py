@@ -118,8 +118,18 @@ class L3ParameterCollection(DefaultLoggingClass):
         return self._product[product_id[0]].grid_dims
 
     @property
+    def years(self):
+        years = sorted([prd.ctlg.tcs.year for prd in self.products])
+        return np.unique(years)
+
+    @property
     def products(self):
         return [self._product[prd] for prd in sorted(self._product.keys())]
+
+    @property
+    def platforms(self):
+        platforms = sorted([prd.ctlg.platform for prd in self.products])
+        return np.unique(platforms)
 
 
 class L3Parameter(DefaultLoggingClass):
