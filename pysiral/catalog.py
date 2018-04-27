@@ -13,7 +13,7 @@ import numpy as np
 
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
-from pysiral.config import TimeRangeRequest
+from pysiral.config import TimeRangeRequest, MISSION_NAME_DICT
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -413,7 +413,7 @@ class ProductMetadata(DefaultLoggingClass):
     VALID_PROCESSING_LEVELS = ["l2i", "l2p", "l3c"]
     VALID_CDM_DATA_LEVEL = ["Trajectory", "Grid"]
     NC_PRODUCT_ATTRIBUTES = [
-        "processing_level", "product_version", "cdm_data_level", 
+        "processing_level", "product_version", "cdm_data_level", "platform", 
         "time_coverage_start", "time_coverage_end", "product_timeliness",
         "time_coverage_duration", "source_mission_id", "source_hemisphere",
         "geospatial_lat_min", "geospatial_lat_max",
@@ -463,6 +463,9 @@ class ProductMetadata(DefaultLoggingClass):
 
             if re.search("geospatial", attribute):
                 value = float(value)
+
+            if attribute == "source_mission_id":
+                setattr(self, "platform", MISSION_NAME_DICT[value])
 
             setattr(self, attribute, value)
 
