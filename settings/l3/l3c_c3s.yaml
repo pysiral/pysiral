@@ -177,17 +177,6 @@ grid_settings:
     no_land_cells: True
     minimum_valid_grid_points: 2
 
-# ==================================================
-# Post processing for gridded parameters
-# ==================================================
-
-# Mask grid cells 
-# Note: The masking is exectuted in the alphabetical order of the mask names.
-#       If there is a dependance between following mask procedures this needs
-#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
-
-l3_masks: Null
-
 
 # ==================================================
 # Post processing for gridded parameters
