@@ -446,6 +446,8 @@ class ProductMetadata(DefaultLoggingClass):
         t1 = time.clock()
         self.nc_access_time = t1-t0
 
+        has_platform = False
+
         for attribute in self.NC_PRODUCT_ATTRIBUTES:
             
             # Extract value from netcdf global attributes
@@ -464,9 +466,9 @@ class ProductMetadata(DefaultLoggingClass):
             if re.search("geospatial", attribute):
                 value = float(value)
 
-            if attribute == "source_mission_id":
-                setattr(self, "platform", MISSION_NAME_DICT[value])
-
+            if attribute == "source_mission_id" and value is not None:
+                setattr(self, "platform", MISSION_NAME_DICT.get(value, None))
+                
             setattr(self, attribute, value)
 
     def has_coverage(self, dt):
