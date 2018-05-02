@@ -78,7 +78,10 @@ class L3ParameterCollection(DefaultLoggingClass):
         # Get target month
         month_grid = self.get_month(year_num, month_num)
         
-        anomaly = month_grid-mean_grid
+        if month_grid is not None:
+            anomaly = month_grid-mean_grid
+        else:
+            anomaly = np.full(mean_grid.shape, np.nan)
 
         if filter_width is not None:
             anomaly = smooth_2darray(anomaly, filter_width=filter_width)
