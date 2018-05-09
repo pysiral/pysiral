@@ -18,6 +18,7 @@ class L3ParameterCollection(DefaultLoggingClass):
         self.variable_name = variable_name
         self.squeeze_empty_dims = squeeze_empty_dims
         self._product = {}
+        self._mask = {}
         self.error = ErrorStatus()
 
         # Simple consistency check
@@ -103,6 +104,12 @@ class L3ParameterCollection(DefaultLoggingClass):
                 self.error.raise_on_error()
         return value 
 
+    def set_mask(self, mask, mask_name):
+        """ Adds a boolean array that needs to be of the same dimension than
+        the product (True=Masked) """
+        for prd in self.products:
+            prd.set_mask(mask, mask_name)
+
     def _get_product_ids_mean(self, product_ids, filter_width=None):
         """ Return the mean of a list of product ids """
         dims = self.grid_dims
@@ -139,12 +146,36 @@ class L3Parameter(DefaultLoggingClass):
 
     def __init__(self, variable_name, variable, ctlg):
         self.variable_name = variable_name
-        self.variable = variable
+        self._variable = variable
+        self._masks = {}
         self.ctlg = ctlg
+
+    def set_mask(self, mask, mask_name):
+        self._masks[mask_name] = mask
+
+    def _get_masked_variable(self):
+        masked_variable = np.copy(self._variable)
+        for mask_name in self.mask_names:
+            mask = self._masks[mask_name]
+            masked_variable[np.where(mask)] = np.nan          
+        return masked_variable
+
+    @property
+    def variable(self):
+        return self._get_masked_variable()
 
     @property
     def grid_dims(self):
-        return self.variable.shape
+        return self._variable.shape
+
+    @property
+    def has_mask(self):
+        return len(self.mask_names) > 0
+
+    @property
+    def mask_names(self):
+        return sorted(self._masks.keys())
+
 
 class L3ParameterPair(DefaultLoggingClass):
 
