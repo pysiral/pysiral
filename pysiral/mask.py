@@ -320,7 +320,7 @@ class L3Mask(DefaultLoggingClass):
     """ Container for Level-3 mask compliant netCDF files
     (see output of pysiral.mask.MaskSourceBase.export_l3_mask) """
 
-    def __init__(self, mask_name, grid_id):
+    def __init__(self, mask_name, grid_id, flipud=False):
         """ Mask container for Level3Processor. Arguments are the
         name (id) of the mask (e.g. warren99_is_valid) and the id of the
         grid (e.g. nh25kmEASE2) """
@@ -331,6 +331,7 @@ class L3Mask(DefaultLoggingClass):
         # Save input
         self._mask_name = mask_name
         self._grid_id = grid_id
+        self._flipud = flipud
 
         # Read the mask
         self._read_mask_netcdf()
@@ -342,7 +343,10 @@ class L3Mask(DefaultLoggingClass):
 
     @property
     def mask(self):
-        return self._nc.mask
+        mask = self._nc.mask
+        if self._flipud:
+            mask = np.flipud(mask)
+        return mask
 
     @property
     def mask_name(self):
