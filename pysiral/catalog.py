@@ -57,6 +57,23 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         return check_passed
 
+    def limit_to_period(self, limit_tcs_dt, limit_tce_dt):
+        """ Removes all catalog entries that have no overlap with start 
+        and end times (not reversible) 
+        TODO: think of a way of making it reversible or return a catalog subset """
+
+        # Search for products that have no overlap (including partial overal)
+        product_ids_not_in_subset = []
+        for product in self.product_list:
+            if not product.has_overlap(limit_tcs_dt, limit_tce_dt):
+                product_ids_not_in_subset.append(product.id)
+
+        # Remove from Catalog
+        msg = "Removed %g products from catalog" % len(product_ids_not_in_subset)
+        self.log.info(msg)
+        for product_id in product_ids_not_in_subset:
+            self._catalog.pop(product_id, None)
+
     def append(self, ctlg, duplication=False):
         """Add the information from another catalog with rules for handling of duplicates 
         (same period, same mission)
