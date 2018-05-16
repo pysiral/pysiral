@@ -89,6 +89,35 @@ class L3ParameterCollection(DefaultLoggingClass):
             
         return anomaly
 
+    def get_winter_season_mean(self, start_year, anomaly=False, **kwargs):
+        """ Returns the mean of a winter season (Oct. start_year till Apr. start_year+1)
+        for the parameter or the anomaly (anomaly=True) """
+        
+        # TODO: Simple solution for the moment
+        winter_season_month = [10, 11, 12, 1, 2, 3, 4]
+        n_month = len(winter_season_month)
+
+        # Init the array
+        dims = [n_month]
+        dim = dims.extend(self.grid_dims)
+        grid_array = np.full(dims, np.nan)
+
+
+        year_num = start_year
+        for i, month_num in enumerate(winter_season_month):
+
+            # Increase year number in January
+            if month_num == 1:
+                year_num += 1
+
+            if anomaly:
+                grid_array[i, :, :] = self.get_monthly_anomaly(year_num, month_num, **kwargs)
+            else:
+                grid_array[i, :, :] = self.get_month(year_num, month_num, **kwargs)
+
+        return np.nanmean(grid_array, axis=0)
+
+
     def get_by_period_id(self, period_id, raise_if_multiple=True):
         """ Returns product(s) for a given period id (see catalog.ProductMetadata) """
         prd_list = [prd for prd in self.products if prd.ctlg.period_id == period_id]
