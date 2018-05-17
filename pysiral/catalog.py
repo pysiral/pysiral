@@ -74,6 +74,9 @@ class SIRALProductCatalog(DefaultLoggingClass):
         for product_id in product_ids_not_in_subset:
             self._catalog.pop(product_id, None)
 
+    def get_product_info(self, product_id):
+        return self._catalog.get(product_id, None)
+
     def append(self, ctlg, duplication=False):
         """Add the information from another catalog with rules for handling of duplicates 
         (same period, same mission)
@@ -179,6 +182,34 @@ class SIRALProductCatalog(DefaultLoggingClass):
         else:
             return product_ids
 
+    def get_all_winter_ids(self):
+        """ Returns a list of ids lists for each winter in the catalogue """
+
+        # Get time range
+        first_year, first_month = self.tcs.year, self.tcs.year
+        last_year, last_month = self.tce.year, self.tce.year
+
+        # Verify start year & end year
+        # (must be that of winter beginning of October)
+        if first_month < 10:
+            first_year -= 1
+        if last_month < 10:
+            last_year -= 1
+
+        winter_ids = []
+        for winter_start_year in np.arange(first_year, last_year+1):
+            time_range = self.get_winter_time_range(winter_start_year)
+            product_ids = self.query_overlap(time_range.start_dt, time_range.stop_dt, return_value="ids")
+            winter_ids.append(product_ids)
+
+        return winter_ids
+
+    def get_winter_time_range(self, start_year):
+        winter_start_tuple = [start_year, 10]
+        winter_end_tuple = [start_year+1, 4]
+        time_range = TimeRangeRequest(winter_start_tuple, winter_end_tuple, period="custom")
+        return time_range 
+
     def get_northern_winter_netcdfs(self, start_year):
         """Returns a list for northern winter data for the period october through april
         
@@ -190,9 +221,7 @@ class SIRALProductCatalog(DefaultLoggingClass):
         """
 
         # Construct time range 
-        winter_start_tuple = [start_year, 10]
-        winter_end_tuple = [start_year+1, 4]
-        time_range = TimeRangeRequest(winter_start_tuple, winter_end_tuple, period="custom")
+        time_range = get_winter_time_range(start_year)
 
         # Query time range
         product_files = self.query_overlap(time_range.start_dt, time_range.stop_dt)
@@ -261,7 +290,6 @@ class SIRALProductCatalog(DefaultLoggingClass):
             return False
 
         return dois_in_ctlg[0] == ref_doi
-
 
     def _catalogize(self):
         """Create the product catalog of the repository"""
@@ -612,6 +640,11 @@ class ProductMetadata(DefaultLoggingClass):
         identifier = (self.tcs_label, self.tce_label, self.time_coverage_duration)
         period_id = "%sT%s-%s" % identifier
         return period_id
+
+    @property
+    def ref_time(self):
+        tcs, tce = self.tcs, self.tce
+        return tcs + (tce - tcs)/2
 
     @property
     def hemisphere(self):
