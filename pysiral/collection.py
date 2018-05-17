@@ -73,7 +73,7 @@ class L3ParameterCollection(DefaultLoggingClass):
         if exclude_ref_month:
             exclude_year = [year_num]
         else:
-            exclude_year = False
+            exclude_year = []
         mean_grid = self.get_monthly_mean(month_num, exclude_years=exclude_year)
 
         # Get target month
