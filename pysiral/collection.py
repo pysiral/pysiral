@@ -48,6 +48,34 @@ class L3ParameterCollection(DefaultLoggingClass):
             self._product[product.id] = L3Parameter(self.variable_name, var, product)
             self.log.info("Add product: %s"% product.id)
 
+    def get_all_winters(self, anomaly=False, mean=False, **kwargs):
+        """ Return all winter (oct - apr) grids as a list of lists 
+        [[datetimes, value], [datetimes, value], ...]. 
+        The value can be grid/mean, for both the parameter as
+        well as the anomaly """
+        # Get winters ids
+        all_winter_ids = self.ctlg.get_all_winter_ids()
+        all_winter_data = []
+        for winter_ids in all_winter_ids:
+            dates, value = [], []
+            for product_id in winter_ids:
+                # Get the product info
+                product_info = self.ctlg.get_product_info(product_id)
+                year_num, month_num = product_info.tcs.year, product_info.tcs.month
+                # Retrieve the gridded data
+                if anomaly:
+                    l3_value = self.get_monthly_anomaly(year_num, month_num, **kwargs)
+                else:
+                    l3_value = self.get_month(year_num, month_num)
+                # Compute mean if required
+                if mean:
+                    l3_value = np.nanmean(l3_value)
+                # Append to current winter list
+                dates.append(product_info.ref_time)
+                value.append(l3_value)
+            all_winter_data.append([dates, value])
+        return all_winter_data
+
     def get_monthly_mean(self, month_num, exclude_years=None, **kwargs):
         # Get list of product ids for given month
         product_ids = self.ctlg.get_month_products(month_num, exclude_years=exclude_years)
