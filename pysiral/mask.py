@@ -349,6 +349,21 @@ class L3Mask(DefaultLoggingClass):
         return mask
 
     @property
+    def lat(self):
+        lat = self._nc.latitude
+        if self._flipud:
+            lat = np.flipud(lat)
+        return lat
+
+    @property
+    def lon(self):
+        lon = self._nc.longitude
+        if self._flipud:
+            lon = np.flipud(lon)
+        return lon
+
+
+    @property
     def mask_name(self):
         return str(self._mask_name)
 
