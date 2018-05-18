@@ -1,0 +1,160 @@
+# This is the default output definition for the Level2Processor
+
+# Metadata
+metadata: 
+  output_id: l2p_sicci2_plus
+  data_level: 2
+  data_level_description: Level-2 Pre-processed (daily summary of geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming: 
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv2.0plus.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv2.0plus.nc"
+
+product_level_subfolder: l2p_plus
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"  
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
+  - references: "Algorithm Theoretical Baseline Document, Sea Ice Climate Change Initiative: Phase 2 (version 2.2)"
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: "2.0"
+  - processing_level: "Level-2 Pre-processed (l2p)"
+  - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2017.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2017.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval. (plus version with extended set of variables)"
+  - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"  
+  - id: "esacci-seaice-l2p-sit-{hemisphere_code}-{source_mission_sensor:lower}-{source_mission_id}-{time_coverage_start:%Y%m%d}-fv2.0plus"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: ""
+  - cdm_data_type: "Trajectory"
+  - comment: "{source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Stefan Hendricks, Stephan Paul (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine (Finnish Meteorological Institute, Helsinki, Finland)"
+  - creator_url: "http://www.awi.de"
+  - creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de, eero.rinne@fmi.fi"
+  - project: "Climate Change Initiative - European Space Agency"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: "0.0"
+  - geospatial_vertical_max: "0.0"
+  - time_coverage_start: "{time_coverage_start:%Y%m%dT%H%M%SZ}"
+  - time_coverage_end: "{time_coverage_end:%Y%m%dT%H%M%SZ}"
+  - time_coverage_duration: "{time_coverage_duration:period}"
+  - time_coverage_resolution: "satellite_orbit_frequency"
+  - standard_name_vocabulary: "CF"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+  
+  time:
+    var_source_name: timestamp
+    long_name: utc timestamp
+    units: seconds since 1970-01-01
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees_east
+    coordinates: time
+
+  lat:
+    var_source_name: latitude
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees_north
+    coordinates: time
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height"
+    units: m
+    coordinates: time
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+
+  radar_freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the radar freeboard retrieval"
+    units: m
+    coordinates: time
+
+  freeboard:
+    long_name: "freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: time
+
+  freeboard_uncertainty:
+    long_name: "freeboard uncertainty"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    coordinates: time
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    coordinates: time
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification standar_error
+    units: "1"
+    coordinates: time
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: snow_depth
+    units: m
+    coordinates: time
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: snow_depth standard_error
+    units: m
+    coordinates: time
+
+  snow_density:
+    long_name: "density of the snow layer"
+    units: kg m-3
+    coordinates: time
+    
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    units: kg m-3
+    coordinates: time
+    
+  ice_density:
+    long_name: "density of the sea ice layer"
+    standard_name: sea_ice_density
+    units: kg m-3
+    coordinates: time
+    
+  ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    standard_name: sea_ice_density standard_error
+    units: kg m-3
+    coordinates: time
+
+  sea_ice_thickness:
+    long_name: "thickness of the sea ice layer"
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: time
+    
+  sea_ice_thickness_uncertainty:
+    long_name: "uncertainty of the sea ice layer thickness"
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    coordinates: time

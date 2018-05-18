@@ -12,10 +12,10 @@ grid_options:
 
 # Output Definition
 filenaming: 
-  monthly: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv2.0debug.nc"
-  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0debug.nc"
-  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0debug.nc"
-product_level_subfolder: l3c_debug
+  monthly: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv2.0plus.nc"
+  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0plus.nc"
+  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0plus.nc"
+product_level_subfolder: l3c_plus
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
