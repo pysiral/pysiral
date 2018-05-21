@@ -154,8 +154,7 @@ class L3ParameterCollection(DefaultLoggingClass):
             else:
                 grid_array[i, :, :] = self.get_month(year_num, month_num, **kwargs)
 
-        return np.nanmean(grid_array, axis=0)
-
+        return np.nanmean(grid_array, axis=0)       
 
     def get_by_period_id(self, period_id, raise_if_multiple=True):
         """ Returns product(s) for a given period id (see catalog.ProductMetadata) """
