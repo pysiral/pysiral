@@ -271,22 +271,26 @@ class L3ParameterPair(DefaultLoggingClass):
         self.param_a = param_a
         self.param_b = param_b
 
-    def get_common_grid_points(self):
+    def get_common_grid_points(self, ravel=True):
         """ Return a vector of all grid values with coverage in both pairs """
         common_grid_indices = self.common_grid_indices
-        return np.ravel(self.param_a.variable[common_grid_indices]), np.ravel(self.param_b.variable[common_grid_indices])
+        param_a = self.param_a.variable[common_grid_indices]
+        param_b = self.param_b.variable[common_grid_indices]
+        if ravel: 
+            param_a = np.ravel(param_a)
+            param_b = np.ravel(param_b)
+        return np.array(param_a), np.array(param_b)
 
-    def get_common_grid_auxvar(self, targ):
+    def get_common_grid_auxvar(self, targ, ravel=True):
         common_grid_indices = self.common_grid_indices
         aux_var_a = self.param_a.get_auxiliary_var(targ)
         aux_var_b = self.param_b.get_auxiliary_var(targ)
-        try: 
-            return np.ravel(aux_var_a[common_grid_indices]), np.ravel(aux_var_b[common_grid_indices])
-        except IndexError:
-            print np.shape(aux_var_a)
-            print np.shape(aux_var_b)
-            print np.shape(common_grid_indices)
-            sys.exit()
+        aux_var_a = aux_var_a[common_grid_indices]
+        aux_var_b = aux_var_b[common_grid_indices]
+        if ravel: 
+            aux_var_a = np.ravel(aux_var_a)
+            aux_var_b = np.ravel(aux_var_b)
+        return np.array(aux_var_a), np.array(aux_var_b)
 
     @property
     def common_grid_indices(self):
