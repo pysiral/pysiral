@@ -176,13 +176,16 @@ class SIRALProductCatalog(DefaultLoggingClass):
 
         # Search files
         product_ids = [prd.id for prd in self.product_list if prd.has_overlap(tcs, tce)]
-        product_path = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
         if return_value == "path":
+            product_path = [prd.path for prd in self.product_list if prd.has_overlap(tcs, tce)]
             return product_path
+        elif return_value == "period_id":
+            period_id = [prd.period_id for prd in self.product_list if prd.has_overlap(tcs, tce)]
+            return period_id
         else:
             return product_ids
 
-    def get_all_winter_ids(self):
+    def get_all_winter_ids(self, return_value="ids"):
         """ Returns a list of ids lists for each winter in the catalogue """
 
         # Get time range
@@ -199,10 +202,11 @@ class SIRALProductCatalog(DefaultLoggingClass):
         winter_ids = []
         for winter_start_year in np.arange(first_year, last_year+1):
             time_range = self.get_winter_time_range(winter_start_year)
-            product_ids = self.query_overlap(time_range.start_dt, time_range.stop_dt, return_value="ids")
-            winter_ids.append(product_ids)
+            ids = self.query_overlap(time_range.start_dt, time_range.stop_dt, return_value=return_value)
+            winter_ids.append(ids)
 
         return winter_ids
+
 
     def get_winter_time_range(self, start_year):
         winter_start_tuple = [start_year, 10]
