@@ -10,12 +10,13 @@ from pysiral.iotools import ReadNC
 
 class L3ParameterCollection(DefaultLoggingClass):
 
-    def __init__(self, variable_name, repo_dir=None, ctlg=None, squeeze_empty_dims=True):
+    def __init__(self, variable_name, repo_dir=None, ctlg=None, squeeze_empty_dims=True, auxiliary_vars=[]):
 
         super(L3ParameterCollection, self).__init__(self.__class__.__name__)
 
         # Name of the parameter from the netCDF files
         self.variable_name = variable_name
+        self.auxiliary_vars = auxiliary_vars
         self.squeeze_empty_dims = squeeze_empty_dims
         self._product = {}
         self._mask = {}
@@ -45,8 +46,18 @@ class L3ParameterCollection(DefaultLoggingClass):
             var = getattr(nc, self.variable_name)
             if self.squeeze_empty_dims:
                 var = np.squeeze(var)
-            self._product[product.id] = L3Parameter(self.variable_name, var, product)
+            l3par = L3Parameter(self.variable_name, var, product)
+            for auxiliary_var_name in self.auxiliary_vars:
+                auxvar = getattr(nc, auxiliary_var_name)
+                if self.squeeze_empty_dims:
+                    auxvar = np.squeeze(auxvar)
+                l3par.set_auxiliary_var(auxiliary_var_name, auxvar)
+            self._product[product.id] = l3par
             self.log.info("Add product: %s"% product.id)
+
+    def get_total_mean(self, **kwargs):
+        """ Return the collection wide average """
+        return self._get_product_ids_mean(self.product_ids, **kwargs)
 
     def get_all_winters(self, anomaly=False, mean=False, **kwargs):
         """ Return all winter (oct - apr) grids as a list of lists 
@@ -167,13 +178,16 @@ class L3ParameterCollection(DefaultLoggingClass):
         for prd in self.products:
             prd.set_mask(mask, mask_name)
 
-    def _get_product_ids_mean(self, product_ids, filter_width=None):
+    def _get_product_ids_mean(self, product_ids, targ="main_variable", filter_width=None):
         """ Return the mean of a list of product ids """
         dims = self.grid_dims
         shape = (len(product_ids), dims[0], dims[1])
         varstack = np.full(shape, np.nan)
         for i, product_id in enumerate(product_ids):
-            varstack[i, :, :] = self._product[product_id].variable
+            if targ == "main_variable":
+                varstack[i, :, :] = self._product[product_id].variable
+            else:
+                varstack[i, :, :] = self._product[product_id].get_auxiliary_var(targ)
         meanvar = np.nanmean(varstack, axis=0)
         if filter_width is not None:
             meanvar = smooth_2darray(meanvar, filter_width)
@@ -198,11 +212,18 @@ class L3ParameterCollection(DefaultLoggingClass):
         platforms = sorted([prd.ctlg.platform for prd in self.products])
         return np.unique(platforms)
 
+    @property
+    def product_ids(self):
+        product_ids = self._product.keys()
+        return sorted(product_ids)
+
+
 
 class L3Parameter(DefaultLoggingClass):
 
     def __init__(self, variable_name, variable, ctlg):
         self.variable_name = variable_name
+        self._aux_vars = {}
         self._variable = variable
         self._masks = {}
         self.ctlg = ctlg
@@ -210,11 +231,21 @@ class L3Parameter(DefaultLoggingClass):
     def set_mask(self, mask, mask_name):
         self._masks[mask_name] = mask
 
+    def set_auxiliary_var(self, aux_var_name, aux_var):
+        self._aux_vars[aux_var_name] = aux_var
+
+    def get_auxiliary_var(self, aux_var_name):
+        grid = self._aux_vars.get(aux_var_name, np.full(self.grid_dims, np.nan))
+        for mask_name in self.mask_names:
+            mask = self._masks[mask_name]
+            grid[np.where(mask)] = np.nan
+        return grid 
+
     def _get_masked_variable(self):
         masked_variable = np.copy(self._variable)
         for mask_name in self.mask_names:
             mask = self._masks[mask_name]
-            masked_variable[np.where(mask)] = np.nan          
+            masked_variable[np.where(mask)] = np.nan
         return masked_variable
 
     @property
@@ -242,10 +273,27 @@ class L3ParameterPair(DefaultLoggingClass):
 
     def get_common_grid_points(self):
         """ Return a vector of all grid values with coverage in both pairs """
+        common_grid_indices = self.common_grid_indices
+        return np.ravel(self.param_a.variable[common_grid_indices]), np.ravel(self.param_b.variable[common_grid_indices])
+
+    def get_common_grid_auxvar(self, targ):
+        common_grid_indices = self.common_grid_indices
+        aux_var_a = self.param_a.get_auxiliary_var(targ)
+        aux_var_b = self.param_b.get_auxiliary_var(targ)
+        try: 
+            return np.ravel(aux_var_a[common_grid_indices]), np.ravel(aux_var_b[common_grid_indices])
+        except IndexError:
+            print np.shape(aux_var_a)
+            print np.shape(aux_var_b)
+            print np.shape(common_grid_indices)
+            sys.exit()
+
+    @property
+    def common_grid_indices(self):
         a_has_data = np.isfinite(self.param_a.variable)
         b_has_data = np.isfinite(self.param_b.variable)
         common_grid_indices = np.where(np.logical_and(a_has_data, b_has_data))
-        return np.ravel(self.param_a.variable[common_grid_indices]), np.ravel(self.param_b.variable[common_grid_indices])
+        return common_grid_indices
 
     @property
     def grid_dims(self):
@@ -270,6 +318,14 @@ class L3ParamPairCollection(DefaultLoggingClass):
 
     def get_all_pairs(self):
         return self._get_point_list(self.pairs)
+
+    def get_all_pairs_auxvar(self, targ):
+        a = np.array([])
+        b = np.array([])
+        for pair in self.pairs:
+            prd_a, prd_b = pair.get_common_grid_auxvar(targ)
+            a, b = np.append(a, prd_a), np.append(b, prd_b)
+        return a, b
 
     def get_month_pairs(self, month_num):
         pairs = [pair for pair in self.pairs if pair.param_a.ctlg.tcs.month == month_num]
