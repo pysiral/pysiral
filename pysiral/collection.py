@@ -299,6 +299,10 @@ class L3ParameterPair(DefaultLoggingClass):
     def grid_dims(self):
         return self.variable.shape
 
+    @property
+    def time(self):
+        return self.param_a.ctlg.ref_time
+
 
 class L3ParamPairCollection(DefaultLoggingClass):
 
