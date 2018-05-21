@@ -323,6 +323,9 @@ class L3ParamPairCollection(DefaultLoggingClass):
     def get_all_pairs(self):
         return self._get_point_list(self.pairs)
 
+    def get_by_period_id(self, period_id):
+        return self._l3_pairs.get(period_id, None)
+
     def get_all_pairs_auxvar(self, targ):
         a = np.array([])
         b = np.array([])
