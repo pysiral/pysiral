@@ -156,6 +156,9 @@ class L3ParameterCollection(DefaultLoggingClass):
 
         return np.nanmean(grid_array, axis=0)       
 
+    def get_by_product_id(self, prd_id):
+        return self._product.get(prd_id, None)
+
     def get_by_period_id(self, period_id, raise_if_multiple=True):
         """ Returns product(s) for a given period id (see catalog.ProductMetadata) """
         prd_list = [prd for prd in self.products if prd.ctlg.period_id == period_id]
