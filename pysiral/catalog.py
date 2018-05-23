@@ -25,8 +25,10 @@ class SIRALProductCatalog(DefaultLoggingClass):
         super(SIRALProductCatalog, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self.repo_path = repo_path
-        self.auto_id = auto_id
         self._repo_id = repo_id
+        if repo_id is not None:
+            auto_id = False
+        self.auto_id = auto_id
         self._catalog = {}
 
     def run_checks(self, check_list, raise_on_failure=True):
