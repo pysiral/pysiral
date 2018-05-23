@@ -7,7 +7,12 @@ metadata:
   data_level_description: Level-3 super-colocated (gridded geophysical parameters)
 
 # Output Definition
-filenaming: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m}.nc"
+filenaming: 
+  monthly: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m}.nc"
+  default_week: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  daily: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m%d}.nc"
+  custom: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  default: "ice_thickness_nh_ease2-250_cdr-v1p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
 product_level_subfolder: l3c_plus
 
 grid_options: 
