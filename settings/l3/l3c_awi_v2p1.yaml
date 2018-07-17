@@ -248,7 +248,7 @@ l3_post_processing:
         # required for uncertainty computation
         options: 
             water_density: 1024.0
-            snow_depth_correction_factor: 0.5
+            snow_depth_correction_factor: 0.22
 
     # Compute the status flag
     status_flag: 
