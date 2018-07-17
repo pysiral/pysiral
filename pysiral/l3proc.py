@@ -15,6 +15,7 @@ from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
+from pysiral.sit import frb2sit_errprop
 
 from scipy.ndimage.filters import maximum_filter
 
@@ -747,6 +748,62 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Write Status flag
         self._l3["status_flag"] = sf
+
+    def _api_l3pp_sit_l3_uncertainty(self, options):
+        """ Compute a level 3 uncertainty. The general idea is to 
+        compute the error propagation of average error components, 
+        where for components for random error the error of the l2 average
+        is used and for systematic error components the average of the
+        l2 error """
+        
+        # Options
+        rho_w = options.water_density
+        sd_corr_fact = options.snow_depth_correction_factor
+
+         # Loop over grid items
+        for xi in self.grid_xi_range:
+            for yj in self.grid_yj_range:
+
+                # Check of data exists
+                if np.isnan(self._l3["sea_ice_thickness"][yj, xi]):
+                    continue
+
+                # Get parameters
+                frb = self._l3["sea_ice_freeboard"][yj, xi]
+                sd = self._l3["snow_depth"][yj, xi]
+                rho_i = self._l3["sea_ice_density"][yj, xi]
+                rho_s = self._l3["snow_density"][yj, xi]
+
+                # Get systematic error components
+                sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
+                rho_i_unc = self._l3["sea_ice_density_uncertainty"][yj, xi]
+                rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
+
+                # Get random uncertainty 
+                # Note: this applies only to the radar freeboard uncertainty. 
+                #       Thus we need to recalculate the sea ice freeboard uncertainty
+
+                # Get the stack of radar freeboard uncertainty values and remove NaN's
+                rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
+                rfrb_uncs = np.array(self._l2["radar_freeboard_uncertainty"][yj, xi])
+                rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
+                n = len(rfrb_uncs)
+
+                # Compute radar freeboard uncertainty as error or the mean from values with individual 
+                # error components (error of a weighted mean)
+                weight = np.nansum(1./rfrb_uncs**2)
+                rfrb_unc = 1./np.sqrt(weight))
+                self._l2["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+
+                # Calculate the level-3 freeboard uncertainty with upated radar freeboard uncertainty
+                deriv_snow = sd_corr_fact
+                frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
+                self._l2["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+
+                # Calculate the level-3 thickness uncertainty 
+                errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
+                self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = frb2sit_errprop(*errprop_args)
+
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined

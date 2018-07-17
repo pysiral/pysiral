@@ -1,0 +1,288 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata: 
+  output_id: l3c_cs2awi
+  data_level: 3
+  data_level_description: Level-3 super-colocated (gridded geophysical parameters)
+
+# Output Definition (for each period definition)
+filenaming: 
+  monthly: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-v2p1.nc"
+  default_week: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
+  daily: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-v2p1.nc"
+  custom: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
+  default: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
+
+product_level_subfolder: l3c_grid_v2p1
+
+grid_options: 
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
+  - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research (AWI), Bremerhaven, Germany"
+  - project: "AWI Sea Ice Radar Altimetry"  
+  - comment: ""
+  - source: "Satellite radar altimetry"
+  - history: "{utc_now} (created)"
+  - references: "TBD"
+  - tracking_id: "None"
+  - conventions: "CF-1.6"
+  - product_version: "cs2awi v2.1"  
+  - summary: ""
+  - keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
+  - id: ""
+  - naming: ""
+  - keywords_vocabulary: ""
+  - standard_name_vocabulary: ""  
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  - date_created: "{utc_now}"
+  - date_issued: ""
+  - date_modified: ""
+  - creator_name: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
+  - creator_url: "http://www.awi.de"
+  - creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de, stephan.paul@awi.de"
+  - publisher_name: "meereisportal.de"
+  - publisher_url: "http://www.meereisportal.de/"
+  - publisher_email: "info@meereisportal.de"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - cdm_data_type: "Grid"  
+  - spatial_resolution: "25.0 km grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - source_mission_name: "{source_mission_name}"
+  - source_mission_id: "{source_mission_id}"
+  - source_mission_sensor: "{source_mission_sensor}"
+  - source_timeliness: "{source_timeliness}"
+  - source_hemisphere: "{source_hemisphere}"
+  - source_auxdata_snow: "{source_auxdata_snow}"
+  - source_auxdata_sic: "{source_auxdata_sic}"
+  - source_auxdata_sitype: "{source_auxdata_sitype}"  
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+    
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  mean_sea_surface:
+    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
+    standard_name: sea_surface_height_above_reference_ellipsoid
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_surface_anomaly:
+    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_surface_anomaly_uncertainty:
+    long_name: "uncertainty of instantaneous sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard_uncertainty:
+    long_name: "uncertainty of radar freeboard"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard_l3_uncertainty:
+    long_name: "uncertainty of radar freeboard (computed as error of a weighted mean)"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  freeboard_l3_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval (computed as error of a weighted mean)"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification standard_error
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    standard_name: sea_ice_area_fraction
+    units: percent
+    valid_min: 0.0
+    valid_max: 100.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: surface_snow_thickness
+    units: m
+    valid_min: 0.0
+    valid_max: 0.6
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density:
+    long_name: "density of the snow layer"
+    standard_name: snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    standard_name: snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  ice_density:
+    long_name: "density of the sea ice layer"
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness:
+    long_name: thickness of the sea ice layer
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: "time lat lon"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    ancillary_variables: "uncertainty status_flag quality_indicator_flag"
+    comment: "this field is the primary sea ice thickness estimate for this data record"
+
+  sea_ice_thickness_l2_uncertainty:
+    var_source_name: sea_ice_thickness_uncertainty
+    long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval (average level-2 uncertainty)
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness_l3_uncertainty:
+    long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval including uncertainty reduction of random components by gridding
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  quality_flag:
+    long_name: quality indicator flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    valid_min: 0
+    valid_max: 3
+    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  status_flag:
+    long_name: status flag for the sea ice thickness retrieval
+    valid_min: 0
+    valid_max: 5
+    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
+    standard_name: "sea_ice_thickness status_flag"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  n_total_waveforms:
+    long_name: "number of total measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  n_valid_waveforms:
+    long_name: "number of valid measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+
+  valid_fraction:
+    long_name: "fraction of valid to total waveforms"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+
+  lead_fraction:
+    long_name: "lead waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  ice_fraction:
+    long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
