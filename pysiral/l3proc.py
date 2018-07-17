@@ -546,8 +546,8 @@ class L3DataGrid(DefaultLoggingClass):
             return None
         # No other l3 parameter computations at the moment
         else:
-            raise ValueError("Unknown l3 parameter name: %s" %
-                             l3_parameter_name)
+            return None
+            # raise ValueError("Unknown l3 parameter name: %s" % l3_parameter_name)
 
     def load_external_mask(self, external_mask_name):
         """ Get mask netCDF filename and load into instance for later use """
@@ -769,14 +769,14 @@ class L3DataGrid(DefaultLoggingClass):
                     continue
 
                 # Get parameters
-                frb = self._l3["sea_ice_freeboard"][yj, xi]
+                frb = self._l3["freeboard"][yj, xi]
                 sd = self._l3["snow_depth"][yj, xi]
-                rho_i = self._l3["sea_ice_density"][yj, xi]
+                rho_i = self._l3["ice_density"][yj, xi]
                 rho_s = self._l3["snow_density"][yj, xi]
 
                 # Get systematic error components
                 sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
-                rho_i_unc = self._l3["sea_ice_density_uncertainty"][yj, xi]
+                rho_i_unc = self._l3["ice_density_uncertainty"][yj, xi]
                 rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
 
                 # Get random uncertainty 
@@ -785,20 +785,20 @@ class L3DataGrid(DefaultLoggingClass):
 
                 # Get the stack of radar freeboard uncertainty values and remove NaN's
                 rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
-                rfrb_uncs = np.array(self._l2["radar_freeboard_uncertainty"][yj, xi])
+                rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
                 rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
                 n = len(rfrb_uncs)
 
                 # Compute radar freeboard uncertainty as error or the mean from values with individual 
                 # error components (error of a weighted mean)
                 weight = np.nansum(1./rfrb_uncs**2)
-                rfrb_unc = 1./np.sqrt(weight))
-                self._l2["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+                rfrb_unc = 1./np.sqrt(weight)
+                self._l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
                 # Calculate the level-3 freeboard uncertainty with upated radar freeboard uncertainty
                 deriv_snow = sd_corr_fact
                 frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
-                self._l2["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+                self._l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
                 # Calculate the level-3 thickness uncertainty 
                 errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]

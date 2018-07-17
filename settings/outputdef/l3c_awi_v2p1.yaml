@@ -113,7 +113,8 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  radar_freeboard_uncertainty:
+  radar_freeboard_l2_uncertainty:
+    var_source_name: radar_freeboard_uncertainty
     long_name: "uncertainty of radar freeboard"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -132,15 +133,16 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
+  freeboard_l2_uncertainty:
+    var_source_name: freeboard_uncertainty
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval"
     standard_name: sea_ice_freeboard standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   freeboard_l3_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval (computed as error of a weighted mean)"
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (computed as error of a weighted mean)"
     standard_name: sea_ice_freeboard standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
