@@ -787,7 +787,6 @@ class L3DataGrid(DefaultLoggingClass):
                 rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
                 rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
                 rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
-                n = len(rfrb_uncs)
 
                 # Compute radar freeboard uncertainty as error or the mean from values with individual 
                 # error components (error of a weighted mean)
