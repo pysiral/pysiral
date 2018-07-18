@@ -801,7 +801,15 @@ class L3DataGrid(DefaultLoggingClass):
 
                 # Calculate the level-3 thickness uncertainty 
                 errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
-                self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = frb2sit_errprop(*errprop_args)
+                sit_l3_unc = frb2sit_errprop(*errprop_args)
+                
+                # Cap the uncertainty 
+                # (very large values may appear in extreme cases)
+                if sit_l3_unc > options.max_l3_uncertainty:
+                    sit_l3_unc = options.max_l3_uncertainty
+                
+                # Assign Level-3 uncertainty
+                self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
 
 
     def _get_l3_mask(self, source_param, condition, options):
