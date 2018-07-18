@@ -21,6 +21,7 @@ from scipy.ndimage.filters import maximum_filter
 
 from collections import OrderedDict
 from datetime import datetime
+import itertools
 import uuid
 import numpy as np
 import sys
@@ -77,7 +78,6 @@ class Level3Processor(DefaultLoggingClass):
                 if orbitfilter.isDangling():
                      orbitfilter_is_active = False
             
-            
             if orbitfilter_is_active:
 
                 # Display warning if filter is active
@@ -123,8 +123,7 @@ class Level3Processor(DefaultLoggingClass):
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
-            self.log.info("Write %s product: %s" % (output_handler.id,
-                                                    output.filename))
+            self.log.info("Write %s product: %s" % (output_handler.id, output.export_filename))
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -761,56 +760,54 @@ class L3DataGrid(DefaultLoggingClass):
         sd_corr_fact = options.snow_depth_correction_factor
 
          # Loop over grid items
-        for xi in self.grid_xi_range:
-            for yj in self.grid_yj_range:
+        for xi, yj in self.grid_indices:
 
-                # Check of data exists
-                if np.isnan(self._l3["sea_ice_thickness"][yj, xi]):
-                    continue
+            # Check of data exists
+            if np.isnan(self._l3["sea_ice_thickness"][yj, xi]):
+                continue
 
-                # Get parameters
-                frb = self._l3["freeboard"][yj, xi]
-                sd = self._l3["snow_depth"][yj, xi]
-                rho_i = self._l3["ice_density"][yj, xi]
-                rho_s = self._l3["snow_density"][yj, xi]
+            # Get parameters
+            frb = self._l3["freeboard"][yj, xi]
+            sd = self._l3["snow_depth"][yj, xi]
+            rho_i = self._l3["ice_density"][yj, xi]
+            rho_s = self._l3["snow_density"][yj, xi]
 
-                # Get systematic error components
-                sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
-                rho_i_unc = self._l3["ice_density_uncertainty"][yj, xi]
-                rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
+            # Get systematic error components
+            sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
+            rho_i_unc = self._l3["ice_density_uncertainty"][yj, xi]
+            rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
 
-                # Get random uncertainty 
-                # Note: this applies only to the radar freeboard uncertainty. 
-                #       Thus we need to recalculate the sea ice freeboard uncertainty
+            # Get random uncertainty 
+            # Note: this applies only to the radar freeboard uncertainty. 
+            #       Thus we need to recalculate the sea ice freeboard uncertainty
 
-                # Get the stack of radar freeboard uncertainty values and remove NaN's
-                rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
-                rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
-                rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
+            # Get the stack of radar freeboard uncertainty values and remove NaN's
+            rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
+            rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
+            rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
 
-                # Compute radar freeboard uncertainty as error or the mean from values with individual 
-                # error components (error of a weighted mean)
-                weight = np.nansum(1./rfrb_uncs**2)
-                rfrb_unc = 1./np.sqrt(weight)
-                self._l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+            # Compute radar freeboard uncertainty as error or the mean from values with individual 
+            # error components (error of a weighted mean)
+            weight = np.nansum(1./rfrb_uncs**2)
+            rfrb_unc = 1./np.sqrt(weight)
+            self._l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
-                # Calculate the level-3 freeboard uncertainty with upated radar freeboard uncertainty
-                deriv_snow = sd_corr_fact
-                frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
-                self._l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+            # Calculate the level-3 freeboard uncertainty with upated radar freeboard uncertainty
+            deriv_snow = sd_corr_fact
+            frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
+            self._l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
-                # Calculate the level-3 thickness uncertainty 
-                errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
-                sit_l3_unc = frb2sit_errprop(*errprop_args)
-                
-                # Cap the uncertainty 
-                # (very large values may appear in extreme cases)
-                if sit_l3_unc > options.max_l3_uncertainty:
-                    sit_l3_unc = options.max_l3_uncertainty
-                
-                # Assign Level-3 uncertainty
-                self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
-
+            # Calculate the level-3 thickness uncertainty 
+            errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
+            sit_l3_unc = frb2sit_errprop(*errprop_args)
+            
+            # Cap the uncertainty 
+            # (very large values may appear in extreme cases)
+            if sit_l3_unc > options.max_l3_uncertainty:
+                sit_l3_unc = options.max_l3_uncertainty
+            
+            # Assign Level-3 uncertainty
+            self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined
@@ -858,9 +855,9 @@ class L3DataGrid(DefaultLoggingClass):
         n_total_waveforms = len(surface_type)
         self._l3["n_total_waveforms"][yj, xi] = n_total_waveforms
 
-        # Compute valid wavefords
+        # Compute valid waveforms
         # Only positively identified waveforms (either lead or ice)
-        # XXX: what about polynay and ocean?
+        # XXX: what about polynya and ocean?
         valid_waveform = ORCondition()
         valid_waveform.add(surface_type == stflags["lead"])
         valid_waveform.add(surface_type == stflags["sea_ice"])
@@ -1047,6 +1044,10 @@ class L3DataGrid(DefaultLoggingClass):
     @property
     def grid_yj_range(self):
         return np.arange(self.griddef.extent.numy)
+
+    @property
+    def grid_indices(self):
+        return itertools.product(self.grid_xi_range, self.grid_yj_range)
 
     @property
     def parameter_list(self):

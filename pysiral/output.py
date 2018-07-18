@@ -474,8 +474,7 @@ class NCDataFile(DefaultLoggingClass):
     def export_path(self):
         """ Evoking this property will also create the directory if it
         does not already exists """
-        return self.output_handler.get_directory_from_data(self.data,
-                                                           create=True)
+        return self.output_handler.get_directory_from_data(self.data, create=True)
 
     @property
     def export_filename(self):
