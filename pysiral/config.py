@@ -882,7 +882,16 @@ class DefaultCommandLineArguments(object):
                 "default": "None",
                 "required": False,
                 "type": str, 
-                "help": "doi number to be written in global attributes"}}
+                "help": "doi number to be written in global attributes"},
+
+            "data_record_type": {
+                "action": "store",
+                "dest": "data_record_type",
+                "default": "None",
+                "required": False,
+                "type": str,
+                "help": "type of data record [cdr, icdr]"},
+        }
 
     def get_argparse_dict(self, name, destination, required):
         options = self._args[name]

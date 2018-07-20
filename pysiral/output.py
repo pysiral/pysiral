@@ -328,6 +328,10 @@ class NCDataFile(DefaultLoggingClass):
         if self.output_handler.has_doi:
             self.data.set_doi(self.output_handler.doi)
 
+    def _set_data_record_type(self):
+        if self.output_handler.has_doi:
+            self.data.set_data_record_type(self.output_handler.data_record_type)
+
     def _write_global_attributes(self):
         attr_dict = self.output_handler.get_global_attribute_dict(self.data)
         self._set_global_attributes(attr_dict)
@@ -654,6 +658,7 @@ class Level2Output(NCDataFile):
         self.data = data
         self.output_handler = output_handler
         self._set_doi()
+        self._set_data_record_type()
         self._export_content()
 
     def _export_content(self):
@@ -674,6 +679,7 @@ class Level3Output(NCDataFile):
         self.data = data
         self.output_handler = output_handler
         self._set_doi()
+        self._set_data_record_type()
         self._preprocess_data()
         self._export_content()
 

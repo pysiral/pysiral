@@ -111,8 +111,7 @@ class Level3Processor(DefaultLoggingClass):
             prefilter = self._job.l3def.l2i_prefilter
 
             if prefilter.active:
-                l2i.transfer_nan_mask(prefilter.nan_source,
-                                      prefilter.nan_targets)
+                l2i.transfer_nan_mask(prefilter.nan_source, prefilter.nan_targets)
             # Add to stack
             stack.add(l2i)
 
@@ -273,6 +272,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Grid size definition
         self._doi = ""
+        self._data_record_type = "none"
         self._griddef = job.grid
         self._l3def = job.l3def
         self._period = period
@@ -374,6 +374,9 @@ class L3DataGrid(DefaultLoggingClass):
 
     def set_doi(self, doi):
         self._doi = doi
+
+    def set_data_record_type(self, data_record_type):
+        self._data_record_type = data_record_type
 
     def get_attribute(self, attribute_name, *args):
         """ Return a string for a given attribute name. This method is
@@ -1029,6 +1032,13 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_doi(self, *args):
         return self._doi
 
+    def _get_attr_data_record_type(self, *args):
+        if args[0] == "select":
+            choices = {"cdr": args[1], "icdr": args[2]}
+            return choices.get(self._data_record_type, "n/a")
+        else:
+            return self._data_record_type
+
     def flipud(self):
         for parameter in self.parameters:
             setattr(self, parameter, np.flipud(getattr(self, parameter)))
@@ -1201,7 +1211,8 @@ class Level3OutputHandler(OutputHandlerBase):
     applicable_data_level = 3
 
     def __init__(self, output_def="default", base_directory="l3proc_default",
-                 overwrite_protection=True, period="default", doi=None):
+                 overwrite_protection=True, period="default", doi=None,
+                 data_record_type="none"):
 
         if output_def == "default":
             output_def = self.default_output_def_filename
@@ -1213,6 +1224,7 @@ class Level3OutputHandler(OutputHandlerBase):
         self._init_product_directory(base_directory)
         self._period = period
         self._doi = doi
+        self._data_record_type = data_record_type
 
     def get_filename_from_data(self, l3):
         """ Return the filename for a defined level-2 data object
@@ -1297,6 +1309,10 @@ class Level3OutputHandler(OutputHandlerBase):
     @property
     def doi(self):
         return self._doi
+
+    @property
+    def data_record_type(self):
+        return self._data_record_type
 
     @property
     def time_dim_is_unlimited(self):

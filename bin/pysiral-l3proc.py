@@ -39,12 +39,12 @@ def pysiral_l3proc():
     output = Level3OutputHandler(output_def=args.l3_output_file,
                                  base_directory=args.l3_product_basedir,
                                  period=args.period,
-                                 doi=args.doi, 
+                                 doi=args.doi,
+                                 data_record_type=args.data_record_type,
                                  overwrite_protection=False)
 
     # Compile the product def
-    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output,
-                                          period)
+    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output,  period)
 
     # Initialize the Processor
     l3proc = Level3Processor(product_def)
@@ -135,6 +135,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
             ("-stop", "date", "stop_date", True),
             ("-period", "period", "period", False),
             ("-doi", "doi", "doi", False),
+            ("-data-record-type", "data_record_type", "data_record_type", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt",
              "no_critical_prompt", False)]
@@ -169,6 +170,10 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def doi(self):
         return self._args.doi
+
+    @property
+    def data_record_type(self):
+        return self._args.data_record_type
 
     @property
     def l2i_product_directory(self):
