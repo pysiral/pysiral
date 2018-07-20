@@ -176,7 +176,7 @@ class L2iDataStack(DefaultLoggingClass):
         # Flags
         self._has_surface_type = False
 
-        # Save global attricbutes from l2i (will be overwritten for each
+        # Save global attributes from l2i (will be overwritten for each
         # l2i file, but it is assumed that general information, e.g.
         # on auxdata remains the same)
         self._l2i_info = None
@@ -285,11 +285,11 @@ class L3DataGrid(DefaultLoggingClass):
         self._time_dim_is_unlimited = [handler.time_dim_is_unlimited for handler in job.outputs]
 
         # Define time of dataset creation as the time of object initialization
-        # to avoid slightly different timestamps for repated calls of
+        # to avoid slightly different timestamps for repeated calls of
         # datatime.now()
         self._creation_time = datetime.now()
 
-        # Shortcut to the surface type flag dictionalry
+        # Shortcut to the surface type flag dictionary
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
 
         # Name and data type of mandatory surface type statistics
@@ -902,7 +902,7 @@ class L3DataGrid(DefaultLoggingClass):
             parameter = self._l3[name]
         except KeyError:
             parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
-            self.log.warn("Parameter not availabe: %s" % name)
+            self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
             print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
             sys.exit(1)
@@ -912,7 +912,7 @@ class L3DataGrid(DefaultLoggingClass):
         try:
             self._l3[name] = var
         except KeyError:
-            self.log.warn("Parameter not availabe: %s" % name)
+            self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
             print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
             sys.exit(1)
@@ -1318,6 +1318,7 @@ class Level3OutputHandler(OutputHandlerBase):
             time_dim_is_unlimited = False
         
         return time_dim_is_unlimited
+
 
 class Level3GridDefinition(GridDefinition):
     """ This is a variation of GridDefinition with a mandatory link to

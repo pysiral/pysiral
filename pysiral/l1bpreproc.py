@@ -332,7 +332,7 @@ class L1bPreProc(DefaultLoggingClass):
         if not arctic_is_valid or not antarctic_is_valid:
             return [arctic_subset, antarctic_subset]
 
-        # Order in sequence depeding on start time
+        # Order in sequence depending on start time
         if arctic_subset.info.start_time < antarctic_subset.info.start_time:
             return [arctic_subset, antarctic_subset]
         else:
@@ -388,7 +388,7 @@ class L1bPreProc(DefaultLoggingClass):
 
         polar_threshold = self._mdef.polar_threshold
         is_polar = np.amax(lat_range) >= polar_threshold
-        self.log.info("- hemisphere: %s" % l1b.info.region_name)
+        self.log.info("- hemisphere: %s" % l1b.info.hemisphere)
         self.log.info("- above polar threshold: %s" % str(is_polar))
 
         # 2) test if there is any ocean data at all
