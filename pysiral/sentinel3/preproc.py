@@ -57,9 +57,9 @@ class Sentinel3PreProc(L1bPreProc):
         has_polar_ocean = self.region_is_arctic_or_antarctic_ocean(l1b)
 
         # 2) Check if desires region is matched
-        if self._jobdef.hemisphere == "global":
+        if self._jobdef.hemisphere == "global" or l1b.info.hemisphere == "global":
             matches_region = True
-        elif l1b.info.region_name == self._jobdef.hemisphere:
+        elif l1b.info.hemisphere == self._jobdef.hemisphere:
             matches_region = True
         else:
             matches_region = False
