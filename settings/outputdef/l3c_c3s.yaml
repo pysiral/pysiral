@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition
 filenaming: 
-  monthly: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m}.nc"
-  default_week: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  daily: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m%d}.nc"
-  custom: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  default: "ice_thickness_nh_ease2-250_cdr-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  monthly: "ice_thickness_nh_ease2-250_{data_record_type}-v1p0_{time_coverage_start:%Y%m}.nc"
+  default_week: "ice_thickness_nh_ease2-250_{data_record_type}-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  daily: "ice_thickness_nh_ease2-250_{data_record_type}-v1p0_{time_coverage_start:%Y%m%d}.nc"
+  custom: "ice_thickness_nh_ease2-250_{data_record_type}-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  default: "ice_thickness_nh_ease2-250_{data_record_type}-v1p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   
 product_level_subfolder: l3c
 
@@ -23,19 +23,20 @@ grid_options:
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "Sea Ice Thickness Climate Data Record (CDR) - v1p0"
+  - title: "Sea Ice Thickness"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: Warren Climatology with 50% reduction for first-year sea ice, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Type CDR v1p2, Sea ice type: C3S Sea Ice Type CDR v1p0"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: Warren Climatology with 50% reduction for first-year sea ice, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR v1p2, Sea ice type: C3S Sea Ice Type CDR/ICDR v1p0"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"  
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 2"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "1.0"
+  - product_version: "1p0"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2015"
-  - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"  
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: ""Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research""
   - id: "c3s-sit-cdr-v1p0-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
@@ -43,13 +44,15 @@ global_attributes:
   - cdm_data_type: "Grid"
   - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard. Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: "Stefan Hendricks, Robert Ricker (Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung)"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
   - creator_url: "http://www.awi.de"
-  - creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de"
-  - project: "Copernicus Climate Change Services (C3S)"  
-  - publisher_name: "Norwegian Meteorological Institute"
-  - publisher_url: "http://met.no"
-  - publisher_email: "" 
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
+  - project: "European Union Copernicus Climate Change Services (C3S)"
+  - publisher_name: "Copernicus Climate Data Store"
+  - publisher_url: "https://climate.copernicus.eu/climate-data-store"
+  - publisher_email: "copernicus-support@ecmwf.int"
   - geospatial_lat_min: "{geospatial_lat_min}"   
   - geospatial_lat_max: 90.0
   - geospatial_lon_min: -180.0
@@ -63,8 +66,8 @@ global_attributes:
   - time_coverage_end: "{time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
   - time_coverage_resolution: "{time_coverage_duration:period}"
-  - standard_name_vocabulary: "CF"
-  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Copernicus License: https://cds-dev.copernicus-climate.eu/api/v2/terms/static/20180314_Copernicus_License_V1.1.pdf"
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-3 parameter
