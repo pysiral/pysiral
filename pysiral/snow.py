@@ -73,10 +73,39 @@ class Warren99(SnowBaseClass):
 
     earth_radius = 6371000.8
     water_density = 1024.0
+    p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
     def __init__(self):
         super(Warren99, self).__init__()
-        self._p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
+
+    def evaluate(self, lons, lats, month_num):
+        """ Return the result of the Warren Climatology for a
+        given set of lons, lats and the month number (1-12)"""
+
+        # Compute coordinates in cartesian reference system of climatology
+        x, y = self.p(lons, lats)
+
+        # convert to degrees of arc
+        x = x / (self.earth_radius * np.pi / 180.0)
+        y = y / (self.earth_radius * np.pi / 180.0)
+
+        # Get W99 snow depth & uncertainty
+        sd = self._get_snow_depth(month_num, x, y)
+
+        # Get W99 snow density
+        sdens = self._get_snow_density(sd, month_num, x, y)
+
+        # Get the uncertainties
+        sd_unc, sdens_unc = self._get_warren_uncertainty(month_num, sd)
+
+        # Put everything in a container
+        snow = SnowParameterContainer()
+        snow.depth = sd
+        snow.density = sdens
+        snow.depth_uncertainty = sd_unc
+        snow.density_uncertainty = sdens_unc
+
+        return snow
 
     def _get_along_track_snow(self, l2):
 
@@ -88,7 +117,7 @@ class Warren99(SnowBaseClass):
             self.error.add_error("warren99-invalid-hemisphere", msg)
             return snow
 
-        # Get orginial warren values
+        # Get original warren values
         snow = self._get_warren99_fit(l2)
 
         # Filter invalid values
@@ -106,8 +135,9 @@ class Warren99(SnowBaseClass):
         # ... and the uncertainty. Here it is assumed that the uncertainty
         # is similar affected by the scaling factor.
         snow.depth_uncertainty *= scaling
-        # the uncertainty of the myi fraction is ackknowledged by adding
-        # an additional term that depennds on snow depth, the magnitude of
+
+        # the uncertainty of the myi fraction is acknowledged by adding
+        # an additional term that depends on snow depth, the magnitude of
         # scaling and the sea ice type uncertainty
         scaling_uncertainty = snow.depth*(1.0-scaling)*l2.sitype.uncertainty
         snow.depth_uncertainty += scaling_uncertainty
@@ -133,7 +163,7 @@ class Warren99(SnowBaseClass):
         l2x = l2x/(self.earth_radius * np.pi/180.0)
         l2y = l2y/(self.earth_radius * np.pi/180.0)
 
-        # Get W99 snow depth & unvertainty
+        # Get W99 snow depth & uncertainty
         sd = self._get_snow_depth(month, l2x, l2y)
 
         # Get W99 snow density
@@ -141,7 +171,6 @@ class Warren99(SnowBaseClass):
 
         # Get the uncertainties
         sd_unc, sdens_unc = self._get_warren_uncertainty(month, sd)
-
 
         # Put everything in a container
         snow = SnowParameterContainer()
@@ -176,7 +205,7 @@ class Warren99(SnowBaseClass):
         snow density
             fit rms of snow water equivalent
         """
-        # get w99 coeficients
+        # get w99 coefficients
         sd_coef = self.sd_coefs[month-1, :]
         swe_coef = self.swe_coefs[month-1, :]
 
