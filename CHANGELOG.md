@@ -1,5 +1,52 @@
 # History of changes
 
+## Version 0.6.0 (1 August 2018)
+
+**New Features**
+* [auxdata] Add the sic data records (cdr/icdr) for c3s
+* [config] Added orbit inclination dict for level 3 status flag
+* [catalog] Added a catalog module that inventarizes all pysiral product (L2P, L3C) in a given directory
+* [collection] Added a collection module to create and manage time series of pysiral products
+* [filter] Added simple smoothing filter for 2D Arrays with the option to preserve gaps
+* [griddef] Added 12.5 km EASE2 grid for northern hemisphere
+* [l2proc] allow multiple subfolders as run-tag (e.g. `-run-tag folder_1/folder_2/.../folder_n`)
+* [l3proc] Allow to specifically set the flag values for the status flag in the l3 settings file
+* [l3proc] Added additional masking method for the l2i stack (here for testing of ascending/descending grids)
+* [l3proc] Add option to filter ascending/descending orbit parts before gridding
+* [l3proc] Add additional L3 parameter: `negative_thickness_fraction`
+* [l3proc] Added computation of level 3 uncertainties. (Error propagation for radar freeboard, freeboard, thickness in each cell based on stack and average values)
+* [l3proc] Added property `data_record_type` to Level-3 processor to specify cdr or icdr output
+* [product] Enable the writing of doi's into netcdf global attributes. doi must be supplied as a command line argument for l2preproc, l3proc
+* [settings] added `time_dim_is_unlimited` grid option attribute
+* [settings] Added C3S Envisat Level-2 algorithm settings
+* [snow] Added evaluate method to the warren snow climatology (return snow parameters for a given set on lons, lats, and month)
+* [visualization] Added ParameterScatterPlot (work in progress)
+
+**Changes**
+* [l2data] renamed level-2 dimension from `n_records` to `time`
+* [l3proc] Allow time dimension in l3 output to be UNLIMITED
+* [l3proc] Improved error logging
+* [mask] Added option to flip a mask to l3 mask
+* [mask] Always return lon/lat variables for each mask
+* [output] Allowed to use sanitized version of sensors names in filenames (e.g. RA-2 -> RA2)
+* [settings] various improvements in netcdf attributes
+* [settings] Increased threshold filter size for Envisat sea ice thickness to account for larger range noise
+* [settings] Create level-3 settings for SICCI-2 CDR with other changes status flag values
+* various code documentation improvements
+
+**Bugfixes**
+* [cython] usage of full module name to prevent issues with compilers
+* [l2proc] the freeboard filter was wrongly determined from the radar freeboard. Negative freeboards were over-filtered, since radar freeboard is always lower.
+* [l3proc] Invalid check if `time_dim_is_unlimited` grid options attribute exists
+* [l3proc] wrong config filter tag for orbit filter
+* [maptools] pcolor grid (grid corner coordinates) not correctly computed
+* [output] netcdf attribute time_bnds lacked the necessary time dimension
+* [output] Umlaut in global attributes crashed the attribute template engine
+* [output] template engine crashed if attribute is not a string
+* [sentinel3a] output not written if `-hemisphere` option was set in the l1 pre-processor
+* [settings] removed fixed value for orbit_inclination tag in l3 settings
+
+
 ## Version 0.5.0 (9 February 2018) 
 
 **Bugfixes**
