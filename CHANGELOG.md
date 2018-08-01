@@ -29,6 +29,7 @@
 * [mask] Added option to flip a mask to l3 mask
 * [mask] Always return lon/lat variables for each mask
 * [output] Allowed to use sanitized version of sensors names in filenames (e.g. RA-2 -> RA2)
+* [output] Two new options in l3 output definition: `root.grid_options.flip_yc` (`True` or `False`) and `root.grid_options.time_dim_is_unlimited` (`True` or `False`)
 * [settings] various improvements in netcdf attributes
 * [settings] Increased threshold filter size for Envisat sea ice thickness to account for larger range noise
 * [settings] Create level-3 settings for SICCI-2 CDR with other changes status flag values
