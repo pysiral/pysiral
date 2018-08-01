@@ -127,7 +127,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
 
-        # Add addtional check to make sure either `l1b-files` or
+        # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
         l1b_file_preset_is_set = self._args.l1b_files_preset is not None
         start_and_stop_is_set = self._args.start_date is not None and \
@@ -141,7 +141,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
     def critical_prompt_confirmation(self):
 
-        # Any confirmation prompts can be overriden by --no-critical-prompt
+        # Any confirmation prompts can be overridden by --no-critical-prompt
         no_prompt = self._args.no_critical_prompt
 
         # if --remove_old is set, all previous l1bdata files will be
@@ -233,7 +233,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             if os.path.isfile(run_tag):
                 run_tag = file_basename(run_tag)
 
-        # split the run-tag on potential path seperators
+        # split the run-tag on potential path separators
         run_tag = re.split(r'[\\|/]', run_tag)
         return run_tag
 
@@ -271,8 +271,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l2_output(self):
         l2_output = self._args.l2_output
-        filename = self.pysiral_config.get_settings_file(
-                "outputdef", l2_output)
+        filename = self.pysiral_config.get_settings_file("outputdef", l2_output)
         if filename is None:
             msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
