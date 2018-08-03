@@ -89,8 +89,6 @@ class Level2Processor(DefaultLoggingClass):
         data sources """
         auxdata_dict = {}
         for auxdata_type in ["mss", "sic", "sitype", "snow"]:
-            handler = getattr(self, "_"+auxdata_type)
-            auxdata_dict[auxdata_type] = handler.longname
             try:
                 handler = getattr(self, "_"+auxdata_type)
                 auxdata_dict[auxdata_type] = handler.longname
