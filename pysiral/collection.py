@@ -55,6 +55,18 @@ class L3ParameterCollection(DefaultLoggingClass):
             self._product[product.id] = l3par
             self.log.info("Add product: %s"% product.id)
 
+    def get_products(self, sort_by=None):
+        if sort_by is None:
+            return self.products
+        elif sort_by == "time":
+            prds = self.products
+            ref_times = [prd.ctlg.ref_time for prd in prds]
+            order = np.argsort(ref_times)
+            return prds[order]
+        else:
+            raise ValueError("Unknown sort variable")
+
+
     def get_total_mean(self, **kwargs):
         """ Return the collection wide average """
         return self._get_product_ids_mean(self.product_ids, **kwargs)
@@ -207,7 +219,7 @@ class L3ParameterCollection(DefaultLoggingClass):
 
     @property
     def products(self):
-        return [self._product[prd] for prd in sorted(self._product.keys())]
+        return np.array([self._product[prd] for prd in sorted(self._product.keys())])
 
     @property
     def platforms(self):
