@@ -619,7 +619,7 @@ class ProductMetadata(DefaultLoggingClass):
         """
         
         identifier = (
-            self.processing_level, str(self.source_mission_id),
+            self.processing_level, str(self.platform),
             self.period_id, self.unique_str)
         idstr = "%s-%s-%s-%s" % identifier
         return idstr
