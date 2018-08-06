@@ -37,7 +37,7 @@ global_attributes:
   - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness {data_record_type:select;Climate Data Record (CDR);Interim Climate Data Record (ICDR)} from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2018"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "c3s-sit-cdr-v1p0-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
+  - id: "c3s-sit-{data_record_type}-v1p0-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "{doi}"
