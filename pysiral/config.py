@@ -33,8 +33,8 @@ from treedict import TreeDict
 
 import numpy as np
 
-PYSIRAL_VERSION = "0.6.0"
-PYSIRAL_VERSION_FILENAME = "060"
+PYSIRAL_VERSION = "0.7.0dev"
+PYSIRAL_VERSION_FILENAME = "070dev"
 HOSTNAME = socket.gethostname()
 
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
@@ -875,13 +875,13 @@ class DefaultCommandLineArguments(object):
                 "default": "default",
                 "required": True,
                 "help": "l3 output id"},
-                
+
             "doi": {
                 "action": "store",
                 "dest": "doi",
                 "default": "None",
                 "required": False,
-                "type": str, 
+                "type": str,
                 "help": "doi number to be written in global attributes"},
 
             "data_record_type": {
