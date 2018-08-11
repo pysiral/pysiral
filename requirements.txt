@@ -7,7 +7,6 @@ geopy
 h5py
 Logbook
 isodate
-matplotlib
 netCDF4
 numpy
 parse
@@ -19,3 +18,4 @@ pyyaml
 scipy
 treedict
 xmltodict
+xarray
