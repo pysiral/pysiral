@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from Cython.Build import cythonize
+from Cython.Distutils import build_ext
+
 from setuptools.extension import Extension
 from setuptools import setup, find_packages
 
@@ -27,6 +29,7 @@ setup(
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     scripts=['bin/pysiral-l1bpreproc', 'bin/pysiral-l2proc', 'bin/pysiral-l2preproc', 'bin/pysiral-l3proc'],
+    cmdclass={ 'build_ext': build_ext },
     ext_modules = cythonize(extensions),
     include_dirs = [numpy.get_include()]
 )
