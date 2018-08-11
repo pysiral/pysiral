@@ -1,2 +1,4 @@
 include LICENSE
+recursive-include bin *.py
 recursive-include resources *.yaml *.list
+recursive-include tests *.py
