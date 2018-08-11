@@ -38,7 +38,7 @@ import os
 
 class Level2Processor(DefaultLoggingClass):
 
-    def __init__(self, product_def, auxdata_handler=DefaultAuxdataHandler()):
+    def __init__(self, product_def, auxdata_handler=None):
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
@@ -49,6 +49,8 @@ class Level2Processor(DefaultLoggingClass):
         self._l2def = product_def.l2def
 
         # Auxiliary Data Handler
+        if auxdata_handler is None:
+            auxdata_handler = DefaultAuxdataHandler()
         self._auxdata_handler = auxdata_handler
 
         # Output_handler (can be one or many)
