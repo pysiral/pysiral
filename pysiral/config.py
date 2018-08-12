@@ -15,6 +15,17 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
+import re
+import os
+import yaml
+import socket
+
+from treedict import TreeDict
+
+import numpy as np
+
+from pysiral import USER_CONFIG_PATH
+
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import month_iterator, days_iterator, get_month_time_range
@@ -24,14 +35,6 @@ from dateutil.relativedelta import relativedelta
 from isodate.duration import Duration
 from isodate import duration_isoformat
 
-import re
-import os
-import sys
-import yaml
-import socket
-from treedict import TreeDict
-
-import numpy as np
 
 PYSIRAL_VERSION = "0.7.0dev"
 PYSIRAL_VERSION_FILENAME = "070dev"
@@ -53,7 +56,7 @@ ORBIT_INCLINATION_DICT = {"ers1": 81.5, "ers2": 81.5, "envisat": 81.45,
 class ConfigInfo(DefaultLoggingClass):
     """
     Container for the content of the pysiral definition files
-    (in pysiral/configration) and the local machine definition file
+    (in pysiral/configuration) and the local machine definition file
     (local_machine_definition.yaml)
     """
 
@@ -936,7 +939,7 @@ def get_parameter_definitions():
 
 
 def td_branches(t):
-    """ Convinience function to get only the branches of a treedict object """
+    """ Convenience function to get only the branches of a treedict object """
     try:
         branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
         branch_objects = list(t.iterbranches())

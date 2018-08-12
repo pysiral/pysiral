@@ -211,11 +211,11 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def run_tag(self):
         """ run_tag is a str or relative path that determines the output directory for
-        the Level-2 processor. If the -run-tag option is not specified, the output 
-        directory will be the `product_repository` specification in `local_machine_def` 
-        with the l2 settings file basename as subfolder. 
+        the Level-2 processor. If the -run-tag option is not specified, the output
+        directory will be the `product_repository` specification in `local_machine_def`
+        with the l2 settings file basename as subfolder.
 
-        One can however specify a custom string, or a relative path, with subfolders 
+        One can however specify a custom string, or a relative path, with subfolders
         defined by `\` or `/`, e.g.
 
         Examples:
