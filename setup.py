@@ -17,6 +17,11 @@ with open('README.rst') as f:
 with open('LICENSE') as f:
     license = f.read()
 
+# Get the version
+mypackage_root_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(mypackage_root_dir, 'VERSION')) as version_file:
+    version = version_file.read().strip()
+
 # cythonized extensions go here
 extensions = [
     Extension("pysiral.bnfunc.cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
@@ -25,9 +30,11 @@ extensions = [
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
+
+
 setup(
     name='pysiral',
-    version='0.6.1',
+    version=version,
     description='python sea ice radar altimetry processing library',
     long_description=readme,
     author='Stefan Hendricks',

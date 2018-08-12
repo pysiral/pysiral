@@ -2,13 +2,12 @@
 
 """ """
 
-__version__ = "0.6.1"
-
 __all__ = ["bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "auxdata", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid", "io_adapter",
            "iotools", "l1bdata", "l1bpreproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
            "logging", "maptools", "mask", "mss", "orbit", "output", "path", "proj", "retracker", "roi",
            "sic", "sit", "sitype", "snow", "surface_type", "units", "validator", "waveform"]
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -17,6 +16,16 @@ import os
 import sys
 import shutil
 import pkg_resources
+
+# Get version from VERSION in package root
+PACKAGE_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(PACKAGE_ROOT_DIR, "..", "VERSION")) as version_file:
+    version = version_file.read().strip()
+
+# Package Metadata
+__version__ = version
+__author__ = "Stefan Hendricks"
+__author_email__ = "stefan.hendricks@awi.de"
 
 # First get the home directory of the current user
 # NOTE: This is where to expect the pysiral configuration files

@@ -1,5 +1,7 @@
 include LICENSE
+include VERSION
 include requirements.txt
+include Makefile
 recursive-include bin *.py *.bat
 recursive-include pysiral/resources *
 recursive-include pysiral/bnfunc *
