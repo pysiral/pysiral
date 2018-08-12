@@ -33,7 +33,6 @@ CURRENT_USER_HOME_DIR = os.path.expanduser("~")
 
 # Get the config directory of the package
 # NOTE: This approach should work for a local script location of distributed package
-
 PACKAGE_CONFIG_PATH = pkg_resources.resource_filename("pysiral", "resources/pysiral-cfg")
 
 # Check if pysiral configuration exists in user home directory
