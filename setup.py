@@ -9,14 +9,21 @@ from setuptools import setup, find_packages
 import numpy
 import os
 
+# Get the readme
 with open('README.rst') as f:
     readme = f.read()
 
+# Get the licence
 with open('LICENSE') as f:
     license = f.read()
 
+# cythonized extensions go here
 extensions = [
     Extension("pysiral.bnfunc.cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
+
+# Package requirements
+with open("requirements.txt") as f:
+    requirements = f.read().splitlines()
 
 setup(
     name='pysiral',
@@ -27,6 +34,7 @@ setup(
     author_email='stefan.hendricks@awi.de',
     url='https://github.com/shendric/pysiral',
     license=license,
+    install_requires=requirements,
     packages=find_packages(exclude=('tests', 'docs')),
     scripts=['bin/pysiral-l1bpreproc.py', 'bin/pysiral-l2proc.py',
              'bin/pysiral-l2preproc.py', 'bin/pysiral-l3proc.py'],
