@@ -1,1 +1,1 @@
-python %~dp0\pysiral-l2preproc.py %
+python %~dp0\pysiral-l2preproc.py %*

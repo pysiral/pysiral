@@ -1,1 +1,1 @@
-python %~dp0\pysiral-l3proc.py %
+python %~dp0\pysiral-l3proc.py %*
