@@ -1,12 +1,13 @@
 astropy
 bottleneck
 cftime
-construct==2.5.5-reupload
+construct<=2.5.5
 dateutils
 geopy
 h5py
 Logbook
 isodate
+matplotlib
 netCDF4
 numpy
 parse
