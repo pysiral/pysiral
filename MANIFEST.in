@@ -1,6 +1,6 @@
 include LICENSE
 include requirements.txt
 recursive-include bin *.py *.bat
-recursive-include resources *.yaml *.list
+recursive-include pysiral/resources *
 recursive-include pysiral/bnfunc *
 recursive-include tests *.py
