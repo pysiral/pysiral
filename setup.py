@@ -28,8 +28,9 @@ setup(
     url='https://github.com/shendric/pysiral',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
-    scripts=['bin/pysiral-l1bpreproc', 'bin/pysiral-l2proc', 'bin/pysiral-l2preproc', 'bin/pysiral-l3proc'],
-    cmdclass={ 'build_ext': build_ext },
+    scripts=['bin/pysiral-l1bpreproc.py', 'bin/pysiral-l2proc.py',
+             'bin/pysiral-l2preproc.py', 'bin/pysiral-l3proc.py'],
+    cmdclass={'build_ext': build_ext},
     ext_modules = cythonize(extensions),
     include_dirs = [numpy.get_include()]
 )
