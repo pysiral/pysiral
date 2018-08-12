@@ -197,8 +197,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2p_output(self):
         l2p_output = self._args.l2p_output
-        filename = self.pysiral_config.get_settings_file(
-                "outputdef", l2p_output)
+        filename = self.pysiral_config.get_settings_file("output", "l2", l2p_output)
         if filename is None:
             msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"

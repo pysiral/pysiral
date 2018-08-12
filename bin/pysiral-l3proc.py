@@ -182,7 +182,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def l3_settings_file(self):
         l3_settings = self._args.l3_settings
-        filename = self.pysiral_config.get_settings_file("l3", l3_settings)
+        filename = self.pysiral_config.get_settings_file("proc", "l3", l3_settings)
         if filename is None:
             msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
             msg = msg + " \nRecognized Level-2 processor setting ids:\n"
@@ -196,7 +196,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def l3_griddef(self):
         l3_griddef = self._args.l3_griddef
-        filename = self.pysiral_config.get_settings_file("griddef", l3_griddef)
+        filename = self.pysiral_config.get_settings_file("grid", None, l3_griddef)
         if filename is None:
             msg = "Invalid griddef filename or id: %s\n" % l3_griddef
             msg = msg + "    Recognized grid definition ids:\n"
@@ -210,8 +210,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def l3_output_file(self):
         l3_output = self._args.l3_output
-        filename = self.pysiral_config.get_settings_file(
-                "outputdef", l3_output)
+        filename = self.pysiral_config.get_settings_file("output", "l3", l3_output)
         if filename is None:
             msg = "Invalid output definition filename or id: %s\n" % l3_output
             msg = msg + "    Recognized output definition ids:\n"
