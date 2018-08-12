@@ -36,9 +36,11 @@ setup(
     license=license,
     install_requires=requirements,
     packages=find_packages(exclude=('tests', 'docs')),
-    scripts=['bin/pysiral-l1bpreproc.py', 'bin/pysiral-l2proc.py',
-             'bin/pysiral-l2preproc.py', 'bin/pysiral-l3proc.py'],
+    scripts=['bin/pysiral-l1bpreproc.py', 'bin/pysiral-l1bpreproc.bat',
+             'bin/pysiral-l2proc.py', 'bin/pysiral-l2proc.bat',
+             'bin/pysiral-l2preproc.py', 'bin/pysiral-l2preproc.bat',
+             'bin/pysiral-l3proc.py', 'bin/pysiral-l3proc.bat'],
     cmdclass={'build_ext': build_ext},
-    ext_modules = cythonize(extensions),
-    include_dirs = [numpy.get_include()]
+    ext_modules=cythonize(extensions),
+    include_dirs=[numpy.get_include()]
 )

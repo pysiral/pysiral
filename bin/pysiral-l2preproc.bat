@@ -1,0 +1,1 @@
+python %~dp0\pysiral-l2preproc.py %
