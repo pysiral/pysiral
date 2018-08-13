@@ -1,4 +1,4 @@
-astropy
+astropy==2.0.6
 bottleneck
 cftime
 construct<=2.5.5
