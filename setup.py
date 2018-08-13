@@ -31,7 +31,6 @@ with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 
-
 setup(
     name='pysiral',
     version=version,
@@ -43,6 +42,7 @@ setup(
     license=license,
     install_requires=requirements,
     packages=find_packages(exclude=('tests', 'docs')),
+    include_package_data=True,
     scripts=['bin/pysiral-l1bpreproc.py', 'bin/pysiral-l1bpreproc.bat',
              'bin/pysiral-l2proc.py', 'bin/pysiral-l2proc.bat',
              'bin/pysiral-l2preproc.py', 'bin/pysiral-l2preproc.bat',
