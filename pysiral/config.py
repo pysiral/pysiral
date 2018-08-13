@@ -167,11 +167,11 @@ class ConfigInfo(DefaultLoggingClass):
         return setting_ids, setting_files
 
     def get_local_setting_path(self, type, data_level):
-        if type in self.VALID_DATA_LEVEL_IDS and data_level in self.VALID_DATA_LEVEL_IDS:
+        if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
             args = [type]
             if data_level is not None:
                 args.append(data_level)
-            return os.path.join(self.pysiral_local_path, *args)
+            return os.path.join(USER_CONFIG_PATH, *args)
         else:
             return None
 
