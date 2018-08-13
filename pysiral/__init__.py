@@ -19,8 +19,12 @@ import pkg_resources
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(PACKAGE_ROOT_DIR, "..", "VERSION")) as version_file:
-    version = version_file.read().strip()
+try:
+    version_file = open(os.path.abspath(os.path.join(PACKAGE_ROOT_DIR, "VERSION")))
+    with version_file as f:
+        version = f.read().strip()
+except IOError:
+    sys.exit("Cannot find VERSION file in package (expected: %s" % version_file)
 
 # Package Metadata
 __version__ = version

@@ -19,7 +19,7 @@ with open('LICENSE') as f:
 
 # Get the version
 mypackage_root_dir = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(mypackage_root_dir, 'VERSION')) as version_file:
+with open(os.path.join(mypackage_root_dir, "pysiral", 'VERSION')) as version_file:
     version = version_file.read().strip()
 
 # cythonized extensions go here
