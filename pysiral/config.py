@@ -182,7 +182,13 @@ class ConfigInfo(DefaultLoggingClass):
 
     def _read_local_machine_file(self):
         filename = os.path.join(USER_CONFIG_PATH, self._LOCAL_MACHINE_DEF_FILE)
-        setattr(self, "local_machine", get_yaml_config(filename))
+        try:
+            local_machine_def = get_yaml_config(filename)
+        except IOError:
+            msg = "local_machine_def.yaml not found (expected: %s)" % filename
+            self.error.add_error("local-machine-def-missing", msg)
+            self.error.raise_on_error()
+        setattr(self, "local_machine", local_machine_def)
 
     def _return_path(self, subfolder):
         return os.path.join(USER_CONFIG_PATH, subfolder)
