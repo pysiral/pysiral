@@ -43,6 +43,7 @@ class NoneHandler(SnowBaseClass):
 
 class Warren99(SnowBaseClass):
 
+    # Snow depth Coeficients
     sd_coefs = np.array([
         [28.01, 0.1270, -1.1833, -0.1164, -0.0051, 0.0243, 7.6, -0.06, 0.07, 4.6],
         [30.28, 0.1056, -0.5908, -0.0263, -0.0049, 0.0044, 7.9, -0.06, 0.08, 5.5],
@@ -80,7 +81,7 @@ class Warren99(SnowBaseClass):
 
     def evaluate(self, lons, lats, month_num):
         """ Return the result of the Warren Climatology for a
-        given set of lons, lats and the month number (1-12)"""
+        given set of lons, lats and the month number (1-12) """
 
         # Compute coordinates in cartesian reference system of climatology
         x, y = self.p(lons, lats)
@@ -108,6 +109,8 @@ class Warren99(SnowBaseClass):
         return snow
 
     def _get_along_track_snow(self, l2):
+        """ Get the snow depth, density and their uncertainties for the track in the l2 data object
+        including all modifications and filters """
 
         # Validate hemisphere
         if l2.hemisphere == "south":
@@ -117,8 +120,9 @@ class Warren99(SnowBaseClass):
             self.error.add_error("warren99-invalid-hemisphere", msg)
             return snow
 
-        # Get original warren values
-        snow = self._get_warren99_fit(l2)
+        # Get the original warren climatology values
+        # NOTE: snow is a class with properties depth, depth_uncertainty, density & density_uncertainty
+        snow = self._get_warren99_fit_from_l2(l2)
 
         # Filter invalid values
         valid_min, valid_max = self._options.valid_snow_depth_range
@@ -127,7 +131,7 @@ class Warren99(SnowBaseClass):
         snow.set_invalid(invalid_records)
 
         # Apply ice_type (myi_fraction correction)
-        scaling = l2.sitype * self._options.fyi_correction_factor + 0.5
+        scaling = (1.0 - l2.sitype) * self._options.fyi_correction_factor
 
         # The scaling factor affects the snow depth ...
         snow.depth *= scaling
@@ -153,32 +157,12 @@ class Warren99(SnowBaseClass):
 
         return snow, ""
 
-    def _get_warren99_fit(self, l2):
-
+    def _get_warren99_fit_from_l2(self, l2):
+        """ This convinience function translates the information from the l2 object
+        for the evaluate method """
         # get projection coordinates
         month = l2.track.timestamp[0].month
-        l2x, l2y = self._p(l2.track.longitude, l2.track.latitude)
-
-        # convert to degrees of arc
-        l2x = l2x/(self.earth_radius * np.pi/180.0)
-        l2y = l2y/(self.earth_radius * np.pi/180.0)
-
-        # Get W99 snow depth & uncertainty
-        sd = self._get_snow_depth(month, l2x, l2y)
-
-        # Get W99 snow density
-        sdens = self._get_snow_density(sd, month, l2x, l2y)
-
-        # Get the uncertainties
-        sd_unc, sdens_unc = self._get_warren_uncertainty(month, sd)
-
-        # Put everything in a container
-        snow = SnowParameterContainer()
-        snow.depth = sd
-        snow.density = sdens
-        snow.depth_uncertainty = sd_unc
-        snow.density_uncertainty = sdens_unc
-
+        snow = self.evaluate(l2.track.longitude, l2.track.latitude, month)
         return snow
 
     def _get_sd_coefs(self, month):
@@ -221,30 +205,13 @@ class Warren99(SnowBaseClass):
 
         return sd_unc, sdens_unc
 
-#        import matplotlib.pyplot as plt
-#        plt.figure("snow depth")
-#        plt.plot(sd_rms_fit_error, label="sd_rms_fit_error")
-#        plt.plot(sd_interannual_var, label="sd_interannual_var")
-#        plt.plot(sd_unc, label="sd_unc")
-#        plt.legend()
-#        plt.show()
-#
-#        plt.figure("snow density")
-#        plt.plot(sdens_rms_fit_error, label="sdens_rms_fit_error")
-#        plt.plot(sdens_interannual_var, label="sd_interannual_var")
-#        plt.plot(sdens_uncertainty, label="sdens_uncertainty")
-#        plt.legend()
-#        plt.show()
-#
-#        stop
 
     def _get_snow_density(self, snow_depth, month, l2x, l2y):
         """ Extract along-track snow density """
 
         # get snow water equivalent coefs
         swe = self._get_swe_coefs(month)
-        snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + \
-            swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
+        snow_water_equivalent = swe[0] + swe[1]*l2x + swe[2]*l2y + swe[3]*l2x*l2y + swe[4]*l2x*l2x + swe[5]*l2y*l2y
         snow_water_equivalent *= 0.01
 
         # Convert sd and swe to snow density
