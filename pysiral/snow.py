@@ -110,7 +110,7 @@ class Warren99(SnowBaseClass):
 
     def _get_along_track_snow(self, l2):
         """ Get the snow depth, density and their uncertainties for the track in the l2 data object
-        including all modifications and filters """
+        including the potential modification of the original climatology and filters """
 
         # Validate hemisphere
         if l2.hemisphere == "south":
@@ -131,20 +131,20 @@ class Warren99(SnowBaseClass):
         snow.set_invalid(invalid_records)
 
         # Apply ice_type (myi_fraction correction)
-        scaling = (1.0 - l2.sitype) * self._options.fyi_correction_factor
+        scale_factor = (1.0 - l2.sitype) * self._options.fyi_correction_factor
 
         # The scaling factor affects the snow depth ...
-        snow.depth *= scaling
+        snow.depth = snow.depth - scale_factor * snow.depth
 
         # ... and the uncertainty. Here it is assumed that the uncertainty
         # is similar affected by the scaling factor.
-        snow.depth_uncertainty *= scaling
+        snow.depth_uncertainty = snow.depth_uncertainty - scale_factor * snow.depth_uncertainty
 
         # the uncertainty of the myi fraction is acknowledged by adding
         # an additional term that depends on snow depth, the magnitude of
         # scaling and the sea ice type uncertainty
-        scaling_uncertainty = snow.depth*(1.0-scaling)*l2.sitype.uncertainty
-        snow.depth_uncertainty += scaling_uncertainty
+        scaling_uncertainty = snow.depth * scale_factor * l2.sitype.uncertainty
+        snow.depth_uncertainty = snow.depth_uncertainty + scaling_uncertainty
 
         # Smooth snow depth (if applicable)
         if self._options.smooth_snow_depth:
