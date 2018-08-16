@@ -71,7 +71,7 @@ class ConfigInfo(DefaultLoggingClass):
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
     VALID_SETTING_TYPES = ["proc", "output", "grid"]
-    VALID_DATA_LEVEL_IDS = ["l1", "l2", "l3", None]
+    VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
 
     def __init__(self):
         """ Read all definition files """
