@@ -7,7 +7,7 @@ Created on Fri Sep 09 17:33:45 2016
 This module is dedicatet to convert between different time standards
 """
 
-from pysiral.config import get_pysiral_local_path
+from pysiral import USER_CONFIG_PATH
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -110,8 +110,7 @@ class UTCTAIConverter(object):
     @property
     def local_ls_ietf_definition(self):
         """ Return the local filename for the IETF leap seconds definition """
-        return os.path.join(get_pysiral_local_path(), "config",
-                            "leap-seconds.list")
+        return os.path.join(USER_CONFIG_PATH, "leap-seconds.list")
 
 
 if __name__ == "__main__":

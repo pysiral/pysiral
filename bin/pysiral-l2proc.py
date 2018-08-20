@@ -211,11 +211,11 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def run_tag(self):
         """ run_tag is a str or relative path that determines the output directory for
-        the Level-2 processor. If the -run-tag option is not specified, the output 
-        directory will be the `product_repository` specification in `local_machine_def` 
-        with the l2 settings file basename as subfolder. 
+        the Level-2 processor. If the -run-tag option is not specified, the output
+        directory will be the `product_repository` specification in `local_machine_def`
+        with the l2 settings file basename as subfolder.
 
-        One can however specify a custom string, or a relative path, with subfolders 
+        One can however specify a custom string, or a relative path, with subfolders
         defined by `\` or `/`, e.g.
 
         Examples:
@@ -248,7 +248,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l2_settings_file(self):
         l2_settings = self._args.l2_settings
-        filename = self.pysiral_config.get_settings_file("l2", l2_settings)
+        filename = self.pysiral_config.get_settings_file("proc","l2", l2_settings)
         if filename is None:
             msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
             msg = msg + " \nRecognized Level-2 processor setting ids:\n"
@@ -271,11 +271,11 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l2_output(self):
         l2_output = self._args.l2_output
-        filename = self.pysiral_config.get_settings_file("outputdef", l2_output)
+        filename = self.pysiral_config.get_settings_file("output", "l2i", l2_output)
         if filename is None:
             msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2_output_ids = self.pysiral_config.get_setting_ids("outputdef")
+            l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
             for l2_output_id in l2_output_ids:
                 msg = msg + "    - " + l2_output_id+"\n"
             self.error.add_error("invalid-l2-outputdef", msg)

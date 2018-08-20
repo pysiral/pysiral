@@ -43,7 +43,7 @@ def pysiral_l2preproc():
             args.l2i_product_dir,
             args.l2p_output,
             period="daily",
-            doi=args.doi, 
+            doi=args.doi,
             overwrite_protection=args.overwrite_protection)
 
     # Prepare DataHandler
@@ -197,12 +197,11 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2p_output(self):
         l2p_output = self._args.l2p_output
-        filename = self.pysiral_config.get_settings_file(
-                "outputdef", l2p_output)
+        filename = self.pysiral_config.get_settings_file("output", "l2p", l2p_output)
         if filename is None:
             msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2p_output_ids = self.pysiral_config.get_setting_ids("outputdef")
+            l2p_output_ids = self.pysiral_config.get_setting_ids("output", "l2p")
             for l2p_output_id in l2p_output_ids:
                 msg = msg + "    - " + l2p_output_id+"\n"
             self.error.add_error("invalid-l2p-outputdef", msg)

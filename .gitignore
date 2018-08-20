@@ -1,8 +1,6 @@
 # pysiral
 
 local_machine_def.yaml
-doc/parameter/pysiral_parameter_table.pdf
-
 # Visual Studio Code
 
 CODE
@@ -229,15 +227,6 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 *.pickle
-sandbox/visualization/temp3.png
-sandbox/visualization/font/NeoSansW1G-Italic.otf
-sandbox/visualization/font/NeoSansW1G-Medium.otf
-sandbox/visualization/font/NeoSansW1G-MediumItalic.otf
-sandbox/visualization/font/NeoSansW1G-Regular.otf
-pysiral/visualization/font/NeoSansW1G-Italic.otf
-pysiral/visualization/font/NeoSansW1G-Medium.otf
-pysiral/visualization/font/NeoSansW1G-MediumItalic.otf
-pysiral/visualization/font/NeoSansW1G-Regular.otf
 *.nbc
 *.nbi
 *.c

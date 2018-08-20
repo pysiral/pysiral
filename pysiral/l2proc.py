@@ -38,7 +38,7 @@ import os
 
 class Level2Processor(DefaultLoggingClass):
 
-    def __init__(self, product_def, auxdata_handler=DefaultAuxdataHandler()):
+    def __init__(self, product_def, auxdata_handler=None):
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
@@ -49,6 +49,8 @@ class Level2Processor(DefaultLoggingClass):
         self._l2def = product_def.l2def
 
         # Auxiliary Data Handler
+        if auxdata_handler is None:
+            auxdata_handler = DefaultAuxdataHandler()
         self._auxdata_handler = auxdata_handler
 
         # Output_handler (can be one or many)
@@ -89,8 +91,6 @@ class Level2Processor(DefaultLoggingClass):
         data sources """
         auxdata_dict = {}
         for auxdata_type in ["mss", "sic", "sitype", "snow"]:
-            handler = getattr(self, "_"+auxdata_type)
-            auxdata_dict[auxdata_type] = handler.longname
             try:
                 handler = getattr(self, "_"+auxdata_type)
                 auxdata_dict[auxdata_type] = handler.longname
@@ -663,10 +663,10 @@ class Level2Processor(DefaultLoggingClass):
                 self.log.warning("! "+error_message)
 
     def _apply_freeboard_filter(self, l2):
-        """ Apply freeboard filters as defined in the level-2 settings file 
+        """ Apply freeboard filters as defined in the level-2 settings file
         under `root.filter.freeboard`
 
-        Filtering means: 
+        Filtering means:
         - setting the freeboard value to nan
         - setting the surface type classification to invalid
         """
@@ -687,15 +687,15 @@ class Level2Processor(DefaultLoggingClass):
             # XXX: This is a temporary fix of an error in the algorithm
             #
             # Explanation: The filter target was wrongly set to radar freeboard,
-            # meaning that whether a freeboard value was filtered was determined on 
+            # meaning that whether a freeboard value was filtered was determined on
             # the wrong parameter. Both values differ by the geometric snow propagation
-            # correction (22% of snow depth). While the impact on the high freeboard end 
-            # is negligible, at the lower (negative) end more freeboard where filtered 
-            # than necessary since radar freeboard is always lower. 
-            # 
+            # correction (22% of snow depth). While the impact on the high freeboard end
+            # is negligible, at the lower (negative) end more freeboard where filtered
+            # than necessary since radar freeboard is always lower.
+            #
             # The `afrb` filter target was hard coded, thus an option is added to replace
             # the filter target (`root.filter.freeboard.frb_valid_range.filter_target`).
-            # The default option is the wrong one only for consistency reasons. 
+            # The default option is the wrong one only for consistency reasons.
             filter_target = "afrb"
             if filter_def.options.has_key("filter_target"):
                 filter_target = filter_def.options.filter_target
@@ -708,10 +708,10 @@ class Level2Processor(DefaultLoggingClass):
             # Logging
             self.log.info("- Filter message: %s has flagged %g waveforms" % (
                 filter_def.pyclass, frbfilter.flag.num))
-            
+
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
-            
+
             # Remove invalid elevations / freeboards
             l2.frb.set_nan_indices(frbfilter.flag.indices)
 

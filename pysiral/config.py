@@ -15,6 +15,17 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
+import re
+import os
+import yaml
+import socket
+
+from treedict import TreeDict
+
+import numpy as np
+
+from pysiral import USER_CONFIG_PATH
+
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import month_iterator, days_iterator, get_month_time_range
@@ -24,19 +35,13 @@ from dateutil.relativedelta import relativedelta
 from isodate.duration import Duration
 from isodate import duration_isoformat
 
-import re
-import os
-import sys
-import yaml
-import socket
-from treedict import TreeDict
 
-import numpy as np
-
-PYSIRAL_VERSION = "0.6.0"
-PYSIRAL_VERSION_FILENAME = "060"
+# TODO: These have to be removed (see __version__ in __init__.py)
+PYSIRAL_VERSION = "0.7.0dev"
+PYSIRAL_VERSION_FILENAME = "070dev"
 HOSTNAME = socket.gethostname()
 
+# TODO: These have to removed (better use info from mission_def)
 SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
                     "cryosat2": "SIRAL", "sentinel3a": "SRAL",
                     "icesat": "GLAS"}
@@ -53,49 +58,30 @@ ORBIT_INCLINATION_DICT = {"ers1": 81.5, "ers2": 81.5, "envisat": 81.45,
 class ConfigInfo(DefaultLoggingClass):
     """
     Container for the content of the pysiral definition files
-    (in pysiral/configration) and the local machine definition file
+    (in pysiral/configuration) and the local machine definition file
     (local_machine_definition.yaml)
     """
 
     # Global variables
     _DEFINITION_FILES = {
         "mission": "mission_def.yaml",
-        "area": "area_def.yaml",
         "auxdata": "auxdata_def.yaml",
-        "product": "product_def.yaml",
-        "parameter": "parameter_def.yaml",
     }
 
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
-    VALID_DATA_LEVEL_IDS = ["l2", "l3", "griddef", "outputdef"]
+    VALID_SETTING_TYPES = ["proc", "output", "grid"]
+    VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
 
     def __init__(self):
         """ Read all definition files """
         super(ConfigInfo, self).__init__(self.__class__.__name__)
 
         self.error = ErrorStatus(self.__class__.__name__)
-        # Store the main path on this machine
-        self.pysiral_local_path = get_pysiral_local_path()
         # read the definition files in the config folder
         self._read_config_files()
         # read the local machine definition file
         self._read_local_machine_file()
-
-    @property
-    def doc_path(self):
-        """ Returns the local path to the document folder"""
-        return self._return_path("doc")
-
-    @property
-    def config_path(self):
-        """ Returns the local path to the document folder"""
-        return self._return_path("config")
-
-    @property
-    def sandbox_path(self):
-        """ Returns the local path to the document folder"""
-        return self._return_path("sandbox")
 
     @property
     def mission_ids(self):
@@ -125,17 +111,20 @@ class ConfigInfo(DefaultLoggingClass):
             mission_info.data_period.stop = datetime.utcnow()
         return mission_info
 
-    def get_setting_ids(self, data_level):
-        lookup_directory = self.get_local_setting_path(data_level)
+    def get_setting_ids(self, type, data_level=None):
+        lookup_directory = self.get_local_setting_path(type, data_level)
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
         return ids
 
-    def get_settings_file(self, data_level, setting_id_or_filename):
+    def get_settings_file(self, type, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.
         (data level: l2 or l3). The second argument can either be an
         direct filename (which validity will be checked) or an id, for
         which the corresponding file (id.yaml) will be looked up in
         the default directory """
+
+        if type not in self.VALID_SETTING_TYPES:
+            return None
 
         if data_level not in self.VALID_DATA_LEVEL_IDS:
             return None
@@ -146,13 +135,13 @@ class ConfigInfo(DefaultLoggingClass):
 
         # Get all settings files in settings/{data_level} and its
         # subdirectories
-        lookup_directory = self.get_local_setting_path(data_level)
+        lookup_directory = self.get_local_setting_path(type, data_level)
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
 
         # Test if ids are unique and return error for the moment
         if len(np.unique(ids)) != len(ids):
-            msg = "Non-unique %s setting filename" % data_level
-            self.error.add_error("ambigous-setting-files", msg)
+            msg = "Non-unique %-%s setting filename" % (type, str(data_level))
+            self.error.add_error("ambiguous-setting-files", msg)
             self.error.raise_on_error()
 
         # Find filename to setting_id
@@ -177,29 +166,32 @@ class ConfigInfo(DefaultLoggingClass):
                     setting_files.append(os.path.join(root, filename))
         return setting_ids, setting_files
 
-    def get_local_setting_path(self, data_level):
-        if data_level in self.VALID_DATA_LEVEL_IDS:
-            return os.path.join(self.pysiral_local_path, "settings",
-                                data_level)
+    def get_local_setting_path(self, type, data_level):
+        if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
+            args = [type]
+            if data_level is not None:
+                args.append(data_level)
+            return os.path.join(USER_CONFIG_PATH, *args)
         else:
             return None
 
     def _read_config_files(self):
         for key in self._DEFINITION_FILES.keys():
-            content = get_yaml_config(
-                os.path.join(
-                    self.config_path,
-                    self._DEFINITION_FILES[key]))
-            setattr(self, key, content)
+            filename = os.path.join(USER_CONFIG_PATH, self._DEFINITION_FILES[key])
+            setattr(self, key, get_yaml_config(filename))
 
     def _read_local_machine_file(self):
-        content = get_yaml_config(
-            os.path.join(
-                self.pysiral_local_path, self._LOCAL_MACHINE_DEF_FILE))
-        setattr(self, "local_machine", content)
+        filename = os.path.join(USER_CONFIG_PATH, self._LOCAL_MACHINE_DEF_FILE)
+        try:
+            local_machine_def = get_yaml_config(filename)
+        except IOError:
+            msg = "local_machine_def.yaml not found (expected: %s)" % filename
+            self.error.add_error("local-machine-def-missing", msg)
+            self.error.raise_on_error()
+        setattr(self, "local_machine", local_machine_def)
 
     def _return_path(self, subfolder):
-        return os.path.join(self.pysiral_local_path, subfolder)
+        return os.path.join(USER_CONFIG_PATH, subfolder)
 
 
 class RadarModes(object):
@@ -875,13 +867,13 @@ class DefaultCommandLineArguments(object):
                 "default": "default",
                 "required": True,
                 "help": "l3 output id"},
-                
+
             "doi": {
                 "action": "store",
                 "dest": "doi",
                 "default": "None",
                 "required": False,
-                "type": str, 
+                "type": str,
                 "help": "doi number to be written in global attributes"},
 
             "data_record_type": {
@@ -923,20 +915,8 @@ def get_yaml_config(filename, output="treedict"):
         return content_dict
 
 
-def get_pysiral_local_path():
-    """ Returns pysiral's main directory for the local machine """
-    directory = os.path.dirname(__file__)
-    directory = os.path.abspath(os.path.join(directory, '..'))
-    return directory
-
-
-def get_parameter_definitions():
-    config = ConfigInfo()
-    return config.parameter.definition
-
-
 def td_branches(t):
-    """ Convinience function to get only the branches of a treedict object """
+    """ Convenience function to get only the branches of a treedict object """
     try:
         branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
         branch_objects = list(t.iterbranches())
@@ -949,11 +929,6 @@ def td_branches(t):
 def options_from_dictionary(**opt_dict):
     """ Function for converting option dictionary in Treedict """
     return TreeDict.fromdict(opt_dict, expand_nested=True)
-
-
-def get_parameter_attributes(target):
-    config = ConfigInfo()
-    return config.parameter[target]
 
 
 def month_list(start_dt, stop_dt, exclude_month):

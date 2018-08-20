@@ -6,7 +6,7 @@ from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
 from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-from pysiral.config import options_from_dictionary, get_parameter_attributes
+from pysiral.config import options_from_dictionary
 from pysiral.path import validate_directory
 
 from glob import glob
@@ -37,7 +37,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Fill an template string with information of a dataset
         object (in this case Level2Data) """
         attributes = self.get_template_attrs(template)
-        try: 
+        try:
             result = template.encode("utf-8")
         except AttributeError:
             result = str(template)
@@ -62,7 +62,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def get_template_attrs(self, template):
         """ Extract attribute names and options (if defined) for a
         give template string """
-        try: 
+        try:
             template = template.encode('utf-8').strip()
         except AttributeError:
             template = str(template)
@@ -127,7 +127,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     @property
     def has_doi(self):
-        try: 
+        try:
             return self._doi is not None
         except AttributeError:
             return False
@@ -270,7 +270,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         protection and product level id subfolder"""
         pysiral_config = ConfigInfo()
         basedir = pysiral_config.local_machine.product_repository
-        if not isinstance(self.subdirectory, list): 
+        if not isinstance(self.subdirectory, list):
             basedir = os.path.join(basedir, self.subdirectory)
         else:
             basedir = os.path.join(basedir, *self.subdirectory)
@@ -510,7 +510,8 @@ class L1bDataNC(DefaultLoggingClass):
 
         self.output_folder = None
         self.l1b = None
-        self.parameter_attributes = get_parameter_attributes("l1b")
+        # TODO: Remove parameter attributes alltogether with l1 setting files
+        self.parameter_attributes = []
 
     def export(self):
         self._validate()
@@ -579,20 +580,13 @@ class L1bDataNC(DefaultLoggingClass):
                 if self.verbose:
                     print " "+parameter, dimensions, data.dtype.str, data.shape
 
-                var = dgroup.createVariable(
-                        parameter, data.dtype.str, dimensions, zlib=self.zlib)
+                var = dgroup.createVariable(parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
 
                 # Add Parameter Attributes
                 attribute_dict = self._get_variable_attr_dict(parameter)
                 for key in attribute_dict.keys():
                     setattr(var, key, attribute_dict[key])
-
-        # Report mission variable attributes (not in master release)
-        not_master = "master" not in PYSIRAL_VERSION
-        if not_master:
-            print "Warning: Missing parameter attributes for "+"; ".join(
-                self._missing_parameters)
 
     def _convert_datetime_attributes(self, attdict):
         """
