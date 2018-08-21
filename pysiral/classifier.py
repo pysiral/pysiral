@@ -3,6 +3,9 @@
 Created on Mon Jul 27 18:09:30 2015
 
 @author: Stefan
+
+Modified by FMI in August 2018:
+LTPP added
 """
 
 import numpy as np
@@ -95,6 +98,97 @@ class CS2PulsePeakiness(BaseClassifier):
     @property
     def peakiness_l(self):
         return self._peakiness_l
+
+# Late tail to peak power (LTPP) ratio added for fmi needs
+class S3LTPP(BaseClassifier):
+    """
+    Calculates Late-Tail-to-Peak-Power ratio.
+    source: Rinne 2016
+    """
+    def __init__(self, wfm_counts, pad=1):
+        # Warning: if 0padding is introduced in S3 L1 processing baseline, pad must be set to 2
+        super(S3LTPP, self).__init__()
+        shape = np.shape(wfm_counts)
+        self._n = shape[0]
+        self._n_range_bins = shape[1]
+        self._pad = pad
+        dtype = np.float32
+        self._ltpp = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        # loop over the waveforms
+        for i in np.arange(self._n): 
+            try:
+                y = wfm_counts[i, :].flatten().astype(np.float32)
+                y -= np.nanmean(y[0:11])  # Remove Noise
+                y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+                yp = np.nanmax(y)  # Waveform peak value
+                
+                if np.isnan(yp): # if the current wf is nan
+                    # no ltpp can be computed
+                    self._ltpp[i] = np.nan
+                else:
+                    ypi = np.nanargmax(y)  # Waveform peak index
+                    
+                    # gates to compute the late tail:
+                    # [ypi+50:ypi+70] if 0padding=2, [ypi+25:ypi+35] if 0padding=1
+                    gate_start = ypi + self._pad*25
+                    gate_stop = ypi + self._pad*35 +1
+                    
+                    if ( gate_start > self._n_range_bins  or  gate_stop > self._n_range_bins ):
+                        # not enough gates to compute the LTPP
+                        self._ltpp[i] = np.nan
+                    else:
+                        self._ltpp[i] = np.mean(y[gate_start:gate_stop])/yp
+                        
+            except ValueError:
+                self._ltpp[i] = np.nan
+                
+    @property
+    def ltpp(self):
+        return self._ltpp        
+            
+            
+            
+class CS2LTPP(BaseClassifier):
+    """
+    Calculates Late-Tail-to-Peak-Power ratio.
+    """
+    def __init__(self, wfm_counts, pad=2):
+        super(CS2LTPP, self).__init__()
+        shape = np.shape(wfm_counts)
+        self._n = shape[0]
+        self._n_range_bins = shape[1]
+        self._pad = pad
+        dtype = np.float32
+        self._ltpp = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        # loop over the waveforms
+        for i in np.arange(self._n): 
+            y = wfm_counts[i, :].flatten().astype(np.float32)
+            y -= np.nanmean(y[0:11])  # Remove Noise
+            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+            yp = np.nanmax(y)  # Waveform peak value
+            ypi = np.nanargmax(y)  # Waveform peak index
+	    
+            # AMANDINE: implementation for wf of 256 bins (128 0padded)?
+            onediv = float(1)/float(41)
+
+            # AMANDINE: here i seems to be understood as gate indice but it is wf indice!?
+            if i == 256: 
+                break
+            if [i > (ypi + 100)] and [i < (ypi + 140)]: # AMANDINE: syntax to be checked
+                try:
+                    self._ltpp[i] = (onediv*float(y[i]))/float(yp) # AMANDINE: where is the sum in this formula?
+                except ZeroDivisionError:
+                    self._ltpp[i] = np.nan
+
+    @property
+    def ltpp(self):
+        return self._ltpp
 
 
 class EnvisatWaveformParameter(BaseClassifier):
