@@ -3,6 +3,9 @@
 Created on Thu Jul 23 15:10:04 2015
 
 @author: Stefan
+
+Modified by FMI in August 2018:
+L1bAdapterCryosat._transfer_classifiers
 """
 
 from pysiral.config import PYSIRAL_VERSION
@@ -15,7 +18,8 @@ from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 from pysiral.cryosat2.functions import (
     get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
     get_cryosat2_wfm_range)
-from pysiral.classifier import (CS2OCOGParameter, CS2PulsePeakiness,
+# fmi modification: CS2LTPP added
+from pysiral.classifier import (CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness,
                                 EnvisatWaveformParameter)
 
 from pysiral.clocks import UTCTAIConverter
@@ -246,6 +250,10 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
+        
+        # fmi version: Calculate the LTPP
+        ltpp = CS2LTPP(wfm)
+        self.l1b.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
 
         # Add the peak power (in Watts)
         # (use l1b waveform power array that is already in physical units)
@@ -257,12 +265,15 @@ class L1bAdapterCryoSat(object):
         rng = self.l1b.waveform.range
         radar_mode = self.l1b.waveform.radar_mode
         is_ocean = self.l1b.surface_type.get_by_name("ocean").flag
-        lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
-        lew1 = lew.get_width_from_thresholds(0.05, 0.5)
-        lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+        # fmi version: add of LEW
+        width = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        lew = width.get_width_from_thresholds(0.05, 0.95)
+        lew1 = width.get_width_from_thresholds(0.05, 0.5)
+        lew2 = width.get_width_from_thresholds(0.5, 0.95)
+        self.l1b.classifier.add(lew, "leading_edge_width")
         self.l1b.classifier.add(lew1, "leading_edge_width_first_half")
         self.l1b.classifier.add(lew2, "leading_edge_width_second_half")
-        self.l1b.classifier.add(lew.fmi, "first_maximum_index")
+        self.l1b.classifier.add(width.fmi, "first_maximum_index")
 
         # Compute sigma nought
         peak_power = get_waveforms_peak_power(self.l1b.waveform.power)
