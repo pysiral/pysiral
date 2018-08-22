@@ -360,6 +360,8 @@ class RIO(RIOBaseClass):
         self._current_date = self._requested_date
 
     def _get_rio_track(self, l2):
+
+        # IDEA: Use dictionaries: data[iceclass] = ...
         data_pc1 = list()
         data_pc2 = list()
         data_pc3 = list()
