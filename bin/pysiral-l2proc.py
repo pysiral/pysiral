@@ -252,7 +252,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         if filename is None:
             msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
             msg = msg + " \nRecognized Level-2 processor setting ids:\n"
-            for l2_settings_id in self.pysiral_config.get_setting_ids("l2"):
+            for l2_settings_id in self.pysiral_config.get_setting_ids("proc", "l2"):
                 msg = msg + "  " + l2_settings_id+"\n"
             self.error.add_error("invalid-l2-settings", msg)
             self.error.raise_on_error()
