@@ -10,5 +10,6 @@ Any contributions from general feedback and bug reports to feature requests are 
 
 - **Bug Reports**: Please use bug report templates
 - **Feature Requests** Please use feature request templates
-- **Contributung code**: Please get in touch with [Stefan Hendricks](mailto:stefan.hendricks@awi.de) to be added as collaborator to the projectt
+- **Contributing code**: Please get in touch with [Stefan Hendricks](mailto:stefan.hendricks@awi.de) to be added as collaborator to the project
+- **Feedback**: Please use [code tags](https://www.python.org/dev/peps/pep-0350/) in the code
 
