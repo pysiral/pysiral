@@ -220,6 +220,101 @@ class Warren99(SnowBaseClass):
         return snow_density
 
 
+class Warren99AMSR2Clim(SnowBaseClass):
+    """ Class for monthly snow depth & density climatology based on merged Warren99 climatology and
+     monthly AMSR2 snow depth composite (source: IUP) """
+
+    def __init__(self):
+        super(Warren99AMSR2Clim, self).__init__()
+        self._data = None
+        self._current_date = [0, 0]
+        self._requested_date = [-1, -1]
+        self.error.caller_id = self.__class__.__name__
+
+    def _get_along_track_snow(self, l2):
+
+        # TODO: Check if this method can be moved to parent class (quite generic)
+        # could be moved to update grid data.
+
+        # Extract requested day
+        self._get_requested_date(l2)
+
+        # Check if data for day is already loaded
+        if self._requested_date != self._current_date:
+            self._get_data(l2)
+            self._current_date = self._requested_date
+        else:
+            self._msg = self.__class__.__name__+": Daily grid already present"
+
+        # Check if error with file I/O
+        if self.error.status:
+            return None, self._msg
+
+        # Extract along track snow depth and density
+        snow = self._get_snow_track(l2)
+
+        return snow, self._msg
+
+    def _get_data(self, l2):
+        """ Loads file from local repository only if needed """
+
+        path = self._get_local_repository_filename(l2)
+        # Validation
+        if not os.path.isfile(path):
+            self._msg = self.__class__.__name__+": File not found: %s " % path
+            self.error.add_error("auxdata_missing_snow", self._msg)
+            return
+        self._data = ReadNC(path)
+        # This step is important for calculation of image coordinates
+        # self._data.ice_conc = np.flipud(self._data.ice_conc)
+        self._msg = self.__class__.__name__+": Loaded SIC file: %s" % path
+
+    def _get_requested_date(self, l2):
+        """ Use first timestamp as reference, date changes are ignored """
+        # TODO: this can definitely moved as property to auxiliary data class
+        month = l2.track.timestamp[0].month
+        day = l2.track.timestamp[0].day
+        self._requested_date = [month, day]
+
+    def _get_local_repository_filename(self, l2):
+        """ Get the filename (no subfolders as climatology for each day)"""
+        path = self._local_repository
+        filename = self._filenaming.format(month=self.month, day=self.day)
+        path = os.path.join(path, filename)
+        return path
+
+    def _get_snow_track(self, l2):
+
+        # TODO: Move functionality to image coordinate class
+
+        # Convert grid/track coordinates to grid projection coordinates
+        kwargs = self._options[l2.hemisphere].projection
+        p = Proj(**kwargs)
+        x, y = p(self._data.lon, self._data.lat)
+        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
+
+        # Convert track projection coordinates to image coordinates
+        # x: 0 < n_lines; y: 0 < n_cols
+        dim = self._options[l2.hemisphere].dimension
+        x_min, y_min = np.nanmin(x), np.nanmin(y)
+        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+
+        # Extract snow depth along track data from grid
+        sd_parameter_name = self._options.snow_depth_nc_variable
+        sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
+        sdgrid = np.flipud(sdgrid)
+        # sdgrid = np.roll(sdgrid, 16, axis=0)
+        sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
+        sd[sd < 0.0] = np.nan
+
+        # Extract snow depth uncertainty
+        unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
+        uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
+        uncgrid = np.flipud(uncgrid)
+        # uncgrid = np.roll(uncgrid, 16, axis=0)
+        unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
+        unc[unc < 0.0] = np.nan
+
 class FixedSnowDepthDensity(SnowBaseClass):
     """ Always returns zero snow depth """
 

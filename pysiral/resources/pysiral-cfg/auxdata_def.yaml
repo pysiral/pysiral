@@ -72,6 +72,29 @@ snow:
             valid_snow_depth_range: [0, 0.6]
         source: None
 
+    # Merged monthly Warren99/IUP AMSR2 snow depth & density climatology (created by AWI, Stefan Hendricks)
+    clim_w99amsr2:
+        pyclass: Warren99AMSR2Clim
+        long_name: Merged monthly snow depth and density climatology from Warren99 and IUP AMSR2 snow depth.
+        filenaming: "monthly_merged_warren99_amsr2_snow_clim_{month}_***.nc"
+        local_repository: clim_w99amsr2
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 1216
+                    n_lines: 1792
+                    dx: 6250
+                    dy: 6250
+            subfolders: null
+        source: None
+
     constant:
         pyclass: FixedSnowDepthDensity
         long_name: Constant snow depth and density
