@@ -201,8 +201,9 @@ class L1bAdapterCryoSat(object):
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
+        # TODO: This is too complicated. The unification of grc names should be handled in the l1p config files
         for key in self.cs2l1b.corrections[0].keys():
-            if key in self._config.parameter.correction_list:
+            if key in self._config.CORRECTION_LIST:
                 self.l1b.correction.set_parameter(
                     key, get_structarr_attr(self.cs2l1b.corrections, key))
         # CryoSat-2 specific: Two different sources of ionospheric corrections
