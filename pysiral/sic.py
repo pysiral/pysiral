@@ -30,28 +30,14 @@ class OsiSafSIC(SICBaseClass):
     def __init__(self):
         super(OsiSafSIC, self).__init__()
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
         self.error.caller_id = self.__class__.__name__
-
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
 
     def _initialize(self):
         pass
 
     def _get_along_track_sic(self, l2):
         self._msg = ""
-        self._get_requested_date(l2)
+        self.set_requested_date_from_l2(l2)
         self._get_data(l2)
         if not self.error.status:
             sic = self._get_sic_track(l2)
@@ -59,18 +45,11 @@ class OsiSafSIC(SICBaseClass):
         else:
             return None, self._msg
 
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        year = l2.track.timestamp[0].year
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [year, month, day]
-
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
-            self._msg = "OsiSafSIC: Daily grid already present"
+            self._msg = self.__class__.__name__+": Daily grid already present"
             return
         path = self._get_local_repository_filename(l2)
 
@@ -90,9 +69,11 @@ class OsiSafSIC(SICBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
+
         # Unique to this class is the possiblity to auto merge
         # products. The current implementation supports only two products
         path = self._local_repository
+
         # The path needs to be completed if two products shall be used
         if "auto_product_change" in self.options:
             opt = self.options.auto_product_change
@@ -105,6 +86,7 @@ class OsiSafSIC(SICBaseClass):
         for subfolder_tag in self._subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
+
         filename = self._filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)

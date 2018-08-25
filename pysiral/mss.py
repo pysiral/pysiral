@@ -59,6 +59,7 @@ class DTU1MinGrid(BaseMSS):
     def get_track(self, longitude, latitude):
         # Use fast image interpolation (since DTU is on regular grid)
         # Longitudes must be 0 -> 360
+        # TODO: That need to be made compliant with the handling of auxiliary data classes
         negative_lons = np.where(longitude < 0)[0]
         longitude[negative_lons] = longitude[negative_lons] + 360.
         # Calculate image coordinates of mss grid "image"

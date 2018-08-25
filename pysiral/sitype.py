@@ -41,35 +41,21 @@ class OsiSafSIType(SITypeBaseClass):
     def __init__(self):
         super(OsiSafSIType, self).__init__()
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
-
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
 
     def _get_along_track_sitype(self, l2):
-        self._get_requested_date(l2)
+        """ Default grid auxiliary data set"""
+
+        # Set the requested data
+        self.set_requested_date_from_l2(l2)
+
+        # Update the data (if necessary)
         self._get_data(l2)
         if self.error.status:
             return None, None, self.error.message
+
+        # Get the data
         sitype, uncertainty, self._msg = self._get_sitype_track(l2)
         return sitype, uncertainty, self._msg
-
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        year = l2.track.timestamp[0].year
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [year, month, day]
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
