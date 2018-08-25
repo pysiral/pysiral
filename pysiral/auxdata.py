@@ -104,7 +104,7 @@ class AuxdataBaseClass(object):
             # NOTE: The implementation of this method needs to be in the subclass
             self.load_requested_auxdata()
             self._current_date = self._requested_date
-            self._msg = self.__class__.__name__ + ": Load "+self.requested_filename
+            self._msg = self.__class__.__name__ + ": Load "+self.requested_filepath
         else:
             self._msg = self.__class__.__name__+": Data already present"
 
@@ -140,8 +140,10 @@ class AuxdataBaseClass(object):
 
         # Get the period dict (will be constructed from filenaming)
         period_dict = {}
-        attr_defs = re.findall("{.*?}", self._filenaming)
-
+        attrs = re.findall("{.*?}", self._filenaming)
+        for attr_def in attrs:
+            attr_name = attr_def[1:-1]
+            period_dict[attr_name] = getattr(self, attr_name)
         filename = self._filenaming.format(**period_dict)
         path = os.path.join(path, filename)
         return path
