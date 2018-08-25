@@ -5,7 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 
-from pysiral.auxdata import AuxdataBaseClass
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
 
 import scipy.ndimage as ndimage
@@ -37,6 +37,7 @@ class NoneHandler(SITypeBaseClass):
 
 
 class OsiSafSIType(SITypeBaseClass):
+    """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
     def __init__(self):
         super(OsiSafSIType, self).__init__()
@@ -45,26 +46,29 @@ class OsiSafSIType(SITypeBaseClass):
     def _get_along_track_sitype(self, l2):
         """ Default grid auxiliary data set"""
 
+        # These properties are needed to construct the product path
+        self.start_time = l2.info.start_time
+        self.hemisphere_code = l2.hemisphere_code
+
         # Set the requested data
         self.set_requested_date_from_l2(l2)
 
-        # Update the data (if necessary)
-        self._get_data(l2)
+        # Update the external data
+        self.update_external_data()
+
+        # Check if error with file I/O
         if self.error.status:
-            return None, None, self.error.message
+            return None, self._msg
 
         # Get the data
         sitype, uncertainty, self._msg = self._get_sitype_track(l2)
         return sitype, uncertainty, self._msg
 
-    def _get_data(self, l2):
-        """ Loads file from local repository only if needed """
-        if self._requested_date == self._current_date:
-            # Data already loaded, nothing to do
-            return
+    def load_requested_auxdata(self):
+        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
 
-        # construct filename
-        path = self._get_local_repository_filename(l2)
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = self.requested_filepath
 
         # Validation
         if not os.path.isfile(path):
@@ -72,49 +76,48 @@ class OsiSafSIType(SITypeBaseClass):
             self.error.add_error("auxdata_missing_sitype", msg)
             return
 
+        # --- Read the data ---
         self._data = ReadNC(path)
-        self._data.ice_type = self._data.ice_type[0, :, :]
-        # self._data.confidence_level = self._data.confidence_level[0, :, :]
 
-        # This step is important for calculation of image coordinates
-        self._data.ice_type = np.flipud(self._data.ice_type)
-        # self._data.confidence_level = np.flipud(self._data.confidence_level)
         self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
-        self._current_date = self._requested_date
 
-    def _get_local_repository_filename(self, l2):
+    @property
+    def requested_filepath(self):
+        """ Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (hemisphere code) """
         path = self._local_repository
         for subfolder_tag in self._subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
         filename = self._filenaming.format(
             year=self.year, month=self.month, day=self.day,
-            hemisphere_code=l2.hemisphere_code)
+            hemisphere_code=self.hemisphere_code)
         path = os.path.join(path, filename)
         return path
 
     def _get_sitype_track(self, l2):
-        # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
-        p = Proj(**kwargs)
-        x, y = p(self._data.lon, self._data.lat)
-        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
-        # Convert track projection coordinates to image coordinates
-        # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
-        y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
-        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
-        # Extract along track data from grid
-        sitype = ndimage.map_coordinates(
-            self._data.ice_type, [iy, ix], order=0)
-        # Convert flags to myi fraction
-        translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
+        # Extract from grid
+        griddef = self._options[l2.hemisphere]
+        grid_lons, grid_lats = self._data.lon, self._data.lat
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
+        sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
+        confidence_level = grid2track.get_from_grid_variable(self._data.confidence_level[0, :, :], flipud=True)
+
+        # set fill values to flag 0 -> nan
         fillvalues = np.where(sitype == -1)[0]
-        sitype[fillvalues] = 5
+        sitype[fillvalues] = 0
+
+        # --- Translate sitype codes into myi fraction ---
+        # flag_meanings: -1: fill value, 1: open_water, 2: first_year_ice, 3: multi_year_ice, 4: ambiguous
+        translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5])
         sitype = np.array([translator[value] for value in sitype])
-        sitype_uncertainty = np.full(sitype.shape, 0.0)
+
+        # Translate confidence level into myi fraction uncertainty
+        # flag_meaning: 0: unprocessed, 1: erroneous, 2: unreliable, 3: acceptable, 4: good, 5: excellent
+        translator = np.array([np.nan, 1., 0.5, 0.2, 0.1, 0.0])
+        sitype_uncertainty = np.array([translator[value] for value in confidence_level])
+
         return sitype, sitype_uncertainty, self._msg
 
 
