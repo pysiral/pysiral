@@ -76,7 +76,7 @@ snow:
     clim_w99amsr2:
         pyclass: Warren99AMSR2Clim
         long_name: Merged monthly snow depth and density climatology from Warren99 and IUP AMSR2 snow depth.
-        filenaming: "monthly_merged_warren99_amsr2_snow_clim_{month}_***.nc"
+        filenaming: "monthly_merged_warren99_amsr2_snow_clim_{month}.nc"
         local_repository: clim_w99amsr2
         options:
             variable_map:
