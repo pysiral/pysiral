@@ -273,15 +273,38 @@ class Warren99AMSR2Clim(SnowBaseClass):
 
         # Extract track data from grid
         griddef = self._options[l2.hemisphere]
-        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, self._data.lon, self._data.lat, griddef)
+        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
 
-        # Extract data
-        var_map = self.set_options.variable_map
+        # Extract data (Map the extracted tracks directly on the snow parameter container)
+        var_map = self.options.variable_map
         snow = SnowParameterContainer()
         for var_name in var_map.keys():
             source_name = var_map[var_name]
-            sdgrid = getattr(self._data, source_name)[0, :, :]
-            setattr(snow, var_name, grid2track(sdgrid))
+            sdgrid = getattr(self._data, source_name)
+            setattr(snow, var_name, grid2track.get_from_grid_variable(sdgrid))
+
+        # Extract the W99 weight
+        w99_weight = grid2track.get_from_grid_variable(self._data.w99_weight)
+
+        # Apply the same modification as the Warren climatology
+        # Apply ice_type (myi_fraction correction) but this time modified by the regional weight
+        # of the Warren climatology. The weight ranges from 0 to 1 and make sure no fyi scaling is
+        # applied over the AMSR2 region data
+        scale_factor = (1.0 - l2.sitype) * self._options.fyi_correction_factor * w99_weight
+
+        # The scaling factor affects the snow depth ...
+        snow.depth = snow.depth - scale_factor * snow.depth
+
+        # ... and the uncertainty. Here it is assumed that the uncertainty
+        # is similar affected by the scaling factor.
+        snow.depth_uncertainty = snow.depth_uncertainty - scale_factor * snow.depth_uncertainty
+
+        # the uncertainty of the myi fraction is acknowledged by adding
+        # an additional term that depends on snow depth, the magnitude of
+        # scaling and the sea ice type uncertainty
+        scaling_uncertainty = snow.depth * scale_factor * l2.sitype.uncertainty * w99_weight
+        snow.depth_uncertainty = snow.depth_uncertainty + scaling_uncertainty
 
         return snow
 
