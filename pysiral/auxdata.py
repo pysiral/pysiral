@@ -10,6 +10,9 @@ import re
 
 import numpy as np
 
+import scipy.ndimage as ndimage
+from pyproj import Proj
+
 from pysiral.config import options_from_dictionary
 from pysiral.errorhandler import ErrorStatus
 
@@ -167,3 +170,68 @@ class AuxdataBaseClass(object):
     def auxdata_variable_names(self):
         """ Returns a list of variables that are provided by the auxiliary data class """
         return sorted(self._variables.keys())
+
+
+class GridTrackInterpol(object):
+    """ Implements fast extraction of gridded data along a track using Image Interpolation """
+
+    def __init__(self, lons, lats, grid_lons, grid_lats, griddef):
+        """
+        lons, lats: ground track
+        Example grid definition (dict)
+            projection:
+                proj: stere
+                ellps: WGS84
+                lon_0: 0
+                lat_0: -90
+                lat_ts: -70
+                a: 6378273
+                b: 6356889.44891
+            dimension:
+                n_cols: 632
+                n_lines: 664
+                dx: 12500
+                dy: 12500
+        """
+
+        # Save the arguments
+        self.lons = lons
+        self.lats = lats
+        self.grid_lons = grid_lons
+        self.grid_lats = grid_lats
+        self.griddef = griddef
+
+        # Compute image coordinates
+        self._set_projection()
+        self._get_track_image_coordinates()
+
+    def _set_projection(self):
+        self.p = Proj(**self.griddef.projection)
+
+    def _get_track_image_coordinates(self):
+        """ Computes the image coordinates that will be used for the m"""
+
+        # Convert track coordinates to grid projection coordinates
+        tr_x, tr_y = self.p(self.lons, self.lats)
+
+        # Convert grid coordinates to grid projection coordinates
+        x, y = self.p(self.grid_lons, self.grid_lats)
+
+        # Convert track projection coordinates to image coordinates
+        # x: 0 < n_lines; y: 0 < n_cols
+        dim = self.griddef.dimension
+        x_min, y_min = np.nanmin(x), np.nanmin(y)
+        self.ix, self.iy = (tr_x-x_min)/dim.dx, (tr_y-y_min)/dim.dy
+
+    def get_from_grid_variable(self, gridvar, order=0, flipud=False):
+        """ Returns a along-track data from a grid variable"""
+        if flipud:
+            gridvar = np.flipud(gridvar)
+        trackvar = ndimage.map_coordinates(gridvar, [self.iy, self.ix], order=order)
+        return trackvar
+
+    def debug_map(self, *args, **kwargs):
+        raise NotImplementedError()
+        # track_var = self.get_from_grid_variable(*args, **kwargs)
+
+
