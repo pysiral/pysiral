@@ -55,6 +55,13 @@ class OsiSafSIC(SICBaseClass):
         # Get and return the track
         sic = self._get_sic_track(l2)
 
+        # Fill pole hole
+        if hasattr(self.options, "fill_pole_hole"):
+            opt = self.options.fill_pole_hole
+            is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
+            is_nan = np.isnan(sic)
+            indices = np.where(np.logical_and(is_near_pole_hole, is_nan))
+            sic[indices] = opt.pole_hole_fill_value
 
         # All done, return
         return sic, self._msg
