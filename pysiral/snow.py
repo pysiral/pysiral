@@ -5,7 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 
-from pysiral.auxdata import AuxdataBaseClass
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
 
@@ -22,6 +22,8 @@ class SnowBaseClass(AuxdataBaseClass):
         super(SnowBaseClass, self).__init__()
 
     def get_along_track_snow(self, l2):
+        """ Standard API method """
+        # TODO: This might be moved into a standard get along-track data method
         snow, msg = self._get_along_track_snow(l2)
         return snow, msg
 
@@ -43,7 +45,7 @@ class NoneHandler(SnowBaseClass):
 
 class Warren99(SnowBaseClass):
 
-    # Snow depth Coeficients
+    # Snow depth Coefficients
     sd_coefs = np.array([
         [28.01, 0.1270, -1.1833, -0.1164, -0.0051, 0.0243, 7.6, -0.06, 0.07, 4.6],
         [30.28, 0.1056, -0.5908, -0.0263, -0.0049, 0.0044, 7.9, -0.06, 0.08, 5.5],
@@ -227,24 +229,17 @@ class Warren99AMSR2Clim(SnowBaseClass):
     def __init__(self):
         super(Warren99AMSR2Clim, self).__init__()
         self._data = None
-        self._current_date = [0, 0]
-        self._requested_date = [-1, -1]
         self.error.caller_id = self.__class__.__name__
 
     def _get_along_track_snow(self, l2):
+        """ This is the method that will be evoked by the Level-2 processor """
 
-        # TODO: Check if this method can be moved to parent class (quite generic)
-        # could be moved to update grid data.
+        # Set the requested date
+        self.set_requested_date_from_l2(l2)
 
-        # Extract requested day
-        self._get_requested_date(l2)
-
-        # Check if data for day is already loaded
-        if self._requested_date != self._current_date:
-            self._get_data(l2)
-            self._current_date = self._requested_date
-        else:
-            self._msg = self.__class__.__name__+": Daily grid already present"
+        # Update the external data
+        # NOTE: This will only be done once as the climatology has the same period as the Level-2 processor
+        self.update_external_data()
 
         # Check if error with file I/O
         if self.error.status:
@@ -255,65 +250,41 @@ class Warren99AMSR2Clim(SnowBaseClass):
 
         return snow, self._msg
 
-    def _get_data(self, l2):
-        """ Loads file from local repository only if needed """
+    def load_requested_auxdata(self):
+        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
 
-        path = self._get_local_repository_filename(l2)
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = self.requested_filepath
+
         # Validation
         if not os.path.isfile(path):
             self._msg = self.__class__.__name__+": File not found: %s " % path
             self.error.add_error("auxdata_missing_snow", self._msg)
             return
+
+        # Read the data
         self._data = ReadNC(path)
+
         # This step is important for calculation of image coordinates
-        # self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self._msg = self.__class__.__name__+": Loaded SIC file: %s" % path
-
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        # TODO: this can definitely moved as property to auxiliary data class
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [month, day]
-
-    def _get_local_repository_filename(self, l2):
-        """ Get the filename (no subfolders as climatology for each day)"""
-        path = self._local_repository
-        filename = self._filenaming.format(month=self.month, day=self.day)
-        path = os.path.join(path, filename)
-        return path
+        self._msg = self.__class__.__name__+": Loaded snow file: %s" % path
 
     def _get_snow_track(self, l2):
+        """ Get the along-track data from the loaded data"""
 
-        # TODO: Move functionality to image coordinate class
+        # Extract track data from grid
+        griddef = self._options[l2.hemisphere]
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, self._data.lon, self._data.lat, griddef)
 
-        # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
-        p = Proj(**kwargs)
-        x, y = p(self._data.lon, self._data.lat)
-        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
+        # Extract data
+        var_map = self.set_options.variable_map
+        snow = SnowParameterContainer()
+        for var_name in var_map.keys():
+            source_name = var_map[var_name]
+            sdgrid = getattr(self._data, source_name)[0, :, :]
+            setattr(snow, var_name, grid2track(sdgrid))
 
-        # Convert track projection coordinates to image coordinates
-        # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
-        x_min, y_min = np.nanmin(x), np.nanmin(y)
-        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+        return snow
 
-        # Extract snow depth along track data from grid
-        sd_parameter_name = self._options.snow_depth_nc_variable
-        sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
-        sdgrid = np.flipud(sdgrid)
-        # sdgrid = np.roll(sdgrid, 16, axis=0)
-        sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
-        sd[sd < 0.0] = np.nan
-
-        # Extract snow depth uncertainty
-        unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
-        uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
-        uncgrid = np.flipud(uncgrid)
-        # uncgrid = np.roll(uncgrid, 16, axis=0)
-        unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
-        unc[unc < 0.0] = np.nan
 
 class FixedSnowDepthDensity(SnowBaseClass):
     """ Always returns zero snow depth """
