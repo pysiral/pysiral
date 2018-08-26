@@ -68,6 +68,13 @@ class ConfigInfo(DefaultLoggingClass):
         "auxdata": "auxdata_def.yaml",
     }
 
+    # FIXME: This is only a quick fix for a bug that was caused by the removal of `parameter_def.yaml` in v0.6.1
+    # (This list was implemented to ensure consistent naming of geophysical range corrections through all
+    # platform pre-processors.
+    CORRECTION_LIST = ["dry_troposphere", "wet_troposphere", "inverse_barometric", "dynamic_atmosphere",
+                       "ionospheric", "ocean_tide_elastic", "ocean_tide_long_period", "ocean_loading_tide",
+                       "solid_earth_tide", "geocentric_polar_tide"]
+
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
     VALID_SETTING_TYPES = ["proc", "output", "grid"]

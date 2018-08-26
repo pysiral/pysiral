@@ -5,7 +5,7 @@ Created on Sun Apr 24 13:57:56 2016
 @author: Stefan
 """
 
-from pysiral.auxdata import AuxdataBaseClass
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
 
@@ -22,6 +22,8 @@ class SnowBaseClass(AuxdataBaseClass):
         super(SnowBaseClass, self).__init__()
 
     def get_along_track_snow(self, l2):
+        """ Standard API method """
+        # TODO: This might be moved into a standard get along-track data method
         snow, msg = self._get_along_track_snow(l2)
         return snow, msg
 
@@ -43,7 +45,7 @@ class NoneHandler(SnowBaseClass):
 
 class Warren99(SnowBaseClass):
 
-    # Snow depth Coeficients
+    # Snow depth Coefficients
     sd_coefs = np.array([
         [28.01, 0.1270, -1.1833, -0.1164, -0.0051, 0.0243, 7.6, -0.06, 0.07, 4.6],
         [30.28, 0.1056, -0.5908, -0.0263, -0.0049, 0.0044, 7.9, -0.06, 0.08, 5.5],
@@ -218,6 +220,93 @@ class Warren99(SnowBaseClass):
         snow_density = snow_water_equivalent/snow_depth*self.water_density
 
         return snow_density
+
+
+class Warren99AMSR2Clim(SnowBaseClass):
+    """ Class for monthly snow depth & density climatology based on merged Warren99 climatology and
+     monthly AMSR2 snow depth composite (source: IUP) """
+
+    def __init__(self):
+        super(Warren99AMSR2Clim, self).__init__()
+        self._data = None
+        self.error.caller_id = self.__class__.__name__
+
+    def _get_along_track_snow(self, l2):
+        """ This is the method that will be evoked by the Level-2 processor """
+
+        # Set the requested date
+        self.set_requested_date_from_l2(l2)
+
+        # Update the external data
+        # NOTE: This will only be done once as the climatology has the same period as the Level-2 processor
+        self.update_external_data()
+
+        # Check if error with file I/O
+        if self.error.status:
+            return None, self._msg
+
+        # Extract along track snow depth and density
+        snow = self._get_snow_track(l2)
+
+        return snow, self._msg
+
+    def load_requested_auxdata(self):
+        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
+
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = self.requested_filepath
+
+        # Validation
+        if not os.path.isfile(path):
+            self._msg = self.__class__.__name__+": File not found: %s " % path
+            self.error.add_error("auxdata_missing_snow", self._msg)
+            return
+
+        # Read the data
+        self._data = ReadNC(path)
+
+        # This step is important for calculation of image coordinates
+        self._msg = self.__class__.__name__+": Loaded snow file: %s" % path
+
+    def _get_snow_track(self, l2):
+        """ Get the along-track data from the loaded data"""
+
+        # Extract track data from grid
+        griddef = self._options[l2.hemisphere]
+        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
+
+        # Extract data (Map the extracted tracks directly on the snow parameter container)
+        var_map = self.options.variable_map
+        snow = SnowParameterContainer()
+        for var_name in var_map.keys():
+            source_name = var_map[var_name]
+            sdgrid = getattr(self._data, source_name)
+            setattr(snow, var_name, grid2track.get_from_grid_variable(sdgrid))
+
+        # Extract the W99 weight
+        w99_weight = grid2track.get_from_grid_variable(self._data.w99_weight)
+
+        # Apply the same modification as the Warren climatology
+        # Apply ice_type (myi_fraction correction) but this time modified by the regional weight
+        # of the Warren climatology. The weight ranges from 0 to 1 and make sure no fyi scaling is
+        # applied over the AMSR2 region data
+        scale_factor = (1.0 - l2.sitype) * self._options.fyi_correction_factor * w99_weight
+
+        # The scaling factor affects the snow depth ...
+        snow.depth = snow.depth - scale_factor * snow.depth
+
+        # ... and the uncertainty. Here it is assumed that the uncertainty
+        # is similar affected by the scaling factor.
+        snow.depth_uncertainty = snow.depth_uncertainty - scale_factor * snow.depth_uncertainty
+
+        # the uncertainty of the myi fraction is acknowledged by adding
+        # an additional term that depends on snow depth, the magnitude of
+        # scaling and the sea ice type uncertainty
+        scaling_uncertainty = snow.depth * scale_factor * l2.sitype.uncertainty * w99_weight
+        snow.depth_uncertainty = snow.depth_uncertainty + scaling_uncertainty
+
+        return snow
 
 
 class FixedSnowDepthDensity(SnowBaseClass):

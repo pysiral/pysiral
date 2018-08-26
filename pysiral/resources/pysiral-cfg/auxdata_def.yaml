@@ -72,6 +72,34 @@ snow:
             valid_snow_depth_range: [0, 0.6]
         source: None
 
+    # Merged monthly Warren99/IUP AMSR2 snow depth & density climatology (created by AWI, Stefan Hendricks)
+    clim_w99amsr2:
+        pyclass: Warren99AMSR2Clim
+        long_name: Merged monthly snow depth and density climatology from Warren99 and IUP AMSR2 snow depth.
+        filenaming: "monthly_merged_warren99_amsr2_snow_clim_{month}.nc"
+        local_repository: clim_w99amsr2
+        options:
+            variable_map:
+                sd: merged_snow_depth
+                sd_unc: merged_snow_depth_uncertainty
+                sdens: w99_snow_density_filtered
+                sdens_unc: w99_snow_density_filtered_uncertainty
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 1216
+                    n_lines: 1792
+                    dx: 6250
+                    dy: 6250
+            subfolders: null
+        source: None
+
     constant:
         pyclass: FixedSnowDepthDensity
         long_name: Constant snow depth and density
@@ -276,17 +304,17 @@ sic:
             type: daily
             link: null
 
-    # This SIC data product definition is a customization that automatically merges the 
+    # This SIC data product definition is a customization that automatically merges the
     # the OSI-SAF 409 and OSI-SAF 430 products. This functionality is a unique feature
     # of the OsiSafSIC class and is not generally available for auxdata products
     # Note: The current implementation supports only two products
     osisafcdr:
         pyclass: OsiSafSIC
-        # The final product directory is computed in the auxdata handler, therefore the local machine definition key 
+        # The final product directory is computed in the auxdata handler, therefore the local machine definition key
         # `osisafcdr` must be the root directory of the subfolders defined below
         local_repository: osisafcdr
         options:
-            auto_product_change: 
+            auto_product_change:
                 # The date defines the time, when the second product will be used
                 date_product_change: 2015-04-16T00:00:00
                 osisaf_product_def:
@@ -452,11 +480,11 @@ sic:
 
     c3s_v1p2:
         pyclass: OsiSafSIC
-        # The final product directory is computed in the auxdata handler, therefore the local machine definition key 
+        # The final product directory is computed in the auxdata handler, therefore the local machine definition key
         # `osisafcdr` must be the root directory of the subfolders defined below
         local_repository: c3s_v1p2
         options:
-            auto_product_change: 
+            auto_product_change:
                 # The date defines the time, when the second product will be used
                 date_product_change: 2015-04-16T00:00:00
                 osisaf_product_def:
@@ -634,7 +662,7 @@ sitype:
         filenaming: "ice_type_{hemisphere_code}_ease2-250_icdr-v1p0_{year}{month}{day}1200.nc"
         local_repository: c3s_v1p0
         options:
-            auto_product_change: 
+            auto_product_change:
                 # The date defines the time, when the second product will be used
                 date_product_change: 2016-01-01T00:00:00
                 osisaf_product_def:

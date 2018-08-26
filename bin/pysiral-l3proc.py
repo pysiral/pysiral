@@ -185,8 +185,8 @@ class Level3ProcArgParser(DefaultLoggingClass):
         filename = self.pysiral_config.get_settings_file("proc", "l3", l3_settings)
         if filename is None:
             msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
-            msg = msg + " \nRecognized Level-2 processor setting ids:\n"
-            for l3_settings_id in self.pysiral_config.get_setting_ids("l3"):
+            msg = msg + " \nRecognized Level-3 processor setting ids:\n"
+            for l3_settings_id in self.pysiral_config.get_setting_ids("proc", "l3"):
                 msg = msg + "  " + l3_settings_id+"\n"
             self.error.add_error("invalid-l3-settings", msg)
             self.error.raise_on_error()
@@ -214,7 +214,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
         if filename is None:
             msg = "Invalid output definition filename or id: %s\n" % l3_output
             msg = msg + "    Recognized output definition ids:\n"
-            for output_id in self.pysiral_config.get_setting_ids("outputdef"):
+            for output_id in self.pysiral_config.get_setting_ids("output", "l3"):
                 msg = msg + "    - " + output_id+"\n"
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
