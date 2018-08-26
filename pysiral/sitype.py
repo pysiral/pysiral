@@ -81,20 +81,6 @@ class OsiSafSIType(SITypeBaseClass):
 
         self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
 
-    @property
-    def requested_filepath(self):
-        """ Note: this overwrites the property in the super class due to some
-        peculiarities with the filenaming (hemisphere code) """
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
-            subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
-            year=self.year, month=self.month, day=self.day,
-            hemisphere_code=self.hemisphere_code)
-        path = os.path.join(path, filename)
-        return path
-
     def _get_sitype_track(self, l2):
 
         # Extract from grid
@@ -119,6 +105,20 @@ class OsiSafSIType(SITypeBaseClass):
         sitype_uncertainty = np.array([translator[value] for value in confidence_level])
 
         return sitype, sitype_uncertainty, self._msg
+
+    @property
+    def requested_filepath(self):
+        """ Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (hemisphere code) """
+        path = self._local_repository
+        for subfolder_tag in self._subfolders:
+            subfolder = getattr(self, subfolder_tag)
+            path = os.path.join(path, subfolder)
+        filename = self._filenaming.format(
+            year=self.year, month=self.month, day=self.day,
+            hemisphere_code=self.hemisphere_code)
+        path = os.path.join(path, filename)
+        return path
 
 
 class OsiSafSITypeCDR(SITypeBaseClass):
