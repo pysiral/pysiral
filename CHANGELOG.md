@@ -1,5 +1,59 @@
 # History of changes
 
+
+## Version 0.6.3 (26. August 2018)
+
+**New Features**
+- [snow] Added support for Merged Warren99 / AMSR2 snow depth climatology (`snow.Warren99AMSR2Clim`)
+- [auxdata] Added class for fast extraction of along-track data from a grid (`auxdata.GridTrackInterpol`)
+
+**Changes**
+- [auxdata] Moved properties and methods from subclasses in the `auxdata.AuxdataBaseClass` superclass with the intention to reduce code for new auxiliary subclasses. 
+- [sic] The class for OSI-401 products now has the option `fill_pole_hole` to avoid data loss around 88N
+
+**Bugfixes**
+- [snow] Ice-type dependent scaling of Warren99 snow depth only valid for factor of 0.5
+- [l2proc] l2proc crashes
+
+**Settings**
+- [awi] Added initial version of the AWI v2p1 Level-2 processor settings 
+
+
+## Version 0.6.2 (20. August 2018)
+
+**New Features**
+- [github] Added bug report / pull request templates
+- [github] Added contributing information 
+
+**Changes**
+
+**Bugfixes**
+- [snow] Ice-type dependent scaling of Warren99 snow depth only valid for factor of 0.5
+- [l2proc] l2proc crashes
+
+**Settings** 
+
+## Version 0.6.1 (13. August 2018)
+
+**New Features**
+- [setup] Allow pysiral to be installed using pip
+- [config] Change of settings structure. Config files are categorized in `type` (proc, output, grid)" and `data_level` (l1p, l2i, l2p, l3, None for grid)
+- [pysiral] Move to github
+
+**Changes**
+- [config] pysiral configuration files are now in the user home directory in the `.pysiral-cfg` subfolder. The existence of the folder is checked upon calling pysiral and automatically created if it does not exist. 
+- [config] Removing obsolete config files from the code repository
+- [config] Improved error message for missing  `local_machine_def.yaml`
+- [collection] Module `collection` removed from pysiral (moved to
+ `pysiral-product-tools`)
+- [catalog] Module `catalog` removed from pysiral (moved to `pysiral-product-tools`)
+- [visualization] Inactive module `visualization` removed from pysiral
+- [version] pysiral version tag moved to `pysiral/VERSION`
+
+**Bugfixes**
+
+**Settings** 
+
 ## Version 0.6.0 (1 August 2018)
 
 **New Features**
