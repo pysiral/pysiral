@@ -87,7 +87,7 @@ class OsiSafSIC(SICBaseClass):
 
         # No negative ice concentrations
         flagged = np.where(self._data.ice_conc < 0)
-        self._data.ice_conc[flagged] = 0
+        self._data.ice_conc[flagged] = np.nan
 
         self._msg = "OsiSafSIC: Loaded SIC file: %s" % path
 
