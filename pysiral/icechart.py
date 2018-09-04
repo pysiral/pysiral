@@ -158,7 +158,7 @@ class IC(ICBaseClass):
                 return fnames, timedelta
                 break
             else:
-                fnames = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+                fnames = ['','','','','','']
                 timedelta = np.nan
         return fnames, timedelta
 
@@ -350,7 +350,7 @@ class ICA(ICBaseClass):
                 return fnames, timedelta
                 break
             else:
-                fnames = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+                fnames = ['','','','','','']
                 timedelta = np.nan
         return fnames, timedelta
 
