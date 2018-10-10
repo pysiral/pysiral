@@ -8,7 +8,7 @@ Created on Fri Jul 24 14:04:27 2015
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
                             get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.datahandler import DefaultAuxdataHandler
+from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
@@ -31,7 +31,7 @@ import os
 
 class Level2Processor(DefaultLoggingClass):
 
-    def __init__(self, product_def, auxdata_handler=None):
+    def __init__(self, product_def, auxclass_handler=None):
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
@@ -42,9 +42,10 @@ class Level2Processor(DefaultLoggingClass):
         self._l2def = product_def.l2def
 
         # Auxiliary Data Handler
-        if auxdata_handler is None:
-            auxdata_handler = DefaultAuxdataHandler()
-        self._auxdata_handler = auxdata_handler
+        # NOTE: retrieves and initializes the auxdata classes based on the l2 processor definition config file
+        if auxclass_handler is None:
+            auxclass_handler = DefaultAuxdataClassHandler()
+        self._auxclass_handler = auxclass_handler
 
         # Output_handler (can be one or many)
         self._output_handler = product_def.output_handler
