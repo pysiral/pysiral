@@ -9,10 +9,10 @@ from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.iotools import get_local_l1bdata_files
-from pysiral.sic import get_l2_sic_handler
-from pysiral.sitype import get_l2_sitype_handler
-from pysiral.snow import get_l2_snow_handler
-from pysiral.mss import get_l2_ssh_class
+from pysiral.auxdata.sic import get_l2_sic_handler
+from pysiral.auxdata.sitype import get_l2_sitype_handler
+from pysiral.auxdata.snow import get_l2_snow_handler
+from pysiral.auxdata.mss import get_l2_mss_class
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -28,7 +28,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
     from `auxdata.yaml` configuration file.
     """
 
-    getcls = {"mss": get_l2_ssh_class, "sic": get_l2_sic_handler,
+    getcls = {"mss": get_l2_mss_class, "sic": get_l2_sic_handler,
               "sitype": get_l2_sitype_handler, "snow": get_l2_snow_handler}
 
     def __init__(self):

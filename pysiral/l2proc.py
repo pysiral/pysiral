@@ -12,7 +12,7 @@ from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
-from pysiral.mss import get_l2_ssh_class
+from pysiral.ssh import get_l2_ssh_class
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
