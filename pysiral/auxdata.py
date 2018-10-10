@@ -11,6 +11,9 @@ import re
 import numpy as np
 
 import scipy.ndimage as ndimage
+
+from collections import OrderedDict
+
 from pyproj import Proj
 
 from pysiral.config import options_from_dictionary
@@ -24,13 +27,15 @@ class AuxdataBaseClass(object):
     auxdata classes
     """
 
+    VALID_MODES = ["return", "store"]
+
     def __init__(self):
 
         # Error handler
         self.error = ErrorStatus()
 
         # General messages
-        self.msg = ""
+        self.msgs = []
 
         # --- This will be filled by the set_xxx methods ---
 
@@ -55,7 +60,7 @@ class AuxdataBaseClass(object):
         self._requested_date = [-1, -1, -1]
 
         # A dictionary with the output variables of the auxiliary data set
-        self._auxvars = {}
+        self.reset_auxvars()
 
     def set_long_name(self, docstr):
         """ Set a description of the auxdata source """
@@ -95,6 +100,57 @@ class AuxdataBaseClass(object):
         month = l2.track.timestamp[0].month
         day = l2.track.timestamp[0].day
         self.set_requested_date(year, month, day)
+
+    def reset_auxvars(self):
+        """ Empties the auxiliary data store. To be executed during class initialization and
+        before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
+        self._auxvars = OrderedDict()
+
+    def add_track_to_l2(self, l2):
+        """ Main Access points for the Level-2 Processor """
+
+        # This redirects to the general variable getter function, but makes sure
+        # that the variables are not
+        self.get_track(l2.timestamp[0], l2.track.longitude, l2.track.latitude, mode="store")
+
+        # Update the Level-2 object
+        self.update_l2(l2)
+
+    def get_track(self, time, lons, lats, mode="return"):
+        """
+        This ist the main getter method for all auxiliary data sets.
+        There are two modes:
+            1) `return`: returns variable(s) as either 'list' or 'dict'
+            2) `store`: keeps them internally
+        """
+
+        # Sanity check of input
+        if mode not in self.VALID_MODES:
+            msg = "mode (%s) not in valid modes: %s" % (str(mode), ", ".join(self.VALID_MODES))
+            self.error.add_error("invalid-mode", msg)
+            self.error.raise_on_error()
+
+        # Call the API get_track class. This is the mandatory method of all auxiliary subclasses (independent
+        # of type. Test if this is indeed the case
+        if not self.has_mandatory_track_method:
+            msg = "Mandatory subclass method `get_track_vars not implemented for %s " % self.pyclass
+            self.error.add_error("not-implemented", msg)
+            self.error.raise_on_error()
+
+        # Before calling the get_track_vars of the subclass, we must empty any existing data from a potential
+        # previous execution
+        self.reset_auxvars()
+
+        # Call the mandatory track extraction method. Each subclass should register its output via the
+        # `register_auxvar` method of the parent class
+        self.get_track_vars(time, lons, lats)
+
+        # Return only if required
+        if mode == "return":
+            return self._auxvars
+
+    def register_auxvar(self, var_name, var):
+        self._auxvars[var_name] = var
 
     def update_external_data(self):
         """ This method will check if the requested date matches current data
@@ -173,6 +229,19 @@ class AuxdataBaseClass(object):
         """ Returns a list of variables that are provided by the auxiliary data class """
         return sorted(self._variables.keys())
 
+    @property
+    def has_mandatory_track_method(self):
+        """ Test if this object instance has the mandatory method for extracting track data. This method
+        is named _get_track_vars() and needs to be present in any auxiliary subclass"""
+        has_method = False
+        get_track_children_method = getattr(self, "get_track_vars", None)
+        if callable(get_track_children_method):
+            has_method = True
+        return has_method
+
+    @property
+    def auxvar_names(self):
+        return self._auxvars.keys()
 
 class GridTrackInterpol(object):
     """ Implements fast extraction of gridded data along a track using Image Interpolation """
@@ -235,5 +304,8 @@ class GridTrackInterpol(object):
     def debug_map(self, *args, **kwargs):
         raise NotImplementedError()
         # track_var = self.get_from_grid_variable(*args, **kwargs)
+
+
+
 
 
