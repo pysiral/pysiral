@@ -27,8 +27,6 @@ class AuxdataBaseClass(object):
     auxdata classes
     """
 
-    VALID_MODES = ["return", "store"]
-
     def __init__(self):
 
         # Error handler
@@ -106,34 +104,13 @@ class AuxdataBaseClass(object):
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
         self._auxvars = OrderedDict()
 
-    def add_track_to_l2(self, l2):
+    def add_variables_to_l2(self, l2):
         """ Main Access points for the Level-2 Processor """
-
-        # This redirects to the general variable getter function, but makes sure
-        # that the variables are not
-        self.get_track(l2.timestamp[0], l2.track.longitude, l2.track.latitude, mode="store")
-
-        # Update the Level-2 object
-        self.update_l2(l2)
-
-    def get_track(self, time, lons, lats, mode="return"):
-        """
-        This ist the main getter method for all auxiliary data sets.
-        There are two modes:
-            1) `return`: returns variable(s) as either 'list' or 'dict'
-            2) `store`: keeps them internally
-        """
-
-        # Sanity check of input
-        if mode not in self.VALID_MODES:
-            msg = "mode (%s) not in valid modes: %s" % (str(mode), ", ".join(self.VALID_MODES))
-            self.error.add_error("invalid-mode", msg)
-            self.error.raise_on_error()
 
         # Call the API get_track class. This is the mandatory method of all auxiliary subclasses (independent
         # of type. Test if this is indeed the case
         if not self.has_mandatory_track_method:
-            msg = "Mandatory subclass method `get_track_vars not implemented for %s " % self.pyclass
+            msg = "Mandatory subclass method `get_l2_track_vars` not implemented for %s " % self.pyclass
             self.error.add_error("not-implemented", msg)
             self.error.raise_on_error()
 
@@ -143,11 +120,10 @@ class AuxdataBaseClass(object):
 
         # Call the mandatory track extraction method. Each subclass should register its output via the
         # `register_auxvar` method of the parent class
-        self.get_track_vars(time, lons, lats)
+        self.get_l2_track_vars(l2)
 
-        # Return only if required
-        if mode == "return":
-            return self._auxvars
+        # Update the Level-2 object
+        self.update_l2(l2)
 
     def register_auxvar(self, var_name, var):
         self._auxvars[var_name] = var
@@ -232,9 +208,9 @@ class AuxdataBaseClass(object):
     @property
     def has_mandatory_track_method(self):
         """ Test if this object instance has the mandatory method for extracting track data. This method
-        is named _get_track_vars() and needs to be present in any auxiliary subclass"""
+        is named get_l2_track_vars() and needs to be present in any auxiliary subclass"""
         has_method = False
-        get_track_children_method = getattr(self, "get_track_vars", None)
+        get_track_children_method = getattr(self, "get_l2_track_vars", None)
         if callable(get_track_children_method):
             has_method = True
         return has_method
