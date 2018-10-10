@@ -10,28 +10,21 @@ from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataHandler
 from pysiral.l1bdata import L1bdataNCFile
-from pysiral.iotools import get_local_l1bdata_files
 from pysiral.l2data import Level2Data
 from pysiral.logging import DefaultLoggingClass
 from pysiral.mss import get_l2_ssh_class
-from pysiral.output import (Level2Output, DefaultLevel2OutputHandler,
-                            PysiralOutputFilenaming, get_output_class)
-from pysiral.roi import get_roi_class
+from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 from pysiral.surface_type import get_surface_type_class
 from pysiral.retracker import get_retracker_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
-from pysiral.path import filename_from_path, file_basename
-
-from dateutil.relativedelta import relativedelta
-from isodate.duration import Duration
+from pysiral.path import filename_from_path
 
 from collections import deque, OrderedDict
 from datetime import datetime
 import time
-import glob
 import sys
 import os
 
@@ -104,48 +97,8 @@ class Level2Processor(DefaultLoggingClass):
 #        self._initialize_processor()
 #        self._initialize_summary_report()
 
-    def get_input_files_local_machine_def(self, time_range, version="default"):
-        mission_id = self._l2def.mission_id
-        hemisphere = self._l2def.hemisphere
-        l1b_files = get_local_l1bdata_files(
-            mission_id, time_range, hemisphere, version=version)
-        self.set_l1b_files(l1b_files)
-
-        # Update the report
-        self.report.n_files = len(l1b_files)
-        self.report.time_range = time_range
-        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
-
-    def set_custom_l1b_file_list(self, l1b_files, time_range):
-        self.set_l1b_files(l1b_files)
-        # Update the report
-        self.report.n_files = len(l1b_files)
-        self.report.time_range = time_range
-        self.report.l1b_repository = os.path.split(l1b_files[0])[0]
-
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
-
-    def remove_old_l2data(self, time_range):
-        """ Clean up old l2 output data """
-        # TODO: Move data management out of processing class
-        # can be several oututs
-        output_ids, output_defs = td_branches(self._l2def.output)
-        for output_id, output_def in zip(output_ids, output_defs):
-            output = get_output_class(output_def.pyclass)
-            output.set_options(**output_def.options)
-            output.set_base_export_path(output_def.path)
-            export_folder = output.get_full_export_path(time_range.start)
-
-            # Get list of output files
-            search_pattern = os.path.join(export_folder, "*.*")
-            l2output_files = glob.glob(search_pattern)
-
-            # Delete files
-            self.log.info("Removing %g output files [ %s ] in %s" % (
-                len(l2output_files), output_id, export_folder))
-            for l2output_file in l2output_files:
-                os.remove(l2output_file)
 
     def process_l1b_files(self, l1b_files):
         self.set_l1b_files(l1b_files)
@@ -157,14 +110,10 @@ class Level2Processor(DefaultLoggingClass):
         self._l2proc_summary_to_file()
         self._clean_up()
 
-    def purge(self):
-        """ Clean the orbit collection """
-        pass
-
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        output_ids, output_defs = td_branches(self._l2def.output)
+        output_ids, output_defs = td_branches(self.l2def.output)
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
@@ -283,7 +232,7 @@ class Level2Processor(DefaultLoggingClass):
         Only add report parameter that are not time range specific
         (e.g. the processor l2 settings)
         """
-        self.report.l2_settings_file = self._l2def.l2_settings_file
+        self.report.l2_settings_file = self.l2def.l2_settings_file
 
 # %% Level2Processor: orbit processing
 
@@ -314,15 +263,12 @@ class Level2Processor(DefaultLoggingClass):
 
             # Initialize the orbit level-2 data container
             try:
-                time_range = TimeRangeRequest(l1b.info.start_time,
-                                              l1b.info.stop_time,
-                                              period="custom")
+                time_range = TimeRangeRequest(l1b.info.start_time, l1b.info.stop_time, period="custom")
                 period = time_range.iterations[0]
             except SystemExit:
                 msg = "Computation of data period caused exception"
                 self.log.warning("[invalid-l1b]", msg)
                 continue
-
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
             # Add sea ice concentration (can be used as classifier)
@@ -387,8 +333,8 @@ class Level2Processor(DefaultLoggingClass):
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
                             source_primary_filename=source_primary_filename,
-                            l2_algorithm_id=self._l2def.id,
-                            l2_version_tag=self._l2def.version_tag)
+                            l2_algorithm_id=self.l2def.id,
+                            l2_version_tag=self.l2def.version_tag)
             self._create_l2_outputs(l2)
 
             # Add data to orbit stack
@@ -400,7 +346,7 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
-        l1b.info.subset_region_name = self._l2def.roi.hemisphere
+        l1b.info.subset_region_name = self.l2def.roi.hemisphere
         return l1b
 
     def _discard_l1b_procedure(self, error_codes, l1b_file):
@@ -412,16 +358,16 @@ class Level2Processor(DefaultLoggingClass):
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
         # XXX: This should be applied to the L2 data not l1b
-        for correction in self._l2def.corrections:
+        for correction in self.l2def.corrections:
             l1b.apply_range_correction(correction)
 
     def _apply_l1b_prefilter(self, l1b):
         """ Apply filtering of l1b variables """
         # Backward compatibility with older l2 setting files
-        if "l1b_pre_filtering" not in self._l2def:
+        if "l1b_pre_filtering" not in self.l2def:
             return
         # Apply filters
-        names, filters = td_branches(self._l2def.l1b_pre_filtering)
+        names, filters = td_branches(self.l2def.l1b_pre_filtering)
         for name, filter_def in zip(names, filters):
             self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
             l1bfilter = get_filter(filter_def.pyclass)
@@ -492,15 +438,15 @@ class Level2Processor(DefaultLoggingClass):
 
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
-        pyclass = self._l2def.surface_type.pyclass
+        pyclass = self.l2def.surface_type.pyclass
         surface_type = get_surface_type_class(pyclass)
-        surface_type.set_options(**self._l2def.surface_type.options)
+        surface_type.set_options(**self.l2def.surface_type.options)
         surface_type.classify(l1b, l2)
         l2.set_surface_type(surface_type.result)
 
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
-        surface_type_validators = self._l2def.validator.surface_type
+        surface_type_validators = self.l2def.validator.surface_type
         names, validators = td_branches(surface_type_validators)
         error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
@@ -519,7 +465,7 @@ class Level2Processor(DefaultLoggingClass):
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        surface_types, retracker_def = td_branches(self._l2def.retracker)
+        surface_types, retracker_def = td_branches(self.l2def.retracker)
 
         for i, surface_type in enumerate(surface_types):
 
@@ -570,8 +516,8 @@ class Level2Processor(DefaultLoggingClass):
     def _estimate_sea_surface_height(self, l2):
 
         # 2. get get sea surface anomaly
-        ssa = get_l2_ssh_class(self._l2def.ssa.pyclass)
-        ssa.set_options(**self._l2def.ssa.options)
+        ssa = get_l2_ssh_class(self.l2def.ssa.pyclass)
+        ssa.set_options(**self.l2def.ssa.options)
         ssa.interpolate(l2)
 
         # dedicated setters, else the uncertainty, bias attributes are broken
@@ -581,8 +527,8 @@ class Level2Processor(DefaultLoggingClass):
     def _get_altimeter_freeboard(self, l1b, l2):
         """ Compute radar freeboard and its uncertainty """
 
-        afrbalg = get_frb_algorithm(self._l2def.afrb.pyclass)
-        afrbalg.set_options(**self._l2def.rfrb.options)
+        afrbalg = get_frb_algorithm(self.l2def.afrb.pyclass)
+        afrbalg.set_options(**self.l2def.rfrb.options)
         afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
 
         # Check and return error status and codes
@@ -641,8 +587,8 @@ class Level2Processor(DefaultLoggingClass):
     def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
 
-        frbgeocorr = get_frb_algorithm(self._l2def.frb.pyclass)
-        frbgeocorr.set_options(**self._l2def.frb.options)
+        frbgeocorr = get_frb_algorithm(self.l2def.frb.pyclass)
+        frbgeocorr.set_options(**self.l2def.frb.options)
         frb, frb_unc = frbgeocorr.get_freeboard(l1b, l2)
 
         # Check and return error status and codes (e.g. missing file)
@@ -672,7 +618,7 @@ class Level2Processor(DefaultLoggingClass):
         """
 
         # Extract filters from settings structure
-        freeboard_filters = self._l2def.filter.freeboard
+        freeboard_filters = self.l2def.filter.freeboard
         names, filters = td_branches(freeboard_filters)
 
         # Loop over freeboard filters
@@ -722,8 +668,8 @@ class Level2Processor(DefaultLoggingClass):
               (usually in the l2 settings)
         """
 
-        frb2sit = get_sit_algorithm(self._l2def.sit.pyclass)
-        frb2sit.set_options(**self._l2def.sit.options)
+        frb2sit = get_sit_algorithm(self.l2def.sit.pyclass)
+        frb2sit.set_options(**self.l2def.sit.options)
 
         sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
 
@@ -739,7 +685,7 @@ class Level2Processor(DefaultLoggingClass):
             l2.ice_dens.set_uncertainty(ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
-        thickness_filters = self._l2def.filter.thickness
+        thickness_filters = self.l2def.filter.thickness
         names, filters = td_branches(thickness_filters)
         for name, filter_def in zip(names, filters):
             sitfilter = get_filter(filter_def.pyclass)
@@ -780,9 +726,7 @@ class Level2ProductDefinition(DefaultLoggingClass):
         # Optional parameters (may be set to default values if not specified)
         self._output_handler = []
 
-    def add_output_definition(self, output_def_file,
-                              period="default",
-                              overwrite_protection=True):
+    def add_output_definition(self, output_def_file, period="default", overwrite_protection=True):
 
         # Set given or default output handler
         self._output_handler.append(DefaultLevel2OutputHandler(
