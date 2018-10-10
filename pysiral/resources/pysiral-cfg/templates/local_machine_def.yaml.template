@@ -63,7 +63,7 @@ auxdata_repository:
     # Snow Products
     snow:
         icdc_climatology_south: ''
-        w99_amsr2_merged: ''
+        clim_w99amsr2: ''
 
     # Masks (for level-3 processor)
     mask:
