@@ -38,7 +38,8 @@ class Level2Processor(DefaultLoggingClass):
         # Error Status Handler
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
-#        # Level-2 Algorithm Defintion
+        # Level-2 Algorithm Definition
+        # NOTE: This object should ony be called through the property self.l2def
         self._l2def = product_def.l2def
 
         # Auxiliary Data Handler
@@ -80,17 +81,21 @@ class Level2Processor(DefaultLoggingClass):
         return len(self._l1b_files) == 0
 
     @property
-    def l2_auxdata_source_dict(self):
-        """ A dictionary that contains the descriptions of the auxiliary
-        data sources """
-        auxdata_dict = {}
-        for auxdata_type in ["mss", "sic", "sitype", "snow"]:
-            try:
-                handler = getattr(self, "_"+auxdata_type)
-                auxdata_dict[auxdata_type] = handler.longname
-            except AttributeError:
-                auxdata_dict[auxdata_type] = "unspecified"
-        return auxdata_dict
+    def l2def(self):
+        return self._l2def
+
+    # @property
+    # def l2_auxdata_source_dict(self):
+    #     """ A dictionary that contains the descriptions of the auxiliary
+    #     data sources """
+    #     auxdata_dict = {}
+    #     for auxdata_type in ["mss", "sic", "sitype", "snow"]:
+    #         try:
+    #             handler = getattr(self, "_"+auxdata_type)
+    #             auxdata_dict[auxdata_type] = handler.longname
+    #         except AttributeError:
+    #             auxdata_dict[auxdata_type] = "unspecified"
+    #     return auxdata_dict
 
 # %% Level2Processor: public methods
 
@@ -141,12 +146,12 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Starting Initialization")
 
         self.log.info("Processor Settings - range correction list:")
-        for correction in self._l2def.corrections:
+        for correction in self.l2def.corrections:
             self.log.info("- %s" % correction)
         self.log.info("Processor Settings - surface type classificator: %s" % (
-            self._l2def.surface_type.pyclass))
+            self.l2def.surface_type.pyclass))
         self.log.info("Processor Settings - lead interpolator: %s" % (
-            self._l2def.ssa.pyclass))
+            self.l2def.ssa.pyclass))
 
         # Set the region of interest option
         # (required for MSS subsetting)
