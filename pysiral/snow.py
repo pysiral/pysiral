@@ -33,6 +33,9 @@ class NoneHandler(SnowBaseClass):
     def __init__(self):
         super(NoneHandler, self).__init__()
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_snow(self, l2):
         dummy = np.full((l2.n_records), np.nan)
         snow = SnowParameterContainer()
@@ -80,6 +83,9 @@ class Warren99(SnowBaseClass):
 
     def __init__(self):
         super(Warren99, self).__init__()
+
+    def _initialize(self):
+        pass
 
     def evaluate(self, lons, lats, month_num):
         """ Return the result of the Warren Climatology for a
@@ -231,6 +237,9 @@ class Warren99AMSR2Clim(SnowBaseClass):
         self._data = None
         self.error.caller_id = self.__class__.__name__
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_snow(self, l2):
         """ This is the method that will be evoked by the Level-2 processor """
 
@@ -315,6 +324,9 @@ class FixedSnowDepthDensity(SnowBaseClass):
     def __init__(self):
         super(FixedSnowDepthDensity, self).__init__()
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_snow(self, l2):
         snow_depth = np.ones(shape=(l2.n_records), dtype=np.float32)
         snow_depth *= self._options.fixed_snow_depth
@@ -337,6 +349,9 @@ class ICDCSouthernClimatology(SnowBaseClass):
         self._current_date = [0, 0]
         self._requested_date = [-1, -1]
         self.error.caller_id = self.__class__.__name__
+
+    def _initialize(self):
+        pass
 
     def _get_along_track_snow(self, l2):
 

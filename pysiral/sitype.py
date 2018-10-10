@@ -30,6 +30,9 @@ class NoneHandler(SITypeBaseClass):
     def __init__(self):
         super(NoneHandler, self).__init__()
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_sitype(self, l2):
         sitype = np.full((l2.n_records), np.nan)
         uncertainty = np.full((l2.n_records), np.nan)
@@ -38,6 +41,9 @@ class NoneHandler(SITypeBaseClass):
 
 class OsiSafSIType(SITypeBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
+
+    def _initialize(self):
+        pass
 
     def __init__(self):
         super(OsiSafSIType, self).__init__()
@@ -131,6 +137,9 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         self._data = None
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
+
+    def _initialize(self):
+        pass
 
     @property
     def year(self):
@@ -276,6 +285,9 @@ class ICDCNasaTeam(SITypeBaseClass):
     def day(self):
         return "%02g" % self._requested_date[2]
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_sitype(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
@@ -383,6 +395,9 @@ class MYIDefault(SITypeBaseClass):
     def __init__(self):
         super(MYIDefault, self).__init__()
 
+    def _initialize(self):
+        pass
+
     def _get_along_track_sitype(self, l2):
         """ Every ice is myi (sitype = 1) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
@@ -404,6 +419,9 @@ class FYIDefault(SITypeBaseClass):
 
     def __init__(self):
         super(FYIDefault, self).__init__()
+
+    def _initialize(self):
+        pass
 
     def _get_along_track_sitype(self, l2):
         """ Every ice is fyi (sitype = 0) """
