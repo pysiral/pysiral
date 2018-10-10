@@ -28,7 +28,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
     from `auxdata.yaml` configuration file.
     """
 
-    valid_auxdata_classes = ["mss", "sic", "sitype", "snow"]
     getcls = {"mss": get_l2_ssh_class, "sic": get_l2_sic_handler,
               "sitype": get_l2_sitype_handler, "snow": get_l2_snow_handler}
 
@@ -58,13 +57,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         # In this case a dummy data handler is returned
         if auxdata_id is None:
             return self.getcls[auxdata_class]("NoneHandler")
-
-        # perform sanity check
-        if auxdata_class not in self.valid_auxdata_classes:
-            error_id = "auxdata_invalid_class"
-            error_message = PYSIRAL_ERROR_CODES[error_id] % auxdata_class
-            self.error.add_error(error_id, error_message)
-            return None
 
         # Initialize the class with information from auxdata_def.yaml
         auxdata_def = self.get_auxdata_def(auxdata_class, auxdata_id)
