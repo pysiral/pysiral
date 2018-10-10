@@ -116,7 +116,7 @@ class Warren99(SnowBaseClass):
 
         return snow
 
-    def _get_along_track_snow(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Get the snow depth, density and their uncertainties for the track in the l2 data object
         including the potential modification of the original climatology and filters """
 
@@ -240,7 +240,7 @@ class Warren99AMSR2Clim(SnowBaseClass):
     def _initialize(self):
         pass
 
-    def _get_along_track_snow(self, l2):
+    def get_l2_track_vars(self, l2):
         """ This is the method that will be evoked by the Level-2 processor """
 
         # Set the requested date
@@ -353,7 +353,7 @@ class ICDCSouthernClimatology(SnowBaseClass):
     def _initialize(self):
         pass
 
-    def _get_along_track_snow(self, l2):
+    def get_l2_track_vars(self, l2):
 
         # Extract requested day
         self._get_requested_date(l2)
@@ -388,10 +388,13 @@ class ICDCSouthernClimatology(SnowBaseClass):
         snow.depth = sd
         snow.depth_uncertainty = sd_unc
         snow.density = np.full(sd.shape, self._options.snow_density)
-        snow.density_uncertainty = np.full(
-            sd.shape, self._options.snow_density_uncertainty)
+        snow.density_uncertainty = np.full(sd.shape, self._options.snow_density_uncertainty)
 
-        return snow, self._msg
+        # Register the variables
+        self.register_auxvar("snow_depth", sd)
+        self.register_auxvar("snow_depth_uncertainty", sd_unc)
+        self.register_auxvar("snow_density", snow.density)
+        self.register_auxvar("snow_density_uncertainty", snow.density_uncertainty)
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """

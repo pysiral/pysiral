@@ -25,7 +25,8 @@ class SICBaseClass(AuxdataBaseClass):
         return sic, msg
 
 
-class OsiSafSIC(SICBaseClass):
+class OsiSafSIC(AuxdataBaseClass):
+
 
     def __init__(self):
         super(OsiSafSIC, self).__init__()
@@ -35,7 +36,7 @@ class OsiSafSIC(SICBaseClass):
     def _initialize(self):
         pass
 
-    def _get_along_track_sic(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Main entry point of the class """
 
         # These properties are needed to construct the product path
@@ -63,8 +64,8 @@ class OsiSafSIC(SICBaseClass):
             indices = np.where(np.logical_and(is_near_pole_hole, is_nan))
             sic[indices] = opt.pole_hole_fill_value
 
-        # All done, return
-        return sic, self._msg
+        # All done, register the variable
+        self.register_auxvar("sic", sic)
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""

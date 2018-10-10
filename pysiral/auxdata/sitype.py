@@ -39,7 +39,7 @@ class NoneHandler(SITypeBaseClass):
         return sitype, uncertainty, ""
 
 
-class OsiSafSIType(SITypeBaseClass):
+class OsiSafSIType(AuxdataBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
     def _initialize(self):
@@ -49,7 +49,7 @@ class OsiSafSIType(SITypeBaseClass):
         super(OsiSafSIType, self).__init__()
         self._data = None
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Default grid auxiliary data set"""
 
         # These properties are needed to construct the product path
@@ -68,7 +68,10 @@ class OsiSafSIType(SITypeBaseClass):
 
         # Get the data
         sitype, uncertainty, self._msg = self._get_sitype_track(l2)
-        return sitype, uncertainty, self._msg
+
+        # Register the data
+        self.register_auxvar("sitype", sitype)
+        self.register_auxvar("sitype_uncertainty", uncertainty)
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""

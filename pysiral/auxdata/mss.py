@@ -64,12 +64,15 @@ class DTU1MinGrid(AuxdataBaseClass):
         for i in np.arange(len(self.latitude)):
             self.elevation[i, :] += (delta_h[i]-delta_h1[i])
 
-    def get_track_vars(self, time, longitude, latitude):
+    def get_l2_track_vars(self, l2):
 
         # Use fast image interpolation (since DTU is on regular grid)
         # Longitudes must be 0 -> 360
 
-        negative_lons = np.where(longitude < 0)[0]
+        longitude = np.array(l2.track.longitude)
+        latitude = np.array(l2.track.latitude)
+
+        negative_lons = np.where(longitude)[0]
         longitude[negative_lons] = longitude[negative_lons] + 360.
 
         # Calculate image coordinates of mss grid "image"
