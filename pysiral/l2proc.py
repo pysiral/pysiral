@@ -48,6 +48,9 @@ class Level2Processor(DefaultLoggingClass):
             auxclass_handler = DefaultAuxdataClassHandler()
         self._auxclass_handler = auxclass_handler
 
+        # This variable will contain a list with the auxiliary data handlers
+        self._registered_auxdata_handlers = []
+
         # Output_handler (can be one or many)
         self._output_handler = product_def.output_handler
 
@@ -153,26 +156,25 @@ class Level2Processor(DefaultLoggingClass):
         self.log.info("Processor Settings - lead interpolator: %s" % (
             self.l2def.ssa.pyclass))
 
-        # Set the region of interest option
-        # (required for MSS subsetting)
-        self._set_roi()
+        # Initialize the auxiliary data handlers
+        self._set_auxdata_handlers()
 
         # Load static background field
 
-        # Read the mean surface height auxiliary file
-        self._set_mss()
-
-        # Handler for dynamic data sets (sea ice concentration, ...)
-        # need to be called with timestamps and positions
-
-        # Sea ice concentration data handler
-        self._set_sic_handler()
-
-        # sea ice type data handler (needs to be before snow)
-        self._set_sitype_handler()
-
-        # snow data handler (needs to provide snow depth and density)
-        self._set_snow_handler()
+        # # Read the mean surface height auxiliary file
+        # self._set_mss()
+        #
+        # # Handler for dynamic data sets (sea ice concentration, ...)
+        # # need to be called with timestamps and positions
+        #
+        # # Sea ice concentration data handler
+        # self._set_sic_handler()
+        #
+        # # sea ice type data handler (needs to be before snow)
+        # self._set_sitype_handler()
+        #
+        # # snow data handler (needs to provide snow depth and density)
+        # self._set_snow_handler()
 
         # Report on output location
         self._report_output_location()
@@ -181,52 +183,77 @@ class Level2Processor(DefaultLoggingClass):
         self._initialized = True
         self.log.info("Initialization complete")
 
-    def _set_roi(self):
-        self.log.info("Processor Settings - ROI: %s" % self._l2def.roi.pyclass)
-        self._roi = get_roi_class(self._l2def.roi.pyclass)
-        self._roi.set_options(**self._l2def.roi.options)
+    def _set_auxdata_handlers(self):
+        """ Adds all auxdata types from the l2 config file to the Level-2 processor instance """
 
-    def _set_mss(self):
-        """ Loading the mss product file from a static file """
-        settings = self._l2def.auxdata.mss
-        self._mss = self._auxdata_handler.get_pyclass("mss", settings.name)
-        self._auxdata_handler.error.raise_on_error()
-        self.log.info("Processor Settings - MSS: %s" % self._mss.pyclass)
-        self.log.info("- loading roi subset from: %s" % self._mss.filename)
-        self._mss.set_roi(self._roi)
-        self._mss.initialize()
+        # The auxdata definition is a list of dictionaries of form {auxdata_type: auxdata_def}
+        for auxdata_dict in self.l2def.auxdata:
 
-    def _set_sic_handler(self):
-        """ Set the sea ice concentration handler """
-        settings = self._l2def.auxdata.sic
-        self._sic = self._auxdata_handler.get_pyclass("sic", settings.name)
-        self._auxdata_handler.error.raise_on_error()
-        if settings.options is not None:
-            self._sic.set_options(**settings.options)
-        self._sic.initialize()
-        self.log.info("Processor Settings - SIC handler: %s" % (
-            self._sic.pyclass))
+            # Extract the information
+            auxdata_type  = auxdata_dict.keys()[0]
+            auxdata_def = auxdata_dict[auxdata_type]
 
-    def _set_sitype_handler(self):
-        """ Set the sea ice type handler """
-        settings = self._l2def.auxdata.sitype
-        self._sitype = self._auxdata_handler.get_pyclass(
-                "sitype", settings.name)
-        self._auxdata_handler.error.raise_on_error()
-        if settings.options is not None:
-            self._sitype.set_options(**settings.options)
-        self.log.info("Processor Settings - SIType handler: %s" % (
-            self._sitype.pyclass))
+            # Retrieve the class
+            auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"])
 
-    def _set_snow_handler(self):
-        """ Set the snow (depth and density) handler """
-        settings = self._l2def.auxdata.snow
-        self._snow = self._auxdata_handler.get_pyclass("snow", settings.name)
-        self._auxdata_handler.error.raise_on_error()
-        if settings.options is not None:
-            self._snow.set_options(**settings.options)
-        self.log.info("Processor Settings - Snow handler: %s" % (
-            self._snow.pyclass))
+            # Test on any errors
+            auxhandler.error.raise_on_error()
+
+            # Set options for l2 processor definition file
+            auxclass_options = auxdata_def.get("options", None)
+            if auxclass_options is not None:
+                auxhandler.set_options(**auxclass_options)
+
+            # Initialize the class (e.g. read static data)
+            auxhandler.initialize()
+
+            # Add & register the class to the Level-2 processor instance
+            setattr(self, auxdata_type, auxhandler)
+            self._registered_auxdata_handlers.append(auxdata_type)
+
+            # Report the auxdata class
+            self.log.info("Processor Settings - %s auxdata handler: %s" % (auxdata_type.upper(), auxhandler.pyclass))
+
+    # def _set_mss(self):
+    #     """ Loading the mss product file from a static file """
+    #     settings = self.l2def.auxdata.mss
+    #     self._mss = self._auxdata_handler.get_pyclass("mss", settings.name)
+    #     self._auxdata_handler.error.raise_on_error()
+
+    #     self._mss.set_roi(self._roi)
+    #     self._mss.initialize()
+    #
+    # def _set_sic_handler(self):
+    #     """ Set the sea ice concentration handler """
+    #     settings = self.l2def.auxdata.sic
+    #     self._sic = self._auxdata_handler.get_pyclass("sic", settings.name)
+    #     self._auxdata_handler.error.raise_on_error()
+    #     if settings.options is not None:
+    #         self._sic.set_options(**settings.options)
+    #     self._sic.initialize()
+    #     self.log.info("Processor Settings - SIC handler: %s" % (
+    #         self._sic.pyclass))
+    #
+    # def _set_sitype_handler(self):
+    #     """ Set the sea ice type handler """
+    #     settings = self.l2def.auxdata.sitype
+    #     self._sitype = self._auxdata_handler.get_pyclass(
+    #             "sitype", settings.name)
+    #     self._auxdata_handler.error.raise_on_error()
+    #     if settings.options is not None:
+    #         self._sitype.set_options(**settings.options)
+    #     self.log.info("Processor Settings - SIType handler: %s" % (
+    #         self._sitype.pyclass))
+    #
+    # def _set_snow_handler(self):
+    #     """ Set the snow (depth and density) handler """
+    #     settings = self.l2def.auxdata.snow
+    #     self._snow = self._auxdata_handler.get_pyclass("snow", settings.name)
+    #     self._auxdata_handler.error.raise_on_error()
+    #     if settings.options is not None:
+    #         self._snow.set_options(**settings.options)
+    #     self.log.info("Processor Settings - Snow handler: %s" % (
+    #         self._snow.pyclass))
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
