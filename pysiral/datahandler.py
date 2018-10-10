@@ -21,7 +21,7 @@ import os
 import re
 
 
-class DefaultAuxdataHandler(DefaultLoggingClass):
+class DefaultAuxdataClassHandler(DefaultLoggingClass):
     """ Class for retrieving handler classes for auxiliary data
     (mss, sic, sitype, snow). The classes are initialized with directory
     information from the local machine definition and the auxdata information
@@ -33,7 +33,7 @@ class DefaultAuxdataHandler(DefaultLoggingClass):
               "sitype": get_l2_sitype_handler, "snow": get_l2_snow_handler}
 
     def __init__(self):
-        super(DefaultAuxdataHandler, self).__init__(self.__class__.__name__)
+        super(DefaultAuxdataClassHandler, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
