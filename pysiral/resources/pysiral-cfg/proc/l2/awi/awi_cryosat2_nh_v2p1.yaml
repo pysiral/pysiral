@@ -3,17 +3,13 @@
 id: "AWI CryoSat-2 Sea Ice Product (cs2awi v2.1) (awi_cryosat2_nh_020)"
 version_tag: "v2p1awi"
 
+# This settings file is valid for 
+hemisphere: north
+
 # Level 2 processor settings are mission specific
 mission:
     id: cryosat2
     
-# Regions Settings (for file selection and potential subsetting
-roi:
-    pyclass: LowerLatLimit
-    hemisphere: north
-    options:
-        latitude_threshold: 50.0
-
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 auxdata:
