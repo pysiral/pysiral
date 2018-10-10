@@ -48,7 +48,7 @@ def pysiral_l2proc_time_range_job(args):
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
     mission_id = product_def.l2def.mission.id
-    hemisphere = product_def.l2def.roi.hemisphere
+    hemisphere = product_def.l2def.hemisphere
 
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
