@@ -12,7 +12,6 @@ import numpy as np
 
 import scipy.ndimage as ndimage
 
-from collections import OrderedDict
 
 from pyproj import Proj
 
@@ -107,7 +106,7 @@ class AuxdataBaseClass(object):
     def reset_auxvars(self):
         """ Empties the auxiliary data store. To be executed during class initialization and
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
-        self._auxvars = OrderedDict()
+        self._auxvars = []
 
     def add_variables_to_l2(self, l2):
         """ Main Access points for the Level-2 Processor """
@@ -128,10 +127,28 @@ class AuxdataBaseClass(object):
         self.get_l2_track_vars(l2)
 
         # Update the Level-2 object
-        self.update_l2(l2)
+        try:
+            self.update_l2(l2)
+        except KeyError:
+            msg = "Invalid auxiliary parameter return from class %s" % self.pyclass
+            self.error.add_error("invalid-auxvar-return", msg)
+            self.error.raise_on_error()
 
-    def register_auxvar(self, var_name, var):
-        self._auxvars[var_name] = var
+    def register_auxvar(self, var_id, var_name, value, uncertainty=None):
+        """ Register an auxiliary variable. The different parameters are necessary for the L2 data object.
+        When it will be added to the l2 object in self.update_l2, the variable will be accessible from the l2 with
+        the following expressions:
+
+            value = l2.%var_id%
+            uncertainty = l2.%var_id%.uncertainty
+
+        or
+
+            value = l2.get_parameter_by_name(%var_name%)
+            uncertainty = l2.get_parameter_by_name(%var_name%_uncertainty)
+        """
+        auxvar_dict = dict(id=var_id, name=var_name, value=value, uncertainty=uncertainty)
+        self._auxvars.append(auxvar_dict)
 
     def update_external_data(self):
         """ This method will check if the requested date matches current data
@@ -147,8 +164,10 @@ class AuxdataBaseClass(object):
 
     def update_l2(self, l2):
         """ Automatically add all auxiliary variables to a Level-2 data object"""
-        # TODO: this has yet no functionality
-        pass
+        for auxvar in self._auxvars:
+            uncertainty = auxvar.get("uncertainty", None)
+            l2.set_auxiliary_parameter(auxvar["id"], auxvar["name"], auxvar["value"], uncertainty)
+
 
     @property
     def pyclass(self):
