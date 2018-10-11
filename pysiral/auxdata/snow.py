@@ -56,14 +56,14 @@ class NoneHandler(AuxdataBaseClass):
     def subclass_init(self):
         pass
 
-    def _get_along_track_snow(self, l2):
-        dummy = np.full((l2.n_records), np.nan)
+    def get_l2_track_vars(self, l2):
         snow = SnowParameterContainer()
-        snow.depth = dummy
-        snow.density = dummy
-        snow.depth_uncertainty = dummy
-        snow.density_uncertainty = dummy
-        return snow, ""
+        snow.set_dummy(l2.n_records)
+        # Register Variables
+        self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
+        self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
+
+
 
 
 class Warren99(AuxdataBaseClass):
@@ -203,8 +203,7 @@ class Warren99(AuxdataBaseClass):
 
     def _get_snow_depth(self, month, l2x, l2y):
         sd = self._get_sd_coefs(month)
-        snow_depth = sd[0] + sd[1]*l2x + sd[2]*l2y + \
-            sd[3]*l2x*l2y + sd[4]*l2x*l2x + sd[5]*l2y*l2y
+        snow_depth = sd[0] + sd[1]*l2x + sd[2]*l2y + sd[3]*l2x*l2y + sd[4]*l2x*l2x + sd[5]*l2y*l2y
         snow_depth *= 0.01
         return snow_depth
 
@@ -274,6 +273,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # Check if error with file I/O
         if self.error.status:
             snow = SnowParameterContainer()
+            snow.set_dummy(l2.n_records)
         else:
             # Extract along track snow depth and density
             snow = self._get_snow_track(l2)
