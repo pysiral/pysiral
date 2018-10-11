@@ -40,18 +40,18 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Check if error with file I/O
         if self.error.status:
-            return None, self._msg
+            sic = self.get_empty_array(l2)
+        else:
+            # Get and return the track
+            sic = self._get_sic_track(l2)
 
-        # Get and return the track
-        sic = self._get_sic_track(l2)
-
-        # Fill pole hole
-        if hasattr(self.options, "fill_pole_hole"):
-            opt = self.options.fill_pole_hole
-            is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
-            is_nan = np.isnan(sic)
-            indices = np.where(np.logical_and(is_near_pole_hole, is_nan))
-            sic[indices] = opt.pole_hole_fill_value
+            # Fill pole hole
+            if hasattr(self.options, "fill_pole_hole"):
+                opt = self.options.fill_pole_hole
+                is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
+                is_nan = np.isnan(sic)
+                indices = np.where(np.logical_and(is_near_pole_hole, is_nan))
+                sic[indices] = opt.pole_hole_fill_value
 
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
@@ -64,8 +64,9 @@ class OsiSafSIC(AuxdataBaseClass):
 
         #  --- Validation ---
         if not os.path.isfile(path):
-            self._msg = self.__class__.__name__+": File not found: %s " % path
-            self.error.add_error("auxdata_missing_sic", self._msg)
+            msg = self.pyclass+": File not found: %s " % path
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_sic", msg)
             return
 
         # --- Read the data ---
@@ -79,7 +80,7 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
-        self._msg = "OsiSafSIC: Loaded SIC file: %s" % path
+        self.add_handler_message("OsiSafSIC: Loaded SIC file: %s" % path)
 
     def _get_sic_track(self, l2):
         """ Simple extraction along trajectory"""
@@ -164,7 +165,7 @@ class IfremerSIC(AuxdataBaseClass):
         if not os.path.isfile(path):
             msg ="IfremerSIC: File not found: %s " % path
             self.add_handler_message(msg)
-            self.error.add_error("auxdata_missing_sic", self._msg)
+            self.error.add_error("auxdata_missing_sic", msg)
             return
 
         self._data = ReadNC(path)

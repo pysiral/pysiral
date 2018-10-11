@@ -260,10 +260,10 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
         # Check if error with file I/O
         if self.error.status:
-            return None, self._msg
-
-        # Extract along track snow depth and density
-        snow = self._get_snow_track(l2)
+            snow = SnowParameterContainer()
+        else:
+            # Extract along track snow depth and density
+            snow = self._get_snow_track(l2)
 
         # Register Variables
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
@@ -278,15 +278,16 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            self._msg = self.__class__.__name__+": File not found: %s " % path
-            self.error.add_error("auxdata_missing_snow", self._msg)
+            msg = self.pyclass+": File not found: %s " % path
+            self.add_handler_message()
+            self.error.add_error("auxdata_missing_snow", msg)
             return
 
         # Read the data
         self._data = ReadNC(path)
 
         # This step is important for calculation of image coordinates
-        self._msg = self.__class__.__name__+": Loaded snow file: %s" % path
+        self.add_handler_message(self.__class__.__name__+": Loaded snow file: %s" % path)
 
     def _get_snow_track(self, l2):
         """ Get the along-track data from the loaded data"""
@@ -421,12 +422,13 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         path = self._get_local_repository_filename(l2)
         # Validation
         if not os.path.isfile(path):
-            self._msg = "ICDCSouthernClimatology: File not found: %s " % path
-            self.error.add_error("auxdata_missing_snow", self._msg)
+            msg = "ICDCSouthernClimatology: File not found: %s " % path
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_snow", msg)
             return
         self._data = ReadNC(path)
         # This step is important for calculation of image coordinates
-        self._msg = "ICDCSouthernClimatology: Loaded SIC file: %s" % path
+        self.add_handler_message("ICDCSouthernClimatology: Loaded SIC file: %s" % path)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """

@@ -27,12 +27,10 @@ class DTU1MinGrid(AuxdataBaseClass):
 
         # Cut to ROI regions (latitude only)
         # -> no need for world mss
-        latitude_range = self.options.latitude_range
+        lat_range = self.options.latitude_range
 
         # Get the indices for the latitude subset
-        latitude_indices = np.where(
-            np.logical_and(dtu_grid.lat >= latitude_range[0],
-                           dtu_grid.lat <= latitude_range[1]))[0]
+        latitude_indices = np.where(np.logical_and(dtu_grid.lat >= lat_range[0], dtu_grid.lat <= lat_range[1]))[0]
 
         # Crop data to subset
         self.elevation = dtu_grid.mss[latitude_indices, :]
