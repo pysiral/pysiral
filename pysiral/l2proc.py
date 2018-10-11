@@ -32,6 +32,7 @@ import os
 class Level2Processor(DefaultLoggingClass):
 
     def __init__(self, product_def, auxclass_handler=None):
+        """ Setup of the Level-2 Processor """
 
         super(Level2Processor, self).__init__(self.__class__.__name__)
 
@@ -91,18 +92,18 @@ class Level2Processor(DefaultLoggingClass):
     def registered_auxdata_handlers(self):
         return list(self._registered_auxdata_handlers)
 
-    # @property
-    # def l2_auxdata_source_dict(self):
-    #     """ A dictionary that contains the descriptions of the auxiliary
-    #     data sources """
-    #     auxdata_dict = {}
-    #     for auxdata_type in ["mss", "sic", "sitype", "snow"]:
-    #         try:
-    #             handler = getattr(self, "_"+auxdata_type)
-    #             auxdata_dict[auxdata_type] = handler.longname
-    #         except AttributeError:
-    #             auxdata_dict[auxdata_type] = "unspecified"
-    #     return auxdata_dict
+    @property
+    def l2_auxdata_source_dict(self):
+        """ A dictionary that contains the descriptions of the auxiliary
+        data sources """
+        auxdata_dict = {}
+        for auxdata_type in self.registered_auxdata_handlers:
+            try:
+                handler = getattr(self, auxdata_type)
+                auxdata_dict[auxdata_type] = handler.longname
+            except AttributeError:
+                auxdata_dict[auxdata_type] = "unspecified"
+        return auxdata_dict
 
 # %% Level2Processor: public methods
 
@@ -214,16 +215,17 @@ class Level2Processor(DefaultLoggingClass):
 
     def _l2_processing_of_orbit_files(self):
         """ Orbit-wise level2 processing """
+
         # TODO: Evaluate parallelization
         self.log.info("Start Orbit Processing")
+
+        n_files = len(self._l1b_files)
 
         # loop over l1bdata preprocessed orbits
         for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
-            self.log.info("+ [ %g of %g ] (%.2f%%)" % (
-                i+1, len(self._l1b_files),
-                float(i+1)/float(len(self._l1b_files))*100.))
+            self.log.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
@@ -376,68 +378,6 @@ class Level2Processor(DefaultLoggingClass):
         # Return error status list
         return auxdata_error_status, auxdata_error_codes
 
-    # def _get_sea_ice_concentration(self, l2):
-    #     """ Get sea ice concentration along track from auxdata """
-    #
-    #     # Get along-track sea ice concentrations via the SIC handler class
-    #     # (see self._set_sic_handler)
-    #     sic, msg = self._sic.get_along_track_sic(l2)
-    #
-    #     # Report any messages from the SIC handler
-    #     if not msg == "":
-    #         self.log.info("- "+msg)
-    #
-    #     # Check and return error status and codes (e.g. missing file)
-    #     error_status = self._sic.error.status
-    #     error_codes = self._sic.error.codes
-    #
-    #     # No error: Set sea ice concentration data to the l2 data container
-    #     if not error_status:
-    #         l2.sic.set_value(sic)
-    #
-    #     # on error: display error messages as warning and return status flag
-    #     # (this will cause the processor to report and skip this orbit segment)
-    #     else:
-    #         error_messages = self._sic.error.get_all_messages()
-    #         for error_message in error_messages:
-    #             self.log.warning("! "+error_message)
-    #             # SIC Handler is persistent, therefore errors status
-    #             # needs to be reset before next orbit
-    #             self._sic.error.reset()
-    #
-    #     return error_status, error_codes
-    #
-    # def _get_sea_ice_type(self, l2):
-    #     """ Get sea ice type (myi fraction) along track from auxdata """
-    #
-    #     # Call the sitype handler
-    #     sitype, sitype_unc, msg = self._sitype.get_along_track_sitype(l2)
-    #
-    #     # Report any messages from the sitype handler
-    #     if not msg == "":
-    #         self.log.info("- "+msg)
-    #
-    #     # Check and return error status and codes (e.g. missing file)
-    #     error_status = self._sitype.error.status
-    #     error_codes = self._sitype.error.codes
-    #
-    #     # Add to l2data
-    #     if not error_status:
-    #         l2.sitype.set_value(sitype)
-    #         l2.sitype.set_uncertainty(sitype_unc)
-    #
-    #     # on error: display error messages as warning and return status flag
-    #     # (this will cause the processor to report and skip this orbit segment)
-    #     else:
-    #         error_messages = self._sitype.error.get_all_messages()
-    #         for error_message in error_messages:
-    #             self.log.warning("! "+error_message)
-    #             # SIC Handler is persistent, therefore errors status
-    #             # needs to be reset before next orbit
-    #         self._sitype.error.reset()
-    #
-    #     return error_status, error_codes
-
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
         pyclass = self.l2def.surface_type.pyclass
@@ -552,40 +492,6 @@ class Level2Processor(DefaultLoggingClass):
 
         return error_status, error_codes
 
-    # def _get_snow_parameters(self, l2):
-    #     """ Get snow depth and density with respective uncertainties """
-    #
-    #     # Get along track snow depth info
-    #     snow, msg = self._snow.get_along_track_snow(l2)
-    #
-    #     # Report any messages from the snow handler
-    #     if not msg == "":
-    #         self.log.info("- "+msg)
-    #
-    #     # Check and return error status and codes (e.g. missing file)
-    #     error_status = self._snow.error.status
-    #     error_codes = self._snow.error.codes
-    #
-    #     # Add to l2data
-    #     if not error_status:
-    #         # Add to l2data
-    #         l2.snow_depth.set_value(snow.depth)
-    #         l2.snow_depth.set_uncertainty(snow.depth_uncertainty)
-    #         l2.snow_dens.set_value(snow.density)
-    #         l2.snow_dens.set_uncertainty(snow.density_uncertainty)
-    #
-    #     # on error: display error messages as warning and return status flag
-    #     # (this will cause the processor to report and skip this orbit segment)
-    #     else:
-    #         error_messages = self._snow.error.get_all_messages()
-    #         for error_message in error_messages:
-    #             self.log.warning("! "+error_message)
-    #             # SIC Handler is persistent, therefore errors status
-    #             # needs to be reset before next orbit
-    #         self._snow.error.reset()
-    #
-    #     return error_status, error_codes
-
     def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
 
@@ -683,8 +589,7 @@ class Level2Processor(DefaultLoggingClass):
             # Add to l2data
             l2.sit.set_value(sit)
             l2.sit.set_uncertainty(sit_unc)
-            l2.ice_dens.set_value(ice_dens)
-            l2.ice_dens.set_uncertainty(ice_dens_unc)
+            l2.set_auxiliary_parameter("idens", "sea_ice_density", ice_dens, ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self.l2def.filter.thickness
