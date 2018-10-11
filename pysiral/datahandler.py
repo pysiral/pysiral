@@ -55,6 +55,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
         # Allow l2 settings to not specify a data handler
         # In this case a dummy data handler is returned
+        # TODO: This should be obsolete, since the auxdata type can be removed from the config file
         if auxdata_id is None:
             return self.getcls[auxdata_class]("NoneHandler")
 
@@ -62,17 +63,17 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         auxdata_def = self.get_auxdata_def(auxdata_class, auxdata_id)
         if auxdata_def is None:
             error_id = "auxdata_missing_definition"
-            error_message = PYSIRAL_ERROR_CODES[error_id] % (
-                    auxdata_class, auxdata_id)
+            error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
             self.error.add_error(error_id, error_message)
-            return None
+            self.error.raise_on_error()
 
         # retrieve the getter class
         auxdata_handler = self.getcls[auxdata_class](auxdata_def.pyclass)
         if auxdata_handler is None:
             error_id = "auxdata_invalid_class_name"
-            self.error.add_error(PYSIRAL_ERROR_CODES[error_id])
-            return None
+            msg = "Invalid Auxdata class: %s" % auxdata_def.pyclass
+            self.error.add_error(PYSIRAL_ERROR_CODES[error_id], msg)
+            self.error.raise_on_error()
 
         # connect to repository on local machine
         if "local_repository" in auxdata_def:
@@ -81,10 +82,9 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
                     auxdata_class, local_repository_id)
             if local_repo is None and local_repository_id is not None:
                 error_id = "auxdata_missing_localrepo_def"
-                error_message = PYSIRAL_ERROR_CODES[error_id] % (
-                    auxdata_class, auxdata_id)
+                error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
                 self.error.add_error(error_id, error_message)
-                return None
+                self.error.raise_on_error()
             auxdata_handler.set_local_repository(local_repo)
 
         # set doc str (should be mandatory for all auxdata handlers)
@@ -94,8 +94,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         # set filename (e.g. for mss)
         if "file" in auxdata_def:
             local_repository_id = auxdata_def.local_repository
-            local_repo = self.get_local_repository(
-                    auxdata_class, local_repository_id)
+            local_repo = self.get_local_repository(auxdata_class, local_repository_id)
             filename = os.path.join(local_repo, auxdata_def.file)
             auxdata_handler.set_filename(filename)
 
