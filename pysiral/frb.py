@@ -41,7 +41,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
 
         # Compute the snow wave speed correction factor
         correction_factor = self._options.vacuum_light_speed_reduction
-        geometric_correction = correction_factor * l2.snow_depth
+        geometric_correction = correction_factor * l2.sd
 
         # Compute freeboard only for sea ice waveforms
         is_ice = l2.surface_type.sea_ice.indices
@@ -49,8 +49,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
 
         # XXX: This is not correct yet
         deriv_snow = correction_factor
-        uncertainty = np.sqrt((deriv_snow*l2.snow_depth.uncertainty)**2. +
-                              l2.afrb.uncertainty**2.)
+        uncertainty = np.sqrt((deriv_snow*l2.sd.uncertainty)**2. + l2.afrb.uncertainty**2.)
         freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
         return freeboard, freeboard_uncertainty
