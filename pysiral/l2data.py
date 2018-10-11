@@ -409,7 +409,7 @@ class Level2Data(object):
         return self.period.duration_isoformat
 
     def _get_attr_time_resolution(self, *args):
-        tdelta = self.timestamp[-1]-self.timestamp[0]
+        tdelta = self.time[-1]-self.time[0]
         seconds = tdelta.total_seconds() + 1e-6 * tdelta.microseconds
         resolution = seconds/self.n_records
         return "%.2f seconds" % resolution
@@ -470,7 +470,7 @@ class Level2Data(object):
         return dimdict
 
     @property
-    def timestamp(self):
+    def time(self):
         try:
             time = self.track.time
         except AttributeError:
@@ -820,12 +820,12 @@ class L2iNCFileImport(object):
             time = self.time
             time_parameter_name = "time"
         else:
-            time = self.timestamp
+            time = self.time
             time_parameter_name = "timestamp"
         self._time_parameter_name = time_parameter_name
         dt = num2date(time, self.time_def.units, self.time_def.calendar)
         setattr(self, "time", dt)
-        self.timestamp = self.time
+        self.time = self.time
 
     def transfer_nan_mask(self, source, targets):
         source_parameter = getattr(self, source)
