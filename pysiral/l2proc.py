@@ -163,23 +163,6 @@ class Level2Processor(DefaultLoggingClass):
         # Initialize the auxiliary data handlers
         self._set_auxdata_handlers()
 
-        # Load static background field
-
-        # # Read the mean surface height auxiliary file
-        # self._set_mss()
-        #
-        # # Handler for dynamic data sets (sea ice concentration, ...)
-        # # need to be called with timestamps and positions
-        #
-        # # Sea ice concentration data handler
-        # self._set_sic_handler()
-        #
-        # # sea ice type data handler (needs to be before snow)
-        # self._set_sitype_handler()
-        #
-        # # snow data handler (needs to provide snow depth and density)
-        # self._set_snow_handler()
-
         # Report on output location
         self._report_output_location()
 
@@ -197,11 +180,8 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_type  = auxdata_dict.keys()[0]
             auxdata_def = auxdata_dict[auxdata_type]
 
-            # Retrieve the class
+            # Retrieve the class (errors will be caught in method)
             auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"])
-
-            # Test on any errors
-            auxhandler.error.raise_on_error()
 
             # Set options for l2 processor definition file
             auxclass_options = auxdata_def.get("options", None)
@@ -299,12 +279,6 @@ class Level2Processor(DefaultLoggingClass):
 
             # Compute the radar freeboard and its uncertainty
             self._get_altimeter_freeboard(l1b, l2)
-
-            # Get snow depth & density
-            error_status, error_codes = self._get_snow_parameters(l2)
-            if error_status:
-                self.report.add_orbit_discarded_event(error_codes, l1b_file)
-                continue
 
             # get radar(-derived) from altimeter freeboard
             self._get_freeboard_from_radar_freeboard(l1b, l2)
