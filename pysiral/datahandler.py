@@ -46,12 +46,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         # Clear errors
         self.error.reset()
 
-        # Allow l2 settings to not specify a data handler
-        # In this case a dummy data handler is returned
-        # TODO: This should be obsolete, since the auxdata type can be removed from the config file
-        if auxdata_id is None:
-            return self.getcls[auxdata_class]("NoneHandler")
-
         # Initialize the class with information from auxdata_def.yaml
         auxdata_def = self.get_auxdata_def(auxdata_class, auxdata_id)
         if auxdata_def is None:
