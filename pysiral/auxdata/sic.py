@@ -14,17 +14,6 @@ import numpy as np
 import os
 
 
-class SICBaseClass(AuxdataBaseClass):
-
-    def __init__(self):
-        super(SICBaseClass, self).__init__()
-        self._msg = ""
-
-    def get_along_track_sic(self, l2):
-        sic, msg = self._get_along_track_sic(l2)
-        return sic, msg
-
-
 class OsiSafSIC(AuxdataBaseClass):
 
 
@@ -131,7 +120,8 @@ class OsiSafSIC(AuxdataBaseClass):
         path = os.path.join(path, filename)
         return path
 
-class IfremerSIC(SICBaseClass):
+
+class IfremerSIC(AuxdataBaseClass):
 
     def __init__(self):
         super(IfremerSIC, self).__init__()
@@ -139,18 +129,6 @@ class IfremerSIC(SICBaseClass):
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
         self.error.caller_id = self.__class__.__name__
-
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
 
     def subclass_init(self):
         """ Read the grid information """
@@ -161,11 +139,12 @@ class IfremerSIC(SICBaseClass):
                 self._local_repository, "grid_%s_12km.nc" % hemisphere)
             self._grid[hemisphere] = ReadNC(grid_file)
 
-    def _get_along_track_sic(self, l2):
+    def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
         sic = self._get_sic_track(l2)
-        return sic, self._msg
+        # All done, register the variable
+        self.register_auxvar("sic", "sea_ice_concentration", sic, None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -190,8 +169,7 @@ class IfremerSIC(SICBaseClass):
 
         self._data = ReadNC(path)
         self._data.ice_conc = self._data.concentration[0, :, :]
-        flagged = np.where(
-            np.logical_or(self._data.ice_conc < 0, self._data.ice_conc > 100))
+        flagged = np.where(np.logical_or(self._data.ice_conc < 0, self._data.ice_conc > 100))
         self._data.ice_conc[flagged] = 0
 
         # This step is important for calculation of image coordinates
@@ -226,33 +204,3 @@ class IfremerSIC(SICBaseClass):
         # Extract along track data from grid
         sic = ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)
         return sic
-
-#        # XXX: Debug stuff below
-#
-#        import matplotlib.pyplot as plt
-#        from mpl_toolkits.basemap import Basemap
-#
-#        plt.figure()
-#        m = Basemap(projection="ortho", lon_0=-45, lat_0=90)
-#        m.drawcoastlines()
-#        tx, ty = m(l2.track.longitude, l2.track.latitude)
-#        m.plot(tx, ty)
-#
-#        plt.figure("x")
-#        plt.imshow(x)
-#
-#        plt.figure("y")
-#        plt.imshow(y)
-#
-#        plt.figure()
-#
-#        plt.imshow(self._data.ice_conc, cmap=plt.get_cmap("viridis"),
-#                   origin="upper", interpolation="none")
-#        plt.plot(ix, iy)
-#
-#        plt.figure("sic")
-#        plt.plot(sic)
-#        plt.show()
-#        stop
-
-

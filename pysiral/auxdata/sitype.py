@@ -14,31 +14,6 @@ import numpy as np
 import os
 
 
-class SITypeBaseClass(AuxdataBaseClass):
-
-    def __init__(self):
-        super(SITypeBaseClass, self).__init__()
-        self._msg = ""
-
-    def get_along_track_sitype(self, l2):
-        sitype, sitype_uncertainty, msg = self._get_along_track_sitype(l2)
-        return sitype, sitype_uncertainty, msg
-
-
-class NoneHandler(SITypeBaseClass):
-    """ Dummy handler only returning NaN's """
-    def __init__(self):
-        super(NoneHandler, self).__init__()
-
-    def _initialize(self):
-        pass
-
-    def _get_along_track_sitype(self, l2):
-        sitype = np.full((l2.n_records), np.nan)
-        uncertainty = np.full((l2.n_records), np.nan)
-        return sitype, uncertainty, ""
-
-
 class OsiSafSIType(AuxdataBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
@@ -62,12 +37,8 @@ class OsiSafSIType(AuxdataBaseClass):
         # Update the external data
         self.update_external_data()
 
-        # Check if error with file I/O
-        if self.error.status:
-            return None, self._msg
-
         # Get the data
-        sitype, uncertainty, self._msg = self._get_sitype_track(l2)
+        sitype, uncertainty = self._get_sitype_track(l2)
 
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
@@ -114,7 +85,7 @@ class OsiSafSIType(AuxdataBaseClass):
         translator = np.array([np.nan, 1., 0.5, 0.2, 0.1, 0.0])
         sitype_uncertainty = np.array([translator[value] for value in confidence_level])
 
-        return sitype, sitype_uncertainty, self._msg
+        return sitype, sitype_uncertainty
 
     @property
     def requested_filepath(self):
@@ -131,7 +102,7 @@ class OsiSafSIType(AuxdataBaseClass):
         return path
 
 
-class OsiSafSITypeCDR(SITypeBaseClass):
+class OsiSafSITypeCDR(AuxdataBaseClass):
     """ Class for reprocessed OSISAF sea ice type products (e.g. for C3S).
     Needs to be merged into single OsiSafSitype class at some point """
 
@@ -145,25 +116,15 @@ class OsiSafSITypeCDR(SITypeBaseClass):
     def subclass_init(self):
         pass
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
+    def get_l2_track_vars(self, l2):
 
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
-    def _get_along_track_sitype(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
-        if self.error.status:
-            return None, None, self.error.message
+
         sitype, uncertainty = self._get_sitype_track(l2)
-        return sitype, uncertainty, self._msg
+
+        # Register the data
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -247,28 +208,10 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         # Uncertainty in product is in %
         sitype_uncertainty = uncertainty / 100.
 
-#        import matplotlib.pyplot as plt
-#
-#        plt.figure(dpi=150)
-#        plt.imshow(self._data.ice_type, interpolation="none")
-#        plt.plot(ix, iy)
-#        plt.scatter(ix[0], iy[0])
-#
-#        plt.figure("projection coordinates")
-#        plt.plot(l2x, l2y)
-#
-#        plt.figure("sitype along track")
-#        plt.plot(sitype)
-#        plt.plot(sitype_uncertainty)
-#
-#        plt.show()
-#
-#        stop
-
         return sitype, sitype_uncertainty
 
 
-class ICDCNasaTeam(SITypeBaseClass):
+class ICDCNasaTeam(AuxdataBaseClass):
     """ MYI Fraction from NASA Team Algorithm (from ICDC UHH) """
 
     def __init__(self):
@@ -277,28 +220,17 @@ class ICDCNasaTeam(SITypeBaseClass):
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
     def subclass_init(self):
         pass
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
         if self.error.status:
-            return None, None, self.error.message
-        sitype, sitype_uncertainty = self._get_sitype_track(l2)
-        return sitype, sitype_uncertainty, self._msg
+            sitype, sitype_uncertainty = self.get_empty_val(l2), self.get_empty_val(l2)
+        else:
+            sitype, sitype_uncertainty = self._get_sitype_track(l2)
+        self.register_auxvar("sitype", "sea_ice_type", sitype, None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -394,7 +326,7 @@ class ICDCNasaTeam(SITypeBaseClass):
         return sitype, sitype_uncertainty
 
 
-class MYIDefault(SITypeBaseClass):
+class MYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
     def __init__(self):
@@ -403,13 +335,14 @@ class MYIDefault(SITypeBaseClass):
     def subclass_init(self):
         pass
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Every ice is myi (sitype = 1) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
         is_ice = np.where(l2.sic > 0)[0]
         sitype[is_ice] = 1.0
-        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
-        return sitype, sitype_uncertainty, ""
+        uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        # Register the data
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     @property
     def uncertainty_default(self):
@@ -419,7 +352,7 @@ class MYIDefault(SITypeBaseClass):
             return 0.0
 
 
-class FYIDefault(SITypeBaseClass):
+class FYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
     def __init__(self):
@@ -428,11 +361,11 @@ class FYIDefault(SITypeBaseClass):
     def subclass_init(self):
         pass
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Every ice is fyi (sitype = 0) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
-        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
-        return sitype, sitype_uncertainty, ""
+        uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     @property
     def uncertainty_default(self):
@@ -441,5 +374,4 @@ class FYIDefault(SITypeBaseClass):
                 return self._options.uncertainty_default
         except TypeError:
             pass
-
         return 0.0

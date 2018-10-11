@@ -158,6 +158,10 @@ class AuxdataBaseClass(object):
 
     def add_handler_message(self, msg):
         self.msgs.append(msg)
+
+    def get_empty_array(self, l2, empty_val=np.nan):
+        return np.full((l2.n_records), empty_val)
+
     def update_external_data(self):
         """ This method will check if the requested date matches current data
         and call the subclass data loader method if not """

@@ -330,7 +330,19 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
 
 class FixedSnowDepthDensity(AuxdataBaseClass):
-    """ Always returns zero snow depth """
+    """
+    Returns constant depth & density (values from l2 processor definition)
+
+    Example entry in l2 proc config files:
+
+        - snow:
+            name: constant
+            options:
+                fixed_snow_depth: 0.2
+                fixed_snow_density: 300
+
+    TODO: Add uncertainties
+    """
 
     def __init__(self):
         super(FixedSnowDepthDensity, self).__init__()
@@ -339,15 +351,11 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
         pass
 
     def get_l2_track_vars(self, l2):
-        snow_depth = np.ones(shape=(l2.n_records), dtype=np.float32)
-        snow_depth *= self._options.fixed_snow_depth
-        snow_density = np.ones(shape=(l2.n_records), dtype=np.float32)
-        snow_density *= self._options.fixed_snow_density
-
+        snow_depth = np.full((l2.n_records), self._options.fixed_snow_depth)
+        snow_density = np.full((l2.n_records), self._options.fixed_snow_density)
         snow = SnowParameterContainer()
         snow.depth = snow_depth
         snow.density = snow_density
-
         # Register Variables
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
@@ -380,30 +388,30 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
 
         # Check if error with file I/O
         if self.error.status:
-            return None, self._msg
+            # This will return an empty container
+            snow = SnowParameterContainer()
+        else:
+            # Extract along track snow depth and density
+            sd, sd_unc = self._get_snow_track(l2)
 
-        # Extract along track snow depth and density
-        sd, sd_unc = self._get_snow_track(l2)
+            # Apply along-track smoothing if required
+            if self._options.smooth_snowdepth:
+                filter_width = self._options.smooth_filter_width_m
+                # Convert filter width to index
+                filter_width /= l2.footprint_spacing
+                # Round to odd number
+                filter_width = np.floor(filter_width) // 2 * 2 + 1
+                sd = idl_smooth(sd, filter_width)
+                sd_unc = idl_smooth(sd_unc, filter_width)
 
-        # Apply along-track smoothing if required
-        if self._options.smooth_snowdepth:
-            filter_width = self._options.smooth_filter_width_m
-            # Convert filter width to index
-            filter_width /= l2.footprint_spacing
-            # Round to odd number
-            filter_width = np.floor(filter_width) // 2 * 2 + 1
-            sd = idl_smooth(sd, filter_width)
-            sd_unc = idl_smooth(sd_unc, filter_width)
+            # Collect Parameters and return
+            # (density and density uncertainty fixed from l2 settings)
+            snow = SnowParameterContainer()
+            snow.depth = sd
+            snow.depth_uncertainty = sd_unc
+            snow.density = np.full(sd.shape, self._options.snow_density)
+            snow.density_uncertainty = np.full(sd.shape, self._options.snow_density_uncertainty)
 
-        # Collect Parameters and return
-        # (density and density uncertainty fixed from l2 settings)
-        snow = SnowParameterContainer()
-        snow.depth = sd
-        snow.depth_uncertainty = sd_unc
-        snow.density = np.full(sd.shape, self._options.snow_density)
-        snow.density_uncertainty = np.full(sd.shape, self._options.snow_density_uncertainty)
-
-        # Register the variables
         # Register Variables
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
@@ -418,7 +426,6 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
             return
         self._data = ReadNC(path)
         # This step is important for calculation of image coordinates
-        # self._data.ice_conc = np.flipud(self._data.ice_conc)
         self._msg = "ICDCSouthernClimatology: Loaded SIC file: %s" % path
 
     def _get_requested_date(self, l2):
@@ -465,14 +472,6 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         unc[unc < 0.0] = np.nan
 
         return sd, unc
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[0]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[1]
 
 
 class SnowParameterContainer(object):
