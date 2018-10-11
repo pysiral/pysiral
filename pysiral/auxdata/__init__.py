@@ -60,6 +60,11 @@ class AuxdataBaseClass(object):
         # A dictionary with the output variables of the auxiliary data set
         self.reset_auxvars()
 
+    def initialize(self, *args, **kwargs):
+        """ Initialize before Level-2 processing """
+        # This executes the _initialize method of each subclass (which should not be called directly
+        self._initialize(*args, **kwargs)
+
     def set_long_name(self, docstr):
         """ Set a description of the auxdata source """
         self._long_name = docstr
@@ -139,11 +144,6 @@ class AuxdataBaseClass(object):
             self._msg = self.__class__.__name__ + ": Load "+self.requested_filepath
         else:
             self._msg = self.__class__.__name__+": Data already present"
-
-    def initialize(self, *args, **kwargs):
-        """ Initialize before Level-2 processing """
-        # This executes the _initialize method of each children class
-        self._initialize(*args, **kwargs)
 
     def update_l2(self, l2):
         """ Automatically add all auxiliary variables to a Level-2 data object"""
