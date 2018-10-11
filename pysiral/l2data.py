@@ -163,6 +163,7 @@ class Level2Data(object):
         # Combine parameter and property catalogs
         catalog = self._PARAMETER_CATALOG
         catalog.update(self._PROPERTY_CATALOG)
+        catalog.update(self._auxiliary_catalog)
 
         if "_uncertainty" in parameter_name:
             parameter_name = parameter_name.replace("_uncertainty", "")
