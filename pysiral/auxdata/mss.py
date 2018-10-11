@@ -5,30 +5,11 @@ Created on Sat Aug 01 17:03:19 2015
 @author: Stefan
 """
 
-from pysiral.errorhandler import ErrorStatus
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
-from pysiral.filter import (fill_nan, idl_smooth)
 
-from treedict import TreeDict
 import scipy.ndimage as ndimage
 import numpy as np
-
-
-class BaseMSS(AuxdataBaseClass):
-
-    def __init__(self):
-        super(BaseMSS, self).__init__()
-        self._roi = None
-
-    def set_roi(self, roi):
-        self._roi = roi
-
-    def roi_latitude_range(self):
-        if hasattr(self, "_roi"):
-            return self._roi.get_latitude_range()
-        else:
-            return [-90.0, 90.0]
 
 
 class DTU1MinGrid(AuxdataBaseClass):
