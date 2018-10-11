@@ -24,31 +24,23 @@ import re
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev",  "afrb", "frb", "range", "sic",
-                      "sitype", "snow_depth",  "snow_dens",  "ice_dens",
-                      "sit", "radar_mode"]
+    _L2_DATA_ITEMS = ["range", "ssa", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
+    # These are only the standard Level-2 parameters
+    # NOTE: Auxiliary parameter are handled differently
     _PARAMETER_CATALOG = {
-        "timestamp": "timestamp",
         "time": "time",
         "longitude": "longitude",
         "latitude": "latitude",
         "surface_type": "surface_type_flag",
         "radar_mode": "radar_mode",
         "elevation": "elev",
-        "mean_sea_surface": "mss",
         "sea_surface_anomaly": "ssa",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
-        "sea_ice_type": "sitype",
-        "snow_depth": "snow_depth",
-        "snow_density": "snow_dens",
-        "ice_density": "ice_dens",
-        "sea_ice_thickness": "sit",
-        "sea_ice_concentration": "sic",
-        "radar_mode": "radar_mode"}
+        "sea_ice_thickness": "sit",}
 
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
@@ -61,6 +53,10 @@ class Level2Data(object):
         self.info = metadata
         self.track = time_orbit
         self.period = period
+
+        # A dictionary similar to the parameter catalog
+        # To be filled during the set auxdata method
+        self._auxiliary_catalog = {}
 
         # Metadata
         self._auxdata_source_dict = {}
@@ -123,6 +119,21 @@ class Level2Data(object):
             parameter.set_bias(bias, bias_value)
         setattr(self, target, parameter)
 
+    def set_auxiliary_parameter(self, var_id, var_name, value, uncertainty=None):
+        """ Adds an auxiliary parameter to the data object"""
+
+        # Use L2Elevation Array
+        # TODO: This is to cumbersome, replace by xarray at due time
+        param = L2ElevationArray(shape=(self.n_records))
+        param.set_value(value)
+        if uncertainty is not None:
+            param.set_uncertainty(uncertainty)
+        setattr(self, var_id, param)
+
+        # Register auxiliary parameter (this allows to find the parameter
+        # by its long name
+        self._auxiliary_catalog[var_name] = var_id
+
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
         # XXX: should get an overhaul
@@ -132,9 +143,8 @@ class Level2Data(object):
         self.elev[ii] = self.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
-    def set_metadata(self, auxdata_source_dict=None,
-                     source_primary_filename=None,
-                     l2_algorithm_id=None, l2_version_tag=None):
+    def set_metadata(self, auxdata_source_dict=None, source_primary_filename=None, l2_algorithm_id=None,
+                     l2_version_tag=None):
         if auxdata_source_dict is not None:
             self._auxdata_source_dict = auxdata_source_dict
         if source_primary_filename is not None:
@@ -159,11 +169,13 @@ class Level2Data(object):
             source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.uncertainty
+
         elif "_bias" in parameter_name:
             parameter_name = parameter_name.replace("_bias", "")
             source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.bias
+
         else:
             source = catalog[parameter_name]
             parameter = getattr(self, source)
@@ -592,11 +604,7 @@ class L2ElevationArray(np.ndarray):
         return r
 
     def set_value(self, value):
-#        uncertainty = self.uncertainty
-#        bias = self.bias
         self[:] = value[:]
-#        setattr(self, "uncertainty", uncertainty)
-#        setattr(self, "bias", bias)
 
     def set_uncertainty(self, uncertainty):
         self.uncertainty = uncertainty
