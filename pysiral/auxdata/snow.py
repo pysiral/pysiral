@@ -404,6 +404,7 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         if self.error.status:
             # This will return an empty container
             snow = SnowParameterContainer()
+            snow.set_dummy(l2.n_records)
         else:
             # Extract along track snow depth and density
             sd, sd_unc = self._get_snow_track(l2)
