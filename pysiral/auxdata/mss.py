@@ -3,6 +3,33 @@
 Created on Sat Aug 01 17:03:19 2015
 
 @author: Stefan
+
+Important Note:
+
+    All mss data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
+    for the Level-2 Processor. By convention, two methods must exist to make the subclass valid.
+
+        subclass_init()
+
+            This method will be called by default at the beginning of the Level-2 processor *after* all
+            options are passed to the instance. It can be used for e.g. reading static data sets
+
+        get_l2_track_vars(l2)
+
+            This method will be called during the Level-2 processor. The argument is the Level-2 data object and
+            the purpose of the method is to compute the auxilary variable(s) and associated uncertainty. These
+            variable need to be registered using the `register_auxvar(id, name, value, uncertainty)` method of
+            the base class. All MSS subclasses need to register at minimum the following variable:
+
+            mean sea surface (wgs84 elevation in meter):
+                id: mss
+                name: mean_sea_surface
+
+            e.g., this code line is mandatory for `get_l2_track_vars` (uncertainty can be None):
+
+                # Register Variables
+                self.register_auxvar("mss", "mean_sea_surface", value, uncertainty)
+
 """
 
 from pysiral.auxdata import AuxdataBaseClass

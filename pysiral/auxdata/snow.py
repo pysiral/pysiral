@@ -6,21 +6,34 @@ Created on Sun Apr 24 13:57:56 2016
 
 Important Note:
 
-    All snow data handlers must register the auxiliary variables for
+    All snow data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
+    for the Level-2 Processor. By convention, two methods must exist to make the subclass valid.
 
-        snow depth:
-            id: sd
-            name: snow_depth
+        subclass_init()
 
-        snow_density
-            id: sdens
-            name: snow_density
+            This method will be called by default at the beginning of the Level-2 processor *after* all
+            options are passed to the instance. It can be used for e.g. reading static data sets
 
-    e.g., this part needs to be included in all handlers (uncertainty can be None)
+        get_l2_track_vars(l2)
 
-        # Register Variables
-        self.register_auxvar("sd", "snow_depth", value, uncertainty)
-        self.register_auxvar("sdens", "snow_density", value, uncertainty)
+            This method will be called during the Level-2 processor. The argument is the Level-2 data object and
+            the purpose of the method is to compute the auxilary variable(s) and associated uncertainty. These
+            variable need to be registered using the `register_auxvar(id, name, value, uncertainty)` method of
+            the base class. All SNOW subclasses need to register at minimum the following variable:
+
+                snow depth (snow depth on sea ice in meter)
+                    id: sd
+                    name: snow_depth
+
+                snow_density (snow density on sea ice in kg/m^3)
+                    id: sdens
+                    name: snow_density
+
+            e.g., this code line is mandatory for `get_l2_track_vars` (uncertainty can be None):
+
+                # Register Variables
+                self.register_auxvar("sd", "snow_depth", value, uncertainty)
+                self.register_auxvar("sdens", "snow_density", value, uncertainty)
 
 """
 
