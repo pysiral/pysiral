@@ -108,6 +108,11 @@ class AuxdataBaseClass(object):
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
         self._auxvars = []
 
+    def reset_handler_messages(self):
+        """ Empties the message list. To be executed during class initialization and
+        before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
+        self.msgs = []
+
     def add_variables_to_l2(self, l2):
         """ Main Access points for the Level-2 Processor """
 
@@ -121,6 +126,7 @@ class AuxdataBaseClass(object):
         # Before calling the get_track_vars of the subclass, we must empty any existing data from a potential
         # previous execution
         self.reset_auxvars()
+        self.reset_handler_messages()
 
         # Call the mandatory track extraction method. Each subclass should register its output via the
         # `register_auxvar` method of the parent class
@@ -150,6 +156,8 @@ class AuxdataBaseClass(object):
         auxvar_dict = dict(id=var_id, name=var_name, value=value, uncertainty=uncertainty)
         self._auxvars.append(auxvar_dict)
 
+    def add_handler_message(self, msg):
+        self.msgs.append(msg)
     def update_external_data(self):
         """ This method will check if the requested date matches current data
         and call the subclass data loader method if not """
@@ -158,9 +166,9 @@ class AuxdataBaseClass(object):
             # NOTE: The implementation of this method needs to be in the subclass
             self.load_requested_auxdata()
             self._current_date = self._requested_date
-            self._msg = self.__class__.__name__ + ": Load "+self.requested_filepath
+            self.add_handler_message(self.__class__.__name__ + ": Load "+self.requested_filepath)
         else:
-            self._msg = self.__class__.__name__+": Data already present"
+            self.add_handler_message(self.__class__.__name__+": Data already present")
 
     def update_l2(self, l2):
         """ Automatically add all auxiliary variables to a Level-2 data object"""
@@ -299,8 +307,6 @@ class GridTrackInterpol(object):
     def debug_map(self, *args, **kwargs):
         raise NotImplementedError()
         # track_var = self.get_from_grid_variable(*args, **kwargs)
-
-
 
 
 

@@ -162,7 +162,6 @@ class IfremerSIC(SICBaseClass):
             self._grid[hemisphere] = ReadNC(grid_file)
 
     def _get_along_track_sic(self, l2):
-        self._msg = ""
         self._get_requested_date(l2)
         self._get_data(l2)
         sic = self._get_sic_track(l2)
@@ -184,7 +183,8 @@ class IfremerSIC(SICBaseClass):
 
         # Validation
         if not os.path.isfile(path):
-            self._msg = "IfremerSIC: File not found: %s " % path
+            msg ="IfremerSIC: File not found: %s " % path
+            self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", self._msg)
             return
 
@@ -196,7 +196,7 @@ class IfremerSIC(SICBaseClass):
 
         # This step is important for calculation of image coordinates
         self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self._msg = "IfremerSIC: Loaded SIC file: %s" % path
+        self.add_handler_message("IfremerSIC: Loaded SIC file: %s" % path)
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):

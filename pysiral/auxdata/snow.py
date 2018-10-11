@@ -376,7 +376,7 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
             self._get_data(l2)
             self._current_date = self._requested_date
         else:
-            self._msg = "ICDCSouthernClimatology: Daily grid already present"
+            self.add_handler_message("ICDCSouthernClimatology: Daily grid already present")
 
         # Check if error with file I/O
         if self.error.status:

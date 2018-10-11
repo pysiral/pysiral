@@ -81,13 +81,15 @@ class OsiSafSIType(AuxdataBaseClass):
         # Validation
         if not os.path.isfile(path):
             msg = "OsiSafSIType: File not found: %s " % path
+            self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         # --- Read the data ---
         self._data = ReadNC(path)
 
-        self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
+        # Report
+        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
 
     def _get_sitype_track(self, l2):
 
@@ -191,7 +193,7 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         self._data.uncertainty = np.flipud(self._data.uncertainty[0, :, :])
 
         # Logging
-        self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
+        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -313,7 +315,7 @@ class ICDCNasaTeam(SITypeBaseClass):
         # Check if file is already loaded
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
-            self._msg = "ICDCNasaTeam: Daily grid already present"
+            self.add_handler_message("ICDCNasaTeam: Daily grid already present")
             return
 
         # construct filename
@@ -322,8 +324,9 @@ class ICDCNasaTeam(SITypeBaseClass):
         # Check if the file exists, add an error if not
         # (error is not raised at this point)
         if not os.path.isfile(path):
-            self._msg = "ICDCNasaTeam: File not found: %s " % path
-            self.error.add_error("auxdata_missing_sitype", self._msg)
+            msg = "ICDCNasaTeam: File not found: %s " % path
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         # Bulk read the netcdf file
@@ -343,7 +346,7 @@ class ICDCNasaTeam(SITypeBaseClass):
         self._data.ice_type_uncertainty = myi_fraction_unc[0, :, :]
 
         # Report and save current data period
-        self._msg = "ICDCNasaTeam: Loaded SIType file: %s" % path
+        self.add_handler_message("ICDCNasaTeam: Loaded SIType file: %s" % path)
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
