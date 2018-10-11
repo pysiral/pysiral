@@ -106,11 +106,3 @@ def rolling_window(a, window):
     shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
     strides = a.strides + (a.strides[-1],)
     return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-
-
-def get_l2_mss_class(name):
-    pyclass = globals().get(name, None)
-    if pyclass is not None:
-        return pyclass()
-    else:
-        return pyclass

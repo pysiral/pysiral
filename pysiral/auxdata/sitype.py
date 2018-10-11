@@ -440,11 +440,3 @@ class FYIDefault(SITypeBaseClass):
             pass
 
         return 0.0
-
-
-def get_l2_sitype_handler(name):
-    pyclass = globals().get(name, None)
-    if pyclass is not None:
-        return pyclass()
-    else:
-        return pyclass

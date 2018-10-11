@@ -256,9 +256,3 @@ class IfremerSIC(SICBaseClass):
 #        stop
 
 
-def get_l2_sic_handler(name):
-    pyclass = globals().get(name, None)
-    if pyclass is not None:
-        return pyclass()
-    else:
-        return pyclass

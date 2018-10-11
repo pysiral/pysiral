@@ -9,10 +9,6 @@ from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.iotools import get_local_l1bdata_files
-from pysiral.auxdata.sic import get_l2_sic_handler
-from pysiral.auxdata.sitype import get_l2_sitype_handler
-from pysiral.auxdata.snow import get_l2_snow_handler
-from pysiral.auxdata.mss import get_l2_mss_class
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -27,9 +23,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
     information from the local machine definition and the auxdata information
     from `auxdata.yaml` configuration file.
     """
-
-    getcls = {"mss": get_l2_mss_class, "sic": get_l2_sic_handler,
-              "sitype": get_l2_sitype_handler, "snow": get_l2_snow_handler}
 
     def __init__(self):
         super(DefaultAuxdataClassHandler, self).__init__(self.__class__.__name__)
@@ -67,8 +60,10 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             self.error.add_error(error_id, error_message)
             self.error.raise_on_error()
 
-        # retrieve the getter class
-        auxdata_handler = self.getcls[auxdata_class](auxdata_def.pyclass)
+
+        # Get (and call) the auxiliary data class
+        auxdata_handler = get_class("pysiral.auxdata.%s.%s" % (auxdata_class, auxdata_def.pyclass))()
+
         if auxdata_handler is None:
             error_id = "auxdata_invalid_class_name"
             msg = "Invalid Auxdata class: %s" % auxdata_def.pyclass
@@ -287,3 +282,12 @@ class L2iDataHandler(DefaultLoggingClass):
         last_month = self.subdirectory_list[-1]
         return datetime(int(last_month[0]), int(last_month[1]), 1) + \
             relativedelta(months=1, microseconds=-1)
+
+
+def get_class(name):
+    """ Return the class based on its name"""
+    components = name.split('.')
+    mod = __import__(components[0])
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
