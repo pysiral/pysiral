@@ -163,7 +163,7 @@ class Warren99(SnowBaseClass):
             filter_width = np.floor(filter_width) // 2 * 2 + 1
             snow.depth = idl_smooth(snow.depth, filter_width)
 
-        return snow, ""
+        # Register the
 
     def _get_warren99_fit_from_l2(self, l2):
         """ This convinience function translates the information from the l2 object
@@ -257,7 +257,10 @@ class Warren99AMSR2Clim(SnowBaseClass):
         # Extract along track snow depth and density
         snow = self._get_snow_track(l2)
 
-        return snow, self._msg
+        # Register Variables
+        self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
+        self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
+
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""

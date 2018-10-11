@@ -70,8 +70,7 @@ class OsiSafSIType(AuxdataBaseClass):
         sitype, uncertainty, self._msg = self._get_sitype_track(l2)
 
         # Register the data
-        self.register_auxvar("sitype", sitype)
-        self.register_auxvar("sitype_uncertainty", uncertainty)
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""

@@ -68,7 +68,7 @@ class DTU1MinGrid(AuxdataBaseClass):
         mss_track_elevation = ndimage.map_coordinates(self.elevation, [iy, ix])
 
         # Register auxdata variable
-        self.register_auxvar("mss", mss_track_elevation)
+        self.register_auxvar("mss", "mean_sea_surface", mss_track_elevation, None)
 
 
 def egm2wgs_delta_h(phi):

@@ -65,7 +65,7 @@ class OsiSafSIC(AuxdataBaseClass):
             sic[indices] = opt.pole_hole_fill_value
 
         # All done, register the variable
-        self.register_auxvar("sic", sic)
+        self.register_auxvar("sic", "sea_ice_concentration", sic, None)
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
