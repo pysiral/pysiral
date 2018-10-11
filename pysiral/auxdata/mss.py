@@ -19,7 +19,7 @@ class DTU1MinGrid(AuxdataBaseClass):
     def __init__(self):
         super(DTU1MinGrid, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         """ The MSS is static, thus the file can be read directly"""
 
         # Read as standard netcdf

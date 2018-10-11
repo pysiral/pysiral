@@ -42,12 +42,12 @@ class NoneHandler(SITypeBaseClass):
 class OsiSafSIType(AuxdataBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
-    def _initialize(self):
-        pass
-
     def __init__(self):
         super(OsiSafSIType, self).__init__()
         self._data = None
+
+    def subclass_init(self):
+        pass
 
     def get_l2_track_vars(self, l2):
         """ Default grid auxiliary data set"""
@@ -140,7 +140,7 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     @property
@@ -287,7 +287,7 @@ class ICDCNasaTeam(SITypeBaseClass):
     def day(self):
         return "%02g" % self._requested_date[2]
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def _get_along_track_sitype(self, l2):
@@ -397,7 +397,7 @@ class MYIDefault(SITypeBaseClass):
     def __init__(self):
         super(MYIDefault, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def _get_along_track_sitype(self, l2):
@@ -422,7 +422,7 @@ class FYIDefault(SITypeBaseClass):
     def __init__(self):
         super(FYIDefault, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def _get_along_track_sitype(self, l2):

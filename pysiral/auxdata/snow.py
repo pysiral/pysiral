@@ -40,7 +40,7 @@ class NoneHandler(AuxdataBaseClass):
     def __init__(self):
         super(NoneHandler, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def _get_along_track_snow(self, l2):
@@ -91,7 +91,7 @@ class Warren99(AuxdataBaseClass):
     def __init__(self):
         super(Warren99, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def evaluate(self, lons, lats, month_num):
@@ -245,7 +245,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self._data = None
         self.error.caller_id = self.__class__.__name__
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def get_l2_track_vars(self, l2):
@@ -335,7 +335,7 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
     def __init__(self):
         super(FixedSnowDepthDensity, self).__init__()
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def get_l2_track_vars(self, l2):
@@ -363,7 +363,7 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         self._requested_date = [-1, -1]
         self.error.caller_id = self.__class__.__name__
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def get_l2_track_vars(self, l2):

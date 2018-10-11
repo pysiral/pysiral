@@ -62,7 +62,7 @@ class AuxdataBaseClass(object):
     def initialize(self, *args, **kwargs):
         """ Initialize before Level-2 processing """
         # This executes the _initialize method of each subclass (which should not be called directly
-        self._initialize(*args, **kwargs)
+        self.subclass_init(*args, **kwargs)
 
     def set_long_name(self, docstr):
         """ Set a description of the auxdata source """

@@ -33,7 +33,7 @@ class OsiSafSIC(AuxdataBaseClass):
         self._data = None
         self.error.caller_id = self.__class__.__name__
 
-    def _initialize(self):
+    def subclass_init(self):
         pass
 
     def get_l2_track_vars(self, l2):
@@ -152,7 +152,7 @@ class IfremerSIC(SICBaseClass):
     def day(self):
         return "%02g" % self._requested_date[2]
 
-    def _initialize(self):
+    def subclass_init(self):
         """ Read the grid information """
         # XXX: This is a dirty hack, but needed for getting SIC lon/lat grid
         self._grid = {}
