@@ -359,7 +359,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Reporting
             for msg in auxclass.msgs:
-                self.log.info("%s auxdata handler message: %s" % (auxdata_type.upper(), msg))
+                self.log.info("- %s auxdata handler message: %s" % (auxdata_type.upper(), msg))
 
             # Check for errors
             if auxclass.error.status:
