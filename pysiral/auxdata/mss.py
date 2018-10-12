@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Aug 01 17:03:19 2015
-
-@author: Stefan
 
 Important Note:
 

@@ -3,16 +3,6 @@
 
 # Note: path keywords must be set in local_machine_def.yaml
 
-# list of valid auxiliary data types
-auxdata_types:
-    - mean_sea_surface
-    - ice_concentration
-    - ice_type
-    - ice_type_fraction
-    - snow_depth
-    - snow_density
-
-
 # list of mean_sea_surface data products
 mss:
 
