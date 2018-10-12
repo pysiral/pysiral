@@ -110,6 +110,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
 # ==================================================
 # Level-2 Pre-Filter
 # ==================================================

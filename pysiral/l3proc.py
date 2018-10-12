@@ -496,6 +496,8 @@ class L3DataGrid(DefaultLoggingClass):
                         self._l3[name][yj, xi] = value
                     elif grid_method == "unique":
                         self._l3[name][yj, xi] = np.unique(data)
+                    elif grid_method == "median":
+                        self._l3[name][yj, xi] = np.nanmedian(data)
                     else:
                         msg = "Invalid grid method (%s) for %s"
                         msg = msg % (str(grid_method), name)
