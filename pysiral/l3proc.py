@@ -1230,10 +1230,12 @@ class Level3OutputHandler(OutputHandlerBase):
         super(Level3OutputHandler, self).__init__(output_def)
         self.error.caller_id = self.__class__.__name__
         self.log.name = self.__class__.__name__
-        self.overwrite_protection = overwrite_protection
-        self._init_product_directory(base_directory)
+
         self._period = period
         self._doi = doi
+        self.overwrite_protection = overwrite_protection
+
+        self._init_product_directory(base_directory)
         self._data_record_type = data_record_type
 
     def get_filename_from_data(self, l3):
@@ -1296,7 +1298,7 @@ class Level3OutputHandler(OutputHandlerBase):
             basedir = self.pysiral_config.local_machine.product_repository
             basedir = os.path.join(basedir, base_directory_or_id)
         # add product level subfolder
-        basedir = os.path.join(basedir, self.product_level_subfolder)
+        basedir = os.path.join(basedir, self.product_level_subfolder, self._period)
         # optional (subfolder with current time)
         if self.overwrite_protection:
             basedir = os.path.join(basedir, self.now_directory)
