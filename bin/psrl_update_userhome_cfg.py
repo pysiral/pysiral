@@ -11,8 +11,7 @@ log.set_threshold(log.INFO)
 from pysiral import PACKAGE_CONFIG_PATH, USER_CONFIG_PATH
 
 def main():
-    """
-    Simply copying the files from the package resources to the user home"""
+    """ Copy all files from the package resources to the user home"""
 
     # Get confirmation from user since all settings file will be overwritten
     var = raw_input("All config files (except `local_machine_def.yaml` will be overwritten, type YES to proceed")
