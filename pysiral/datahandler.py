@@ -76,10 +76,10 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             cfg.set_long_name(auxdata_def.long_name)
 
         # set filename (e.g. for mss)
-        if "file" in auxdata_def:
+        if "filename" in auxdata_def:
             local_repository_id = auxdata_def.local_repository
             local_repo = self.get_local_repository(auxdata_class, local_repository_id)
-            filename = os.path.join(local_repo, auxdata_def.file)
+            filename = os.path.join(local_repo, auxdata_def.filename)
             cfg.set_filename(filename)
 
         # set filenaming (e.g. for sic, sitype, snow)
