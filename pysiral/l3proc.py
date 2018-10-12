@@ -4,7 +4,7 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-
+from pysiral import __version__
 from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
                             MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
 from pysiral.errorhandler import ErrorStatus
@@ -1045,6 +1045,9 @@ class L3DataGrid(DefaultLoggingClass):
             return choices.get(self._data_record_type, "n/a")
         else:
             return self._data_record_type
+
+    def _get_attr_pysiral_version(self, *args):
+        return __version__
 
     def flipud(self):
         for parameter in self.parameters:
