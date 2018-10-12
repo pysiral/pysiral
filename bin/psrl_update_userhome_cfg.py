@@ -14,7 +14,7 @@ def main():
     """ Copy all files from the package resources to the user home"""
 
     # Get confirmation from user since all settings file will be overwritten
-    var = raw_input("All config files (except `local_machine_def.yaml` will be overwritten, type YES to proceed")
+    var = raw_input("All config files (except `local_machine_def.yaml` will be overwritten, type YES to proceed: ")
     if var != "YES":
         print " abort"
         sys.exit()
