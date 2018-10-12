@@ -15,6 +15,7 @@ warnings.filterwarnings("ignore")
 import os
 import sys
 import shutil
+import importlib
 import pkg_resources
 
 # Get version from VERSION in package root
@@ -47,3 +48,6 @@ if not os.path.isdir(USER_CONFIG_PATH):
     shutil.copytree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH)
 
 
+def get_cls(module_name, class_name):
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name, None)

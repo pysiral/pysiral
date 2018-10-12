@@ -5,6 +5,7 @@ Created on Fri May 19 18:16:09 2017
 @author: Stefan
 """
 
+from pysiral import get_cls
 from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
@@ -278,10 +279,3 @@ class L2iDataHandler(DefaultLoggingClass):
             relativedelta(months=1, microseconds=-1)
 
 
-def get_class(name):
-    """ Return the class based on its name"""
-    components = name.split('.')
-    mod = __import__(components[0])
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    return mod
