@@ -652,7 +652,10 @@ class Level2Output(NCDataFile):
         self.data = data
         self.output_handler = output_handler
         self._set_doi()
-        self._set_data_record_type()
+        try:
+            self._set_data_record_type()
+        except AttributeError:
+            pass
         self._export_content()
 
     def _export_content(self):

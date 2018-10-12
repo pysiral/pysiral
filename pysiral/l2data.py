@@ -5,11 +5,10 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
+from pysiral import __version__
 from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
                             SENSOR_NAME_DICT, MISSION_NAME_DICT)
 from pysiral.errorhandler import ErrorStatus
-from pysiral.output import PysiralOutputFilenaming
-from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
@@ -54,6 +53,8 @@ class Level2Data(object):
         self.track = time_orbit
         self.period = period
 
+        self._auto_auxvar_num = 0
+
         # A dictionary similar to the parameter catalog
         # To be filled during the set auxdata method
         self._auxiliary_catalog = {}
@@ -86,18 +87,20 @@ class Level2Data(object):
         """ Convienience method to safely add a parameter with optional
         uncertainty and/or bias to the level-2 data structure """
 
-        # Sanity checks
-        is_valid = self._check_if_valid_parameter(target)
+        # # Sanity checks
+        is_l2_default = self._check_if_valid_parameter(target)
 
         # Check if the full name has been passed
-        if not is_valid and target in self._PARAMETER_CATALOG.keys():
+        if not is_l2_default and target in self._PARAMETER_CATALOG.keys():
             target = self._PARAMETER_CATALOG[target]
-            is_valid = True
+        else:
+            # TODO: Need to figure something out for the auxvar id (not known if reinstated from l2i)
+            self.set_auxiliary_parameter(self.auto_auxvar_id, target, value, uncertainty)
 
         # Next check: Needs to be of correct shape
         is_correct_size = self._check_valid_size(value)
-        if not is_valid or not is_correct_size:
-            msg = "Invalid parameter name: %s (See self._L2_DATA_ITEMS)"
+        if not is_correct_size:
+            msg = "Invalid parameter dimension: %s (See self._L2_DATA_ITEMS)"
             msg = msg % str(target)
             self.error.add_error("l2-invalid-parameter_name", msg)
             self.error.raise_on_error()
@@ -133,6 +136,9 @@ class Level2Data(object):
         # Register auxiliary parameter (this allows to find the parameter
         # by its long name
         self._auxiliary_catalog[var_name] = var_id
+
+    def set_data_record_type(self, data_record_type):
+        self._data_record_type = data_record_type
 
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
@@ -253,9 +259,7 @@ class Level2Data(object):
                 return np.full(self.arrshape, np.nan)
 
     def _get_attr_pysiral_version(self, target):
-        versions = {"filename": PYSIRAL_VERSION_FILENAME,
-                    "default": PYSIRAL_VERSION}
-        return versions[target]
+        return __version__
 
     def _get_attr_mission_id(self, *args):
         # XXX: Deprecated
@@ -434,6 +438,12 @@ class Level2Data(object):
 
     def _get_attr_doi(self, *args):
         return self._doi
+
+    @property
+    def auto_auxvar_id(self):
+        name = "auxvar%02g" % self._auto_auxvar_num
+        self._auto_auxvar_num += 1
+        return name
 
     @property
     def arrshape(self):
