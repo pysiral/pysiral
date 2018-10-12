@@ -267,6 +267,16 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  radar_mode:
+    long_name: "radar mode flag"
+    valid_min: 0
+    valid_max: 2
+    flag_values: "0, 1, 2"
+    flag_meaning: "0: pulse limited (lrm), 1: sar, 2: sar interferometric"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   n_total_waveforms:
     long_name: "number of total measurements per grid cell"
     units: "1"

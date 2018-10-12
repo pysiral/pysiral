@@ -101,9 +101,9 @@ l2_parameter:
         fillvalue: .NAN
 
     radar_mode:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
 
     region_code:
         grid_method: median
