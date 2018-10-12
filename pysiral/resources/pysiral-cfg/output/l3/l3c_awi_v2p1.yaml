@@ -8,13 +8,13 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-v2p1.nc"
-  default_week: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
-  daily: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-v2p1.nc"
-  custom: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
-  default: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-v2p1.nc"
+  monthly: "awi-siral-l3c-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p1.nc"
+  default_week: "awi-siral-l3c-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p1.nc"
+  daily: "awi-siral-l3c-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p1.nc"
+  custom: "awi-siral-l3c-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p1.nc"
+  default: "awi-siral-l3c-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p1.nc"
 
-product_level_subfolder: l3c_grid_v2p1
+product_level_subfolder: l3c
 
 grid_options: 
   flip_yc: True
@@ -24,30 +24,34 @@ grid_options:
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
-  - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research (AWI), Bremerhaven, Germany"
-  - project: "AWI Sea Ice Radar Altimetry"  
-  - comment: ""
-  - source: "Satellite radar altimetry"
-  - history: "{utc_now} (created)"
-  - references: "TBD"
-  - tracking_id: "None"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
+  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: OSI-SAF (OSI-401-b), Sea ice type: OSI-SAF (OSI-403-c), Region code: Adapted from NSIDC region mask"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
+  - references: ""
+  - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "cs2awi v2.1"  
-  - summary: ""
-  - keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
-  - id: ""
-  - naming: ""
-  - keywords_vocabulary: ""
-  - standard_name_vocabulary: ""  
-  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
-  - date_created: "{utc_now}"
-  - date_issued: ""
-  - date_modified: ""
-  - creator_name: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
+  - product_version: "2.1"
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness from CryoSat-2 satellite radar altimetry and auxiliary parameter"
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p1"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Grid"
+  - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard."
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
   - creator_url: "http://www.awi.de"
-  - creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de, stephan.paul@awi.de"
-  - publisher_name: "meereisportal.de"
-  - publisher_url: "http://www.meereisportal.de/"
+  - creator_name: "Stefan Hendricks, Robert Ricker"
+  - creator_role: "PrincipalInvestigator, Author"
+  - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
+  - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - publisher_url: "www.awi.de"
   - publisher_email: "info@meereisportal.de"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: 90.0
@@ -55,20 +59,15 @@ global_attributes:
   - geospatial_lon_max: 180.0
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
-  - cdm_data_type: "Grid"  
-  - spatial_resolution: "25.0 km grid spacing"
+  - cdm_data_type: "Grid"
+  - spatial_resolution: "{grid_spacing_tag} grid spacing"
   - geospatial_bounds_crs: "EPSG:6931"
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
-  - source_mission_name: "{source_mission_name}"
-  - source_mission_id: "{source_mission_id}"
-  - source_mission_sensor: "{source_mission_sensor}"
-  - source_timeliness: "{source_timeliness}"
-  - source_hemisphere: "{source_hemisphere}"
-  - source_auxdata_snow: "{source_auxdata_snow}"
-  - source_auxdata_sic: "{source_auxdata_sic}"
-  - source_auxdata_sitype: "{source_auxdata_sitype}"  
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-3 parameter
@@ -113,7 +112,7 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  radar_freeboard_l2_uncertainty:
+  radar_freeboard_uncertainty:
     var_source_name: radar_freeboard_uncertainty
     long_name: "uncertainty of radar freeboard"
     units: m
@@ -141,7 +140,7 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  freeboard_l3_uncertainty:
+  freeboard_uncertainty:
     long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (computed as error of a weighted mean)"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -232,7 +231,7 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  sea_ice_thickness_l3_uncertainty:
+  sea_ice_thickness_uncertainty:
     long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval including uncertainty reduction of random components by gridding
     standard_name: sea_ice_thickness standard_error
     units: m
@@ -254,6 +253,17 @@ variables:
     valid_max: 5
     flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
     standard_name: "sea_ice_thickness status_flag"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "Region code (adapted from NSIDC region mask)"
+    comment: "Added flag for Baltic Sea (flag value 16)"
+    valid_min: 0
+    valid_max: 21
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
