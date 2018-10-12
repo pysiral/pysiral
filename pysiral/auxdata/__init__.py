@@ -5,6 +5,9 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
+__all__ = ["mss", "sic", "sitype", "snow"]
+
+
 import os
 import re
 
@@ -26,23 +29,23 @@ class AuxdataBaseClass(object):
     auxdata classes
     """
 
-    def __init__(self):
+    def __init__(self, auxclass_cfg):
+        """ This class should not be called directly, only its subclasses. auxclass_cfg needs to be of type
+        AuxClassConfig """
 
         # Error handler
-        self.error = ErrorStatus()
+        self.error = ErrorStatus(self.pyclass)
+
+        # Auxiliary class options
+        if not isinstance(auxclass_cfg, AuxClassConfig):
+            msg = "Invalid config object: %s (needs to be of type pysiral.auxdata.AuxClassConfig"
+            msg = msg % str(auxclass_cfg)
+            self.error.add_error("invalid-auxclasscfg-type", msg)
+            self.error.raise_on_error()
+        self._cfg = auxclass_cfg
 
         # General messages
         self.msgs = []
-
-        # --- This will be filled by the set_xxx methods ---
-
-        # General options
-        self._options = None
-        self._local_repository = None
-        self._filename = None
-        self._filenaming = None
-        self._subfolders = []
-        self._long_name = ""
 
         # --- Class internals ---
 
@@ -58,39 +61,6 @@ class AuxdataBaseClass(object):
 
         # A dictionary with the output variables of the auxiliary data set
         self.reset_auxvars()
-
-    def initialize(self, *args, **kwargs):
-        """ Initialize before Level-2 processing """
-        # This executes the _initialize method of each subclass (which should not be called directly
-        self.subclass_init(*args, **kwargs)
-
-    def set_long_name(self, docstr):
-        """ Set a description of the auxdata source """
-        self._long_name = docstr
-
-    def set_options(self, **opt_dict):
-        """  Pass a dictionary with options """
-        if self._options is None:
-            self._options = options_from_dictionary(**opt_dict)
-        else:
-            self._options.update(options_from_dictionary(**opt_dict))
-
-    def set_local_repository(self, path):
-        """ Set the path the local auxdata repository """
-        self._local_repository = path
-
-    def set_filename(self, filename):
-        """ Set a constant filename (e.g. for mss) """
-        self._filename = filename
-
-    def set_filenaming(self, filenaming):
-        """ Set the filenaming of the auxdata files """
-        self._filenaming = filenaming
-
-    def set_subfolder(self, subfolder_list):
-        """ Set a list of folders (year, [month, [day]]) where auxdata files
-        can be found """
-        self._subfolders = subfolder_list
 
     def set_requested_date(self, year, month, day):
         """ Use first timestamp as reference, date changes are ignored """
@@ -180,44 +150,35 @@ class AuxdataBaseClass(object):
             uncertainty = auxvar.get("uncertainty", None)
             l2.set_auxiliary_parameter(auxvar["id"], auxvar["name"], auxvar["value"], uncertainty)
 
-
     @property
     def pyclass(self):
         return self.__class__.__name__
 
     @property
-    def filename(self):
-        return self._filename
+    def cfg(self):
+        return self._cfg
 
     @property
     def requested_filepath(self):
         """ Returns the local file path for the requested date"""
 
         # Main directory
-        path = self._local_repository
+        path = self.cfg.local_repository
 
         # Add the subfolders
-        for subfolder_tag in self._subfolders:
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
 
         # Get the period dict (will be constructed from filenaming)
         period_dict = {}
-        attrs = re.findall("{.*?}", self._filenaming)
+        attrs = re.findall("{.*?}", self.cfg.filenaming)
         for attr_def in attrs:
             attr_name = attr_def[1:-1]
             period_dict[attr_name] = getattr(self, attr_name)
-        filename = self._filenaming.format(**period_dict)
+        filename = self.cfg.filenaming.format(**period_dict)
         path = os.path.join(path, filename)
         return path
-
-    @property
-    def longname(self):
-        return self._long_name
-
-    @property
-    def options(self):
-        return self._options
 
     @property
     def year(self):
@@ -249,6 +210,49 @@ class AuxdataBaseClass(object):
     @property
     def auxvar_names(self):
         return self._auxvars.keys()
+
+
+class AuxClassConfig(object):
+    """ A container for configuration data for any auxilary data handler class"""
+
+    def __init__(self):
+
+        # General options
+        self.options = None
+        self.local_repository = None
+        self.filename = None
+        self.filenaming = None
+        self.subfolders = []
+        self.long_name = ""
+
+    def set_long_name(self, docstr):
+        """ Set a description of the auxdata source """
+        self.long_name = docstr
+
+    def set_options(self, **opt_dict):
+        """  Pass a dictionary with options """
+        if self.options is None:
+            self.options = options_from_dictionary(**opt_dict)
+        else:
+            self.options.update(options_from_dictionary(**opt_dict))
+
+    def set_local_repository(self, path):
+        """ Set the path the local auxdata repository """
+        self.local_repository = path
+
+    def set_filename(self, filename):
+        """ Set a constant filename (e.g. for mss) """
+        self.filename = filename
+
+    def set_filenaming(self, filenaming):
+        """ Set the filenaming of the auxdata files """
+        self.filenaming = filenaming
+
+    def set_subfolder(self, subfolder_list):
+        """ Set a list of folders (year, [month, [day]]) where auxdata files
+        can be found """
+        self.subfolders = subfolder_list
+
 
 class GridTrackInterpol(object):
     """ Implements fast extraction of gridded data along a track using Image Interpolation """

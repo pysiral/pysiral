@@ -181,16 +181,12 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_type  = auxdata_dict.keys()[0]
             auxdata_def = auxdata_dict[auxdata_type]
 
+            # Get options from l2 processor definition file
+            # NOTE: These will intentionally override the default options defined in auxdata_def.yaml
+            l2_procdef_opt = auxdata_def.get("options", None)
+
             # Retrieve the class (errors will be caught in method)
-            auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"])
-
-            # Set options for l2 processor definition file
-            auxclass_options = auxdata_def.get("options", None)
-            if auxclass_options is not None:
-                auxhandler.set_options(**auxclass_options)
-
-            # Initialize the class (e.g. read static data)
-            auxhandler.initialize()
+            auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"], l2_procdef_opt)
 
             # Add & register the class to the Level-2 processor instance
             setattr(self, auxdata_type, auxhandler)
