@@ -3,6 +3,36 @@
 Created on Sun Apr 24 13:57:56 2016
 
 @author: Stefan
+
+Important Note:
+
+    All sitype data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
+    for the Level-2 Processor. If the auxiliary class is based on a static dataset, this should be parsed
+    in `__init__`.
+
+    Please review the variables and properties in the parent class, as well as the correspodning config and
+    support classes for grid track interpolation in the pysiral.auxdata module for additional guidance.
+
+    The only other hard requirements is the presence of on specific method in order to be a valid subclass of
+    AuxdataBaseClass:
+
+
+        get_l2_track_vars(l2)
+
+            This method will be called during the Level-2 processor. The argument is the Level-2 data object and
+            the purpose of the method is to compute the auxilary variable(s) and associated uncertainty. These
+            variable need to be registered using the `register_auxvar(id, name, value, uncertainty)` method of
+            the base class. All sitype subclasses need to register at minimum the following variable:
+
+                sea ice type (fraction of multi year ice):
+                    id: sitype
+                    name: sea_ice_type
+
+            e.g., this code line is mandatory for `get_l2_track_vars` (uncertainty can be None):
+
+                # Register Variables
+                self.register_auxvar("sitype", "sea_ice_type", value, uncertainty)
+
 """
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
@@ -14,36 +44,14 @@ import numpy as np
 import os
 
 
-class SITypeBaseClass(AuxdataBaseClass):
-
-    def __init__(self):
-        super(SITypeBaseClass, self).__init__()
-        self._msg = ""
-
-    def get_along_track_sitype(self, l2):
-        sitype, sitype_uncertainty, msg = self._get_along_track_sitype(l2)
-        return sitype, sitype_uncertainty, msg
-
-
-class NoneHandler(SITypeBaseClass):
-    """ Dummy handler only returning NaN's """
-    def __init__(self):
-        super(NoneHandler, self).__init__()
-
-    def _get_along_track_sitype(self, l2):
-        sitype = np.full((l2.n_records), np.nan)
-        uncertainty = np.full((l2.n_records), np.nan)
-        return sitype, uncertainty, ""
-
-
-class OsiSafSIType(SITypeBaseClass):
+class OsiSafSIType(AuxdataBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
-    def __init__(self):
-        super(OsiSafSIType, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(OsiSafSIType, self).__init__(*args, **kwargs)
         self._data = None
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Default grid auxiliary data set"""
 
         # These properties are needed to construct the product path
@@ -56,13 +64,11 @@ class OsiSafSIType(SITypeBaseClass):
         # Update the external data
         self.update_external_data()
 
-        # Check if error with file I/O
-        if self.error.status:
-            return None, self._msg
-
         # Get the data
-        sitype, uncertainty, self._msg = self._get_sitype_track(l2)
-        return sitype, uncertainty, self._msg
+        sitype, uncertainty = self._get_sitype_track(l2)
+
+        # Register the data
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
@@ -73,18 +79,20 @@ class OsiSafSIType(SITypeBaseClass):
         # Validation
         if not os.path.isfile(path):
             msg = "OsiSafSIType: File not found: %s " % path
+            self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         # --- Read the data ---
         self._data = ReadNC(path)
 
-        self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
+        # Report
+        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
 
     def _get_sitype_track(self, l2):
 
         # Extract from grid
-        griddef = self._options[l2.hemisphere]
+        griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
@@ -104,53 +112,38 @@ class OsiSafSIType(SITypeBaseClass):
         translator = np.array([np.nan, 1., 0.5, 0.2, 0.1, 0.0])
         sitype_uncertainty = np.array([translator[value] for value in confidence_level])
 
-        return sitype, sitype_uncertainty, self._msg
+        return sitype, sitype_uncertainty
 
     @property
     def requested_filepath(self):
         """ Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (hemisphere code) """
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
+        path = self.cfg.local_repository
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
         path = os.path.join(path, filename)
         return path
 
 
-class OsiSafSITypeCDR(SITypeBaseClass):
+class OsiSafSITypeCDR(AuxdataBaseClass):
     """ Class for reprocessed OSISAF sea ice type products (e.g. for C3S).
     Needs to be merged into single OsiSafSitype class at some point """
 
-    def __init__(self):
-        super(OsiSafSITypeCDR, self).__init__()
-
+    def __init__(self, *args, **kwargs):
+        super(OsiSafSITypeCDR, self).__init__(*args, **kwargs)
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
+        """ Mandadory method of AuxdataBaseClass subclass """
         self._get_requested_date(l2)
         self._get_data(l2)
-        if self.error.status:
-            return None, None, self.error.message
         sitype, uncertainty = self._get_sitype_track(l2)
-        return sitype, uncertainty, self._msg
+        # Register the data
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -161,6 +154,7 @@ class OsiSafSITypeCDR(SITypeBaseClass):
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
+
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
             return
@@ -180,11 +174,11 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         self._data.uncertainty = np.flipud(self._data.uncertainty[0, :, :])
 
         # Logging
-        self._msg = "OsiSafSIType: Loaded SIType file: %s" % path
+        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self._local_repository
+        path = self.cfg.local_repository
 
         if "auto_product_change" in self.options:
             opt = self.options.auto_product_change
@@ -194,10 +188,10 @@ class OsiSafSITypeCDR(SITypeBaseClass):
             self.set_filenaming(product_def["filenaming"])
             self.set_long_name(product_def["long_name"])
 
-        for subfolder_tag in self._subfolders:
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
         path = os.path.join(path, filename)
@@ -207,14 +201,14 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         """ Extract ice type and ice type uncertainty along the track """
 
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.option[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.lon, self._data.lat)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.option[l2.hemisphere].dimension
         x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
         y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
@@ -234,55 +228,24 @@ class OsiSafSITypeCDR(SITypeBaseClass):
         # Uncertainty in product is in %
         sitype_uncertainty = uncertainty / 100.
 
-#        import matplotlib.pyplot as plt
-#
-#        plt.figure(dpi=150)
-#        plt.imshow(self._data.ice_type, interpolation="none")
-#        plt.plot(ix, iy)
-#        plt.scatter(ix[0], iy[0])
-#
-#        plt.figure("projection coordinates")
-#        plt.plot(l2x, l2y)
-#
-#        plt.figure("sitype along track")
-#        plt.plot(sitype)
-#        plt.plot(sitype_uncertainty)
-#
-#        plt.show()
-#
-#        stop
-
         return sitype, sitype_uncertainty
 
 
-class ICDCNasaTeam(SITypeBaseClass):
+class ICDCNasaTeam(AuxdataBaseClass):
     """ MYI Fraction from NASA Team Algorithm (from ICDC UHH) """
 
-    def __init__(self):
-        super(ICDCNasaTeam, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ICDCNasaTeam, self).__init__(*args, **kwargs)
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
         if self.error.status:
-            return None, None, self.error.message
-        sitype, sitype_uncertainty = self._get_sitype_track(l2)
-        return sitype, sitype_uncertainty, self._msg
+            sitype, sitype_uncertainty = self.get_empty_val(l2), self.get_empty_val(l2)
+        else:
+            sitype, sitype_uncertainty = self._get_sitype_track(l2)
+        self.register_auxvar("sitype", "sea_ice_type", sitype, None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -294,12 +257,12 @@ class ICDCNasaTeam(SITypeBaseClass):
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
 
-        opt = self._options
+        opt = self.cfg.options
 
         # Check if file is already loaded
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
-            self._msg = "ICDCNasaTeam: Daily grid already present"
+            self.add_handler_message("ICDCNasaTeam: Daily grid already present")
             return
 
         # construct filename
@@ -308,8 +271,9 @@ class ICDCNasaTeam(SITypeBaseClass):
         # Check if the file exists, add an error if not
         # (error is not raised at this point)
         if not os.path.isfile(path):
-            self._msg = "ICDCNasaTeam: File not found: %s " % path
-            self.error.add_error("auxdata_missing_sitype", self._msg)
+            msg = "ICDCNasaTeam: File not found: %s " % path
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         # Bulk read the netcdf file
@@ -329,15 +293,15 @@ class ICDCNasaTeam(SITypeBaseClass):
         self._data.ice_type_uncertainty = myi_fraction_unc[0, :, :]
 
         # Report and save current data period
-        self._msg = "ICDCNasaTeam: Loaded SIType file: %s" % path
+        self.add_handler_message("ICDCNasaTeam: Loaded SIType file: %s" % path)
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
+        path = self.cfg.local_repository
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
         path = os.path.join(path, filename)
@@ -346,14 +310,14 @@ class ICDCNasaTeam(SITypeBaseClass):
     def _get_sitype_track(self, l2):
 
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.option[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.longitude, self._data.latitude)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.option[l2.hemisphere].dimension
 
         x_min = x[0, 0]-(0.5*dim.dx)
         y_min = y[0, 0]-(0.5*dim.dy)
@@ -377,54 +341,46 @@ class ICDCNasaTeam(SITypeBaseClass):
         return sitype, sitype_uncertainty
 
 
-class MYIDefault(SITypeBaseClass):
+class MYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
-    def __init__(self):
-        super(MYIDefault, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(MYIDefault, self).__init__(*args, **kwargs)
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Every ice is myi (sitype = 1) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
         is_ice = np.where(l2.sic > 0)[0]
         sitype[is_ice] = 1.0
-        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
-        return sitype, sitype_uncertainty, ""
+        uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        # Register the data
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     @property
     def uncertainty_default(self):
-        if "uncertainty_default" in self._options:
-            return self._options.uncertainty_default
+        if "uncertainty_default" in self.cfg.option:
+            return self.cfg.option.uncertainty_default
         else:
             return 0.0
 
 
-class FYIDefault(SITypeBaseClass):
+class FYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
-    def __init__(self):
-        super(FYIDefault, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(FYIDefault, self).__init__(*args, **kwargs)
 
-    def _get_along_track_sitype(self, l2):
+    def get_l2_track_vars(self, l2):
         """ Every ice is fyi (sitype = 0) """
         sitype = np.zeros(shape=l2.sic.shape, dtype=np.float32)
-        sitype_uncertainty = np.full(sitype.shape, self.uncertainty_default)
-        return sitype, sitype_uncertainty, ""
+        uncertainty = np.full(sitype.shape, self.uncertainty_default)
+        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     @property
     def uncertainty_default(self):
         try:
-            if "uncertainty_default" in self._options:
-                return self._options.uncertainty_default
+            if "uncertainty_default" in self.cfg.option:
+                return self.cfg.option.uncertainty_default
         except TypeError:
             pass
-
         return 0.0
-
-
-def get_l2_sitype_handler(name):
-    pyclass = globals().get(name, None)
-    if pyclass is not None:
-        return pyclass()
-    else:
-        return pyclass

@@ -2,11 +2,11 @@
 
 """ """
 
-__all__ = ["bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "auxdata", "classifier", "clocks",
+__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid", "io_adapter",
            "iotools", "l1bdata", "l1bpreproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
-           "logging", "maptools", "mask", "mss", "orbit", "output", "path", "proj", "retracker", "roi",
-           "sic", "sit", "sitype", "snow", "surface_type", "units", "validator", "waveform"]
+           "logging", "maptools", "mask", "orbit", "output", "path", "proj", "retracker", "roi",
+           "sit", "surface_type", "units", "validator", "waveform"]
 
 
 import warnings
@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 import os
 import sys
 import shutil
-import pkg_resources
+import importlib
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,4 +46,7 @@ if not os.path.isdir(USER_CONFIG_PATH):
     print "Creating pysiral config directory: %s" % USER_CONFIG_PATH
     shutil.copytree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH)
 
-
+def get_cls(module_name, class_name):
+    """ Small helper function to dynamically load classes"""
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name, None)

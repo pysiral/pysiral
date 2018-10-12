@@ -80,10 +80,10 @@ snow:
         local_repository: clim_w99amsr2
         options:
             variable_map:
-                sd: merged_snow_depth
-                sd_unc: merged_snow_depth_uncertainty
-                sdens: w99_snow_density_filtered
-                sdens_unc: w99_snow_density_filtered_uncertainty
+                depth: merged_snow_depth
+                depth_uncertainty: merged_snow_depth_uncertainty
+                density: w99_snow_density_filtered
+                density_uncertainty: w99_snow_density_filtered_uncertainty
             north:
                 projection:
                     proj: stere

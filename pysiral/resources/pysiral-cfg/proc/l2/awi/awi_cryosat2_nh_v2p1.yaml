@@ -3,39 +3,39 @@
 id: "AWI CryoSat-2 Sea Ice Product (cs2awi v2.1) (awi_cryosat2_nh_020)"
 version_tag: "v2p1awi"
 
+# This settings file is valid for 
+hemisphere: north
+
 # Level 2 processor settings are mission specific
 mission:
     id: cryosat2
     
-# Regions Settings (for file selection and potential subsetting
-roi:
-    pyclass: LowerLatLimit
-    hemisphere: north
-    options:
-        latitude_threshold: 50.0
-
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 auxdata:
     
-    mss:
-        name: dtu15
-        options: null
-    sic:
-        name: osisaf
-        options:
-            # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
-            # All NaN values inside the pole hole latitude threshold will be set to 100%
-            fill_pole_hole: 
-                pole_hole_lat_threshold: 87.0
-                pole_hole_fill_value: 100.
-    sitype:
-        name: osisaf
-        options: null
-    snow: 
-        name: clim_w99amsr2
-        options: 
-            fyi_correction_factor: 0.5
+    - mss:
+            name: dtu15
+            options: 
+                latitude_range: [50.0, 90.0]
+    
+    - sic:
+            name: osisaf
+            options:
+                # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
+                # All NaN values inside the pole hole latitude threshold will be set to 100%
+                fill_pole_hole: 
+                    pole_hole_lat_threshold: 87.0
+                    pole_hole_fill_value: 100.
+    
+    - sitype:
+            name: osisaf
+            options: null
+    
+    - snow: 
+            name: clim_w99amsr2
+            options: 
+                fyi_correction_factor: 0.5
 
 # geophysical corrections applied to the l1b range window
 corrections: 
