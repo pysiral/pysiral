@@ -77,7 +77,7 @@ class DTU1MinGrid(AuxdataBaseClass):
         longitude = np.array(l2.track.longitude)
         latitude = np.array(l2.track.latitude)
 
-        negative_lons = np.where(longitude)[0]
+        negative_lons = np.where(longitude < 0)[0]
         longitude[negative_lons] = longitude[negative_lons] + 360.
 
         # Calculate image coordinates of mss grid "image"
