@@ -47,8 +47,8 @@ global_attributes:
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - creator_type: "institution"
   - creator_url: "http://www.awi.de"
-  - creator_name: "Stefan Hendricks, Robert Ricker"
-  - creator_role: "PrincipalInvestigator, Author"
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
   - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
   - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - publisher_url: "www.awi.de"
@@ -59,7 +59,6 @@ global_attributes:
   - geospatial_lon_max: 180.0
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
-  - cdm_data_type: "Grid"
   - spatial_resolution: "{grid_spacing_tag} grid spacing"
   - geospatial_bounds_crs: "EPSG:6931"
   - time_coverage_start: "{time_coverage_start}"
