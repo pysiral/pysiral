@@ -120,13 +120,24 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         """ Get the local repository for the the auxdata type and id """
         if auxdata_id is None:
             return None
-        local_repo = self.pysiral_config.local_machine.auxdata_repository
-        return local_repo[auxdata_class].get(auxdata_id, None)
+        aux_repo_defs = self.pysiral_config.local_machine.auxdata_repository
+        try:
+            local_repo_auxclass = aux_repo_defs[auxdata_class]
+        except KeyError:
+            msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.%s" % auxdata_class
+            self.error.add_error("missing-localmachinedef-tag", msg)
+            self.error.raise_on_error()
+        return local_repo_auxclass.get(auxdata_id, None)
 
     def get_auxdata_def(self, auxdata_class, auxdata_id):
         """ Returns the definition in `config/auxdata_def.yaml` for
         specified auxdata class and id """
-        auxdata_class_def = self.pysiral_config.auxdata[auxdata_class]
+        try:
+            auxdata_class_def = self.pysiral_config.auxdata[auxdata_class]
+        except KeyError:
+            msg = "Invalid auxdata class [%s] in auxdata_def.yaml" % auxdata_class
+            self.error.add_error("invalid-auxdata-class", msg)
+            self.error.raise_on_error()
         return auxdata_class_def.get(auxdata_id, None)
 
 
