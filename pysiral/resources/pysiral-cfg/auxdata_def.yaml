@@ -737,3 +737,29 @@ sitype:
             pwdfile: null
             type: daily
             link: "outgoing/icdc/esasicci/"
+
+
+region:
+
+    # Adapted region mask from NSIDC
+    nsidc_mod:
+        pyclass: NSIDCRegionMask
+        long_name: Arctic region mask adapted from NSIDC region mask (Baltic Sea added)
+        filename: region_mask_nsidc_adapted_v1p0.nc
+        local_repository: nsidc_mod
+        options:
+
+            # Projection is NSIDC SSMI grid
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 448
+                    dx: 25000
+                    dy: 25000
