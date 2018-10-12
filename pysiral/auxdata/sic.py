@@ -45,13 +45,9 @@ import os
 class OsiSafSIC(AuxdataBaseClass):
 
 
-    def __init__(self):
-        super(OsiSafSIC, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(OsiSafSIC, self).__init__(*args, **kwargs)
         self._data = None
-        self.error.caller_id = self.__class__.__name__
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
         """ Main entry point of the class """
@@ -74,11 +70,10 @@ class OsiSafSIC(AuxdataBaseClass):
             sic = self._get_sic_track(l2)
 
             # Fill pole hole
-            if hasattr(self.options, "fill_pole_hole"):
-                opt = self.options.fill_pole_hole
+            if hasattr(self.cfg.options, "fill_pole_hole"):
+                opt = self.cfg.options.fill_pole_hole
                 is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
-                is_nan = np.isnan(sic)
-                indices = np.where(np.logical_and(is_near_pole_hole, is_nan))
+                indices = np.where(np.logical_and(is_near_pole_hole, np.isnan(sic)))
                 sic[indices] = opt.pole_hole_fill_value
 
         # All done, register the variable
@@ -114,7 +109,7 @@ class OsiSafSIC(AuxdataBaseClass):
         """ Simple extraction along trajectory"""
 
         # Extract from grid
-        griddef = self._options[l2.hemisphere]
+        griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
@@ -126,24 +121,24 @@ class OsiSafSIC(AuxdataBaseClass):
         """ Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (auto product changes etc) """
 
-        # Unique to this class is the possiblity to auto merge
+        # Unique to this class is the possibility to auto merge
         # products. The current implementation supports only two products
-        path = self._local_repository
+        path = self.cfg.local_repository
 
         # The path needs to be completed if two products shall be used
-        if "auto_product_change" in self.options:
-            opt = self.options.auto_product_change
+        if "auto_product_change" in self.cfg.options:
+            opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
             path = os.path.join(path, product_def["subfolder"])
-            self.set_filenaming(product_def["filenaming"])
-            self.set_long_name(product_def["long_name"])
+            self.cfg.set_filenaming(product_def["filenaming"])
+            self.cfg.set_long_name(product_def["long_name"])
 
-        for subfolder_tag in self._subfolders:
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
 
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
         path = os.path.join(path, filename)
@@ -152,20 +147,15 @@ class OsiSafSIC(AuxdataBaseClass):
 
 class IfremerSIC(AuxdataBaseClass):
 
-    def __init__(self):
-        super(IfremerSIC, self).__init__()
-        self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
-        self.error.caller_id = self.__class__.__name__
+    def __init__(self, *args, **kwargs):
 
-    def subclass_init(self):
-        """ Read the grid information """
+        super(IfremerSIC, self).__init__(*args, **kwargs)
+        self._data = None
+
         # XXX: This is a dirty hack, but needed for getting SIC lon/lat grid
         self._grid = {}
         for hemisphere in ["north", "south"]:
-            grid_file = os.path.join(
-                self._local_repository, "grid_%s_12km.nc" % hemisphere)
+            grid_file = os.path.join(self.cfg.local_repository, "grid_%s_12km.nc" % hemisphere)
             self._grid[hemisphere] = ReadNC(grid_file)
 
     def get_l2_track_vars(self, l2):
@@ -207,11 +197,11 @@ class IfremerSIC(AuxdataBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
+        path = self.cfg.local_repository
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
         path = os.path.join(path, filename)
@@ -219,14 +209,14 @@ class IfremerSIC(AuxdataBaseClass):
 
     def _get_sic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.options[l2.hemisphere].projection
         p = Proj(**kwargs)
         grid = self._grid[l2.hemisphere]
         x, y = p(grid.longitude, grid.latitude)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.options[l2.hemisphere].dimension
         x_min = x[dim.n_lines-1, 0]
         y_min = y[dim.n_lines-1, 0]
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy

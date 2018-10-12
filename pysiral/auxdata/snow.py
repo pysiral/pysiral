@@ -101,11 +101,8 @@ class Warren99(AuxdataBaseClass):
     water_density = 1024.0
     p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
-    def __init__(self):
-        super(Warren99, self).__init__()
-
-    def subclass_init(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super(Warren99, self).__init__(*args, **kwargs)
 
     def evaluate(self, lons, lats, month_num):
         """ Return the result of the Warren Climatology for a
@@ -153,13 +150,13 @@ class Warren99(AuxdataBaseClass):
         snow = self._get_warren99_fit_from_l2(l2)
 
         # Filter invalid values
-        valid_min, valid_max = self._options.valid_snow_depth_range
+        valid_min, valid_max = self.cfg.options.valid_snow_depth_range
         invalid = np.logical_or(snow.depth < valid_min, snow.depth > valid_max)
         invalid_records = np.where(invalid)[0]
         snow.set_invalid(invalid_records)
 
         # Apply ice_type (myi_fraction correction)
-        scale_factor = (1.0 - l2.sitype) * self._options.fyi_correction_factor
+        scale_factor = (1.0 - l2.sitype) * self.cfg.options.fyi_correction_factor
 
         # The scaling factor affects the snow depth ...
         snow.depth = snow.depth - scale_factor * snow.depth
@@ -175,8 +172,8 @@ class Warren99(AuxdataBaseClass):
         snow.depth_uncertainty = snow.depth_uncertainty + scaling_uncertainty
 
         # Smooth snow depth (if applicable)
-        if self._options.smooth_snow_depth:
-            filter_width = self._options.smooth_filter_width_m
+        if self.cfg.options.smooth_snow_depth:
+            filter_width = self.cfg.options.smooth_filter_width_m
             # Convert filter width to index
             filter_width /= l2.footprint_spacing
             # Round to odd number
@@ -252,13 +249,9 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
     """ Class for monthly snow depth & density climatology based on merged Warren99 climatology and
      monthly AMSR2 snow depth composite (source: IUP) """
 
-    def __init__(self):
-        super(Warren99AMSR2Clim, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(Warren99AMSR2Clim, self).__init__(*args, **kwargs)
         self._data = None
-        self.error.caller_id = self.__class__.__name__
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
         """ This is the method that will be evoked by the Level-2 processor """
@@ -306,12 +299,12 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         """ Get the along-track data from the loaded data"""
 
         # Extract track data from grid
-        griddef = self._options[l2.hemisphere]
+        griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.longitude, self._data.latitude
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
 
         # Extract data (Map the extracted tracks directly on the snow parameter container)
-        var_map = self.options.variable_map
+        var_map = self.cfg.options.variable_map
         snow = SnowParameterContainer()
         for var_name in var_map.keys():
             source_name = var_map[var_name]
@@ -325,7 +318,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # Apply ice_type (myi_fraction correction) but this time modified by the regional weight
         # of the Warren climatology. The weight ranges from 0 to 1 and make sure no fyi scaling is
         # applied over the AMSR2 region data
-        scale_factor = (1.0 - l2.sitype) * self._options.fyi_correction_factor * w99_weight
+        scale_factor = (1.0 - l2.sitype) * self.cfg.options.fyi_correction_factor * w99_weight
 
         # The scaling factor affects the snow depth ...
         snow.depth = snow.depth - scale_factor * snow.depth
@@ -358,15 +351,15 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
     TODO: Add uncertainties
     """
 
-    def __init__(self):
-        super(FixedSnowDepthDensity, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(FixedSnowDepthDensity, self).__init__(*args, **kwargs)
 
     def subclass_init(self):
         pass
 
     def get_l2_track_vars(self, l2):
-        snow_depth = np.full((l2.n_records), self._options.fixed_snow_depth)
-        snow_density = np.full((l2.n_records), self._options.fixed_snow_density)
+        snow_depth = np.full((l2.n_records), self.cfg.options.fixed_snow_depth)
+        snow_density = np.full((l2.n_records), self.cfg.options.fixed_snow_density)
         snow = SnowParameterContainer()
         snow.depth = snow_depth
         snow.density = snow_density
@@ -378,15 +371,9 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
 class ICDCSouthernClimatology(AuxdataBaseClass):
     """ Class for daily climatology fields from UHH ICDC """
 
-    def __init__(self):
-        super(ICDCSouthernClimatology, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ICDCSouthernClimatology, self).__init__(*args, **kwargs)
         self._data = None
-        self._current_date = [0, 0]
-        self._requested_date = [-1, -1]
-        self.error.caller_id = self.__class__.__name__
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
 
@@ -410,8 +397,8 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
             sd, sd_unc = self._get_snow_track(l2)
 
             # Apply along-track smoothing if required
-            if self._options.smooth_snowdepth:
-                filter_width = self._options.smooth_filter_width_m
+            if self.cfg.options.smooth_snowdepth:
+                filter_width = self.cfg.options.smooth_filter_width_m
                 # Convert filter width to index
                 filter_width /= l2.footprint_spacing
                 # Round to odd number
@@ -424,8 +411,8 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
             snow = SnowParameterContainer()
             snow.depth = sd
             snow.depth_uncertainty = sd_unc
-            snow.density = np.full(sd.shape, self._options.snow_density)
-            snow.density_uncertainty = np.full(sd.shape, self._options.snow_density_uncertainty)
+            snow.density = np.full(sd.shape, self.cfg.options.snow_density)
+            snow.density_uncertainty = np.full(sd.shape, self.cfg.options.snow_density_uncertainty)
 
         # Register Variables
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
@@ -452,8 +439,8 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
 
     def _get_local_repository_filename(self, l2):
         """ Get the filename (no subfolders as climatology for each day)"""
-        path = self._local_repository
-        filename = self._filenaming.format(month=self.month, day=self.day)
+        path = self.cfg.local_repository
+        filename = self.cfg.filenaming.format(month=self.month, day=self.day)
         path = os.path.join(path, filename)
         return path
 
@@ -462,26 +449,26 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         # TODO: Move functionality to image coordinate class
 
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.options[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.lon, self._data.lat)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.options[l2.hemisphere].dimension
         x_min, y_min = np.nanmin(x), np.nanmin(y)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract snow depth along track data from grid
-        sd_parameter_name = self._options.snow_depth_nc_variable
+        sd_parameter_name = self.cfg.options.snow_depth_nc_variable
         sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
         sdgrid = np.flipud(sdgrid)
         sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
         sd[sd < 0.0] = np.nan
 
         # Extract snow depth uncertainty
-        unc_parameter_name = self._options.snow_depth_uncertainty_nc_variable
+        unc_parameter_name = self.cfg.options.snow_depth_uncertainty_nc_variable
         uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
         uncgrid = np.flipud(uncgrid)
         unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)

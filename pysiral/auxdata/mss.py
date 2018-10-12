@@ -43,18 +43,17 @@ class DTU1MinGrid(AuxdataBaseClass):
     """
     Parsing Routine for DTU 1 minute global mean sea surface height files
     """
-    def __init__(self):
-        super(DTU1MinGrid, self).__init__()
 
-    def subclass_init(self):
-        """ The MSS is static, thus the file can be read directly"""
+    def __init__(self, *args, **kwargs):
+
+        super(DTU1MinGrid, self).__init__(*args, **kwargs)
 
         # Read as standard netcdf
-        dtu_grid = ReadNC(self._filename)
+        dtu_grid = ReadNC(self.cfg.filename)
 
         # Cut to ROI regions (latitude only)
         # -> no need for world mss
-        lat_range = self.options.latitude_range
+        lat_range = self.cfg.options.latitude_range
 
         # Get the indices for the latitude subset
         latitude_indices = np.where(np.logical_and(dtu_grid.lat >= lat_range[0], dtu_grid.lat <= lat_range[1]))[0]

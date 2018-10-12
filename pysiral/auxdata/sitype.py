@@ -44,12 +44,9 @@ import os
 class OsiSafSIType(AuxdataBaseClass):
     """ This is a class for the OSI-403 product with variables ice_type and confidence_level """
 
-    def __init__(self):
-        super(OsiSafSIType, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(OsiSafSIType, self).__init__(*args, **kwargs)
         self._data = None
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
         """ Default grid auxiliary data set"""
@@ -92,7 +89,7 @@ class OsiSafSIType(AuxdataBaseClass):
     def _get_sitype_track(self, l2):
 
         # Extract from grid
-        griddef = self._options[l2.hemisphere]
+        griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
@@ -118,11 +115,11 @@ class OsiSafSIType(AuxdataBaseClass):
     def requested_filepath(self):
         """ Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (hemisphere code) """
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
+        path = self.cfg.local_repository
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
         path = os.path.join(path, filename)
@@ -133,23 +130,15 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
     """ Class for reprocessed OSISAF sea ice type products (e.g. for C3S).
     Needs to be merged into single OsiSafSitype class at some point """
 
-    def __init__(self):
-        super(OsiSafSITypeCDR, self).__init__()
-
+    def __init__(self, *args, **kwargs):
+        super(OsiSafSITypeCDR, self).__init__(*args, **kwargs)
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
-
+        """ Mandadory method of AuxdataBaseClass subclass """
         self._get_requested_date(l2)
         self._get_data(l2)
-
         sitype, uncertainty = self._get_sitype_track(l2)
-
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
@@ -162,6 +151,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
+
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
             return
@@ -185,7 +175,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self._local_repository
+        path = self.cfg.local_repository
 
         if "auto_product_change" in self.options:
             opt = self.options.auto_product_change
@@ -195,10 +185,10 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
             self.set_filenaming(product_def["filenaming"])
             self.set_long_name(product_def["long_name"])
 
-        for subfolder_tag in self._subfolders:
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
         path = os.path.join(path, filename)
@@ -208,14 +198,14 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         """ Extract ice type and ice type uncertainty along the track """
 
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.option[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.lon, self._data.lat)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.option[l2.hemisphere].dimension
         x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
         y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
@@ -241,14 +231,9 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 class ICDCNasaTeam(AuxdataBaseClass):
     """ MYI Fraction from NASA Team Algorithm (from ICDC UHH) """
 
-    def __init__(self):
-        super(ICDCNasaTeam, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ICDCNasaTeam, self).__init__(*args, **kwargs)
         self._data = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
-
-    def subclass_init(self):
-        pass
 
     def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
@@ -269,7 +254,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
 
-        opt = self._options
+        opt = self.cfg.options
 
         # Check if file is already loaded
         if self._requested_date == self._current_date:
@@ -309,11 +294,11 @@ class ICDCNasaTeam(AuxdataBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self._local_repository
-        for subfolder_tag in self._subfolders:
+        path = self.cfg.local_repository
+        for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = os.path.join(path, subfolder)
-        filename = self._filenaming.format(
+        filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
         path = os.path.join(path, filename)
@@ -322,14 +307,14 @@ class ICDCNasaTeam(AuxdataBaseClass):
     def _get_sitype_track(self, l2):
 
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.option[l2.hemisphere].projection
         p = Proj(**kwargs)
         x, y = p(self._data.longitude, self._data.latitude)
         l2x, l2y = p(l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         # x: 0 < n_lines; y: 0 < n_cols
-        dim = self._options[l2.hemisphere].dimension
+        dim = self.cfg.option[l2.hemisphere].dimension
 
         x_min = x[0, 0]-(0.5*dim.dx)
         y_min = y[0, 0]-(0.5*dim.dy)
@@ -356,11 +341,8 @@ class ICDCNasaTeam(AuxdataBaseClass):
 class MYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
-    def __init__(self):
-        super(MYIDefault, self).__init__()
-
-    def subclass_init(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super(MYIDefault, self).__init__(*args, **kwargs)
 
     def get_l2_track_vars(self, l2):
         """ Every ice is myi (sitype = 1) """
@@ -373,8 +355,8 @@ class MYIDefault(AuxdataBaseClass):
 
     @property
     def uncertainty_default(self):
-        if "uncertainty_default" in self._options:
-            return self._options.uncertainty_default
+        if "uncertainty_default" in self.cfg.option:
+            return self.cfg.option.uncertainty_default
         else:
             return 0.0
 
@@ -382,11 +364,8 @@ class MYIDefault(AuxdataBaseClass):
 class FYIDefault(AuxdataBaseClass):
     """ Returns myi for all ice covered regions """
 
-    def __init__(self):
-        super(FYIDefault, self).__init__()
-
-    def subclass_init(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super(FYIDefault, self).__init__(*args, **kwargs)
 
     def get_l2_track_vars(self, l2):
         """ Every ice is fyi (sitype = 0) """
@@ -397,8 +376,8 @@ class FYIDefault(AuxdataBaseClass):
     @property
     def uncertainty_default(self):
         try:
-            if "uncertainty_default" in self._options:
-                return self._options.uncertainty_default
+            if "uncertainty_default" in self.cfg.option:
+                return self.cfg.option.uncertainty_default
         except TypeError:
             pass
         return 0.0
