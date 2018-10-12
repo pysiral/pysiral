@@ -7,12 +7,15 @@ Created on Sat Aug 01 17:03:19 2015
 Important Note:
 
     All mss data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
-    for the Level-2 Processor. By convention, two methods must exist to make the subclass valid.
+    for the Level-2 Processor. If the auxiliary class is based on a static dataset, this should be parsed
+    in `__init__`.
 
-        subclass_init()
+    Please review the variables and properties in the parent class, as well as the correspodning config and
+    support classes for grid track interpolation in the pysiral.auxdata module for additional guidance.
 
-            This method will be called by default at the beginning of the Level-2 processor *after* all
-            options are passed to the instance. It can be used for e.g. reading static data sets
+    The only other hard requirements is the presence of on specific method in order to be a valid subclass of
+    AuxdataBaseClass:
+
 
         get_l2_track_vars(l2)
 
@@ -120,13 +123,3 @@ def compute_delta_h(a1, b1, a2, b2, phi):
     sinsqphi = sinsqphi * sinsqphi
     cossqphi = 1.0 - sinsqphi
     return -1.0*(delta_a * cossqphi + delta_b * sinsqphi)
-
-
-def rolling_window(a, window):
-    """
-    Recipe for rapid computations of rolling windows using numpy
-    from: http://www.rigtorp.se/2011/01/01/rolling-statistics-numpy.html
-    """
-    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-    strides = a.strides + (a.strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)

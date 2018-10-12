@@ -7,12 +7,14 @@ Created on Sun Apr 24 13:57:56 2016
 Important Note:
 
     All snow data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
-    for the Level-2 Processor. By convention, two methods must exist to make the subclass valid.
+    for the Level-2 Processor. If the auxiliary class is based on a static dataset, this should be parsed
+    in `__init__`.
 
-        subclass_init()
+    Please review the variables and properties in the parent class, as well as the correspodning config and
+    support classes for grid track interpolation in the pysiral.auxdata module for additional guidance.
 
-            This method will be called by default at the beginning of the Level-2 processor *after* all
-            options are passed to the instance. It can be used for e.g. reading static data sets
+    The only other hard requirements is the presence of on specific method in order to be a valid subclass of
+    AuxdataBaseClass:
 
         get_l2_track_vars(l2)
 
@@ -46,25 +48,6 @@ import scipy.ndimage as ndimage
 from pyproj import Proj
 import numpy as np
 import os
-
-
-class NoneHandler(AuxdataBaseClass):
-
-    def __init__(self):
-        super(NoneHandler, self).__init__()
-
-    def subclass_init(self):
-        pass
-
-    def get_l2_track_vars(self, l2):
-        snow = SnowParameterContainer()
-        snow.set_dummy(l2.n_records)
-        # Register Variables
-        self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
-        self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
-
-
-
 
 class Warren99(AuxdataBaseClass):
 
