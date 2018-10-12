@@ -511,8 +511,7 @@ class L3DataGrid(DefaultLoggingClass):
         """
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
-                for l3_parameter_name in self._l3_parameter:
-                    self._compute_surface_type_grid_statistics(xi, yj)
+                self._compute_surface_type_grid_statistics(xi, yj)
 
     def compute_l3_output_parameter(self):
         """
