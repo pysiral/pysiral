@@ -15,7 +15,7 @@ mission:
 auxdata:
     
     - mss:
-            name: dtu15
+            name: dtu18
             options: 
                 latitude_range: [50.0, 90.0]
     

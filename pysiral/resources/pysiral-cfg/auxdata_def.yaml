@@ -49,6 +49,20 @@ mss:
             type: static
             link: /pub/DTU15/1_MIN/DTU15MSS_1min.nc
 
+    # DTU 15 mean sea surface
+    dtu18:
+        pyclass: DTU1MinGrid
+        long_name: DTU18 mean sea surface (1 minute grid)
+        local_repository: dtu18
+        filename: DTU18MSS_1min.nc
+        options: null
+        source:
+            transfer: ftp
+            server: ftp.space.dtu.dk
+            pwdfile: null
+            type: static
+            link: /pub/DTU18/1_MIN/DTU18MSS_1min.nc
+
 # List of snow depth (density products)
 snow:
 
