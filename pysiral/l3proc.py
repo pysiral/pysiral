@@ -944,6 +944,12 @@ class L3DataGrid(DefaultLoggingClass):
             grid_id = grid_id.upper()
         return grid_id
 
+    def _get_attr_grid_spacing_tag(self, *args):
+        value = self.griddef.resolution_tag
+        if args[0] == "uppercase":
+            grid_id = value.upper()
+        return value
+
     def _get_attr_source_mission_sensor(self, *args):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
