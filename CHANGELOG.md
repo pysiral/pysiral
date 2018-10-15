@@ -1,5 +1,32 @@
 # History of changes
 
+## Version 0.6.4 (15. October 2018)
+
+**New Features**
+- [mss] Added support for DTU18
+- [snow] Added support for new (finalized) merged Warren/IUP AMSR2 snow climatology
+- [region] Added new `region` auxiliary data type for Level-2 processor
+- [l2proc] Added modified NSIDC region definition to Level-2 and higher level products
+- [l3proc] Added label of the period (`monthly`, `weekly`) to the grid output subfolders
+- [scripts] Added a script (`pysiral/bin/psrl_update_userhome_cfg.py`) that will update the pysiral configuration in the user home with the definition files of the pysiral package (excluding `local_machine_def.yaml`)
+
+**Changes**
+- [auxdata] Major overhaul of auxiliary data ingestion engine (main part of this release). A custom list of handlers now replaces a static set of defined handlers (`mss`, `sic`, `sitype`, `snow`)
+- [auxdata] All auxiliary data types are now moved the the sub-module: `pysiral.auxdata`
+- [auxdata] Created a common interface for all auxiliary data classes. Adapted all existing auxiliary data handlers
+- [general] Various documentation improvements and code cleanup
+
+**Bugfixes**
+- [l2data] l2data.Level2Data._PARAMETER_CATALOG was a mutable class variable, and it could be unintentionaly changed for all instances 
+
+**Settings**
+- [general] New format of Level-2 auxiliary definition
+- [awi] Added AWI v2p1 Level-2 & Level-3 processor settings
+- [awi] Added AWI v2p1 Level-2 & Level-3 output definition files
+
+**Known Issues**
+- [settings] Not all Level-2 settings adapted to new auxiliary data engine
+
 
 ## Version 0.6.3 (26. August 2018)
 
