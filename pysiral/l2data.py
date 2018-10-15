@@ -801,7 +801,6 @@ class L2iNCFileImport(object):
         self._parse()
 
     def _parse(self):
-        from pysiral.path import file_basename
         from netCDF4 import num2date
 
         content = ReadNC(self.filename)
@@ -816,12 +815,6 @@ class L2iNCFileImport(object):
             setattr(self, parameter_name, getattr(content, parameter_name))
 
         self._n_records = len(self.longitude)
-
-        # Get mission id from filename
-#        l2i_filename = filename_from_path(self.filename)
-#        filenaming = PysiralOutputFilenaming()
-#        filenaming.parse_filename(l2i_filename)
-#        self.mission = filenaming.mission_id
 
         # Get timestamp (can be either time or timestamp in l2i files)
         if hasattr(self, "time"):
