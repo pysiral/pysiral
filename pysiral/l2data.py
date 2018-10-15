@@ -89,11 +89,13 @@ class Level2Data(object):
         is_l2_default = self._check_if_valid_parameter(target)
 
         # Check if the full name has been passed
-        if not is_l2_default and target in self._PARAMETER_CATALOG.keys():
-            target = self._PARAMETER_CATALOG[target]
+        if not is_l2_default and target in self.parameter_catalog.keys():
+            target = self.parameter_catalog[target]
         else:
             # TODO: Need to figure something out for the auxvar id (not known if reinstated from l2i)
-            self.set_auxiliary_parameter(self.auto_auxvar_id, target, value, uncertainty)
+            par_name = self.auto_auxvar_id
+            self.set_auxiliary_parameter(par_name, target, value, uncertainty)
+            return
 
         # Next check: Needs to be of correct shape
         is_correct_size = self._check_valid_size(value)
@@ -165,8 +167,8 @@ class Level2Data(object):
         """ Method to retrieve a level-2 parameter """
 
         # Combine parameter and property catalogs
-        catalog = self._PARAMETER_CATALOG
-        catalog.update(self._PROPERTY_CATALOG)
+        catalog = self.parameter_catalog
+        catalog.update(self.property_catalog)
         catalog.update(self._auxiliary_catalog)
 
         if "_uncertainty" in parameter_name:
@@ -436,6 +438,18 @@ class Level2Data(object):
 
     def _get_attr_doi(self, *args):
         return self._doi
+
+    @property
+    def parameter_catalog(self):
+        return dict(self._PARAMETER_CATALOG)
+
+    @property
+    def property_catalog(self):
+        return dict(self._PROPERTY_CATALOG)
+
+    @property
+    def auxvar_names(self):
+        return sorted(self._auxiliary_catalog.keys())
 
     @property
     def auto_auxvar_id(self):
@@ -734,7 +748,7 @@ class Level2PContainer(DefaultLoggingClass):
             if uncertainty_name in parameter_list_all:
                 uncertainty = data[uncertainty_name]
             else:
-                uncertainty = np.full(value.shape, 0.0)
+                uncertainty = None
 
             # Add to l2 object
             l2.set_parameter(parameter_name, value, uncertainty=uncertainty)
