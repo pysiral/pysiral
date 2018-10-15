@@ -347,7 +347,6 @@ class NCDataFile(DefaultLoggingClass):
             self._rootgrp.createDimension(key, dimdict[key])
 
         for parameter_name, attribute_dict in self.output_handler.variable_def:
-
             # Check if parameter name is also the the name or the source
             # parameter
 

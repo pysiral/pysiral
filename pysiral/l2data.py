@@ -6,8 +6,7 @@ Created on Fri Jul 24 16:30:24 2015
 """
 
 from pysiral import __version__
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            SENSOR_NAME_DICT, MISSION_NAME_DICT)
+from pysiral.config import SENSOR_NAME_DICT, MISSION_NAME_DICT
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
@@ -67,8 +66,7 @@ class Level2Data(object):
         self._doi = ""
 
         # Define time of dataset creation as the time of object initialization
-        # to avoid slightly different timestamps for repated calls of
-        # datatime.now()
+        # to avoid slightly different timestamps for repated calls of datetime.now()
         self._creation_time = datetime.now()
 
         # Other Class properties
@@ -87,7 +85,7 @@ class Level2Data(object):
         """ Convienience method to safely add a parameter with optional
         uncertainty and/or bias to the level-2 data structure """
 
-        # # Sanity checks
+        # Sanity checks
         is_l2_default = self._check_if_valid_parameter(target)
 
         # Check if the full name has been passed
@@ -675,7 +673,8 @@ class Level2PContainer(DefaultLoggingClass):
         # l2i object in the stack
         info = self.l2i_stack[0].info
 
-        # Old notation (for backward compability)
+        # Old notation (for backward compatibility)
+        #TODO: This will soon be obsolete
         try:
             mission_id = info.mission_id
             # Transfer auxdata information
@@ -684,7 +683,7 @@ class Level2PContainer(DefaultLoggingClass):
             metadata.source_auxdata_sitype = l2i.info.source_sitype
             metadata.source_auxdata_mss = l2i.info.source_mss
 
-        # New (fall 2017) pysiral product notaion
+        # New (fall 2017) pysiral product notation
         except AttributeError:
             mission_id = info.source_mission_id
             # Transfer auxdata information
@@ -708,19 +707,17 @@ class Level2PContainer(DefaultLoggingClass):
         #  Transfer the level-2 data items
 
         # 1. Get the list of parameters
-        # (assumuning all l2i files share the same)
+        # (assuming all l2i files share the same)
         parameter_list_all = l2i.parameter_list
 
         # 2. Exclude variables that end with `_uncertainty`
-        parameter_list = [p for p in parameter_list_all
-                          if not re.search("_uncertainty", p)]
+        parameter_list = [p for p in parameter_list_all if not re.search("_uncertainty", p)]
 
         # 3. Remove parameters from the timeorbit group, surface type &
         # orbit id. This will be added to level 2 object by other means
         # or do not make sense (surface type for valid freeboard will
         # always be sea ice)
-        for parameter_name in ["timestamp", "time", "longitude", "latitude",
-                               "surface_type"]:
+        for parameter_name in ["timestamp", "time", "longitude", "latitude", "surface_type"]:
             try:
                 parameter_list.remove(parameter_name)
             except ValueError:
