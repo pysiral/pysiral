@@ -58,8 +58,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
-        self.log.info("- Wrote %s data file: %s" % (
-                self.job.output_handler.id, output.export_filename))
+        self.log.info("- Wrote %s data file: %s" % (self.job.output_handler.id, output.export_filename))
 
     @property
     def job(self):

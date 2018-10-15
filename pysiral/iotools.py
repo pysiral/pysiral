@@ -53,7 +53,7 @@ class ReadNC(object):
         try:
             f = Dataset(self.filename)
         except RuntimeError:
-            msg = "Cannot option netCDF file: %s" % self.filename
+            msg = "Cannot read netCDF file: %s" % self.filename
             self.error.add_error("nc-runtime-error", msg)
             self.error.raise_on_error()
 

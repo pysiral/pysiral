@@ -347,7 +347,6 @@ class NCDataFile(DefaultLoggingClass):
             self._rootgrp.createDimension(key, dimdict[key])
 
         for parameter_name, attribute_dict in self.output_handler.variable_def:
-
             # Check if parameter name is also the the name or the source
             # parameter
 
@@ -652,7 +651,10 @@ class Level2Output(NCDataFile):
         self.data = data
         self.output_handler = output_handler
         self._set_doi()
-        self._set_data_record_type()
+        try:
+            self._set_data_record_type()
+        except AttributeError:
+            pass
         self._export_content()
 
     def _export_content(self):

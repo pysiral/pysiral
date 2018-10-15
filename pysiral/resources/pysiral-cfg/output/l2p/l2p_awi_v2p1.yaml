@@ -1,56 +1,72 @@
 # This is the default output definition for the Level2Processor
 
 # Metadata
-metadata: 
-  output_id: l2i_default
+metadata:
+  output_id: l2p_default
   data_level: 2
-  data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
+  data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: 
-  default: "l2i_seaice_{mission_id}_{source_timeliness:lowercase}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc"
-product_level_subfolder: l2i
+filenaming:
+  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p1.nc"
+  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p1.nc"
 
-# A list of global attributes 
+product_level_subfolder: l2p_trajectory
+
+
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - title: "Geophysical sea ice parameters from {mission_id} {source_timeliness} radar altimeter data"  
-  - summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
-  - keywords: "sea ice, radar altimetry"
-  - product_version: "{l2_algorithm_id}"
-  - source_mission_name: "{source_mission_name}"
-  - source_mission_id: "{source_mission_id}"
-  - source_mission_sensor: "{source_mission_sensor}"
-  - source_hemisphere: "{source_hemisphere}"
-  - source_timeliness: "{source_timeliness}"
-  - source_auxdata_snow: "{source_auxdata_snow}"
-  - source_auxdata_mss: "{source_auxdata_mss}"
-  - source_auxdata_sic: "{source_auxdata_sic}"
-  - source_auxdata_sitype: "{source_auxdata_sitype}"
-  - references: "pysiral version: {pysiral_version:default}"
-  - cdm_data_type: Trajectory
-  - date_created: "{utcnow}"
-  - creator_name: "Stefan Hendricks"
-  - creator_url: "www.awi.de"
-  - creator_email: "stefan.hendricks@awi.de"
-  - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
-  - processing_level: "Level-2 intermediate (geophysical parameters at footprint resolution)"
+  - title: "Collection of daily geophysical & auxiliary sea ice parameters from satellite radar altimetry at footprint resolution"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
+  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: OSI-SAF (OSI-401-b), Sea ice type: OSI-SAF (OSI-403-c), Region code: Adapted from NSIDC region mask"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: ""
+  - tracking_id: "{uuid}"
+  # - conventions: "CF-1.6"
+  - product_version: "2.1"
+  - processing_level: "Level-2 Pre-processed (l2p)"
+  - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{grid_id}-{time_coverage_start:%Y%m%d}-fv2p1"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Trajectory"
+  - comment: "Data points only for valid freeboard retrievals"
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
+  - creator_url: "http://www.awi.de"
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
+  - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
+  - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - publisher_url: "www.awi.de"
+  - publisher_email: "info@meereisportal.de"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
   - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
-  - time_coverage_duration: "{time_coverage_duration:period}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
-
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
 variables:
-  
+
   time:
+    var_source_name: time
     long_name: utc timestamp
     units: seconds since 1970-01-01
 
@@ -66,14 +82,12 @@ variables:
     units: degrees north
     coordinates: time
 
-  surface_type:
-    long_name: "surface type classification flag"
-    units: "1"
-    flag_meaning: "0: unknown, 1: ocean, 2: lead: 2, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid"
-    coordinates: time
-
   radar_mode:
-    long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
+    long_name: "radar mode flag"
+    valid_min: 0
+    valid_max: 2
+    flag_values: "0, 1, 2"
+    flag_meaning: "0: pulse limited (lrm), 1: sar, 2: sar interferometric"
     units: "1"
     coordinates: time
 
@@ -85,34 +99,6 @@ variables:
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
     flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
     units: "1"
-    coordinates: time
-
-  elevation:
-    long_name: "elevation of retracked point above WGS84 ellipsoid (satellite altitude - range corrections - retracker range)"
-    units: m
-    coordinates: time
-
-  elevation_uncertainty:
-    long_name: "uncertainty of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
-    units: m
-    coordinates: time
-
-  mean_sea_surface:
-    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-    standard_name: sea_surface_height_above_reference_ellipsoid
-    units: m
-    coordinates: time
-
-  sea_surface_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
-    sstandard_name: sea_surface_height_above_mean_sea_level
-    units: m
-    coordinates: time
-
-  sea_surface_anomaly_uncertainty:
-    long_name: "uncertainty of instantaneous sea surface height"
-    standard_name: sea_surface_height_above_mean_sea_level standard_error
-    units: m
     coordinates: time
 
   radar_freeboard:
@@ -148,16 +134,8 @@ variables:
 
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
-    standard_name: sea_ice_classification standar_error
+    standard_name: sea_ice_classification standard_error
     units: "1"
-    coordinates: time
-
-  sea_ice_concentration:
-    long_name: "sea ice concentration"
-    standard_name: sea_ice_area_fraction
-    units: percent
-    valid_min: 0.0
-    valid_max: 100.0
     coordinates: time
 
   snow_depth:
@@ -176,18 +154,18 @@ variables:
     long_name: "density of the snow layer"
     units: kg m-3
     coordinates: time
-    
+
   snow_density_uncertainty:
     long_name: "uncertainty of the snow layer density"
     units: kg m-3
     coordinates: time
-    
+
   sea_ice_density:
     long_name: "density of the sea ice layer"
     standard_name: sea_ice_density
     units: kg m-3
     coordinates: time
-    
+
   sea_ice_density_uncertainty:
     long_name: "uncertainty of the sea ice layer density"
     standard_name: sea_ice_density standard_error
@@ -199,9 +177,10 @@ variables:
     standard_name: sea_ice_thickness
     units: m
     coordinates: time
-    
+
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness_uncertainty
     units: m
     coordinates: time
+

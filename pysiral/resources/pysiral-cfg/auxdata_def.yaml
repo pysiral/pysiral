@@ -3,16 +3,6 @@
 
 # Note: path keywords must be set in local_machine_def.yaml
 
-# list of valid auxiliary data types
-auxdata_types:
-    - mean_sea_surface
-    - ice_concentration
-    - ice_type
-    - ice_type_fraction
-    - snow_depth
-    - snow_density
-
-
 # list of mean_sea_surface data products
 mss:
 
@@ -21,7 +11,7 @@ mss:
         pyclass: DTU1MinGrid
         long_name: DTU10 mean sea surface (1 minute grid)
         local_directory: dtu10
-        file: DTU10MSS_1min.nc
+        filename: DTU10MSS_1min.nc
         options: null
         source:
             transfer: ftp
@@ -36,7 +26,7 @@ mss:
         pyclass: DTU1MinGrid
         long_name: DTU13 mean sea surface (1 minute grid)
         local_directory: dtu13
-        file: DTU13MSS_1min.nc
+        filename: DTU13MSS_1min.nc
         options: null
         source:
             transfer: ftp
@@ -50,7 +40,7 @@ mss:
         pyclass: DTU1MinGrid
         long_name: DTU15 mean sea surface (1 minute grid)
         local_repository: dtu15
-        file: DTU15MSS_1min.nc
+        filename: DTU15MSS_1min.nc
         options: null
         source:
             transfer: ftp
@@ -58,6 +48,20 @@ mss:
             pwdfile: null
             type: static
             link: /pub/DTU15/1_MIN/DTU15MSS_1min.nc
+
+    # DTU 15 mean sea surface
+    dtu18:
+        pyclass: DTU1MinGrid
+        long_name: DTU18 mean sea surface (1 minute grid)
+        local_repository: dtu18
+        filename: DTU18MSS_1min.nc
+        options: null
+        source:
+            transfer: ftp
+            server: ftp.space.dtu.dk
+            pwdfile: null
+            type: static
+            link: /pub/DTU18/1_MIN/DTU18MSS_1min.nc
 
 # List of snow depth (density products)
 snow:
@@ -76,14 +80,14 @@ snow:
     clim_w99amsr2:
         pyclass: Warren99AMSR2Clim
         long_name: Merged monthly snow depth and density climatology from Warren99 and IUP AMSR2 snow depth.
-        filenaming: "monthly_merged_warren99_amsr2_snow_clim_{month}.nc"
+        filenaming: "awi-siral-l4-snow_on_seaice-monthly_warren_amsr2_clim-{month}-fv1p0.nc"
         local_repository: clim_w99amsr2
         options:
             variable_map:
-                sd: merged_snow_depth
-                sd_unc: merged_snow_depth_uncertainty
-                sdens: w99_snow_density_filtered
-                sdens_unc: w99_snow_density_filtered_uncertainty
+                depth: merged_snow_depth
+                depth_uncertainty: merged_snow_depth_uncertainty
+                density: w99_snow_density_filtered
+                density_uncertainty: w99_snow_density_filtered_uncertainty
             north:
                 projection:
                     proj: stere
@@ -733,3 +737,29 @@ sitype:
             pwdfile: null
             type: daily
             link: "outgoing/icdc/esasicci/"
+
+
+region:
+
+    # Adapted region mask from NSIDC
+    nsidc_mod:
+        pyclass: NSIDCRegionMask
+        long_name: Arctic region mask adapted from NSIDC region mask (Baltic Sea added)
+        filename: region_mask_nsidc_adapted_v1p0.nc
+        local_repository: nsidc_mod
+        options:
+
+            # Projection is NSIDC SSMI grid
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 448
+                    dx: 25000
+                    dy: 25000

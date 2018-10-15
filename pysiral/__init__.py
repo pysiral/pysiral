@@ -2,11 +2,11 @@
 
 """ """
 
-__all__ = ["bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "auxdata", "classifier", "clocks",
+__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid", "io_adapter",
            "iotools", "l1bdata", "l1bpreproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
-           "logging", "maptools", "mask", "mss", "orbit", "output", "path", "proj", "retracker", "roi",
-           "sic", "sit", "sitype", "snow", "surface_type", "units", "validator", "waveform"]
+           "logging", "maptools", "mask", "orbit", "output", "path", "proj", "retracker", "roi",
+           "sit", "surface_type", "units", "validator", "waveform"]
 
 
 import warnings
@@ -14,8 +14,10 @@ warnings.filterwarnings("ignore")
 
 import os
 import sys
-import shutil
-import pkg_resources
+from distutils import log, dir_util
+log.set_verbosity(log.INFO)
+log.set_threshold(log.INFO)
+import importlib
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -41,9 +43,17 @@ PACKAGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 
 # Check if pysiral configuration exists in user home directory
 # if not: create the user configuration directory
+# Also add an initial version of local_machine_def, so that pysiral does not raise an exception
 USER_CONFIG_PATH = os.path.join(CURRENT_USER_HOME_DIR, ".pysiral-cfg")
 if not os.path.isdir(USER_CONFIG_PATH):
     print "Creating pysiral config directory: %s" % USER_CONFIG_PATH
-    shutil.copytree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH)
+    dir_util.copy_tree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, verbose=1)
+    print "Init local machine def"
+    template_filename = os.path.join(PACKAGE_CONFIG_PATH,  "templates", "local_machine_def.yaml.template")
+    target_filename = os.path.join(USER_CONFIG_PATH,  "local_machine_def.yaml")
+    dir_util.copy(template_filename, USER_CONFIG_PATH, verbose=1)
 
-
+def get_cls(module_name, class_name):
+    """ Small helper function to dynamically load classes"""
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name, None)

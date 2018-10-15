@@ -25,20 +25,20 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research (AWI), Bremerhaven, Germany"
-  - project: "AWI Sea Ice Radar Altimetry"  
+  - project: "AWI Sea Ice Radar Altimetry"
   - comment: ""
   - source: "Satellite radar altimetry"
   - history: "{utc_now} (created)"
   - references: "TBD"
   - tracking_id: "None"
   - conventions: "CF-1.6"
-  - product_version: "cs2awi 2.0"  
+  - product_version: "cs2awi 2.0"
   - summary: ""
   - keywords: "Sea ice thickness, Arctic Ocean (Antarctic Ocean), radar altimetry"
   - id: ""
   - naming: ""
   - keywords_vocabulary: ""
-  - standard_name_vocabulary: ""  
+  - standard_name_vocabulary: ""
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   - date_created: "{utc_now}"
   - date_issued: ""
@@ -55,7 +55,7 @@ global_attributes:
   - geospatial_lon_max: 180.0
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
-  - cdm_data_type: "Grid"  
+  - cdm_data_type: "Grid"
   - spatial_resolution: "25.0 km grid spacing"
   - geospatial_bounds_crs: "EPSG:6931"
   - time_coverage_start: "{time_coverage_start}"
@@ -68,7 +68,7 @@ global_attributes:
   - source_hemisphere: "{source_hemisphere}"
   - source_auxdata_snow: "{source_auxdata_snow}"
   - source_auxdata_sic: "{source_auxdata_sic}"
-  - source_auxdata_sitype: "{source_auxdata_sitype}"  
+  - source_auxdata_sitype: "{source_auxdata_sitype}"
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-3 parameter

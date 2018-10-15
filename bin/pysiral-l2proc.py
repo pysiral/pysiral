@@ -48,11 +48,10 @@ def pysiral_l2proc_time_range_job(args):
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
     mission_id = product_def.l2def.mission.id
-    hemisphere = product_def.l2def.roi.hemisphere
+    hemisphere = product_def.l2def.hemisphere
 
     # Specifically add an output handler
-    product_def.add_output_definition(
-            args.l2_output, overwrite_protection=args.overwrite_protection)
+    product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
 
     # Break down the time range in individual month
     start, stop = args.start, args.stop
@@ -61,8 +60,8 @@ def pysiral_l2proc_time_range_job(args):
     job.raise_if_empty()
 
     # Prepare DataHandler
-    l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere,
-                                             version=args.l1b_version)
+    l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere, version=args.l1b_version)
+
     # Processor Initialization
     l2proc = Level2Processor(product_def)
 
@@ -79,8 +78,7 @@ def pysiral_l2proc_time_range_job(args):
 
         # Get input files
         l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
-        l2proc.log.info("Found %g files in %s" % (
-                len(l1b_files), l1b_data_handler.last_directory))
+        l2proc.log.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
 
         # Process the orbits
         l2proc.process_l1b_files(l1b_files)
@@ -101,8 +99,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
 
     # Specifically add an output handler
-    product_def.add_output_definition(
-            args.l2_output, overwrite_protection=args.overwrite_protection)
+    product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)

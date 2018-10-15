@@ -5,11 +5,9 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            SENSOR_NAME_DICT, MISSION_NAME_DICT)
+from pysiral import __version__
+from pysiral.config import SENSOR_NAME_DICT, MISSION_NAME_DICT
 from pysiral.errorhandler import ErrorStatus
-from pysiral.output import PysiralOutputFilenaming
-from pysiral.path import filename_from_path
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
 from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
@@ -24,31 +22,23 @@ import re
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["mss", "ssa", "elev",  "afrb", "frb", "range", "sic",
-                      "sitype", "snow_depth",  "snow_dens",  "ice_dens",
-                      "sit", "radar_mode"]
+    _L2_DATA_ITEMS = ["range", "ssa", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
+    # These are only the standard Level-2 parameters
+    # NOTE: Auxiliary parameter are handled differently
     _PARAMETER_CATALOG = {
-        "timestamp": "timestamp",
         "time": "time",
         "longitude": "longitude",
         "latitude": "latitude",
         "surface_type": "surface_type_flag",
         "radar_mode": "radar_mode",
         "elevation": "elev",
-        "mean_sea_surface": "mss",
         "sea_surface_anomaly": "ssa",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
-        "sea_ice_type": "sitype",
-        "snow_depth": "snow_depth",
-        "snow_density": "snow_dens",
-        "ice_density": "ice_dens",
-        "sea_ice_thickness": "sit",
-        "sea_ice_concentration": "sic",
-        "radar_mode": "radar_mode"}
+        "sea_ice_thickness": "sit",}
 
     _PROPERTY_CATALOG = {
         "sea_surface_height": "ssh"}
@@ -62,6 +52,12 @@ class Level2Data(object):
         self.track = time_orbit
         self.period = period
 
+        self._auto_auxvar_num = 0
+
+        # A dictionary similar to the parameter catalog
+        # To be filled during the set auxdata method
+        self._auxiliary_catalog = {}
+
         # Metadata
         self._auxdata_source_dict = {}
         self._source_primary_filename = "unkown"
@@ -70,8 +66,7 @@ class Level2Data(object):
         self._doi = ""
 
         # Define time of dataset creation as the time of object initialization
-        # to avoid slightly different timestamps for repated calls of
-        # datatime.now()
+        # to avoid slightly different timestamps for repated calls of datetime.now()
         self._creation_time = datetime.now()
 
         # Other Class properties
@@ -91,17 +86,21 @@ class Level2Data(object):
         uncertainty and/or bias to the level-2 data structure """
 
         # Sanity checks
-        is_valid = self._check_if_valid_parameter(target)
+        is_l2_default = self._check_if_valid_parameter(target)
 
         # Check if the full name has been passed
-        if not is_valid and target in self._PARAMETER_CATALOG.keys():
-            target = self._PARAMETER_CATALOG[target]
-            is_valid = True
+        if not is_l2_default and target in self.parameter_catalog.keys():
+            target = self.parameter_catalog[target]
+        else:
+            # TODO: Need to figure something out for the auxvar id (not known if reinstated from l2i)
+            par_name = self.auto_auxvar_id
+            self.set_auxiliary_parameter(par_name, target, value, uncertainty)
+            return
 
         # Next check: Needs to be of correct shape
         is_correct_size = self._check_valid_size(value)
-        if not is_valid or not is_correct_size:
-            msg = "Invalid parameter name: %s (See self._L2_DATA_ITEMS)"
+        if not is_correct_size:
+            msg = "Invalid parameter dimension: %s (See self._L2_DATA_ITEMS)"
             msg = msg % str(target)
             self.error.add_error("l2-invalid-parameter_name", msg)
             self.error.raise_on_error()
@@ -123,6 +122,24 @@ class Level2Data(object):
             parameter.set_bias(bias, bias_value)
         setattr(self, target, parameter)
 
+    def set_auxiliary_parameter(self, var_id, var_name, value, uncertainty=None):
+        """ Adds an auxiliary parameter to the data object"""
+
+        # Use L2Elevation Array
+        # TODO: This is to cumbersome, replace by xarray at due time
+        param = L2ElevationArray(shape=(self.n_records))
+        param.set_value(value)
+        if uncertainty is not None:
+            param.set_uncertainty(uncertainty)
+        setattr(self, var_id, param)
+
+        # Register auxiliary parameter (this allows to find the parameter
+        # by its long name
+        self._auxiliary_catalog[var_name] = var_id
+
+    def set_data_record_type(self, data_record_type):
+        self._data_record_type = data_record_type
+
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
         # XXX: should get an overhaul
@@ -132,9 +149,8 @@ class Level2Data(object):
         self.elev[ii] = self.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
-    def set_metadata(self, auxdata_source_dict=None,
-                     source_primary_filename=None,
-                     l2_algorithm_id=None, l2_version_tag=None):
+    def set_metadata(self, auxdata_source_dict=None, source_primary_filename=None, l2_algorithm_id=None,
+                     l2_version_tag=None):
         if auxdata_source_dict is not None:
             self._auxdata_source_dict = auxdata_source_dict
         if source_primary_filename is not None:
@@ -151,19 +167,22 @@ class Level2Data(object):
         """ Method to retrieve a level-2 parameter """
 
         # Combine parameter and property catalogs
-        catalog = self._PARAMETER_CATALOG
-        catalog.update(self._PROPERTY_CATALOG)
+        catalog = self.parameter_catalog
+        catalog.update(self.property_catalog)
+        catalog.update(self._auxiliary_catalog)
 
         if "_uncertainty" in parameter_name:
             parameter_name = parameter_name.replace("_uncertainty", "")
             source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.uncertainty
+
         elif "_bias" in parameter_name:
             parameter_name = parameter_name.replace("_bias", "")
             source = catalog[parameter_name]
             parameter = getattr(self, source)
             return parameter.bias
+
         else:
             source = catalog[parameter_name]
             parameter = getattr(self, source)
@@ -240,9 +259,7 @@ class Level2Data(object):
                 return np.full(self.arrshape, np.nan)
 
     def _get_attr_pysiral_version(self, target):
-        versions = {"filename": PYSIRAL_VERSION_FILENAME,
-                    "default": PYSIRAL_VERSION}
-        return versions[target]
+        return __version__
 
     def _get_attr_mission_id(self, *args):
         # XXX: Deprecated
@@ -397,7 +414,7 @@ class Level2Data(object):
         return self.period.duration_isoformat
 
     def _get_attr_time_resolution(self, *args):
-        tdelta = self.timestamp[-1]-self.timestamp[0]
+        tdelta = self.time[-1]-self.time[0]
         seconds = tdelta.total_seconds() + 1e-6 * tdelta.microseconds
         resolution = seconds/self.n_records
         return "%.2f seconds" % resolution
@@ -421,6 +438,24 @@ class Level2Data(object):
 
     def _get_attr_doi(self, *args):
         return self._doi
+
+    @property
+    def parameter_catalog(self):
+        return dict(self._PARAMETER_CATALOG)
+
+    @property
+    def property_catalog(self):
+        return dict(self._PROPERTY_CATALOG)
+
+    @property
+    def auxvar_names(self):
+        return sorted(self._auxiliary_catalog.keys())
+
+    @property
+    def auto_auxvar_id(self):
+        name = "auxvar%02g" % self._auto_auxvar_num
+        self._auto_auxvar_num += 1
+        return name
 
     @property
     def arrshape(self):
@@ -458,7 +493,7 @@ class Level2Data(object):
         return dimdict
 
     @property
-    def timestamp(self):
+    def time(self):
         try:
             time = self.track.time
         except AttributeError:
@@ -592,11 +627,7 @@ class L2ElevationArray(np.ndarray):
         return r
 
     def set_value(self, value):
-#        uncertainty = self.uncertainty
-#        bias = self.bias
         self[:] = value[:]
-#        setattr(self, "uncertainty", uncertainty)
-#        setattr(self, "bias", bias)
 
     def set_uncertainty(self, uncertainty):
         self.uncertainty = uncertainty
@@ -656,7 +687,8 @@ class Level2PContainer(DefaultLoggingClass):
         # l2i object in the stack
         info = self.l2i_stack[0].info
 
-        # Old notation (for backward compability)
+        # Old notation (for backward compatibility)
+        #TODO: This will soon be obsolete
         try:
             mission_id = info.mission_id
             # Transfer auxdata information
@@ -665,7 +697,7 @@ class Level2PContainer(DefaultLoggingClass):
             metadata.source_auxdata_sitype = l2i.info.source_sitype
             metadata.source_auxdata_mss = l2i.info.source_mss
 
-        # New (fall 2017) pysiral product notaion
+        # New (fall 2017) pysiral product notation
         except AttributeError:
             mission_id = info.source_mission_id
             # Transfer auxdata information
@@ -689,19 +721,17 @@ class Level2PContainer(DefaultLoggingClass):
         #  Transfer the level-2 data items
 
         # 1. Get the list of parameters
-        # (assumuning all l2i files share the same)
+        # (assuming all l2i files share the same)
         parameter_list_all = l2i.parameter_list
 
         # 2. Exclude variables that end with `_uncertainty`
-        parameter_list = [p for p in parameter_list_all
-                          if not re.search("_uncertainty", p)]
+        parameter_list = [p for p in parameter_list_all if not re.search("_uncertainty", p)]
 
         # 3. Remove parameters from the timeorbit group, surface type &
         # orbit id. This will be added to level 2 object by other means
         # or do not make sense (surface type for valid freeboard will
         # always be sea ice)
-        for parameter_name in ["timestamp", "time", "longitude", "latitude",
-                               "surface_type"]:
+        for parameter_name in ["timestamp", "time", "longitude", "latitude", "surface_type"]:
             try:
                 parameter_list.remove(parameter_name)
             except ValueError:
@@ -718,7 +748,7 @@ class Level2PContainer(DefaultLoggingClass):
             if uncertainty_name in parameter_list_all:
                 uncertainty = data[uncertainty_name]
             else:
-                uncertainty = np.full(value.shape, 0.0)
+                uncertainty = None
 
             # Add to l2 object
             l2.set_parameter(parameter_name, value, uncertainty=uncertainty)
@@ -785,7 +815,6 @@ class L2iNCFileImport(object):
         self._parse()
 
     def _parse(self):
-        from pysiral.path import file_basename
         from netCDF4 import num2date
 
         content = ReadNC(self.filename)
@@ -801,23 +830,17 @@ class L2iNCFileImport(object):
 
         self._n_records = len(self.longitude)
 
-        # Get mission id from filename
-#        l2i_filename = filename_from_path(self.filename)
-#        filenaming = PysiralOutputFilenaming()
-#        filenaming.parse_filename(l2i_filename)
-#        self.mission = filenaming.mission_id
-
         # Get timestamp (can be either time or timestamp in l2i files)
         if hasattr(self, "time"):
             time = self.time
             time_parameter_name = "time"
         else:
-            time = self.timestamp
+            time = self.time
             time_parameter_name = "timestamp"
         self._time_parameter_name = time_parameter_name
         dt = num2date(time, self.time_def.units, self.time_def.calendar)
         setattr(self, "time", dt)
-        self.timestamp = self.time
+        self.time = self.time
 
     def transfer_nan_mask(self, source, targets):
         source_parameter = getattr(self, source)
