@@ -112,13 +112,14 @@ variables:
     coordinates: "time lat lon"
 
   radar_freeboard_uncertainty:
-    var_source_name: radar_freeboard_uncertainty
+    var_source_name: radar_freeboard_l3_uncertainty
     long_name: "uncertainty of radar freeboard"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  radar_freeboard_l3_uncertainty:
+  radar_freeboard_l2_uncertainty:
+    var_source_name: radar_freeboard_uncertainty
     long_name: "uncertainty of radar freeboard (computed as error of a weighted mean)"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -140,6 +141,7 @@ variables:
     coordinates: "time lat lon"
 
   freeboard_uncertainty:
+    var_source_name: freeboard_l3_uncertainty
     long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (computed as error of a weighted mean)"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -201,13 +203,13 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  ice_density:
+  sea_ice_density:
     long_name: "density of the sea ice layer"
     units: kg m-3
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  ice_density_uncertainty:
+  sea_ice_density_uncertainty:
     long_name: "uncertainty of the sea ice layer density"
     units: kg m-3
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -231,6 +233,7 @@ variables:
     coordinates: "time lat lon"
 
   sea_ice_thickness_uncertainty:
+    var_source_name: sea_ice_thickness_l3_uncertainty
     long_name: algorithm uncertainty (error propagation) of the sea ice thickness retrieval including uncertainty reduction of random components by gridding
     standard_name: sea_ice_thickness standard_error
     units: m

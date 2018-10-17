@@ -268,7 +268,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # Validation
         if not os.path.isfile(path):
             msg = self.pyclass+": File not found: %s " % path
-            self.add_handler_message()
+            self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_snow", msg)
             return
 
