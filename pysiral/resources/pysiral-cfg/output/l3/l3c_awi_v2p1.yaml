@@ -201,13 +201,13 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  ice_density:
+  sea_ice_density:
     long_name: "density of the sea ice layer"
     units: kg m-3
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  ice_density_uncertainty:
+  sea_ice_density_uncertainty:
     long_name: "uncertainty of the sea ice layer density"
     units: kg m-3
     grid_mapping: "Lambert_Azimuthal_Grid"

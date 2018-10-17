@@ -773,12 +773,12 @@ class L3DataGrid(DefaultLoggingClass):
             # Get parameters
             frb = self._l3["freeboard"][yj, xi]
             sd = self._l3["snow_depth"][yj, xi]
-            rho_i = self._l3["ice_density"][yj, xi]
+            rho_i = self._l3["sea_ice_density"][yj, xi]
             rho_s = self._l3["snow_density"][yj, xi]
 
             # Get systematic error components
             sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
-            rho_i_unc = self._l3["ice_density_uncertainty"][yj, xi]
+            rho_i_unc = self._l3["sea_ice_density_uncertainty"][yj, xi]
             rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
 
             # Get random uncertainty 
