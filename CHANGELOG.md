@@ -1,5 +1,16 @@
 # History of changes
 
+
+## Version 0.6.4.1 (17. October 2018)
+
+**Changes**
+- [l3proc] Allow masking of non-float Level-3 parameter (e.g. integer flags, which will be set to -1)
+
+**Bugfixes**
+- [l3proc] Level-3 processor was not adapted for name change of l2 variable (`ice_density` -> `sea_ice_density`)
+- [l3proc] Incorrect source variable naming for uncertainties of `radar_freeboard`, `freeboard` & `sea_ice_thickness` in AWI v2.1 l3 output definition 
+
+
 ## Version 0.6.4 (15. October 2018)
 
 **New Features**
