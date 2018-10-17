@@ -9,7 +9,7 @@
 **Bugfixes**
 - [l3proc] Level-3 processor was not adapted for name change of l2 variable (`ice_density` -> `sea_ice_density`)
 - [l3proc] Incorrect source variable naming for uncertainties of `radar_freeboard`, `freeboard` & `sea_ice_thickness` in AWI v2.1 l3 output definition 
-
+- [snow] bugfix: missing message string caused crash of data handler (see #19)
 
 ## Version 0.6.4 (15. October 2018)
 
