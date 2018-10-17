@@ -603,7 +603,14 @@ class L3DataGrid(DefaultLoggingClass):
         # Apply mask
         masked_indices = np.where(filter_mask)
         for target in mask_def.targets:
-            self._l3[target][masked_indices] = np.nan
+            try:
+                self._l3[target][masked_indices] = np.nan
+            except ValueError:
+                if self._l3[target].dtype.kind == "i":
+                    self._l3[target][masked_indices] = -1
+                else:
+                    msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
+                    self.log.warning(msg)
 
     def apply_post_processor(self, name, options):
         """ Caller for post-processing methods """

@@ -239,6 +239,8 @@ l3_masks:
             - snow_density
             - snow_density_uncertainty
             - sea_ice_concentration
+            - region_code
+            - radar_mode
 
 l3_post_processing:
 
