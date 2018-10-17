@@ -786,7 +786,7 @@ class L3DataGrid(DefaultLoggingClass):
             #       Thus we need to recalculate the sea ice freeboard uncertainty
 
             # Get the stack of radar freeboard uncertainty values and remove NaN's
-            rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
+            # rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
             rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
             rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
 
@@ -796,7 +796,7 @@ class L3DataGrid(DefaultLoggingClass):
             rfrb_unc = 1./np.sqrt(weight)
             self._l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
-            # Calculate the level-3 freeboard uncertainty with upated radar freeboard uncertainty
+            # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
             deriv_snow = sd_corr_fact
             frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
             self._l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
@@ -812,6 +812,7 @@ class L3DataGrid(DefaultLoggingClass):
             
             # Assign Level-3 uncertainty
             self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
+
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined
