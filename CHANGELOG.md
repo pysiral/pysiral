@@ -1,6 +1,12 @@
 # History of changes
 
 
+
+## Version 0.6.4.2 (18. October 2018)
+
+**Changes**
+- [l3proc] Added l2i pre-filtering to the AWI CryoSat-2 v2.1 Level-3 processor settings. To confusing to have radar freeboard over leads
+
 ## Version 0.6.4.1 (17. October 2018)
 
 **Changes**
