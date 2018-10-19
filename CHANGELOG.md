@@ -1,5 +1,10 @@
 # History of changes
 
+## Version 0.6.4.4 (19. October 2018)
+
+**Changes**
+- [setup] Added userhome pysiral update script to python package
+
 ## Version 0.6.4.3 (19. October 2018)
 
 **Changes**
