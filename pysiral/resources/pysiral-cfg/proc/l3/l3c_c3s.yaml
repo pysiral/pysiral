@@ -100,11 +100,6 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_concentration:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     radar_mode:
         grid_method: average
         dtype: f4

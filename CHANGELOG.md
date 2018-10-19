@@ -1,6 +1,9 @@
 # History of changes
 
+## Version 0.6.4.3 (19. October 2018)
 
+**Changes**
+- [l2proc] Rollback of CryoSat-2 AWI v2.1 surface type classification algorithm to the CCI one. RickerTC2014 was causing issues of SARin areas. 
 
 ## Version 0.6.4.2 (18. October 2018)
 
