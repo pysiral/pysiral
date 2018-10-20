@@ -237,7 +237,7 @@ class TimeRangeRequest(DefaultLoggingClass):
     #   from 00:00:00.000000 of first day in month to 23:59:59.99999 of
     #   last day per month for each month in time range
     #
-    # default_week:
+    # weekly:
     #   from Monday 00:00:00.00000 to Sunday 23:59:59.99999 for all weeks
     #   in the time range including partially covered weeks
     #
@@ -248,7 +248,7 @@ class TimeRangeRequest(DefaultLoggingClass):
     #   from 00:00:00.000000 of first day to 23:59:59.99999 of last day
     #   in timer range
 
-    _PERIODS = ["monthly", "default_week", "daily", "custom"]
+    _PERIODS = ["monthly", "weekly", "daily", "custom"]
 
     # TODO: Future planned option (weekly: 7 days from start day) and
     #       (week_of_year: self explanatory)
@@ -385,8 +385,8 @@ class TimeRangeRequest(DefaultLoggingClass):
 
         # default week periods: return a list of time ranges for each default
         # week definition (from Monday to Sunday)
-        elif self._period == "default_week":
-            iterations = self._get_default_week_iterations()
+        elif self._period == "weekly":
+            iterations = self._get_weekly_iterations()
 
         # daily periods: return a list of time ranges for each day
         # in the requested period (exclude_month still applies)
@@ -483,8 +483,8 @@ class TimeRangeRequest(DefaultLoggingClass):
 
         return iterations
 
-    def _get_default_week_iterations(self):
-        """ Create iterator with default_week (Monday throught Sunday)
+    def _get_weekly_iterations(self):
+        """ Create iterator with weekly (Monday throught Sunday)
         period """
 
         # Start with empty iteration
@@ -493,7 +493,7 @@ class TimeRangeRequest(DefaultLoggingClass):
 
         # Get the start date: period start date (if is monday) or previous
         # monday. If the day is not monday we can use the isoweekday
-        # (monday=1m sundy=7) to compute the number days we have to subtract
+        # (monday=1m sunday=7) to compute the number days we have to subtract
         # from the start day of the period
         start_offset_days = self.start_dt.isoweekday() - 1
         week_start_day = self.start_dt - relativedelta(days=start_offset_days)

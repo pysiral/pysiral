@@ -9,7 +9,7 @@ metadata:
 # Output Definition (for each period definition)
 filenaming: 
   monthly: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2.0.nc"
-  default_week: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
+  weekly: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
   daily: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2.0.nc"
   custom: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
   default: "l3c-awi-seaice-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2.0.nc"
