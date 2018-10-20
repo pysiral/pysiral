@@ -835,7 +835,7 @@ class DefaultCommandLineArguments(object):
             "overwrite-protection": {
                 "action": "store_true",
                 "dest": "overwrite_protection",
-                "default": True,
+                "default": False,
                 "required": False,
                 "help": 'enable writing Level-2 output to unique directory ' +
                         '(default)'},
