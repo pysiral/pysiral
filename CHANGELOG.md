@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 0.6.4.5 (23. October 2018)
+
+**Changes**
+- [config] set default value of overwrite protection to False
+- [config] renamed period name `default_week` to `weekly`
+
 ## Version 0.6.4.4 (19. October 2018)
 
 **Changes**
