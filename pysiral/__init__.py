@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore")
 
 import os
 import sys
+import shutil
 from distutils import log, dir_util
 log.set_verbosity(log.INFO)
 log.set_threshold(log.INFO)
@@ -35,7 +36,7 @@ __author_email__ = "stefan.hendricks@awi.de"
 
 # Get the config directory of the package
 # NOTE: This approach should work for a local script location of distributed package
-PACKAGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "pysiral-cfg")
+PACKAGE_CONFIG_PATH = os.path.join(PACKAGE_ROOT_DIR, "resources", "pysiral-cfg")
 
 
 # Get an indication of the location for the pysiral configuration path
@@ -65,26 +66,21 @@ if cfg_loc == "USER_HOME":
     # NOTE: This is where to expect the pysiral configuration files
     USER_CONFIG_PATH = os.path.join(CURRENT_USER_HOME_DIR, ".pysiral-cfg")
 
-    # Check if pysiral configuration exists in user home directory
-    # if not: create the user configuration directory
-    # Also add an initial version of local_machine_def, so that pysiral does not raise an exception
-    if not os.path.isdir(USER_CONFIG_PATH):
-        print "Creating pysiral config directory: %s" % USER_CONFIG_PATH
-        dir_util.copy_tree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, verbose=1)
-        print "Init local machine def"
-        template_filename = os.path.join(PACKAGE_CONFIG_PATH, "templates", "local_machine_def.yaml.template")
-        target_filename = os.path.join(USER_CONFIG_PATH, "local_machine_def.yaml")
-        dir_util.copy(template_filename, USER_CONFIG_PATH, verbose=1)
-
 # Case 2: package specific config path
 else:
+    # This should be an existing path, but in the case it is not, it is created
     USER_CONFIG_PATH = cfg_loc
-    # This must be an existing path
-    # NOTE: The idea is that this case needs to set up specifically (i.e. calling a script that will alter the value
-    #       in the config location indicator file
-    if not os.path.isdir(USER_CONFIG_PATH):
-        sys.exit("Invalid pysiral config location in PYSIRAL-CFG-LOC (%s)" % USER_CONFIG_PATH)
 
+# Check if pysiral configuration exists in user home directory
+# if not: create the user configuration directory
+# Also add an initial version of local_machine_def, so that pysiral does not raise an exception
+if not os.path.isdir(USER_CONFIG_PATH):
+    print "Creating pysiral config directory: %s" % USER_CONFIG_PATH
+    dir_util.copy_tree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, verbose=1)
+    print "Init local machine def"
+    template_filename = os.path.join(PACKAGE_CONFIG_PATH, "templates", "local_machine_def.yaml.template")
+    target_filename = os.path.join(USER_CONFIG_PATH, "local_machine_def.yaml")
+    shutil.copy(template_filename, target_filename)
 
 def get_cls(module_name, class_name):
     """ Small helper function to dynamically load classes"""
