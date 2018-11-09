@@ -21,8 +21,15 @@ def main(args):
     NOTE: The mutually exclusive selection of the 3 actions is ensured by argparse
     """
 
+    print "Create, activate or reset the pysiral configuration directory (handle with care!)"
+
     # Action 1:
     if args.target_create is not None:
+
+        var = raw_input("Create and activate config dir %s? [YES/NO]: " % args.target_create)
+        if var != "YES":
+            print " abort"
+            sys.exit(2)
 
         # Check if directory exists
         if os.path.isdir(args.target_create):
@@ -67,6 +74,12 @@ def main(args):
 
     # Action 3:
     if args.target_activate is not None:
+
+        var = raw_input("Activate config dir %s? [YES/NO]: " % args.target_activate)
+        if var != "YES":
+            print " abort"
+            sys.exit(2)
+
         if os.path.isdir(args.target_activate):
             set_pysiral_cfg_loc(args.target_activate)
             print "Activating config dir [SUCCESS]"
@@ -78,6 +91,12 @@ def main(args):
 
     # Action 3:
     if args.reset:
+
+        var = raw_input("Reset config dir to user home? [YES/NO]: ")
+        if var != "YES":
+            print " abort"
+            sys.exit(2)
+
         set_pysiral_cfg_loc("USER_HOME")
         print "Resetting config dir to user home [SUCCESS]"
         sys.exit(0)
