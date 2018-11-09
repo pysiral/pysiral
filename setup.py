@@ -43,7 +43,7 @@ setup(
     install_requires=requirements,
     packages=find_packages(exclude=('tests', 'docs')),
     include_package_data=True,
-    scripts=['bin/psrl_update_userhome_cfg.py',
+    scripts=['bin/psrl_update_userhome_cfg.py', 'bin/pysiral_cfg_setdir.py',
              'bin/pysiral-l1bpreproc.py', 'bin/pysiral-l1bpreproc.bat',
              'bin/pysiral-l2proc.py', 'bin/pysiral-l2proc.bat',
              'bin/pysiral-l2preproc.py', 'bin/pysiral-l2preproc.bat',

@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 0.6.5 (9. November 2018)
+
+**New Features**
+- [config] directory for pysiral configuration can now be specified to allow running multiple instances with different configuration by the same user on the same machine (fully encapsulated installation)
+
+
 ## Version 0.6.4.5 (23. October 2018)
 
 **Changes**
