@@ -4,31 +4,30 @@
 id: "ESA CCI Phase-2 Sentinel-3a Arctic climate data record v1 (ccicdr_sentinel3a_nh_010)"
 version_tag: "exp-v1p0"
 
+# This settings file is valid for
+hemisphere: north
+
 # Level 2 processor settings are mission specific
 mission:
     id: sentinel3a
-    
-# Regions Settings (for file selection and potential subsetting
-roi:
-    pyclass: LowerLatLimit
-    hemisphere: north
-    options:
-        latitude_threshold: 50.0
 
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 auxdata:
 
-    mss:
+    - mss:
         name: dtu15
         options: null
-    sic:
+
+    - sic:
         name: osisaf
         options: null
-    sitype:
+
+    - sitype:
         name: osisaf
         options: null
-    snow: 
+
+    - snow:
         name: warren99
         options: 
             fyi_correction_factor: 0.5
@@ -36,11 +35,13 @@ auxdata:
             smooth_filter_width_m: 25000.0
             valid_snow_depth_range: [0, 0.6]
             invalid_replace: .0
+
     # Canadian and AARI ice charts added in fmi version
-    icechart:
+    - icechart:
         name: canada
         options: null
-    icechart_aari:
+
+    - icechart_aari:
         name: aari
         options: null
 
