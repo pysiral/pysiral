@@ -11,6 +11,45 @@ hemisphere: north
 mission:
     id: sentinel3a
 
+
+# Transfer data from the l1b to the l2 data object (from any data group)
+# The notation is the following:
+#
+#   $data_group_name:
+#       $l1p_varname:
+#           aux_id: id of the auxiliary parameter (l2.$aux_id)
+#           aux_name: long name for output definition
+#
+# NOTE: Any parameter will be registered as a auxiliary data object
+
+transfer_from_l1p:
+
+    classifier:
+
+        peakiness:
+            aux_id: pp
+            aux_name: pulse_peakiness
+
+        peakiness_l:
+            aux_id: ppl
+            aux_name: pulse_peakiness_left
+
+        peakiness_r:
+            aux_id: ppr
+            aux_name: pulse_peakiness_right
+
+        leading_edge_width:
+            aux_id: lew
+            aux_name: leading_edge_width
+
+        late_tail_to_peak_power:
+            aux_id: ltpp
+            aux_name: late_tail_to_peak_power
+
+        stack_standard_deviation:
+            aux_id: ssd
+            aux_name: stack_standard_deviation
+
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 auxdata:
