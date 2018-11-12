@@ -19,8 +19,8 @@ import os
 
 class IC(AuxdataBaseClass):
 
-    def __init__(self):
-        super(IC, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(IC, self).__init__(*args, **kwargs)
         self._data_ct = None
         self._data_ca = None
         self._data_cb = None
@@ -207,8 +207,8 @@ class IC(AuxdataBaseClass):
 
 class ICA(AuxdataBaseClass):
 
-    def __init__(self):
-        super(ICA, self).__init__() #MUOKS20170517
+    def __init__(self, *args, **kwargs):
+        super(ICA, self).__init__(*args, **kwargs) #MUOKS20170517
         self._data_ct = None
         self._data_ca = None
         self._data_cb = None

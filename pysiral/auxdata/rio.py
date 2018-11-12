@@ -13,8 +13,8 @@ import numpy as np
 
 class RIO(AuxdataBaseClass):
 
-    def __init__(self):
-        super(RIO, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(RIO, self).__init__(*args, **kwargs)
         self._rio_pc1 = None
         self._rio_pc2 = None
         self._rio_pc3 = None
