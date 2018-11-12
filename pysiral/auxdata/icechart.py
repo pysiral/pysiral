@@ -37,7 +37,13 @@ class IC(AuxdataBaseClass):
         self._get_data(l2)
         if not self.error.status:
             ic_sics = self._get_sic_ic_track(l2)
-            self.register_auxvar("ic_sics", "ic_sics", ic_sics, None)
+            self.register_auxvar("ic_ct", "icechart_ct", ic_sics[0], None)
+            self.register_auxvar("ic_ca", "icechart_ca", ic_sics[1], None)
+            self.register_auxvar("ic_cb", "icechart_cb", ic_sics[2], None)
+            self.register_auxvar("ic_cc", "icechart_cc", ic_sics[3], None)
+            self.register_auxvar("ic_sa", "icechart_sa", ic_sics[4], None)
+            self.register_auxvar("ic_sb", "icechart_sb", ic_sics[5], None)
+            self.register_auxvar("ic_sc", "icechart_sc", ic_sics[6], None)
         else:
             return
         
@@ -138,9 +144,7 @@ class IC(AuxdataBaseClass):
         return fnames, timedelta
 
     def XXYYGrids(self):
-        ### Returns 2 km EASE2 grid XX and YY values
-
-        import numpy as np
+        ### Returns 2 km EASE2 grid XX and YY value
 
         vec_Y = np.arange(5400000, -5400000, -2000) - 1000
         vec_X = np.arange(-5400000, 5400000, 2000) + 1000
@@ -224,7 +228,13 @@ class ICA(AuxdataBaseClass):
         self._get_data(l2)
         if not self.error.status:
             ic_sics = self._get_sic_ic_track(l2)
-            self.register_auxvar("ic_sics", "ic_sics", ic_sics, None)
+            self.register_auxvar("ica_ct", "icechart_aari_ct", ic_sics[0], None)
+            self.register_auxvar("ica_ca", "icechart_aari_ca", ic_sics[1], None)
+            self.register_auxvar("ica_cb", "icechart_aari_cb", ic_sics[2], None)
+            self.register_auxvar("ica_cc", "icechart_aari_cc", ic_sics[3], None)
+            self.register_auxvar("ica_sa", "icechart_aari_sa", ic_sics[4], None)
+            self.register_auxvar("ica_sb", "icechart_aari_sb", ic_sics[5], None)
+            self.register_auxvar("ica_sc", "icechart_aari_sc", ic_sics[6], None)
         else:
             return
 
