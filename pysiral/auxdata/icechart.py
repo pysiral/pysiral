@@ -6,27 +6,18 @@ Created on Sun Apr 24 13:57:56 2016
 
 Module created for FMI version of pysiral
 """
-from pysiral.auxdata import AuxdataBaseClass
-#from pysiral.iotools import ReadNC
 
-import scipy.ndimage as ndimage
-#from pyproj import Proj
+
+from pysiral.auxdata import AuxdataBaseClass
+
 import pyproj
+import gdal
 import numpy as np
 import os
 
-class ICBaseClass(AuxdataBaseClass):
-
-    def __init__(self):
-        super(ICBaseClass, self).__init__()
-        self._msg = ""
-
-    def get_along_track_sic(self, l2):
-        sic, msg = self._get_along_track_sic(l2)
-        return sic, msg
 
 
-class IC(ICBaseClass):
+class IC(AuxdataBaseClass):
 
     def __init__(self):
         super(IC, self).__init__()
@@ -41,30 +32,14 @@ class IC(ICBaseClass):
         self._requested_date = [-1, -1, -1]
         self.error.caller_id = self.__class__.__name__
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
-    def _initialize(self):
-        pass
-
-    def _get_along_track_sic(self, l2):
-        self._msg = ""
+    def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
         if not self.error.status:
             ic_sics = self._get_sic_ic_track(l2)
-            return ic_sics, self._msg
+            self.register_auxvar("ic_sics", "ic_sics", ic_sics, None)
         else:
-            return None, self._msg
+            return
         
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -75,7 +50,7 @@ class IC(ICBaseClass):
         
     def _open_tif(self, path):
         """ Open the tif file"""
-        import gdal
+
         G = gdal.Open(str(path))
         #print 'icechart G', G, type(G)
         #print 'PATH TO DATA', str(path)
@@ -202,8 +177,8 @@ class IC(ICBaseClass):
             xOffset = int((x - xOrigin) / pixelWidth)
             yOffset = int((y - yOrigin) / pixelHeight)
             
-            stuf =  self._data_ct[yOffset][xOffset]
-            dct = str(self._data_ct[yOffset][xOffset]) # AMANDINE: why this conversion to string?
+            stuf = self._data_ct[yOffset][xOffset]
+            dct = str(self._data_ct[yOffset][xOffset])  # AMANDINE: why this conversion to string?
             dca = self._data_ca[yOffset][xOffset]
             dcb = self._data_cb[yOffset][xOffset]
             dcc = self._data_cc[yOffset][xOffset]
@@ -225,7 +200,8 @@ class IC(ICBaseClass):
             
         return [data_ct,data_ca,data_cb,data_cc,data_sa,data_sb,data_sc]
 
-class ICA(ICBaseClass):
+
+class ICA(AuxdataBaseClass):
 
     def __init__(self):
         super(ICA, self).__init__() #MUOKS20170517
@@ -240,27 +216,17 @@ class ICA(ICBaseClass):
         self._requested_date = [-1, -1, -1]
         self.error.caller_id = self.__class__.__name__
 
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
     def _initialize(self):
         pass
 
-    def _get_along_track_sic(self, l2):
-        self._msg = ""
+    def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
         self._get_data(l2)
-        ic_sics = self._get_sic_ic_track(l2)
-        return ic_sics, self._msg
+        if not self.error.status:
+            ic_sics = self._get_sic_ic_track(l2)
+            self.register_auxvar("ic_sics", "ic_sics", ic_sics, None)
+        else:
+            return
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -271,7 +237,6 @@ class ICA(ICBaseClass):
 
     def _open_tif(self, path):
         """ Open the tif file"""
-        import gdal
         G = gdal.Open(str(path))
         # NOTE August 2017 exception added for missing AARI years
         try:
@@ -414,10 +379,3 @@ class ICA(ICBaseClass):
                 data_sc.append(None)
 
         return [data_ct,data_ca,data_cb,data_cc,data_sa,data_sb,data_sc]
-
-def get_l2_sic_ic_handler(name):
-    pyclass = globals().get(name, None)
-    if pyclass is not None:
-        return pyclass()
-    else:
-        return pyclass

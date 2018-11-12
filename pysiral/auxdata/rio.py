@@ -6,43 +6,12 @@ Created on Sun Apr 24 13:57:56 2016
 
 Module created for FMI version of pysiral
 """
-from pysiral.config import options_from_dictionary
-from pysiral.iotools import ReadNC
 
-import scipy.ndimage as ndimage
-#from pyproj import Proj
-import pyproj
+from pysiral.auxdata import AuxdataBaseClass
 import numpy as np
-import os
 
-class RIOBaseClass(object):
 
-    def __init__(self):
-        self._options = None
-        self._local_repository = None
-        self._subfolders = []
-        self._msg = ""
-
-    def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
-
-    def set_local_repository(self, path):
-        self._local_repository = path
-
-    def set_filenaming(self, filenaming):
-        self._filenaming = filenaming
-
-    def set_subfolders(self, subfolder_list):
-        self._subfolders = subfolder_list
-
-    def initialize(self):
-        self._initialize()
-
-    def get_along_track_rio(self, l2):
-        rio, msg = self._get_along_track_rio(l2)
-        return rio, msg
-
-class RIO(RIOBaseClass):
+class RIO(AuxdataBaseClass):
 
     def __init__(self):
         super(RIO, self).__init__()
@@ -58,30 +27,27 @@ class RIO(RIOBaseClass):
         self._rio_1b = None
         self._rio_1c = None
         self._rio_no_ice_class = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
-
-    @property
-    def year(self):
-        return "%04g" % self._requested_date[0]
-
-    @property
-    def month(self):
-        return "%02g" % self._requested_date[1]
-
-    @property
-    def day(self):
-        return "%02g" % self._requested_date[2]
-
-    def _initialize(self):
-        pass
 
     def _get_along_track_rio(self, l2):
-        self._msg = ""
+
+        # Get the data
         self._get_requested_date(l2)
         self._get_data(l2)
         rio = self._get_rio_track(l2)
-        return rio, self._msg
+
+        # Register the rio code as auxiliary data variables
+        self.register_auxvar("data_pc1", "data_pc1", rio[0], None)
+        self.register_auxvar("data_pc2", "data_pc2", rio[1], None)
+        self.register_auxvar("data_pc3", "data_pc5", rio[2], None)
+        self.register_auxvar("data_pc4", "data_pc4", rio[3], None)
+        self.register_auxvar("data_pc5", "data_pc5", rio[4], None)
+        self.register_auxvar("data_pc6", "data_pc6", rio[5], None)
+        self.register_auxvar("data_pc7", "data_pc7", rio[6], None)
+        self.register_auxvar("data_1asuper", "data_1asuper", rio[7], None)
+        self.register_auxvar("data_1a", "data_1a", rio[8], None)
+        self.register_auxvar("data_1b", "data_1b", rio[9], None)
+        self.register_auxvar("data_1c", "data_1c", rio[10], None)
+        self.register_auxvar("data_no_ice_class", "data_no_ice_class", rio[11], None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -336,28 +302,28 @@ class RIO(RIOBaseClass):
         return RV
 
     def _get_data(self, l2):
-	"""Hopefully gets data assigned already for l2"""
-	if self._requested_date == self._current_date:
-	    # Data already loaded, nothing to do... right?
-	    return
-        self._data_ct = l2.ic_ct
-        self._data_ca = l2.ic_ca
-        self._data_cb = l2.ic_cb
-        self._data_cc = l2.ic_cc
-        self._data_sa = l2.ic_sa
-        self._data_sb = l2.ic_sb
-        self._data_sc = l2.ic_sc
-	
-        self.icechart = dict()
-        self.icechart['CT'] = self._data_ct
-        self.icechart['CA'] = self._data_ca
-        self.icechart['CB'] = self._data_cb
-        self.icechart['CC'] = self._data_cc
-        self.icechart['SA'] = self._data_sa
-        self.icechart['SB'] = self._data_sb
-        self.icechart['SC'] = self._data_sc
+        """ Hopefully gets data assigned already for l2 """
+        if self._requested_date == self._current_date:
+            # Data already loaded, nothing to do... right?
+            return
+            self._data_ct = l2.ic_ct
+            self._data_ca = l2.ic_ca
+            self._data_cb = l2.ic_cb
+            self._data_cc = l2.ic_cc
+            self._data_sa = l2.ic_sa
+            self._data_sb = l2.ic_sb
+            self._data_sc = l2.ic_sc
 
-        self._current_date = self._requested_date
+            self.icechart = dict()
+            self.icechart['CT'] = self._data_ct
+            self.icechart['CA'] = self._data_ca
+            self.icechart['CB'] = self._data_cb
+            self.icechart['CC'] = self._data_cc
+            self.icechart['SA'] = self._data_sa
+            self.icechart['SB'] = self._data_sb
+            self.icechart['SC'] = self._data_sc
+
+            self._current_date = self._requested_date
 
     def _get_rio_track(self, l2):
 
@@ -378,7 +344,7 @@ class RIO(RIOBaseClass):
         iceclasses = ['PC1','PC2','PC3','PC4','PC5','PC6','PC7','1ASuper','1A','1B','1C','NO ICE CLASS']
         icechart = self.icechart
         for str_iceclass in iceclasses:
-            RIO = self.IceChartToRIO(icechart,str_iceclass)
+            RIO = self.IceChartToRIO(icechart, str_iceclass)
             if str_iceclass =='PC1':
                 data_pc1 = RIO
             elif str_iceclass =='PC2':
@@ -407,7 +373,6 @@ class RIO(RIOBaseClass):
                 print "Daaaamn, you shouln't be here!", str_iceclass
 		
      
-    	return [data_pc1,data_pc2,data_pc3,data_pc4,data_pc5,data_pc6,data_pc7,data_1asuper,data_1a,data_1b,data_1c,data_no_ice_class]
+    	return [data_pc1, data_pc2, data_pc3, data_pc4, data_pc5, data_pc6, data_pc7,
+                data_1asuper, data_1a, data_1b, data_1c, data_no_ice_class]
 
-def get_l2_rio_handler(name):
-    return globals()[name]()
