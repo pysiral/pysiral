@@ -13,7 +13,6 @@ auxdata_types:
     - snow_density
     # ice charts added for fmi version
     - icechart
-    - icechart_aari
 
 # List of icechart products (fmi version)
 icechart:
@@ -48,9 +47,6 @@ icechart:
             pwdfile: null
             type: weekly
             link: "/pub/DATASETS/NOAA/G02171/{area}/{year}/cis_SGRD*_pl_*"
-
-# AARI ice chart products (fmi version)
-icechart_aari:
     
     # AARI ICE CHARTS
     aari:
