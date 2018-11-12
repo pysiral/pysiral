@@ -107,8 +107,7 @@ class Level1bData(object):
     """
     Unified L1b Data Class
     """
-    data_groups = ["time_orbit", "correction", "classifier",
-                   "waveform", "surface_type"]
+    data_groups = ["time_orbit", "correction", "classifier", "waveform", "surface_type"]
 
     def __init__(self):
         self.info = L1bMetaData()
