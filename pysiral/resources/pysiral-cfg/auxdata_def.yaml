@@ -839,3 +839,12 @@ region:
                     n_lines: 448
                     dx: 25000
                     dy: 25000
+
+rio:
+
+    rio_fmi:
+        pyclass: RIO
+        long_name: Risk Index Outcome
+        local_repository: null
+        options: null
+

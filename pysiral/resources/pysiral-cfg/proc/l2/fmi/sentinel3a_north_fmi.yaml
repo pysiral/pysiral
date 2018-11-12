@@ -85,6 +85,11 @@ auxdata:
         name: aari
         options: null
 
+    - rio:
+        name: rio_fmi
+        options: null
+
+
 # geophysical corrections applied to the l1b range window
 corrections: 
     - dry_troposphere
