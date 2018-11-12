@@ -24,6 +24,7 @@ from pysiral.path import filename_from_path
 
 from collections import deque, OrderedDict
 from datetime import datetime
+import numpy as np
 import time
 import sys
 import os
@@ -246,6 +247,11 @@ class Level2Processor(DefaultLoggingClass):
                 continue
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
+            # Transfer l1p parameter to the l2 data object (if applicable)
+            # NOTE: This is only necessary, if parameters from the l1p files (classifiers) should
+            #       be present in the l2i product
+            self._transfer_l1p_vars(l1b, l2)
+
             # Get auxiliary data from all registered auxdata handlers
             error_status, error_codes = self._get_auxiliary_data(l2)
             if True in error_status:
@@ -254,7 +260,6 @@ class Level2Processor(DefaultLoggingClass):
 
             # Surface type classification (ocean, ice, lead, ...)
             # (ice type classification comes later)
-            # TODO: Add L2 classifiers (ice concentration, ice type)
             self._classify_surface_types(l1b, l2)
 
             # Validate surface type classification
@@ -333,6 +338,30 @@ class Level2Processor(DefaultLoggingClass):
             l1bfilter = get_filter(filter_def.pyclass)
             l1bfilter.set_options(**filter_def.options)
             l1bfilter.apply_filter(l1b)
+
+    def _transfer_l1p_vars(self, l1b, l2):
+        """ Transfer variables from l1p to l2 object"""
+
+        # Make this a backward compatible feature (should work without tag in l2 processor definition file)
+        if not "transfer_from_l1p" in self.l2def:
+            return
+
+        # Get and loop over data groups
+        data_groups, vardefs = td_branches(self.l2def.transfer_from_l1p)
+        for data_group, varlist in zip(data_groups, vardefs):
+
+            # Get and loop over variables per data group
+            var_names, vardefs = td_branches(varlist)
+            for var_name, vardef in zip(var_names, vardefs):
+
+                # Get variable via standard getter method
+                # NOTE: Will return None if not found -> create an empty array
+                var = l1b.get_parameter_by_name(data_group, var_name)
+                if var is None:
+                    var = np.full((l2.n_records), np.nan)
+
+                # Add variable to l2 object as auxiliary variable
+                l2.set_auxiliary_parameter(vardef.aux_id, vardef.aux_name, var, None)
 
     def _get_auxiliary_data(self, l2):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
