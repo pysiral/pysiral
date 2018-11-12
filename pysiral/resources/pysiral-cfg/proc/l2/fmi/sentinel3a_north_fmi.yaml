@@ -56,7 +56,8 @@ auxdata:
 
     - mss:
         name: dtu15
-        options: null
+        options:
+            latitude_range: [50.0, 90.0]
 
     - sic:
         name: osisaf
