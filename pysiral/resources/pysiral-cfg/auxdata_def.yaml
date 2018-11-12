@@ -23,7 +23,7 @@ icechart:
         long_name: ICE CHART Sea Ice Concentration
         filenaming: "merged_{year}{month}{day}_{variable}.tif"
         # local_repository = link to the folder declared in local_machine_def
-        local_repository: tif
+        local_repository: canada
         options:
             north:
                 projection:
@@ -54,7 +54,7 @@ icechart:
         long_name: AARI ICE CHART Sea Ice Concentration
         filenaming: "aari_arc_{year}{month}{day}_{variable}.tif"
         # local_repository = link to the folder declared in local_machine_def
-        local_repository: tif
+        local_repository: aari
         options:
             north:
                 projection:

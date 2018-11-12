@@ -81,7 +81,7 @@ auxdata:
         name: canada
         options: null
 
-    - icechart_aari:
+    - icechart:
         name: aari
         options: null
 
