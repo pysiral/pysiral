@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 0.6.6 (XX. XXXXX XXXX)
+
+**New Features**
+- [rio] Added rio auxiliary data type
+
+
 ## Version 0.6.5 (9. November 2018)
 
 **New Features**
