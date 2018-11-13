@@ -52,6 +52,7 @@ class Level2Processor(DefaultLoggingClass):
 
         # This variable will contain a list with the auxiliary data handlers
         self._registered_auxdata_handlers = []
+        self._auxhandlers = {}
 
         # Output_handler (can be one or many)
         self._output_handler = product_def.output_handler
@@ -95,13 +96,15 @@ class Level2Processor(DefaultLoggingClass):
 
     @property
     def l2_auxdata_source_dict(self):
-        """ A dictionary that contains the descriptions of the auxiliary
-        data sources """
+        """ A dictionary that contains the descriptions of the auxiliary data sources """
         auxdata_dict = {}
-        for auxdata_type in self.registered_auxdata_handlers:
+        for auxdata_id, auxdata_type in self.registered_auxdata_handlers:
             try:
-                handler = getattr(self, auxdata_type)
-                auxdata_dict[auxdata_type] = handler.longname
+                handler = self._auxhandlers[auxdata_id]
+                if auxdata_type not in auxdata_dict:
+                    auxdata_dict[auxdata_type] = handler.longname
+                else:
+                    auxdata_dict[auxdata_type] = auxdata_dict[auxdata_type]+", "+handler.longname
             except AttributeError:
                 auxdata_dict[auxdata_type] = "unspecified"
         return auxdata_dict
@@ -190,12 +193,15 @@ class Level2Processor(DefaultLoggingClass):
             # Retrieve the class (errors will be caught in method)
             auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"], l2_procdef_opt)
 
+            # Get a unique id of the auxhandler
+            auxhandler_id = "%s_%s" % (auxdata_type, auxhandler.pyclass.lower())
+
             # Add & register the class to the Level-2 processor instance
-            setattr(self, auxdata_type, auxhandler)
-            self._registered_auxdata_handlers.append(auxdata_type)
+            self._auxhandlers[auxhandler_id] = auxhandler
+            self._registered_auxdata_handlers.append((auxhandler_id, auxdata_type))
 
             # Report the auxdata class
-            self.log.info("Processor Settings - %s auxdata handler: %s" % (auxdata_type.upper(), auxhandler.pyclass))
+            self.log.info("Processor Settings - %s auxdata handler registered" % auxhandler_id.upper())
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
@@ -377,10 +383,10 @@ class Level2Processor(DefaultLoggingClass):
         auxdata_error_status = []
         auxdata_error_codes = []
 
-        for auxdata_type in self.registered_auxdata_handlers:
+        for (auxdata_id, auxdata_type) in self.registered_auxdata_handlers:
 
             # Get the class
-            auxclass = getattr(self, auxdata_type)
+            auxclass = self._auxhandlers[auxdata_id]
 
             # Transfer variables (or at least attempt to)
             auxclass.add_variables_to_l2(l2)
