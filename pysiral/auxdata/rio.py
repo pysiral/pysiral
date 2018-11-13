@@ -28,7 +28,7 @@ class RIO(AuxdataBaseClass):
         self._rio_1c = None
         self._rio_no_ice_class = None
 
-    def _get_along_track_rio(self, l2):
+    def get_l2_track_vars(self, l2):
 
         # Get the data
         self._get_requested_date(l2)
@@ -36,18 +36,18 @@ class RIO(AuxdataBaseClass):
         rio = self._get_rio_track(l2)
 
         # Register the rio code as auxiliary data variables
-        self.register_auxvar("data_pc1", "data_pc1", rio[0], None)
-        self.register_auxvar("data_pc2", "data_pc2", rio[1], None)
-        self.register_auxvar("data_pc3", "data_pc5", rio[2], None)
-        self.register_auxvar("data_pc4", "data_pc4", rio[3], None)
-        self.register_auxvar("data_pc5", "data_pc5", rio[4], None)
-        self.register_auxvar("data_pc6", "data_pc6", rio[5], None)
-        self.register_auxvar("data_pc7", "data_pc7", rio[6], None)
-        self.register_auxvar("data_1asuper", "data_1asuper", rio[7], None)
-        self.register_auxvar("data_1a", "data_1a", rio[8], None)
-        self.register_auxvar("data_1b", "data_1b", rio[9], None)
-        self.register_auxvar("data_1c", "data_1c", rio[10], None)
-        self.register_auxvar("data_no_ice_class", "data_no_ice_class", rio[11], None)
+        self.register_auxvar("rio_pc1", "rio_pc1", rio[0], None)
+        self.register_auxvar("rio_pc2", "rio_pc2", rio[1], None)
+        self.register_auxvar("rio_pc3", "rio_pc3", rio[2], None)
+        self.register_auxvar("rio_pc4", "rio_pc4", rio[3], None)
+        self.register_auxvar("rio_pc5", "rio_pc5", rio[4], None)
+        self.register_auxvar("rio_pc6", "rio_pc6", rio[5], None)
+        self.register_auxvar("rio_pc7", "rio_pc7", rio[6], None)
+        self.register_auxvar("rio_1asuper", "rio_1asuper", rio[7], None)
+        self.register_auxvar("rio_1a", "rio_1a", rio[8], None)
+        self.register_auxvar("rio_1b", "rio_1b", rio[9], None)
+        self.register_auxvar("rio_1c", "rio_1c", rio[10], None)
+        self.register_auxvar("rio_no_ice_class", "rio_no_ice_class", rio[11], None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -58,7 +58,6 @@ class RIO(AuxdataBaseClass):
         
     def IceChartToRIO(self, icechart, ice_class="none", summer=False):
         RIO = list()
-
         for i in np.arange(len(icechart['CT'])):
             RV_A = self.SIGRID3toRV(icechart['SA'][i])
             RV_B = self.SIGRID3toRV(icechart['SB'][i])
@@ -303,27 +302,25 @@ class RIO(AuxdataBaseClass):
 
     def _get_data(self, l2):
         """ Hopefully gets data assigned already for l2 """
-        if self._requested_date == self._current_date:
-            # Data already loaded, nothing to do... right?
-            return
-            self._data_ct = l2.ic_ct
-            self._data_ca = l2.ic_ca
-            self._data_cb = l2.ic_cb
-            self._data_cc = l2.ic_cc
-            self._data_sa = l2.ic_sa
-            self._data_sb = l2.ic_sb
-            self._data_sc = l2.ic_sc
 
-            self.icechart = dict()
-            self.icechart['CT'] = self._data_ct
-            self.icechart['CA'] = self._data_ca
-            self.icechart['CB'] = self._data_cb
-            self.icechart['CC'] = self._data_cc
-            self.icechart['SA'] = self._data_sa
-            self.icechart['SB'] = self._data_sb
-            self.icechart['SC'] = self._data_sc
+        self._data_ct = l2.ic_ct
+        self._data_ca = l2.ic_ca
+        self._data_cb = l2.ic_cb
+        self._data_cc = l2.ic_cc
+        self._data_sa = l2.ic_sa
+        self._data_sb = l2.ic_sb
+        self._data_sc = l2.ic_sc
 
-            self._current_date = self._requested_date
+        self.icechart = dict()
+        self.icechart['CT'] = self._data_ct
+        self.icechart['CA'] = self._data_ca
+        self.icechart['CB'] = self._data_cb
+        self.icechart['CC'] = self._data_cc
+        self.icechart['SA'] = self._data_sa
+        self.icechart['SB'] = self._data_sb
+        self.icechart['SC'] = self._data_sc
+
+        # self._current_date = self._requested_date
 
     def _get_rio_track(self, l2):
 
