@@ -182,6 +182,7 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_type  = auxdata_dict.keys()[0]
             auxdata_def = auxdata_dict[auxdata_type]
 
+
             # Get options from l2 processor definition file
             # NOTE: These will intentionally override the default options defined in auxdata_def.yaml
             l2_procdef_opt = auxdata_def.get("options", None)
@@ -362,6 +363,8 @@ class Level2Processor(DefaultLoggingClass):
 
                 # Add variable to l2 object as auxiliary variable
                 l2.set_auxiliary_parameter(vardef.aux_id, vardef.aux_name, var, None)
+
+                self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
 
     def _get_auxiliary_data(self, l2):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
