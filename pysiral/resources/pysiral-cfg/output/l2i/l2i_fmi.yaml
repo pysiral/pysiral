@@ -52,7 +52,6 @@ global_attributes:
 variables:
   
   time:
-    var_source_name: timestamp
     long_name: utc timestamp
     units: seconds since 1970-01-01
 
@@ -174,13 +173,13 @@ variables:
     units: kg m-3
     coordinates: time
     
-  ice_density:
+  sea_ice_density:
     long_name: "density of the sea ice layer"
     standard_name: sea_ice_density
     units: kg m-3
     coordinates: time
     
-  ice_density_uncertainty:
+  sea_ice_density_uncertainty:
     long_name: "uncertainty of the sea ice layer density"
     standard_name: sea_ice_density standard_error
     units: kg m-3
