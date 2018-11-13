@@ -12,6 +12,7 @@ from pysiral.auxdata import AuxdataBaseClass
 
 import pyproj
 import gdal
+import datetime
 import numpy as np
 import os
 
@@ -45,7 +46,13 @@ class IC(AuxdataBaseClass):
             self.register_auxvar("ic_sb", "icechart_sb", ic_sics[5], None)
             self.register_auxvar("ic_sc", "icechart_sc", ic_sics[6], None)
         else:
-            return
+            self.register_auxvar("ic_ct", "icechart_ct", None, None)
+            self.register_auxvar("ic_ca", "icechart_ca", None, None)
+            self.register_auxvar("ic_cb", "icechart_cb", None, None)
+            self.register_auxvar("ic_cc", "icechart_cc", None, None)
+            self.register_auxvar("ic_sa", "icechart_sa", None, None)
+            self.register_auxvar("ic_sb", "icechart_sb", None, None)
+            self.register_auxvar("ic_sc", "icechart_sc", None, None)
         
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -72,17 +79,17 @@ class IC(AuxdataBaseClass):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
-            self._msg = "IC: tif already present"
+            self.add_handler_message("IC: tif already present")
             return
         
-        paths,timedelta = self._get_local_repository_filename(l2)
-        print 'IN ICECHART _GET_DATA, PATHS 0', paths[0]
+        paths, timedelta = self._get_local_repository_filename(l2)
+        self.add_handler_message('IN ICECHART _GET_DATA, PATHS 0: %s' % paths[0])
         #print os.path.isfile(paths[0])
         
         # Validation
         if not os.path.isfile(paths[0]):
-            self._msg = "IC: File not found: %s " % paths[0]
-            self.error.add_error("auxdata_missing_sic", self._msg)
+            msg = "IC: File not found: %s " % paths[0]
+            self.error.add_error("auxdata_missing_icechart", msg)
             return
         
         self._data_ct = self._open_tif(paths[0])
@@ -113,29 +120,27 @@ class IC(AuxdataBaseClass):
         #self._data_sb = np.flipud(self._data_sb)
         #self._data_sc = np.flipud(self._data_sc)
         
-        self._msg = "IC: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0]
+        self.add_handler_message("IC: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0])
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
+
+        time = datetime.datetime(int(self.year), int(self.month), int(self.day))
         
-        import datetime
-        time = datetime.datetime(int(self.year),int(self.month),int(self.day))
+        path = self.cfg.local_repository
         
-        path = self._local_repository
-        
-        other_icevars = ['CA','CB','CC','SA','SB','SC']
-        for delta in [0,-1,1,-2,2,-3,3,4,-4,5,-5,6,-6,7,-7]:
+        other_icevars = ['CA', 'CB', 'CC', 'SA', 'SB', 'SC']
+        for delta in [0, -1, 1, -2, 2, -3, 3, 4, -4, 5, -5, 6, -6, 7, -7]:
             fnames = []
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = path+'/'+str(year)+'/'+str(month)+'/'+"merged_"+datestring+"_CT.tif"
-            
+            str_filename = os.path.join(path, str(year), str(month), "merged_"+datestring+"_CT.tif")
             if os.path.isfile(str_filename):
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(path+'/'+str(year)+'/'+str(month)+'/'+'merged_'+datestring+'_'+o+'.tif')
+                    fnames.append(os.path.join(path, str(year), str(month), 'merged_'+datestring+'_'+o+'.tif'))
                 return fnames, timedelta
                 break
             else:
@@ -153,7 +158,7 @@ class IC(AuxdataBaseClass):
 
     def _get_sic_ic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        kwargs = self.cfg.options[l2.hemisphere].projection
         #p = Proj(**kwargs)
         data_ct = list()
         data_ca = list()
@@ -208,6 +213,7 @@ class IC(AuxdataBaseClass):
 class ICA(AuxdataBaseClass):
 
     def __init__(self, *args, **kwargs):
+
         super(ICA, self).__init__(*args, **kwargs) #MUOKS20170517
         self._data_ct = None
         self._data_ca = None
@@ -216,12 +222,7 @@ class ICA(AuxdataBaseClass):
         self._data_sa = None
         self._data_sb = None
         self._data_sc = None
-        self._current_date = [0, 0, 0]
-        self._requested_date = [-1, -1, -1]
         self.error.caller_id = self.__class__.__name__
-
-    def _initialize(self):
-        pass
 
     def get_l2_track_vars(self, l2):
         self._get_requested_date(l2)
@@ -236,7 +237,13 @@ class ICA(AuxdataBaseClass):
             self.register_auxvar("ica_sb", "icechart_aari_sb", ic_sics[5], None)
             self.register_auxvar("ica_sc", "icechart_aari_sc", ic_sics[6], None)
         else:
-            return
+            self.register_auxvar("ica_ct", "icechart_aari_ct", None, None)
+            self.register_auxvar("ica_ca", "icechart_aari_ca", None, None)
+            self.register_auxvar("ica_cb", "icechart_aari_cb", None, None)
+            self.register_auxvar("ica_cc", "icechart_aari_cc", None, None)
+            self.register_auxvar("ica_sa", "icechart_aari_sa", None, None)
+            self.register_auxvar("ica_sb", "icechart_aari_sb", None, None)
+            self.register_auxvar("ica_sc", "icechart_aari_sc", None, None)
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
@@ -260,9 +267,9 @@ class ICA(AuxdataBaseClass):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
-            self._msg = "ICA: tif already present"
+            self.add_handler_message("ICA: tif already present")
             return
-        paths,timedelta = self._get_local_repository_filename(l2)
+        paths, timedelta = self._get_local_repository_filename(l2)
         #print 'AARI PATHS 0', paths[0]
         
         # Validation
@@ -300,32 +307,32 @@ class ICA(AuxdataBaseClass):
         #self._data_sa = np.flipud(self._data_sa)
         #self._data_sb = np.flipud(self._data_sb)
         #self._data_sc = np.flipud(self._data_sc)
-        self._msg = "ICA: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0]
+        self.add_handler_message("ICA: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0])
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        
-        import datetime
+
+
         time = datetime.datetime(int(self.year),int(self.month),int(self.day))
         
-        path = self._local_repository
+        path = self.cfg.local_repository
                 
         other_icevars = ['CA','CB','CC','SA','SB','SC']
-        for delta in [0,-1,1,-2,2,-3,3,4,-4,5,-5,6,-6,7,-7]:
+        for delta in [0, -1, 1, -2, 2, -3, 3, 4, -4, 5, -5, 6, -6, 7, -7]:
             fnames = []
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = path+'/'+str(year)+'/'+str(month)+'/'+"merged_aari_"+datestring+"_CT.tif"
+            str_filename = os.path.join(path, str(year), str(month), "merged_aari_"+datestring+"_CT.tif")
             if os.path.isfile(str_filename):
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(path+'/'+str(year)+'/'+str(month)+'/'+'merged_aari_'+datestring+'_'+o+'.tif')
+                    fnames.append(os.path.join(path, str(year), str(month), 'merged_aari_'+datestring+'_'+o+'.tif'))
                 return fnames, timedelta
                 break
             else:
-                fnames = ['','','','','','']
+                fnames = ['', '', '', '', '', '']
                 timedelta = np.nan
         return fnames, timedelta
 
@@ -341,7 +348,7 @@ class ICA(AuxdataBaseClass):
     
     def _get_sic_ic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self._options[l2.hemisphere].projection
+        # kwargs = self.cfg.option[l2.hemisphere].projection
         #p = Proj(**kwargs)
         data_ct = list()
         data_ca = list()
