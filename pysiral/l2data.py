@@ -188,7 +188,12 @@ class Level2Data(object):
             return parameter.bias
 
         else:
-            source = catalog[parameter_name]
+            try:
+                source = catalog[parameter_name]
+            except KeyError:
+                msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
+                self.error.add_error("l2data-missing-variable", msg)
+                self.error.raise_on_error()
             parameter = getattr(self, source)
             return parameter
 
