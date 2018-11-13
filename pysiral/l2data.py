@@ -128,6 +128,10 @@ class Level2Data(object):
         # Use L2Elevation Array
         # TODO: This is to cumbersome, replace by xarray at due time
         param = L2ElevationArray(shape=(self.n_records))
+        # Allow value to be None
+        # NOTE: In this case an empty value will be generated
+        if value is None:
+            value = np.full((self.n_records), np.nan)
         param.set_value(value)
         if uncertainty is not None:
             param.set_uncertainty(uncertainty)
