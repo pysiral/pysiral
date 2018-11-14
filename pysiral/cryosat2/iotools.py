@@ -111,7 +111,29 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         super(BaselineDFileDiscovery, self).__init__(cls_name)
         self.error = ErrorStatus(caller_id=cls_name)
 
+        # Init empty file lists
+        self._reset_file_list()
 
     def get_file_for_period(self, period):
-        self.log.warning("Not implemented: self.get_file_for_period")
-        return []
+        """ Return a list of sorted files """
+
+        # Make sure file list are empty
+        self._reset_file_list()
+
+        for mode in self.cfg.lookup_modes:
+            self._add_input_files(period, mode)
+
+    def _reset_file_list(self):
+        self._list = deque([])
+        self._sorted_list = None
+
+    def _append_files(self, mode, period):
+
+        for year, month, day in period.dayslist:
+            lookup_dir = self._get_lookup_dir(year, month, mode)
+
+    def _get_lookup_dir(self, year, month, mode):
+        return None
+
+
+    # @property
