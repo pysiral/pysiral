@@ -641,6 +641,12 @@ class L1bDataNC(DefaultLoggingClass):
         self._rootgrp.close()
 
 
+class Level1POutput(NCDataFile):
+    """ Class to export a l2data object into a netcdf file """
+
+    def __init__(self, data, output_handler):
+        pass
+
 class Level2Output(NCDataFile):
     """
     Class to export a l2data object into a netcdf file
