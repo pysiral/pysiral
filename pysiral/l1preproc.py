@@ -145,7 +145,13 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         input_handler_cfg = self.l1pprocdef.input_handler.options
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
         primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
-        lookup_dir = primary_input_def[self.l1pprocdef.platform][local_machine_def_tag]
+        platform, tag = self.l1pprocdef.platform, local_machine_def_tag
+        try:
+            lookup_dir = primary_input_def[platform][tag]
+        except KeyError:
+            msg = "Missing local machine definition for: root.l1b_repository.%s.%s" % ((platform, tag))
+            self.error.add_error("[local-machine-def-missing-tag", msg)
+            self.error.raise_on_error()
         self.l1pprocdef.input_handler.options.lookup_dir = lookup_dir
 
     @property
