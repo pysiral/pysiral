@@ -111,6 +111,9 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         super(BaselineDFileDiscovery, self).__init__(cls_name)
         self.error = ErrorStatus(caller_id=cls_name)
 
+        # Save config
+        self.cfg = cfg
+
         # Init empty file lists
         self._reset_file_list()
 
@@ -119,9 +122,8 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
 
         # Make sure file list are empty
         self._reset_file_list()
-
         for mode in self.cfg.lookup_modes:
-            self._add_input_files(period, mode)
+            self._append_files(mode, period)
 
     def _reset_file_list(self):
         self._list = deque([])
@@ -129,7 +131,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
 
     def _append_files(self, mode, period):
 
-        for year, month, day in period.dayslist:
+        for year, month, day in period.days_list:
             lookup_dir = self._get_lookup_dir(year, month, mode)
             self.log.info("Search directory: %s" % lookup_dir)
 
