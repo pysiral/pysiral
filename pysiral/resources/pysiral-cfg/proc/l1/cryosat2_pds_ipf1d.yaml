@@ -1,0 +1,41 @@
+
+name: "CryoSat-2 Level-1b data of the ESA PDS Instrument Processing Facility (algorithm baseline D)"
+
+platform: cryosat2
+
+version:
+  number: 1.0
+  product_file_tag: pds_ipf1d_fv1p0
+
+# Information of getting an input file list
+input_lookup:
+  pyclass: cryosat2.iotools.BaselineDFileListAllModes
+  local_machine_def_tag: baseline_d  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+  options:
+    look_for: [sar, sin]
+
+# Class that will generate the initial l1p data object from
+# the input data
+l1b_adaptor:
+  pyclass: cryosat2.adapter.ESAPDSBaselineD
+  options:
+    bincount:
+      sar: 256
+      sin: 512
+      target: 412
+
+
+
+# Settings for the pre-processor
+l1_pre_processor:
+  type: orbit_segment
+  options:
+      polar_threshold: 50.0
+      max_connected_files_timedelta_seconds: 10
+      max_inner_nonocean_segment_nrecords: 1000
+
+
+
+
+
+
