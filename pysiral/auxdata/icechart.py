@@ -10,13 +10,13 @@ Module created for FMI version of pysiral
 
 from pysiral.auxdata import AuxdataBaseClass
 
+from PIL import Image
+
 import pyproj
-import gdal
+# import gdal
 import datetime
 import numpy as np
 import os
-
-
 
 class IC(AuxdataBaseClass):
 
@@ -60,20 +60,6 @@ class IC(AuxdataBaseClass):
         month = l2.track.timestamp[0].month
         day = l2.track.timestamp[0].day
         self._requested_date = [year, month, day]
-        
-    def _open_tif(self, path):
-        """ Open the tif file"""
-
-        G = gdal.Open(str(path))
-        #print 'icechart G', G, type(G)
-        #print 'PATH TO DATA', str(path)
-      
-        try:
-            data = G.ReadAsArray()
-        except AttributeError:
-            data = np.nan
-        G = None
-        return data
 
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
@@ -92,13 +78,13 @@ class IC(AuxdataBaseClass):
             self.error.add_error("auxdata_missing_icechart", msg)
             return
         
-        self._data_ct = self._open_tif(paths[0])
-        self._data_ca = self._open_tif(paths[1])
-        self._data_cb = self._open_tif(paths[2])
-        self._data_cc = self._open_tif(paths[3])
-        self._data_sa = self._open_tif(paths[4])
-        self._data_sb = self._open_tif(paths[5])
-        self._data_sc = self._open_tif(paths[6])
+        self._data_ct = get_tif_image_data(paths[0])
+        self._data_ca = get_tif_image_data(paths[1])
+        self._data_cb = get_tif_image_data(paths[2])
+        self._data_cc = get_tif_image_data(paths[3])
+        self._data_sa = get_tif_image_data(paths[4])
+        self._data_sb = get_tif_image_data(paths[5])
+        self._data_sc = get_tif_image_data(paths[6])
         
         # to flag the CT values =-9 (corresponding to no data in the tif)
         flagged = np.where(self._data_ct == -9)
@@ -207,7 +193,7 @@ class IC(AuxdataBaseClass):
             data_sb.append(dsb)
             data_sc.append(dsc)
             
-        return [data_ct,data_ca,data_cb,data_cc,data_sa,data_sb,data_sc]
+        return [data_ct, data_ca, data_cb, data_cc, data_sa, data_sb, data_sc]
 
 
 class ICA(AuxdataBaseClass):
@@ -252,17 +238,6 @@ class ICA(AuxdataBaseClass):
         day = l2.track.timestamp[0].day
         self._requested_date = [year, month, day]
 
-    def _open_tif(self, path):
-        """ Open the tif file"""
-        G = gdal.Open(str(path))
-        # NOTE August 2017 exception added for missing AARI years
-        try:
-            data = G.ReadAsArray()
-        except AttributeError:
-            data = None
-        G = None
-        return data
-
     def _get_data(self, l2):
         """ Loads file from local repository only if needed """
         if self._requested_date == self._current_date:
@@ -278,13 +253,13 @@ class ICA(AuxdataBaseClass):
             self.error.add_error("auxdata_missing_sic", self._msg)
             return
         
-        self._data_ct = self._open_tif(paths[0])
-        self._data_ca = self._open_tif(paths[1])
-        self._data_cb = self._open_tif(paths[2])
-        self._data_cc = self._open_tif(paths[3])
-        self._data_sa = self._open_tif(paths[4])
-        self._data_sb = self._open_tif(paths[5])
-        self._data_sc = self._open_tif(paths[6])
+        self._data_ct = get_tif_image_data(paths[0])
+        self._data_ca = get_tif_image_data(paths[1])
+        self._data_cb = get_tif_image_data(paths[2])
+        self._data_cc = get_tif_image_data(paths[3])
+        self._data_sa = get_tif_image_data(paths[4])
+        self._data_sb = get_tif_image_data(paths[5])
+        self._data_sc = get_tif_image_data(paths[6])
         flagged = np.where(self._data_ct == -5)
         # NOTE August 2017 exception added for missing AARI years
         try:
@@ -396,3 +371,12 @@ class ICA(AuxdataBaseClass):
                 data_sc.append(None)
 
         return [data_ct,data_ca,data_cb,data_cc,data_sa,data_sb,data_sc]
+
+
+def get_tif_image_data(self, path):
+    """ Open the tif file and return its content """
+    im = Image.open(str(path))
+    pixel_list = im.getdata()
+    width, height = im.size
+    data = np.reshape(pixel_list, (width, height))
+    return data

@@ -11,6 +11,7 @@ matplotlib
 netCDF4
 numpy
 parse
+Pillow
 pykdtree
 pyproj
 pyresample
