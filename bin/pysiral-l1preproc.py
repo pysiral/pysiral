@@ -42,6 +42,8 @@ def pysiral_l1preproc(job):
 
         # 5.1 Get input files
         file_list = input_handler.get_file_for_period(period)
+        if len(file_list) == 0:
+            job.log.warning("No input files found for period: %s, skipping" % period.date_label)
 
         # 5.2 Output management
         # Note: This is only relevant, if the --remove-old keyword is set
