@@ -131,9 +131,11 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
 
         for year, month, day in period.dayslist:
             lookup_dir = self._get_lookup_dir(year, month, mode)
+            self.log.info("Search directory: %s" % lookup_dir)
 
     def _get_lookup_dir(self, year, month, mode):
-        return None
+        yyyy, mm = "%04g" % year, "%02g" % month
+        return os.path.join(self.cfg.lookup_dir[mode], yyyy, mm)
 
 
     # @property
