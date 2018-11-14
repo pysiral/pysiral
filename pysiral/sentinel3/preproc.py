@@ -3,6 +3,9 @@
 Created on Thu Mar 31 20:52:32 2016
 
 @author: Stefan
+
+Modified by FMI in August 2018: 
+_get_l1bdata_ocean_segments modified to add the LTPP computation
 """
 
 from pysiral.l1bpreproc import L1bPreProc
@@ -11,6 +14,8 @@ from pysiral.sentinel3.iotools import Sentinel3FileList
 
 from pysiral.classifier import CS2PulsePeakiness
 from pysiral.waveform import TFMRALeadingEdgeWidth
+# fmi version: S3 LTPP added
+from pysiral.classifier import S3LTPP
 
 import time
 
@@ -141,9 +146,8 @@ class Sentinel3PreProc(L1bPreProc):
             is_ocean = l1b.surface_type.get_by_name("ocean").flag
 
             tick = time.clock()
-            # Calculate the Peakiness (CryoSat-2 notation)
-
-            pulse = CS2PulsePeakiness(wfm)
+            # Calculate the Peakiness (CryoSat-2 notation, but with 0padding factor = 1)
+            pulse = CS2PulsePeakiness(wfm,pad=1)
             l1b.classifier.add(pulse.peakiness, "peakiness")
             l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
             l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
@@ -152,14 +156,24 @@ class Sentinel3PreProc(L1bPreProc):
 
             tick = time.clock()
             # Compute the leading edge width (requires TFMRA retracking)
-            lew = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
-            lew1 = lew.get_width_from_thresholds(0.05, 0.5)
-            lew2 = lew.get_width_from_thresholds(0.5, 0.95)
+            # fmi version: add of LEW
+            width = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+            lew = width.get_width_from_thresholds(0.05, 0.95)
+            lew1 = width.get_width_from_thresholds(0.05, 0.5)
+            lew2 = width.get_width_from_thresholds(0.5, 0.95)
+            l1b.classifier.add(lew, "leading_edge_width")
             l1b.classifier.add(lew1, "leading_edge_width_first_half")
             l1b.classifier.add(lew2, "leading_edge_width_second_half")
-            l1b.classifier.add(lew.fmi, "first_maximum_index")
+            l1b.classifier.add(width.fmi, "first_maximum_index")
             tock = time.clock()
             print "TFMRALeadingEdgeWidth completed in %.1f seconds" % (tock-tick)
+            
+            tick = time.clock()
+            # fmi version: compute the late tail to peak power ratio
+            ltpp = S3LTPP(wfm)
+            l1b.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
+            tock = time.clock()
+            print "S3LTPP completed in %.1f seconds" % (tock-tick)
 
         return l1b_list
 

@@ -73,7 +73,7 @@ class OsiSafSIC(AuxdataBaseClass):
             sic = self._get_sic_track(l2)
 
             # Fill pole hole
-            if hasattr(self.cfg.options, "fill_pole_hole"):
+            if self.cfg.options.has_key("fill_pole_hole"):
                 opt = self.cfg.options.fill_pole_hole
                 is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
                 indices = np.where(np.logical_and(is_near_pole_hole, np.isnan(sic)))

@@ -70,3 +70,9 @@ auxdata_repository:
         warren99_is_valid: ''
         regions_nsidc: ''
         landsea: ''
+
+    # Ice charts (for fmi version)
+    icechart:
+        tif: '' # merged files, converted to tif format
+    icechart_aari:
+        tif: '' # merged files, converted to tif format
