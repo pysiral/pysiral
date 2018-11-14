@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
-                            TimeRangeRequest)
+from pysiral.config import (ConfigInfo, DefaultCommandLineArguments, TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition

@@ -253,8 +253,7 @@ class TimeRangeRequest(DefaultLoggingClass):
     # TODO: Future planned option (weekly: 7 days from start day) and
     #       (week_of_year: self explanatory)
 
-    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
-                 raise_if_empty=False):
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[], raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
