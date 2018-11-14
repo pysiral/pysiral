@@ -1,12 +1,15 @@
 
+platform: cryosat2
+
 # Information of getting an input file list
 input_handler:
   module_name: pysiral.cryosat2.iotools
   class_name: BaselineDFileDiscovery
   options:
-    name: "CryoSat-2 Level-1b data of the ESA PDS Instrument Processing Facility (algorithm baseline D)"
     local_machine_def_tag: baseline_d  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+    lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
     lookup_modes: [sar, sin]
+    file_search: CS_TEST_SIR_*_1B_{year}{month}{day}*_D001.nc
 
 # Class that will generate the initial l1p data object from
 # the input data
@@ -14,6 +17,7 @@ input_adapter:
   module_name: pysiral.cryosat2.l1_adapter
   class_name: ESAPDSBaselineD
   options:
+    name: "CryoSat-2 Level-1b data of the ESA PDS Instrument Processing Facility (algorithm baseline D)"
     bincount:
       sar: 256
       sin: 512
@@ -23,7 +27,6 @@ input_adapter:
 # Output handler (will always be default handler -> only options)
 output_handler:
   options:
-    platform: cryosat2
     version:
       value: test
       product_file_tag: pds_ipf1d
