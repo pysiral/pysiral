@@ -9,7 +9,9 @@ This module is dedicatet to convert between different time standards
 
 from pysiral import USER_CONFIG_PATH
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
+import time
 import numpy as np
 
 import os
@@ -111,6 +113,29 @@ class UTCTAIConverter(object):
     def local_ls_ietf_definition(self):
         """ Return the local filename for the IETF leap seconds definition """
         return os.path.join(USER_CONFIG_PATH, "leap-seconds.list")
+
+
+class StopWatch(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.t0 = None
+        self.t1 = None
+
+    def start(self):
+        self.t0 = time.time()
+
+    def stop(self):
+        self.t1 = time.time()
+
+    def get_duration(self, fmt="%H:%M:%S"):
+        # Example time
+        datum = datetime(1900, 1, 1)
+        elapsed_seconds = self.t1 - self.t0
+        duration = datum + relativedelta(seconds=elapsed_seconds)
+        return duration.strftime(fmt)
 
 
 if __name__ == "__main__":
