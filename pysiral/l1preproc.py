@@ -118,6 +118,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self.log.info("Parsing L1P processor definition file: %s" % procdef_file_path)
         self._l1pprocdef = get_yaml_config(procdef_file_path)
 
+        # 3. Expand info (input data lookup directories)
+        self._get_local_input_directory()
+
     def get_l1p_proc_def_filename(self, l1p_settings_id_or_file):
         """ Query pysiral config to obtain filename for processor definition file """
 
@@ -136,6 +139,14 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             self.error.add_error("invalid-l1p-outputdef", msg)
             self.error.raise_on_error()
         return filename
+
+    def _get_local_input_directory(self):
+        """ Replace the tag for local machine def with the actual path info """
+        input_handler_cfg = self.l1pprocdef.input_handler.options
+        local_machine_def_tag = input_handler_cfg.local_machine_def_tag
+        primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
+        lookup_dir = primary_input_def[self.l1pprocdef.platform][local_machine_def_tag]
+        self.l1pprocdef.input_handler.options.lookup_dir = lookup_dir
 
     @property
     def pysiral_cfg(self):
