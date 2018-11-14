@@ -1,5 +1,19 @@
 # History of changes
 
+## Version 0.6.6 (XX. XXXXX XXXX)
+
+**New Features**
+- [l2proc] Added direct transfer of l1p variables to the l2 object via processor configuration files
+- [rio] Added rio auxiliary data type (rebase from `fmi` branch)
+- [icechart] Added icechart auxiliary data type (rebase from `fmi` branch)
+
+**Changes**
+- [l2proc] Auxiliary data handlers now have a unique id, allowing multiple handlers of the same type (e.g. icechart.canada, icechart.aari) to be registered. Old state was one handler per type.
+
+**Settings**
+- [fmi] Added FMI l2i output (rebase from `fmi` branch)
+
+
 ## Version 0.6.5 (9. November 2018)
 
 **New Features**

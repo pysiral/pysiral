@@ -5,7 +5,7 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["mss", "sic", "sitype", "snow", "region"]
+__all__ = ["mss", "icechart", "rio", "sic", "sitype", "snow", "region"]
 
 
 import os

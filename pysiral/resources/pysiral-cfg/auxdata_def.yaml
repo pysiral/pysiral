@@ -3,6 +3,82 @@
 
 # Note: path keywords must be set in local_machine_def.yaml
 
+# list of valid auxiliary data types
+auxdata_types:
+    - mean_sea_surface
+    - ice_concentration
+    - ice_type
+    - ice_type_fraction
+    - snow_depth
+    - snow_density
+    # ice charts added for fmi version
+    - icechart
+
+# List of icechart products (fmi version)
+icechart:
+    
+    # CANADIAN ICE CHARTS    
+    canada:
+        pyclass: IC
+        long_name: ICE CHART Sea Ice Concentration
+        filenaming: "merged_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: canada
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: 90
+                    lat_ts:
+                    a:
+                    b:
+                dimension:
+                    n_cols: 5400
+                    n_lines: 5400
+                    dx:
+                    dy:
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: sidads.colorado.edu
+            pwdfile: null
+            type: weekly
+            link: "/pub/DATASETS/NOAA/G02171/{area}/{year}/cis_SGRD*_pl_*"
+    
+    # AARI ICE CHARTS
+    aari:
+        pyclass: ICA
+        long_name: AARI ICE CHART Sea Ice Concentration
+        filenaming: "aari_arc_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: aari
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: 90
+                    lat_ts:
+                    a:
+                    b:
+                dimension:
+                    n_cols: 5400
+                    n_lines: 5400
+                    dx:
+                    dy:
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: http
+            server: aari.ru
+            pwdfile: null
+            type: weekly
+            link: "/resources/d0015/arctic/sigrid/{year}/aari_arc_{year}{month}{day}_pl_a.zip"
+
 # list of mean_sea_surface data products
 mss:
 
@@ -763,3 +839,12 @@ region:
                     n_lines: 448
                     dx: 25000
                     dy: 25000
+
+rio:
+
+    rio_fmi:
+        pyclass: RIO
+        long_name: Risk Index Outcome
+        local_repository: null
+        options: null
+

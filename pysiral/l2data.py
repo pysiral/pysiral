@@ -128,6 +128,10 @@ class Level2Data(object):
         # Use L2Elevation Array
         # TODO: This is to cumbersome, replace by xarray at due time
         param = L2ElevationArray(shape=(self.n_records))
+        # Allow value to be None
+        # NOTE: In this case an empty value will be generated
+        if value is None:
+            value = np.full((self.n_records), np.nan)
         param.set_value(value)
         if uncertainty is not None:
             param.set_uncertainty(uncertainty)
@@ -184,7 +188,12 @@ class Level2Data(object):
             return parameter.bias
 
         else:
-            source = catalog[parameter_name]
+            try:
+                source = catalog[parameter_name]
+            except KeyError:
+                msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
+                self.error.add_error("l2data-missing-variable", msg)
+                self.error.raise_on_error()
             parameter = getattr(self, source)
             return parameter
 
