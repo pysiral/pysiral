@@ -791,6 +791,14 @@ class DefaultCommandLineArguments(object):
                 "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
 
             # fetch the level-2 settings file
+            "l1p-settings": {
+                "action": "store",
+                "dest": "l1p_settings",
+                "default": None,
+                "required": True,
+                "help": 'id or path to Level-1P processor definition file file'},
+
+            # fetch the level-2 settings file
             "l2-settings": {
                 "action": "store",
                 "dest": "l2_settings",
