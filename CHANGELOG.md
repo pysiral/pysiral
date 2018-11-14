@@ -1,6 +1,6 @@
 # History of changes
 
-## Version 0.6.6 (XX. XXXXX XXXX)
+## Version 0.6.6 (14. November 2018)
 
 **New Features**
 - [l2proc] Added direct transfer of l1p variables to the l2 object via processor configuration files
