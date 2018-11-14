@@ -4,6 +4,8 @@ import os
 
 import numpy as np
 from collections import deque
+
+from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 
 
@@ -100,3 +102,16 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
         dtypes = [('path', object), ('start_time', object)]
         self._sorted_list = np.array(self._list, dtype=dtypes)
         self._sorted_list.sort(order='start_time')
+
+
+class BaselineDFileDiscovery(DefaultLoggingClass):
+
+    def __init__(self, cfg):
+        cls_name = self.__class__.__name__
+        super(BaselineDFileDiscovery, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+
+
+    def get_file_for_period(self, period):
+        self.log.warning("Not implemented: self.get_file_for_period")
+        return []
