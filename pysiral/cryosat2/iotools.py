@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-
+import glob
 import numpy as np
 from collections import deque
 
@@ -37,8 +37,7 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
 
         # Create a list of day if not full month is required
         if not time_range.is_full_month:
-            self.day_list = np.arange(
-                time_range.start.day, time_range.stop.day+1)
+            self.day_list = np.arange(time_range.start.day, time_range.stop.day+1)
 
         # Search all sar/sin product files per month
         self._search_specific_mode_files("sar")
@@ -65,8 +64,7 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
 
             # Get the list of all dbl files
             cs2files = [fn for fn in filenames if self.pattern in fn]
-            self.log.info("Found %g %s level-1b files" % (
-                len(cs2files), mode))
+            self.log.info("Found %g %s level-1b files" % (len(cs2files), mode))
 
             # reform the list that each list entry is of type
             # [full_path, identifier (start_date)] for later sorting
@@ -81,8 +79,7 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
             return
 
         # Cross-check the data label and day list
-        self._sorted_list = [fn for fn in self._sorted_list if
-                             int(fn[1][6:8]) in self.day_list]
+        self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][6:8]) in self.day_list]
 
         self.log.info("%g files match time range of this month" % (
             len(self._sorted_list)))
@@ -119,25 +116,58 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
 
     def get_file_for_period(self, period):
         """ Return a list of sorted files """
-
         # Make sure file list are empty
         self._reset_file_list()
         for mode in self.cfg.lookup_modes:
             self._append_files(mode, period)
 
+        return self.sorted_list
+
     def _reset_file_list(self):
         self._list = deque([])
-        self._sorted_list = None
+        self._sorted_list = []
 
     def _append_files(self, mode, period):
-
         for year, month, day in period.days_list:
             lookup_dir = self._get_lookup_dir(year, month, mode)
             self.log.info("Search directory: %s" % lookup_dir)
+            # Search for specific day
+            file_list = self._get_files_per_day(lookup_dir, year, month, day)
+            self.log.info(" Found %g %s files" % (len(file_list), mode))
+            tcs_list = self._get_tcs_from_filenames(file_list)
+            for file, tcs in zip(file_list, tcs_list):
+                self._list.append((file, tcs))
+
+    def _get_files_per_day(self, lookup_dir, year, month, day):
+        """ Return a list of files for a given lookup directory """
+        # Search for specific day
+        filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
+        file_search = os.path.join(lookup_dir, filename_search)
+        input_file_list = glob.glob(file_search)
+        return sorted(input_file_list)
 
     def _get_lookup_dir(self, year, month, mode):
         yyyy, mm = "%04g" % year, "%02g" % month
         return os.path.join(self.cfg.lookup_dir[mode], yyyy, mm)
 
+    def _get_tcs_from_filenames(self, files):
+        """
+        Extract the part of the filename that indicates the time coverage start (tcs)
+        :param files: a list of files
+        :return: tcs: a list with time coverage start strings of same length as files
+        """
+        tcs = []
+        for file in files:
+            filename = os.path.split(file)[1]
+            filename_segments = filename.split(self.cfg.filename_sep)
+            tcs.append(filename_segments[self.cfg.tcs_str_index])
+        return tcs
+
+    @property
+    def sorted_list(self):
+        dtypes = [('path', object), ('start_time', object)]
+        self._sorted_list = np.array(self._list, dtype=dtypes)
+        self._sorted_list.sort(order='start_time')
+        return [item[0] for item in self._sorted_list]
 
     # @property
