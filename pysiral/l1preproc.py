@@ -56,8 +56,37 @@ class L1PPreProcBase(DefaultLoggingClass):
         self.cfg = cfg
 
 
-    def process_input_files(self, file_list):
-        self.log.warning("Not implemented: self.process_input_files")
+    def process_input_files(self, input_file_list):
+        """
+        Main entry point for the Level-Preprocessor.
+        :param input_file_list: A list full filepath for the pre-processor
+        :return: None
+        """
+
+        # Validaty Checks
+        if len(input_file_list) == 0:
+            self.log.warning("Passed empty input file list to process_input_files()")
+            return
+
+        # orbit segments may or may not be connected, therefore the list of input file
+        # needs to be processed sequentially.
+        for input_file in input_file_list:
+
+            # Step 1:
+            # Map the entire orbit segment into on Level-1 data object. This is the task
+            # of the input adaptor. But first, parse only the metadata of the file is in
+            # the applicable region
+
+            product_info = self.input_adapter.get_metadata(input_file)
+            if not self._in_target_region(product_info):
+                # TODO: logging
+                continue
+
+
+
+
+
+
 
 
 class L1PreProcOrbitSegment(L1PPreProcBase):
