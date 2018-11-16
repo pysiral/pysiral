@@ -38,11 +38,17 @@ output_handler:
 
 # Settings for the pre-processor
 level1_preprocessor:
-  type: orbit_segment
+  type: custom_orbit_segment
   options:
-      polar_threshold: 50.0
-      max_connected_files_timedelta_seconds: 10
-      max_inner_nonocean_segment_nrecords: 1000
+      polar_ocean:
+        target_hemisphere: [north, south]
+        polar_latitude_threshold: 50.0
+        allow_nonocean_segment_nrecords: 1000
+      orbit_segment_connectivity:
+        max_connected_segment_timedelta_seconds: 10
+      post_processing: null
+
+
 
 
 
