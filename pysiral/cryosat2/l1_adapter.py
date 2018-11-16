@@ -141,19 +141,20 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         """
 
         # Set the geolocation
-        self.l1b.time_orbit.set_position(
+        self.l1.time_orbit.set_position(
             self.nc.lon_20_ku[:],
             self.nc.lat_20_ku[:],
             self.nc.alt_20_ku[:],
             self.nc.orb_alt_rate_20_ku[:])
 
         # Set antenna attitude
-        self.l1b.time_orbit.set_antenna_attitude(
+        self.l1.time_orbit.set_antenna_attitude(
             self.nc.off_nadir_pitch_angle_str_20_ku[:],
             self.nc.off_nadir_roll_angle_str_20_ku[:],
             self.nc.off_nadir_yaw_angle_str_20_ku[:])
 
     def _set_waveform_data_group(self):
+        stop
         pass
 
     def _set_range_correction_group(self):
