@@ -94,6 +94,56 @@ class L1PreProcOrbitSegment(L1PPreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcOrbitSegment, self).__init__(self.__class__.__name__, *args)
+class L1PreProcPolarOceanCheck(DefaultLoggingClass):
+    """
+    A small helper class that can be passed to input adapter to check whether the l1 segment is
+    wanted or not
+    """
+
+    def __init__(self, cfg):
+        cls_name = self.__class__.__name__
+        super(L1PreProcPolarOceanCheck, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+
+        # Save Parameter
+        self.cfg = cfg
+
+    def has_polar_ocean_segments(self, product_metadata):
+        """
+        Checks if there are polar oceans segments based on the metadata of a L1 data object
+        :param product_metadata: A l1bdata.L1BMetaData object
+        :return: Boolean Flag (true: in region of interest, false: not in region of interest)
+        """
+
+        # 1 Check: Needs ocean data
+        if product_metadata.open_ocean_percent <= 1e-6:
+            self.log.info("- No ocean data")
+            return False
+
+        # 2. Must be in target hemisphere
+        # NOTE: the definition of hemisphere in l1 data is above or below the equator
+        hemisphere = product_metadata.hemisphere
+        target_hemisphere = self.cfg.get("target_hemisphere", None)
+        if not hemisphere == "global" and not hemisphere in target_hemisphere:
+            self.log.info("- No data in target hemishere: %s" % "".join( self.cfg.target_hemispheres))
+            return False
+
+        # 3. Must be at higher latitude than the polar latitude threshold
+        lat_range = np.abs([product_metadata.lat_min, product_metadata.lat_max])
+        polar_latitude_threshold = self.cfg.get("polar_latitude_threshold", None)
+        if np.amax(lat_range) < polar_latitude_threshold:
+            self.log.info("- No data above polar ocean latitude threshold (%.1f)" % polar_latitude_threshold)
+            return False
+
+        # 4. All tests passed
+        return True
+
+
+
+
+
+
+
 
 
 class Level1PreProcJobDef(DefaultLoggingClass):
