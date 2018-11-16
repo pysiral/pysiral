@@ -52,23 +52,40 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         # Parse the input file
         self._read_input_netcdf(filepath, attributes_only=True)
 
+        if self.error.status:
+            return self.empty
+
         # Get metadata
-        self._get_input_file_metadata()
+        self._set_input_file_metadata()
 
         if polar_ocean_check is not None:
             has_polar_ocean_data = polar_ocean_check.has_polar_ocean_segments(self.l1.info)
             if not has_polar_ocean_data:
-                return None
+                return self.empty
+
+        # Polar ocean check passed, now fill the rest of the l1 data groups
+        self._set_l1_data_groups()
+
+        # Return the l1 object
+        return self.l1
 
     def _read_input_netcdf(self, filepath, attributes_only=False):
+        """ Read the netCDF file via xarray """
         timer = StopWatch()
         timer.start()
-        self.nc = xarray.open_dataset(filepath)
+        try:
+            self.nc = xarray.open_dataset(filepath)
+        except:
+            timer.stop()
+            msg = "Error encountered by xarray parsing: %s" % filepath
+            self.error.add_error("xarray-parse-error", msg)
+            self.log.warning(msg)
+            return
+
         timer.stop()
         self.log.info("Read netCDF file in %s" % timer.get_duration())
 
-
-    def _get_input_file_metadata(self):
+    def _set_input_file_metadata(self):
         """ Fill the product info """
 
         # Short cuts
@@ -104,6 +121,49 @@ class ESAPDSBaselineD(DefaultLoggingClass):
                 percent_value = 100.
             info.set_attribute("{}_mode_percent".format(mode), percent_value)
         info.set_attribute("open_ocean_percent", float(metadata["open_ocean_percent"])*0.01)
+
+    def _set_l1_data_groups(self):
+        """
+        Fill all data groups of the Level-1 data object with the content of the netCDF file. This is just the
+        overview method, see specific sub-methods below
+        :return: None
+        """
+        self._set_time_orbit_data_group()
+        self._set_waveform_data_group()
+        self._set_range_correction_group()
+        self._set_surface_type_group()
+        self._set_classifier_group()
+
+    def _set_time_orbit_data_group(self):
+        """
+        Transfer the time orbit parameter from the netcdf to l1 data object
+        :return: None
+        """
+
+        # Set the geolocation
+        self.l1b.time_orbit.set_position(
+            self.nc.lon_20_ku[:],
+            self.nc.lat_20_ku[:],
+            self.nc.alt_20_ku[:],
+            self.nc.orb_alt_rate_20_ku[:])
+
+        # Set antenna attitude
+        self.l1b.time_orbit.set_antenna_attitude(
+            self.nc.off_nadir_pitch_angle_str_20_ku[:],
+            self.nc.off_nadir_roll_angle_str_20_ku[:],
+            self.nc.off_nadir_yaw_angle_str_20_ku[:])
+
+    def _set_waveform_data_group(self):
+        pass
+
+    def _set_range_correction_group(self):
+        pass
+
+    def _set_surface_type_group(self):
+        pass
+
+    def _set_classifier_group(self):
+        pass
 
     @property
     def empty(self):
