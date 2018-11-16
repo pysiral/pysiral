@@ -641,6 +641,7 @@ class L1bTimeOrbit(object):
         self._longitude = None
         self._latitude = None
         self._altitude = None
+        self._altitude_rate = None
         self._antenna_pitch = None
         self._antenna_roll = None
         self._antenna_yaw = None
@@ -657,6 +658,10 @@ class L1bTimeOrbit(object):
     @property
     def altitude(self):
         return np.array(self._altitude)
+
+    @property
+    def altitude_rate(self):
+        return np.array(self._altitude_rate)
 
     @property
     def antenna_pitch(self):
@@ -682,11 +687,13 @@ class L1bTimeOrbit(object):
 
     @property
     def parameter_list(self):
-        return ["timestamp", "longitude", "latitude", "altitude", "antenna_pitch", "antenna_roll", "antenna_yaw"]
+        return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
+                "antenna_pitch", "antenna_roll", "antenna_yaw"]
 
     @property
     def geolocation_parameter_list(self):
-        return ["longitude", "latitude", "altitude", "antenna_pitch", "antenna_roll", "antenna_yaw"]
+        return ["longitude", "latitude", "altitude", "altitude_rate",
+                "antenna_pitch", "antenna_roll", "antenna_yaw"]
 
     @property
     def dimdict(self):
@@ -698,20 +705,29 @@ class L1bTimeOrbit(object):
     def is_evenly_spaced(self):
         return self._is_evenly_spaced
 
-    def set_position(self, longitude, latitude, altitude):
+    def set_position(self, longitude, latitude, altitude, altitude_rate=None):
         # Check dimensions
         if self._info is not None:
             self._info.check_n_records(len(longitude))
             self._info.check_n_records(len(latitude))
             self._info.check_n_records(len(altitude))
+            if altitude_rate is not None:
+                self._info.check_n_records(len(altitude_rate))
+
         # All fine => set values
         self._longitude = longitude
         self._latitude = latitude
         self._altitude = altitude
 
+        # Parameter that were added later
+        dummy_val = np.full(self.longitude.shape, np.nan)
+        if altitude_rate is not None:
+            self._altitude_rate = altitude_rate
+        else:
+            self._altitude_rate = dummy_val
+
         # Set a dummy value for pitch, roll & yaw for backward compability
         if self.antenna_pitch is None:
-            dummy_val = np.full(self.longitude.shape, np.nan)
             self.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
 
     def set_antenna_attitude(self, pitch, roll, yaw):
