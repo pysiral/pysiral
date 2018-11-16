@@ -136,12 +136,10 @@ class L1bPreProc(DefaultLoggingClass):
 
             # Skip if no relevant data was found
             if l1b_segments is None:
-                log.info("- %s polar ocean data: False -> skip file" % (
-                     self._jobdef.hemisphere))
+                log.info("- %s polar ocean data: False -> skip file" % (self._jobdef.hemisphere))
                 continue
             else:
-                log.info("- %s polar ocean data: True" % (
-                     self._jobdef.hemisphere))
+                log.info("- %s polar ocean data: True" % (self._jobdef.hemisphere))
             log.info("- %g polar ocean data segments" % len(l1b_segments))
 
             # XXX: Debug
@@ -149,8 +147,7 @@ class L1bPreProc(DefaultLoggingClass):
             # Loop over segments and check connectivity
             for l1b_segment in l1b_segments:
 
-                if not self.l1b_is_connected_to_stack(
-                        l1b_segment, l1bdata_stack):
+                if not self.l1b_is_connected_to_stack(l1b_segment, l1bdata_stack):
 
                     # => break criterium, save existing stack and start over
                     log.info("- segment unconnected, exporting current stack")
@@ -190,8 +187,7 @@ class L1bPreProc(DefaultLoggingClass):
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
             ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-            self.log.info("- ocean subset [%g:%g]" % (
-                 first_ocean_index, last_ocean_index))
+            self.log.info("- ocean subset [%g:%g]" % (first_ocean_index, last_ocean_index))
             l1b.trim_to_subset(ocean_subset)
 
         return l1b
