@@ -641,6 +641,9 @@ class L1bTimeOrbit(object):
         self._longitude = None
         self._latitude = None
         self._altitude = None
+        self._antenna_pitch = None
+        self._antenna_roll = None
+        self._antenna_yaw = None
         self._is_evenly_spaced = is_evenly_spaced
 
     @property
@@ -656,6 +659,18 @@ class L1bTimeOrbit(object):
         return np.array(self._altitude)
 
     @property
+    def antenna_pitch(self):
+        return np.array(self._antenna_pitch)
+
+    @property
+    def antenna_roll(self):
+        return np.array(self._antenna_roll)
+
+    @property
+    def antenna_yaw(self):
+        return np.array(self._antenna_yaw)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -667,11 +682,11 @@ class L1bTimeOrbit(object):
 
     @property
     def parameter_list(self):
-        return ["timestamp", "longitude", "latitude", "altitude"]
+        return ["timestamp", "longitude", "latitude", "altitude", "antenna_pitch", "antenna_roll", "antenna_yaw"]
 
     @property
     def geolocation_parameter_list(self):
-        return ["longitude", "latitude", "altitude"]
+        return ["longitude", "latitude", "altitude", "antenna_pitch", "antenna_roll", "antenna_yaw"]
 
     @property
     def dimdict(self):
@@ -693,6 +708,22 @@ class L1bTimeOrbit(object):
         self._longitude = longitude
         self._latitude = latitude
         self._altitude = altitude
+
+        # Set a dummy value for pitch, roll & yaw for backward compability
+        if self.antenna_pitch is None:
+            dummy_val = np.full(self.longitude.shape, np.nan)
+            self.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
+
+    def set_antenna_attitude(self, pitch, roll, yaw):
+        # Check dimensions
+        if self._info is not None:
+            self._info.check_n_records(len(pitch))
+            self._info.check_n_records(len(roll))
+            self._info.check_n_records(len(yaw))
+        # All fine => set values
+        self._antenna_longitude = pitch
+        self._antenna_latitude = roll
+        self._antenna_altitude = yaw
 
     def append(self, annex):
         for parameter in self.parameter_list:
