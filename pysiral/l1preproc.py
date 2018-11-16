@@ -1,8 +1,10 @@
 
 import os
+import numpy as np
 
 from pysiral.clocks import StopWatch
 from pysiral.config import ConfigInfo, TimeRangeRequest, get_yaml_config
+from pysiral.helper import ProgressIndicator
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level1POutput, OutputHandlerBase
@@ -19,7 +21,7 @@ def get_preproc(type, input_adapter, output_handler, cfg):
     """
 
     # A lookup dictionary for the appropriate class
-    preproc_class_lookup_dict = {"orbit_segment": L1PreProcOrbitSegment}
+    preproc_class_lookup_dict = {"custom_orbit_segment": L1PreProcCustomOrbitSegment}
 
     # Try the get the class
     cls = preproc_class_lookup_dict.get(type, None)
@@ -38,23 +40,25 @@ def get_preproc(type, input_adapter, output_handler, cfg):
     return cls(input_adapter, output_handler, cfg)
 
 
-class L1PPreProcBase(DefaultLoggingClass):
+class L1PreProcBase(DefaultLoggingClass):
 
     def __init__(self, cls_name, input_adapter, output_handler, cfg):
 
         # Make sure the logger/error handler has the name of the parent class
-        super(L1PPreProcBase, self).__init__(cls_name)
+        super(L1PreProcBase, self).__init__(cls_name)
         self.error = ErrorStatus(caller_id=cls_name)
 
         # The class that translates a given input file into an L1BData object
         self.input_adapter = input_adapter
 
-        # The class that will create a pysiral pysiral l1p product file from the current stack
+        # Output data handler that creates l1p netCDF files from l1 data objects
         self.output_handler = output_handler
 
         # The configuration for the pre-processor
         self.cfg = cfg
 
+        # Init
+        self.l1_stack = L1OrbitSegmentStack()
 
     def process_input_files(self, input_file_list):
         """
@@ -63,37 +67,122 @@ class L1PPreProcBase(DefaultLoggingClass):
         :return: None
         """
 
-        # Validaty Checks
-        if len(input_file_list) == 0:
+        # Validity Check
+        n_input_files = len(input_file_list)
+        if n_input_files == 0:
             self.log.warning("Passed empty input file list to process_input_files()")
             return
 
+        # Init helpers
+        prgs = ProgressIndicator(n_input_files)
+
+        # A class that is passed to the input adapter to check if the pre-processsor wants the
+        # content of the current file
+        polar_ocean_check = L1PreProcPolarOceanCheck(self.polar_ocean_props)
+
         # orbit segments may or may not be connected, therefore the list of input file
         # needs to be processed sequentially.
-        for input_file in input_file_list:
+        for i, input_file in enumerate(input_file_list):
 
-            # Step 1:
+            # Step 1: Read Input
             # Map the entire orbit segment into on Level-1 data object. This is the task
-            # of the input adaptor. But first, parse only the metadata of the file is in
-            # the applicable region
-
-            product_info = self.input_adapter.get_metadata(input_file)
-            if not self._in_target_region(product_info):
-                # TODO: logging
+            # of the input adaptor. The input handler gets only the filename and the target
+            # region to assess whether it is necessary to parse and transform the file content
+            # for the sake of computational efficiency.
+            self.log.info("+ Process input file %s" % prgs.get_status_report(i))
+            l1 = self.input_adapter.get_l1(input_file, polar_ocean_check)
+            if l1 is None:
+                self.log.info("- No polar ocean data for curent job -> skip file")
                 continue
 
+            # Step 2: Extract and subset
+            # The input files may contain unwanted data (low latitude/land segments). It is the
+            # job of the L1PReProc children class to return only the relevant segments over
+            # polar ocean as a list of l1 objects.
+            l1_segments = self.get_polar_ocean_segments(l1, **self.polar_ocean_props)
+
+            # Step 3: Merge orbit segments
+            # Add the list of orbit segments to the l1 data stack and merge those that are connected
+            # (e.g. two half orbits connected at the pole) into a single l1 object.
+            self.l1_stack.append_and_merge(l1_segments, **self.orbit_segment_connectivity_props)
+
+            # Step 4: Post-Processing and Export
+            # Orbit segments that are known to be unconnected to other part of the stack can be exported
+            # to the l1p product after post-processing. The last segment in the stack is always assumed
+            # to be connected as its state is only known when parsing the next input file. An empty list
+            # indicates that all orbit segments in the stack are connected
+            l1_separate_segments = self.l1_stack.extract_separate_segments()
+            if len(l1_separate_segments) == 0:
+                continue
+            self.post_processing_and_export(l1_separate_segments)
+
+        # Step 5: Export the final orbit segment
+        # Per definition the last segment
+        self.l1_stack.extract_all_segments()
+        self.post_processing_and_export(l1_separate_segments)
 
 
+    def post_processing_and_export(self, l1_separate_segments):
+        pass
+
+    @property
+    def target_region_def(self):
+        if not self.cfg.has_key("polar_ocean"):
+            msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
+            self.error.add_error("l1preproc-missing-option", msg)
+            self.error.raise_on_error()
+        return self.cfg.polar_ocean
+
+    @property
+    def polar_ocean_props(self):
+        if not self.cfg.has_key("polar_ocean"):
+            msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
+            self.error.add_error("l1preproc-missing-option", msg)
+            self.error.raise_on_error()
+        return self.cfg.polar_ocean
+
+    @property
+    def orbit_segment_connectivity_props(self):
+        if not self.cfg.has_key("orbit_segment_connectivity"):
+            msg = "Missing configuration key `orbit_segment_connectivity` in Level-1 Pre-Processor Options"
+            self.error.add_error("l1preproc-missing-option", msg)
+            self.error.raise_on_error()
+        return self.cfg.orbit_segment_connectivity
 
 
+class L1OrbitSegmentStack(DefaultLoggingClass):
+    """ A small helper class that handles the operations for the stacking of l1 orbit segments """
+
+    def __init__(self):
+        cls_name = self.__class__.__name__
+        super(L1OrbitSegmentStack, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+
+        # Create an empty stack upon initialization
+        self.clear_stack()
 
 
+    def clear_stack(self):
+        # The stack is a simple list, each entry is a tuple of the connected_flag and the l1 segment
+        self._stack = []
 
-class L1PreProcOrbitSegment(L1PPreProcBase):
+    def append_and_merge(self, l1_segments, **cfg):
+        pass
+
+    def extract_separate_segments(self):
+        pass
+
+    def extract_all_segments(self):
+        pass
+
+
+class L1PreProcCustomOrbitSegment(L1PreProcBase):
     """ A Pre-Processor for input files with arbitrary segment lenght (e.g. CryoSat-2) """
 
     def __init__(self, *args):
-        super(L1PreProcOrbitSegment, self).__init__(self.__class__.__name__, *args)
+        super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
+
+
 class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     """
     A small helper class that can be passed to input adapter to check whether the l1 segment is
