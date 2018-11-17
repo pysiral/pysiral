@@ -79,7 +79,7 @@ class ESAPDSBaselineD(DefaultLoggingClass):
     def _read_input_netcdf(self, filepath, attributes_only=False):
         """ Read the netCDF file via xarray """
         try:
-            self.nc = xarray.open_dataset(filepath)
+            self.nc = xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
         except:
             msg = "Error encountered by xarray parsing: %s" % filepath
             self.error.add_error("xarray-parse-error", msg)
