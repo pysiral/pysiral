@@ -128,6 +128,9 @@ class StopWatch(object):
     def stop(self):
         self.t1 = time.time()
 
+    def get_seconds(self):
+        return self.t1 - self.t0
+
     def get_duration(self, fmt="%H:%M:%S"):
         # Example time
         datum = datetime(1900, 1, 1)
