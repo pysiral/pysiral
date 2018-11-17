@@ -207,8 +207,49 @@ class ESAPDSBaselineD(DefaultLoggingClass):
             self.nc.off_nadir_yaw_angle_str_20_ku.values)
 
     def _set_waveform_data_group(self):
-        stop
-        pass
+        """
+        Transfer of the waveform group to the Level-1 object. This includes
+          1. the computation of waveform power in Watts
+          2. the computation of the window delay in meter for each waveform bin
+          3. extraction of the waveform valid flag
+        :return: None
+        """
+
+        # Get the waveform
+        # NOTE: Convert the waveform units to Watts. From the documentation:is applied as follows:
+        #       pwr_waveform_20_ku(time, ns) * echo_scale_factor_20_ku(time, ns) * 2 ^ echo_scale_pwr_20_ku(time)
+        wfm_linear = self.nc.pwr_waveform_20_ku.values
+
+        # Get the shape of the waveform array
+        dim_time, dim_ns = wfm_linear.shape
+
+        # Scaling parameter are 1D -> Replicate to same shape as waveform array
+        echo_scale_factor = self.nc.echo_scale_factor_20_ku.values
+        echo_scale_pwr = self.nc.echo_scale_pwr_20_ku.values
+        echo_scale_factor = np.tile(echo_scale_factor, (dim_ns, 1)).transpose()
+        echo_scale_pwr = np.tile(echo_scale_pwr, (dim_ns, 1)).transpose()
+
+        # Convert the waveform from linear counts to Watts
+        wfm_power = wfm_linear*echo_scale_factor * 2.0**echo_scale_pwr
+
+        # Get the window delay
+        # From the documentation:
+        #   Calibrated 2-way window delay: distance from CoM to middle range window (at sample ns/2 from 0).
+        #   It includes all the range corrections given in the variable instr_cor_range and in the
+        #   variable uso_cor_20_ku. This is a 2-way time and 2-way corrections are applied.
+        window_delay = self.nc.window_del_20_ku.values
+
+        # Convert window delay to range for each waveform range bin
+        wfm_range = self.get_wfm_range(window_delay, dim_ns)
+
+        # Set the waveform
+        radar_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
+        self.l1.waveform.set_waveform_data(wfm_power, wfm_range, radar_mode)
+
+        # Get the valid flags
+        measurement_confident_flag = self.nc.flag_mcd_20_ku.values
+        valid_flag = measurement_confident_flag == 0
+        self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
         pass
