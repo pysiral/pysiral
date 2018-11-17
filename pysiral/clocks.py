@@ -49,8 +49,7 @@ class UTCTAIConverter(object):
         else:
             leap_seconds = np.ndarray(shape=tai_datetimes.shape, dtype=int)
             for i in np.arange(len(tai_datetimes)):
-                leap_seconds[i] = self._get_leap_seconds_for_utc_time(
-                    tai_datetimes[i])
+                leap_seconds[i] = self._get_leap_seconds_for_utc_time(tai_datetimes[i])
 
         # Apply leap seconds
         for i, tai_time in enumerate(tai_datetimes):
@@ -95,8 +94,7 @@ class UTCTAIConverter(object):
             self.leap_seconds = np.append(self.leap_seconds, int(arr[1]))
             # Compute datetime timestamp of leap seconds occurence
             timestamp = self.epoch + timedelta(seconds=int(arr[0]))
-            self.leap_seconds_timestamp = np.append(
-                self.leap_seconds_timestamp, timestamp)
+            self.leap_seconds_timestamp = np.append(self.leap_seconds_timestamp, timestamp)
 
     def _get_leap_seconds_for_utc_time(self, datetime):
         """ Returns applicable leap seconds for given datetime """
