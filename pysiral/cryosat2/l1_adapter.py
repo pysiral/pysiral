@@ -8,6 +8,7 @@ from scipy import interpolate
 
 
 from pysiral import __version__ as pysiral_version
+from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
 from pysiral.clocks import StopWatch, UTCTAIConverter
 from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.errorhandler import ErrorStatus
@@ -291,7 +292,38 @@ class ESAPDSBaselineD(DefaultLoggingClass):
             self.l1.surface_type.add_flag(flag, key)
 
     def _set_classifier_group(self):
-        pass
+        """
+        Transfer the classifiers defined in the l1p config file to the Level-1 object.
+        NOTE: It is assumed that all classifiers are 20Hz
+        In addition, a few legacy parameter are computed based on the waveform counts that is only available at
+        this stage. Computation of other parameter such as sigma_0, leading_edge_width, ... are moved to the
+        post-processing
+        :return: None
+        """
+        # Loop over all classifier variables defined in the processor definition file
+        for key in self.cfg.classifier_targets.keys():
+            variable_20Hz = getattr(self.nc, self.cfg.range_correction_targets[key])
+            self.l1.correction.set_parameter(key, variable_20Hz)
+
+        # Calculate Parameters from waveform counts
+        # XXX: This is a legacy of the CS2AWI IDL processor
+        #      Threshold defined for waveform counts not power in dB
+        wfm_counts = self.nc.pwr_waveform_20_ku.values
+
+        # Calculate the OCOG Parameter (CryoSat-2 notation)
+        ocog = CS2OCOGParameter(wfm_counts)
+        self.l1.classifier.add(ocog.width, "ocog_width")
+        self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
+
+        # Calculate the Peakiness (CryoSat-2 notation)
+        pulse = CS2PulsePeakiness(wfm_counts)
+        self.l1.classifier.add(pulse.peakiness, "peakiness")
+        self.l1.classifier.add(pulse.peakiness_r, "peakiness_r")
+        self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
+
+        # fmi version: Calculate the LTPP
+        ltpp = CS2LTPP(wfm_counts)
+        self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
 
     @property
     def empty(self):
