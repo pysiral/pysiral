@@ -3,6 +3,8 @@ import os
 import sys
 import xarray
 import numpy as np
+from scipy import interpolate
+
 
 from pysiral import __version__ as pysiral_version
 from pysiral.clocks import StopWatch
@@ -75,6 +77,45 @@ class ESAPDSBaselineD(DefaultLoggingClass):
 
         # Return the l1 object
         return self.l1
+
+    @staticmethod
+    def get_wfm_range(window_delay, n_range_bins):
+        """
+        Returns the range for each waveform bin based on the window delay and the number of range bins
+        :param window_delay: The two-way delay to the center of the range window in seconds
+        :param n_range_bins: The number of range bins (256: sar, 512: sin)
+        :return: The range for each waveform bin as array (time, ns)
+        """
+        lightspeed = 299792458.0
+        bandwidth = 320000000.0
+        # The two way delay time give the distance to the central bin
+        central_window_range = window_delay * lightspeed / 2.0
+        # Calculate the offset from the center to the first range bin
+        window_size = (n_range_bins * lightspeed) / (4.0 * bandwidth)
+        first_bin_offset = window_size / 2.0
+        # Calculate the range increment for each bin
+        range_increment = np.arange(n_range_bins) * lightspeed / (4.0 * bandwidth)
+
+        # Reshape the arrays
+        range_offset = np.tile(range_increment, (window_delay.shape[0], 1)) - first_bin_offset
+        window_range = np.tile(central_window_range, (n_range_bins, 1)).transpose()
+
+        # Compute the range for each bin and return
+        wfm_range = window_range + range_offset
+        return wfm_range
+
+    @staticmethod
+    def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, **kwargs):
+        """
+        Computes a simple linear interpolation to transform a 1Hz into a 20Hz variable
+        :param variable_1Hz: an 1Hz variable array
+        :param time_1Hz: 1Hz reference time
+        :param time_20Hz: 20 Hz reference time
+        :return: the interpolated 20Hz variable
+        """
+        f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
+        variable_20Hz = f(time_20Hz)
+        return variable_20Hz
 
     def _read_input_netcdf(self, filepath, attributes_only=False):
         """ Read the netCDF file via xarray """
