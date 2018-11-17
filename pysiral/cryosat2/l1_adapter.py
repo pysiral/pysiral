@@ -1,13 +1,14 @@
 
 import os
 import sys
+import pandas
 import xarray
 import numpy as np
 from scipy import interpolate
 
 
 from pysiral import __version__ as pysiral_version
-from pysiral.clocks import StopWatch
+from pysiral.clocks import StopWatch, UTCTAIConverter
 from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
@@ -182,18 +183,28 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         :return: None
         """
 
+        # Transfer the timestamp
+        # NOTE: Unfortunately is seem to be necessary to first convert the np.datetime64 from xarray to
+        #       Pandas TimeStamp and then to datetime.datetime as there seems to be no reliable way
+        #       to convert directly from np.datetime64 to datetime.datetime
+        tai_datetime = pandas.to_datetime(self.nc.time_20_ku.values).to_pydatetime()
+
+        converter = UTCTAIConverter()
+        utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
+        self.l1.time_orbit.timestamp = utc_timestamp
+
         # Set the geolocation
         self.l1.time_orbit.set_position(
-            self.nc.lon_20_ku[:],
-            self.nc.lat_20_ku[:],
-            self.nc.alt_20_ku[:],
-            self.nc.orb_alt_rate_20_ku[:])
+            self.nc.lon_20_ku.values,
+            self.nc.lat_20_ku.values,
+            self.nc.alt_20_ku.values,
+            self.nc.orb_alt_rate_20_ku.values)
 
         # Set antenna attitude
         self.l1.time_orbit.set_antenna_attitude(
-            self.nc.off_nadir_pitch_angle_str_20_ku[:],
-            self.nc.off_nadir_roll_angle_str_20_ku[:],
-            self.nc.off_nadir_yaw_angle_str_20_ku[:])
+            self.nc.off_nadir_pitch_angle_str_20_ku.values,
+            self.nc.off_nadir_roll_angle_str_20_ku.values,
+            self.nc.off_nadir_yaw_angle_str_20_ku.values)
 
     def _set_waveform_data_group(self):
         stop
