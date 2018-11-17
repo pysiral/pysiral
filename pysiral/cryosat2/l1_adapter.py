@@ -36,6 +36,9 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         :return:
         """
 
+        timer = StopWatch()
+        timer.start()
+
         # Save filepath
         self.filepath = filepath
 
@@ -61,29 +64,27 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         if polar_ocean_check is not None:
             has_polar_ocean_data = polar_ocean_check.has_polar_ocean_segments(self.l1.info)
             if not has_polar_ocean_data:
+                timer.stop()
                 return self.empty
 
         # Polar ocean check passed, now fill the rest of the l1 data groups
         self._set_l1_data_groups()
+
+        timer.stop()
+        self.log.info("Created L1 object in %.3f seconds" % timer.get_seconds())
 
         # Return the l1 object
         return self.l1
 
     def _read_input_netcdf(self, filepath, attributes_only=False):
         """ Read the netCDF file via xarray """
-        timer = StopWatch()
-        timer.start()
         try:
             self.nc = xarray.open_dataset(filepath)
         except:
-            timer.stop()
             msg = "Error encountered by xarray parsing: %s" % filepath
             self.error.add_error("xarray-parse-error", msg)
             self.log.warning(msg)
             return
-
-        timer.stop()
-        self.log.info("Read netCDF file in %s" % timer.get_duration())
 
     def _set_input_file_metadata(self):
         """ Fill the product info """
