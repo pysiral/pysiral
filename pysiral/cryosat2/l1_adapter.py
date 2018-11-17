@@ -252,7 +252,21 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
-        pass
+        """
+        Transfer the range corrections defined in the l1p config file to the Level-1 object
+        NOTE: The range corrections are all in 1 Hz and must be interpolated to 20Hz
+        :return: None
+        """
+
+        # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
+        time_1Hz =  self.nc.time_cor_01.values
+        time_20Hz = self.nc.time_20_ku.values
+
+        # Loop over all range correction variables defined in the processor definition file
+        for key in self.cfg.range_correction_targets.keys():
+            variable_1Hz = getattr(self.nc, self.cfg.range_correction_targets[key])
+            variable_20Hz = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
+            self.l1.correction.set_parameter(key, variable_20Hz)
 
     def _set_surface_type_group(self):
         pass
