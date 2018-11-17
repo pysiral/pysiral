@@ -15,6 +15,7 @@ from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
 from pysiral.path import filename_from_path
+from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
 class ESAPDSBaselineD(DefaultLoggingClass):
@@ -269,7 +270,25 @@ class ESAPDSBaselineD(DefaultLoggingClass):
             self.l1.correction.set_parameter(key, variable_20Hz)
 
     def _set_surface_type_group(self):
-        pass
+        """
+        Transfer of the surface type flag to the Level-1 object
+        NOTE: In the current state (TEST dataset), the surface type flag is only 1 Hz. A nearest neighbour
+              interpolation is used to get the 20Hz surface type flag.
+        :return: None
+        """
+
+        # Get the reference times for interpolating the flag from 1Hz -> 20Hz
+        time_1Hz =  self.nc.time_cor_01.values
+        time_20Hz = self.nc.time_20_ku.values
+
+        # Interpolate 1Hz surface type flag to 20 Hz
+        surface_type_1Hz = self.nc.surf_type_01.values
+        surface_type_20Hz = self.interp_1Hz_to_20Hz(surface_type_1Hz, time_1Hz, time_20Hz, kind="nearest")
+
+        # Set the flag
+        for key in ESA_SURFACE_TYPE_DICT.keys():
+            flag = surface_type_20Hz == ESA_SURFACE_TYPE_DICT[key]
+            self.l1.surface_type.add_flag(flag, key)
 
     def _set_classifier_group(self):
         pass
