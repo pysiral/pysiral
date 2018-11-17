@@ -999,10 +999,8 @@ class L1bWaveforms(object):
         # Create radar mode arrays
         if type(radar_mode) is str and radar_mode in self._valid_radar_modes:
             mode_flag = self.radar_mode_def.get_flag(radar_mode)
-            self._radar_mode = np.repeat(
-                mode_flag, self.n_records).astype(np.byte)
-        elif len(radar_mode) == self._info.n_records and \
-                radar_mode.dtype == "int8":
+            self._radar_mode = np.repeat(mode_flag, self.n_records).astype(np.byte)
+        elif len(radar_mode) == self._info.n_records and radar_mode.dtype == "int8":
                 self._radar_mode = radar_mode
         else:
             raise ValueError("Invalid radar_mode: ", radar_mode)
