@@ -497,8 +497,7 @@ class L1bDataNC(DefaultLoggingClass):
     def __init__(self):
         super(L1bDataNC, self).__init__(self.__class__.__name__)
 
-        self.datagroups = ["waveform", "surface_type", "time_orbit",
-                           "classifier", "correction"]
+        self.datagroups = ["waveform", "surface_type", "time_orbit", "classifier", "correction"]
         self.filename = None
         self.time_def = NCDateNumDef()
         self.zlib = True
