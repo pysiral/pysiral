@@ -169,19 +169,3 @@ def parse_cryosat_l1b_xml_header(filename):
         content_odereddict = xmltodict.parse(fd.read())
     return content_odereddict[u'Earth_Explorer_Header']
 
-
-def tai2utc(tai_datetime):
-    """
-    Converts a datetime object in TAI into UTC
-    TODO: No real functionality here yet, maybe parse leap second list from
-          IETF?: http://www.ietf.org/timezones/data/leap-seconds.list
-    """
-    utc_offset_seconds = 33
-    tai_times = np.asarray(tai_datetime)
-    output = np.ndarray(shape=(len(tai_times)), dtype=object)
-    for i, tai_time in enumerate(tai_times):
-        output[i] = tai_time+timedelta(seconds=utc_offset_seconds)
-    if len(output) > 0:
-        return output
-    else:
-        return output[0]
