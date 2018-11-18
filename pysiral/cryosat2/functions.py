@@ -13,6 +13,36 @@ from treedict import TreeDict
 from dateutil import parser as dtparser
 from datetime import datetime, timedelta
 
+from pysiral.logging import DefaultLoggingClass
+
+class L1PWaveformResampleSIN(DefaultLoggingClass):
+    """
+    A post-processing class for CryoSat-2 l1p data that resamples the SIN waveform group
+    to the same size as SAR waveform group
+    """
+
+    def __init__(self, **cfg):
+        cls_name = self.__class__.__name__
+        super(L1PWaveformResampleSIN, self).__init__(cls_name)
+        self.sin_target_bins = cfg.get("sin_target_bins", None)
+        if self.sin_target_bins is None:
+            msg = "Missing option `sin_target_bins` -> SIN waveform will not be resampled!"
+            self.log.warning(msg)
+
+    def apply(self, l1):
+        """
+        API class for the Level-1 pre-processor. Functionality is reduce the size of the waveform power and
+        range arrays for SIN data to the one for SAR data.
+        :param l1: A Level-1 data instance
+        :return: None, Level-1 object is change in place
+        """
+
+        # The functionality to reduce the waveform bins is built-in in the Level-1 data object
+        if l1.radar_modes == "sin" and self.sin_target_bins is not None:
+            l1.reduce_waveform_bin_count(self.sin_target_bins)
+
+
+
 
 def get_cryosat2_wfm_power(counts, linear_scale, power_scale):
     """
