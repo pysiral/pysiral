@@ -29,7 +29,7 @@ def pysiral_l1preproc(job):
     input_adapter = input_adapter_cls(adapter_def.options)
 
     # 3. Get the output handler
-    output_handler_def = job.l1pprocdef.output_adapter
+    output_handler_def = job.l1pprocdef.output_handler
     output_handler = Level1POutputHandler(output_handler_def.options)
     output_handler.cfg.set(**job.output_handler_cfg)
 
