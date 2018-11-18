@@ -302,7 +302,7 @@ class ESAPDSBaselineD(DefaultLoggingClass):
         """
         # Loop over all classifier variables defined in the processor definition file
         for key in self.cfg.classifier_targets.keys():
-            variable_20Hz = getattr(self.nc, self.cfg.range_correction_targets[key])
+            variable_20Hz = getattr(self.nc, self.cfg.classifier_targets[key])
             self.l1.correction.set_parameter(key, variable_20Hz)
 
         # Calculate Parameters from waveform counts
