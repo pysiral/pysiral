@@ -49,7 +49,7 @@ input_adapter:
             stack_centre_look_angle: stack_centre_look_angle_20_ku
             transmit_power: transmit_pwr_20_ku
             noise_power: noise_power_20_ku
-        
+
 
 
 # Output handler (will always be default handler -> only options)
@@ -78,7 +78,8 @@ level1_preprocessor:
         orbit_segment_connectivity:
             max_connected_segment_timedelta_seconds: 10
         
-        post_processing_items:
+        # NOTE: if no options are required use an empty mapping {} instead of null!
+        pre_processing_items:
             
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
@@ -87,6 +88,21 @@ level1_preprocessor:
               class_name: L1PWaveformResampleSIN
               options:
                   sin_target_bins: 256
+            
+            # Compute the leading edge width parameters (full, first half & second half)
+            - label: "Compute Leading Edge Width"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeWidth
+              options:
+                  tfmra_leading_edge_start: 0.05
+                  tfmra_leading_edge_center: 0.5
+                  tfmra_leading_edge_end: 0.95
+            
+            # Compute the sigma_0
+            - label: "Compute Sigma0"
+              module_name: pysiral.waveform
+              class_name: L1PSigma0
+              options: {}
 
 
 
