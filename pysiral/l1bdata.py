@@ -737,9 +737,9 @@ class L1bTimeOrbit(object):
             self._info.check_n_records(len(roll))
             self._info.check_n_records(len(yaw))
         # All fine => set values
-        self._antenna_longitude = pitch
-        self._antenna_latitude = roll
-        self._antenna_altitude = yaw
+        self._antenna_pitch = pitch
+        self._antenna_roll = roll
+        self._antenna_yaw = yaw
 
     def append(self, annex):
         for parameter in self.parameter_list:
