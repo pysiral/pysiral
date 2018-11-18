@@ -59,7 +59,7 @@ class L1PreProcBase(DefaultLoggingClass):
         self.cfg = cfg
 
         # The stack of Level-1 objects is a simple list
-        self._l1_stack = []
+        self.l1_stack = []
 
     def process_input_files(self, input_file_list):
         """
@@ -79,7 +79,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
         # A class that is passed to the input adapter to check if the pre-processsor wants the
         # content of the current file
-        polar_ocean_check = L1PreProcPolarOceanCheck(self.polar_ocean_props)
+        polar_ocean_check = L1PreProcPolarOceanCheck(self.__class__.__name__, self.polar_ocean_props)
 
         # orbit segments may or may not be connected, therefore the list of input file
         # needs to be processed sequentially.
@@ -113,7 +113,8 @@ class L1PreProcBase(DefaultLoggingClass):
             self.l1_stack_merge_and_export(l1_segments)
 
         # Step : Export the last item in the stack
-        self.l1_export_last_stack_item()
+        l1_merged = self.merge_l1_stack()
+        self.export_l1_to_netcdf(l1_merged)
 
 
     def l1_post_processing(self, l1_segments):
@@ -125,24 +126,93 @@ class L1PreProcBase(DefaultLoggingClass):
         """
 
         # Get the post processing options
-        post_processing_items = self.cfg.get("post_processing_items", None)
-        if post_processing_items is None:
-            self.log.info("No post processing items defined")
+        pre_processing_items = self.cfg.get("pre_processing_items", None)
+        if pre_processing_items is None:
+            self.log.info("No pre processing items defined")
             return
 
         # Measure time for the different post processors
         timer = StopWatch()
 
         # Get the list of post-processing items
-        for pp_item in post_processing_items:
+        for pp_item in pre_processing_items:
             timer.start()
             pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
             post_processor = pp_class(**pp_item["options"])
             for l1 in l1_segments:
                 post_processor.apply(l1)
             timer.stop()
-            msg = "- Applied post processing option `%s` in %.3f seconds" % (pp_item["label"], timer.get_seconds())
+            msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
             self.log.info(msg)
+
+
+    def l1_stack_merge_and_export(self, l1_segments):
+        """
+        Add the input Level-1 segments to the l1 stack and export the unconnected ones as l1p netCDF products
+        :param l1_segments:
+        :return: None
+        """
+
+        # Loop over all input segments
+        for l1 in l1_segments:
+
+            # Test if l1 segment is connected to stack
+            is_connected = self.l1_is_connected_to_stack(l1)
+
+            # Case 1: Segment is connected
+            # -> Add the l1 segment to the stack and check the next segment.
+            if is_connected:
+                self.log.info("- L1 segment connected -> add to stack")
+                self.l1_stack.append(l1)
+
+            # Case 2: Segment is not connected
+            # -> In this case all items in the l1 stack will be merged and the merged l1 object will be
+            #    exported to a l1p netCDF product. The current l1 segment that was unconnected to the stack
+            #    will become the next stack
+            else:
+                self.log.info("- L1 segment unconnected -> exporting current stack")
+                l1_merged = self.l1_get_merged_stack()
+                self.l1_export_to_netcdf(l1_merged)
+                self.l1_stack = [l1]
+
+    def l1_is_connected_to_stack(self, l1):
+        """
+        Check if the start time of file i and the stop time if file i-1 indicate neighbouring orbit segments
+        (e.g. due to radar mode change, or two half-orbits
+        :param l1:
+        :return: Flag if l1 is connected (True of False)
+        """
+
+        # Stack is empty (return True -> create a new stack)
+        if self.stack_len == 0:
+            return True
+
+        # Test if segments are adjacent based on time gap between them
+        timedelta = l1.info.start_time - self.last_stack_item.info.stop_time
+        threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
+        is_connected = timedelta.seconds <= threshold
+
+        return is_connected
+
+    def l1_get_merged_stack(self):
+        """
+        Concatenates all items in the l1 stack and returns the merged Level-1 data object.
+        Note: This operation leaves the state of the Level-1 stack untouched
+        :return: Level-1 data object
+        """
+        l1_merged = self.l1_stack[0]
+        for l1 in self.l1_stack[1:]:
+            l1_merged.append(l1)
+        return l1_merged
+
+    def l1_export_to_netcdf(self, l1):
+        """
+        Exports the Level-1 object as as l1p netCDF
+        :param l1_merged: The Level-1 object to exported
+        :return:
+        """
+        self.output_handler.export(l1)
+        self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
 
 
     def trim_single_hemisphere_segment_to_polar_region(self, l1):
@@ -252,58 +322,6 @@ class L1PreProcBase(DefaultLoggingClass):
             self.error.raise_on_error()
         return self.cfg.orbit_segment_connectivity
 
-
-class L1OrbitSegmentStack(DefaultLoggingClass):
-    """ A small helper class that handles the operations for the stacking of l1 orbit segments """
-
-    def __init__(self):
-        cls_name = self.__class__.__name__
-        super(L1OrbitSegmentStack, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Create an empty stack upon initialization
-        self.clear_stack()
-
-
-    def clear_stack(self):
-        # The stack is a simple list, each entry is a tuple of the connected_flag and the l1 segment
-        self._stack = []
-
-    def append_and_merge(self, l1_segments, **cfg):
-
-        for l1 in l1_segments:
-
-            # Stack is empty (return True -> create a new stack)
-            if self.stack_len == 0:
-                self.add_to_stack(l1, connected=True)
-                continue
-
-            # Test if segments are adjacent based on time gap between them
-
-            timedelta = l1b.info.start_time - self.last_stack_item.info.stop_time
-            threshold = self._mdef.max_connected_files_timedelta_seconds
-            is_connected = timedelta.seconds <= threshold
-
-    def extract_unconnected_segments(self):
-        pass
-
-    def extract_all_segments(self):
-        pass
-
-    def l1_is_connected_to_stack(self, l1, max_connected_files_timedelta_seconds=10):
-        """
-        Check if the start time of file i and the stop time if file i-1
-        indicate neighbouring orbit segments (e.g. due to radar mode change)
-        """
-        # Test if segments are adjacent based on time gap between them
-        timedelta = l1.info.start_time - self.last_stack_item.info.stop_time
-        is_connected = timedelta.seconds <= max_connected_files_timedelta_seconds
-        return is_connected
-
-    @property
-    def l1_stack(self):
-        return list(self._stack)
-
     @property
     def stack_len(self):
         return len(self.l1_stack)
@@ -318,6 +336,8 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
+        # Override the logger name of the input adapter for better logging experience
+        self.input_adapter.log.name = self.__class__.__name__
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -371,9 +391,9 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     wanted or not
     """
 
-    def __init__(self, cfg):
+    def __init__(self, log_name, cfg):
         cls_name = self.__class__.__name__
-        super(L1PreProcPolarOceanCheck, self).__init__(cls_name)
+        super(L1PreProcPolarOceanCheck, self).__init__(log_name)
         self.error = ErrorStatus(caller_id=cls_name)
 
         # Save Parameter
