@@ -19,12 +19,12 @@ from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
-class ESAPDSBaselineD(DefaultLoggingClass):
+class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
     def __init__(self, cfg, raise_on_error=False):
 
         cls_name = self.__class__.__name__
-        super(ESAPDSBaselineD, self).__init__(cls_name)
+        super(ESACryoSat2PDSBaselineD, self).__init__(cls_name)
         self.error = ErrorStatus(caller_id=cls_name)
 
         # Store arguments
