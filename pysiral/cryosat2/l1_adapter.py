@@ -1,11 +1,11 @@
 
 import os
 import sys
-import pandas
+
 import xarray
 import numpy as np
 from scipy import interpolate
-
+from netCDF4 import num2date
 
 from pysiral import __version__ as pysiral_version
 from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
@@ -33,6 +33,13 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Init main class variables
         self.nc = None
+
+    @staticmethod
+    def translate_opmode2radar_mode(op_mode):
+        """ Converts the ESA operation mode str in the pysiral compliant version """
+        translate_dict = {"sar": "sar", "lrm": "lrm", "sarin": "sin"}
+        return translate_dict.get(op_mode, None)
+
 
     def get_l1(self, filepath, polar_ocean_check=None):
         """
@@ -76,7 +83,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         timer.stop()
-        self.log.info("Created L1 object in %.3f seconds" % timer.get_seconds())
+        self.log.info("- Created L1 object in %.3f seconds" % timer.get_seconds())
 
         # Return the l1 object
         return self.l1
@@ -138,7 +145,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         info = self.l1.info
 
         # Processing environment metadata
-        info.set_attribute("pysiral_version", "pysiral_version")
+        info.set_attribute("pysiral_version", pysiral_version)
 
         # General product metadata
         info.set_attribute("mission", "cryosat2")
@@ -186,11 +193,10 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
 
         # Transfer the timestamp
-        # NOTE: Unfortunately is seem to be necessary to first convert the np.datetime64 from xarray to
-        #       Pandas TimeStamp and then to datetime.datetime as there seems to be no reliable way
-        #       to convert directly from np.datetime64 to datetime.datetime
-        tai_datetime = pandas.to_datetime(self.nc.time_20_ku.values).to_pydatetime()
-
+        # NOTE: Here it is critical that the xarray does not automatically decodes time since it is
+        #       difficult to work with the numpy datetime64 date format. Better to compute datetimes using
+        #       a know num2date conversion
+        tai_datetime = num2date(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
         converter = UTCTAIConverter()
         utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
         self.l1.time_orbit.timestamp = utc_timestamp
@@ -245,7 +251,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         wfm_range = self.get_wfm_range(window_delay, dim_ns)
 
         # Set the waveform
-        radar_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
+        op_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
+        radar_mode = self.translate_opmode2radar_mode(op_mode)
         self.l1.waveform.set_waveform_data(wfm_power, wfm_range, radar_mode)
 
         # Get the valid flags
@@ -303,7 +310,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         # Loop over all classifier variables defined in the processor definition file
         for key in self.cfg.classifier_targets.keys():
             variable_20Hz = getattr(self.nc, self.cfg.classifier_targets[key])
-            self.l1.correction.set_parameter(key, variable_20Hz)
+            self.l1.classifier.add(variable_20Hz, key)
 
         # Calculate Parameters from waveform counts
         # XXX: This is a legacy of the CS2AWI IDL processor
@@ -324,6 +331,14 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         # fmi version: Calculate the LTPP
         ltpp = CS2LTPP(wfm_counts)
         self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
+
+        # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
+        satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
+        self.l1.classifier.add(satellite_velocity_vector[:, 0], "satellite_velocity_x")
+        self.l1.classifier.add(satellite_velocity_vector[:, 1], "satellite_velocity_y")
+        self.l1.classifier.add(satellite_velocity_vector[:, 2], "satellite_velocity_z")
+
+
 
     @property
     def empty(self):
