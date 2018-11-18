@@ -56,9 +56,9 @@ input_adapter:
 output_handler:
    
     options:
+        local_machine_def_tag: baseline_d
         version:
-            value: test
-            product_file_tag: pds_ipf1d
+            source_file_tag: esa_pds_ipf1d
             version_file_tag: vftest
 
 
