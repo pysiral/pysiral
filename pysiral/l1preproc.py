@@ -2,9 +2,10 @@
 import os
 import numpy as np
 
+from pysiral import get_cls
 from pysiral.clocks import StopWatch
 from pysiral.config import ConfigInfo, TimeRangeRequest, get_yaml_config
-from pysiral.helper import ProgressIndicator
+from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level1POutput, OutputHandlerBase
@@ -57,8 +58,8 @@ class L1PreProcBase(DefaultLoggingClass):
         # The configuration for the pre-processor
         self.cfg = cfg
 
-        # Init
-        self.l1_stack = L1OrbitSegmentStack()
+        # The stack of Level-1 objects is a simple list
+        self._l1_stack = []
 
     def process_input_files(self, input_file_list):
         """
@@ -96,34 +97,136 @@ class L1PreProcBase(DefaultLoggingClass):
                 continue
 
             # Step 2: Extract and subset
-            # The input files may contain unwanted data (low latitude/land segments). It is the
-            # job of the L1PReProc children class to return only the relevant segments over
-            # polar ocean as a list of l1 objects.
-            l1_segments = self.get_polar_ocean_segments(l1, **self.polar_ocean_props)
+            # The input files may contain unwanted data (low latitude/land segments). It is the job of the
+            # L1PReProc children class to return only the relevant segments over polar ocean as a list of l1 objects.
+            l1_segments = self.extract_polar_ocean_segments(l1)
 
-            # Step 3: Merge orbit segments
+            # Step 3: Post-processing
+            # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
+            # executed as the the Level-1 segments are cropped to the minimal length.
+            self.l1_post_processing(l1_segments)
+
+            # Step 4: Merge orbit segments
             # Add the list of orbit segments to the l1 data stack and merge those that are connected
-            # (e.g. two half orbits connected at the pole) into a single l1 object.
-            self.l1_stack.append_and_merge(l1_segments, **self.orbit_segment_connectivity_props)
+            # (e.g. two half orbits connected at the pole) into a single l1 object. Orbit segments that
+            # are unconnected from other segments in the stack will be exported to netCDF files.
+            self.l1_stack_merge_and_export(l1_segments)
 
-            # Step 4: Post-Processing and Export
-            # Orbit segments that are known to be unconnected to other part of the stack can be exported
-            # to the l1p product after post-processing. The last segment in the stack is always assumed
-            # to be connected as its state is only known when parsing the next input file. An empty list
-            # indicates that all orbit segments in the stack are connected
-            l1_separate_segments = self.l1_stack.extract_separate_segments()
-            if len(l1_separate_segments) == 0:
-                continue
-            self.post_processing_and_export(l1_separate_segments)
-
-        # Step 5: Export the final orbit segment
-        # Per definition the last segment
-        self.l1_stack.extract_all_segments()
-        self.post_processing_and_export(l1_separate_segments)
+        # Step : Export the last item in the stack
+        self.l1_export_last_stack_item()
 
 
-    def post_processing_and_export(self, l1_separate_segments):
-        pass
+    def l1_post_processing(self, l1_segments):
+        """
+        Apply the post-processing procedures defined in the l1p processor definition file.
+
+        :param l1_segments: A list of Level-1 data objects
+        :return: None, the l1_segments are changed in place
+        """
+
+        # Get the post processing options
+        post_processing_items = self.cfg.get("post_processing_items", None)
+        if post_processing_items is None:
+            self.log.info("No post processing items defined")
+            return
+
+        # Measure time for the different post processors
+        timer = StopWatch()
+
+        # Get the list of post-processing items
+        for pp_item in post_processing_items:
+            timer.start()
+            pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
+            post_processor = pp_class(**pp_item["options"])
+            for l1 in l1_segments:
+                post_processor.apply(l1)
+            timer.stop()
+            msg = "- Applied post processing option `%s` in %.3f seconds" % (pp_item["label"], timer.get_seconds())
+            self.log.info(msg)
+
+
+    def trim_single_hemisphere_segment_to_polar_region(self, l1):
+        """
+        Extract polar region of interest from a segment that is either north or south (not global)
+
+        :param l1: Input Level-1 object
+        :return: Trimmed Input Level-1 object
+        """
+        self.log.info("- extracting polar region subset")
+        polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
+        is_polar = np.abs(l1.time_orbit.latitude) >= polar_threshold
+        polar_subset = np.where(is_polar)[0]
+        if len(polar_subset) != l1.n_records:
+            l1.trim_to_subset(polar_subset)
+        return l1
+
+    def trim_non_ocean_data(self, l1):
+        """
+        Remove leading and trailing data that is not if type ocean. 
+        :param l1: The input Level-1 object
+        :return: The subset of Level-1 object. (None if no ocean data is found)
+        """""" """
+
+        self.log.info("- trim outer non-ocean regions")
+        ocean = l1.surface_type.get_by_name("ocean")
+        first_ocean_index = get_first_array_index(ocean.flag, True)
+        last_ocean_index = get_last_array_index(ocean.flag, True)
+        if first_ocean_index is None or last_ocean_index is None:
+            return None
+        n = l1.info.n_records-1
+        is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
+        if not is_full_ocean:
+            ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
+            l1.trim_to_subset(ocean_subset)
+        return l1
+
+    def split_at_large_non_ocean_segments(self, l1):
+        """
+        Identify larger segments that are not ocean (land, land ice) and split the segments if necessary.
+        The return value will always be a list of Level-1 object instances, even if no non-ocean data
+        segment is present in the input data file
+        :param l1: Input Level-1 object
+        :return: a list of Level-1 objects.
+        """
+
+        # Identify connected non-ocean segments within the orbit
+        ocean = l1.surface_type.get_by_name("ocean")
+        not_ocean_flag = np.logical_not(ocean.flag)
+        segments_len, segments_start, not_ocean = rle(not_ocean_flag)
+        landseg_index = np.where(not_ocean)[0]
+        self.log.info("- total number of non-ocean segments: %g" % len(landseg_index))
+
+        # no non-ocean segments, return full segment
+        if len(landseg_index) == 0:
+            return [l1]
+
+        # Test if non-ocean segments above the size threshold that will require a split of the segment.
+        # The motivation behind this step to keep l1p data files as small as possible, while tolerating
+        # smaller non-ocean sections
+        treshold = self.cfg.polar_ocean.allow_nonocean_segment_nrecords
+        large_landsegs_index = np.where(segments_len[landseg_index] > treshold)[0]
+        large_landsegs_index = landseg_index[large_landsegs_index]
+        self.log.info("- number of non-ocean segments that trigger split: %g" % len(large_landsegs_index))
+
+        # no segment split necessary, return full segment
+        if len(large_landsegs_index) == 0:
+            return [l1]
+
+        # Split of orbit segment required, generate individual Level-1 segments from the ocean segments
+        l1_segments = []
+        start_index = 0
+        for index in large_landsegs_index:
+            stop_index = segments_start[index]
+            subset_list = np.arange(start_index, stop_index)
+            l1_segments.append(l1.extract_subset(subset_list))
+            start_index = segments_start[index+1]
+
+        # Extract the last subset
+        last_subset_list = np.arange(start_index, len(ocean.flag))
+        l1_segments.append(l1.extract_subset(last_subset_list))
+
+        # Return a list of segments
+        return l1_segments
 
     @property
     def target_region_def(self):
@@ -167,13 +270,47 @@ class L1OrbitSegmentStack(DefaultLoggingClass):
         self._stack = []
 
     def append_and_merge(self, l1_segments, **cfg):
-        pass
 
-    def extract_separate_segments(self):
+        for l1 in l1_segments:
+
+            # Stack is empty (return True -> create a new stack)
+            if self.stack_len == 0:
+                self.add_to_stack(l1, connected=True)
+                continue
+
+            # Test if segments are adjacent based on time gap between them
+
+            timedelta = l1b.info.start_time - self.last_stack_item.info.stop_time
+            threshold = self._mdef.max_connected_files_timedelta_seconds
+            is_connected = timedelta.seconds <= threshold
+
+    def extract_unconnected_segments(self):
         pass
 
     def extract_all_segments(self):
         pass
+
+    def l1_is_connected_to_stack(self, l1, max_connected_files_timedelta_seconds=10):
+        """
+        Check if the start time of file i and the stop time if file i-1
+        indicate neighbouring orbit segments (e.g. due to radar mode change)
+        """
+        # Test if segments are adjacent based on time gap between them
+        timedelta = l1.info.start_time - self.last_stack_item.info.stop_time
+        is_connected = timedelta.seconds <= max_connected_files_timedelta_seconds
+        return is_connected
+
+    @property
+    def l1_stack(self):
+        return list(self._stack)
+
+    @property
+    def stack_len(self):
+        return len(self.l1_stack)
+
+    @property
+    def last_stack_item(self):
+        return self.l1_stack[-1]
 
 
 class L1PreProcCustomOrbitSegment(L1PreProcBase):
@@ -181,6 +318,51 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
+
+    def extract_polar_ocean_segments(self, l1):
+        """
+        Splits the input Level-1 object into the polar ocean segments (e.g. by trimming land at the edges
+        or by splitting into several parts if there are land masses with the orbit segment). The returned
+        polar ocean segments should be generally free of data over non-ocean parts of the orbit, except
+        for smaller parts within the orbit.
+
+        NOTE: This subclass of the Level-1 Pre-Processor is designed for input data type with arbitrary
+              orbit segment length (e.g. data of CryoSat-2 where the orbit segments of the input data
+              is controlled by the mode mask changes).
+
+        :param l1: A Level-1 data object
+        :return: A list of Level-1 data objects (subsets of polar ocean segments from input l1)
+        """
+
+        # Step 1: Trim the orbit segment to latitude range for the specific hemisphere
+        # NOTE: There is currently no case of an input data set that is not of type half-orbit and that
+        #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
+        #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
+        #      `input_file_is_single_hemisphere=False`
+        if self.cfg.polar_ocean.input_file_is_single_hemisphere:
+            l1_subset = self.trim_single_hemisphere_segment_to_polar_region(l1)
+        else:
+            msg = "Need to implemented method for input orbit segments that can span polar regions in " + \
+                  "both hemispheres!"
+            raise NotImplementedError(msg)
+
+        # Step 2: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
+        # NOTE: Generally it can be assumed that the l1 object passed to this method contains polar ocean data.
+        #       But there tests before only include if there is ocean data and data above the polar latitude
+        #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
+        #       In this case an empty list is returned.
+        l1_subset = self.trim_non_ocean_data(l1_subset)
+        if l1_subset is None:
+            return []
+
+        # Step 3: Split the remaining subset at non-ocean parts.
+        # NOTE: There is no need to split the orbit at small features. See option `allow_nonocean_segment_nrecords`
+        #       in the l1p processor definition. But even if there are no segments to split, the output will always
+        #       be a list per requirements of the Level-1 pre-processor workflow.
+        l1_list = self.split_at_large_non_ocean_segments(l1_subset)
+
+        # All done, return the list of polar ocean segments
+        return l1_list
 
 
 class L1PreProcPolarOceanCheck(DefaultLoggingClass):
@@ -221,7 +403,9 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         lat_range = np.abs([product_metadata.lat_min, product_metadata.lat_max])
         polar_latitude_threshold = self.cfg.get("polar_latitude_threshold", None)
         if np.amax(lat_range) < polar_latitude_threshold:
-            self.log.info("- No data above polar ocean latitude threshold (%.1f)" % polar_latitude_threshold)
+            msg = "- No data above polar latitude threshold (min:%.1f, max:%.1f) [req:+/-%.1f]"
+            msg = msg % (product_metadata.lat_min, product_metadata.lat_max, polar_latitude_threshold)
+            self.log.info(msg)
             return False
 
         # 4. All tests passed
