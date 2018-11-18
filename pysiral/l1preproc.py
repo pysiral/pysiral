@@ -7,8 +7,9 @@ from pysiral.clocks import StopWatch
 from pysiral.config import ConfigInfo, TimeRangeRequest, get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
 from pysiral.errorhandler import ErrorStatus
+from pysiral.path import validate_directory
 from pysiral.logging import DefaultLoggingClass
-from pysiral.output import Level1POutput, OutputHandlerBase
+from pysiral.output import L1bDataNC
 
 
 def get_preproc(type, input_adapter, output_handler, cfg):
@@ -113,8 +114,8 @@ class L1PreProcBase(DefaultLoggingClass):
             self.l1_stack_merge_and_export(l1_segments)
 
         # Step : Export the last item in the stack
-        l1_merged = self.merge_l1_stack()
-        self.export_l1_to_netcdf(l1_merged)
+        l1_merged = self.l1_get_merged_stack()
+        self.l1_export_to_netcdf(l1_merged)
 
 
     def l1_post_processing(self, l1_segments):
@@ -211,7 +212,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :param l1_merged: The Level-1 object to exported
         :return:
         """
-        self.output_handler.export(l1)
+        self.output_handler.export_to_netcdf(l1)
         self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
 
 
@@ -542,7 +543,6 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     def output_handler_cfg(self):
         return self._output_handler_cfg
 
-
 class Level1POutputHandler(DefaultLoggingClass):
     """
     The output handler for l1p product files
@@ -556,10 +556,79 @@ class Level1POutputHandler(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=cls_name)
         self.cfg = cfg
 
+        self.pysiral_cfg = ConfigInfo()
+
+        # Init class properties
+        self._path = None
+        self._filename = None
+
     def remove_old_if_applicable(self, period):
         self.log.warning("Not implemented: self.remove_old_if_applicable")
         return
 
+    def export_to_netcdf(self, l1):
+        """
+        Workflow to export a Level-1 object to l1p netCDF product. The workflow includes the generation of the
+        output path (if applicable).
+        :param l1: The Level-1 object to be exported
+        :return: None
+        """
+
+        # Get filename and path
+        self.set_output_filepath(l1)
+
+        # Check if path exists
+        validate_directory(self.path)
+
+        # Export the data object
+        ncfile = L1bDataNC()
+        ncfile.l1b = l1
+        ncfile.output_folder = self.path
+        ncfile.filename = self.filename
+        ncfile.export()
 
 
+    def set_output_filepath(self, l1):
+        """
+        Sets the class properties required for the file export
+        :param l1: The Level-1 object
+        :return: None
+        """
 
+        local_machine_def_tag = self.cfg.get("local_machine_def_tag", None)
+        if local_machine_def_tag is None:
+            msg = "Missing mandatory option %s in l1p processor definition file -> aborting"
+            msg = msg % "root.output_handler.options.local_machine_def_tag"
+            msg = msg + "\nOptions: \n"+self.cfg.makeReport()
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+
+
+        # TODO: This is work in progress
+        filename_template = "pysiral-l1p-{platform}-{source}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"
+        time_fmt = "%Y%m%dT%H%M%S"
+        values = {"platform": l1.info.mission,
+                  "source": self.cfg.version.source_file_tag,
+                  "hemisphere": l1.info.hemisphere,
+                  "tcs": l1.time_orbit.timestamp[0].strftime(time_fmt),
+                  "tce": l1.time_orbit.timestamp[-1].strftime(time_fmt),
+                  "file_version": self.cfg.version.version_file_tag}
+        self._filename = filename_template.format(**values)
+
+        local_repository = self.pysiral_cfg.local_machine.l1b_repository
+        export_folder = local_repository[l1.info.mission][local_machine_def_tag].l1p
+        yyyy = "%04g" % l1.time_orbit.timestamp[0].year
+        mm = "%02g" % l1.time_orbit.timestamp[0].month
+        self._path = os.path.join(export_folder, l1.info.hemisphere, yyyy, mm)
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def last_written_file(self):
+        return os.path.join(self.path, self.filename)
