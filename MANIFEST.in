@@ -1,5 +1,6 @@
 include LICENSE
 include pysiral/VERSION
+include pysiral/PYSIRAL-CFG-LOC
 include requirements.txt
 include Makefile
 recursive-include bin *.py *.bat
