@@ -120,7 +120,6 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         self._reset_file_list()
         for mode in self.cfg.lookup_modes:
             self._append_files(mode, period)
-
         return self.sorted_list
 
     def _reset_file_list(self):
@@ -128,15 +127,18 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         self._sorted_list = []
 
     def _append_files(self, mode, period):
+        lookup_year, lookup_month = period.start.year, period.start.month
+        lookup_dir = self._get_lookup_dir(lookup_year, lookup_month, mode)
+        self.log.info("Search directory: %s" % lookup_dir)
+        n_files = 0
         for year, month, day in period.days_list:
-            lookup_dir = self._get_lookup_dir(year, month, mode)
-            self.log.info("Search directory: %s" % lookup_dir)
             # Search for specific day
             file_list = self._get_files_per_day(lookup_dir, year, month, day)
-            self.log.info(" Found %g %s files" % (len(file_list), mode))
             tcs_list = self._get_tcs_from_filenames(file_list)
+            n_files += len(file_list)
             for file, tcs in zip(file_list, tcs_list):
                 self._list.append((file, tcs))
+        self.log.info(" Found %g %s files" % (n_files, mode))
 
     def _get_files_per_day(self, lookup_dir, year, month, day):
         """ Return a list of files for a given lookup directory """
