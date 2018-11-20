@@ -123,13 +123,15 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         :param time_20Hz: 20 Hz reference time
         :return: the interpolated 20Hz variable
         """
+        error_status = False
         try:
             f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
             variable_20Hz = f(time_20Hz)
         except ValueError:
             fill_value = np.nan
             variable_20Hz = np.full(time_20Hz.shape, fill_value)
-        return variable_20Hz
+            error_status = True
+        return variable_20Hz, error_status
 
     def _read_input_netcdf(self, filepath, attributes_only=False):
         """ Read the netCDF file via xarray """
@@ -282,8 +284,12 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Loop over all range correction variables defined in the processor definition file
         for key in self.cfg.range_correction_targets.keys():
-            variable_1Hz = getattr(self.nc, self.cfg.range_correction_targets[key])
-            variable_20Hz = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
+            pds_var_name = self.cfg.range_correction_targets[key]
+            variable_1Hz = getattr(self.nc, pds_var_name)
+            variable_20Hz, error_status = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
+            if error_status:
+                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
+                self.log.warning(msg)
             self.l1.correction.set_parameter(key, variable_20Hz)
 
     def _set_surface_type_group(self):
@@ -300,7 +306,10 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Interpolate 1Hz surface type flag to 20 Hz
         surface_type_1Hz = self.nc.surf_type_01.values
-        surface_type_20Hz = self.interp_1Hz_to_20Hz(surface_type_1Hz, time_1Hz, time_20Hz, kind="nearest")
+        surface_type_20Hz, error_status = self.interp_1Hz_to_20Hz(surface_type_1Hz, time_1Hz, time_20Hz, kind="nearest")
+        if error_status:
+            msg = "- Error in 20Hz interpolation for variable `surf_type_01` -> set only dummy"
+            self.log.warning(msg)
 
         # Set the flag
         for key in ESA_SURFACE_TYPE_DICT.keys():
