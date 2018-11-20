@@ -123,8 +123,12 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         :param time_20Hz: 20 Hz reference time
         :return: the interpolated 20Hz variable
         """
-        f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
-        variable_20Hz = f(time_20Hz)
+        try:
+            f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
+            variable_20Hz = f(time_20Hz)
+        except ValueError:
+            fill_value = np.nan
+            variable_20Hz = np.full(time_20Hz.shape, fill_value)
         return variable_20Hz
 
     def _read_input_netcdf(self, filepath, attributes_only=False):
