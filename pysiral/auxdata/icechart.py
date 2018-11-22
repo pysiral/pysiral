@@ -373,7 +373,7 @@ class ICA(AuxdataBaseClass):
         return [data_ct,data_ca,data_cb,data_cc,data_sa,data_sb,data_sc]
 
 
-def get_tif_image_data(self, path):
+def get_tif_image_data(path):
     """ Open the tif file and return its content """
     im = Image.open(str(path))
     pixel_list = im.getdata()
