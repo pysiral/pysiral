@@ -127,13 +127,13 @@ class OsiSafSIC(AuxdataBaseClass):
         path = self.cfg.local_repository
 
         # The path needs to be completed if two products shall be used
-        if "auto_product_change" in self.cfg.options:
+        if self.cfg.options.has_key("auto_product_change"):
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
             path = os.path.join(path, product_def["subfolder"])
-            self.cfg.set_filenaming(product_def["filenaming"])
-            self.cfg.set_long_name(product_def["long_name"])
+            self.cfg.filenaming = product_def["filenaming"]
+            self.cfg.long_name = product_def["long_name"]
 
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
