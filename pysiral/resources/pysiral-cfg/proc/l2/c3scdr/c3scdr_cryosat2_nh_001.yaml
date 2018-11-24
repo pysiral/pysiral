@@ -17,14 +17,16 @@ auxdata:
     - mss:
          name: dtu15
          options:
+             exception_on_error: True
              latitude_range: [50.0, 90.0]
     - sic:
-         name: osisaf430
+         name: c3sv1p2
          options:
             exception_on_error: True
     - sitype:
          name: c3s_v1p0
-         options: null
+         options:
+             exception_on_error: True
     - snow:
          name: warren99
          options:
