@@ -106,8 +106,6 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
-        self.add_handler_message("OsiSafSIC: Loaded SIC file: %s" % path)
-
     def _get_sic_track(self, l2):
         """ Simple extraction along trajectory"""
 
