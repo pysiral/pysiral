@@ -102,6 +102,10 @@ class AuxdataBaseClass(object):
         # `register_auxvar` method of the parent class
         self.get_l2_track_vars(l2)
 
+        # Check on errors
+        if self.error.status and self.exception_on_error:
+            self.error.raise_on_error()
+
         # Update the Level-2 object
         try:
             self.update_l2(l2)
@@ -140,9 +144,14 @@ class AuxdataBaseClass(object):
             # NOTE: The implementation of this method needs to be in the subclass
             self.load_requested_auxdata()
             self._current_date = self._requested_date
-            self.add_handler_message(self.__class__.__name__ + ": Load "+self.requested_filepath)
+            if self.has_data_loaded:
+                self.add_handler_message(self.__class__.__name__ + ": Load "+self.requested_filepath)
         else:
-            self.add_handler_message(self.__class__.__name__+": Data already present")
+            if self.has_data_loaded:
+                self.add_handler_message(self.__class__.__name__+": Data already present")
+            else:
+                msg = ": No Data: Loading failed in an earlier attempt"
+                self.add_handler_message(self.__class__.__name__ + msg)
 
     def update_l2(self, l2):
         """ Automatically add all auxiliary variables to a Level-2 data object"""
@@ -157,6 +166,20 @@ class AuxdataBaseClass(object):
     @property
     def cfg(self):
         return self._cfg
+
+    @property
+    def has_data_loaded(self):
+        if not hasattr(self, "_data"):
+            return False
+        return self._data is not None
+
+    @property
+    def exception_on_error(self):
+        if self.cfg.options.has_key("exception_on_error"):
+            exception_on_error = self.cfg.options.exception_on_error
+        else:
+            exception_on_error = False
+        return exception_on_error
 
     @property
     def requested_filepath(self):
