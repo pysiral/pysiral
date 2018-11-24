@@ -66,7 +66,7 @@ class OsiSafSIC(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if error with file I/O
-        if self.error.status:
+        if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
         else:
             # Get and return the track
