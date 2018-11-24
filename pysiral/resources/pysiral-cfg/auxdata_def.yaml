@@ -17,7 +17,7 @@ auxdata_types:
 # List of icechart products (fmi version)
 icechart:
     
-    # CANADIAN ICE CHARTS    
+    # CANADIAN ICE CHARTS
     canada:
         pyclass: IC
         long_name: ICE CHART Sea Ice Concentration

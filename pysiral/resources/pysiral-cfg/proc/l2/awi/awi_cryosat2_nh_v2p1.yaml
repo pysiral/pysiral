@@ -3,7 +3,7 @@
 id: "AWI CryoSat-2 Sea Ice Product (cs2awi v2.1) (awi_cryosat2_nh_020)"
 version_tag: "v2p1awi"
 
-# This settings file is valid for 
+# This settings file is valid for
 hemisphere: north
 
 # Level 2 processor settings are mission specific
@@ -24,7 +24,7 @@ auxdata:
     # Load the
     - mss:
             name: dtu18
-            options: 
+            options:
                 latitude_range: [50.0, 90.0]
     
     - sic:
@@ -32,7 +32,7 @@ auxdata:
             options:
                 # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
                 # All NaN values inside the pole hole latitude threshold will be set to 100%
-                fill_pole_hole: 
+                fill_pole_hole:
                     pole_hole_lat_threshold: 87.0
                     pole_hole_fill_value: 100.
     
@@ -40,13 +40,13 @@ auxdata:
             name: osisaf
             options: null
     
-    - snow: 
+    - snow:
             name: clim_w99amsr2
-            options: 
+            options:
                 fyi_correction_factor: 0.5
 
 # geophysical corrections applied to the l1b range window
-corrections: 
+corrections:
     - dry_troposphere
     - wet_troposphere
     - inverse_barometric
@@ -58,7 +58,7 @@ corrections:
     - geocentric_polar_tide
     
 # Surface type classification algorithm
-surface_type: 
+surface_type:
     pyclass: SICCI2
     options:
         sar:
@@ -93,49 +93,49 @@ surface_type:
                 ice_concentration_min: 70.0
 
 # Retracking algorithm dependent on surface type
-retracker: 
-    ocean: 
+retracker:
+    ocean:
         pyclass: NoneRetracker
         options: null
-    lead: 
+    lead:
         pyclass: cTFMRA
         options:
-            # if arrays than [lrm, sar, sin]    
+            # if arrays than [lrm, sar, sin]
             threshold: 0.5
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
-            wfm_smoothing_window_size: [11, 11, 21] 
-            first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+            wfm_smoothing_window_size: [11, 11, 21]
+            first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
             first_maximum_local_order: 1
             range_bias: [-0.022, 0.047, 0.017]
             uncertainty:
                 type: fixed
-                value: 0.1                
-    sea_ice: 
+                value: 0.1
+    sea_ice:
         pyclass: cTFMRA
-        options: 
-            # if arrays than [lrm, sar, sin]   
+        options:
+            # if arrays than [lrm, sar, sin]
             threshold: 0.5
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
-            wfm_smoothing_window_size: [11, 11, 21] 
-            first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
+            wfm_smoothing_window_size: [11, 11, 21]
+            first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
             first_maximum_local_order: 1
             range_bias: [-0.022, 0.047, 0.017]
             uncertainty:
                 type: fixed
                 value: 0.1
             
-# Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard 
-ssa: 
+# Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+ssa:
     pyclass: SSASmoothedLinear
-    options: 
+    options:
         use_ocean_wfm: False
         smooth_filter_width_m: 100000.0
         smooth_filter_width_footprint_size: 300.0
-        pre_filtering: true       
+        pre_filtering: true
         pre_filter_maximum_mss_median_offset: 5.0 # in meter
         uncertainty_tiepoints_distance_max: 100000.
         uncertainty_minimum: 0.02
@@ -152,15 +152,15 @@ afrb:
     options: null
 
 # Algorithm for converting radar freeboard into freeboard
-frb: 
+frb:
     pyclass: SnowGeometricCorrection
-    options: 
+    options:
         vacuum_light_speed_reduction: 0.22
         
 # Algorithm for getting sea ice thickness from other l2 parameters
-sit: 
+sit:
     pyclass: SeaIceFreeboardDefault
-    options: 
+    options:
         water_density: 1024.0
         fyi_density: 916.7
         myi_density: 882.0
@@ -169,35 +169,35 @@ sit:
             fyi_density: 35.7
             myi_density: 23.0
         
-# List of filter at different stages of l2 procesing 
+# List of filter at different stages of l2 procesing
 # (can be list of filters)
-filter: 
+filter:
 
     # Filters after freeboard computation
-    freeboard: 
-        frb_valid_range: 
+    freeboard:
+        frb_valid_range:
             pyclass: L2ParameterValidRange
-            options: 
+            options:
                 valid_minimum_point_value: -0.25
                 valid_maximum_point_value: 2.25
                 
     # Filters after thickness computation
-    thickness: 
-        frb_valid_range: 
+    thickness:
+        frb_valid_range:
             pyclass: L2ParameterValidRange
-            options: 
+            options:
                 valid_minimum_point_value: -0.5
                 valid_maximum_point_value: 10.5
                 
 # Tests if l1b orbit file is valid
-validator: 
+validator:
 
     # Tests (Can be several) after surface type classification
-    surface_type: 
-        n_leads: 
+    surface_type:
+        n_leads:
             pyclass: LeadFixedMinimumNumber
-            options: 
+            options:
                 minimum_n_leads: 3
         
-# Post-Processing (tbd if needed)            
+# Post-Processing (tbd if needed)
 post_processing: null
