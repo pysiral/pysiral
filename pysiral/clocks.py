@@ -9,7 +9,9 @@ This module is dedicatet to convert between different time standards
 
 from pysiral import USER_CONFIG_PATH
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
+import time
 import numpy as np
 
 import os
@@ -47,8 +49,7 @@ class UTCTAIConverter(object):
         else:
             leap_seconds = np.ndarray(shape=tai_datetimes.shape, dtype=int)
             for i in np.arange(len(tai_datetimes)):
-                leap_seconds[i] = self._get_leap_seconds_for_utc_time(
-                    tai_datetimes[i])
+                leap_seconds[i] = self._get_leap_seconds_for_utc_time(tai_datetimes[i])
 
         # Apply leap seconds
         for i, tai_time in enumerate(tai_datetimes):
@@ -93,8 +94,7 @@ class UTCTAIConverter(object):
             self.leap_seconds = np.append(self.leap_seconds, int(arr[1]))
             # Compute datetime timestamp of leap seconds occurence
             timestamp = self.epoch + timedelta(seconds=int(arr[0]))
-            self.leap_seconds_timestamp = np.append(
-                self.leap_seconds_timestamp, timestamp)
+            self.leap_seconds_timestamp = np.append(self.leap_seconds_timestamp, timestamp)
 
     def _get_leap_seconds_for_utc_time(self, datetime):
         """ Returns applicable leap seconds for given datetime """
@@ -111,6 +111,32 @@ class UTCTAIConverter(object):
     def local_ls_ietf_definition(self):
         """ Return the local filename for the IETF leap seconds definition """
         return os.path.join(USER_CONFIG_PATH, "leap-seconds.list")
+
+
+class StopWatch(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.t0 = None
+        self.t1 = None
+
+    def start(self):
+        self.t0 = time.time()
+
+    def stop(self):
+        self.t1 = time.time()
+
+    def get_seconds(self):
+        return self.t1 - self.t0
+
+    def get_duration(self, fmt="%H:%M:%S"):
+        # Example time
+        datum = datetime(1900, 1, 1)
+        elapsed_seconds = self.t1 - self.t0
+        duration = datum + relativedelta(seconds=elapsed_seconds)
+        return duration.strftime(fmt)
 
 
 if __name__ == "__main__":

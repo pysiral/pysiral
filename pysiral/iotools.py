@@ -172,7 +172,14 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
 
     # 1) get list of all files for monthly folders
     yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
-    l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
+
+    # NOTE: Check if folder is l1p instead of l1bdata
+    #       -> l1p indicated new l1 data version with different filenaming. File structure is still the same
+    repo_branch = l1b_repo = config.local_machine.l1b_repository[mission_id][version]
+    if repo_branch.has_key("l1bdata"):
+        l1b_repo = repo_branch.l1bdata
+    else:
+        l1b_repo = repo_branch.l1p
     directory = os.path.join(l1b_repo, hemisphere, yyyy, mm)
     all_l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
 

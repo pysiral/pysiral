@@ -18,9 +18,8 @@ from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 from pysiral.cryosat2.functions import (
     get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
     get_cryosat2_wfm_range)
-# fmi modification: CS2LTPP added
-from pysiral.classifier import (CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness,
-                                EnvisatWaveformParameter)
+
+from pysiral.classifier import (CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness, EnvisatWaveformParameter)
 
 from pysiral.clocks import UTCTAIConverter
 from pysiral.esa.functions import get_structarr_attr
@@ -195,13 +194,15 @@ class L1bAdapterCryoSat(object):
         for i, record in enumerate(self.cs2l1b.waveform):
             echo_power[i, :] = get_cryosat2_wfm_power(
                 np.array(record.wfm).astype(np.float32),
-                record.linear_scale, record.power_scale)
+                record.linear_scale, record.power_scalepower_scale)
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
 
-            # Transfer to L1bData
-        self.l1b.waveform.set_waveform_data(
-            echo_power, echo_range, self.cs2l1b.radar_mode)
+        # Transfer the waveform data
+        self.l1.waveform.set_waveform_data(echo_power, echo_range, self.l1.info.radar_mode)
+
+        # Transfer waveform flag
+
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
@@ -250,7 +251,7 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
-        
+
         # fmi version: Calculate the LTPP
         ltpp = CS2LTPP(wfm)
         self.l1b.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")

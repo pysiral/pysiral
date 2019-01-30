@@ -82,7 +82,19 @@ if not os.path.isdir(USER_CONFIG_PATH):
     target_filename = os.path.join(USER_CONFIG_PATH, "local_machine_def.yaml")
     shutil.copy(template_filename, target_filename)
 
-def get_cls(module_name, class_name):
+def get_cls(module_name, class_name, relaxed=True):
     """ Small helper function to dynamically load classes"""
-    module = importlib.import_module(module_name)
-    return getattr(module, class_name, None)
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        if relaxed:
+            return None
+        else:
+            raise ImportError("Cannot load module: %s" % module_name)
+    try:
+        return getattr(module, class_name)
+    except AttributeError:
+        if relaxed:
+            return None
+        else:
+            raise NotImplementedError("Cannot load class: %s.%s" % (module_name, class_name))

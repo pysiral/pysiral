@@ -253,8 +253,7 @@ class TimeRangeRequest(DefaultLoggingClass):
     # TODO: Future planned option (weekly: 7 days from start day) and
     #       (week_of_year: self explanatory)
 
-    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
-                 raise_if_empty=False):
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[], raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
@@ -790,6 +789,14 @@ class DefaultCommandLineArguments(object):
                 "default": None,
                 "required": False,
                 "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
+
+            # fetch the level-2 settings file
+            "l1p-settings": {
+                "action": "store",
+                "dest": "l1p_settings",
+                "default": None,
+                "required": True,
+                "help": 'id or path to Level-1P processor definition file file'},
 
             # fetch the level-2 settings file
             "l2-settings": {
