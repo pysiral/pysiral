@@ -247,7 +247,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if error with file I/O
-        if self.error.status:
+        if not self.has_data_loaded:
             snow = SnowParameterContainer()
             snow.set_dummy(l2.n_records)
         else:
