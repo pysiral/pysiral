@@ -194,12 +194,12 @@ class L1bAdapterCryoSat(object):
         for i, record in enumerate(self.cs2l1b.waveform):
             echo_power[i, :] = get_cryosat2_wfm_power(
                 np.array(record.wfm).astype(np.float32),
-                record.linear_scale, record.power_scalepower_scale)
+                record.linear_scale, record.power_scale)
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
 
         # Transfer the waveform data
-        self.l1.waveform.set_waveform_data(echo_power, echo_range, self.l1.info.radar_mode)
+        self.l1b.waveform.set_waveform_data(echo_power, echo_range, self.cs2l1b.radar_mode)
 
         # Transfer waveform flag
 
