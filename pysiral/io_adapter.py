@@ -180,6 +180,10 @@ class L1bAdapterCryoSat(object):
         utc_timestamp = converter.tai2utc(tai_timestamp, check_all=False)
         self.l1b.time_orbit.timestamp = utc_timestamp
 
+        # Set antenna pitch, roll, yaw (dummy values for now)
+        dummy_val = np.full(longitude.shape, np.nan)
+        self.l1b.time_orbit.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
+
     def _transfer_waveform_collection(self):
 
         # Create the numpy arrays for power & range
