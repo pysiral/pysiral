@@ -14,13 +14,16 @@ hemisphere: north
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 auxdata:
     
+    - region:
+         name: nsidc_mod
+         options: null
     - mss:
          name: dtu15
          options:
              exception_on_error: True
              latitude_range: [50.0, 90.0]
     - sic:
-         name: c3sv1p2
+         name: c3s_v1p2
          options:
             exception_on_error: True
     - sitype:
