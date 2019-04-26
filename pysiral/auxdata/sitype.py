@@ -379,8 +379,8 @@ class FYIDefault(AuxdataBaseClass):
     @property
     def uncertainty_default(self):
         try:
-            if "uncertainty_default" in self.cfg.option:
-                return self.cfg.option.uncertainty_default
+            if "uncertainty_default" in self.cfg.options:
+                return self.cfg.options.uncertainty_default
         except TypeError:
             pass
         return 0.0
