@@ -18,6 +18,7 @@ pyresample
 pyshp
 pyyaml
 scipy
+Sphinx
 treedict
 xmltodict
 xarray
