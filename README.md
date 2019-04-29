@@ -4,7 +4,7 @@ python sea ice radar altimetry processing library
 
 ## Documentation
 
-See [webpage at ReadTheDocs.org](pysiral.readthedocs.io). [![Documentation Status](https://readthedocs.org/projects/pysiral/badge/?version=latest)](https://pysiral.readthedocs.io/en/latest/?badge=latest)
+See [webpage at ReadTheDocs.org](pysiral.readthedocs.io) [![Documentation Status](https://readthedocs.org/projects/pysiral/badge/?version=latest)](https://pysiral.readthedocs.io/en/latest/?badge=latest)
 
 ## Requirements
 
