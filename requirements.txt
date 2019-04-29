@@ -19,6 +19,7 @@ pyshp
 pyyaml
 scipy
 Sphinx
+sphinx_rtd_theme
 treedict
 xmltodict
 xarray
