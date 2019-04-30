@@ -18,9 +18,6 @@ pyresample
 pyshp
 pyyaml
 scipy
-Sphinx
-sphinx-automodapi
-sphinx_rtd_theme
 treedict
 xmltodict
 xarray

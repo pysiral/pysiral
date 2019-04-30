@@ -1,0 +1,3 @@
+Sphinx
+sphinx-automodapi
+sphinx_rtd_theme
