@@ -6,6 +6,10 @@
 Welcome to pysiral's documentation!
 ===================================
 
+This is the main page for the documentation of the python sea ice radar altimetry (pysiral) toolbox. 
+
+.. note::
+   This page is work in progress.
 
 .. toctree::
    :maxdepth: 2
@@ -28,9 +32,9 @@ Welcome to pysiral's documentation!
 
    codingconv
 
-Indices and tables
-------------------
+.. toctree::
+   :maxdepth: 2
+   :caption: Module Index
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   modules
+
