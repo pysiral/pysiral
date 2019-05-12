@@ -117,7 +117,6 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_merged = self.l1_get_merged_stack()
         self.l1_export_to_netcdf(l1_merged)
 
-
     def l1_post_processing(self, l1_segments):
         """
         Apply the post-processing procedures defined in the l1p processor definition file.
@@ -145,7 +144,6 @@ class L1PreProcBase(DefaultLoggingClass):
             timer.stop()
             msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
             self.log.info(msg)
-
 
     def l1_stack_merge_and_export(self, l1_segments):
         """

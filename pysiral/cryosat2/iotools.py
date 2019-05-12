@@ -92,8 +92,9 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
             folder = os.path.join(folder, "%02g" % self.month)
         return folder
 
-    def _get_list_item(self, filename, dirpath):
-        return (os.path.join(dirpath, filename), filename.split("_")[6])
+    @staticmethod
+    def _get_list_item(filename, dirpath):
+        return os.path.join(dirpath, filename), filename.split("_")[6]
 
     def _sort_mixed_mode_file_list(self):
         dtypes = [('path', object), ('start_time', object)]
@@ -159,8 +160,8 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         :return: tcs: a list with time coverage start strings of same length as files
         """
         tcs = []
-        for file in files:
-            filename = os.path.split(file)[1]
+        for filename in files:
+            filename = os.path.split(filename)[1]
             filename_segments = filename.split(self.cfg.filename_sep)
             tcs.append(filename_segments[self.cfg.tcs_str_index])
         return tcs

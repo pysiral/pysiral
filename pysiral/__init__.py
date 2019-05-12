@@ -82,6 +82,7 @@ if not os.path.isdir(USER_CONFIG_PATH):
     target_filename = os.path.join(USER_CONFIG_PATH, "local_machine_def.yaml")
     shutil.copy(template_filename, target_filename)
 
+
 def get_cls(module_name, class_name, relaxed=True):
     """ Small helper function to dynamically load classes"""
     try:
