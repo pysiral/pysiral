@@ -24,8 +24,20 @@ input_adapter:
     
     options:
         
-        name: "IPF SRAL/MWR Level 2 Measurement "
-        
+        name: "IPF SRAL/MWR Level 2 Measurement"
+
+        # Settings for the xml manifest
+        xml_manifest: xfdumanifest.xml
+        xml_metadata_object_index:
+            processing: 0
+            acquisitionPeriod: 1
+            platform: 2
+            generalProductInformation: 3
+            measurementOrbitReference: 4
+            measurementQualityInformation: 5
+            measurementFrameSet: 6
+            sralProductInformation: 7
+
         timeliness_dict:
             NT: nrt
 

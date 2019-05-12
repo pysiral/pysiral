@@ -15,7 +15,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import filename_from_path
+from pysiral.path import filename_from_path, folder_from_filename
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
@@ -33,12 +33,6 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
 
         # Init main class variables
         self.nc = None
-
-    @staticmethod
-    def translate_opmode2radar_mode(op_mode):
-        """ Converts the ESA operation mode str in the pysiral compliant version """
-        translate_dict = {"sar": "sar", "lrm": "lrm", "sarin": "sin"}
-        return translate_dict.get(op_mode, None)
 
     def get_l1(self, filepath, polar_ocean_check=None):
         """
@@ -62,6 +56,9 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             self.log.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
+
+        # Parse xml header file
+        self._parse_xml_manifest(filepath)
 
         # Parse the input file
         self._read_input_netcdf(filepath, attributes_only=True)
@@ -132,6 +129,34 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             error_status = True
         return variable_20Hz, error_status
 
+    def _parse_xml_manifest(self, filepath):
+        """
+        Parse the Sentinel-3 XML header file and extract key attributes for filtering
+        :param filepath: the filepath for the netcdf
+        :return: None
+        """
+        # Retrieve header information from mission settings
+        xml_header_file = self.cfg.xml_manifest
+        dataset_folder = folder_from_filename(filepath)
+        filename_header = os.path.join(dataset_folder, xml_header_file)
+        self._xmlh = parse_sentinel3_l1b_xml_header(filename_header)
+
+    def _get_xml_content(self, section_name, tag):
+        """ Returns the generalProductInformation content of the xml manifest
+        :return: dictionary
+        """
+
+        # Extract Metadata
+        metadata = self._xmlh["metadataSection"]["metadataObject"]
+
+        # Extract General Product Info
+        index = self.cfg.xml_metadata_object_index[section_name]
+        product_info = metadata[index]["metadataWrap"]["xmlData"]
+        print product_info.keys()
+        product_info = product_info[tag]
+
+        return product_info
+
     def _read_input_netcdf(self, filepath, attributes_only=False):
         """ Read the netCDF file via xarray """
         try:
@@ -149,6 +174,10 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         metadata =  self.nc.attrs
         info = self.l1.info
 
+        # Get xml manifest content
+        product_info = self._get_xml_content("generalProductInformation", "sentinel3:generalProductInformation")
+        sral_info = self._get_xml_content("sralProductInformation", "sralProductInformation")
+
         # Processing environment metadata
         info.set_attribute("pysiral_version", pysiral_version)
 
@@ -159,11 +188,8 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         info.set_attribute("mission_data_version", metadata["source"])
         info.set_attribute("orbit", metadata["absolute_rev_number"])
         info.set_attribute("cycle", metadata["cycle_number"])
-
-        product_name = metadata["product_name"]
-        info.set_attribute("mission_data_source", product_name)
-        timeliness_tag = product_name.split("_")[-2]
-        info.set_attribute("timeliness", self.cfg.timeliness_dict[timeliness_tag])
+        info.set_attribute("mission_data_source",  metadata["product_name"])
+        info.set_attribute("timeliness", self.cfg.timeliness_dict[str(product_info["sentinel3:timeliness"])])
 
         # Time-Orbit Metadata
         lats = [float(metadata["first_meas_lat"]), float(metadata["last_meas_lat"])]
@@ -178,10 +204,10 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Product Content Metadata
         for mode in ["sar", "sin", "lrm"]:
             percent_value = 0.0
-            if metadata["sir_op_mode"].strip().lower() == mode:
+            if mode == "sar":
                 percent_value = 100.
             info.set_attribute("{}_mode_percent".format(mode), percent_value)
-        info.set_attribute("open_ocean_percent", float(metadata["open_ocean_percent"])*0.01)
+        info.set_attribute("open_ocean_percent", float(sral_info["sral:openOceanPercentage"]))
 
     def _set_l1_data_groups(self):
         """
@@ -364,3 +390,14 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
     @property
     def empty(self):
         return None
+
+
+def parse_sentinel3_l1b_xml_header(filename):
+    """
+    Reads the XML header file of a Sentinel 3 L1b Data set
+    and returns the contents as an OrderedDict
+    """
+    import xmltodict
+    with open(filename) as fd:
+        content_odereddict = xmltodict.parse(fd.read())
+    return content_odereddict[u'xfdu:XFDU']
