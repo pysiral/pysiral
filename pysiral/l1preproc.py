@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+from operator import attrgetter
 
 from pysiral import get_cls
 from pysiral.clocks import StopWatch
@@ -231,7 +232,8 @@ class L1PreProcBase(DefaultLoggingClass):
 
     def trim_two_hemisphere_segment_to_polar_regions(self, l1):
         """
-        Extract polar regions of interest from a segment that is either north, south or both
+        Extract polar regions of interest from a segment that is either north, south or both. The method will
+        preserve the order of the hemispheres
 
         :param l1: Input Level-1 object
         :return: List of Trimmed Input Level-1 objects
@@ -239,42 +241,66 @@ class L1PreProcBase(DefaultLoggingClass):
         self.log.info("- extracting polar region subsets")
         polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
         l1_list = []
+
+        # Loop over the two hemispheres
         for hemisphere in self.cfg.polar_ocean.target_hemisphere:
-            is_polar = np.abs(l1.time_orbit.latitude) >= polar_threshold
+
+            if hemisphere == "north":
+                is_polar = np.abs(l1.time_orbit.latitude) >= polar_threshold
+            elif hemisphere == "south":
+                is_polar = np.abs(l1.time_orbit.latitude) <= -1.0*polar_threshold
+            else:
+                msg = "Unknown hemisphere: %s [north|south]" % hemisphere
+                self.error.add_error("invalid-hemisphere", msg)
+                self.error.raise_on_error()
+
+            # Extract the subset (if applicable)
             polar_subset = np.where(is_polar)[0]
+
+            # is true subset -> add subset to output list
             if len(polar_subset) != l1.n_records:
                 l1_segment = l1.extract_subset(polar_subset)
                 l1_list.append(l1_segment)
+
+            # entire segment in polar region -> add full segment to output list
             elif len(polar_subset) == l1.n_records:
                 l1_list.append(l1)
+
+            # no coverage in target hemisphere -> remove segment from list
             else:
                 pass
 
+        # Last step: Sort the list to maintain temporal order
+        # (only if more than 1 segment)
+        print len(l1_list)
+        if len(l1_list) > 1:
+            for l1 in l1_list:
+                print l1.tcs
+            l1_list = sorted(l1_list, key=attrgetter("tcs"))
+            for l1 in l1_list:
+                print l1.tcs
+
         return l1_list
 
-    def trim_non_ocean_data(self, l1_list):
+    def trim_non_ocean_data(self, l1):
         """
         Remove leading and trailing data that is not if type ocean. 
-        :param l1_list: A list of input Level-1 objects
-        :return: A list of subsetted Level-1 objects. (Segments with no ocean data are removed from the list)
+        :param l1: The input Level-1 objects
+        :return: The subsetted Level-1 objects. (Segments with no ocean data are removed from the list)
         """""" """
 
         self.log.info("- trim outer non-ocean regions")
-        l1_list_trimmed = []
-        for l1 in l1_list:
-            ocean = l1.surface_type.get_by_name("ocean")
-            first_ocean_index = get_first_array_index(ocean.flag, True)
-            last_ocean_index = get_last_array_index(ocean.flag, True)
-            if first_ocean_index is None or last_ocean_index is None:
-                continue
-            n = l1.info.n_records-1
-            is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
-            if not is_full_ocean:
-                ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
-                l1.trim_to_subset(ocean_subset)
-            l1_list_trimmed.append(l1)
-
-        return l1_list_trimmed
+        ocean = l1.surface_type.get_by_name("ocean")
+        first_ocean_index = get_first_array_index(ocean.flag, True)
+        last_ocean_index = get_last_array_index(ocean.flag, True)
+        if first_ocean_index is None or last_ocean_index is None:
+            return None
+        n = l1.info.n_records-1
+        is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
+        if not is_full_ocean:
+            ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
+            l1.trim_to_subset(ocean_subset)
+        return l1
 
     def split_at_large_non_ocean_segments(self, l1):
         """
@@ -395,15 +421,20 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
         #       In this case an empty list is returned.
-        l1_list = self.trim_non_ocean_data(l1_list)
-        if len(l1_list) is 0:
-            return []
+        l1_trimmed_list = []
+        for l1 in l1_list:
+            l1_trimmed = self.trim_non_ocean_data(l1)
+            if l1_trimmed is not None:
+                l1_trimmed_list.append(l1_trimmed)
 
         # Step 3: Split the remaining subset at non-ocean parts.
         # NOTE: There is no need to split the orbit at small features. See option `allow_nonocean_segment_nrecords`
         #       in the l1p processor definition. But even if there are no segments to split, the output will always
         #       be a list per requirements of the Level-1 pre-processor workflow.
-        l1_list = self.split_at_large_non_ocean_segments(l1_list)
+        l1_list = []
+        for l1 in l1_trimmed_list:
+            l1_splitted_list = self.split_at_large_non_ocean_segments(l1)
+            l1_list.extend(l1_splitted_list)
 
         # All done, return the list of polar ocean segments
         return l1_list
