@@ -102,7 +102,7 @@ level1_preprocessor:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 50.0
             input_file_is_single_hemisphere: False
-            allow_nonocean_segment_nrecords: 1000
+            allow_nonocean_segment_nrecords: 250
     
         # The maximum separation in seconds for two orbits so that they cound as connected
         orbit_segment_connectivity:
