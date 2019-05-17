@@ -441,7 +441,19 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 class Level1PreProcJobDef(DefaultLoggingClass):
     """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
 
-    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], output_handler_cfg={}):
+    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], hemisphere="global",
+                 output_handler_cfg={}):
+        """
+        The settings for the Level-1 pre-processor job
+        :param l1p_settings_id_or_file: An id of an proc/l1 processor config file (filename excluding the .yaml
+                                        extension) or an full filepath to a yaml config file
+        :param tcs: [int list] Time coverage start (YYYY MM [DD])
+        :param tce: [int list] Time coverage end (YYYY MM [DD]) [int list]
+        :param exclude_month: [int list] A list of month that will be ignored
+        :param hemisphere: [str] The target hemisphere (`north`, `south`, `global`:default).
+        :param output_handler_cfg: [dict] An optional dictionary with options of the output handler
+                                   (`overwrite_protection`: [True, False], `remove_old`: [True, False])
+        """
 
         super(Level1PreProcJobDef, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
@@ -527,7 +539,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         try:
             lookup_dir = primary_input_def[platform][tag]
         except KeyError:
-            msg = "Missing local machine definition for: root.l1b_repository.%s.%s" % ((platform, tag))
+            msg = "Missing local machine definition for: root.l1b_repository.%s.%s" % (platform, tag)
             self.error.add_error("[local-machine-def-missing-tag", msg)
             self.error.raise_on_error()
         self.l1pprocdef.input_handler.options.lookup_dir = lookup_dir
@@ -556,6 +568,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     @property
     def output_handler_cfg(self):
         return self._output_handler_cfg
+
 
 class Level1POutputHandler(DefaultLoggingClass):
     """
@@ -601,7 +614,6 @@ class Level1POutputHandler(DefaultLoggingClass):
         ncfile.filename = self.filename
         ncfile.export()
 
-
     def set_output_filepath(self, l1):
         """
         Sets the class properties required for the file export
@@ -616,7 +628,6 @@ class Level1POutputHandler(DefaultLoggingClass):
             msg = msg + "\nOptions: \n"+self.cfg.makeReport()
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
-
 
         # TODO: This is work in progress
         filename_template = "pysiral-l1p-{platform}-{source}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"

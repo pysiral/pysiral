@@ -13,7 +13,12 @@ from pysiral.l1preproc import get_preproc, Level1PreProcJobDef, Level1POutputHan
 
 
 def pysiral_l1preproc(job):
-    """ Workflow of the Level-1 Pre-Processor """
+    """
+    Workflow script of the pysiral l1b preprocessor.
+
+    :param job: A pysiral.l1preproc.Level1PreProcJobDef instance
+    :return: None
+    """
 
     # Take the time
     job.stopwatch.start()
