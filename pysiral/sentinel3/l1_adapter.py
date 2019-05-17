@@ -152,7 +152,6 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Extract General Product Info
         index = self.cfg.xml_metadata_object_index[section_name]
         product_info = metadata[index]["metadataWrap"]["xmlData"]
-        print product_info.keys()
         product_info = product_info[tag]
 
         return product_info
@@ -231,9 +230,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # NOTE: Here it is critical that the xarray does not automatically decodes time since it is
         #       difficult to work with the numpy datetime64 date format. Better to compute datetimes using
         #       a know num2date conversion
-        tai_datetime = num2date(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
-        converter = UTCTAIConverter()
-        utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
+        utc_timestamp = num2date(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
         self.l1.time_orbit.timestamp = utc_timestamp
 
         # Set the geolocation
@@ -244,10 +241,12 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             self.nc.orb_alt_rate_20_ku.values)
 
         # Set antenna attitude
-        self.l1.time_orbit.set_antenna_attitude(
-            self.nc.off_nadir_pitch_angle_str_20_ku.values,
-            self.nc.off_nadir_roll_angle_str_20_ku.values,
-            self.nc.off_nadir_yaw_angle_str_20_ku.values)
+        # NOTE: This are only available in 1Hz and need to be interpolated
+        time_01, time_20 = self.nc.time_01.values, self.nc.time_20_ku.values
+        pitch_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_pitch_angle_pf_01.values, time_01, time_20)
+        roll_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_roll_angle_pf_01.values, time_01, time_20)
+        yaw_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_yaw_angle_pf_01.values, time_01, time_20)
+        self.l1.time_orbit.set_antenna_attitude(pitch_angle_20, roll_angle_20, yaw_angle_20)
 
     def _set_waveform_data_group(self):
         """
@@ -259,46 +258,47 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         """
 
         # Get the waveform
-        # NOTE: Convert the waveform units to Watts. From the documentation:is applied as follows:
-        #       pwr_waveform_20_ku(time, ns) * echo_scale_factor_20_ku(time, ns) * 2 ^ echo_scale_pwr_20_ku(time)
-        wfm_linear = self.nc.pwr_waveform_20_ku.values
+        # NOTE: The waveform is given in counts
+        wfm_counts = self.nc.waveform_20_ku.values
+        n_records, n_range_bins = wfm_counts.shape
 
-        # Get the shape of the waveform array
-        dim_time, dim_ns = wfm_linear.shape
-
-        # Scaling parameter are 1D -> Replicate to same shape as waveform array
-        echo_scale_factor = self.nc.echo_scale_factor_20_ku.values
-        echo_scale_pwr = self.nc.echo_scale_pwr_20_ku.values
-        echo_scale_factor = np.tile(echo_scale_factor, (dim_ns, 1)).transpose()
-        echo_scale_pwr = np.tile(echo_scale_pwr, (dim_ns, 1)).transpose()
-
-        # Convert the waveform from linear counts to Watts
-        wfm_power = wfm_linear*echo_scale_factor * 2.0**echo_scale_pwr
+        # Convert the waveform to power
+        # TODO: This needs to be verified. Currently using the scale factor and documentation in netcdf unclear
+        # From the documentation:
+        # "This scaling factor represents the backscatter coefficient for a waveform amplitude equal to 1.
+        #  It is corrected for AGC instrumental errors (agc_cor_20_ku) and internal calibration (sig0_cal_20_ku)"
+        # NOTE: Make sure type of waveform is float and not double
+        #       (double will cause issues with cythonized retrackers)
+        wfm_power = np.ndarray(shape=wfm_counts.shape, dtype=np.float32)
+        waveform_scale_factor = self.nc.scale_factor_20_ku.values
+        for record in np.arange(n_records):
+            wfm_power[record, :] = waveform_scale_factor[record] * wfm_counts[record, :].astype(float)
 
         # Get the window delay
-        # From the documentation:
-        #   Calibrated 2-way window delay: distance from CoM to middle range window (at sample ns/2 from 0).
-        #   It includes all the range corrections given in the variable instr_cor_range and in the
-        #   variable uso_cor_20_ku. This is a 2-way time and 2-way corrections are applied.
-        window_delay = self.nc.window_del_20_ku.values
+        # "The tracker_range_20hz is the range measured by the onboard tracker
+        #  as the window delay, corrected for instrumental effects and
+        #  CoG offset"
+        tracker_range_20hz = self.nc.tracker_range_20_ku.values
+        wfm_range = np.ndarray(shape=wfm_counts.shape, dtype=np.float32)
+        range_bin_index = np.arange(n_range_bins)
+        for record in np.arange(n_records):
+            wfm_range[record, :] = tracker_range_20hz[record] + \
+                (range_bin_index*self.cfg.range_bin_width) - \
+                (self.cfg.nominal_tracking_bin*self.cfg.range_bin_width)
 
-        # Convert window delay to range for each waveform range bin
-        wfm_range = self.get_wfm_range(window_delay, dim_ns)
-
-        # Make sure that parameter are float and not double
-        # -> Import for cythonized algorithm parts (ctfrma specifically uses floats)
-        wfm_power = wfm_power.astype(np.float32)
-        wfm_range = wfm_range.astype(np.float32)
+        # Set the operation mode
+        op_mode = self.nc.instr_op_mode_20_ku.values
+        op_mode_translator = self.cfg.instr_op_mode_list
+        radar_mode = np.array([op_mode_translator[int(val)] for val in op_mode]).astype("int8")
 
         # Set the waveform
-        op_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
-        radar_mode = self.translate_opmode2radar_mode(op_mode)
         self.l1.waveform.set_waveform_data(wfm_power, wfm_range, radar_mode)
 
         # Get the valid flags
-        measurement_confident_flag = self.nc.flag_mcd_20_ku.values
-        valid_flag = measurement_confident_flag == 0
-        self.l1.waveform.set_valid_flag(valid_flag)
+        # TODO: Find a way to get a valid flag
+        # measurement_confident_flag = self.nc.flag_mcd_20_ku.values
+        # valid_flag = measurement_confident_flag == 0
+        # self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
         """
@@ -308,16 +308,16 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         """
 
         # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
-        time_1Hz =  self.nc.time_cor_01.values
+        time_1Hz = self.nc.time_01.values
         time_20Hz = self.nc.time_20_ku.values
 
         # Loop over all range correction variables defined in the processor definition file
         for key in self.cfg.range_correction_targets.keys():
-            pds_var_name = self.cfg.range_correction_targets[key]
-            variable_1Hz = getattr(self.nc, pds_var_name)
+            var_name = self.cfg.range_correction_targets[key]
+            variable_1Hz = getattr(self.nc, var_name)
             variable_20Hz, error_status = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
             if error_status:
-                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
+                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % var_name
                 self.log.warning(msg)
             self.l1.correction.set_parameter(key, variable_20Hz)
 
@@ -329,20 +329,9 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         :return: None
         """
 
-        # Get the reference times for interpolating the flag from 1Hz -> 20Hz
-        time_1Hz =  self.nc.time_cor_01.values
-        time_20Hz = self.nc.time_20_ku.values
-
-        # Interpolate 1Hz surface type flag to 20 Hz
-        surface_type_1Hz = self.nc.surf_type_01.values
-        surface_type_20Hz, error_status = self.interp_1Hz_to_20Hz(surface_type_1Hz, time_1Hz, time_20Hz, kind="nearest")
-        if error_status:
-            msg = "- Error in 20Hz interpolation for variable `surf_type_01` -> set only dummy"
-            self.log.warning(msg)
-
         # Set the flag
         for key in ESA_SURFACE_TYPE_DICT.keys():
-            flag = surface_type_20Hz == ESA_SURFACE_TYPE_DICT[key]
+            flag = self.nc.surf_type_20_ku.values == ESA_SURFACE_TYPE_DICT[key]
             self.l1.surface_type.add_flag(flag, key)
 
     def _set_classifier_group(self):
@@ -362,22 +351,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Calculate Parameters from waveform counts
         # XXX: This is a legacy of the CS2AWI IDL processor
         #      Threshold defined for waveform counts not power in dB
-        wfm_counts = self.nc.pwr_waveform_20_ku.values
-
-        # Calculate the OCOG Parameter (CryoSat-2 notation)
-        ocog = CS2OCOGParameter(wfm_counts)
-        self.l1.classifier.add(ocog.width, "ocog_width")
-        self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
-
-        # Calculate the Peakiness (CryoSat-2 notation)
-        pulse = CS2PulsePeakiness(wfm_counts)
-        self.l1.classifier.add(pulse.peakiness, "peakiness")
-        self.l1.classifier.add(pulse.peakiness_r, "peakiness_r")
-        self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
-
-        # fmi version: Calculate the LTPP
-        ltpp = CS2LTPP(wfm_counts)
-        self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
+        wfm_counts = self.nc.waveform_20_ku.values
 
         # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
         satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
