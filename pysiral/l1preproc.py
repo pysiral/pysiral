@@ -246,9 +246,11 @@ class L1PreProcBase(DefaultLoggingClass):
         for hemisphere in self.cfg.polar_ocean.target_hemisphere:
 
             if hemisphere == "north":
-                is_polar = np.abs(l1.time_orbit.latitude) >= polar_threshold
+                is_polar = l1.time_orbit.latitude >= polar_threshold
+
             elif hemisphere == "south":
-                is_polar = np.abs(l1.time_orbit.latitude) <= -1.0*polar_threshold
+                is_polar = l1.time_orbit.latitude <= (-1.0*polar_threshold)
+
             else:
                 msg = "Unknown hemisphere: %s [north|south]" % hemisphere
                 self.error.add_error("invalid-hemisphere", msg)
@@ -256,14 +258,15 @@ class L1PreProcBase(DefaultLoggingClass):
 
             # Extract the subset (if applicable)
             polar_subset = np.where(is_polar)[0]
+            n_records_subset = len(polar_subset)
 
             # is true subset -> add subset to output list
-            if len(polar_subset) != l1.n_records:
+            if n_records_subset != l1.n_records and n_records_subset > 0:
                 l1_segment = l1.extract_subset(polar_subset)
                 l1_list.append(l1_segment)
 
             # entire segment in polar region -> add full segment to output list
-            elif len(polar_subset) == l1.n_records:
+            elif n_records_subset == l1.n_records:
                 l1_list.append(l1)
 
             # no coverage in target hemisphere -> remove segment from list
@@ -272,13 +275,8 @@ class L1PreProcBase(DefaultLoggingClass):
 
         # Last step: Sort the list to maintain temporal order
         # (only if more than 1 segment)
-        print len(l1_list)
         if len(l1_list) > 1:
-            for l1 in l1_list:
-                print l1.tcs
             l1_list = sorted(l1_list, key=attrgetter("tcs"))
-            for l1 in l1_list:
-                print l1.tcs
 
         return l1_list
 
