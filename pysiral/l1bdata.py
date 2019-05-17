@@ -624,12 +624,12 @@ class L1bMetaData(object):
         # First time a data set is set: Store number of records as reference
         if self.n_records == -1:
             self.n_records = n_records
-        else:  # n_records exists: verify consistenty
+        else:  # n_records exists: verify consistency
             if n_records == self.n_records:  # all good
                 pass
-            else:  # raise Erro
-                raise ValueError("n_records mismatch, len must be: ",
-                                 str(self.n_records))
+            else:  # raise Error
+                msg = "n_records mismatch, len must be: %s (was %s)" % (str(self.n_records), str(n_records))
+                raise ValueError(msg)
 
 
 class L1bTimeOrbit(object):
