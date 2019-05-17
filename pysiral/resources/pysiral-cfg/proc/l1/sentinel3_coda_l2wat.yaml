@@ -82,10 +82,10 @@ input_adapter:
 output_handler:
    
     options:
-        local_machine_def_tag: baseline_d
+        local_machine_def_tag: coda_l2wat
         version:
-            source_file_tag: esa_pds_ipf1d
-            version_file_tag: vftest
+            source_file_tag: coda_l2wat
+            version_file_tag: v1p0b1
 
 
 # Settings for the pre-processor
