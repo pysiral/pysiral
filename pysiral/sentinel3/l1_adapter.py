@@ -184,7 +184,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
 
         # General product metadata
         mission = metadata["mission_name"].lower().replace(" ", "")
-        info.set_attribute("mission", mission)
+        info.set_attribute("mission", str(mission))
         info.set_attribute("mission_sensor", "sral")
         info.set_attribute("mission_data_version", metadata["source"])
         info.set_attribute("orbit", metadata["absolute_rev_number"])
