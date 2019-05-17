@@ -378,6 +378,14 @@ class Level1bData(object):
         return self.info.n_records
 
     @property
+    def tcs(self):
+        return self.info.start_time
+
+    @property
+    def tce(self):
+        return self.info.stop_time
+
+    @property
     def radar_modes(self):
         radar_modes = RadarModes()
         radar_mode_flag_list = np.unique(self.waveform.radar_mode)
