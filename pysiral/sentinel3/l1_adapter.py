@@ -133,7 +133,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         xml_header_file = self.cfg.xml_manifest
         dataset_folder = folder_from_filename(filepath)
         filename_header = os.path.join(dataset_folder, xml_header_file)
-        self._xmlh = parse_sentinel3_l1b_xml_header(filename_header)
+        self._xmlh = self.parse_sentinel3_l1b_xml_header(filename_header)
 
     def _get_xml_content(self, section_name, tag):
         """ Returns the generalProductInformation content of the xml manifest
