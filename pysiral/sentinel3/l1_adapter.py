@@ -1,6 +1,6 @@
 
 import os
-import sys
+import xmltodict
 
 import xarray
 import numpy as np
@@ -9,19 +9,24 @@ from netCDF4 import num2date
 
 from pysiral import __version__ as pysiral_version
 from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
-from pysiral.clocks import StopWatch, UTCTAIConverter
-from pysiral.cryosat2 import cs2_procstage2timeliness
+from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import filename_from_path, folder_from_filename
+from pysiral.path import folder_from_filename
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
 class Sentinel3CODAL2Wat(DefaultLoggingClass):
 
     def __init__(self, cfg, raise_on_error=False):
+        """
+        Input handler for Sentinel-3 L2WAT netCDF files from the CODA.
+        :param cfg: A treedict object (root.input_handler.options) from the corresponding Level-1 pre-processor
+                    config file
+        :param raise_on_error: Boolean value if the class should raise an exception upon an error (default: False)
+        """
 
         cls_name = self.__class__.__name__
         super(Sentinel3CODAL2Wat, self).__init__(cls_name)
@@ -34,15 +39,20 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Init main class variables
         self.nc = None
 
+        # Debug variables
+        self.timer = None
+
     def get_l1(self, filepath, polar_ocean_check=None):
         """
-        Main entry point to the CryoSat-2 Baseline-D Input Adapter
-        :param filepath:
-        :return:
+        Create a Level-1 data container from Sentinel-3 CODA L2WAT files
+        :param filepath: The full file path to the netCDF file
+        :param polar_ocean_check:
+        :return: The parsed (or empty) Level-1 data container
         """
 
-        timer = StopWatch()
-        timer.start()
+        #  for debug purposes
+        self.timer = StopWatch()
+        self.timer.start()
 
         # Save filepath
         self.filepath = filepath
@@ -60,55 +70,29 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Parse xml header file
         self._parse_xml_manifest(filepath)
 
-        # Parse the input file
-        self._read_input_netcdf(filepath, attributes_only=True)
-
+        # Parse the input netCDF file
+        self._read_input_netcdf(filepath)
         if self.error.status:
             return self.empty
 
         # Get metadata
         self._set_input_file_metadata()
 
+        # Test if input file contains data over polar oceans (optional)
         if polar_ocean_check is not None:
             has_polar_ocean_data = polar_ocean_check.has_polar_ocean_segments(self.l1.info)
             if not has_polar_ocean_data:
-                timer.stop()
+                self.timer.stop()
                 return self.empty
 
         # Polar ocean check passed, now fill the rest of the l1 data groups
         self._set_l1_data_groups()
 
-        timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % timer.get_seconds())
+        self.timer.stop()
+        self.log.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
 
         # Return the l1 object
         return self.l1
-
-    @staticmethod
-    def get_wfm_range(window_delay, n_range_bins):
-        """
-        Returns the range for each waveform bin based on the window delay and the number of range bins
-        :param window_delay: The two-way delay to the center of the range window in seconds
-        :param n_range_bins: The number of range bins (256: sar, 512: sin)
-        :return: The range for each waveform bin as array (time, ns)
-        """
-        lightspeed = 299792458.0
-        bandwidth = 320000000.0
-        # The two way delay time give the distance to the central bin
-        central_window_range = window_delay * lightspeed / 2.0
-        # Calculate the offset from the center to the first range bin
-        window_size = (n_range_bins * lightspeed) / (4.0 * bandwidth)
-        first_bin_offset = window_size / 2.0
-        # Calculate the range increment for each bin
-        range_increment = np.arange(n_range_bins) * lightspeed / (4.0 * bandwidth)
-
-        # Reshape the arrays
-        range_offset = np.tile(range_increment, (window_delay.shape[0], 1)) - first_bin_offset
-        window_range = np.tile(central_window_range, (n_range_bins, 1)).transpose()
-
-        # Compute the range for each bin and return
-        wfm_range = window_range + range_offset
-        return wfm_range
 
     @staticmethod
     def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, **kwargs):
@@ -128,6 +112,16 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             variable_20Hz = np.full(time_20Hz.shape, fill_value)
             error_status = True
         return variable_20Hz, error_status
+
+    @staticmethod
+    def parse_sentinel3_l1b_xml_header(filename):
+        """
+        Reads the XML header file of a Sentinel 3 L1b Data set
+        and returns the contents as an OrderedDict
+        """
+        with open(filename) as fd:
+            content_odereddict = xmltodict.parse(fd.read())
+        return content_odereddict[u'xfdu:XFDU']
 
     def _parse_xml_manifest(self, filepath):
         """
@@ -156,8 +150,12 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
 
         return product_info
 
-    def _read_input_netcdf(self, filepath, attributes_only=False):
-        """ Read the netCDF file via xarray """
+    def _read_input_netcdf(self, filepath):
+        """
+        Read the netCDF file via xarray
+        :param filepath: The full filepath to the netCDF file
+        :return: none
+        """
         try:
             self.nc = xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
         except:
@@ -167,7 +165,11 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             return
 
     def _set_input_file_metadata(self):
-        """ Fill the product info """
+        """
+        Populates the product info segment of the Level1Data object with information from
+        the global attributes of the netCDF and content of the xml manifest
+        :return: None
+        """
 
         # Short cuts
         metadata =  self.nc.attrs
@@ -348,30 +350,10 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             variable_20Hz = getattr(self.nc, self.cfg.classifier_targets[key])
             self.l1.classifier.add(variable_20Hz, key)
 
-        # Calculate Parameters from waveform counts
-        # XXX: This is a legacy of the CS2AWI IDL processor
-        #      Threshold defined for waveform counts not power in dB
-        wfm_counts = self.nc.waveform_20_ku.values
-
-        # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
-        satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
-        self.l1.classifier.add(satellite_velocity_vector[:, 0], "satellite_velocity_x")
-        self.l1.classifier.add(satellite_velocity_vector[:, 1], "satellite_velocity_y")
-        self.l1.classifier.add(satellite_velocity_vector[:, 2], "satellite_velocity_z")
-
-
-
     @property
     def empty(self):
+        """
+        Default return object, if nodata should be returned
+        :return: Representation of an empty object (None)
+        """
         return None
-
-
-def parse_sentinel3_l1b_xml_header(filename):
-    """
-    Reads the XML header file of a Sentinel 3 L1b Data set
-    and returns the contents as an OrderedDict
-    """
-    import xmltodict
-    with open(filename) as fd:
-        content_odereddict = xmltodict.parse(fd.read())
-    return content_odereddict[u'xfdu:XFDU']
