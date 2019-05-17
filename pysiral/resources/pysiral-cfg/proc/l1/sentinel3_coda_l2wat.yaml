@@ -104,6 +104,10 @@ level1_preprocessor:
             input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 250
     
+        # Check for gaps in the input files and split at a certain gap size (in seconds)
+        timestamp_discontinuities:
+            split_at_time_gap_seconds: 10
+
         # The maximum separation in seconds for two orbits so that they cound as connected
         orbit_segment_connectivity:
             max_connected_segment_timedelta_seconds: 10

@@ -2,6 +2,7 @@
 import os
 import numpy as np
 from operator import attrgetter
+from datetime import timedelta
 
 from pysiral import get_cls
 from pysiral.clocks import StopWatch
@@ -222,7 +223,6 @@ class L1PreProcBase(DefaultLoggingClass):
         :param l1: Input Level-1 object
         :return: Trimmed Input Level-1 object
         """
-        self.log.info("- extracting polar region subset")
         polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
         is_polar = np.abs(l1.time_orbit.latitude) >= polar_threshold
         polar_subset = np.where(is_polar)[0]
@@ -238,7 +238,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :param l1: Input Level-1 object
         :return: List of Trimmed Input Level-1 objects
         """
-        self.log.info("- extracting polar region subsets")
+
         polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
         l1_list = []
 
@@ -287,7 +287,6 @@ class L1PreProcBase(DefaultLoggingClass):
         :return: The subsetted Level-1 objects. (Segments with no ocean data are removed from the list)
         """""" """
 
-        self.log.info("- trim outer non-ocean regions")
         ocean = l1.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
         last_ocean_index = get_last_array_index(ocean.flag, True)
@@ -314,7 +313,6 @@ class L1PreProcBase(DefaultLoggingClass):
         not_ocean_flag = np.logical_not(ocean.flag)
         segments_len, segments_start, not_ocean = rle(not_ocean_flag)
         landseg_index = np.where(not_ocean)[0]
-        self.log.info("- total number of non-ocean segments: %g" % len(landseg_index))
 
         # no non-ocean segments, return full segment
         if len(landseg_index) == 0:
@@ -326,7 +324,6 @@ class L1PreProcBase(DefaultLoggingClass):
         treshold = self.cfg.polar_ocean.allow_nonocean_segment_nrecords
         large_landsegs_index = np.where(segments_len[landseg_index] > treshold)[0]
         large_landsegs_index = landseg_index[large_landsegs_index]
-        self.log.info("- number of non-ocean segments that trigger split: %g" % len(large_landsegs_index))
 
         # no segment split necessary, return full segment
         if len(large_landsegs_index) == 0:
@@ -346,6 +343,48 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_segments.append(l1.extract_subset(last_subset_list))
 
         # Return a list of segments
+        return l1_segments
+
+    def split_at_time_discontinuities(self, l1_list):
+        """
+        Split l1 object(s) at discontinuities of the timestamp value and return the expanded list with l1 segments.
+
+        :param l1_list: [list] a list of l1b_files 
+        :return: expanded list 
+        """
+
+        # Prepare input (should always be list)
+        seconds_threshold = self.cfg.timestamp_discontinuities.split_at_time_gap_seconds
+        dt_threshold = timedelta(seconds=seconds_threshold)
+
+        # Output (list with l1b segments)
+        l1_segments = []
+
+        for l1 in l1_list:
+
+            # Get timestamp discontinuities (if any)
+            time = l1.time_orbit.timestamp
+
+            # Get start start/stop indices pairs
+            segments_start = np.array([0])
+            segments_start_indices = np.where(np.ediff1d(time) > dt_threshold)[0]+1
+            segments_start = np.append(segments_start, segments_start_indices)
+
+            segments_stop = segments_start[1:]-1
+            segments_stop = np.append(segments_stop, len(time)-1)
+
+            # Check if only one segment found
+            if len(segments_start) == 1:
+                l1_segments.append(l1)
+                continue
+
+            # Extract subsets
+            segment_indices = zip(segments_start, segments_stop)
+            for start_index, stop_index in segment_indices:
+                subset_indices = np.arange(start_index, stop_index+1)
+                l1_segment = l1.extract_subset(subset_indices)
+                l1_segments.append(l1_segment)
+
         return l1_segments
 
     @property
@@ -409,23 +448,32 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
         #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
         #      `input_file_is_single_hemisphere=False`
+        self.log.info("- extracting polar region subset(s)")
         if self.cfg.polar_ocean.input_file_is_single_hemisphere:
             l1_list = [self.trim_single_hemisphere_segment_to_polar_region(l1)]
         else:
             l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
 
-        # Step 2: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
+        # Step 3: Split the l1 segments at time discontinuities.
+        # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
+        #       in the l1proc config file
+        if self.cfg.has_key("timestamp_discontinuities"):
+            self.log.info("- split at time discontinuities")
+            l1_list = self.split_at_time_discontinuities(l1_list)
+
+        # Step 3: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
         # NOTE: Generally it can be assumed that the l1 object passed to this method contains polar ocean data.
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
         #       In this case an empty list is returned.
+        self.log.info("- trim outer non-ocean regions")
         l1_trimmed_list = []
         for l1 in l1_list:
             l1_trimmed = self.trim_non_ocean_data(l1)
             if l1_trimmed is not None:
                 l1_trimmed_list.append(l1_trimmed)
 
-        # Step 3: Split the remaining subset at non-ocean parts.
+        # Step 4: Split the remaining subset at non-ocean parts.
         # NOTE: There is no need to split the orbit at small features. See option `allow_nonocean_segment_nrecords`
         #       in the l1p processor definition. But even if there are no segments to split, the output will always
         #       be a list per requirements of the Level-1 pre-processor workflow.
