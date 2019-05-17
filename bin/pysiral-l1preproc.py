@@ -103,6 +103,7 @@ class Level1PreProcArgParser(DefaultLoggingClass):
             ("-start", "date", "start_date", True),
             ("-stop", "date", "stop_date", True),
             ("-exclude-month", "exclude-month", "exclude_month", False),
+            ("-hemisphere", "hemisphere", "hemisphere", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
             ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),

@@ -450,6 +450,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # TODO: Move to global
         self._cfg = ConfigInfo()
 
+        # Store command line options
+        self._hemisphere = hemisphere
+
         # Parse the l1p settings file
         self.set_l1p_processor_def(l1p_settings_id_or_file)
 
@@ -471,10 +474,11 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         kwargs = {}
         if args.exclude_month is not None:
             kwargs["exclude_month"] = args.exclude_month
-        data_handler_cfg = {}
+        data_handler_cfg = dict()
         data_handler_cfg["overwrite_protection"] = args.overwrite_protection
         data_handler_cfg["remove_old"] = args.remove_old
         kwargs["output_handler_cfg"] = data_handler_cfg
+        kwargs["hemisphere"] = args.hemisphere
 
         # Return the initialized class
         return cls(args.l1p_settings, args.start_date, args.stop_date, **kwargs)
@@ -491,6 +495,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # 3. Expand info (input data lookup directories)
         self._get_local_input_directory()
+
+        # 4. update hemisphere for input adapter
+        self._l1pprocdef.level1_preprocessor.options.polar_ocean.target_hemisphere = self.target_hemisphere
 
     def get_l1p_proc_def_filename(self, l1p_settings_id_or_file):
         """ Query pysiral config to obtain filename for processor definition file """
@@ -524,6 +531,15 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             self.error.add_error("[local-machine-def-missing-tag", msg)
             self.error.raise_on_error()
         self.l1pprocdef.input_handler.options.lookup_dir = lookup_dir
+
+    @property
+    def hemisphere(self):
+        return self._hemisphere
+
+    @property
+    def target_hemisphere(self):
+        values = {"north": ["north"], "south": ["south"], "global": ["north", "south"]}
+        return values[self.hemisphere]
 
     @property
     def pysiral_cfg(self):
