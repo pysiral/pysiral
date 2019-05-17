@@ -561,13 +561,39 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
         primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
         platform, tag = self.l1pprocdef.platform, local_machine_def_tag
-        try:
-            lookup_dir = primary_input_def[platform][tag]
-        except KeyError:
-            msg = "Missing local machine definition for: root.l1b_repository.%s.%s" % (platform, tag)
-            self.error.add_error("[local-machine-def-missing-tag", msg)
+
+        # Get the value
+        branch = primary_input_def[platform][tag]
+
+        # Sanity Checks
+        expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
+        if branch.isDangling():
+            msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
+            msg = msg % expected_branch_name
+            self.error.add_error("local-machine-def-missing-tag", msg)
             self.error.raise_on_error()
-        self.l1pprocdef.input_handler.options.lookup_dir = lookup_dir
+
+        # Validity checks
+        # TODO: These checks are probably better located in a separate method?
+        for key in ["source", "l1p"]:
+
+            # 1. Branch must have specific keys for input and output
+            if not branch.has_key(key):
+                msg = "Missing definition in `local_machine_def.yaml`. Expected value: %s.%s"
+                msg = msg % (expected_branch_name, key)
+                self.error.add_error("local-machine-def-missing-tag", msg)
+                self.error.raise_on_error()
+
+            # 2. The value of each branch must be a valid directory
+            directory = str(branch[key])
+            if not os.path.isdir(directory):
+                msg = "Invalid directory in `local_machine_def.yaml`: %s is not a valid directory"
+                msg = msg % directory
+                self.error.add_error("local-machine-def-invalid-dir", msg)
+                self.error.raise_on_error()
+
+        # Update the lookup dir parameter
+        self.l1pprocdef.input_handler.options.lookup_dir = branch.source
 
     @property
     def hemisphere(self):
