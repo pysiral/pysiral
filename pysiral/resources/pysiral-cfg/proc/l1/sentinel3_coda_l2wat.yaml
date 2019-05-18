@@ -100,7 +100,7 @@ level1_preprocessor:
         #       command line option of the `pysiral-l1preproc` script
         polar_ocean:
             target_hemisphere: [north, south]
-            polar_latitude_threshold: 50.0
+            polar_latitude_threshold: 45.0
             input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 250
     
