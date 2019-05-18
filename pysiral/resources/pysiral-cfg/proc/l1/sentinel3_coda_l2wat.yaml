@@ -103,6 +103,7 @@ level1_preprocessor:
             polar_latitude_threshold: 45.0
             input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 250
+            ocean_mininum_size_nrecords: 5
     
         # Check for gaps in the input files and split at a certain gap size (in seconds)
         timestamp_discontinuities:

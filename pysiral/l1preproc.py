@@ -280,6 +280,54 @@ class L1PreProcBase(DefaultLoggingClass):
 
         return l1_list
 
+    def filter_small_ocean_segments(self, l1):
+        """
+        This method sets the surface type flag of very small ocean segments to land. This action should prevent
+        large portions of land staying in the l1 segment is a small fjord etc is crossed. It should also filter
+        out smaller ocean segments that do not have a realistic chance of freeboard retrieval.
+
+        :param l1: A pysiral.l1bdata.Level1bData instance
+        :return: filtered l1 object
+        """
+
+        # Minimum size for valid ocean segments
+        ocean_mininum_size_nrecords = self.cfg.polar_ocean.ocean_mininum_size_nrecords
+
+        # Get the clusters of ocean parts in the l1 object
+        ocean_flag = l1.surface_type.get_by_name("ocean").flag
+        land_flag = l1.surface_type.get_by_name("land").flag
+        segments_len, segments_start, not_ocean = rle(ocean_flag)
+
+        # Find smaller than threshold ocean segments
+        small_cluster_indices = np.where(segments_len < ocean_mininum_size_nrecords)[0]
+
+        # Do not mess with the l1 object if not necessary
+        if len(small_cluster_indices == 0):
+            return l1
+
+        # Set land flag -> True for small ocean segments
+        for small_cluster_index in small_cluster_indices:
+            i0 = segments_start[small_cluster_index]
+            i1 = i0 + segments_len[small_cluster_index]
+            land_flag[i0:i1] = True
+
+        # Update the l1 surface type flag by re-setting the land flag
+        l1.surface_type.add_flag(land_flag, "land")
+
+        # All done
+        return l1
+
+        # import matplotlib.pyplot as plt
+        # import sys
+        #
+        # print segments_len
+        #
+        # plt.figure()
+        # plt.plot(ocean_flag, alpha=0.5)
+        # plt.plot(land_flag, alpha=0.5)
+        # plt.show()
+        # sys.exit()
+
     def trim_non_ocean_data(self, l1):
         """
         Remove leading and trailing data that is not if type ocean. 
@@ -349,8 +397,8 @@ class L1PreProcBase(DefaultLoggingClass):
         """
         Split l1 object(s) at discontinuities of the timestamp value and return the expanded list with l1 segments.
 
-        :param l1_list: [list] a list of l1b_files 
-        :return: expanded list 
+        :param l1_list: [list] a list of l1b_files
+        :return: expanded list
         """
 
         # Prepare input (should always be list)
@@ -443,7 +491,14 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         :return: A list of Level-1 data objects (subsets of polar ocean segments from input l1)
         """
 
-        # Step 1: Trim the orbit segment to latitude range for the specific hemisphere
+        # Step: Filter small ocean segments
+        # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
+        #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
+        if self.cfg.polar_ocean.has_key("ocean_mininum_size_nrecords"):
+            self.log.info("- filter ocean segments")
+            l1 = self.filter_small_ocean_segments(l1)
+
+        # Step: Trim the orbit segment to latitude range for the specific hemisphere
         # NOTE: There is currently no case of an input data set that is not of type half-orbit and that
         #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
         #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
@@ -454,14 +509,14 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         else:
             l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
 
-        # Step 3: Split the l1 segments at time discontinuities.
+        # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
         if self.cfg.has_key("timestamp_discontinuities"):
             self.log.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
-        # Step 3: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
+        # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
         # NOTE: Generally it can be assumed that the l1 object passed to this method contains polar ocean data.
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
@@ -473,7 +528,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
             if l1_trimmed is not None:
                 l1_trimmed_list.append(l1_trimmed)
 
-        # Step 4: Split the remaining subset at non-ocean parts.
+        # Step: Split the remaining subset at non-ocean parts.
         # NOTE: There is no need to split the orbit at small features. See option `allow_nonocean_segment_nrecords`
         #       in the l1p processor definition. But even if there are no segments to split, the output will always
         #       be a list per requirements of the Level-1 pre-processor workflow.
