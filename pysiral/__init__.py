@@ -52,8 +52,8 @@ CURRENT_USER_HOME_DIR = os.path.expanduser("~")
 
 
 # Read pysiral config location indicator file
+cfg_loc_file = open(os.path.abspath(os.path.join(PACKAGE_ROOT_DIR, "PYSIRAL-CFG-LOC")))
 try:
-    cfg_loc_file = open(os.path.abspath(os.path.join(PACKAGE_ROOT_DIR, "PYSIRAL-CFG-LOC")))
     with cfg_loc_file as f:
         cfg_loc = f.read().strip()
 except IOError:
