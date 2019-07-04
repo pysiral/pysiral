@@ -9,8 +9,10 @@ input_handler:
     class_name: ERSCycleBasedSGDR
     
     options:
-        local_machine_def_tag: sgdr  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+        local_machine_def_tag: sgdr_reaper_v1p08  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
+        cycle_folder_regex: E._REAP_ERS_ALT_2S_.
+        folder_parser: E{ers_number:1d}_REAP_ERS_ALT_2S_{tcs}_{tce}_{cycle:04d}
         filename_search: E*_REAP_ERS_ALT_2S_{year:04d}{month:02d}{day:02d}T*_RP01.NC
         filename_sep: _   # character to split the filename
         tcs_str_index: 5  # index of time_coverage_start string in file (when splitting filename with filename_sep)
@@ -20,7 +22,7 @@ input_handler:
 input_adapter:
     
     module_name: pysiral.ers.l1_adapter
-    class_name: EsaErsReaperSgdr
+    class_name: ERSReaperSGDR
     
     options:
         
@@ -36,6 +38,10 @@ input_adapter:
         # SGDR timestamp units
         sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
         sgdr_timestamp_calendar: gregorian
+
+        platform_name_dict:
+            E1: ers1
+            E2: ers2
 
         # The timeliness is fixed (always reprocessed)
         timeliness: rep
