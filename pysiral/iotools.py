@@ -77,7 +77,10 @@ class ReadNC(object):
         if not self.global_attrs_only:
             for key in f.variables.keys():
 
-                variable = f.variables[key][:]
+                try:
+                    variable = f.variables[key][:]
+                except ValueError:
+                    continue
 
                 try:
                     is_float = variable.dtype in ["float32", "float64"]
