@@ -167,7 +167,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         For a description of the parameter see section 3.10 in the
         REAPER handbook
         """
-        grc_dict = self.cfg.sgdr_range_correction_targets
+        grc_dict = self.cfg.range_correction_targets
         for name in grc_dict.keys():
             target_parameter = grc_dict[name]
             if target_parameter is None:
@@ -183,7 +183,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         config/mission_def.yaml for ers1/ers2
         -> ersX.settings.sgdr_range_correction_targets
         """
-        target_dict = self.cfg.sgdr_classifier_targets
+        target_dict = self.cfg.classifier_targets
         for parameter_name in target_dict.keys():
             nc_parameter_name = target_dict[parameter_name]
             nc_parameter = getattr(self.sgdr.nc, nc_parameter_name)
