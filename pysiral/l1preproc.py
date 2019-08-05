@@ -281,6 +281,59 @@ class L1PreProcBase(DefaultLoggingClass):
 
         return l1_list
 
+    def trim_full_orbit_segment_to_polar_regions(self, l1):
+        """
+        Extract polar regions of interest from a segment that is either north, south or both. The method will
+        preserve the order of the hemispheres
+
+        :param l1: Input Level-1 object
+        :return: List of Trimmed Input Level-1 objects
+        """
+
+        polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
+        l1_list = []
+
+        # Loop over the two hemispheres
+        for hemisphere in self.cfg.polar_ocean.target_hemisphere:
+
+            # Compute full polar subset range
+            if hemisphere == "north":
+                is_polar = l1.time_orbit.latitude >= polar_threshold
+
+            elif hemisphere == "south":
+                is_polar = l1.time_orbit.latitude <= (-1.0*polar_threshold)
+
+            else:
+                msg = "Unknown hemisphere: %s [north|south]" % hemisphere
+                self.error.add_error("invalid-hemisphere", msg)
+                self.error.raise_on_error()
+
+            # Step: Extract the polar ocean segment for the given hemisphere
+            polar_subset = np.where(is_polar)[0]
+            n_records_subset = len(polar_subset)
+
+            # Safety check
+            if n_records_subset == 0:
+                continue
+            l1_segment = l1.extract_subset(polar_subset)
+
+            # Step: Trim non-ocean segments
+            l1_segment = self.trim_non_ocean_data(l1_segment)
+
+            # Step: Split the polar subset to its marine regions
+            l1_segment_list = self.split_at_large_non_ocean_segments(l1_segment)
+
+            # Step: append the ocean segments
+            l1_list.extend(l1_segment_list)
+
+        # Last step: Sort the list to maintain temporal order
+        # (only if more than 1 segment)
+        if len(l1_list) > 1:
+            l1_list = sorted(l1_list, key=attrgetter("tcs"))
+
+        return l1_list
+
+
     def filter_small_ocean_segments(self, l1):
         """
         This method sets the surface type flag of very small ocean segments to land. This action should prevent
@@ -572,16 +625,9 @@ class L1PreProcFullOrbit(L1PreProcBase):
             self.log.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
-        # Step: Trim the orbit segment to latitude range for the specific hemisphere
-        # NOTE: There is currently no case of an input data set that is not of type half-orbit and that
-        #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
-        #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
-        #      `input_file_is_single_hemisphere=False`
+        # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
         self.log.info("- extracting polar region subset(s)")
-        if self.cfg.polar_ocean.input_file_is_single_hemisphere:
-            l1_list = [self.trim_single_hemisphere_segment_to_polar_region(l1)]
-        else:
-            l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
