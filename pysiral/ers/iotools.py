@@ -150,7 +150,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             dates = []
             for i in range(delta.days + 1):
                 date = tcs + timedelta(days=i)
-                dates.append("%04g-%02g-%2g" % (date.year, date.month, date.day))
+                dates.append("%04g-%02g-%02g" % (date.year, date.month, date.day))
 
             # Add entry to lookup table
             result_dict = {}
