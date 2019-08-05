@@ -26,6 +26,7 @@ def get_preproc(type, input_adapter, output_handler, cfg):
 
     # A lookup dictionary for the appropriate class
     preproc_class_lookup_dict = {"custom_orbit_segment": L1PreProcCustomOrbitSegment,
+                                 "half_orbit": L1PreProcHalfOrbit,
                                  "full_orbit": L1PreProcFullOrbit,}
 
     # Try the get the class
@@ -213,6 +214,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :param l1_merged: The Level-1 object to exported
         :return:
         """
+
         self.output_handler.export_to_netcdf(l1)
         self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
 
@@ -595,6 +597,71 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         return l1_list
 
 
+class L1PreProcHalfOrbit(L1PreProcBase):
+    """ A Pre-Processor for input files with a full orbit around the earth (e.g. ERS-1/2) """
+
+    def __init__(self, *args):
+        super(L1PreProcHalfOrbit, self).__init__(self.__class__.__name__, *args)
+        # Override the logger name of the input adapter for better logging experience
+        self.input_adapter.log.name = self.__class__.__name__
+
+    def extract_polar_ocean_segments(self, l1):
+        """
+        Splits the input Level-1 object into the polar ocean segments (e.g. by trimming land at the edges
+        or by splitting into several parts if there are land masses with the orbit segment). The returned
+        polar ocean segments should be generally free of data over non-ocean parts of the orbit, except
+        for smaller parts within the orbit.
+
+        NOTE: This subclass of the Level-1 Pre-Processor is designed for input data type with coverage
+              from pole to pole (e.g. Envisat SGDR)
+
+        :param l1: A Level-1 data object
+        :return: A list of Level-1 data objects (subsets of polar ocean segments from input l1)
+        """
+
+        # Step: Filter small ocean segments
+        # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
+        #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
+        if self.cfg.polar_ocean.has_key("ocean_mininum_size_nrecords"):
+            self.log.info("- filter ocean segments")
+            l1 = self.filter_small_ocean_segments(l1)
+
+        # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
+        self.log.info("- extracting polar region subset(s)")
+        l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+
+        # Step: Split the l1 segments at time discontinuities.
+        # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
+        #       in the l1proc config file
+        if self.cfg.has_key("timestamp_discontinuities"):
+            self.log.info("- split at time discontinuities")
+            l1_list = self.split_at_time_discontinuities(l1_list)
+
+        # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
+        # NOTE: Generally it can be assumed that the l1 object passed to this method contains polar ocean data.
+        #       But there tests before only include if there is ocean data and data above the polar latitude
+        #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
+        #       In this case an empty list is returned.
+        self.log.info("- trim outer non-ocean regions")
+        l1_trimmed_list = []
+        for l1 in l1_list:
+            l1_trimmed = self.trim_non_ocean_data(l1)
+            if l1_trimmed is not None:
+                l1_trimmed_list.append(l1_trimmed)
+
+        # Step: Split the remaining subset at non-ocean parts.
+        # NOTE: There is no need to split the orbit at small features. See option `allow_nonocean_segment_nrecords`
+        #       in the l1p processor definition. But even if there are no segments to split, the output will always
+        #       be a list per requirements of the Level-1 pre-processor workflow.
+        l1_list = []
+        for l1 in l1_trimmed_list:
+            l1_splitted_list = self.split_at_large_non_ocean_segments(l1)
+            l1_list.extend(l1_splitted_list)
+
+        # All done, return the list of polar ocean segments
+        return l1_list
+
+
 class L1PreProcFullOrbit(L1PreProcBase):
     """ A Pre-Processor for input files with a full orbit around the earth (e.g. ERS-1/2) """
 
@@ -659,7 +726,6 @@ class L1PreProcFullOrbit(L1PreProcBase):
 
         # All done, return the list of polar ocean segments
         return l1_list
-
 
 class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     """
