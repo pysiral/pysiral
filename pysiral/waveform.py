@@ -244,3 +244,61 @@ class L1PSigma0(DefaultLoggingClass):
         # Add the classifier
         l1.classifier.add(peak_power, "peak_power")
         l1.classifier.add(sigma0, "sigma0")
+
+    @property
+    def required_options(self):
+        return ["tfmra_leading_edge_start", "tfmra_leading_edge_center", "tfmra_leading_edge_end"]
+
+
+class L1PWaveformPeakiness(DefaultLoggingClass):
+    """
+    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
+    using three TFMRA thresholds """
+
+    def __init__(self, **cfg):
+        super(L1PWaveformPeakiness, self).__init__(self.__class__.__name__)
+        for option_name in self.required_options:
+            option_value = cfg.get(option_name, None)
+            if option_value is None:
+                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                self.log.warning(msg)
+            setattr(self, option_name, option_value)
+
+        # Init Parameters
+        self.peakiness = None
+
+    def apply(self, l1):
+        """
+        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        :param l1: l1bdata.Level1bData instance
+        :return: None
+        """
+        self._calc(l1)
+        l1.classifier.add(self.peakiness, "peakiness")
+
+    def _calc(self, l1):
+        """ Compute pulse peakiness (from SICCI v1 processor)."""
+
+        # Get the waveform
+        wfm = l1.waveform.power
+        n_records, n_range_bins = wfm.shape
+
+        # Init output parameters
+        self.peakiness = np.full((n_records), np.nan)
+        self.peakiness_old = np.full((n_records), np.nan)
+
+        # Compute peakiness for each waveform
+        for i in np.arange(n_records):
+
+            # Discard first bins, they are FFT artefacts anyway
+            wave = wfm[i, self.skip_first_range_bins:]
+
+            # new peakiness
+            try:
+                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
+            except ZeroDivisionError:
+                self.peakiness[i] = np.nan
+
+    @property
+    def required_options(self):
+        return ["skip_first_range_bins"]
