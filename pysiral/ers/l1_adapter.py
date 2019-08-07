@@ -100,16 +100,6 @@ class ERSReaperSGDR(DefaultLoggingClass):
         info.set_attribute("mission_data_source", mission_data_source)
         info.set_attribute("timeliness", self.cfg.timeliness)
 
-        # # Time-Orbit Metadata
-        # lats = [float(sgdr.nc.ra0_first_lat), float(sgdr.nc.ra0_last_lat)]
-        # lons = [float(sgdr.nc.ra0_first_long), float(sgdr.nc.ra0_last_long)]
-        # info.set_attribute("start_time", parse_datetime_str(sgdr.nc.ra0_first_record_time))
-        # info.set_attribute("stop_time", parse_datetime_str(sgdr.nc.ra0_last_record_time))
-        # info.set_attribute("lat_min", np.amin(lats))
-        # info.set_attribute("lat_max", np.amax(lats))
-        # info.set_attribute("lon_min", np.amin(lons))
-        # info.set_attribute("lon_max", np.amax(lons))
-
     def _set_l1_data_groups(self):
         self._transfer_timeorbit()            # (lon, lat, alt, time)
         self._transfer_waveform_collection()  # (power, range)
