@@ -58,7 +58,8 @@ input_adapter:
             total_geocentric_ocean_tide: Null
         
         classifier_targets:
-            pulse_peakiness_sgdr: peakiness_20_ku
+            peakiness_sgdr: peakiness_20_ku
+            sigma0: sig0_sea_ice_20_ku
             sigma0_ice1: sig0_ice1_20_ku
             sigma0_ice2: sig0_ice2_20_ku
             leading_edge_width_ice2: width_leading_edge_ice2_20_ku
@@ -73,8 +74,6 @@ input_adapter:
             retracking_sea_ice_qual: retracking_sea_ice_qual_20_ku
             swh_ocean: swh_ocean_20_ku
             slope_first_trailing_edge_ice2: slope_first_trailing_edge_ice2_20_ku
-
-
 
 # Output handler (will always be default handler -> only options)
 output_handler:
