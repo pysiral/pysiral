@@ -26,7 +26,7 @@ input_adapter:
     
     options:
         
-        name: "CryoSat-2 Level-1b data of the ESA PDS Instrument Processing Facility (algorithm baseline D)"
+        name: "Radar Altimeter REAPER Sensor Geophysical Data Record - SGDR "
 
         # Radar Altimeter Settings
         range_bin_width: 0.4545
@@ -80,7 +80,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p0a
+            version_file_tag: v1p0
 
 
 # Settings for the pre-processor
