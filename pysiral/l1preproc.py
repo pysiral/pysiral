@@ -775,13 +775,6 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         return True
 
 
-
-
-
-
-
-
-
 class Level1PreProcJobDef(DefaultLoggingClass):
     """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
 
@@ -929,10 +922,25 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         settings_is_ambigous = "," in self._l1pprocdef.platform
         platform_is_known = self.platform is not None
+
+        # Test if platform is given if the settings file is valid for more than 1 platform
         if settings_is_ambigous and not platform_is_known:
-            msg = "Erro: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
+            msg = "Error: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
             msg = msg % self._l1pprocdef.platform
             sys.exit(msg)
+
+        # Test if platform provided matches the platform list in the settings file
+        if settings_is_ambigous and platform_is_known:
+            platform_list = self._l1pprocdef.platform.split(",")
+            if not self.platform in platform_list:
+                msg = "Error: platform in l1p settings (%s) and given platform (%s) do not match"
+                msg = msg % (self._l1pprocdef.platform, self.platform)
+                sys.exit(msg)
+
+        # If platform in settings is unambigous, but not provided -> get platform from settings
+        if not settings_is_ambigous and not platform_is_known:
+            self.platform = self._l1pprocdef.platform
+            self.log.info("- get platform from l1p settings -> %s" % self.platform)
 
     @property
     def hemisphere(self):
