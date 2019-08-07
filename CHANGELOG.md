@@ -1,5 +1,23 @@
 # History of changes
 
+## Version 0.7.0 (7. August 2019)
+
+**New Features**
+- [l1preproc] Added a new Level-1 preprocessor system (l1preproc) that will gradually replace the original one (l1bpreproc)
+- [l1preproc] Add support for CryoSat-2 Baseline-D, Envisat SGDR v3.0, ERS-1/2 REAPER and Sentinel-3A/B for l1preproc
+- [doc] Add support for automatic documentation building using SPHINX (-> https://pysiral.readthedocs.io/en/latest/)
+- [config] Add a stop watch to track time
+
+**Changes**
+- [l1bdata] Add antenna pitch, roll, heading to the time orbit group
+
+**Settings**
+- [l1preproc] Added CryoSat-2 Baseline-D
+- [l1preproc] Added Envisat SGDR v3.0
+- [l1preproc] Added ERS-1/2 REAPER 
+- [l1preproc] Added Sentinel-3A/B for l1preproc
+- [l2proc] Added beta for CryoSat-2 v2.2
+
 ## Version 0.6.6 (14. November 2018)
 
 **New Features**
