@@ -729,6 +729,15 @@ class DefaultCommandLineArguments(object):
                 "required": True,
                 "help": "pysiral recognized mission id"},
 
+            # platform (same as mission, but proper name)
+            "platform": {
+                "action": 'store',
+                "dest": 'platform',
+                "choices": config.mission_ids,
+                "required": True,
+                "default": None,
+                "help": "pysiral recognized platform id"},
+
             # Default date parameter
             "date": {
                 "action": "store",

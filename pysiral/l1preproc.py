@@ -1,5 +1,6 @@
 
 import os
+import sys
 import numpy as np
 from operator import attrgetter
 from datetime import timedelta
@@ -784,7 +785,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 class Level1PreProcJobDef(DefaultLoggingClass):
     """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
 
-    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], hemisphere="global",
+    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], hemisphere="global", platform=None,
                  output_handler_cfg={}):
         """
         The settings for the Level-1 pre-processor job
@@ -794,6 +795,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         :param tce: [int list] Time coverage end (YYYY MM [DD]) [int list]
         :param exclude_month: [int list] A list of month that will be ignored
         :param hemisphere: [str] The target hemisphere (`north`, `south`, `global`:default).
+        :param platform: [str] The target platform (pysiral id). Required if l1p settings files is valid for
+                               multiple platforms (e.g. ERS-1/2, ...)
         :param output_handler_cfg: [dict] An optional dictionary with options of the output handler
                                    (`overwrite_protection`: [True, False], `remove_old`: [True, False])
         """
@@ -807,6 +810,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Store command line options
         self._hemisphere = hemisphere
+        self._platform = platform
 
         # Parse the l1p settings file
         self.set_l1p_processor_def(l1p_settings_id_or_file)
@@ -834,6 +838,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         data_handler_cfg["remove_old"] = args.remove_old
         kwargs["output_handler_cfg"] = data_handler_cfg
         kwargs["hemisphere"] = args.hemisphere
+        kwargs["platform"] = args.platform
 
         # Return the initialized class
         return cls(args.l1p_settings, args.start_date, args.stop_date, **kwargs)
@@ -847,6 +852,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # 2. Read the content
         self.log.info("Parsing L1P processor definition file: %s" % procdef_file_path)
         self._l1pprocdef = get_yaml_config(procdef_file_path)
+        self._check_if_unambiguous_platform()
 
         # 3. Expand info (input data lookup directories)
         self._get_local_input_directory()
@@ -878,7 +884,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         input_handler_cfg = self.l1pprocdef.input_handler.options
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
         primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
-        platform, tag = self.l1pprocdef.platform, local_machine_def_tag
+        platform, tag = self.platform, local_machine_def_tag
 
         # Get the value
         branch = primary_input_def[platform][tag]
@@ -913,6 +919,21 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Update the lookup dir parameter
         self.l1pprocdef.input_handler.options.lookup_dir = branch.source
 
+    def _check_if_unambiguous_platform(self):
+        """ Checks if the platform is unique, since some l1 processor definitions are valid for a series of
+        platforms, such as ERS-1/2, Sentinel-3A/B, etc. The indicator is that the platform tag in the
+        l1 preprocessor settings is comma separated list.
+
+        For the location of the source data, it is however necessary that the exact platform is known. It must
+        therefore be specified explicitly by the -platform argument """
+
+        settings_is_ambigous = "," in self._l1pprocdef.platform
+        platform_is_known = self.platform is not None
+        if settings_is_ambigous and not platform_is_known:
+            msg = "Erro: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
+            msg = msg % self._l1pprocdef.platform
+            sys.exit(msg)
+
     @property
     def hemisphere(self):
         return self._hemisphere
@@ -937,6 +958,10 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     @property
     def output_handler_cfg(self):
         return self._output_handler_cfg
+
+    @property
+    def platform(self):
+        return self._platform
 
 
 class Level1POutputHandler(DefaultLoggingClass):

@@ -1,6 +1,6 @@
 # NOTE: A separate config file is necessary for ERS-2, since the Level-1 pre-processor
 #       expects one config file per platform (at least for now)
-platform: ers1
+platform: ers1, ers2
 
 # Information of getting an input file list
 input_handler:

@@ -62,8 +62,6 @@ def pysiral_l1preproc(job):
     job.info("Level-1 PreProcessor finished in %s" % job.stopwatch.get_duration())
 
 
-
-
 class Level1PreProcArgParser(DefaultLoggingClass):
 
     def __init__(self):
@@ -105,6 +103,7 @@ class Level1PreProcArgParser(DefaultLoggingClass):
         # (argname, argtype (see config module), destination, required flag)
         options = [
             ("-l1p-settings", "l1p-settings", "l1p_settings", True),
+            ("-platform", "platform", "platform", False),
             ("-start", "date", "start_date", True),
             ("-stop", "date", "stop_date", True),
             ("-exclude-month", "exclude-month", "exclude_month", False),
