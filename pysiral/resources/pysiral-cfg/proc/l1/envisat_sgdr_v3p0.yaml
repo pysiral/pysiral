@@ -107,12 +107,20 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items: {}
+        pre_processing_items:
 
+            # Compute the leading edge width parameters (full, first half & second half)
+            - label: "Compute Leading Edge Width"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeWidth
+              options:
+                  tfmra_leading_edge_start: 0.05
+                  tfmra_leading_edge_center: 0.5
+                  tfmra_leading_edge_end: 0.95
 
-
-
-
-
-
-
+            # Compute waveform peakiness CCI style
+            - label: "Compute Waveform Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 5
