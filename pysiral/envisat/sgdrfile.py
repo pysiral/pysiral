@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import os
+import re
+import numpy as np
+
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.envisat.sgdr_mds_def import envisat_get_mds_def
 from pysiral.envisat.functions import (mdsr_timestamp_to_datetime,
@@ -7,10 +11,7 @@ from pysiral.envisat.functions import (mdsr_timestamp_to_datetime,
                                        get_envisat_wfm_range)
 from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
 from pysiral.esa.functions import get_structarr_attr
-
-import numpy as np
-import os
-import re
+from pysiral.iotools import ReadNC
 
 
 class EnvisatSGDR(object):

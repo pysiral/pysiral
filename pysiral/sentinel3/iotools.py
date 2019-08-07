@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.logging import DefaultLoggingClass
-
 import re
 import os
 import glob
+from collections import deque
+
+from pysiral.errorhandler import ErrorStatus
+from pysiral.logging import DefaultLoggingClass
+
+
 
 
 class Sentinel3FileList(DefaultLoggingClass):
@@ -70,6 +74,73 @@ class Sentinel3FileList(DefaultLoggingClass):
 #            len(self._sorted_list)))
 
 
+class CodaL2SralFileDiscovery(DefaultLoggingClass):
+    """ Class to retrieve Sentinel-3 SRAL files from the Copernicus Online Data Archive """
+
+    def __init__(self, cfg):
+        """
+
+        :param cfg: dict/treedict configuration options (see l1proc config file)
+        """
+        cls_name = self.__class__.__name__
+        super(CodaL2SralFileDiscovery, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+
+        # Save config
+        self.cfg = cfg
+
+        # Init empty file lists
+        self._reset_file_list()
+
+    def get_file_for_period(self, period):
+        """
+        Query for Sentinel Level-2 files for a specific period.
+        :param period: A pysiral.config.TimeRangeIteration object
+        :return: sorted list of filenames
+        """
+        # Make sure file list are empty
+        self._reset_file_list()
+        self._query(period)
+        return self.sorted_list
+
+    def _query(self, period):
+        """
+        Searches for files in the given period and stores result in property _sorted_list
+        :param period: A pysiral.config.TimeRangeIteration object
+        :return: None
+        """
+
+        # Loop over all months in the period
+        for year, month in period.month_list:
+
+            # Get the file list for each month
+            toplevel_folder = self._get_toplevel_search_folder(year, month)
+            l2_file_list = get_sentinel3_l1b_filelist(toplevel_folder, self.cfg.filename_search)
+
+            # Get list of days for particular year/month
+            days = period.get_days_for_month(year, month)
+            for day in days:
+                daystr = "%04g%02g%02g" % (year, month, day)
+                match = [f[0] for f in l2_file_list if re.search(daystr, f[1])]
+                self._sorted_list.extend(sorted(match))
+
+    def _get_toplevel_search_folder(self, year, month):
+        """ Get the folder for the file search """
+        folder = self.cfg.lookup_dir
+        folder = os.path.join(folder, "%4g" % year)
+        folder = os.path.join(folder, "%02g" % month)
+        return folder
+
+    def _reset_file_list(self):
+        """ Resets the result of previous file searches """
+        self._list = deque([])
+        self._sorted_list = []
+
+    @property
+    def sorted_list(self):
+        """ Return the search result """
+        return self._sorted_list
+
 def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     """ Returns a list with measurement.nc files for given month """
     s3_file_list = []
@@ -82,8 +153,7 @@ def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     return s3_file_list
 
 
-def get_sentinel3_sral_l1_from_l2(l2_filename,
-                                  target="enhanced_measurement.nc"):
+def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc"):
     """ Returns the corresponding sral l1 file to a given l2 filename """
 
     # XXX: This is based on the data structure of the early access

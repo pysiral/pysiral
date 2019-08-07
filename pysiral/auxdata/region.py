@@ -32,6 +32,8 @@ Important Note:
 
 """
 
+import numpy as np
+
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
 
@@ -54,5 +56,19 @@ class NSIDCRegionMask(AuxdataBaseClass):
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         region_code = grid2track.get_from_grid_variable(self._data.region_id, flipud=False)
 
+        # Register the variable
+        self.register_auxvar("reg_code", "region_code", region_code, None)
+
+
+class BlankRegionMask(AuxdataBaseClass):
+    """ A dummy region code class """
+
+    def __init__(self, *args, **kwargs):
+        super(BlankRegionMask, self).__init__(*args, **kwargs)
+        pass
+
+    def get_l2_track_vars(self, l2):
+        # Just use a dummy array
+        region_code = np.full(l2.track.longitude.shape, -1)
         # Register the variable
         self.register_auxvar("reg_code", "region_code", region_code, None)

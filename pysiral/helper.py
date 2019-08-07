@@ -91,6 +91,29 @@ def validate_year_month_list(year_month_list, label):
             year_month_list[0], year_month_list[1])
 
 
+class ProgressIndicator(object):
+
+    def __init__(self, n_steps):
+        self.n_steps = n_steps
+        self.reset()
+
+    def reset(self):
+        self.index = 0
+
+    def get_status_report(self, i, fmt="{step} of {n_steps} ({percent:.2f}%)"):
+        self.index = i
+        return fmt.format(step=self.step, n_steps=self.n_steps, percent=self.percent)
+
+    @property
+    def step(self):
+        return self.index+1
+
+    @property
+    def percent(self):
+        return float(self.step)/float(self.n_steps)*100.
+
+
+
 class SimpleTimer(object):
 
     def __init__(self, name=''):

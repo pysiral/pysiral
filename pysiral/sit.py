@@ -225,6 +225,9 @@ class SnowFreeboardDefault(L2ThicknessAlgorithmBaseClass):
         return sit_unc
 
 
+def icefreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
+    return (rho_w)/(rho_w - rho_i)*frb + (rho_s)/(rho_w - rho_i)*sd
+
 def snowfreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
     return rho_w / (rho_w - rho_i)*frb + (rho_s - rho_w)/(rho_w - rho_i)*sd
 

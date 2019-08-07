@@ -10,14 +10,16 @@
 missions:
     - cryosat2
     - envisat
+    - ers1
     - ers2
     - sentinel3a
+    - sentinel3b
     - icesat
+    - icesat2
 
 # These missions are includeed in the pysiral concept but support
 # will be added later in the development phase
 missions_to_be_added:
-    - ers1
     - altika
 
 # list of supported radar altimeter modes

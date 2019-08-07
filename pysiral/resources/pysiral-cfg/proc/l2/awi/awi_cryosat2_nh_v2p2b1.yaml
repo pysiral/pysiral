@@ -1,6 +1,6 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 
-id: "AWI CryoSat-2 Sea Ice Product (cs2awi v2.1) (awi_cryosat2_nh_020)"
+id: "AWI CryoSat-2 Sea Ice Product (cs2awi v2.2 beta 1)"
 version_tag: "v2p1awi"
 
 # This settings file is valid for
@@ -9,7 +9,81 @@ hemisphere: north
 # Level 2 processor settings are mission specific
 mission:
     id: cryosat2
-    
+
+
+# Transfer data from the l1b to the l2 data object (from any data group)
+# The notation is the following:
+#
+#   $data_group_name:
+#       $l1p_varname:
+#           aux_id: id of the auxiliary parameter (l2.$aux_id)
+#           aux_name: long name for output definition
+#
+# NOTE: Any parameter will be registered as a auxiliary data object
+
+transfer_from_l1p:
+
+    classifier:
+
+        sigma0:
+            aux_id: sig
+            aux_name: sigma0
+
+        peakiness:
+            aux_id: pp
+            aux_name: pulse_peakiness
+
+        leading_edge_width:
+            aux_id: lew
+            aux_name: leading_edge_width
+
+        late_tail_to_peak_power:
+            aux_id: ltpp
+            aux_name: late_tail_to_peak_power
+
+        stack_standard_deviation:
+            aux_id: ssd
+            aux_name: stack_standard_deviation
+
+    correction:
+
+        dry_troposphere:
+            aux_id: rcdt
+            aux_name: dry_troposphere
+
+        wet_troposphere:
+            aux_id: rcwt
+            aux_name: wet_troposphere
+
+        inverse_barometric:
+            aux_id: rcib
+            aux_name: inverse_barometric
+
+        ionospheric:
+            aux_id: rcio
+            aux_name: ionospheric
+
+        ocean_tide_elastic:
+            aux_id: rcote
+            aux_name: ocean_tide_elastic
+
+        ocean_tide_long_period:
+            aux_id: rcotlp
+            aux_name: ocean_tide_long_period
+
+        ocean_loading_tide:
+            aux_id: rcolt
+            aux_name: ocean_loading_tide
+
+        solid_earth_tide:
+            aux_id: rcset
+            aux_name: solid_earth_tide
+
+        geocentric_polar_tide:
+            aux_id: rcgpt
+            aux_name: geocentric_polar_tide
+
+
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 # NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 auxdata:
@@ -26,7 +100,7 @@ auxdata:
             name: dtu18
             options:
                 latitude_range: [50.0, 90.0]
-    
+
     - sic:
             name: osisaf
             options:
@@ -35,11 +109,11 @@ auxdata:
                 fill_pole_hole:
                     pole_hole_lat_threshold: 87.0
                     pole_hole_fill_value: 100.
-    
+
     - sitype:
             name: osisaf
             options: null
-    
+
     - snow:
             name: clim_w99amsr2
             options:
@@ -56,7 +130,7 @@ corrections:
     - ocean_loading_tide
     - solid_earth_tide
     - geocentric_polar_tide
-    
+
 # Surface type classification algorithm
 surface_type:
     pyclass: SICCI2
@@ -66,30 +140,30 @@ surface_type:
                 peakiness_max: 5.0
                 ice_concentration_min: 5.0
             lead:
-                peakiness_min: [67.30, 66.30, 66.60, 69.90, 0.00, 0.00, 0.00, 0.00, 0.00, 76.00, 73.80, 68.60]
-                sea_ice_backscatter_min: [23.80, 23.20, 23.30, 23.40, 0.00, 0.00, 0.00, 0.00, 0.00, 28.00, 25.80, 24.10]
-                leading_edge_width_max: [0.77, 0.78, 0.78, 0.76, 0.00, 0.00, 0.00, 0.00, 0.00, 0.72, 0.73, 0.76]
+                peakiness_min: [67.30, 66.30, 66.60, 69.90, 69.90, 69.90, 69.90, 69.90, 69.90, 76.00, 73.80, 68.60]
+                sea_ice_backscatter_min: [23.80, 23.20, 23.30, 23.40, 23.40, 23.40, 23.40, 23.40, 23.40, 28.00, 25.80, 24.10]
+                leading_edge_width_max: [0.77, 0.78, 0.78, 0.76, 0.76, 0.76, 0.76, 0.76, 0.76, 0.72, 0.73, 0.76]
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_max: [30.50, 28.70, 28.10, 28.50, 0.00, 0.00, 0.00, 0.00, 0.00, 35.40, 34.90, 31.90]
+                peakiness_max: [30.50, 28.70, 28.10, 28.50, 28.50, 28.50, 28.50, 28.50, 28.50, 35.40, 34.90, 31.90]
                 sea_ice_backscatter_min: 2.5
-                sea_ice_backscatter_max: [20.80, 19.90, 19.60, 19.00, 0.00, 0.00, 0.00, 0.00, 0.00, 25.70, 23.20, 21.10]
-                leading_edge_width_min: [1.02, 1.08, 1.10, 1.11, 0.00, 0.00, 0.00, 0.00, 0.00, 0.91, 0.90, 0.97]
+                sea_ice_backscatter_max: [20.80, 19.90, 19.60, 19.00, 19.00, 19.00, 19.00, 19.00, 19.00, 25.70, 23.20, 21.10]
+                leading_edge_width_min: [1.02, 1.08, 1.10, 1.11, 1.11, 1.11, 1.11, 1.11, 1.11, 0.91, 0.90, 0.97]
                 ice_concentration_min: 70.0
         sin:
             ocean:
                 peakiness_max: 5.0
                 ice_concentration_min: 5.0
             lead:
-                peakiness_min: [264.30, 257.90, 253.60, 264.60, 0.00, 0.00, 0.00, 0.00, 0.00, 291.80, 288.80, 272.60]
-                sea_ice_backscatter_min: [24.90, 25.00, 24.10, 24.50, 0.00, 0.00, 0.00, 0.00, 0.00, 29.00, 27.40, 25.80]
-                leading_edge_width_max: [1.10, 1.11, 1.13, 1.09, 0.00, 0.00, 0.00, 0.00, 0.00, 1.02, 1.03, 1.07]
+                peakiness_min: [264.30, 257.90, 253.60, 264.60, 264.60, 264.60, 264.60, 264.60, 264.60, 291.80, 288.80, 272.60]
+                sea_ice_backscatter_min: [24.90, 25.00, 24.10, 24.50, 24.50, 24.50, 24.50, 24.50, 24.50, 29.00, 27.40, 25.80]
+                leading_edge_width_max: [1.10, 1.11, 1.13, 1.09, 1.09, 1.09, 1.09, 1.09, 1.09, 1.02, 1.03, 1.07]
                 ice_concentration_min: 70.0
             sea_ice:
-                peakiness_max: [99.40, 94.20, 89.90, 90.00, 0.00, 0.00, 0.00, 0.00, 0.00, 114.40, 113.90, 103.80]
+                peakiness_max: [99.40, 94.20, 89.90, 90.00, 90.00, 90.00, 90.00, 90.00, 90.00, 114.40, 113.90, 103.80]
                 sea_ice_backscatter_min: 2.5
-                sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 0.00, 0.00, 0.00, 0.00, 0.00, 24.30, 23.70, 22.00]
-                leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 0.00, 0.00, 0.00, 0.00, 0.00, 1.44, 1.44, 1.51]
+                sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 19.10, 19.10, 19.10, 19.10, 19.10, 24.30, 23.70, 22.00]
+                leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 1.64, 1.64, 1.64, 1.64, 1.64, 1.44, 1.44, 1.51]
                 ice_concentration_min: 70.0
 
 # Retracking algorithm dependent on surface type
@@ -127,7 +201,7 @@ retracker:
             uncertainty:
                 type: fixed
                 value: 0.1
-            
+
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
 ssa:
     pyclass: SSASmoothedLinear
@@ -156,7 +230,7 @@ frb:
     pyclass: SnowGeometricCorrection
     options:
         vacuum_light_speed_reduction: 0.22
-        
+
 # Algorithm for getting sea ice thickness from other l2 parameters
 sit:
     pyclass: SeaIceFreeboardDefault
@@ -168,7 +242,7 @@ sit:
         uncertainty:
             fyi_density: 35.7
             myi_density: 23.0
-        
+
 # List of filter at different stages of l2 procesing
 # (can be list of filters)
 filter:
@@ -180,7 +254,7 @@ filter:
             options:
                 valid_minimum_point_value: -0.25
                 valid_maximum_point_value: 2.25
-                
+
     # Filters after thickness computation
     thickness:
         frb_valid_range:
@@ -188,7 +262,7 @@ filter:
             options:
                 valid_minimum_point_value: -0.5
                 valid_maximum_point_value: 10.5
-                
+
 # Tests if l1b orbit file is valid
 validator:
 
@@ -197,7 +271,7 @@ validator:
         n_leads:
             pyclass: LeadFixedMinimumNumber
             options:
-                minimum_n_leads: 3
-        
+                minimum_n_leads: 0
+
 # Post-Processing (tbd if needed)
 post_processing: null

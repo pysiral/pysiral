@@ -18,9 +18,8 @@ from pysiral.sentinel3.sral_l1b import Sentinel3SRALL1b
 from pysiral.cryosat2.functions import (
     get_tai_datetime_from_timestamp, get_cryosat2_wfm_power,
     get_cryosat2_wfm_range)
-# fmi modification: CS2LTPP added
-from pysiral.classifier import (CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness,
-                                EnvisatWaveformParameter)
+
+from pysiral.classifier import (CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness, EnvisatWaveformParameter)
 
 from pysiral.clocks import UTCTAIConverter
 from pysiral.esa.functions import get_structarr_attr
@@ -181,6 +180,10 @@ class L1bAdapterCryoSat(object):
         utc_timestamp = converter.tai2utc(tai_timestamp, check_all=False)
         self.l1b.time_orbit.timestamp = utc_timestamp
 
+        # Set antenna pitch, roll, yaw (dummy values for now)
+        dummy_val = np.full(longitude.shape, np.nan)
+        self.l1b.time_orbit.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
+
     def _transfer_waveform_collection(self):
 
         # Create the numpy arrays for power & range
@@ -199,9 +202,11 @@ class L1bAdapterCryoSat(object):
             echo_range[i, :] = get_cryosat2_wfm_range(
                 self.cs2l1b.measurement[i].window_delay, n_range_bins)
 
-            # Transfer to L1bData
-        self.l1b.waveform.set_waveform_data(
-            echo_power, echo_range, self.cs2l1b.radar_mode)
+        # Transfer the waveform data
+        self.l1b.waveform.set_waveform_data(echo_power, echo_range, self.cs2l1b.radar_mode)
+
+        # Transfer waveform flag
+
 
     def _transfer_range_corrections(self):
         # Transfer all the correction in the list
@@ -250,7 +255,7 @@ class L1bAdapterCryoSat(object):
         self.l1b.classifier.add(pulse.peakiness, "peakiness")
         self.l1b.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1b.classifier.add(pulse.peakiness_l, "peakiness_l")
-        
+
         # fmi version: Calculate the LTPP
         ltpp = CS2LTPP(wfm)
         self.l1b.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")

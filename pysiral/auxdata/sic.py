@@ -66,7 +66,7 @@ class OsiSafSIC(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if error with file I/O
-        if self.error.status:
+        if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
         else:
             # Get and return the track
@@ -106,8 +106,6 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
-        self.add_handler_message("OsiSafSIC: Loaded SIC file: %s" % path)
-
     def _get_sic_track(self, l2):
         """ Simple extraction along trajectory"""
 
@@ -129,13 +127,13 @@ class OsiSafSIC(AuxdataBaseClass):
         path = self.cfg.local_repository
 
         # The path needs to be completed if two products shall be used
-        if "auto_product_change" in self.cfg.options:
+        if self.cfg.options.has_key("auto_product_change"):
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
             path = os.path.join(path, product_def["subfolder"])
-            self.cfg.set_filenaming(product_def["filenaming"])
-            self.cfg.set_long_name(product_def["long_name"])
+            self.cfg.filenaming = product_def["filenaming"]
+            self.cfg.long_name = product_def["long_name"]
 
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)

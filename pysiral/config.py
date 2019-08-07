@@ -37,8 +37,8 @@ from isodate import duration_isoformat
 
 
 # TODO: These have to be removed (see __version__ in __init__.py)
-PYSIRAL_VERSION = "0.7.0dev"
-PYSIRAL_VERSION_FILENAME = "070dev"
+PYSIRAL_VERSION = "0.7.0"
+PYSIRAL_VERSION_FILENAME = "070"
 HOSTNAME = socket.gethostname()
 
 # TODO: These have to removed (better use info from mission_def)
@@ -253,8 +253,7 @@ class TimeRangeRequest(DefaultLoggingClass):
     # TODO: Future planned option (weekly: 7 days from start day) and
     #       (week_of_year: self explanatory)
 
-    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[],
-                 raise_if_empty=False):
+    def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[], raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
         self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
@@ -730,6 +729,15 @@ class DefaultCommandLineArguments(object):
                 "required": True,
                 "help": "pysiral recognized mission id"},
 
+            # platform (same as mission, but proper name)
+            "platform": {
+                "action": 'store',
+                "dest": 'platform',
+                "choices": config.mission_ids,
+                "required": True,
+                "default": None,
+                "help": "pysiral recognized platform id"},
+
             # Default date parameter
             "date": {
                 "action": "store",
@@ -790,6 +798,14 @@ class DefaultCommandLineArguments(object):
                 "default": None,
                 "required": False,
                 "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
+
+            # fetch the level-2 settings file
+            "l1p-settings": {
+                "action": "store",
+                "dest": "l1p_settings",
+                "default": None,
+                "required": True,
+                "help": 'id or path to Level-1P processor definition file file'},
 
             # fetch the level-2 settings file
             "l2-settings": {

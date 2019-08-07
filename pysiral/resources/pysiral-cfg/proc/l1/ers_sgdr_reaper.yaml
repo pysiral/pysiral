@@ -1,0 +1,133 @@
+# NOTE: A separate config file is necessary for ERS-2, since the Level-1 pre-processor
+#       expects one config file per platform (at least for now)
+platform: ers1, ers2
+
+# Information of getting an input file list
+input_handler:
+    
+    module_name: pysiral.ers.iotools
+    class_name: ERSCycleBasedSGDR
+    
+    options:
+        local_machine_def_tag: sgdr_reaper_v1p08  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+        lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
+        cycle_folder_regex: E._REAP_ERS_ALT_2S_.
+        folder_parser: E{ers_number:1d}_REAP_ERS_ALT_2S_{tcs}_{tce}_{cycle:04d}
+        filename_search: E*_REAP_ERS_ALT_2S_{year:04d}{month:02d}{day:02d}T*_RP01.NC
+        filename_sep: _   # character to split the filename
+        tcs_str_index: 5  # index of time_coverage_start string in file (when splitting filename with filename_sep)
+
+# Class that will generate the initial l1p data object from
+# the input data
+input_adapter:
+    
+    module_name: pysiral.ers.l1_adapter
+    class_name: ERSReaperSGDR
+    
+    options:
+        
+        name: "Radar Altimeter REAPER Sensor Geophysical Data Record - SGDR "
+
+        # Radar Altimeter Settings
+        range_bin_width: 0.4545
+        nominal_tracking_bin: 32.5
+
+        # SGDR Input Settings
+        sgdr_n_blocks: 20
+
+        # SGDR timestamp units
+        sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
+        sgdr_timestamp_calendar: gregorian
+
+        platform_name_dict:
+            E1: ers1
+            E2: ers2
+
+        # The timeliness is fixed (always reprocessed)
+        timeliness: rep
+        
+        range_correction_targets:
+            dry_troposphere: model_dry_tropo_corr
+            wet_troposphere: model_wet_tropo_corr
+            inverse_barometric: inv_bar_corr
+            dynamic_atmosphere: hf_fluctuations_corr
+            ionosphere: iono_corr_model
+            ocean_tide_elastic: ocean_tide_sol1
+            ocean_tide_long_period: ocean_tide_equil
+            ocean_loading_tide: load_tide_sol1
+            solid_earth_tide: solid_earth_tide
+            geocentric_polar_tide: pole_tide
+            total_geocentric_ocean_tide: Null
+        
+        classifier_targets:
+            chirp_type: alt_state_flag_chirp_type_20hz
+            peakiness_sgdr: peakiness_20hz
+            ocog_width: width_20hz
+            ocog_amplitude: amplitude_20hz
+            sigma0: sitrack_sig0_20hz
+            sigma0_ice1: ice1_sig0_20hz
+            sigma0_ice2: ice2_sig0_20hz
+            leading_edge_width_ice2: ice2_le_width_20hz
+            elevation_ice1: ice1_elevation_20hz
+            elevation_sitrack: sitrack_elevation_20hz
+
+
+
+# Output handler (will always be default handler -> only options)
+output_handler:
+   
+    options:
+        local_machine_def_tag: sgdr_reaper_v1p08
+        version:
+            source_file_tag: esa_sgdr_v1p08
+            version_file_tag: v1p0
+
+
+# Settings for the pre-processor
+level1_preprocessor:
+    
+    type: full_orbit
+    
+    options:
+        
+        polar_ocean:
+            target_hemisphere: [north, south]
+            polar_latitude_threshold: 45.0
+            input_file_is_single_hemisphere: False
+            allow_nonocean_segment_nrecords: 250
+            ocean_mininum_size_nrecords: 5
+
+        # Check for gaps in the input files and split at a certain gap size (in seconds)
+        timestamp_discontinuities:
+            split_at_time_gap_seconds: 10
+
+        # The maximum separation in seconds for two orbits so that they count as connected
+        orbit_segment_connectivity:
+            max_connected_segment_timedelta_seconds: 10
+        
+        # NOTE: if no options are required use an empty mapping {} instead of null!
+        pre_processing_items:
+
+            # Compute the leading edge width parameters (full, first half & second half)
+            - label: "Compute Leading Edge Width"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeWidth
+              options:
+                  tfmra_leading_edge_start: 0.05
+                  tfmra_leading_edge_center: 0.5
+                  tfmra_leading_edge_end: 0.95
+            
+            # Compute waveform peakiness CCI style
+            - label: "Compute Waveform Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 5
+
+
+
+
+
+
+
+

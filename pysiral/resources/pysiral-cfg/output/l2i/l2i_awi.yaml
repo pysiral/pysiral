@@ -1,0 +1,268 @@
+# This is the fmi output definition (with ice chart) for the Level2Processor
+
+# Metadata
+metadata: 
+  output_id: l2i_ic
+  data_level: 2
+  data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming: 
+  default: "l2i_seaice_{mission_id}_{source_timeliness:lowercase}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc"
+product_level_subfolder: l2i
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
+  - title: "Geophysical sea ice parameters from {mission_id} {source_timeliness} radar altimeter data"  
+  - summary: "Along-track sea ice freeboard, sea ice thickness and auxiliary parameters with associated uncertainties"
+  - keywords: "sea ice, radar altimetry"
+  - product_version: "{l2_algorithm_id}"
+  - source_mission_name: "{source_mission_name}"
+  - source_mission_id: "{source_mission_id}"
+  - source_mission_sensor: "{source_mission_sensor}"
+  - source_hemisphere: "{source_hemisphere}"
+  - source_timeliness: "{source_timeliness}"
+  - source_auxdata_snow: "{source_auxdata_snow}"
+  - source_auxdata_mss: "{source_auxdata_mss}"
+  - source_auxdata_sic: "{source_auxdata_sic}"
+  - source_auxdata_sitype: "{source_auxdata_sitype}"
+  - source_auxdata_icechart: "{source_auxdata_icechart}" # fmi modification
+  - references: "pysiral version: {pysiral_version:default}"
+  - cdm_data_type: Trajectory
+  - date_created: "{utcnow}"
+  - creator_name: "Stefan Hendricks"
+  - creator_url: "www.awi.de"
+  - creator_email: "stefan.hendricks@awi.de"
+  - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
+  - processing_level: "Level-2 intermediate (geophysical parameters at footprint resolution)"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration:period}"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+  
+  time:
+    long_name: utc timestamp
+    units: seconds since 1970-01-01
+
+  longitude:
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees east
+    coordinates: time
+
+  latitude:
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees north
+    coordinates: time
+
+  surface_type:
+    long_name: "surface type classification flag"
+    units: "1"
+    flag_meaning: "0: unknown, 1: ocean, 2: lead, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid"
+    coordinates: time
+
+  radar_mode:
+    long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
+    units: "1"
+    coordinates: time
+
+  elevation:
+    long_name: "elevation of retracked point above WGS84 ellipsoid (satellite altitude - range corrections - retracker range)"
+    units: m
+    coordinates: time
+
+  elevation_uncertainty:
+    long_name: "uncertainty of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
+    units: m
+    coordinates: time
+
+  mean_sea_surface:
+    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
+    standard_name: sea_surface_height_above_reference_ellipsoid
+    units: m
+    coordinates: time
+
+  sea_surface_anomaly:
+    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    sstandard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+
+  sea_surface_anomaly_uncertainty:
+    long_name: "uncertainty of instantaneous sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level standard_error
+    units: m
+    coordinates: time
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height"
+    units: m
+    coordinates: time
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+
+  radar_freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    units: m
+    coordinates: time
+
+  freeboard:
+    long_name: "freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: time
+
+  freeboard_uncertainty:
+    long_name: "freeboard uncertainty"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    coordinates: time
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    coordinates: time
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification standar_error
+    units: "1"
+    coordinates: time
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    standard_name: sea_ice_area_fraction
+    units: percent
+    valid_min: 0.0
+    valid_max: 100.0
+    coordinates: time
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: snow_depth
+    units: m
+    coordinates: time
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: snow_depth standard_error
+    units: m
+    coordinates: time
+
+  snow_density:
+    long_name: "density of the snow layer"
+    units: kg m-3
+    coordinates: time
+    
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    units: kg m-3
+    coordinates: time
+    
+  sea_ice_density:
+    long_name: "density of the sea ice layer"
+    standard_name: sea_ice_density
+    units: kg m-3
+    coordinates: time
+    
+  sea_ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    standard_name: sea_ice_density standard_error
+    units: kg m-3
+    coordinates: time
+
+  sea_ice_thickness:
+    long_name: "thickness of the sea ice layer"
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: time
+    
+  sea_ice_thickness_uncertainty:
+    long_name: "uncertainty of the sea ice layer thickness"
+    standard_name: sea_ice_thickness_uncertainty
+    units: m
+    coordinates: time
+
+  sigma0:
+    long_name: "radar backscatter (sigma0)"
+    units: "1"
+    coordinates: time
+
+  pulse_peakiness:
+    long_name: "pulse peakiness"
+    units: "1"
+    coordinates: time
+
+  leading_edge_width:
+    long_name: "leading edge width"
+    units: "1"
+    coordinates: time
+  
+  late_tail_to_peak_power:
+    long_name: "ratio of late tail to peak power"
+    units: "1"
+    coordinates: time
+  
+  stack_standard_deviation:
+    long_name: "standard deviation of power over the stack"
+    units: "1"
+    coordinates: time
+
+  dry_troposphere:
+    long_name: "dry troposphere range correction"
+    units: "m"
+    coordinates: time
+
+  wet_troposphere:
+    long_name: "wet troposphere range correction"
+    units: "m"
+    coordinates: time
+
+  inverse_barometric:
+    long_name: "inverse barometric range correction"
+    units: "m"
+    coordinates: time
+
+  ionospheric:
+    long_name: "ionospheric range correction"
+    units: "m"
+    coordinates: time
+
+  ocean_tide_elastic:
+    long_name: "ocean tide elastic range correction"
+    units: "m"
+    coordinates: time
+
+  ocean_tide_long_period:
+    long_name: "ocean tide long period range correction"
+    units: "m"
+    coordinates: time
+
+  ocean_loading_tide:
+    long_name: "ocean loading tide range correction"
+    units: "m"
+    coordinates: time
+
+  solid_earth_tide:
+    long_name: "solid earth tide range correction"
+    units: "m"
+    coordinates: time
+
+  geocentric_polar_tide:
+    long_name: "geocentric polar tide range correction"
+    units: "m"
+    coordinates: time

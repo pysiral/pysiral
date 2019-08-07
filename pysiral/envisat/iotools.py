@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import os
+import glob
 import numpy as np
 
 from collections import deque
+
+from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 
 
@@ -90,3 +93,70 @@ class EnvisatFileList(DefaultLoggingClass):
 
         self.log.info("%g files match time range of this month" % (
             len(self._sorted_list)))
+
+
+class EnvisatSGDRNC(DefaultLoggingClass):
+
+    def __init__(self, cfg):
+        """
+        File discovery for Envisat SGDG netcdf files with yyyy/mm/dd subfolder structure
+        :param cfg:
+        """
+
+        cls_name = self.__class__.__name__
+        super(EnvisatSGDRNC, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+
+        # Save config
+        self.cfg = cfg
+
+        # Init empty file lists
+        self._reset_file_list()
+
+    def get_file_for_period(self, period):
+        """
+        Query for Sentinel Level-2 files for a specific period.
+        :param period: A pysiral.config.TimeRangeIteration object
+        :return: sorted list of filenames
+        """
+        # Make sure file list are empty
+        self._reset_file_list()
+        self._query(period)
+        return self.sorted_list
+
+    def _reset_file_list(self):
+        """ Resets the result of previous file searches """
+        self._list = deque([])
+        self._sorted_list = []
+
+    def _query(self, period):
+        """
+        Searches for files in the given period and stores result in property _sorted_list
+        :param period: A pysiral.config.TimeRangeIteration object
+        :return: None
+        """
+
+        # Loop over all months in the period
+        for year, month, day in period.days_list:
+
+            # Search folder
+            lookup_folder = self._get_lookup_folder(year, month, day)
+            if not os.path.isdir(lookup_folder):
+                continue
+
+            # Query the daily folder
+            filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
+            search = os.path.join(lookup_folder, filename_search)
+            sgdr_files = glob.glob(search)
+
+            # Add files to result list
+            if len(sgdr_files) == 0:
+                continue
+            self._sorted_list.extend(sorted(sgdr_files))
+
+    def _get_lookup_folder(self, year, month, day):
+        return os.path.join(self.cfg.lookup_dir, "%04g" % year, "%02g" % month, "%02g" % day)
+
+    @property
+    def sorted_list(self):
+         return list(self._sorted_list)

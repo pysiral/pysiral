@@ -247,7 +247,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if error with file I/O
-        if self.error.status:
+        if not self.has_data_loaded:
             snow = SnowParameterContainer()
             snow.set_dummy(l2.n_records)
         else:
@@ -416,9 +416,10 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
 
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
+        year = l2.track.timestamp[0].year
         month = l2.track.timestamp[0].month
         day = l2.track.timestamp[0].day
-        self._requested_date = [month, day]
+        self._requested_date = [year, month, day]
 
     def _get_local_repository_filename(self, l2):
         """ Get the filename (no subfolders as climatology for each day)"""

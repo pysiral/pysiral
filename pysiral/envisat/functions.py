@@ -17,17 +17,17 @@ def mdsr_timestamp_to_datetime(mdsr_time):
         microseconds=mdsr_time.msec)
 
 
-def get_envisat_wfm_range(window_delay_meter, n_range_bins):
+def get_envisat_wfm_range(window_delay_meter, n_range_bins, bin_width_meter=BIN_WIDTH_METER):
     n_records = len(window_delay_meter)
     wfm_range = np.ndarray(shape=(n_records, n_range_bins), dtype=np.float32)
     for i in range(n_records):
-        wfm_range[i, :] = np.arange(n_range_bins)*BIN_WIDTH_METER + \
-            window_delay_meter[i]
+        wfm_range[i, :] = np.arange(n_range_bins)*bin_width_meter + window_delay_meter[i]
     return wfm_range
 
 
-def get_envisat_window_delay(tracker_range, doppler_correction,
-                             slope_doppler_correction):
+def get_envisat_window_delay(tracker_range, doppler_correction, slope_doppler_correction,
+                             nominal_tracking_bin=NOMINAL_TRACKING_BIN,
+                             bin_width_meter=BIN_WIDTH_METER):
     """
     Calculating the window delay of the first range bin:
 
@@ -48,10 +48,8 @@ def get_envisat_window_delay(tracker_range, doppler_correction,
 
     slope_doppler_correction: field '18Hz_ku_range_doppler_slope' from
                               mds_ra2.range_correction
-
     """
 
-    range_delta = -1.0 * NOMINAL_TRACKING_BIN * BIN_WIDTH_METER
-    window_delay_meter = tracker_range + range_delta + doppler_correction + \
-        slope_doppler_correction
+    range_delta = -1.0 * nominal_tracking_bin * bin_width_meter
+    window_delay_meter = tracker_range + range_delta + doppler_correction + slope_doppler_correction
     return window_delay_meter

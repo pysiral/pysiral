@@ -8,6 +8,7 @@ Created on Fri Jul 01 13:07:10 2016
 from retracker import SICCI2TfmraEnvisat
 import numpy as np
 
+from pysiral.logging import DefaultLoggingClass
 
 def get_waveforms_peak_power(wfm, dB=False):
     """
@@ -33,8 +34,7 @@ def get_sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s, **sigma0_par_dict):
     n_records = wf_peak_power_watt.shape[0]
     sigma0 = np.ndarray(shape=(n_records))
     for i in np.arange(n_records):
-        sigma0[i] = sar_sigma0(wf_peak_power_watt[i], tx_pwr[i], r[i], v_s[i],
-                               **sigma0_par_dict)
+        sigma0[i] = sar_sigma0(wf_peak_power_watt[i], tx_pwr[i], r[i], v_s[i], **sigma0_par_dict)
     return sigma0
 
 
@@ -151,3 +151,154 @@ class TFMRALeadingEdgeWidth(object):
         width = self.tfmra.get_thresholds_distance(
             self.rng, self.wfm, self.fmi, thres0, thres1)
         return width
+
+
+class L1PLeadingEdgeWidth(DefaultLoggingClass):
+    """
+    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
+    using three TFMRA thresholds """
+
+    def __init__(self, **cfg):
+        super(L1PLeadingEdgeWidth, self).__init__(self.__class__.__name__)
+        for option_name in self.required_options:
+            option_value = cfg.get(option_name, None)
+            if option_value is None:
+                msg = "Missing option `%s` -> No computation of leading edge width!" % option_name
+                self.log.warning(msg)
+            setattr(self, option_name, option_value)
+
+    def apply(self, l1):
+        """
+        API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
+        second half) and adding the result to the classifier data group
+        :param l1: A Level-1 data instance
+        :return: None, Level-1 object is change in place
+        """
+
+        # Prepare input
+        wfm = l1.waveform.power
+        rng = l1.waveform.range
+        radar_mode = l1.waveform.radar_mode
+        is_ocean = l1.surface_type.get_by_name("ocean").flag
+        thrs_start = self.tfmra_leading_edge_start
+        thrs_center = self.tfmra_leading_edge_center
+        thrs_end = self.tfmra_leading_edge_end
+
+        # Compute the leading edge width (requires TFMRA retracking)
+        width = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        lew = width.get_width_from_thresholds(thrs_start, thrs_end)
+        lew1 = width.get_width_from_thresholds(thrs_start, thrs_center)
+        lew2 = width.get_width_from_thresholds(thrs_center, thrs_end)
+
+        # Add result to classifier group
+        l1.classifier.add(lew, "leading_edge_width")
+        l1.classifier.add(lew1, "leading_edge_width_first_half")
+        l1.classifier.add(lew2, "leading_edge_width_second_half")
+        l1.classifier.add(width.fmi, "first_maximum_index")
+
+    @property
+    def required_options(self):
+        return ["tfmra_leading_edge_start", "tfmra_leading_edge_center", "tfmra_leading_edge_end"]
+
+
+class L1PSigma0(DefaultLoggingClass):
+    """
+    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
+    using three TFMRA thresholds """
+
+    def __init__(self, **cfg):
+        super(L1PSigma0, self).__init__(self.__class__.__name__)
+
+    def apply(self, l1):
+        """
+        API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
+        second half) and adding the result to the classifier data group
+        :param l1: A Level-1 data instance
+        :return: None, Level-1 object is change in place
+        """
+
+        # Compute sigma nought
+        peak_power = get_waveforms_peak_power(l1.waveform.power)
+
+        # Get Input parameter from l1 object
+        tx_power = l1.get_parameter_by_name("classifier", "transmit_power")
+        if tx_power is None:
+            msg = "classifier `transmit_power` must exist for this pre-processor item -> aborting"
+            self.log.warning(msg)
+            return
+        altitude = l1.time_orbit.altitude
+
+        # Compute absolute satellite velocity
+        sat_vel_x = l1.get_parameter_by_name("classifier", "satellite_velocity_x")
+        sat_vel_y = l1.get_parameter_by_name("classifier", "satellite_velocity_y")
+        sat_vel_z = l1.get_parameter_by_name("classifier", "satellite_velocity_z")
+        if sat_vel_x is None or sat_vel_y is None or sat_vel_z is None:
+            msg = "classifier `satellite_velocity_[x|y|z]` must exist for this pre-processor item -> aborting"
+            self.log.warning(msg)
+            return
+        velocity = np.sqrt(sat_vel_x**2. + sat_vel_y**2. + sat_vel_z**2.)
+
+        # Compute sigma_0
+        sigma0 = get_sar_sigma0(peak_power, tx_power, altitude, velocity)
+
+        # Add the classifier
+        l1.classifier.add(peak_power, "peak_power")
+        l1.classifier.add(sigma0, "sigma0")
+
+    @property
+    def required_options(self):
+        return ["tfmra_leading_edge_start", "tfmra_leading_edge_center", "tfmra_leading_edge_end"]
+
+
+class L1PWaveformPeakiness(DefaultLoggingClass):
+    """
+    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
+    using three TFMRA thresholds """
+
+    def __init__(self, **cfg):
+        super(L1PWaveformPeakiness, self).__init__(self.__class__.__name__)
+        for option_name in self.required_options:
+            option_value = cfg.get(option_name, None)
+            if option_value is None:
+                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                self.log.warning(msg)
+            setattr(self, option_name, option_value)
+
+        # Init Parameters
+        self.peakiness = None
+
+    def apply(self, l1):
+        """
+        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        :param l1: l1bdata.Level1bData instance
+        :return: None
+        """
+        self._calc(l1)
+        l1.classifier.add(self.peakiness, "peakiness")
+
+    def _calc(self, l1):
+        """ Compute pulse peakiness (from SICCI v1 processor)."""
+
+        # Get the waveform
+        wfm = l1.waveform.power
+        n_records, n_range_bins = wfm.shape
+
+        # Init output parameters
+        self.peakiness = np.full((n_records), np.nan)
+        self.peakiness_old = np.full((n_records), np.nan)
+
+        # Compute peakiness for each waveform
+        for i in np.arange(n_records):
+
+            # Discard first bins, they are FFT artefacts anyway
+            wave = wfm[i, self.skip_first_range_bins:]
+
+            # new peakiness
+            try:
+                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
+            except ZeroDivisionError:
+                self.peakiness[i] = np.nan
+
+    @property
+    def required_options(self):
+        return ["skip_first_range_bins"]
