@@ -37,8 +37,8 @@ from isodate import duration_isoformat
 
 
 # TODO: These have to be removed (see __version__ in __init__.py)
-PYSIRAL_VERSION = "0.7.0dev"
-PYSIRAL_VERSION_FILENAME = "070dev"
+PYSIRAL_VERSION = "0.7.0"
+PYSIRAL_VERSION_FILENAME = "070"
 HOSTNAME = socket.gethostname()
 
 # TODO: These have to removed (better use info from mission_def)
