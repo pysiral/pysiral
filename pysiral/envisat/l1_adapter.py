@@ -197,10 +197,6 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             nc_parameter = getattr(self.sgdr, nc_parameter_name)
             self.l1.classifier.add(nc_parameter.flatten(), parameter_name)
 
-        # Add consistent definition of pulse peakiness
-        parameter = EnvisatWaveformParameter(self.l1.waveform.power)
-        self.l1.classifier.add(parameter.peakiness, "pulse_peakiness")
-
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.surf_class_20
         for key in ESA_SURFACE_TYPE_DICT.keys():

@@ -189,10 +189,6 @@ class ERSReaperSGDR(DefaultLoggingClass):
             nc_parameter = getattr(self.sgdr.nc, nc_parameter_name)
             self.l1.classifier.add(nc_parameter.flatten(), parameter_name)
 
-        # Add consistent definition of pulse peakiness
-        parameter = EnvisatWaveformParameter(self.l1.waveform.power)
-        self.l1.classifier.add(parameter.peakiness, "pulse_peakiness")
-
     def _transfer_surface_type_data(self):
         surface_type = self.sgdr.nc.surface_type
         surface_type = np.repeat(surface_type, self.cfg.sgdr_n_blocks)
