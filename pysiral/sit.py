@@ -231,6 +231,7 @@ class L2SeaIceDraft(DefaultLoggingClass):
 
     def __init__(self, **cfg):
         super(L2SeaIceDraft, self).__init__(self.__class__.__name__)
+        self.cfg = cfg
 
     def apply(self, l2):
         """
