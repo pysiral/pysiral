@@ -1050,10 +1050,11 @@ class Level1POutputHandler(DefaultLoggingClass):
             self.error.raise_on_error()
 
         # TODO: This is work in progress
-        filename_template = "pysiral-l1p-{platform}-{source}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"
+        filename_template = "pysiral-l1p-{platform}-{source}-{timeliness}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"
         time_fmt = "%Y%m%dT%H%M%S"
         values = {"platform": l1.info.mission,
                   "source": self.cfg.version.source_file_tag,
+                  "timeliness": l1.info.timeliness,
                   "hemisphere": l1.info.hemisphere,
                   "tcs": l1.time_orbit.timestamp[0].strftime(time_fmt),
                   "tce": l1.time_orbit.timestamp[-1].strftime(time_fmt),
