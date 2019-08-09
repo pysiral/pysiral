@@ -779,7 +779,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
 
     def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], hemisphere="global", platform=None,
-                 output_handler_cfg={}):
+                 output_handler_cfg={}, source_repo_id=None):
         """
         The settings for the Level-1 pre-processor job
         :param l1p_settings_id_or_file: An id of an proc/l1 processor config file (filename excluding the .yaml
@@ -792,6 +792,10 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                                multiple platforms (e.g. ERS-1/2, ...)
         :param output_handler_cfg: [dict] An optional dictionary with options of the output handler
                                    (`overwrite_protection`: [True, False], `remove_old`: [True, False])
+        :param source_repo_id: [str] The tag in local_machine_def.yaml (l1b_repository.<platform>.<source_repo_id>)
+                                  -> Overwrites the default source repo in the l1p settings
+                                     (input_handler.options.local_machine_def_tag &
+                                      output_handler.options.local_machine_def_tag)
         """
 
         super(Level1PreProcJobDef, self).__init__(self.__class__.__name__)
@@ -804,6 +808,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Store command line options
         self._hemisphere = hemisphere
         self._platform = platform
+        self._source_repo_id = source_repo_id
 
         # Parse the l1p settings file
         self.set_l1p_processor_def(l1p_settings_id_or_file)
@@ -832,6 +837,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         kwargs["output_handler_cfg"] = data_handler_cfg
         kwargs["hemisphere"] = args.hemisphere
         kwargs["platform"] = args.platform
+        kwargs["source_repo_id"] = args.source_repo_id
 
         # Return the initialized class
         return cls(args.l1p_settings, args.start_date, args.stop_date, **kwargs)
@@ -874,10 +880,15 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
     def _get_local_input_directory(self):
         """ Replace the tag for local machine def with the actual path info """
+
         input_handler_cfg = self.l1pprocdef.input_handler.options
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
         primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
         platform, tag = self.platform, local_machine_def_tag
+
+        # Overwrite the tag if specifically supplied
+        if self._source_repo_id is not None:
+            tag = self._source_repo_id
 
         # Get the value
         branch = primary_input_def[platform][tag]
@@ -901,13 +912,20 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                 self.error.add_error("local-machine-def-missing-tag", msg)
                 self.error.raise_on_error()
 
-            # 2. The value of each branch must be a valid directory
-            directory = str(branch[key])
-            if not os.path.isdir(directory):
-                msg = "Invalid directory in `local_machine_def.yaml`: %s is not a valid directory"
-                msg = msg % directory
-                self.error.add_error("local-machine-def-invalid-dir", msg)
-                self.error.raise_on_error()
+            # 2. The value of each branch must be a valid directory or a
+            #    treedict (e.g. for different radar modes) with a list of directories
+            directory_or_treedict = branch[key]
+            try:
+                directories = directory_or_treedict.values(recursive=True)
+            except AttributeError:
+                directories = [directory_or_treedict]
+
+            for directory in directories:
+                if not os.path.isdir(directory):
+                    msg = "Invalid directory in `local_machine_def.yaml`: %s is not a valid directory"
+                    msg = msg % directory
+                    self.error.add_error("local-machine-def-invalid-dir", msg)
+                    self.error.raise_on_error()
 
         # Update the lookup dir parameter
         self.l1pprocdef.input_handler.options.lookup_dir = branch.source
@@ -939,7 +957,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # If platform in settings is unambigous, but not provided -> get platform from settings
         if not settings_is_ambigous and not platform_is_known:
-            self.platform = self._l1pprocdef.platform
+            self._platform = self._l1pprocdef.platform
             self.log.info("- get platform from l1p settings -> %s" % self.platform)
 
     @property

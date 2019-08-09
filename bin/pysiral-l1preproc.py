@@ -104,6 +104,7 @@ class Level1PreProcArgParser(DefaultLoggingClass):
         options = [
             ("-l1p-settings", "l1p-settings", "l1p_settings", True),
             ("-platform", "platform", "platform", False),
+            ("-source-repo-id", "source-repo-id", "source_repo_id", False),
             ("-start", "date", "start_date", True),
             ("-stop", "date", "stop_date", True),
             ("-exclude-month", "exclude-month", "exclude_month", False),

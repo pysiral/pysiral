@@ -783,6 +783,14 @@ class DefaultCommandLineArguments(object):
                 "required": False,
                 "help": 'input version name (see documentation)'},
 
+            # same as input-version, but better worded
+            "source-repo-id": {
+                "action": "store",
+                "dest": "source_repo_id",
+                "default": None,
+                "required": False,
+                "help": 'specific tag in local_machine_def.yaml (root.l1b_repository.<platform>.<source_repo_od>'},
+
             # override any critical prompts for cronjobs etc
             "no-critical-prompt": {
                 "action": "store_true",
