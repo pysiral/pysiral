@@ -353,6 +353,12 @@ class Level2Processor(DefaultLoggingClass):
         if not "transfer_from_l1p" in self.l2def:
             return
 
+        # Don't spam the log
+        try:
+            verbose = self.l2def.transfer_from_l1p.options.get("verbose")
+        except:
+            verbose = False
+
         # Get and loop over data groups
         data_groups, vardefs = td_branches(self.l2def.transfer_from_l1p)
         for data_group, varlist in zip(data_groups, vardefs):
@@ -370,7 +376,8 @@ class Level2Processor(DefaultLoggingClass):
                 # Add variable to l2 object as auxiliary variable
                 l2.set_auxiliary_parameter(vardef.aux_id, vardef.aux_name, var, None)
 
-                self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
+                if verbose:
+                    self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
 
     def _get_auxiliary_data(self, l2):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
