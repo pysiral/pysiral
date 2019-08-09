@@ -502,11 +502,27 @@ class L1bdataNCFile(Level1bData):
         """
         # Get the datagroup
         datagroup = self.nc.groups["time_orbit"]
+
         # Set satellite position data (measurement is nadir)
         self.time_orbit.set_position(
             datagroup.variables["longitude"][:],
             datagroup.variables["latitude"][:],
             datagroup.variables["altitude"][:])
+
+        antenna_angles = {}
+        for angle in ["pitch", "roll", "yaw"]:
+            try:
+                value = datagroup.variables["antenna_%s" % angle][:]
+            except KeyError:
+                value = np.full((self.time_orbit.longitude.shape), 0.0)
+            antenna_angles[angle] = value
+
+        # Set satellite position data (measurement is nadir)
+        self.time_orbit.set_antenna_attitude(
+            antenna_angles["pitch"],
+            antenna_angles["roll"],
+            antenna_angles["yaw"])
+
         # Convert the timestamp to datetimes
         self.time_orbit.timestamp = num2date(
              datagroup.variables["timestamp"][:],
@@ -790,6 +806,12 @@ class L1bTimeOrbit(object):
 #                    alpha=0.5, s=120)
 #        plt.show()
 #        stop
+
+    def get_parameter_by_name(self, name):
+        try:
+            return getattr(self, name)
+        except:
+            return None
 
     def __getstate__(self):
         return self.__dict__
