@@ -86,15 +86,15 @@ transfer_from_l1p:
     time_orbit:
 
         antenna_pitch:
-            aux:id: toantptch
+            aux_id: toantptch
             aux_name: antenna_pitch
 
         antenna_roll:
-            aux:id: toantrll
+            aux_id: toantrll
             aux_name: antenna_roll
 
         antenna_yaw:
-            aux:id: toantyaw
+            aux_id: toantyaw
             aux_name: antenna_yaw
 
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
@@ -115,17 +115,14 @@ auxdata:
                 latitude_range: [45.0, 90.0]
 
     - sic:
-            name: osisaf
-            options:
-                # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
-                # All NaN values inside the pole hole latitude threshold will be set to 100%
-                fill_pole_hole:
-                    pole_hole_lat_threshold: 87.0
-                    pole_hole_fill_value: 100.
-
+         name: c3s_v1p2
+         options:
+            exception_on_error: True
+            
     - sitype:
-            name: osisaf
-            options: null
+         name: c3s_v1p0
+         options:
+             exception_on_error: True
 
     - snow:
             name: clim_w99amsr2
