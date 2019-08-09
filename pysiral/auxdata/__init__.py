@@ -73,6 +73,19 @@ class AuxdataBaseClass(object):
         day = l2.track.timestamp[0].day
         self.set_requested_date(year, month, day)
 
+    def check_data_availability(self, data_container_name="_data"):
+        """
+        Checks if data is loaded. If data container is None, raise an Error
+        :param data_container_name:
+        :return:
+        """
+        data_container = getattr(self, data_container_name, None)
+        if data_container is None:
+            msg = "%s: Data not loaded [%s]"
+            msg = msg % (self.__class__.__name__, self.year+"-"+self.month+"-"+self.day)
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing", msg)
+
     def reset_auxvars(self):
         """ Empties the auxiliary data store. To be executed during class initialization and
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """

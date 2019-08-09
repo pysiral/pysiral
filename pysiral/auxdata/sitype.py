@@ -64,6 +64,10 @@ class OsiSafSIType(AuxdataBaseClass):
         # Update the external data
         self.update_external_data()
 
+        # Check if data is available
+        if self.error.status:
+            self.error.raise_on_error()
+
         # Get the data
         sitype, uncertainty = self._get_sitype_track(l2)
 
