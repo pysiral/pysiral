@@ -23,6 +23,9 @@ mission:
 
 transfer_from_l1p:
 
+    options:
+        verbose: False
+
     classifier:
 
         sigma0:
@@ -118,7 +121,7 @@ auxdata:
          name: c3s_v1p2
          options:
             exception_on_error: True
-            
+
     - sitype:
          name: c3s_v1p0
          options:
