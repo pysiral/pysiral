@@ -614,6 +614,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def apply_post_processor(self, name, options):
         """ Caller for post-processing methods """
+        # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-procecsors
         try:
             method = getattr(self, "_api_l3pp_"+name)
         except AttributeError:
