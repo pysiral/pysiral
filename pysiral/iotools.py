@@ -178,7 +178,7 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
 
     # NOTE: Check if folder is l1p instead of l1bdata
     #       -> l1p indicated new l1 data version with different filenaming. File structure is still the same
-    repo_branch = l1b_repo = config.local_machine.l1b_repository[mission_id][version]
+    repo_branch = config.local_machine.l1b_repository[mission_id][version]
     if repo_branch.has_key("l1bdata"):
         l1b_repo = repo_branch.l1bdata
     else:
