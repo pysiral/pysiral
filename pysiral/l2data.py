@@ -862,7 +862,7 @@ class L2iNCFileImport(object):
     def mask_variables(self, indices, targets, value=np.nan):
         for target in targets:
             parameter = getattr(self, target)
-            try: 
+            try:
                 parameter[indices] = value
             except ValueError:
                 pass
