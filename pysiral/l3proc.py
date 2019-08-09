@@ -60,7 +60,7 @@ class Level3Processor(DefaultLoggingClass):
             self._log_progress(i)
 
             # Parse l2i source file
-            try: 
+            try:
                 l2i = L2iNCFileImport(l2i_file)
             except AttributeError:
                 self.log.warning("Attribute Error encountered in %s" % l2i_file)
@@ -69,7 +69,7 @@ class Level3Processor(DefaultLoggingClass):
             # Apply the orbit filter (for masking descending or ascending orbit segments)
             # NOTE: This tag may not be present in all level-3 settings files, as it has
             #       been added as a test case
-            try: 
+            try:
                 orbitfilter = self._job.l3def.orbit_filter
                 orbitfilter_is_active = orbitfilter.active
             except AttributeError:
@@ -77,7 +77,7 @@ class Level3Processor(DefaultLoggingClass):
             finally:
                 if orbitfilter.isDangling():
                      orbitfilter_is_active = False
-            
+
             if orbitfilter_is_active:
 
                 # Display warning if filter is active
@@ -88,14 +88,14 @@ class Level3Processor(DefaultLoggingClass):
                     indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
                 elif orbitfilter.mask_orbits == "descending":
                     indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
-                else: 
+                else:
                     self.log.error("Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
                     indices = []
-                
+
                 # Filter geophysical parameters only
                 targets = l2i.parameter_list
                 for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-                 try: 
+                 try:
                      targets.remove(non_target)
                  except ValueError:
                      pass
@@ -280,7 +280,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Check if any output definition requires an unlimited dimension
         # XXX: This is an unsatisfying solution resulting from the current solution that the L3DataGrid
-        #      provides fix dimensions for potentially more than one output handler. This need 
+        #      provides fix dimensions for potentially more than one output handler. This need
         #      consideration in the future
         self._time_dim_is_unlimited = [handler.time_dim_is_unlimited for handler in job.outputs]
 
@@ -760,12 +760,12 @@ class L3DataGrid(DefaultLoggingClass):
         self._l3["status_flag"] = sf
 
     def _api_l3pp_sit_l3_uncertainty(self, options):
-        """ Compute a level 3 uncertainty. The general idea is to 
-        compute the error propagation of average error components, 
+        """ Compute a level 3 uncertainty. The general idea is to
+        compute the error propagation of average error components,
         where for components for random error the error of the l2 average
         is used and for systematic error components the average of the
         l2 error """
-        
+
         # Options
         rho_w = options.water_density
         sd_corr_fact = options.snow_depth_correction_factor
@@ -788,8 +788,8 @@ class L3DataGrid(DefaultLoggingClass):
             rho_i_unc = self._l3["sea_ice_density_uncertainty"][yj, xi]
             rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
 
-            # Get random uncertainty 
-            # Note: this applies only to the radar freeboard uncertainty. 
+            # Get random uncertainty
+            # Note: this applies only to the radar freeboard uncertainty.
             #       Thus we need to recalculate the sea ice freeboard uncertainty
 
             # Get the stack of radar freeboard uncertainty values and remove NaN's
@@ -797,7 +797,7 @@ class L3DataGrid(DefaultLoggingClass):
             rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
             rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
 
-            # Compute radar freeboard uncertainty as error or the mean from values with individual 
+            # Compute radar freeboard uncertainty as error or the mean from values with individual
             # error components (error of a weighted mean)
             weight = np.nansum(1./rfrb_uncs**2)
             rfrb_unc = 1./np.sqrt(weight)
@@ -1336,8 +1336,8 @@ class Level3OutputHandler(OutputHandlerBase):
 
     @property
     def time_dim_is_unlimited(self):
-        
-        # This property has been added. Older L3 output definitions may not have it, 
+
+        # This property has been added. Older L3 output definitions may not have it,
         # -> Catch attribute error and return false if attribute does not exist
         if not self.output_def.grid_options.has_key("time_dim_is_unlimited"):
             msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
@@ -1352,7 +1352,7 @@ class Level3OutputHandler(OutputHandlerBase):
             msg = msg % (self.output_def_filename, str(time_dim_is_unlimited))
             self.log.error(msg)
             time_dim_is_unlimited = False
-        
+
         return time_dim_is_unlimited
 
 
