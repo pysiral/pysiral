@@ -2,7 +2,7 @@
 
 # Metadata
 metadata: 
-  output_id: l2i_ic
+  output_id: l2i
   data_level: 2
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
@@ -195,6 +195,24 @@ variables:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness_uncertainty
     units: m
+    coordinates: time
+
+  antenna_pitch:
+    long_name: "antenna bench pitch angle"
+    comment: "Pitch angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
+    units: degrees
+    coordinates: time
+
+  antenna_roll:
+    long_name: "antenna bench roll angle"
+    comment: "Roll angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
+    units: degrees
+    coordinates: time
+
+  antenna_yaw:
+    long_name: "antenna bench yaw angle"
+    comment: "Yaw angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
+    units: degrees
     coordinates: time
 
   sigma0:
