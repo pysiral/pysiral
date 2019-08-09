@@ -193,7 +193,19 @@ variables:
     
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
-    standard_name: sea_ice_thickness_uncertainty
+    standard_name: sea_ice_thickness standard error
+    units: m
+    coordinates: time
+
+  sea_ice_draft:
+    long_name: "depth of the sea-ice layer below the water surface"
+    standard_name: sea_ice_draft
+    units: m
+    coordinates: time
+    
+  sea_ice_draft_uncertainty:
+    long_name: "uncertainty of the sea ice layer draft"
+    standard_name: sea_ice_draft standard error
     units: m
     coordinates: time
 

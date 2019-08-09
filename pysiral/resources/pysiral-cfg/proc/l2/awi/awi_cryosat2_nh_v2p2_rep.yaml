@@ -287,4 +287,10 @@ validator:
                 minimum_n_leads: 0
 
 # Post-Processing (tbd if needed)
-post_processing: null
+post_processing:
+
+    # Compute sea ice draft
+    - label: "Compute Sea Ice Draft"
+      module_name: pysiral.sit
+      class_name: L2SeaIceDraft
+      options: {}

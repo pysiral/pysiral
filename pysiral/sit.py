@@ -5,6 +5,7 @@ Created on Mon Apr 25 17:15:39 2016
 @author: shendric
 """
 
+from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 from pysiral.config import options_from_dictionary
 import numpy as np
@@ -223,6 +224,23 @@ class SnowFreeboardDefault(L2ThicknessAlgorithmBaseClass):
                           (deriv_rho_s**2 * l2.sdens.uncertainty**2.))
 
         return sit_unc
+
+
+class L2SeaIceDraft(DefaultLoggingClass):
+    """ A Level-2" post-rocessor item class for computing sea ice draft and its uncertainty """
+
+    def __init__(self, **cfg):
+        super(L2SeaIceDraft, self).__init__(self.__class__.__name__)
+
+    def apply(self, l2):
+        """
+        API class for the Level-2 processor. Functionality is to compute sea ice draft and its uncertainty
+        :param l2: A Level-2 data instance
+        :return: None, Level-2 object is change in place
+        """
+        sea_ice_draft = l2.sit - l2.frb
+        sea_ice_draft_uncertainty = np.sqrt(l2.sit.uncertainty**2. + l2.frb.uncertainty**2.)
+        l2.set_auxiliary_parameter("sid", "sea_ice_draft", sea_ice_draft, uncertainty=sea_ice_draft_uncertainty)
 
 
 def icefreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
