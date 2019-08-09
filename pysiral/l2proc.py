@@ -5,6 +5,7 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
+from pysiral import get_cls
 from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
                             get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
@@ -301,6 +302,9 @@ class Level2Processor(DefaultLoggingClass):
 
             # Filter thickness
             self._apply_thickness_filter(l2)
+
+            # Post processing
+            self._post_processing_items(l2)
 
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
@@ -647,6 +651,26 @@ class Level2Processor(DefaultLoggingClass):
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
             # Remove invalid thickness values
             l2.sit.set_nan_indices(sitfilter.flag.indices)
+
+    def _post_processing_items(self, l2):
+        """
+
+        :param l2:
+        :return:
+        """
+        # Get the post processing options
+        post_processing_items = self._l2def.get("post_processing", None)
+        if post_processing_items is None:
+            self.log.info("No post-processing items defined")
+            return
+
+        # Get the list of post-processing items
+        for pp_item in post_processing_items:
+            pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
+            post_processor = pp_class(**pp_item["options"])
+            post_processor.apply(l2)
+            msg = "- Level-2 post-processing item `%s` applied" % (pp_item["label"])
+            self.log.info(msg)
 
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
