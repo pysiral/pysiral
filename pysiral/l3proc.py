@@ -952,6 +952,9 @@ class L3DataGrid(DefaultLoggingClass):
         timeliness = self.metadata.source_timeliness
         if args[0] == "lowercase":
             timeliness = timeliness.lower()
+        elif args[0] == "select":
+            choices = {"nrt": args[1], "rep": args[2], "ntc": args[2]}
+            return choices.get(timeliness.lower(), "n/a")
         return timeliness
 
     def _get_attr_grid_id(self, *args):
