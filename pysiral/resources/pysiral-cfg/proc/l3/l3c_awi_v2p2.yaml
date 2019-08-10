@@ -186,6 +186,26 @@ l3_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    sea_ice_draft_l3_uncertainty:
+        dtype: f4
+        fillvalue: .NAN
+
+    temporal_coverage_uniformity_factor:
+        dtype: f4
+        fillvalue: .NAN
+
+    temporal_coverage_day_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    temporal_coverage_period_fraction:
+        dtype: f4
+        fillvalue: .NAN
+
+    temporal_coverage_period_center:
+        dtype: f4
+        fillvalue: .NAN
+
 # ==================================================
 # External Masks
 # ==================================================
