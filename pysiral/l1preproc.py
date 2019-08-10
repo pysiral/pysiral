@@ -891,10 +891,17 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             tag = self._source_repo_id
 
         # Get the value
-        branch = primary_input_def[platform][tag]
+        expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
+        try:
+            branch = primary_input_def[platform][tag]
+        except KeyError:
+            msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
+            msg = msg % expected_branch_name
+            self.error.add_error("local-machine-def-missing-tag", msg)
+            self.error.raise_on_error()
 
         # Sanity Checks
-        expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
+        # TODO: Obsolete?
         if branch.isDangling():
             msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
             msg = msg % expected_branch_name
