@@ -17,10 +17,11 @@ from pysiral.flag import ORCondition
 from pysiral.surface_type import SurfaceType
 from pysiral.sit import frb2sit_errprop
 
+from scipy import stats
 from scipy.ndimage.filters import maximum_filter
 
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, date
 import itertools
 import uuid
 import numpy as np
@@ -194,6 +195,7 @@ class L2iDataStack(DefaultLoggingClass):
         # surface_type is mandatory for level-3 parameters
         # (e.g. n_total_wave_forms, lead_fraction, ...)
         self.stack["surface_type"] = self.parameter_stack
+        self.stack["day_of_observation"] = self.parameter_stack
 
         # create a stack for each l2 parameter
         for pardef in self.l2_parameter:
@@ -228,10 +230,17 @@ class L2iDataStack(DefaultLoggingClass):
 
         # Stack the l2 parameter in the corresponding grid cells
         for i in np.arange(l2i.n_records):
+
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
             self.stack["surface_type"][y][x].append(l2i.surface_type[i])
+
+            # Add a date object per default
+            time = l2i.time[i]
+            day_of_observation = date(time.year, time.month, time.day)
+            self.stack["day_of_observation"][y][x].append(day_of_observation)
+
             for pardef in self.l2_parameter:
                 parameter_name = pardef.branchName()
                 try:
@@ -333,6 +342,15 @@ class L3DataGrid(DefaultLoggingClass):
         l3_metadata.get_auxdata_infos(stack.l2i_info)
         l3_metadata.get_projection_parameter(job.grid)
         self.set_metadata(l3_metadata)
+
+        # Compute parameter for the temporal coverage
+        # needs only be done once
+        # All statistics are computed with respect to the temporal coverage of the grid
+        # (-> the period that has been asked for, not the actual data coverage)
+        tcs, tce = self.metadata.time_coverage_start, self.metadata.time_coverage_end
+        self.start_date = date(tcs.year, tcs.month, tcs.day)
+        self.end_date = date(tce.year, tce.month, tce.day)
+        self.period_n_days = (self.end_date-self.start_date).days + 1
 
         self.init_parameter_fields(job.l2_parameter, "l2")
         self.init_parameter_fields(job.l3_parameter, "l3")
@@ -512,6 +530,7 @@ class L3DataGrid(DefaultLoggingClass):
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
                 self._compute_surface_type_grid_statistics(xi, yj)
+                self._compute_temporal_coverage_statistics(xi, yj)
 
     def compute_l3_output_parameter(self):
         """
@@ -916,6 +935,49 @@ class L3DataGrid(DefaultLoggingClass):
             except ZeroDivisionError:
                 negative_thickness_fraction = np.nan
             self._l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
+
+    def _compute_temporal_coverage_statistics(self, xi, yj):
+        """
+        Computes statistics of the temporal coverage
+        :param xi: grid x index
+        :param yj: grid y index
+        :return:
+        """
+        # Get the day of observation for each entry in the Level-2 stack
+        day_of_observation = np.array(self._l2.stack["day_of_observation"][yj][xi])
+
+        # Validity check
+        if len(day_of_observation) == 0:
+            return
+
+        # Compute the number of days for each observation with respect to the start of the period
+        day_number = [(day-self.start_date).days for day in day_of_observation]
+
+        # Compute the set of days with observations available
+        days_with_observations = np.unique(day_number)
+        first_day, last_day = np.amin(days_with_observations), np.amax(days_with_observations)
+
+        # Compute the uniformity factor
+        # The uniformity factor is derived from a Kolmogorov-Smirnov (KS) test for goodness of fit that tests
+        # the list of against a uniform distribution. The definition of the uniformity factor is that is
+        # reaches 1 for uniform distribution of observations and gets smaller for non-uniform distributions
+        # It is therefore defined as 1-D with D being the result of KS test
+        ks_test_result = stats.kstest(day_number, stats.uniform(loc=0.0, scale=self.period_n_days).cdf)
+        uniformity_factor = 1.0 - ks_test_result[0]
+        self._l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
+
+        # Compute the day fraction (number of days with actual data coverage/days of period)
+        day_fraction = float(len(days_with_observations))/float(self.period_n_days)
+        self._l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
+
+        # Compute the period in days that is covered between the first and last day of observation
+        # normed by the length of the period
+        period_fraction = float(last_day - first_day + 1) / float(self.period_n_days)
+        self._l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
+
+        # Compute the temporal center between the first and last day in units of period length
+        period_center = float(first_day + 0.5 * float(last_day - first_day)) / float(self.period_n_days)
+        self._l3["temporal_coverage_period_center"][yj, xi] = period_center
 
     def get_parameter_by_name(self, name):
         try:
