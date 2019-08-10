@@ -949,8 +949,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Test if platform provided matches the platform list in the settings file
         if settings_is_ambigous and platform_is_known:
-            platform_list = self._l1pprocdef.platform.split(",")
-            if not self.platform in platform_list:
+            if not self.platform in str(self._l1pprocdef.platform):
                 msg = "Error: platform in l1p settings (%s) and given platform (%s) do not match"
                 msg = msg % (self._l1pprocdef.platform, self.platform)
                 sys.exit(msg)
