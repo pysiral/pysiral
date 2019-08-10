@@ -200,7 +200,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
         if filename is None:
             msg = "Invalid griddef filename or id: %s\n" % l3_griddef
             msg = msg + "    Recognized grid definition ids:\n"
-            for griddef_id in self.pysiral_config.get_setting_ids("griddef"):
+            for griddef_id in self.pysiral_config.get_setting_ids("grid"):
                 msg = msg + "    - " + griddef_id+"\n"
             self.error.add_error("invalid-griddef", msg)
             self.error.raise_on_error()
