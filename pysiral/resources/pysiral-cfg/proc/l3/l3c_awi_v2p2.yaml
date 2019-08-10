@@ -202,7 +202,7 @@ l3_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    temporal_coverage_period_center:
+    temporal_coverage_weighted_center:
         dtype: f4
         fillvalue: .NAN
 

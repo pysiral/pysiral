@@ -349,9 +349,9 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  temporal_coverage_period_center:
-    long_name: "center of the period with data coverage"
-    comment: "This parameter describes the temporal center between the first and last day with observations: (first_day + 0.5*(last_day-first_day))/number_of_days_in_grid_period. A value smaller or larger than 0.5 indicates a possible phase bias."
+  temporal_coverage_weighted_center:
+    long_name: "center of the period with data coverage weighted points per day"
+    comment: "This parameter describes the temporal center of the days with observations with taken the number observations on indiviual days into account: mean(day number for all observations)/number_of_days_in_grid_period. A value smaller or larger than 0.5 indicates a possible phase bias."
     valid_min: 0.0
     valid_max: 1.0
     units: "1"

@@ -947,7 +947,9 @@ class L3DataGrid(DefaultLoggingClass):
         day_of_observation = np.array(self._l2.stack["day_of_observation"][yj][xi])
 
         # Validity check
-        if len(day_of_observation) == 0:
+        #  - must have data
+        #  - must have parameter pre-defined (not all settings will)
+        if len(day_of_observation) == 0 or not self._l3.has_key("temporal_coverage_uniformity_factor"):
             return
 
         # Compute the number of days for each observation with respect to the start of the period
@@ -975,9 +977,10 @@ class L3DataGrid(DefaultLoggingClass):
         period_fraction = float(last_day - first_day + 1) / float(self.period_n_days)
         self._l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
 
-        # Compute the temporal center between the first and last day in units of period length
-        period_center = float(first_day + 0.5 * float(last_day - first_day)) / float(self.period_n_days)
-        self._l3["temporal_coverage_period_center"][yj, xi] = period_center
+        # Compute the temporal center of the actual data coverage in units of period length
+        # -> optimum 0.5
+        weighted_center = np.mean(day_number) / float(self.period_n_days)
+        self._l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
 
     def get_parameter_by_name(self, name):
         try:
