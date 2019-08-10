@@ -258,10 +258,10 @@ class L2iDataHandler(DefaultLoggingClass):
         search for year, month, day. Note: month & day can only be set,
         if the year & year + month respectively is set
         Examples:
-            l2i*.nc
-            l2i*2017*.nc
-            l2i*201704*.nc
-            l2i*20170401*.nc
+            *l2i*.nc
+            *l2i*2017*.nc
+            *l2i*201704*.nc
+            *l2i*20170401*.nc
         """
         date_str = "*"
         if year is not None:
@@ -276,7 +276,7 @@ class L2iDataHandler(DefaultLoggingClass):
             raise ValueError("year & month must be set if day is set")
         if len(date_str) > 1:
             date_str += "*"
-        l2i_file_pattern = "l2i%s.nc" % date_str
+        l2i_file_pattern = "*l2i%s.nc" % date_str
         return l2i_file_pattern
 
     @property
