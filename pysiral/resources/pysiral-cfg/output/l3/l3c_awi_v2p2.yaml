@@ -325,3 +325,35 @@ variables:
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+
+  temporal_coverage_uniformity_factor:
+    long_name: "uniformity of data coverage for days in period"
+    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the period of the grid (1: uniform distribution, << 1: singular distribution). It is derived from by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a uniform distribution. Due to its definition with 1 indicating uniformity, the factor is computed as 1-D with D being the result of KS test"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  temporal_coverage_day_fraction:
+    long_name: "fraction of days in full period that have observation"
+    comment: "This parameter is defined as len(days_with_observations)/number_of_days_in_grid_period"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  temporal_coverage_period_fraction:
+    long_name: "fraction of data coverage from first to last day relative to full period"
+    comment: "This parameter describes the fraction of the period between the first and the last day with observations (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  temporal_coverage_period_center:
+    long_name: "center of the period with data coverage"
+    comment: "This parameter describes the temporal center between the first and last day with observations: (first_day + 0.5*(last_day-first_day))/number_of_days_in_grid_period. A value smaller or larger than 0.5 indicates a possible phase bias."
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
