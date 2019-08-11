@@ -41,6 +41,13 @@ class Level3Processor(DefaultLoggingClass):
         self._l3_progress_percent = 0.0
 
     def process_l2i_files(self, l2i_files, period):
+        """
+        The main call for the Level-3 processor
+        TODO: Needs organization
+        :param l2i_files:
+        :param period:
+        :return:
+        """
 
         # Store l2i_files
         self._l2i_files = l2i_files
@@ -52,8 +59,7 @@ class Level3Processor(DefaultLoggingClass):
         self.log.info("Initialize l2i data stack")
         stack = L2iDataStack(self._job.grid, self._job.l2_parameter)
 
-        self.log.info("Parsing products (prefilter active: %s)" % (
-                str(self._job.l3def.l2i_prefilter.active)))
+        self.log.info("Parsing products (prefilter active: %s)" % (str(self._job.l3def.l2i_prefilter.active)))
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
@@ -120,6 +126,8 @@ class Level3Processor(DefaultLoggingClass):
         self.log.info("Initialize l3 data grid")
         l3 = L3DataGrid(self._job, stack, period)
 
+        # TODO: processing items go in here
+
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
@@ -132,8 +140,7 @@ class Level3Processor(DefaultLoggingClass):
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            self.log.info("Creating l2i orbit stack: %3g%% (%g of %g)" % (
-                          progress_percent-current_reminder, i+1, n))
+            self.log.info("Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent-current_reminder, i+1, n))
         self._l3_progress_percent = progress_percent
 
 
@@ -141,7 +148,7 @@ class Level3Processor(DefaultLoggingClass):
 
 class L2iDataStack(DefaultLoggingClass):
 
-    def __init__(self, griddef, l2_parameter):
+    def __init__(self, griddef, l2_parameter, default_parameter=["surface_type", "day_of_observation"]):
         """ A container for stacking l2i variables (geophysical paramters
         at sensor resolution) in L3 grid cells. For each parameters
         a (numx, numy) array is created, with an list containing all
@@ -301,20 +308,6 @@ class L3DataGrid(DefaultLoggingClass):
         # Shortcut to the surface type flag dictionary
         self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
 
-        # Name and data type of mandatory surface type statistics
-        # XXX: This seems to outdated (definitions in l3 settings)
-        self._surface_type_l3par = {
-            "n_total_waveforms": "i4",
-            "n_valid_waveforms": "i4",
-            "valid_fraction": "f4",
-            "lead_fraction": "f4",
-            "ice_fraction": "f4",
-            "negative_thickness_fraction": "f4",
-            "is_land": "i2",
-            "radar_mode_flag": "i1",
-            "quality_flag": "i1",
-            "status_flag": "i1"}
-
         # List of level-2 parameter
         # (gridded parameter that are already in l2i)
         self._l2_parameter = None
@@ -324,7 +317,11 @@ class L3DataGrid(DefaultLoggingClass):
         self._l3_parameter = None
 
         # list of stacked l2 parameters for each grid cell
-        self._l2 = None
+        if not isinstance(stack, L2iDataStack):
+            msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
+            msg = msg % type(stack)
+            raise ValueError(msg)
+        self._l2 = stack
 
         # container for gridded parameters
         self._l3 = {}
@@ -352,24 +349,21 @@ class L3DataGrid(DefaultLoggingClass):
         self.end_date = date(tce.year, tce.month, tce.day)
         self.period_n_days = (self.end_date-self.start_date).days + 1
 
+        # Create the parameter fields
         self.init_parameter_fields(job.l2_parameter, "l2")
         self.init_parameter_fields(job.l3_parameter, "l3")
 
-        self.init_mandatory_parameter_fields()
+        # Compute the longitude & latitude dimensions
         self.calculate_longitude_latitude_fields()
 
         # Average level-2 parameter for each grid cell
-        self.set_l2i_stack(stack)
         self.log.info("Compute masks and mandatory grid statistics")
         self.compute_l3_mandatory_parameter()
 
         self.log.info("Grid l2i parameter")
         self.grid_l2_parameter()
 
-        # Get the level-3 parameter
-        self.log.info("Compute level-3 ouput parameter")
-        self.compute_l3_output_parameter()
-
+        # TODO: Masks should be post-processing items
         # Load external data masks
         # NOTE: This is done for each file, but we assume it does not take
         #       much time compared to the gridding
@@ -383,6 +377,7 @@ class L3DataGrid(DefaultLoggingClass):
         for mask_def in job.l3_masks:
             self.mask_l3(mask_def)
 
+        # TODO: The application of pos-processing items to be moved into Level3Processor
         self.log.info("Post-Processing")
         for name, options in job.l3_post_processors:
             self.apply_post_processor(name, options)
@@ -391,6 +386,7 @@ class L3DataGrid(DefaultLoggingClass):
         self._metadata = metadata
 
     def set_doi(self, doi):
+        # TODO: Move to __init__
         self._doi = doi
 
     def set_data_record_type(self, data_record_type):
@@ -418,64 +414,31 @@ class L3DataGrid(DefaultLoggingClass):
             msg = "Adding %s parameter: %s" % (level, pardef.branchName())
             self.log.info(msg)
             fillvalue = pardef.fillvalue
-            self._l3[pardef.branchName()] = np.full(
-                    shape, fillvalue, dtype=pardef.dtype)
+            self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
 
-    def init_mandatory_parameter_fields(self):
+    def add_grid_variable(self, parameter_name, fill_value, dtype):
         """
-        Initialize mandatory parameter field that may be needed for masking
-        and thus will be calculated whether they are included in the
-        output files or not (computational cost is small)
-
-        Note: These parameter fields will be computed separately from the
-        loops over the l2/l3 parameter loops. But as the fields can
-        be also specified in the output format definition, these will be
-        than ignored when looping over all output parameters
+        Add a grid variable and fill with empty values
+        :param parameter_name: The name of the parameter
+        :param fill_value: the "empty" value assigned to all cell
+        :param dtype: numpy compatible dtype
+        :return:
         """
 
-        # grid output dimensions
-        shape = self.grid_shape
+        # Check if variable already exists
+        if self._l3.has_key(parameter_name):
+            msg = "Variable overwrite alert: %s" % parameter_name
+            self.error.add_error("l3-variable-overwrite", msg)
+            self.error.raise_on_error()
 
-        # XXX: There needs to be a better handling of data types
-        #       (requires better definition of l3 output file format)
-        self.lon = np.ndarray(shape=shape, dtype='f4')*np.nan
-        self.lat = np.ndarray(shape=shape, dtype='f4')*np.nan
-
-        self.log.info("Adding parameter: longitude")
-        self.log.info("Adding parameter: latitude")
-
-        # Surface type statistics
-        for surface_type_statistics_par in self._surface_type_l3par.keys():
-            # Check if already created, which will be the case if
-            # the parameter is in the l3 output definition
-            if surface_type_statistics_par in self._l3_parameter:
-                continue
-            self.log.info("Adding parameter: %s" % surface_type_statistics_par)
-            dtype = self._surface_type_l3par[surface_type_statistics_par]
-            self._l3[surface_type_statistics_par] = np.ndarray(
-                shape=shape, dtype=dtype)
-
-        # Sea Ice Concentration (for potential masking)
-        if "sea_ice_concentration" not in self._l2_parameter:
-            self.log.info("Adding parameter: sea_ice_concentration")
-            self._l3["sea_ice_concentration"] = np.ndarray(
-                shape=shape, dtype='f4')*np.nan
+        # All clear, create variable
+        self._l3[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
 
     def calculate_longitude_latitude_fields(self):
         """ Geographic coordinates from GridDefinition """
         lon, lat = self.griddef.get_grid_coordinates()
         self._l3["longitude"] = lon
         self._l3["latitude"] = lat
-
-    def set_l2i_stack(self, l2i_stack):
-        """ Set the l2i data stack (list of all individual measurements
-        per grid cell grouped by parameter) """
-        # Input validation
-        if not isinstance(l2i_stack, L2iDataStack):
-            msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
-            msg = msg % type(l2i_stack)
-            raise ValueError(msg)
-        self._l2 = l2i_stack
 
     def grid_l2_parameter(self):
         """ Compute averages of all l2i parameter for each grid cell.
@@ -502,7 +465,6 @@ class L3DataGrid(DefaultLoggingClass):
 
                     # nanmean needs at least 2 valid items
                     valid = np.where(np.isfinite(data))[0]
-
                     if len(valid) < settings.minimum_valid_grid_points:
                         continue
 
@@ -527,6 +489,7 @@ class L3DataGrid(DefaultLoggingClass):
         Wrapper method for computing the surface type statistics for
         each grid cell
         """
+        # TODO: to be obsolete
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
                 self._compute_surface_type_grid_statistics(xi, yj)
@@ -540,6 +503,8 @@ class L3DataGrid(DefaultLoggingClass):
         from  the l2i orbits, are called level-2 in the terminology
         of pysiral.Level2Processor
         """
+
+        # TODO: To be made obsolete
         # Loop over grid items
         for xi in self.grid_xi_range:
             for yj in self.grid_yj_range:
@@ -562,6 +527,7 @@ class L3DataGrid(DefaultLoggingClass):
         statistics), which are computed in a seperate method and can safely
         be ignored here.
         """
+        # TODO: To be made obsolete
         # Surface type based parameter are computed anyway, skip
         if l3_parameter_name in self._surface_type_l3par:
             # XXX: Add radar mode flag here
@@ -573,6 +539,8 @@ class L3DataGrid(DefaultLoggingClass):
 
     def load_external_mask(self, external_mask_name):
         """ Get mask netCDF filename and load into instance for later use """
+        # TODO: to be moved to Level-3 processor item
+
 
         # Read the file
         mask = L3Mask(external_mask_name, self.griddef.grid_id)
@@ -587,6 +555,8 @@ class L3DataGrid(DefaultLoggingClass):
 
     def mask_l3(self, mask_def):
         """ Apply a parametrized mask to level 3 data """
+
+        # TODO: to be moved to Level-3 processor item
 
         # Get the source parameter
         source = self._l3[mask_def.source]
@@ -633,7 +603,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def apply_post_processor(self, name, options):
         """ Caller for post-processing methods """
-        # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-procecsors
+        # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-processors
         try:
             method = getattr(self, "_api_l3pp_"+name)
         except AttributeError:
