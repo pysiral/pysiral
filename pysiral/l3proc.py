@@ -317,8 +317,8 @@ class L3DataGrid(DefaultLoggingClass):
         # datatime.now()
         self._creation_time = datetime.now()
 
-        # Shortcut to the surface type flag dictionary
-        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+        # # Shortcut to the surface type flag dictionary
+        # self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
 
         # List of level-2 parameter
         # (gridded parameter that are already in l2i)
@@ -333,10 +333,10 @@ class L3DataGrid(DefaultLoggingClass):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
             msg = msg % type(stack)
             raise ValueError(msg)
-        self._l2 = stack
+        self.l2 = stack
 
         # container for gridded parameters
-        self._l3 = {}
+        self.l3 = {}
 
         self._metadata = None
 
@@ -352,15 +352,6 @@ class L3DataGrid(DefaultLoggingClass):
         l3_metadata.get_projection_parameter(job.grid)
         self.set_metadata(l3_metadata)
 
-        # Compute parameter for the temporal coverage
-        # needs only be done once
-        # All statistics are computed with respect to the temporal coverage of the grid
-        # (-> the period that has been asked for, not the actual data coverage)
-        tcs, tce = self.metadata.time_coverage_start, self.metadata.time_coverage_end
-        self.start_date = date(tcs.year, tcs.month, tcs.day)
-        self.end_date = date(tce.year, tce.month, tce.day)
-        self.period_n_days = (self.end_date-self.start_date).days + 1
-
         # Create the parameter fields
         self.init_parameter_fields(job.l2_parameter, "l2")
         self.init_parameter_fields(job.l3_parameter, "l3")
@@ -369,8 +360,8 @@ class L3DataGrid(DefaultLoggingClass):
         self.calculate_longitude_latitude_fields()
 
         # Average level-2 parameter for each grid cell
-        self.log.info("Compute masks and mandatory grid statistics")
-        self.compute_l3_mandatory_parameter()
+        # self.log.info("Compute masks and mandatory grid statistics")
+        # self.compute_l3_mandatory_parameter()
 
         self.log.info("Grid l2i parameter")
         self.grid_l2_parameter()
@@ -379,20 +370,20 @@ class L3DataGrid(DefaultLoggingClass):
         # Load external data masks
         # NOTE: This is done for each file, but we assume it does not take
         #       much time compared to the gridding
-        self.log.info("Load external masks")
-        for external_mask_name in job.l3_external_masks:
-            self.load_external_mask(external_mask_name)
+        # self.log.info("Load external masks")
+        # for external_mask_name in job.l3_external_masks:
+        #     self.load_external_mask(external_mask_name)
 
         # Set parameters nan if freeboard is nan
         # (list in output definition file)
-        self.log.info("Apply data masks")
-        for mask_def in job.l3_masks:
-            self.mask_l3(mask_def)
+        # self.log.info("Apply data masks")
+        # for mask_def in job.l3_masks:
+        #     self.mask_l3(mask_def)
 
         # TODO: The application of pos-processing items to be moved into Level3Processor
-        self.log.info("Post-Processing")
-        for name, options in job.l3_post_processors:
-            self.apply_post_processor(name, options)
+        # self.log.info("Post-Processing")
+        # for name, options in job.l3_post_processors:
+        #     self.apply_post_processor(name, options)
 
     def set_metadata(self, metadata):
         self._metadata = metadata
@@ -421,12 +412,10 @@ class L3DataGrid(DefaultLoggingClass):
         """ Initialize output parameter fields """
         parameter_names = sorted([pd.branchName() for pd in pardefs])
         setattr(self, "_"+level+"_parameter", parameter_names)
-        shape = self.grid_shape
         for pardef in pardefs:
-            msg = "Adding %s parameter: %s" % (level, pardef.branchName())
-            self.log.info(msg)
             fillvalue = pardef.fillvalue
-            self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
+            if pardef.grid_method != "none":
+                self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
         """
@@ -438,19 +427,22 @@ class L3DataGrid(DefaultLoggingClass):
         """
 
         # Check if variable already exists
-        if self._l3.has_key(parameter_name):
+        if self.l3.has_key(parameter_name):
             msg = "Variable overwrite alert: %s" % parameter_name
             self.error.add_error("l3-variable-overwrite", msg)
             self.error.raise_on_error()
 
         # All clear, create variable
-        self._l3[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
+        self.l3[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
+
+        # Log
+        self.log.info("Added grid parameter: %s" % (parameter_name))
 
     def calculate_longitude_latitude_fields(self):
         """ Geographic coordinates from GridDefinition """
         lon, lat = self.griddef.get_grid_coordinates()
-        self._l3["longitude"] = lon
-        self._l3["latitude"] = lat
+        self.l3["longitude"] = lon
+        self.l3["latitude"] = lat
 
     def grid_l2_parameter(self):
         """ Compute averages of all l2i parameter for each grid cell.
@@ -460,110 +452,111 @@ class L3DataGrid(DefaultLoggingClass):
 
         settings = self.l3def.grid_settings
 
-        # Loop over all grid cells
-        # XXX: Is there a better way?
-
+        # Loop over all parameter / grid cells
         for name in self._l2_parameter:
-            self.log.info("Gridding parameter: %s" % name)
 
-            for xi in self.grid_xi_range:
-                for yj in self.grid_yj_range:
+            # Certain parameters in the l2 stack are excluded from gridding
+            # (-> indicated by grid_method: none)
+            grid_method = self.l3def.l2_parameter[name].grid_method
+            if grid_method == "none":
+                continue
 
-                    data = np.array(self._l2.stack[name][yj][xi])
+            self.log.info("Gridding parameter: %s [%s]" % (name, grid_method))
 
-                    # Exclude land (or near land grid cells)
-                    if self._l3["is_land"][xi, yj] and settings.no_land_cells:
-                        continue
+            for xi, yj in self.grid_indices:
 
-                    # nanmean needs at least 2 valid items
-                    valid = np.where(np.isfinite(data))[0]
-                    if len(valid) < settings.minimum_valid_grid_points:
-                        continue
+                data = np.array(self.l2.stack[name][yj][xi])
 
-                    grid_method = self.l3def.l2_parameter[name].grid_method
-                    if grid_method == "average":
-                        self._l3[name][yj, xi] = np.nanmean(data)
-                    elif grid_method == "average_uncertainty":
-                        value = np.abs(np.sqrt(1./np.sum(data[valid])))
-                        self._l3[name][yj, xi] = value
-                    elif grid_method == "unique":
-                        self._l3[name][yj, xi] = np.unique(data)
-                    elif grid_method == "median":
-                        self._l3[name][yj, xi] = np.nanmedian(data)
-                    else:
-                        msg = "Invalid grid method (%s) for %s"
-                        msg = msg % (str(grid_method), name)
-                        self.error.add_error("invalid-l3def", msg)
-                        self.error.raise_on_error()
+                # nanmean needs at least 2 valid items
+                valid = np.where(np.isfinite(data))[0]
+                if len(valid) < settings.minimum_valid_grid_points:
+                    continue
 
-    def compute_l3_mandatory_parameter(self):
-        """
-        Wrapper method for computing the surface type statistics for
-        each grid cell
-        """
-        # TODO: to be obsolete
-        for xi in self.grid_xi_range:
-            for yj in self.grid_yj_range:
-                self._compute_surface_type_grid_statistics(xi, yj)
-                self._compute_temporal_coverage_statistics(xi, yj)
+                # TODO: Think of a dicts with lambdas to make this more concise
+                if grid_method == "average":
+                    self.l3[name][yj, xi] = np.nanmean(data)
+                elif grid_method == "average_uncertainty":
+                    value = np.abs(np.sqrt(1./np.sum(data[valid])))
+                    self.l3[name][yj, xi] = value
+                elif grid_method == "unique":
+                    self.l3[name][yj, xi] = np.unique(data)
+                elif grid_method == "median":
+                    self.l3[name][yj, xi] = np.nanmedian(data)
+                else:
+                    msg = "Invalid grid method (%s) for %s"
+                    msg = msg % (str(grid_method), name)
+                    self.error.add_error("invalid-l3def", msg)
+                    self.error.raise_on_error()
 
-    def compute_l3_output_parameter(self):
-        """
-        Compute level-3 parameter for each grid cell. A parameter is
-        classified as level-3 if it only exists on the grid cell level
-        (e.g. total number of waveforms). Parameters that are averaged
-        from  the l2i orbits, are called level-2 in the terminology
-        of pysiral.Level2Processor
-        """
+    # def compute_l3_mandatory_parameter(self):
+    #     """
+    #     Wrapper method for computing the surface type statistics for
+    #     each grid cell
+    #     """
+    #     pass
+    #     # TODO: to be obsolete
+    #     # for xi in self.grid_xi_range:
+    #     #     for yj in self.grid_yj_range:
+    #     #         # self._compute_surface_type_grid_statistics(xi, yj)
+    #     #         self._compute_temporal_coverage_statistics(xi, yj)
 
-        # TODO: To be made obsolete
-        # Loop over grid items
-        for xi in self.grid_xi_range:
-            for yj in self.grid_yj_range:
-                for l3_parameter_name in self._l3_parameter:
-                    # level-3 parameter can to be computed
-                    result = self.get_l3_parameter(l3_parameter_name, xi, yj)
-                    if result is not None:
-                        self._l3[l3_parameter_name][yj, xi] = result
+    # def compute_l3_output_parameter(self):
+    #     """
+    #     Compute level-3 parameter for each grid cell. A parameter is
+    #     classified as level-3 if it only exists on the grid cell level
+    #     (e.g. total number of waveforms). Parameters that are averaged
+    #     from  the l2i orbits, are called level-2 in the terminology
+    #     of pysiral.Level2Processor
+    #     """
+    #
+    #     # TODO: To be made obsolete
+    #     # Loop over grid items
+    #     for xi in self.grid_xi_range:
+    #         for yj in self.grid_yj_range:
+    #             for l3_parameter_name in self._l3_parameter:
+    #                 # level-3 parameter can to be computed
+    #                 result = self.get_l3_parameter(l3_parameter_name, xi, yj)
+    #                 if result is not None:
+    #                     self.l3[l3_parameter_name][yj, xi] = result
 
-    def get_l3_parameter(self, l3_parameter_name, xi, yj):
-        """
-        Compution of all level-3 parameter for a given grid cell
-        Since level-3 parameter may be computed in very different ways,
-        this method is supplied with the grid index and the name of the
-        parameter and then redirects to the corresponding computation
-        method.
+    # def get_l3_parameter(self, l3_parameter_name, xi, yj):
+    #     """
+    #     Compution of all level-3 parameter for a given grid cell
+    #     Since level-3 parameter may be computed in very different ways,
+    #     this method is supplied with the grid index and the name of the
+    #     parameter and then redirects to the corresponding computation
+    #     method.
+    #
+    #     It returns the parameter value, which will be ignored if None. This
+    #     is the case for the mandatory level-3 parameter (surface type
+    #     statistics), which are computed in a seperate method and can safely
+    #     be ignored here.
+    #     """
+    #     # TODO: To be made obsolete
+    #     # Surface type based parameter are computed anyway, skip
+    #     if l3_parameter_name in self._surface_type_l3par:
+    #         # XXX: Add radar mode flag here
+    #         return None
+    #     # No other l3 parameter computations at the moment
+    #     else:
+    #         return None
+    #         # raise ValueError("Unknown l3 parameter name: %s" % l3_parameter_name)
 
-        It returns the parameter value, which will be ignored if None. This
-        is the case for the mandatory level-3 parameter (surface type
-        statistics), which are computed in a seperate method and can safely
-        be ignored here.
-        """
-        # TODO: To be made obsolete
-        # Surface type based parameter are computed anyway, skip
-        if l3_parameter_name in self._surface_type_l3par:
-            # XXX: Add radar mode flag here
-            return None
-        # No other l3 parameter computations at the moment
-        else:
-            return None
-            # raise ValueError("Unknown l3 parameter name: %s" % l3_parameter_name)
-
-    def load_external_mask(self, external_mask_name):
-        """ Get mask netCDF filename and load into instance for later use """
-        # TODO: to be moved to Level-3 processor item
-
-
-        # Read the file
-        mask = L3Mask(external_mask_name, self.griddef.grid_id)
-
-        if not mask.error.status:
-            self._external_masks[external_mask_name] = mask
-        else:
-            error_msgs = mask.error.get_all_messages()
-            for error_msg in error_msgs:
-                self.log.error(error_msg)
-            self._external_masks[external_mask_name] = None
+    # def load_external_mask(self, external_mask_name):
+    #     """ Get mask netCDF filename and load into instance for later use """
+    #     # TODO: to be moved to Level-3 processor item
+    #
+    #
+    #     # Read the file
+    #     mask = L3Mask(external_mask_name, self.griddef.grid_id)
+    #
+    #     if not mask.error.status:
+    #         self._external_masks[external_mask_name] = mask
+    #     else:
+    #         error_msgs = mask.error.get_all_messages()
+    #         for error_msg in error_msgs:
+    #             self.log.error(error_msg)
+    #         self._external_masks[external_mask_name] = None
 
     def mask_l3(self, mask_def):
         """ Apply a parametrized mask to level 3 data """
@@ -571,7 +564,7 @@ class L3DataGrid(DefaultLoggingClass):
         # TODO: to be moved to Level-3 processor item
 
         # Get the source parameter
-        source = self._l3[mask_def.source]
+        source = self.l3[mask_def.source]
 
         # Compute the masking condition
         conditions = mask_def.condition.split(";")
@@ -605,24 +598,24 @@ class L3DataGrid(DefaultLoggingClass):
         masked_indices = np.where(filter_mask)
         for target in mask_def.targets:
             try:
-                self._l3[target][masked_indices] = np.nan
+                self.l3[target][masked_indices] = np.nan
             except ValueError:
-                if self._l3[target].dtype.kind == "i":
-                    self._l3[target][masked_indices] = -1
+                if self.l3[target].dtype.kind == "i":
+                    self.l3[target][masked_indices] = -1
                 else:
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
                     self.log.warning(msg)
 
-    def apply_post_processor(self, name, options):
-        """ Caller for post-processing methods """
-        # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-processors
-        try:
-            method = getattr(self, "_api_l3pp_"+name)
-        except AttributeError:
-            msg = "l3 post processor method not found: %s" % name
-            self.error.add_error("l3-postproc-error", msg)
-            self.error.raise_on_error()
-        method(options)
+    # def apply_post_processor(self, name, options):
+    #     """ Caller for post-processing methods """
+    #     # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-processors
+    #     try:
+    #         method = getattr(self, "_api_l3pp_"+name)
+    #     except AttributeError:
+    #         msg = "l3 post processor method not found: %s" % name
+    #         self.error.add_error("l3-postproc-error", msg)
+    #         self.error.raise_on_error()
+    #     method(options)
 
     def _api_l3pp_quality_indicator_flag(self, options):
         """ Computation of quality flag indicator based on several rules
@@ -631,11 +624,11 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Get the quality flag indicator array
         # This array will be continously updated by the quality check rules
-        qif = np.copy(self._l3["quality_flag"])
-        sit = np.copy(self._l3["sea_ice_thickness"])
-        nvw = np.copy(self._l3["n_valid_waveforms"])
-        ntf = np.copy(self._l3["negative_thickness_fraction"])
-        lfr = np.copy(self._l3["lead_fraction"])
+        qif = np.copy(self.l3["quality_flag"])
+        sit = np.copy(self.l3["sea_ice_thickness"])
+        nvw = np.copy(self.l3["n_valid_waveforms"])
+        ntf = np.copy(self.l3["negative_thickness_fraction"])
+        lfr = np.copy(self.l3["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
         qif[np.where(np.isfinite(sit))] = 1
@@ -668,7 +661,7 @@ class L3DataGrid(DefaultLoggingClass):
         # Elevate the quality flag for SARin or mixed SAR/SARin regions
         # (only sensible for CryoSat-2)
         if "qif_cs2_radar_mode_is_sin" in quality_flag_rules:
-            radar_modes = self._l3["radar_mode"]
+            radar_modes = self.l3["radar_mode"]
             rule_options = options.rules.qif_cs2_radar_mode_is_sin
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             flag[np.where(radar_modes >= 2.)] = rule_options.target_flag
@@ -710,56 +703,56 @@ class L3DataGrid(DefaultLoggingClass):
         qif[np.where(np.isnan(sit))] = 0
 
         # Set flag again
-        self._l3["quality_flag"] = qif
+        self.l3["quality_flag"] = qif
 
-    def _api_l3pp_status_flag(self, options):
-        """ Create a status flag that describes the availability of l2i
-        input data, orbit properties, land mask etc """
-
-        # Get the flag values from the l3 settings file
-        flag_values = options.flag_values
-
-        # Get status flag (fill value should be set to zero)
-        sf = np.copy(self._l3["status_flag"])
-
-        # Init the flag with not data flag value
-        sf[:] = flag_values.no_data
-
-        # get input parameters
-        par = np.copy(self._l3[options.retrieval_status_target])
-        sic = self._l3["sea_ice_concentration"]
-        nvw = self._l3["n_valid_waveforms"]
-        lnd = self._external_masks["landsea"]
-
-        # Compute conditions for flags
-        is_below_sic_thrs = np.logical_and(sic >= 0., sic < options.sic_thrs)
-        mission_ids = self._metadata.mission_ids.split(",")
-        orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
-        is_pole_hole = np.abs(self._l3["latitude"]) > np.amin(orbit_inclinations)
-        is_land = lnd.mask > 0
-        has_data = nvw > 0
-        has_retrieval = np.isfinite(par)
-        retrieval_failed = np.logical_and(
-                np.logical_and(has_data, np.logical_not(is_below_sic_thrs)),
-                np.logical_not(has_retrieval))
-
-        # Set sic threshold
-        sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
-
-        # Set pole hole (Antarctica: Will be overwritten below)
-        sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
-
-        # Set land mask
-        sf[np.where(is_land)] = flag_values.is_land
-
-        # Set failed retrieval
-        sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
-
-        # Set retrieval successful
-        sf[np.where(has_retrieval)] = flag_values.has_retrieval
-
-        # Write Status flag
-        self._l3["status_flag"] = sf
+    # def _api_l3pp_status_flag(self, options):
+    #     """ Create a status flag that describes the availability of l2i
+    #     input data, orbit properties, land mask etc """
+    #
+    #     # Get the flag values from the l3 settings file
+    #     flag_values = options.flag_values
+    #
+    #     # Get status flag (fill value should be set to zero)
+    #     sf = np.copy(self.l3["status_flag"])
+    #
+    #     # Init the flag with not data flag value
+    #     sf[:] = flag_values.no_data
+    #
+    #     # get input parameters
+    #     par = np.copy(self.l3[options.retrieval_status_target])
+    #     sic = self.l3["sea_ice_concentration"]
+    #     nvw = self.l3["n_valid_waveforms"]
+    #     lnd = self._external_masks["landsea"]
+    #
+    #     # Compute conditions for flags
+    #     is_below_sic_thrs = np.logical_and(sic >= 0., sic < options.sic_thrs)
+    #     mission_ids = self._metadata.mission_ids.split(",")
+    #     orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
+    #     is_pole_hole = np.abs(self.l3["latitude"]) > np.amin(orbit_inclinations)
+    #     is_land = lnd.mask > 0
+    #     has_data = nvw > 0
+    #     has_retrieval = np.isfinite(par)
+    #     retrieval_failed = np.logical_and(
+    #             np.logical_and(has_data, np.logical_not(is_below_sic_thrs)),
+    #             np.logical_not(has_retrieval))
+    #
+    #     # Set sic threshold
+    #     sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
+    #
+    #     # Set pole hole (Antarctica: Will be overwritten below)
+    #     sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
+    #
+    #     # Set land mask
+    #     sf[np.where(is_land)] = flag_values.is_land
+    #
+    #     # Set failed retrieval
+    #     sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
+    #
+    #     # Set retrieval successful
+    #     sf[np.where(has_retrieval)] = flag_values.has_retrieval
+    #
+    #     # Write Status flag
+    #     self.l3["status_flag"] = sf
 
     def _api_l3pp_sit_l3_uncertainty(self, options):
         """ Compute a level 3 uncertainty. The general idea is to
@@ -776,39 +769,39 @@ class L3DataGrid(DefaultLoggingClass):
         for xi, yj in self.grid_indices:
 
             # Check of data exists
-            if np.isnan(self._l3["sea_ice_thickness"][yj, xi]):
+            if np.isnan(self.l3["sea_ice_thickness"][yj, xi]):
                 continue
 
             # Get parameters
-            frb = self._l3["freeboard"][yj, xi]
-            sd = self._l3["snow_depth"][yj, xi]
-            rho_i = self._l3["sea_ice_density"][yj, xi]
-            rho_s = self._l3["snow_density"][yj, xi]
+            frb = self.l3["freeboard"][yj, xi]
+            sd = self.l3["snow_depth"][yj, xi]
+            rho_i = self.l3["sea_ice_density"][yj, xi]
+            rho_s = self.l3["snow_density"][yj, xi]
 
             # Get systematic error components
-            sd_unc = self._l3["snow_depth_uncertainty"][yj, xi]
-            rho_i_unc = self._l3["sea_ice_density_uncertainty"][yj, xi]
-            rho_s_unc = self._l3["snow_density_uncertainty"][yj, xi]
+            sd_unc = self.l3["snow_depth_uncertainty"][yj, xi]
+            rho_i_unc = self.l3["sea_ice_density_uncertainty"][yj, xi]
+            rho_s_unc = self.l3["snow_density_uncertainty"][yj, xi]
 
             # Get random uncertainty
             # Note: this applies only to the radar freeboard uncertainty.
             #       Thus we need to recalculate the sea ice freeboard uncertainty
 
             # Get the stack of radar freeboard uncertainty values and remove NaN's
-            # rfrb_unc = self._l3["radar_freeboard_uncertainty"][yj, xi]
-            rfrb_uncs = np.array(self._l2.stack["radar_freeboard_uncertainty"][yj][xi])
+            # rfrb_unc = self.l3["radar_freeboard_uncertainty"][yj, xi]
+            rfrb_uncs = np.array(self.l2.stack["radar_freeboard_uncertainty"][yj][xi])
             rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
 
             # Compute radar freeboard uncertainty as error or the mean from values with individual
             # error components (error of a weighted mean)
             weight = np.nansum(1./rfrb_uncs**2)
             rfrb_unc = 1./np.sqrt(weight)
-            self._l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+            self.l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
             # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
             deriv_snow = sd_corr_fact
             frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
-            self._l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+            self.l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
             # Calculate the level-3 thickness uncertainty
             errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
@@ -820,14 +813,14 @@ class L3DataGrid(DefaultLoggingClass):
                 sit_l3_unc = options.max_l3_uncertainty
 
             # Assign Level-3 uncertainty
-            self._l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
+            self.l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
 
             # Compute sea ice draft uncertainty
-            if not "sea_ice_draft" in self._l3:
+            if not "sea_ice_draft" in self.l3:
                 continue
 
             sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
-            self._l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
+            self.l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
 
 
     def _get_l3_mask(self, source_param, condition, options):
@@ -860,7 +853,7 @@ class L3DataGrid(DefaultLoggingClass):
         Optional (parameter name needs to in l3 settings file)
           - negative_thickness_fraction  (fraction of negatice sea ice thicknesses in grid cell)
         """
-        surface_type = np.array(self._l2.stack["surface_type"][yj][xi])
+        surface_type = np.array(self.l2.stack["surface_type"][yj][xi])
 
         # Stack can be empty
         if len(surface_type) == 0:
@@ -870,11 +863,11 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Create a land flag
         is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
-        self._l3["is_land"][xi, yj] = is_land
+        self.l3["is_land"][xi, yj] = is_land
 
         # Compute total waveforms in grid cells
         n_total_waveforms = len(surface_type)
-        self._l3["n_total_waveforms"][yj, xi] = n_total_waveforms
+        self.l3["n_total_waveforms"][yj, xi] = n_total_waveforms
 
         # Compute valid waveforms
         # Only positively identified waveforms (either lead or ice)
@@ -883,14 +876,14 @@ class L3DataGrid(DefaultLoggingClass):
         valid_waveform.add(surface_type == stflags["lead"])
         valid_waveform.add(surface_type == stflags["sea_ice"])
         n_valid_waveforms = valid_waveform.num
-        self._l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
+        self.l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
 
         # Fractions of leads on valid_waveforms
         try:
             valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
         except ZeroDivisionError:
             valid_fraction = np.nan
-        self._l3["valid_fraction"][yj, xi] = valid_fraction
+        self.l3["valid_fraction"][yj, xi] = valid_fraction
 
         # Fractions of leads on valid_waveforms
         n_leads = len(np.where(surface_type == stflags["lead"])[0])
@@ -898,7 +891,7 @@ class L3DataGrid(DefaultLoggingClass):
             lead_fraction = float(n_leads)/float(n_valid_waveforms)
         except ZeroDivisionError:
             lead_fraction = np.nan
-        self._l3["lead_fraction"][yj, xi] = lead_fraction
+        self.l3["lead_fraction"][yj, xi] = lead_fraction
 
         # Fractions of leads on valid_waveforms
         n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
@@ -906,17 +899,17 @@ class L3DataGrid(DefaultLoggingClass):
             ice_fraction = float(n_ice)/float(n_valid_waveforms)
         except ZeroDivisionError:
             ice_fraction = np.nan
-        self._l3["ice_fraction"][yj, xi] = ice_fraction
+        self.l3["ice_fraction"][yj, xi] = ice_fraction
 
         # Fractions of negative thickness values
-        if "negative_thickness_fraction" in self._l3.keys():
-            sit = np.array(self._l2.stack["sea_ice_thickness"][yj][xi])
+        if "negative_thickness_fraction" in self.l3.keys():
+            sit = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
                 negative_thickness_fraction = float(n_negative_thicknesses)/float(n_ice)
             except ZeroDivisionError:
                 negative_thickness_fraction = np.nan
-            self._l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
+            self.l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
 
     def _compute_temporal_coverage_statistics(self, xi, yj):
         """
@@ -926,16 +919,16 @@ class L3DataGrid(DefaultLoggingClass):
         :return:
         """
         # Get the day of observation for each entry in the Level-2 stack
-        day_of_observation = np.array(self._l2.stack["day_of_observation"][yj][xi])
+        day_of_observation = np.array(self.l2.stack["day_of_observation"][yj][xi])
 
         # The statistic is computed for sea ice thickness -> remove data points without valid sea ice thickness
-        sea_ice_thickness = np.array(self._l2.stack["sea_ice_thickness"][yj][xi])
+        sea_ice_thickness = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
         day_of_observation = day_of_observation[np.isfinite(sea_ice_thickness)]
 
         # Validity check
         #  - must have data
         #  - must have parameter pre-defined (not all settings will)
-        if len(day_of_observation) == 0 or not self._l3.has_key("temporal_coverage_uniformity_factor"):
+        if len(day_of_observation) == 0 or not self.l3.has_key("temporal_coverage_uniformity_factor"):
             return
 
         # Compute the number of days for each observation with respect to the start of the period
@@ -952,27 +945,27 @@ class L3DataGrid(DefaultLoggingClass):
         # It is therefore defined as 1-D with D being the result of KS test
         ks_test_result = stats.kstest(day_number, stats.uniform(loc=0.0, scale=self.period_n_days).cdf)
         uniformity_factor = 1.0 - ks_test_result[0]
-        self._l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
+        self.l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
 
         # Compute the day fraction (number of days with actual data coverage/days of period)
         day_fraction = float(len(days_with_observations))/float(self.period_n_days)
-        self._l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
+        self.l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
 
         # Compute the period in days that is covered between the first and last day of observation
         # normed by the length of the period
         period_fraction = float(last_day - first_day + 1) / float(self.period_n_days)
-        self._l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
+        self.l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
 
         # Compute the temporal center of the actual data coverage in units of period length
         # -> optimum 0.5
         weighted_center = np.mean(day_number) / float(self.period_n_days)
-        self._l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
+        self.l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
 
     def get_parameter_by_name(self, name):
         try:
-            parameter = self._l3[name]
+            parameter = self.l3[name]
         except KeyError:
-            parameter = np.full(np.shape(self._l3["longitude"]), np.nan)
+            parameter = np.full(np.shape(self.l3["longitude"]), np.nan)
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
             print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
@@ -981,7 +974,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def set_parameter_by_name(self, name, var):
         try:
-            self._l3[name] = var
+            self.l3[name] = var
         except KeyError:
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
@@ -1052,19 +1045,19 @@ class L3DataGrid(DefaultLoggingClass):
         return self.info.stop_time.strftime(dtfmt)
 
     def _get_attr_geospatial_lat_min(self, *args):
-        latitude = self._l3["latitude"]
+        latitude = self.l3["latitude"]
         return self._get_attr_geospatial_str(np.nanmin(latitude))
 
     def _get_attr_geospatial_lat_max(self, *args):
-        latitude = self._l3["latitude"]
+        latitude = self.l3["latitude"]
         return self._get_attr_geospatial_str(np.nanmax(latitude))
 
     def _get_attr_geospatial_lon_min(self, *args):
-        longitude = self._l3["longitude"]
+        longitude = self.l3["longitude"]
         return self._get_attr_geospatial_str(np.nanmin(longitude))
 
     def _get_attr_geospatial_lon_max(self, *args):
-        longitude = self._l3["longitude"]
+        longitude = self.l3["longitude"]
         return self._get_attr_geospatial_str(np.nanmax(longitude))
 
     def _get_attr_geospatial_str(self, value):
