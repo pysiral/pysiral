@@ -1091,7 +1091,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for option_name in self.required_options:
             option_value = self.cfg.get(option_name, None)
             if option_value is None:
-                msg = "Missing option `%s` in Level-3 processor item" % (option_name, self.__class_name__)
+                msg = "Missing option `%s` in Level-3 processor item %s" % (option_name, self.__class__.__name__)
                 self.error.add_error("l3procitem-missing-option", msg)
                 self.error.raise_on_error()
             setattr(self, option_name, option_value)
@@ -1606,7 +1606,7 @@ class Level3ParameterMask(Level3ProcessorItem):
     """
 
     # Mandatory properties
-    required_options = ["source", "condition", "target"]
+    required_options = ["source", "condition", "targets"]
     l2_variable_dependencies = []
     l3_variable_dependencies = []
     # Note: the output names depend on mask name, thus these will be
@@ -1676,7 +1676,7 @@ class Level3ParameterMask(Level3ProcessorItem):
         elif condition.strip() == "is_zero":
             return np.array(source_param <= 1.0e-9)
         elif condition.strip() == "is_smaller":
-            return np.array(source_param < options.is_smaller_threshold)
+            return np.array(source_param < options["is_smaller_threshold"])
         else:
             msg = "Unknown condition in l3 mask: %s" % condition
             self.error.add_error("invalid-l3mask-condition", msg)
