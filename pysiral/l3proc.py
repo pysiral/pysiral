@@ -330,7 +330,7 @@ class L3DataGrid(DefaultLoggingClass):
         self.l2 = stack
 
         # container for gridded parameters
-        self.l3 = {}
+        self.vars = {}
 
         # Product Metadata
         self._metadata = None
@@ -377,13 +377,13 @@ class L3DataGrid(DefaultLoggingClass):
         """
 
         # Check if variable already exists
-        if self.l3.has_key(parameter_name):
+        if self.vars.has_key(parameter_name):
             msg = "Variable overwrite alert: %s" % parameter_name
             self.error.add_error("l3-variable-overwrite", msg)
             self.error.raise_on_error()
 
         # All clear, create variable
-        self.l3[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
+        self.vars[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
 
         # Log
         self.log.info("Added grid parameter: %s" % (parameter_name))
@@ -391,8 +391,8 @@ class L3DataGrid(DefaultLoggingClass):
     def calculate_longitude_latitude_fields(self):
         """ Geographic coordinates from GridDefinition """
         lon, lat = self.griddef.get_grid_coordinates()
-        self.l3["longitude"] = lon
-        self.l3["latitude"] = lat
+        self.vars["longitude"] = lon
+        self.vars["latitude"] = lat
 
     def grid_l2_parameter(self):
         """ Compute averages of all l2i parameter for each grid cell.
@@ -424,14 +424,14 @@ class L3DataGrid(DefaultLoggingClass):
 
                 # TODO: Think of a dicts with lambdas to make this more concise
                 if grid_method == "average":
-                    self.l3[name][yj, xi] = np.nanmean(data)
+                    self.vars[name][yj, xi] = np.nanmean(data)
                 elif grid_method == "average_uncertainty":
                     value = np.abs(np.sqrt(1./np.sum(data[valid])))
-                    self.l3[name][yj, xi] = value
+                    self.vars[name][yj, xi] = value
                 elif grid_method == "unique":
-                    self.l3[name][yj, xi] = np.unique(data)
+                    self.vars[name][yj, xi] = np.unique(data)
                 elif grid_method == "median":
-                    self.l3[name][yj, xi] = np.nanmedian(data)
+                    self.vars[name][yj, xi] = np.nanmedian(data)
                 else:
                     msg = "Invalid grid method (%s) for %s"
                     msg = msg % (str(grid_method), name)
@@ -440,9 +440,9 @@ class L3DataGrid(DefaultLoggingClass):
 
     def get_parameter_by_name(self, name):
         try:
-            parameter = self.l3[name]
+            parameter = self.vars[name]
         except KeyError:
-            parameter = np.full(np.shape(self.l3["longitude"]), np.nan)
+            parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
             print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
@@ -451,7 +451,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def set_parameter_by_name(self, name, var):
         try:
-            self.l3[name] = var
+            self.vars[name] = var
         except KeyError:
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
@@ -547,19 +547,19 @@ class L3DataGrid(DefaultLoggingClass):
         return self.info.stop_time.strftime(dtfmt)
 
     def _get_attr_geospatial_lat_min(self, *args):
-        latitude = self.l3["latitude"]
+        latitude = self.vars["latitude"]
         return self._get_attr_geospatial_str(np.nanmin(latitude))
 
     def _get_attr_geospatial_lat_max(self, *args):
-        latitude = self.l3["latitude"]
+        latitude = self.vars["latitude"]
         return self._get_attr_geospatial_str(np.nanmax(latitude))
 
     def _get_attr_geospatial_lon_min(self, *args):
-        longitude = self.l3["longitude"]
+        longitude = self.vars["longitude"]
         return self._get_attr_geospatial_str(np.nanmin(longitude))
 
     def _get_attr_geospatial_lon_max(self, *args):
-        longitude = self.l3["longitude"]
+        longitude = self.vars["longitude"]
         return self._get_attr_geospatial_str(np.nanmax(longitude))
 
     def _get_attr_geospatial_str(self, value):
@@ -1074,7 +1074,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-3 grid parameter
         for l3_var_name in self.l3_variable_dependencies:
-            if not self.l3grid.l3.has_key(l3_var_name):
+            if not self.l3grid.vars.has_key(l3_var_name):
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)
@@ -1161,11 +1161,11 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
 
             # Create a land flag
             is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
-            self.l3grid.l3["is_land"][xi, yj] = is_land
+            self.l3grid.vars["is_land"][xi, yj] = is_land
 
             # Compute total waveforms in grid cells
             n_total_waveforms = len(surface_type)
-            self.l3grid.l3["n_total_waveforms"][yj, xi] = n_total_waveforms
+            self.l3grid.vars["n_total_waveforms"][yj, xi] = n_total_waveforms
 
             # Compute valid waveforms
             # Only positively identified waveforms (either lead or ice)
@@ -1173,14 +1173,14 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             valid_waveform.add(surface_type == stflags["lead"])
             valid_waveform.add(surface_type == stflags["sea_ice"])
             n_valid_waveforms = valid_waveform.num
-            self.l3grid.l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
+            self.l3grid.vars["n_valid_waveforms"][yj, xi] = n_valid_waveforms
 
             # Fractions of leads on valid_waveforms
             try:
                 valid_fraction = float(n_valid_waveforms) / float(n_total_waveforms)
             except ZeroDivisionError:
                 valid_fraction = np.nan
-            self.l3grid.l3["valid_fraction"][yj, xi] = valid_fraction
+            self.l3grid.vars["valid_fraction"][yj, xi] = valid_fraction
 
             # Fractions of leads on valid_waveforms
             n_leads = len(np.where(surface_type == stflags["lead"])[0])
@@ -1188,7 +1188,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 lead_fraction = float(n_leads) / float(n_valid_waveforms)
             except ZeroDivisionError:
                 lead_fraction = np.nan
-            self.l3grid.l3["lead_fraction"][yj, xi] = lead_fraction
+            self.l3grid.vars["lead_fraction"][yj, xi] = lead_fraction
 
             # Fractions of leads on valid_waveforms
             n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
@@ -1196,7 +1196,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 ice_fraction = float(n_ice) / float(n_valid_waveforms)
             except ZeroDivisionError:
                 ice_fraction = np.nan
-            self.l3grid.l3["ice_fraction"][yj, xi] = ice_fraction
+            self.l3grid.vars["ice_fraction"][yj, xi] = ice_fraction
 
             # Fractions of negative thickness values
             sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
@@ -1205,7 +1205,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 negative_thickness_fraction = float(n_negative_thicknesses) / float(n_ice)
             except ZeroDivisionError:
                 negative_thickness_fraction = np.nan
-            self.l3grid.l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
+            self.l3grid.vars["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
 
 
 class Level3TemporalCoverageStatistics(Level3ProcessorItem):
@@ -1277,21 +1277,21 @@ class Level3TemporalCoverageStatistics(Level3ProcessorItem):
             # It is therefore defined as 1-D with D being the result of KS test
             ks_test_result = stats.kstest(day_number, stats.uniform(loc=0.0, scale=period_n_days).cdf)
             uniformity_factor = 1.0 - ks_test_result[0]
-            self.l3grid.l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
+            self.l3grid.vars["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
 
             # Compute the day fraction (number of days with actual data coverage/days of period)
             day_fraction = float(len(days_with_observations)) / float(period_n_days)
-            self.l3grid.l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
+            self.l3grid.vars["temporal_coverage_day_fraction"][yj, xi] = day_fraction
 
             # Compute the period in days that is covered between the first and last day of observation
             # normed by the length of the period
             period_fraction = float(last_day - first_day + 1) / float(period_n_days)
-            self.l3grid.l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
+            self.l3grid.vars["temporal_coverage_period_fraction"][yj, xi] = period_fraction
 
             # Compute the temporal center of the actual data coverage in units of period length
             # -> optimum 0.5
             weighted_center = np.mean(day_number) / float(period_n_days)
-            self.l3grid.l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
+            self.l3grid.vars["temporal_coverage_weighted_center"][yj, xi] = weighted_center
 
 
 class Level3StatusFlag(Level3ProcessorItem):
@@ -1323,22 +1323,22 @@ class Level3StatusFlag(Level3ProcessorItem):
         flag_values = self.flag_values
 
         # Get status flag (fill value should be set to zero)
-        sf = np.copy(self.l3grid.l3["status_flag"])
+        sf = np.copy(self.l3grid.vars["status_flag"])
 
         # Init the flag with not data flag value
         sf[:] = flag_values["no_data"]
 
         # get input parameters
-        par = np.copy(self.l3grid.l3[self.retrieval_status_target])
-        sic = self.l3grid.l3["sea_ice_concentration"]
-        nvw = self.l3grid.l3["n_valid_waveforms"]
-        lnd = self.l3grid.l3["landsea"]
+        par = np.copy(self.l3grid.vars[self.retrieval_status_target])
+        sic = self.l3grid.vars["sea_ice_concentration"]
+        nvw = self.l3grid.vars["n_valid_waveforms"]
+        lnd = self.l3grid.vars["landsea"]
 
         # Compute conditions for flags
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
         orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
-        is_pole_hole = np.abs(self.l3grid.l3["latitude"]) > np.amin(orbit_inclinations)
+        is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
         is_land = lnd > 0
         has_data = nvw > 0
         has_retrieval = np.isfinite(par)
@@ -1362,7 +1362,7 @@ class Level3StatusFlag(Level3ProcessorItem):
         sf[np.where(has_retrieval)] = flag_values["has_retrieval"]
 
         # Write Status flag
-        self.l3grid.l3["status_flag"] = sf
+        self.l3grid.vars["status_flag"] = sf
 
 
 class Level3QualityFlag(Level3ProcessorItem):
@@ -1390,11 +1390,11 @@ class Level3QualityFlag(Level3ProcessorItem):
 
         # Get the quality flag indicator array
         # This array will be continously updated by the quality check rules
-        qif = np.copy(self.l3grid.l3["quality_flag"])
-        sit = np.copy(self.l3grid.l3["sea_ice_thickness"])
-        nvw = np.copy(self.l3grid.l3["n_valid_waveforms"])
-        ntf = np.copy(self.l3grid.l3["negative_thickness_fraction"])
-        lfr = np.copy(self.l3grid.l3["lead_fraction"])
+        qif = np.copy(self.l3grid.vars["quality_flag"])
+        sit = np.copy(self.l3grid.vars["sea_ice_thickness"])
+        nvw = np.copy(self.l3grid.vars["n_valid_waveforms"])
+        ntf = np.copy(self.l3grid.vars["negative_thickness_fraction"])
+        lfr = np.copy(self.l3grid.vars["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
         qif[np.where(np.isfinite(sit))] = 1
@@ -1407,7 +1407,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         # Use the Warren99 validity maslk
         # XXX: Not implemented yet
         if "qif_warren99_valid_flag" in quality_flag_rules:
-            w99 = self.l3grid.l3["warren99_is_valid"]
+            w99 = self.l3grid.vars["warren99_is_valid"]
             # mask = 0 means warren99 is invalid
             rule_options = self.rules["qif_warren99_valid_flag"]
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
@@ -1417,7 +1417,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         # Elevate the quality flag for SARin or mixed SAR/SARin regions
         # (only sensible for CryoSat-2)
         if "qif_cs2_radar_mode_is_sin" in quality_flag_rules:
-            radar_modes = self.l3grid.l3["radar_mode"]
+            radar_modes = self.l3grid.vars["radar_mode"]
             rule_options = self.rules["qif_cs2_radar_mode_is_sin"]
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             flag[np.where(radar_modes >= 2.)] = rule_options["target_flag"]
@@ -1457,7 +1457,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         qif[np.where(np.isnan(sit))] = 0
 
         # Set flag again
-        self.l3grid.l3["quality_flag"] = qif
+        self.l3grid.vars["quality_flag"] = qif
 
 
 class Level3LoadMasks(Level3ProcessorItem):
@@ -1497,7 +1497,7 @@ class Level3LoadMasks(Level3ProcessorItem):
             # Add the mask to the l3grid as variable
             if not mask.error.status:
                 self.l3grid.add_grid_variable(mask_name, np.nan, mask.mask.dtype)
-                self.l3grid.l3[mask_name] = mask.mask
+                self.l3grid.vars[mask_name] = mask.mask
 
             # If fails, only add an empty variable
             else:
@@ -1546,19 +1546,19 @@ class Level3GridUncertainties(Level3ProcessorItem):
         for xi, yj in self.l3grid.grid_indices:
 
             # Check of data exists
-            if np.isnan(self.l3grid.l3["sea_ice_thickness"][yj, xi]):
+            if np.isnan(self.l3grid.vars["sea_ice_thickness"][yj, xi]):
                 continue
 
             # Get parameters
-            frb = self.l3grid.l3["freeboard"][yj, xi]
-            sd = self.l3grid.l3["snow_depth"][yj, xi]
-            rho_i = self.l3grid.l3["sea_ice_density"][yj, xi]
-            rho_s = self.l3grid.l3["snow_density"][yj, xi]
+            frb = self.l3grid.vars["freeboard"][yj, xi]
+            sd = self.l3grid.vars["snow_depth"][yj, xi]
+            rho_i = self.l3grid.vars["sea_ice_density"][yj, xi]
+            rho_s = self.l3grid.vars["snow_density"][yj, xi]
 
             # Get systematic error components
-            sd_unc = self.l3grid.l3["snow_depth_uncertainty"][yj, xi]
-            rho_i_unc = self.l3grid.l3["sea_ice_density_uncertainty"][yj, xi]
-            rho_s_unc = self.l3grid.l3["snow_density_uncertainty"][yj, xi]
+            sd_unc = self.l3grid.vars["snow_depth_uncertainty"][yj, xi]
+            rho_i_unc = self.l3grid.vars["sea_ice_density_uncertainty"][yj, xi]
+            rho_s_unc = self.l3grid.vars["snow_density_uncertainty"][yj, xi]
 
             # Get random uncertainty
             # Note: this applies only to the radar freeboard uncertainty.
@@ -1573,12 +1573,12 @@ class Level3GridUncertainties(Level3ProcessorItem):
             # error components (error of a weighted mean)
             weight = np.nansum(1./rfrb_uncs**2)
             rfrb_unc = 1./np.sqrt(weight)
-            self.l3grid.l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+            self.l3grid.vars["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
             # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
             deriv_snow = sd_corr_fact
             frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
-            self.l3grid.l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+            self.l3grid.vars["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
             # Calculate the level-3 thickness uncertainty
             errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
@@ -1590,14 +1590,14 @@ class Level3GridUncertainties(Level3ProcessorItem):
                 sit_l3_unc = self.max_l3_uncertainty
 
             # Assign Level-3 uncertainty
-            self.l3grid.l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
+            self.l3grid.vars["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
 
             # Compute sea ice draft uncertainty
-            if not "sea_ice_draft" in self.l3grid.l3:
+            if not "sea_ice_draft" in self.l3grid.vars:
                 continue
 
             sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
-            self.l3grid.l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
+            self.l3grid.vars["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
 
 
 class Level3ParameterMask(Level3ProcessorItem):
@@ -1628,7 +1628,7 @@ class Level3ParameterMask(Level3ProcessorItem):
         """
 
         # Get the source parameter
-        source = self.l3grid.l3[self.source]
+        source = self.l3grid.vars[self.source]
 
         # Compute the masking condition
         conditions = self.condition.split(";")
@@ -1660,10 +1660,10 @@ class Level3ParameterMask(Level3ProcessorItem):
         masked_indices = np.where(filter_mask)
         for target in self.targets:
             try:
-                self.l3grid.l3[target][masked_indices] = np.nan
+                self.l3grid.vars[target][masked_indices] = np.nan
             except ValueError:
-                if self.l3grid.l3[target].dtype.kind == "i":
-                    self.l3grid.l3[target][masked_indices] = -1
+                if self.l3grid.vars[target].dtype.kind == "i":
+                    self.l3grid.vars[target][masked_indices] = -1
                 else:
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
                     self.log.warning(msg)
