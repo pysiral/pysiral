@@ -946,6 +946,10 @@ class L3DataGrid(DefaultLoggingClass):
         # Get the day of observation for each entry in the Level-2 stack
         day_of_observation = np.array(self._l2.stack["day_of_observation"][yj][xi])
 
+        # The statistic is computed for sea ice thickness -> remove data points without valid sea ice thickness
+        sea_ice_thickness = np.array(self._l2.stack["sea_ice_thickness"][yj][xi])
+        day_of_observation = day_of_observation[np.isfinite(sea_ice_thickness)]
+
         # Validity check
         #  - must have data
         #  - must have parameter pre-defined (not all settings will)
