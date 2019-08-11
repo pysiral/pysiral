@@ -78,6 +78,16 @@ variables:
     units: "1"
     coordinates: time
 
+  region_code:
+    long_name: "Region code (adapted from NSIDC region mask)"
+    comment: "Added flag for Baltic Sea (flag value 16)"
+    valid_min: 0
+    valid_max: 21
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
+    units: "1"
+    coordinates: time
+
   elevation:
     long_name: "elevation of retracked point above WGS84 ellipsoid (satellite altitude - range corrections - retracker range)"
     units: m
