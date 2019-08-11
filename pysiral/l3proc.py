@@ -252,8 +252,6 @@ class L2iDataStack(DefaultLoggingClass):
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
         # Stack the l2 parameter in the corresponding grid cells
-
-
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
@@ -324,10 +322,6 @@ class L3DataGrid(DefaultLoggingClass):
         # (gridded parameter that are already in l2i)
         self._l2_parameter = None
 
-        # list of level-3 parameter
-        # (grid specific parameter, e.g. surface type statistics)
-        self._l3_parameter = None
-
         # list of stacked l2 parameters for each grid cell
         if not isinstance(stack, L2iDataStack):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
@@ -366,27 +360,6 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Grid l2i parameter")
         self.grid_l2_parameter()
 
-        # TODO: Masks should be post-processing items
-        # Load external data masks
-        # NOTE: This is done for each file, but we assume it does not take
-        #       much time compared to the gridding
-        # self.log.info("Load external masks")
-        # for external_mask_name in job.l3_external_masks:
-        #     self.load_external_mask(external_mask_name)
-
-        # Set parameters nan if freeboard is nan
-        # (list in output definition file)
-        # self.log.info("Apply data masks")
-        # for mask_def in job.l3_masks:
-        #     self.mask_l3(mask_def)
-
-        # TODO: The application of pos-processing items to be moved into Level3Processor
-        # self.log.info("Post-Processing")
-        # for name, options in job.l3_post_processors:
-        #     self.apply_post_processor(name, options)
-
-    def set_metadata(self, metadata):
-        self._metadata = metadata
 
     def set_doi(self, doi):
         # TODO: Move to __init__
@@ -488,76 +461,6 @@ class L3DataGrid(DefaultLoggingClass):
                     self.error.add_error("invalid-l3def", msg)
                     self.error.raise_on_error()
 
-    # def compute_l3_mandatory_parameter(self):
-    #     """
-    #     Wrapper method for computing the surface type statistics for
-    #     each grid cell
-    #     """
-    #     pass
-    #     # TODO: to be obsolete
-    #     # for xi in self.grid_xi_range:
-    #     #     for yj in self.grid_yj_range:
-    #     #         # self._compute_surface_type_grid_statistics(xi, yj)
-    #     #         self._compute_temporal_coverage_statistics(xi, yj)
-
-    # def compute_l3_output_parameter(self):
-    #     """
-    #     Compute level-3 parameter for each grid cell. A parameter is
-    #     classified as level-3 if it only exists on the grid cell level
-    #     (e.g. total number of waveforms). Parameters that are averaged
-    #     from  the l2i orbits, are called level-2 in the terminology
-    #     of pysiral.Level2Processor
-    #     """
-    #
-    #     # TODO: To be made obsolete
-    #     # Loop over grid items
-    #     for xi in self.grid_xi_range:
-    #         for yj in self.grid_yj_range:
-    #             for l3_parameter_name in self._l3_parameter:
-    #                 # level-3 parameter can to be computed
-    #                 result = self.get_l3_parameter(l3_parameter_name, xi, yj)
-    #                 if result is not None:
-    #                     self.l3[l3_parameter_name][yj, xi] = result
-
-    # def get_l3_parameter(self, l3_parameter_name, xi, yj):
-    #     """
-    #     Compution of all level-3 parameter for a given grid cell
-    #     Since level-3 parameter may be computed in very different ways,
-    #     this method is supplied with the grid index and the name of the
-    #     parameter and then redirects to the corresponding computation
-    #     method.
-    #
-    #     It returns the parameter value, which will be ignored if None. This
-    #     is the case for the mandatory level-3 parameter (surface type
-    #     statistics), which are computed in a seperate method and can safely
-    #     be ignored here.
-    #     """
-    #     # TODO: To be made obsolete
-    #     # Surface type based parameter are computed anyway, skip
-    #     if l3_parameter_name in self._surface_type_l3par:
-    #         # XXX: Add radar mode flag here
-    #         return None
-    #     # No other l3 parameter computations at the moment
-    #     else:
-    #         return None
-    #         # raise ValueError("Unknown l3 parameter name: %s" % l3_parameter_name)
-
-    # def load_external_mask(self, external_mask_name):
-    #     """ Get mask netCDF filename and load into instance for later use """
-    #     # TODO: to be moved to Level-3 processor item
-    #
-    #
-    #     # Read the file
-    #     mask = L3Mask(external_mask_name, self.griddef.grid_id)
-    #
-    #     if not mask.error.status:
-    #         self._external_masks[external_mask_name] = mask
-    #     else:
-    #         error_msgs = mask.error.get_all_messages()
-    #         for error_msg in error_msgs:
-    #             self.log.error(error_msg)
-    #         self._external_masks[external_mask_name] = None
-
     def mask_l3(self, mask_def):
         """ Apply a parametrized mask to level 3 data """
 
@@ -606,221 +509,6 @@ class L3DataGrid(DefaultLoggingClass):
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
                     self.log.warning(msg)
 
-    # def apply_post_processor(self, name, options):
-    #     """ Caller for post-processing methods """
-    #     # TODO: Use a similar engine as for the Level-1 pre-processors and Level-2 post-processors
-    #     try:
-    #         method = getattr(self, "_api_l3pp_"+name)
-    #     except AttributeError:
-    #         msg = "l3 post processor method not found: %s" % name
-    #         self.error.add_error("l3-postproc-error", msg)
-    #         self.error.raise_on_error()
-    #     method(options)
-
-    # def _api_l3pp_quality_indicator_flag(self, options):
-    #     """ Computation of quality flag indicator based on several rules
-    #     defined in the l3 settings file
-    #     NOTE: Currently very limited implementation for C3S ICDR/CDR """
-    #
-    #     # Get the quality flag indicator array
-    #     # This array will be continously updated by the quality check rules
-    #     qif = np.copy(self.l3["quality_flag"])
-    #     sit = np.copy(self.l3["sea_ice_thickness"])
-    #     nvw = np.copy(self.l3["n_valid_waveforms"])
-    #     ntf = np.copy(self.l3["negative_thickness_fraction"])
-    #     lfr = np.copy(self.l3["lead_fraction"])
-    #
-    #     # As first step set qif to 1 where data is availabe
-    #     qif[np.where(np.isfinite(sit))] = 1
-    #
-    #     # Get a list of all the rules
-    #     quality_flag_rules = options.rules.keys(branch_mode="only")
-    #
-    #     # Simple way of handling rules (for now)
-    #
-    #     # Use the Warren99 validity masl
-    #     # XXX: Not implemented yet
-    #     if "qif_warren99_valid_flag" in quality_flag_rules:
-    #
-    #         try:
-    #             w99 = self._external_masks["warren99_is_valid"]
-    #             assert w99 is not None
-    #         # breaks if either warren99 is not in external mask or None
-    #         # Note: can be None
-    #         except (KeyError, AssertionError):
-    #             msg = "Missing external mask: warren99_is_valid"
-    #             self.error.add_error("missing-extmask", msg)
-    #             self.error.raise_on_error()
-    #
-    #         # mask = 0 means warren99 is invalid
-    #         rule_options = options.rules.qif_warren99_valid_flag
-    #         flag = np.full(qif.shape, 0, dtype=qif.dtype)
-    #         flag[np.where(w99.mask == 0)] = rule_options.target_flag
-    #         qif = np.maximum(qif, flag)
-    #
-    #     # Elevate the quality flag for SARin or mixed SAR/SARin regions
-    #     # (only sensible for CryoSat-2)
-    #     if "qif_cs2_radar_mode_is_sin" in quality_flag_rules:
-    #         radar_modes = self.l3["radar_mode"]
-    #         rule_options = options.rules.qif_cs2_radar_mode_is_sin
-    #         flag = np.full(qif.shape, 0, dtype=qif.dtype)
-    #         flag[np.where(radar_modes >= 2.)] = rule_options.target_flag
-    #         qif = np.maximum(qif, flag)
-    #
-    #     # Check the number of waveforms (less valid waveforms -> higher warning flag)
-    #     if "qif_n_waveforms" in quality_flag_rules:
-    #         flag = np.full(qif.shape, 0, dtype=qif.dtype)
-    #         rule_options = options.rules.qif_n_waveforms
-    #         for threshold, target_flag in zip(rule_options.thresholds,
-    #                                           rule_options.target_flags):
-    #             flag[np.where(nvw < threshold)] = target_flag
-    #         qif = np.maximum(qif, flag)
-    #
-    #     # Check the availiability of leads in an area adjacent to the grid cell
-    #     if "qif_lead_availability" in quality_flag_rules:
-    #         flag = np.full(qif.shape, 0, dtype=qif.dtype)
-    #         rule_options = options.rules.qif_lead_availability
-    #         # get the window size
-    #         grid_res = self.griddef.resolution
-    #         window_size = np.ceil(rule_options.search_radius_m/grid_res)
-    #         window_size = int(2*window_size+1)
-    #         # Use a maximum filter to get best lead fraction in area
-    #         area_lfr = maximum_filter(lfr, size=window_size)
-    #         thrs = rule_options.area_lead_fraction_minimum
-    #         flag[np.where(area_lfr <= thrs)] = rule_options.target_flag
-    #         qif = np.maximum(qif, flag)
-    #
-    #     # Check the negative thickness fraction (higher value -> higher warnung flag)
-    #     if "qif_high_negative_thickness_fraction" in quality_flag_rules:
-    #         flag = np.full(qif.shape, 0, dtype=qif.dtype)
-    #         rule_options = options.rules.qif_high_negative_thickness_fraction
-    #         for threshold, target_flag in zip(rule_options.thresholds,
-    #                                           rule_options.target_flags):
-    #             flag[np.where(ntf > threshold)] = target_flag
-    #         qif = np.maximum(qif, flag)
-    #
-    #     # Set all flags with no data to zero again
-    #     qif[np.where(np.isnan(sit))] = 0
-    #
-    #     # Set flag again
-    #     self.l3["quality_flag"] = qif
-
-    # def _api_l3pp_status_flag(self, options):
-    #     """ Create a status flag that describes the availability of l2i
-    #     input data, orbit properties, land mask etc """
-    #
-    #     # Get the flag values from the l3 settings file
-    #     flag_values = options.flag_values
-    #
-    #     # Get status flag (fill value should be set to zero)
-    #     sf = np.copy(self.l3["status_flag"])
-    #
-    #     # Init the flag with not data flag value
-    #     sf[:] = flag_values.no_data
-    #
-    #     # get input parameters
-    #     par = np.copy(self.l3[options.retrieval_status_target])
-    #     sic = self.l3["sea_ice_concentration"]
-    #     nvw = self.l3["n_valid_waveforms"]
-    #     lnd = self._external_masks["landsea"]
-    #
-    #     # Compute conditions for flags
-    #     is_below_sic_thrs = np.logical_and(sic >= 0., sic < options.sic_thrs)
-    #     mission_ids = self._metadata.mission_ids.split(",")
-    #     orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
-    #     is_pole_hole = np.abs(self.l3["latitude"]) > np.amin(orbit_inclinations)
-    #     is_land = lnd.mask > 0
-    #     has_data = nvw > 0
-    #     has_retrieval = np.isfinite(par)
-    #     retrieval_failed = np.logical_and(
-    #             np.logical_and(has_data, np.logical_not(is_below_sic_thrs)),
-    #             np.logical_not(has_retrieval))
-    #
-    #     # Set sic threshold
-    #     sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
-    #
-    #     # Set pole hole (Antarctica: Will be overwritten below)
-    #     sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
-    #
-    #     # Set land mask
-    #     sf[np.where(is_land)] = flag_values.is_land
-    #
-    #     # Set failed retrieval
-    #     sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
-    #
-    #     # Set retrieval successful
-    #     sf[np.where(has_retrieval)] = flag_values.has_retrieval
-    #
-    #     # Write Status flag
-    #     self.l3["status_flag"] = sf
-
-    # def _api_l3pp_sit_l3_uncertainty(self, options):
-    #     """ Compute a level 3 uncertainty. The general idea is to
-    #     compute the error propagation of average error components,
-    #     where for components for random error the error of the l2 average
-    #     is used and for systematic error components the average of the
-    #     l2 error """
-    #
-    #     # Options
-    #     rho_w = options.water_density
-    #     sd_corr_fact = options.snow_depth_correction_factor
-    #
-    #      # Loop over grid items
-    #     for xi, yj in self.grid_indices:
-    #
-    #         # Check of data exists
-    #         if np.isnan(self.l3["sea_ice_thickness"][yj, xi]):
-    #             continue
-    #
-    #         # Get parameters
-    #         frb = self.l3["freeboard"][yj, xi]
-    #         sd = self.l3["snow_depth"][yj, xi]
-    #         rho_i = self.l3["sea_ice_density"][yj, xi]
-    #         rho_s = self.l3["snow_density"][yj, xi]
-    #
-    #         # Get systematic error components
-    #         sd_unc = self.l3["snow_depth_uncertainty"][yj, xi]
-    #         rho_i_unc = self.l3["sea_ice_density_uncertainty"][yj, xi]
-    #         rho_s_unc = self.l3["snow_density_uncertainty"][yj, xi]
-    #
-    #         # Get random uncertainty
-    #         # Note: this applies only to the radar freeboard uncertainty.
-    #         #       Thus we need to recalculate the sea ice freeboard uncertainty
-    #
-    #         # Get the stack of radar freeboard uncertainty values and remove NaN's
-    #         # rfrb_unc = self.l3["radar_freeboard_uncertainty"][yj, xi]
-    #         rfrb_uncs = np.array(self.l2.stack["radar_freeboard_uncertainty"][yj][xi])
-    #         rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
-    #
-    #         # Compute radar freeboard uncertainty as error or the mean from values with individual
-    #         # error components (error of a weighted mean)
-    #         weight = np.nansum(1./rfrb_uncs**2)
-    #         rfrb_unc = 1./np.sqrt(weight)
-    #         self.l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
-    #
-    #         # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
-    #         deriv_snow = sd_corr_fact
-    #         frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
-    #         self.l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
-    #
-    #         # Calculate the level-3 thickness uncertainty
-    #         errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
-    #         sit_l3_unc = frb2sit_errprop(*errprop_args)
-    #
-    #         # Cap the uncertainty
-    #         # (very large values may appear in extreme cases)
-    #         if sit_l3_unc > options.max_l3_uncertainty:
-    #             sit_l3_unc = options.max_l3_uncertainty
-    #
-    #         # Assign Level-3 uncertainty
-    #         self.l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
-    #
-    #         # Compute sea ice draft uncertainty
-    #         if not "sea_ice_draft" in self.l3:
-    #             continue
-    #
-    #         sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
-    #         self.l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
 
 
     def _get_l3_mask(self, source_param, condition, options):
