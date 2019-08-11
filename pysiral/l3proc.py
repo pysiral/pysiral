@@ -486,6 +486,26 @@ class L3DataGrid(DefaultLoggingClass):
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
                     self.log.warning(msg)
 
+    def get_parameter_by_name(self, name):
+        try:
+            parameter = self.l3[name]
+        except KeyError:
+            parameter = np.full(np.shape(self.l3["longitude"]), np.nan)
+            self.log.warn("Parameter not available: %s" % name)
+        except Exception, msg:
+            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
+            sys.exit(1)
+        return parameter
+
+    def set_parameter_by_name(self, name, var):
+        try:
+            self.l3[name] = var
+        except KeyError:
+            self.log.warn("Parameter not available: %s" % name)
+        except Exception, msg:
+            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
+            sys.exit(1)
+
     def _init_metadata_from_l2(self):
         """
         Gets metadata from Level-2 instance
@@ -524,150 +544,6 @@ class L3DataGrid(DefaultLoggingClass):
             msg = "Unknown condition in l3 mask: %s" % condition
             self.error.add_error("invalid-l3mask-condition", msg)
             self.error.raise_on_error()
-
-    # def _compute_surface_type_grid_statistics(self, xi, yj):
-    #     """
-    #     Computes the mandatory surface type statistics for a given
-    #     grid index based on the surface type stack flag
-    #
-    #     The current list
-    #       - is_land (land flag exists in l2i stack)
-    #       - n_total_waveforms (size of l2i stack)
-    #       - n_valid_waveforms (tagged as either lead or sea ice )
-    #       - valid_fraction (n_valid/n_total)
-    #       - lead_fraction (n_leads/n_valid)
-    #       - ice_fraction (n_ice/n_valid)
-    #
-    #     Optional (parameter name needs to in l3 settings file)
-    #       - negative_thickness_fraction  (fraction of negatice sea ice thicknesses in grid cell)
-    #     """
-    #     surface_type = np.array(self.l2.stack["surface_type"][yj][xi])
-    #
-    #     # Stack can be empty
-    #     if len(surface_type) == 0:
-    #         return
-    #
-    #     stflags = self._surface_type_dict
-    #
-    #     # Create a land flag
-    #     is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
-    #     self.l3["is_land"][xi, yj] = is_land
-    #
-    #     # Compute total waveforms in grid cells
-    #     n_total_waveforms = len(surface_type)
-    #     self.l3["n_total_waveforms"][yj, xi] = n_total_waveforms
-    #
-    #     # Compute valid waveforms
-    #     # Only positively identified waveforms (either lead or ice)
-    #     # XXX: what about polynya and ocean?
-    #     valid_waveform = ORCondition()
-    #     valid_waveform.add(surface_type == stflags["lead"])
-    #     valid_waveform.add(surface_type == stflags["sea_ice"])
-    #     n_valid_waveforms = valid_waveform.num
-    #     self.l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
-    #
-    #     # Fractions of leads on valid_waveforms
-    #     try:
-    #         valid_fraction = float(n_valid_waveforms)/float(n_total_waveforms)
-    #     except ZeroDivisionError:
-    #         valid_fraction = np.nan
-    #     self.l3["valid_fraction"][yj, xi] = valid_fraction
-    #
-    #     # Fractions of leads on valid_waveforms
-    #     n_leads = len(np.where(surface_type == stflags["lead"])[0])
-    #     try:
-    #         lead_fraction = float(n_leads)/float(n_valid_waveforms)
-    #     except ZeroDivisionError:
-    #         lead_fraction = np.nan
-    #     self.l3["lead_fraction"][yj, xi] = lead_fraction
-    #
-    #     # Fractions of leads on valid_waveforms
-    #     n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
-    #     try:
-    #         ice_fraction = float(n_ice)/float(n_valid_waveforms)
-    #     except ZeroDivisionError:
-    #         ice_fraction = np.nan
-    #     self.l3["ice_fraction"][yj, xi] = ice_fraction
-    #
-    #     # Fractions of negative thickness values
-    #     if "negative_thickness_fraction" in self.l3.keys():
-    #         sit = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
-    #         n_negative_thicknesses = len(np.where(sit < 0.0)[0])
-    #         try:
-    #             negative_thickness_fraction = float(n_negative_thicknesses)/float(n_ice)
-    #         except ZeroDivisionError:
-    #             negative_thickness_fraction = np.nan
-    #         self.l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
-
-    # def _compute_temporal_coverage_statistics(self, xi, yj):
-    #     """
-    #     Computes statistics of the temporal coverage
-    #     :param xi: grid x index
-    #     :param yj: grid y index
-    #     :return:
-    #     """
-    #     # Get the day of observation for each entry in the Level-2 stack
-    #     day_of_observation = np.array(self.l2.stack["day_of_observation"][yj][xi])
-    #
-    #     # The statistic is computed for sea ice thickness -> remove data points without valid sea ice thickness
-    #     sea_ice_thickness = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
-    #     day_of_observation = day_of_observation[np.isfinite(sea_ice_thickness)]
-    #
-    #     # Validity check
-    #     #  - must have data
-    #     #  - must have parameter pre-defined (not all settings will)
-    #     if len(day_of_observation) == 0 or not self.l3.has_key("temporal_coverage_uniformity_factor"):
-    #         return
-    #
-    #     # Compute the number of days for each observation with respect to the start of the period
-    #     day_number = [(day-self.start_date).days for day in day_of_observation]
-    #
-    #     # Compute the set of days with observations available
-    #     days_with_observations = np.unique(day_number)
-    #     first_day, last_day = np.amin(days_with_observations), np.amax(days_with_observations)
-    #
-    #     # Compute the uniformity factor
-    #     # The uniformity factor is derived from a Kolmogorov-Smirnov (KS) test for goodness of fit that tests
-    #     # the list of against a uniform distribution. The definition of the uniformity factor is that is
-    #     # reaches 1 for uniform distribution of observations and gets smaller for non-uniform distributions
-    #     # It is therefore defined as 1-D with D being the result of KS test
-    #     ks_test_result = stats.kstest(day_number, stats.uniform(loc=0.0, scale=self.period_n_days).cdf)
-    #     uniformity_factor = 1.0 - ks_test_result[0]
-    #     self.l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
-    #
-    #     # Compute the day fraction (number of days with actual data coverage/days of period)
-    #     day_fraction = float(len(days_with_observations))/float(self.period_n_days)
-    #     self.l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
-    #
-    #     # Compute the period in days that is covered between the first and last day of observation
-    #     # normed by the length of the period
-    #     period_fraction = float(last_day - first_day + 1) / float(self.period_n_days)
-    #     self.l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
-    #
-    #     # Compute the temporal center of the actual data coverage in units of period length
-    #     # -> optimum 0.5
-    #     weighted_center = np.mean(day_number) / float(self.period_n_days)
-    #     self.l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
-
-    def get_parameter_by_name(self, name):
-        try:
-            parameter = self.l3[name]
-        except KeyError:
-            parameter = np.full(np.shape(self.l3["longitude"]), np.nan)
-            self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
-            sys.exit(1)
-        return parameter
-
-    def set_parameter_by_name(self, name, var):
-        try:
-            self.l3[name] = var
-        except KeyError:
-            self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
-            sys.exit(1)
 
     def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
