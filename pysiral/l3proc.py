@@ -169,6 +169,9 @@ class L2iDataStack(DefaultLoggingClass):
         # Grid Definition Type
         self.griddef = griddef
 
+        # Parameter that need always be created
+        self.default_parameter = default_parameter
+
         # A list of level-2 parameters to be stacked
         self.l2_parameter = l2_parameter
 
@@ -201,8 +204,8 @@ class L2iDataStack(DefaultLoggingClass):
         # init stack arrays
         # surface_type is mandatory for level-3 parameters
         # (e.g. n_total_wave_forms, lead_fraction, ...)
-        self.stack["surface_type"] = self.parameter_stack
-        self.stack["day_of_observation"] = self.parameter_stack
+        for parameter_name in self.default_parameter:
+            self.stack[parameter_name] = self.parameter_stack
 
         # create a stack for each l2 parameter
         for pardef in self.l2_parameter:

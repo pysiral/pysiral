@@ -170,6 +170,10 @@ l3_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    is_land:
+        dtype: i2
+        fillvalue: -1
+
     negative_thickness_fraction:
         dtype: f4
         fillvalue: .NAN
