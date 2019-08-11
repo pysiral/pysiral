@@ -438,54 +438,6 @@ class L3DataGrid(DefaultLoggingClass):
                     self.error.add_error("invalid-l3def", msg)
                     self.error.raise_on_error()
 
-    def mask_l3(self, mask_def):
-        """ Apply a parametrized mask to level 3 data """
-
-        # TODO: to be moved to Level-3 processor item
-
-        # Get the source parameter
-        source = self.l3[mask_def.source]
-
-        # Compute the masking condition
-        conditions = mask_def.condition.split(";")
-        n_conditions = len(conditions)
-
-        if n_conditions == 0:
-            msg = "Missing condition in %s" % str(mask_def)
-            self.error.add_error("invalid-l3mask-def", msg)
-            self.error.raise_on_error()
-
-        # Start with the first (and maybe only condition)
-        filter_mask = self._get_l3_mask(source, conditions[0], mask_def)
-
-        # Add conditions
-        if n_conditions >= 2:
-            for i in range(1, n_conditions):
-                new_filter = self._get_l3_mask(source, conditions[i], mask_def)
-                if mask_def.connect_conditions == "or":
-                    filter_mask = np.logical_or(filter_mask, new_filter)
-                elif mask_def.connect_conditions == "and":
-                    filter_mask = np.logical_and(filter_mask, new_filter)
-                else:
-                    msg = "Invalid l3 mask operation: %s"
-                    msg = msg % mask_def.connect_conditions
-                    self.error.add_error("invalid-l3mask-def", msg)
-                    self.error.raise_on_error()
-
-        self.log.info("Apply l3 mask: %s" % mask_def.branchName())
-
-        # Apply mask
-        masked_indices = np.where(filter_mask)
-        for target in mask_def.targets:
-            try:
-                self.l3[target][masked_indices] = np.nan
-            except ValueError:
-                if self.l3[target].dtype.kind == "i":
-                    self.l3[target][masked_indices] = -1
-                else:
-                    msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
-                    self.log.warning(msg)
-
     def get_parameter_by_name(self, name):
         try:
             parameter = self.l3[name]
@@ -530,20 +482,6 @@ class L3DataGrid(DefaultLoggingClass):
             fillvalue = pardef.fillvalue
             if pardef.grid_method != "none":
                 self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
-
-    def _get_l3_mask(self, source_param, condition, options):
-        """ Return bool array based on a parameter and a predefined
-        masking operation """
-        if condition.strip() == "is_nan":
-            return np.isnan(source_param)
-        elif condition.strip() == "is_zero":
-            return np.array(source_param <= 1.0e-9)
-        elif condition.strip() == "is_smaller":
-            return np.array(source_param < options.is_smaller_threshold)
-        else:
-            msg = "Unknown condition in l3 mask: %s" % condition
-            self.error.add_error("invalid-l3mask-condition", msg)
-            self.error.raise_on_error()
 
     def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
@@ -1660,3 +1598,86 @@ class Level3GridUncertainties(Level3ProcessorItem):
 
             sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
             self.l3grid.l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
+
+
+class Level3ParameterMask(Level3ProcessorItem):
+    """
+    A Level-3 processor item to load external masks
+    """
+
+    # Mandatory properties
+    required_options = ["source", "condition", "target"]
+    l2_variable_dependencies = []
+    l3_variable_dependencies = []
+    # Note: the output names depend on mask name, thus these will be
+    #       created in apply (works as well)
+    l3_output_variables = dict()
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3ParameterMask, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Mask certain parameters based on condition of one other parameter
+        :return:
+        """
+
+        # Get the source parameter
+        source = self.l3grid.l3[self.source]
+
+        # Compute the masking condition
+        conditions = self.condition.split(";")
+        n_conditions = len(conditions)
+
+        if n_conditions == 0:
+            msg = "Missing condition in %s" % self.__class__.__name__
+            self.error.add_error("invalid-l3mask-def", msg)
+            return
+
+        # Start with the first (and maybe only condition)
+        filter_mask = self._get_l3_mask(source, conditions[0], self.cfg)
+
+        # Add conditions
+        if n_conditions >= 2:
+            for i in range(1, n_conditions):
+                new_filter = self._get_l3_mask(source, conditions[i], self.cfg)
+                if self.cfg["connect_conditions"] == "or":
+                    filter_mask = np.logical_or(filter_mask, new_filter)
+                elif self.cfg["connect_conditions"] == "and":
+                    filter_mask = np.logical_and(filter_mask, new_filter)
+                else:
+                    msg = "Invalid l3 mask operation: %s"
+                    msg = msg % self.cfg["connect_conditions"]
+                    self.error.add_error("invalid-l3mask-def", msg)
+                    self.error.raise_on_error()
+
+        # Apply mask
+        masked_indices = np.where(filter_mask)
+        for target in self.targets:
+            try:
+                self.l3grid.l3[target][masked_indices] = np.nan
+            except ValueError:
+                if self.l3grid.l3[target].dtype.kind == "i":
+                    self.l3grid.l3[target][masked_indices] = -1
+                else:
+                    msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
+                    self.log.warning(msg)
+
+    def _get_l3_mask(self, source_param, condition, options):
+        """ Return bool array based on a parameter and a predefined
+        masking operation """
+        if condition.strip() == "is_nan":
+            return np.isnan(source_param)
+        elif condition.strip() == "is_zero":
+            return np.array(source_param <= 1.0e-9)
+        elif condition.strip() == "is_smaller":
+            return np.array(source_param < options.is_smaller_threshold)
+        else:
+            msg = "Unknown condition in l3 mask: %s" % condition
+            self.error.add_error("invalid-l3mask-condition", msg)
+            self.error.raise_on_error()

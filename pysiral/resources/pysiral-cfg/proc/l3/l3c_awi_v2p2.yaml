@@ -1,6 +1,4 @@
-# Level-3 processor settings suitable for default l2i input files and output for C3S ICDR/CDR 
-# 
-# Version 1.0
+# Level-3 processor settings for AWI v2.2 output
 
 # ==================================================
 # Level-2 Parameters
@@ -144,16 +142,7 @@ l2i_prefilter:
         - radar_freeboard
 
 # ==================================================
-# Level-3 Parameter
-# ==================================================
-
-# l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
-# of valid l3 parameter names. (l2 parameter surface type is mandatory)
-
-l3_parameter: {}
-
-# ==================================================
-# Grid settings
+# Gridding settings
 # ==================================================
 grid_settings:
     no_land_cells: True
@@ -169,6 +158,54 @@ grid_settings:
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
 
 processing_items:
+
+    - label: "Mask parameters"
+      module_name: pysiral.l3proc
+      class_name: Level3ParameterMask
+      options:
+        source: freeboard
+        condition: "is_nan"
+        targets:
+            - freeboard_uncertainty
+            - radar_freeboard_uncertainty
+            - sea_surface_anomaly
+            - sea_surface_anomaly_uncertainty
+            - mean_sea_surface
+            - sea_ice_density
+            - sea_ice_density_uncertainty
+            - sea_ice_type
+            - sea_ice_type_uncertainty
+
+    - label: "Mask parameters"
+      module_name: pysiral.l3proc
+      class_name: Level3ParameterMask
+      options:
+        source: sea_ice_concentration
+        condition: "is_nan; is_smaller"
+        is_smaller_threshold: 15.0
+        connect_conditions: "or"
+        targets:
+            - n_total_waveforms
+            - n_valid_waveforms
+            - valid_fraction
+            - lead_fraction
+            - ice_fraction
+            - negative_thickness_fraction
+            - sea_ice_type
+            - snow_depth
+            - snow_depth_uncertainty
+            - snow_density
+            - snow_density_uncertainty
+            - sea_ice_concentration
+            - region_code
+            - radar_mode
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load masks"
+      module_name: pysiral.l3proc
+      class_name: Level3LoadMasks
+      options:
+        mask_names: ["warren99_is_valid", "landsea"]
 
     # Compute surface type statistics based on surface type classification
     - label: "Load masks"
@@ -245,110 +282,3 @@ processing_items:
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
                 target_flags: [2, 3]
-
-l3_masks:
-
-# Apply freeboard filter to mss, ssa for visualization purposes
-
-    freeboard_nan_mask: 
-        source: freeboard
-        condition: "is_nan"
-        targets:
-            - freeboard_uncertainty
-            - radar_freeboard_uncertainty
-            - sea_surface_anomaly
-            - sea_surface_anomaly_uncertainty
-            - mean_sea_surface
-            - sea_ice_density
-            - sea_ice_density_uncertainty
-            - sea_ice_type
-            - sea_ice_type_uncertainty
-
-# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
-# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
-#       is only a monthly average from the daily fields in the l2i orbits
-
-    sea_ice_concentration_mask:
-        source: sea_ice_concentration
-        condition: "is_nan; is_smaller"
-        is_smaller_threshold: 15.0
-        connect_conditions: "or"
-        targets:
-            - n_total_waveforms
-            - n_valid_waveforms
-            - valid_fraction
-            - lead_fraction
-            - ice_fraction
-            - negative_thickness_fraction
-            - sea_ice_type
-            - snow_depth
-            - snow_depth_uncertainty
-            - snow_density
-            - snow_density_uncertainty
-            - sea_ice_concentration
-            - region_code
-            - radar_mode
-
-l3_post_processing:
-
-    # Compute l3 sea ice thickness uncertainty
-    sit_l3_uncertainty:
-        
-        # required for uncertainty computation
-        options: 
-            water_density: 1024.0
-            snow_depth_correction_factor: 0.22
-            max_l3_uncertainty: 10.0
-
-    # Compute the status flag
-    status_flag: 
-
-        options: 
-            retrieval_status_target: sea_ice_thickness
-            sic_thrs: 70.
-            flag_values:
-                no_data: 0 
-                is_below_sic_thrs: 1
-                is_pole_hole: 2
-                is_land: 3
-                retrieval_failed: 4
-                has_retrieval: 5
-
-    # Compute the quality indicator flag
-    quality_indicator_flag:
-
-        options:
-
-            # This setting is currently without effect
-            add_rule_flags: maximum_value
-
-            # A list of rules that will be checked
-            rules: 
-
-                # Mark everything outside of the Warren99 Climatology as biased
-                # Note: This method requires loading the external mask with id `warren99_is_valid`
-                qif_warren99_valid_flag:
-                    type: method
-                    target_flag: 3
-            
-                # Check for lead fractions not only in the grid cell but also in the adjacent 
-                # grid cells. Idea is that grid cell with low lead fractions have still high 
-                # confidence if enough leads in the neighbourhood
-                qif_lead_availability:
-                    search_radius_m: 75000.
-                    area_lead_fraction_minimum: 0.1
-                    target_flag: 2
-
-                # Check radar mode for SARin mode (only applicable for CryoSat-2)
-                qif_cs2_radar_mode_is_sin:
-                    target_flag: 2
-
-                # Check number of waveforms and raise flag if low
-                qif_n_waveforms:
-                    thresholds: [50, 10]
-                    target_flags: [2, 3]
-
-                # Check the negative thickness fraction and raise flag if high
-                qif_high_negative_thickness_fraction:
-                    thresholds: [0.2, 0.4]
-                    target_flags: [2, 3]
