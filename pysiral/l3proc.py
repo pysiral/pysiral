@@ -290,14 +290,14 @@ class L3DataGrid(DefaultLoggingClass):
     (averaged l2i parameter, grid cell statistics)
     """
 
-    def __init__(self, job, stack, period):
+    def __init__(self, job, stack, period, doi=""):
 
         super(L3DataGrid, self).__init__(self.__class__.__name__)
 
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
         # Grid size definition
-        self._doi = ""
+        self._doi = doi
         self._data_record_type = "none"
         self._griddef = job.grid
         self._l3def = job.l3def
