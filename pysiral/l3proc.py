@@ -340,7 +340,7 @@ class L3DataGrid(DefaultLoggingClass):
         self.calculate_longitude_latitude_fields()
 
         # Create the parameter fields
-        self.init_parameter_fields(job.l2_parameter)
+        self._init_parameter_fields(job.l2_parameter)
 
         # Grid the Level-2 parameter
         self.log.info("Grid Level-2 parameter")
