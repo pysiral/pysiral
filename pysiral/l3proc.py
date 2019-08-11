@@ -1828,13 +1828,13 @@ class Level3StatusFlag(Level3ProcessorItem):
         sf[:] = flag_values["no_data"]
 
         # get input parameters
-        par = np.copy(self.l3grid.l3[self.cfg.retrieval_status_target])
+        par = np.copy(self.l3grid.l3[self.retrieval_status_target])
         sic = self.l3grid.l3["sea_ice_concentration"]
         nvw = self.l3grid.l3["n_valid_waveforms"]
         lnd = self.l3grid.l3["landsea"]
 
         # Compute conditions for flags
-        is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.cfg.sic_thrs)
+        is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
         orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
         is_pole_hole = np.abs(self.l3grid.l3["latitude"]) > np.amin(orbit_inclinations)
@@ -1846,19 +1846,19 @@ class Level3StatusFlag(Level3ProcessorItem):
             np.logical_not(has_retrieval))
 
         # Set sic threshold
-        sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
+        sf[np.where(is_below_sic_thrs)] = flag_values["is_below_sic_thrs"]
 
         # Set pole hole (Antarctica: Will be overwritten below)
-        sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
+        sf[np.where(is_pole_hole)] = flag_values["is_pole_hole"]
 
         # Set land mask
-        sf[np.where(is_land)] = flag_values.is_land
+        sf[np.where(is_land)] = flag_values["is_land"]
 
         # Set failed retrieval
-        sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
+        sf[np.where(retrieval_failed)] = flag_values["retrieval_failed"]
 
         # Set retrieval successful
-        sf[np.where(has_retrieval)] = flag_values.has_retrieval
+        sf[np.where(has_retrieval)] = flag_values["has_retrieval"]
 
         # Write Status flag
         self.l3grid.l3["status_flag"] = sf
