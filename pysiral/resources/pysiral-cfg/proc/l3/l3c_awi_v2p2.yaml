@@ -10,6 +10,16 @@
 
 l2_parameter:
 
+    time:
+        grid_method: none
+        dtype: M
+        fillvalue: null
+    
+    surface_type:
+        grid_method: none
+        dtype: i4
+        fillvalue: -1
+
     radar_freeboard:
         grid_method: average
         dtype: f4
@@ -146,38 +156,6 @@ l3_parameter:
         dtype: i1
         fillvalue: 0
 
-    status_flag:
-        dtype: i1
-        fillvalue: 0
-
-    n_total_waveforms:
-        dtype: f4
-        fillvalue: .NAN
-
-    n_valid_waveforms:
-        dtype: f4
-        fillvalue: .NAN
-
-    valid_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
-    lead_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
-    ice_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
-    is_land:
-        dtype: i2
-        fillvalue: -1
-
-    negative_thickness_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
     radar_freeboard_l3_uncertainty:
         dtype: f4
         fillvalue: .NAN
@@ -193,30 +171,6 @@ l3_parameter:
     sea_ice_draft_l3_uncertainty:
         dtype: f4
         fillvalue: .NAN
-
-    temporal_coverage_uniformity_factor:
-        dtype: f4
-        fillvalue: .NAN
-
-    temporal_coverage_day_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
-    temporal_coverage_period_fraction:
-        dtype: f4
-        fillvalue: .NAN
-
-    temporal_coverage_weighted_center:
-        dtype: f4
-        fillvalue: .NAN
-
-# ==================================================
-# External Masks
-# ==================================================
-
-external_masks:
-    - warren99_is_valid
-    - landsea
 
 # ==================================================
 # Grid settings
@@ -234,6 +188,51 @@ grid_settings:
 # Note: The masking is exectuted in the alphabetical order of the mask names.
 #       If there is a dependance between following mask procedures this needs
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+processing_items:
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load masks"
+      module_name: pysiral.l3proc
+      class_name: Level3LoadMasks
+      options:
+        mask_names: ["warren99_is_valid", "landsea"]
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Compute surface type statistics"
+      module_name: pysiral.l3proc
+      class_name: Level3SurfaceTypeStatistics
+      options: {}
+
+    # Compute the temporal coverage of sea-ice thickness within the grid period
+    - label: "Compute temporal coverage statistics"
+      module_name: pysiral.l3proc
+      class_name: Level3TemporalCoverageStatistics
+      options: {}
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties"
+      module_name: pysiral.l3proc
+      class_name: Level3GridUncertainties
+      options: 
+        water_density: 1024.0
+        snow_depth_correction_factor: 0.22
+        max_l3_uncertainty: 10.0
+
+    # Compute the status flag
+    - label: "Get status flag"
+      module_name: pysiral.l3proc
+      class_name: Level3StatusFlag
+      options: 
+        retrieval_status_target: sea_ice_thickness
+        sic_thrs: 70.
+        flag_values:
+            no_data: 0 
+            is_below_sic_thrs: 1
+            is_pole_hole: 2
+            is_land: 3
+            retrieval_failed: 4
+            has_retrieval: 5
 
 l3_masks:
 
