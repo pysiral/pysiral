@@ -116,7 +116,6 @@ class Level3Processor(DefaultLoggingClass):
             #       highly recommended to harmonize the mask for thickness
             #       and the different freeboard levels
             prefilter = self._job.l3def.l2i_prefilter
-
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source, prefilter.nan_targets)
             # Add to stack
@@ -171,7 +170,7 @@ class Level3Processor(DefaultLoggingClass):
 
 class L2iDataStack(DefaultLoggingClass):
 
-    def __init__(self, griddef, l2_parameter, default_parameter=["surface_type", "day_of_observation"]):
+    def __init__(self, griddef, l2_parameter):
         """ A container for stacking l2i variables (geophysical paramters
         at sensor resolution) in L3 grid cells. For each parameters
         a (numx, numy) array is created, with an list containing all
@@ -191,9 +190,6 @@ class L2iDataStack(DefaultLoggingClass):
 
         # Grid Definition Type
         self.griddef = griddef
-
-        # Parameter that need always be created
-        self.default_parameter = default_parameter
 
         # A list of level-2 parameters to be stacked
         self.l2_parameter = l2_parameter
@@ -223,12 +219,6 @@ class L2iDataStack(DefaultLoggingClass):
 
         # Stack dictionary that will hold the data
         self.stack = {}
-
-        # init stack arrays
-        # surface_type is mandatory for level-3 parameters
-        # (e.g. n_total_wave_forms, lead_fraction, ...)
-        for parameter_name in self.default_parameter:
-            self.stack[parameter_name] = self.parameter_stack
 
         # create a stack for each l2 parameter
         for pardef in self.l2_parameter:
@@ -262,17 +252,13 @@ class L2iDataStack(DefaultLoggingClass):
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
         # Stack the l2 parameter in the corresponding grid cells
+
+
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
-            self.stack["surface_type"][y][x].append(l2i.surface_type[i])
-
-            # Add a date object per default
-            time = l2i.time[i]
-            day_of_observation = date(time.year, time.month, time.day)
-            self.stack["day_of_observation"][y][x].append(day_of_observation)
 
             for pardef in self.l2_parameter:
                 parameter_name = pardef.branchName()
