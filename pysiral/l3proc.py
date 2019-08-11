@@ -1618,6 +1618,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                                valid_fraction=dict(dtype="f4", fill_value=np.nan),
                                lead_fraction=dict(dtype="f4", fill_value=np.nan),
                                ice_fraction=dict(dtype="f4", fill_value=np.nan),
+                               negative_thickness_fraction=dict(dtype="f4", fill_value=np.nan),
                                is_land=dict(dtype="i2", fill_value=-1))
 
     def __init__(self, *args, **kwargs):
@@ -1642,9 +1643,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
           - valid_fraction (n_valid/n_total)
           - lead_fraction (n_leads/n_valid)
           - ice_fraction (n_ice/n_valid)
-
-        Optional (parameter name needs to in l3 settings file)
-          - negative_thickness_fraction  (fraction of negatice sea ice thicknesses in grid cell)
+          - negative thickness fraction (n_sit<0 / n_sit)
         """
 
         # Loop over all grid indices
