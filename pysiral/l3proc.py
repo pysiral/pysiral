@@ -524,8 +524,8 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _init_parameter_fields(self, pardefs):
         """ Initialize output parameter fields """
-        parameter_names = sorted([pd.branchName() for pd in pardefs])
-        setattr(self, "_parameter", parameter_names)
+        # Store the name of the parameters
+        self._l2_parameter = sorted([pd.branchName() for pd in pardefs])
         for pardef in pardefs:
             fillvalue = pardef.fillvalue
             if pardef.grid_method != "none":
@@ -1479,7 +1479,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         # Elevate the quality flag for SARin or mixed SAR/SARin regions
         # (only sensible for CryoSat-2)
         if "qif_cs2_radar_mode_is_sin" in quality_flag_rules:
-            radar_modes = self.l3["radar_mode"]
+            radar_modes = self.l3grid.l3["radar_mode"]
             rule_options = self.rules["qif_cs2_radar_mode_is_sin"]
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             flag[np.where(radar_modes >= 2.)] = rule_options["target_flag"]
@@ -1499,11 +1499,11 @@ class Level3QualityFlag(Level3ProcessorItem):
             rule_options = self.rules["qif_lead_availability"]
             # get the window size
             grid_res = self.l3grid.griddef.resolution
-            window_size = np.ceil(rule_options.search_radius_m/grid_res)
+            window_size = np.ceil(rule_options["search_radius_m"]/grid_res)
             window_size = int(2*window_size+1)
             # Use a maximum filter to get best lead fraction in area
             area_lfr = maximum_filter(lfr, size=window_size)
-            thrs = rule_options.area_lead_fraction_minimum
+            thrs = rule_options["area_lead_fraction_minimum"]
             flag[np.where(area_lfr <= thrs)] = rule_options["target_flag"]
             qif = np.maximum(qif, flag)
 
