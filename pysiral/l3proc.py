@@ -4,7 +4,7 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral import __version__
+from pysiral import __version__, get_cls
 from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
                             MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
 from pysiral.errorhandler import ErrorStatus
@@ -126,7 +126,8 @@ class Level3Processor(DefaultLoggingClass):
         self.log.info("Initialize l3 data grid")
         l3 = L3DataGrid(self._job, stack, period)
 
-        # TODO: processing items go in here
+        # Apply the processing items
+        self._apply_processing_items(l3)
 
         # Write output(s)
         for output_handler in self._job.outputs:
@@ -142,6 +143,28 @@ class Level3Processor(DefaultLoggingClass):
         if last_reminder > current_reminder:
             self.log.info("Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent-current_reminder, i+1, n))
         self._l3_progress_percent = progress_percent
+
+    def _apply_processing_items(self, l3grid):
+        """
+        Sequentially apply the processing items defined in the Level-3 processor definition files
+        (listed under root.processing_items)
+        :param l3grid:
+        :return:
+        """
+
+        # Get the post processing options
+        processing_items = self._job.l3def.get("processing_items", None)
+        if processing_items is None:
+            self.log.info("No processing items defined")
+            return
+
+        # Get the list of post-processing items
+        for pitem in processing_items:
+            msg = "Apply Level-3 processing item: `%s`" % (pitem["label"])
+            self.log.info(msg)
+            pp_class = get_cls(pitem["module_name"], pitem["class_name"], relaxed=False)
+            processing_items = pp_class(l3grid, **pitem["options"])
+            processing_items.apply()
 
 
 # %% Data Containers
