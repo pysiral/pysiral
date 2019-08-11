@@ -150,27 +150,7 @@ l2i_prefilter:
 # l3 parameter need to be computed by the Level-3 processor, therefore can only be chosen from a list 
 # of valid l3 parameter names. (l2 parameter surface type is mandatory)
 
-l3_parameter:
-
-    quality_flag:
-        dtype: i1
-        fillvalue: 0
-
-    radar_freeboard_l3_uncertainty:
-        dtype: f4
-        fillvalue: .NAN
-
-    freeboard_l3_uncertainty:
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_ice_thickness_l3_uncertainty:
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_ice_draft_l3_uncertainty:
-        dtype: f4
-        fillvalue: .NAN
+l3_parameter: {}
 
 # ==================================================
 # Grid settings
@@ -178,7 +158,6 @@ l3_parameter:
 grid_settings:
     no_land_cells: True
     minimum_valid_grid_points: 2
-
 
 # ==================================================
 # Post processing for gridded parameters
@@ -233,6 +212,39 @@ processing_items:
             is_land: 3
             retrieval_failed: 4
             has_retrieval: 5
+
+    # Compute the quality flag
+    - label: "Get quality flag"
+      module_name: pysiral.l3proc
+      class_name: Level3QualityFlag
+      options:
+        # This setting is currently without effect
+        add_rule_flags: maximum_value
+        # A list of rules that will be checked
+        rules: 
+            # Mark everything outside of the Warren99 Climatology as biased
+            # Note: This method requires loading the external mask with id `warren99_is_valid`
+            qif_warren99_valid_flag:
+                type: method
+                target_flag: 3
+            # Check for lead fractions not only in the grid cell but also in the adjacent 
+            # grid cells. Idea is that grid cell with low lead fractions have still high 
+            # confidence if enough leads in the neighbourhood
+            qif_lead_availability:
+                search_radius_m: 75000.
+                area_lead_fraction_minimum: 0.1
+                target_flag: 2
+            # Check radar mode for SARin mode (only applicable for CryoSat-2)
+            qif_cs2_radar_mode_is_sin:
+                target_flag: 2
+            # Check number of waveforms and raise flag if low
+            qif_n_waveforms:
+                thresholds: [50, 10]
+                target_flags: [2, 3]
+            # Check the negative thickness fraction and raise flag if high
+            qif_high_negative_thickness_fraction:
+                thresholds: [0.2, 0.4]
+                target_flags: [2, 3]
 
 l3_masks:
 
