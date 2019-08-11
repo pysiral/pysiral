@@ -171,11 +171,9 @@ class Level3Processor(DefaultLoggingClass):
 class L2iDataStack(DefaultLoggingClass):
 
     def __init__(self, griddef, l2_parameter):
-        """ A container for stacking l2i variables (geophysical paramters
-        at sensor resolution) in L3 grid cells. For each parameters
-        a (numx, numy) array is created, with an list containing all
-        l2i data points that fall into the grid cell area. This list
-        can be averaged or used for histogram computation in later stages
+        """ A container for stacking l2i variables (geophysical parameter at sensor resolution) in L3 grid cells.
+        For each parameters a (numx, numy) array is created, with an list containing all l2i data points that
+        fall into the grid cell area. This list can be averaged or used for histogram computation in later stages
         of the Level-3 processor.
 
         Args:
@@ -201,9 +199,6 @@ class L2iDataStack(DefaultLoggingClass):
         self.stop_time = []
         self.mission = []
         self.timeliness = []
-
-        # Flags
-        self._has_surface_type = False
 
         # Save global attributes from l2i (will be overwritten for each
         # l2i file, but it is assumed that general information, e.g.
@@ -703,7 +698,6 @@ class L3MetaData(object):
         mission_sensor = [SENSOR_NAME_DICT[mission] for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
-
         source_timeliness = np.unique(stack.timeliness)[0]
         if len(source_timeliness) != 1:
             # XXX: Different timeliness should not be mixed
