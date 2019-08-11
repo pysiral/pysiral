@@ -332,32 +332,18 @@ class L3DataGrid(DefaultLoggingClass):
         # container for gridded parameters
         self.l3 = {}
 
+        # Product Metadata
         self._metadata = None
-
-        # Get the metadata information from the L2 stack
-        self.log.info("Compile metadata")
-        l3_metadata = L3MetaData()
-        l3_metadata.get_missions_from_stack(stack)
-        # Actual data coverage
-        l3_metadata.get_data_period_from_stack(stack)
-        # Requested time coverage (might not be the actual coverage)
-        l3_metadata.get_time_coverage_from_period(self._period)
-        l3_metadata.get_auxdata_infos(stack.l2i_info)
-        l3_metadata.get_projection_parameter(job.grid)
-        self.set_metadata(l3_metadata)
-
-        # Create the parameter fields
-        self.init_parameter_fields(job.l2_parameter, "l2")
-        self.init_parameter_fields(job.l3_parameter, "l3")
+        self._init_metadata_from_l2()
 
         # Compute the longitude & latitude dimensions
         self.calculate_longitude_latitude_fields()
 
-        # Average level-2 parameter for each grid cell
-        # self.log.info("Compute masks and mandatory grid statistics")
-        # self.compute_l3_mandatory_parameter()
+        # Create the parameter fields
+        self.init_parameter_fields(job.l2_parameter)
 
-        self.log.info("Grid l2i parameter")
+        # Grid the Level-2 parameter
+        self.log.info("Grid Level-2 parameter")
         self.grid_l2_parameter()
 
 
@@ -380,15 +366,6 @@ class L3DataGrid(DefaultLoggingClass):
         except Exception, msg:
             print "L3DataGrid.get_attribute Exception: "+str(msg)+" for attribute: %s" % attribute_name
             sys.exit(1)
-
-    def init_parameter_fields(self, pardefs, level):
-        """ Initialize output parameter fields """
-        parameter_names = sorted([pd.branchName() for pd in pardefs])
-        setattr(self, "_"+level+"_parameter", parameter_names)
-        for pardef in pardefs:
-            fillvalue = pardef.fillvalue
-            if pardef.grid_method != "none":
-                self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
         """
@@ -509,7 +486,30 @@ class L3DataGrid(DefaultLoggingClass):
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
                     self.log.warning(msg)
 
+    def _init_metadata_from_l2(self):
+        """
+        Gets metadata from Level-2 instance
+        :return:
+        """
+        # Get the metadata information from the L2 stack
+        self.log.info("Compile metadata")
+        self._metadata = L3MetaData()
+        self._metadata.get_missions_from_stack(self.l2)
+        # Actual data coverage
+        self._metadata.get_data_period_from_stack(self.l2)
+        # Requested time coverage (might not be the actual coverage)
+        self._metadata.get_time_coverage_from_period(self._period)
+        self._metadata.get_auxdata_infos(self.l2.l2i_info)
+        self._metadata.get_projection_parameter(self._griddef)
 
+    def _init_parameter_fields(self, pardefs):
+        """ Initialize output parameter fields """
+        parameter_names = sorted([pd.branchName() for pd in pardefs])
+        setattr(self, "_parameter", parameter_names)
+        for pardef in pardefs:
+            fillvalue = pardef.fillvalue
+            if pardef.grid_method != "none":
+                self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined
