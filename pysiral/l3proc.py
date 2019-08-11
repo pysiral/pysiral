@@ -634,14 +634,14 @@ class L3DataGrid(DefaultLoggingClass):
     def grid_indices(self):
         return itertools.product(self.grid_xi_range, self.grid_yj_range)
 
-    @property
-    def parameter_list(self):
-        # TODO: Only L2 parameter for now
-        parameter_list = list(self._l2_parameter)
-        parameter_list.extend(self._l3_parameter)
-        parameter_list.append("lon")
-        parameter_list.append("lat")
-        return parameter_list
+    # @property
+    # def parameter_list(self):
+    #     # TODO: Only L2 parameter for now
+    #     parameter_list = list(self._l2_parameter)
+    #     parameter_list.extend(self._l3_parameter)
+    #     parameter_list.append("lon")
+    #     parameter_list.append("lat")
+    #     return parameter_list
 
     @property
     def dimdict(self):
