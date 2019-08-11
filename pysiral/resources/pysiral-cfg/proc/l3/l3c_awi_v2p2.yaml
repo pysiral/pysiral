@@ -178,7 +178,7 @@ processing_items:
       class_name: Level3TemporalCoverageStatistics
       options: {}
 
-    - label: "Mask parameters"
+    - label: "Mask parameters (freeboard)"
       module_name: pysiral.l3proc
       class_name: Level3ParameterMask
       options:
@@ -195,7 +195,7 @@ processing_items:
             - sea_ice_type
             - sea_ice_type_uncertainty
 
-    - label: "Mask parameters"
+    - label: "Mask parameters (sea ice concentration)"
       module_name: pysiral.l3proc
       class_name: Level3ParameterMask
       options:
