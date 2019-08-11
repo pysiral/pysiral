@@ -1157,7 +1157,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
 
             # Stack can be empty
             if len(surface_type) == 0:
-                return
+                continue
 
             # Create a land flag
             is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
@@ -1199,7 +1199,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             self.l3grid.l3["ice_fraction"][yj, xi] = ice_fraction
 
             # Fractions of negative thickness values
-            sit = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
+            sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
                 negative_thickness_fraction = float(n_negative_thicknesses) / float(n_ice)
@@ -1339,7 +1339,7 @@ class Level3StatusFlag(Level3ProcessorItem):
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
         orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
         is_pole_hole = np.abs(self.l3grid.l3["latitude"]) > np.amin(orbit_inclinations)
-        is_land = lnd.mask > 0
+        is_land = lnd > 0
         has_data = nvw > 0
         has_retrieval = np.isfinite(par)
         retrieval_failed = np.logical_and(
