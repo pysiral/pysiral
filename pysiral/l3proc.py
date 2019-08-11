@@ -1518,3 +1518,487 @@ class Level3ProductDefinition(DefaultLoggingClass):
         l3_parameter = sorted(self.l3def.l3_parameter.keys(branch_mode="only"))
         l3_param_def = [self.l3def.l3_parameter[n] for n in l3_parameter]
         return l3_param_def
+
+
+class Level3ProcessorItem(DefaultLoggingClass):
+    """
+    A parent class for processing items to be selected in the Level-3 processor settings
+    and applied in the Level3Processor
+    """
+
+    def __init__(self, l3grid, **cfg):
+        """
+        Initizalizes the Level-3 processor item and performs checks if all option input parameters are available.
+        :param l3grid: the Level3DataGrid instance to be processed
+        :param cfg: The option dictionary/treedict from the config settings file
+        """
+
+        # Add error handler
+        self.error = ErrorStatus(caller_id=self.__class__.__name__)
+
+        # Store the arguments with type validation
+        if not isinstance(l3grid, L3DataGrid):
+            msg = "Invalid data type [%s] for l3grid parameter. Must be l3proc.L3DataGrid"
+            msg = msg % type(l3grid)
+            self.error.add_error("invalid-argument", msg)
+            self.error.raise_on_error()
+        self.l3grid = l3grid
+        self.cfg = cfg
+
+        # run the input validation checks
+        self._check_variable_dependencies()
+        self._check_options()
+
+        # Add empty parameters to the l3grid
+        self._add_l3_variables()
+
+    def _check_variable_dependencies(self):
+        """
+        Tests if the Level-3 data grid has all required input variables (both in the Level-2 stack as
+        well as in the Level 3 parameters). All processor item classes that are inheriting this class
+        require the properties `l3_variable_dependencies` & `l2_variable_dependencies` for this method to work. Both
+        parameter should return a list of variable names. Empty lists should be returned in case of no
+        dependency.
+        :return:
+        """
+
+        # Check Level-2 stack parameter
+        for l2_var_name in self.l2_variable_dependencies:
+            if not self.l3grid.l2.stack.has_key(l2_var_name):
+                msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
+                msg = msg % (self.__class__.__name__, l2_var_name)
+                self.error.add_error("l3procitem-missing-l2stackitem", msg)
+                self.error.raise_on_error()
+
+        # Check Level-3 grid parameter
+        for l3_var_name in self.l3_variable_dependencies:
+            if not self.l3grid.l3.has_key(l3_var_name):
+                msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
+                msg = msg % (self.__class__.__name__, l3_var_name)
+                self.error.add_error("l3procitem-missing-l3griditem", msg)
+                self.error.raise_on_error()
+
+    def _check_options(self):
+        """
+        Tests if the all options are given in the Level-3 processor definition files. All processor item
+        classes require the property `required_options` (list of option names) for this method to work.
+        NOTE: It is in the spirit of pysiral of having all numerical values in one place only that ideally
+              is not the code itself.
+        :return:
+        """
+        for option_name in self.required_options:
+            option_value = self.cfg.get(option_name, None)
+            if option_value is None:
+                msg = "Missing option `%s` in Level-3 processor item" % (option_name, self.__class_name__)
+                self.error.add_error("l3procitem-missing-option", msg)
+                self.error.raise_on_error()
+            setattr(self, option_name, option_value)
+
+    def _add_l3_variables(self):
+        """
+        This method initializes the output variables for a given processing item to the l3grid. All processor item
+        classes require the property `l3_output_variables` for this method to work. The property should return a
+        dict with variable names as keys and the value a dict with fill_value and data type.
+        :return:
+        """
+        for variable_name in self.l3_output_variables.keys():
+            vardef = self.l3_output_variables[variable_name]
+            self.l3grid.add_grid_variable(variable_name, vardef["fill_value"], vardef["dtype"])
+
+
+class Level3SurfaceTypeStatistics(Level3ProcessorItem):
+    """ A Level-3 processor item to compute surface type stastics """
+
+    # Mandatory properties
+    required_options = []
+    l2_variable_dependencies = ["surface_type", "sea_ice_thickness"]
+    l3_variable_dependencies = []
+    l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=np.nan),
+                               n_valid_waveforms=dict(dtype="f4", fill_value=np.nan),
+                               valid_fraction=dict(dtype="f4", fill_value=np.nan),
+                               lead_fraction=dict(dtype="f4", fill_value=np.nan),
+                               ice_fraction=dict(dtype="f4", fill_value=np.nan),
+                               is_land=dict(dtype="i2", fill_value=-1))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3SurfaceTypeStatistics, self).__init__(*args, **kwargs)
+
+        # Init this class
+        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+
+    def apply(self):
+        """
+        Computes the mandatory surface type statistics on the surface type stack flag
+
+        The current list
+          - is_land (land flag exists in l2i stack)
+          - n_total_waveforms (size of l2i stack)
+          - n_valid_waveforms (tagged as either lead or sea ice )
+          - valid_fraction (n_valid/n_total)
+          - lead_fraction (n_leads/n_valid)
+          - ice_fraction (n_ice/n_valid)
+
+        Optional (parameter name needs to in l3 settings file)
+          - negative_thickness_fraction  (fraction of negatice sea ice thicknesses in grid cell)
+        """
+
+        # Loop over all grid indices
+        stflags = self._surface_type_dict
+        for xi, yj in self.l3grid.grid_indices:
+
+            # Extract the list of surface types inm the grid cell
+            surface_type = np.array( self.l3grid.l2.stack["surface_type"][yj][xi])
+
+            # Stack can be empty
+            if len(surface_type) == 0:
+                return
+
+            # Create a land flag
+            is_land = len(np.where(surface_type == stflags["land"])[0] > 0)
+            self.l3grid.l3["is_land"][xi, yj] = is_land
+
+            # Compute total waveforms in grid cells
+            n_total_waveforms = len(surface_type)
+            self.l3grid.l3["n_total_waveforms"][yj, xi] = n_total_waveforms
+
+            # Compute valid waveforms
+            # Only positively identified waveforms (either lead or ice)
+            valid_waveform = ORCondition()
+            valid_waveform.add(surface_type == stflags["lead"])
+            valid_waveform.add(surface_type == stflags["sea_ice"])
+            n_valid_waveforms = valid_waveform.num
+            self.l3grid.l3["n_valid_waveforms"][yj, xi] = n_valid_waveforms
+
+            # Fractions of leads on valid_waveforms
+            try:
+                valid_fraction = float(n_valid_waveforms) / float(n_total_waveforms)
+            except ZeroDivisionError:
+                valid_fraction = np.nan
+            self.l3grid.l3["valid_fraction"][yj, xi] = valid_fraction
+
+            # Fractions of leads on valid_waveforms
+            n_leads = len(np.where(surface_type == stflags["lead"])[0])
+            try:
+                lead_fraction = float(n_leads) / float(n_valid_waveforms)
+            except ZeroDivisionError:
+                lead_fraction = np.nan
+            self.l3grid.l3["lead_fraction"][yj, xi] = lead_fraction
+
+            # Fractions of leads on valid_waveforms
+            n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
+            try:
+                ice_fraction = float(n_ice) / float(n_valid_waveforms)
+            except ZeroDivisionError:
+                ice_fraction = np.nan
+            self.l3grid.l3["ice_fraction"][yj, xi] = ice_fraction
+
+            # Fractions of negative thickness values
+            sit = np.array(self.l2.stack["sea_ice_thickness"][yj][xi])
+            n_negative_thicknesses = len(np.where(sit < 0.0)[0])
+            try:
+                negative_thickness_fraction = float(n_negative_thicknesses) / float(n_ice)
+            except ZeroDivisionError:
+                negative_thickness_fraction = np.nan
+            self.l3grid.l3["negative_thickness_fraction"][yj, xi] = negative_thickness_fraction
+
+
+class Level3TemporalCoverageStatistics(Level3ProcessorItem):
+    """
+    A Level-3 processor item to compute temporal coverage statistics of sea-ice thickness in the grid period
+    """
+
+    # Mandatory properties
+    required_options = []
+    l2_variable_dependencies = ["time", "sea_ice_thickness"]
+    l3_variable_dependencies = []
+    l3_output_variables = dict(temporal_coverage_uniformity_factor=dict(dtype="f4", fill_value=np.nan),
+                               temporal_coverage_day_fraction=dict(dtype="f4", fill_value=np.nan),
+                               temporal_coverage_period_fraction=dict(dtype="f4", fill_value=np.nan),
+                               temporal_coverage_weighted_center=dict(dtype="f4", fill_value=np.nan))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3TemporalCoverageStatistics, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Computes statistics of the temporal coverage of sea ice thickness
+        :return:
+        """
+
+        # Other parameter for L3DataGrid
+        # All statistics are computed with respect to the temporal coverage of the grid
+        # (-> the period that has been asked for, not the actual data coverage)
+        tcs, tce = self.l3grid.metadata.time_coverage_start, self.l3grid.metadata.time_coverage_end
+        start_date = date(tcs.year, tcs.month, tcs.day)
+        end_date = date(tce.year, tce.month, tce.day)
+        period_n_days = (end_date-start_date).days + 1
+
+        # Links
+        stack = self.l3grid.l2.stack
+
+        # Loop over all grid cells
+        for xi, yj in self.l3grid.grid_indices:
+
+            # Get the day of observation for each entry in the Level-2 stack
+            times = np.array(stack["time"][yj][xi])
+            day_of_observation = np.array([date(t.year, t.month, t.day) for t in times])
+
+            # The statistic is computed for sea ice thickness -> remove data points without valid sea ice thickness
+            sea_ice_thickness = np.array(stack["sea_ice_thickness"][yj][xi])
+            day_of_observation = day_of_observation[np.isfinite(sea_ice_thickness)]
+
+            # Validity check
+            #  - must have data
+            if len(day_of_observation) == 0:
+                continue
+
+            # Compute the number of days for each observation with respect to the start of the period
+            day_number = [(day - start_date).days for day in day_of_observation]
+
+            # Compute the set of days with observations available
+            days_with_observations = np.unique(day_number)
+            first_day, last_day = np.amin(days_with_observations), np.amax(days_with_observations)
+
+            # Compute the uniformity factor
+            # The uniformity factor is derived from a Kolmogorov-Smirnov (KS) test for goodness of fit that tests
+            # the list of against a uniform distribution. The definition of the uniformity factor is that is
+            # reaches 1 for uniform distribution of observations and gets smaller for non-uniform distributions
+            # It is therefore defined as 1-D with D being the result of KS test
+            ks_test_result = stats.kstest(day_number, stats.uniform(loc=0.0, scale=period_n_days).cdf)
+            uniformity_factor = 1.0 - ks_test_result[0]
+            self.l3grid.l3["temporal_coverage_uniformity_factor"][yj, xi] = uniformity_factor
+
+            # Compute the day fraction (number of days with actual data coverage/days of period)
+            day_fraction = float(len(days_with_observations)) / float(period_n_days)
+            self.l3grid.l3["temporal_coverage_day_fraction"][yj, xi] = day_fraction
+
+            # Compute the period in days that is covered between the first and last day of observation
+            # normed by the length of the period
+            period_fraction = float(last_day - first_day + 1) / float(period_n_days)
+            self.l3grid.l3["temporal_coverage_period_fraction"][yj, xi] = period_fraction
+
+            # Compute the temporal center of the actual data coverage in units of period length
+            # -> optimum 0.5
+            weighted_center = np.mean(day_number) / float(period_n_days)
+            self.l3grid.l3["temporal_coverage_weighted_center"][yj, xi] = weighted_center
+
+
+class Level3StatusFlag(Level3ProcessorItem):
+    """
+    A Level-3 processor item to compute the status flag
+    """
+
+    # Mandatory properties
+    required_options = ["retrieval_status_target", "sic_thrs", "flag_values"]
+    l2_variable_dependencies = []
+    l3_variable_dependencies = ["sea_ice_concentration", "n_valid_waveforms", "landsea"]
+    l3_output_variables = dict(status_flag=dict(dtype="i1", fill_value=0))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3StatusFlag, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Computes the status flag
+        :return:
+        """
+
+        # Get the flag values from the l3 settings file
+        flag_values = self.flag_values
+
+        # Get status flag (fill value should be set to zero)
+        sf = np.copy(self.l3grid.l3["status_flag"])
+
+        # Init the flag with not data flag value
+        sf[:] = flag_values["no_data"]
+
+        # get input parameters
+        par = np.copy(self.l3grid.l3[self.cfg.retrieval_status_target])
+        sic = self.l3grid.l3["sea_ice_concentration"]
+        nvw = self.l3grid.l3["n_valid_waveforms"]
+        lnd = self.l3grid.l3["landsea"]
+
+        # Compute conditions for flags
+        is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.cfg.sic_thrs)
+        mission_ids = self.l3grid.metadata.mission_ids.split(",")
+        orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
+        is_pole_hole = np.abs(self.l3grid.l3["latitude"]) > np.amin(orbit_inclinations)
+        is_land = lnd.mask > 0
+        has_data = nvw > 0
+        has_retrieval = np.isfinite(par)
+        retrieval_failed = np.logical_and(
+            np.logical_and(has_data, np.logical_not(is_below_sic_thrs)),
+            np.logical_not(has_retrieval))
+
+        # Set sic threshold
+        sf[np.where(is_below_sic_thrs)] = flag_values.is_below_sic_thrs
+
+        # Set pole hole (Antarctica: Will be overwritten below)
+        sf[np.where(is_pole_hole)] = flag_values.is_pole_hole
+
+        # Set land mask
+        sf[np.where(is_land)] = flag_values.is_land
+
+        # Set failed retrieval
+        sf[np.where(retrieval_failed)] = flag_values.retrieval_failed
+
+        # Set retrieval successful
+        sf[np.where(has_retrieval)] = flag_values.has_retrieval
+
+        # Write Status flag
+        self.l3grid.l3["status_flag"] = sf
+
+
+class Level3LoadMasks(Level3ProcessorItem):
+    """
+    A Level-3 processor item to load external masks
+    """
+
+    # Mandatory properties
+    required_options = ["mask_names"]
+    l2_variable_dependencies = []
+    l3_variable_dependencies = []
+    # Note: the output names depend on mask name, thus these will be
+    #       created in apply (works as well)
+    l3_output_variables = dict()
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3LoadMasks, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Load masks and add them as grid variable (variable name -> mask name)
+        :return:
+        """
+
+        # Get the mask names and load each
+        for mask_name in self.mask_names:
+
+            # The masks are stored in external files that can be automatically
+            #  found with the grid id
+            mask = L3Mask(mask_name, self.l3grid.griddef.grid_id)
+
+            # Add the mask to the l3grid as variable
+            if not mask.error.status:
+                self.l3grid.add_grid_variable(mask_name, np.nan, mask.mask.dtype)
+                self.l3grid.l3[mask_name] = mask.mask
+
+            # If fails, only add an empty variable
+            else:
+                self.l3grid.add_grid_variable(mask_name, np.nan,"f4")
+                error_msgs = mask.error.get_all_messages()
+                for error_msg in error_msgs:
+                    self.log.error(error_msg)
+
+
+class Level3GridUncertainties(Level3ProcessorItem):
+    """
+    A Level-3 processor item to compute uncertainties of key geophysical variables on a grid.
+    NOTE: As a concession to backward compability: sea ice draft uncertainty will be computed, but
+          the sea ice draft is not a required input parameter
+    """
+
+    # Mandatory properties
+    required_options = ["water_density", "snow_depth_correction_factor", "max_l3_uncertainty"]
+    l2_variable_dependencies = ["radar_freeboard_uncertainty", "sea_ice_thickness"]
+    l3_variable_dependencies = ["sea_ice_thickness", "freeboard", "snow_depth", "sea_ice_density",
+                                "snow_density", "snow_depth_uncertainty", "sea_ice_density_uncertainty",
+                                "snow_density_uncertainty"]
+    l3_output_variables = dict(radar_freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
+                               freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
+                               sea_ice_thickness_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
+                               sea_ice_draft_l3_uncertainty=dict(dtype="f4", fill_value=np.nan))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3GridUncertainties, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """ Compute a level 3 uncertainty. The general idea is to compute the error propagation of average
+        error components, where for components for random error the error of the l2 average
+        is used and for systematic error components the average of the l2 error """
+
+        # Options
+        rho_w = self.water_density
+        sd_corr_fact = self.snow_depth_correction_factor
+
+         # Loop over grid items
+        for xi, yj in self.l3grid.grid_indices:
+
+            # Check of data exists
+            if np.isnan(self.l3grid.l3["sea_ice_thickness"][yj, xi]):
+                continue
+
+            # Get parameters
+            frb = self.l3grid.l3["freeboard"][yj, xi]
+            sd = self.l3grid.l3["snow_depth"][yj, xi]
+            rho_i = self.l3grid.l3["sea_ice_density"][yj, xi]
+            rho_s = self.l3grid.l3["snow_density"][yj, xi]
+
+            # Get systematic error components
+            sd_unc = self.l3grid.l3["snow_depth_uncertainty"][yj, xi]
+            rho_i_unc = self.l3grid.l3["sea_ice_density_uncertainty"][yj, xi]
+            rho_s_unc = self.l3grid.l3["snow_density_uncertainty"][yj, xi]
+
+            # Get random uncertainty
+            # Note: this applies only to the radar freeboard uncertainty.
+            #       Thus we need to recalculate the sea ice freeboard uncertainty
+
+            # Get the stack of radar freeboard uncertainty values and remove NaN's
+            # rfrb_unc = self.l3["radar_freeboard_uncertainty"][yj, xi]
+            rfrb_uncs = np.array(self.l3grid.l2.stack["radar_freeboard_uncertainty"][yj][xi])
+            rfrb_uncs = rfrb_uncs[~np.isnan(rfrb_uncs)]
+
+            # Compute radar freeboard uncertainty as error or the mean from values with individual
+            # error components (error of a weighted mean)
+            weight = np.nansum(1./rfrb_uncs**2)
+            rfrb_unc = 1./np.sqrt(weight)
+            self.l3grid.l3["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
+
+            # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
+            deriv_snow = sd_corr_fact
+            frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
+            self.l3grid.l3["freeboard_l3_uncertainty"][yj, xi] = frb_unc
+
+            # Calculate the level-3 thickness uncertainty
+            errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
+            sit_l3_unc = frb2sit_errprop(*errprop_args)
+
+            # Cap the uncertainty
+            # (very large values may appear in extreme cases)
+            if sit_l3_unc > self.max_l3_uncertainty:
+                sit_l3_unc = self.max_l3_uncertainty
+
+            # Assign Level-3 uncertainty
+            self.l3grid.l3["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
+
+            # Compute sea ice draft uncertainty
+            if not "sea_ice_draft" in self.l3grid.l3:
+                continue
+
+            sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
+            self.l3grid.l3["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
