@@ -355,3 +355,99 @@ variables:
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+
+  stat_sigma0_mean:
+    var_source_name: stat_sigma0_mean_all
+    long_name: "average radar backscatter coefficient (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_sigma0_sdev:
+    var_source_name: stat_sigma0_sdev_all
+    long_name: "radar backscatter coefficient standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_sigma0_mean_sea_ice:
+    long_name: "average radar backscatter coefficient (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_sigma0_sdev_sea_ice:
+    long_name: "radar backscatter coefficient standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_sigma0_mean_lead:
+    long_name: "average radar backscatter coefficient (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_sigma0_sdev_lead:
+    long_name: "radar backscatter coefficient standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_mean:
+    var_source_name: stat_leading_edge_width_mean_all
+    long_name: "average leading edge width coefficient (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_sdev:
+    var_source_name: stat_leading_edge_width_sdev_all
+    long_name: "leading edge width coefficient standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_mean_sea_ice:
+    long_name: "average leading edge width coefficient (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_sdev_sea_ice:
+    long_name: "leading edge width coefficient standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_mean_lead:
+    long_name: "average leading edge width coefficient (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_leading_edge_width_sdev_lead:
+    long_name: "leading edge width coefficient standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_mean:
+    var_source_name: stat_pulse_peakiness_mean_all
+    long_name: "average pulse peakiness coefficient (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_sdev:
+    var_source_name: stat_pulse_peakiness_sdev_all
+    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_mean_sea_ice:
+    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_sdev_sea_ice:
+    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_mean_lead:
+    long_name: "average pulse peakiness coefficient (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_pulse_peakiness_sdev_lead:
+    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
