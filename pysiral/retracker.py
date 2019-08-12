@@ -727,7 +727,7 @@ class cTFMRA(BaseRetracker):
         window_size = opt.wfm_smoothing_window_size[radar_mode]
 
         # Use cython implementation of waveform oversampling
-        range_os, wfm_os = cytfmra_interpolate(rng, wfm, oversampling)
+        range_os, wfm_os = cytfmra_interpolate(rng, wfm.astype(np.float32), oversampling)
 
         # Smoothing
         wfm_os = bnsmooth(wfm_os, window_size)
@@ -742,7 +742,10 @@ class cTFMRA(BaseRetracker):
         """
 
         # Get the main maximum first
-        absolute_maximum_index = bn.nanargmax(wfm)
+        try:
+            absolute_maximum_index = bn.nanargmax(wfm)
+        except ValueError:
+            return 0
 
         # Find relative maxima before the absolute maximum
 
