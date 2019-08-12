@@ -260,7 +260,7 @@ class L2iDataStack(DefaultLoggingClass):
                 try:
                     data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
-                except:
+                except AttributeError:
                     pass
 
     @property
@@ -309,7 +309,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # Define time of dataset creation as the time of object initialization
         # to avoid slightly different timestamps for repeated calls of
-        # datatime.now()
+        # datetime.now()
         self._creation_time = datetime.now()
 
         # # Shortcut to the surface type flag dictionary
@@ -382,7 +382,7 @@ class L3DataGrid(DefaultLoggingClass):
         self.vars[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
 
         # Log
-        self.log.info("Added grid parameter: %s" % (parameter_name))
+        self.log.info("Added grid parameter: %s" % parameter_name)
 
     def calculate_longitude_latitude_fields(self):
         """ Geographic coordinates from GridDefinition """
@@ -533,7 +533,8 @@ class L3DataGrid(DefaultLoggingClass):
         else:
             return self.hemisphere
 
-    def _get_attr_uuid(self, *args):
+    @staticmethod
+    def _get_attr_uuid(*args):
         return str(uuid.uuid4())
 
     def _get_attr_startdt(self, dtfmt):
@@ -558,7 +559,8 @@ class L3DataGrid(DefaultLoggingClass):
         longitude = self.vars["longitude"]
         return self._get_attr_geospatial_str(np.nanmax(longitude))
 
-    def _get_attr_geospatial_str(self, value):
+    @staticmethod
+    def _get_attr_geospatial_str(value):
         return "%.4f" % value
 
     def _get_attr_source_auxdata_sic(self, *args):
@@ -571,27 +573,27 @@ class L3DataGrid(DefaultLoggingClass):
         return self.metadata.source_auxdata_sitype
 
     def _get_attr_utcnow(self, *args):
-        datetime = self._creation_time
+        dt = self._creation_time
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_start(self, *args):
-        datetime = self.metadata.time_coverage_start
+        dt = self.metadata.time_coverage_start
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_end(self, *args):
-        datetime = self.metadata.time_coverage_end
+        dt = self.metadata.time_coverage_end
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_duration(self, *args):
@@ -607,7 +609,8 @@ class L3DataGrid(DefaultLoggingClass):
         else:
             return self._data_record_type
 
-    def _get_attr_pysiral_version(self, *args):
+    @staticmethod
+    def _get_attr_pysiral_version(*args):
         return __version__
 
     def flipud(self):
@@ -651,7 +654,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     @property
     def grid_shape(self):
-        return (self.griddef.extent.numx, self.griddef.extent.numy)
+        return self.griddef.extent.numx, self.griddef.extent.numy
 
     @property
     def griddef(self):
@@ -1027,6 +1030,8 @@ class Level3ProcessorItem(DefaultLoggingClass):
         :param l3grid: the Level3DataGrid instance to be processed
         :param cfg: The option dictionary/treedict from the config settings file
         """
+
+        super(Level3ProcessorItem, self).__init__(self.__class__.__name__)
 
         # Add error handler
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
