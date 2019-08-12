@@ -1679,3 +1679,96 @@ class Level3ParameterMask(Level3ProcessorItem):
             msg = "Unknown condition in l3 mask: %s" % condition
             self.error.add_error("invalid-l3mask-condition", msg)
             self.error.raise_on_error()
+
+
+class Level3GriddedClassifiers(Level3ProcessorItem):
+    """
+    A Level-3 processor item to provide gridded classifiers (for different surface types)
+    """
+
+    # Mandatory properties
+    required_options = ["parameters", "surface_types", "statistics"]
+    l2_variable_dependencies = ["surface_type"]
+    l3_variable_dependencies = []
+    # Note: the output names depend on the parameters selected, thus these will be
+    #       created in apply (works as well)
+    l3_output_variables = dict()
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3GriddedClassifiers, self).__init__(*args, **kwargs)
+
+        # Surface type dict is required to get subsets
+        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+
+        # Statistical function dictionary
+        self._stat_functions = dict(mean=lambda x: np.nanmean(x), sdev=lambda x: np.nanstd(x))
+
+    def apply(self):
+        """
+        Mask certain parameters based on condition of one other parameter
+        :return:
+        """
+
+        # Get surface type flag
+        surface_type = self.l3grid.l2.stack["surface_type"]
+        target_surface_types = self.surface_types
+        target_surface_types.append("all")
+
+        # Loop over all parameters
+        for parameter_name in self.parameters:
+            # Get the stack
+            try:
+             classifier_stack = self.l3grid.l2.stack[parameter_name]
+            except KeyError:
+                msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
+                msg = msg % (self.__class__.__name__, parameter_name)
+                self.error.add_error("l3procitem-missing-l2stackitem", msg)
+                self.error.raise_on_error()
+
+            # Loop over the statistical parameters (mean, sdev, ...)
+            for statistic in self.statistics:
+                # Loop over target surface types
+                for target_surface_type in target_surface_types:
+                    self._compute_grid_variable(parameter_name, classifier_stack, surface_type, target_surface_type,
+                                                statistic)
+
+    def _compute_grid_variable(self, parameter_name, classifier_stack, surface_type, target_surface_type, statistic):
+        """
+        Computes gridded surface type statistics for all grid cells
+        :param parameter_name: The name of the classifier (for output name generation)
+        :param classifier_stack: The Level-2 stack for the given classifier
+        :param surface_type: The Level-2 stack of surface type
+        :param target_surface_type: The name of the target surface type
+        :param statistic: The name of the statistic to be computed
+        :return:
+        """
+
+        # Create the output parameter name
+        grid_var_name = "stat_%s_%s_%s" % (parameter_name, target_surface_type, statistic)
+        self.l3grid.add_grid_variable(grid_var_name, np.nan, "f4")
+
+        # Loop over all grid cells
+        for xi, yj in self.l3grid.grid_indices:
+
+            classifier_grid_values = np.array(classifier_stack[yj][xi])
+
+            # Get the surface type target subset
+            if target_surface_type == "all":
+                subset = np.arange(len(classifier_grid_values))
+            else:
+                try:
+                    subset = np.where(surface_type == self._surface_type_dict[target_surface_type])[0]
+                except KeyError:
+                    msg = "Surface type %s does not exist" % target_surface_type
+                    self.error.add_error("l3procitem-incorrect-option", msg)
+                    self.error.raise_on_error()
+
+            # A minimum of two values is needed to compute statistics
+            if len(subset) < 2:
+                continue
+            self.l3grid.vars[grid_var_name] = self._stat_functions[statistic](classifier_grid_values[subset])

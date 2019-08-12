@@ -12,7 +12,22 @@ l2_parameter:
         grid_method: none
         dtype: M
         fillvalue: null
-    
+
+    sigma0:
+        grid_method: none
+        dtype: f4
+        fillvalue: .NAN
+
+    leading_edge_width:
+        grid_method: none
+        dtype: f4
+        fillvalue: .NAN
+
+    pulse_peakiness:
+        grid_method: none
+        dtype: f4
+        fillvalue: .NAN
+
     surface_type:
         grid_method: none
         dtype: i4
@@ -275,3 +290,12 @@ processing_items:
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
                 target_flags: [2, 3]
+
+    # Compute the status flag
+    - label: "grid surface type classifiers"
+      module_name: pysiral.l3proc
+      class_name: Level3GriddedClassifiers
+      options: 
+        parameters: ["sigma0", "leading_edge_width", "pulse_peakiness"]
+        surface_types: ["sea_ice", "lead"]
+        statistics: ["mean", "sdev"]
