@@ -83,7 +83,7 @@ class Level3Processor(DefaultLoggingClass):
                 orbitfilter_is_active = False
             finally:
                 if orbitfilter.isDangling():
-                     orbitfilter_is_active = False
+                    orbitfilter_is_active = False
 
             if orbitfilter_is_active:
 
@@ -96,16 +96,17 @@ class Level3Processor(DefaultLoggingClass):
                 elif orbitfilter.mask_orbits == "descending":
                     indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
                 else:
-                    self.log.error("Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
+                    self.log.error(
+                        "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
                     indices = []
 
                 # Filter geophysical parameters only
                 targets = l2i.parameter_list
                 for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-                 try:
-                     targets.remove(non_target)
-                 except ValueError:
-                     pass
+                    try:
+                        targets.remove(non_target)
+                    except ValueError:
+                        pass
                 l2i.mask_variables(indices, targets)
 
             # Prefilter l2i product
@@ -136,11 +137,12 @@ class Level3Processor(DefaultLoggingClass):
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
         n = len(self._l2i_files)
-        progress_percent = float(i+1)/float(n)*100.
+        progress_percent = float(i + 1) / float(n) * 100.
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            self.log.info("Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent-current_reminder, i+1, n))
+            self.log.info(
+                "Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
         self._l3_progress_percent = progress_percent
 
     def _apply_processing_items(self, l3grid):
@@ -341,7 +343,6 @@ class L3DataGrid(DefaultLoggingClass):
         self.log.info("Grid Level-2 parameter")
         self.grid_l2_parameter()
 
-
     def set_doi(self, doi):
         # TODO: Move to __init__
         self._doi = doi
@@ -353,13 +354,13 @@ class L3DataGrid(DefaultLoggingClass):
         """ Return a string for a given attribute name. This method is
         required for the output data handler """
         try:
-            attr_getter = getattr(self, "_get_attr_"+attribute_name)
+            attr_getter = getattr(self, "_get_attr_" + attribute_name)
             attribute = attr_getter(*args)
             return attribute
         except AttributeError:
             return "attr_unavailable"
         except Exception, msg:
-            print "L3DataGrid.get_attribute Exception: "+str(msg)+" for attribute: %s" % attribute_name
+            print "L3DataGrid.get_attribute Exception: " + str(msg) + " for attribute: %s" % attribute_name
             sys.exit(1)
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
@@ -421,7 +422,7 @@ class L3DataGrid(DefaultLoggingClass):
                 if grid_method == "average":
                     self.vars[name][yj, xi] = np.nanmean(data)
                 elif grid_method == "average_uncertainty":
-                    value = np.abs(np.sqrt(1./np.sum(data[valid])))
+                    value = np.abs(np.sqrt(1. / np.sum(data[valid])))
                     self.vars[name][yj, xi] = value
                 elif grid_method == "unique":
                     self.vars[name][yj, xi] = np.unique(data)
@@ -440,7 +441,7 @@ class L3DataGrid(DefaultLoggingClass):
             parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
+            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
             sys.exit(1)
         return parameter
 
@@ -450,7 +451,7 @@ class L3DataGrid(DefaultLoggingClass):
         except KeyError:
             self.log.warn("Parameter not available: %s" % name)
         except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: "+str(msg)
+            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
             sys.exit(1)
 
     def _init_metadata_from_l2(self):
@@ -671,7 +672,6 @@ class L3DataGrid(DefaultLoggingClass):
 
 
 class L3MetaData(object):
-
     """
     Container for L3S Metadata information
     (see property attribute_list for a list of attributes)
@@ -773,7 +773,6 @@ class L3MetaData(object):
 
 
 class Level3OutputHandler(OutputHandlerBase):
-
     # Some fixed parameters for this class
     default_file_location = ["settings", "outputdef", "l3_default.yaml"]
     subfolder_tags = ["year"]
@@ -993,7 +992,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
     def l3_post_processors(self):
         try:
             names = sorted(self.l3def.l3_post_processing.keys(
-                            recursive=False, branch_mode="only"))
+                recursive=False, branch_mode="only"))
         except AttributeError:
             return []
         options = [self.l3def.l3_post_processing[n].options for n in names]
@@ -1147,7 +1146,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
         for xi, yj in self.l3grid.grid_indices:
 
             # Extract the list of surface types inm the grid cell
-            surface_type = np.array( self.l3grid.l2.stack["surface_type"][yj][xi])
+            surface_type = np.array(self.l3grid.l2.stack["surface_type"][yj][xi])
 
             # Stack can be empty
             if len(surface_type) == 0:
@@ -1236,7 +1235,7 @@ class Level3TemporalCoverageStatistics(Level3ProcessorItem):
         tcs, tce = self.l3grid.metadata.time_coverage_start, self.l3grid.metadata.time_coverage_end
         start_date = date(tcs.year, tcs.month, tcs.day)
         end_date = date(tce.year, tce.month, tce.day)
-        period_n_days = (end_date-start_date).days + 1
+        period_n_days = (end_date - start_date).days + 1
 
         # Links
         stack = self.l3grid.l2.stack
@@ -1431,8 +1430,8 @@ class Level3QualityFlag(Level3ProcessorItem):
             rule_options = self.rules["qif_lead_availability"]
             # get the window size
             grid_res = self.l3grid.griddef.resolution
-            window_size = np.ceil(rule_options["search_radius_m"]/grid_res)
-            window_size = int(2*window_size+1)
+            window_size = np.ceil(rule_options["search_radius_m"] / grid_res)
+            window_size = int(2 * window_size + 1)
             # Use a maximum filter to get best lead fraction in area
             area_lfr = maximum_filter(lfr, size=window_size)
             thrs = rule_options["area_lead_fraction_minimum"]
@@ -1495,7 +1494,7 @@ class Level3LoadMasks(Level3ProcessorItem):
 
             # If fails, only add an empty variable
             else:
-                self.l3grid.add_grid_variable(mask_name, np.nan,"f4")
+                self.l3grid.add_grid_variable(mask_name, np.nan, "f4")
                 error_msgs = mask.error.get_all_messages()
                 for error_msg in error_msgs:
                     self.log.error(error_msg)
@@ -1536,7 +1535,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
         rho_w = self.water_density
         sd_corr_fact = self.snow_depth_correction_factor
 
-         # Loop over grid items
+        # Loop over grid items
         for xi, yj in self.l3grid.grid_indices:
 
             # Check of data exists
@@ -1565,13 +1564,13 @@ class Level3GridUncertainties(Level3ProcessorItem):
 
             # Compute radar freeboard uncertainty as error or the mean from values with individual
             # error components (error of a weighted mean)
-            weight = np.nansum(1./rfrb_uncs**2)
-            rfrb_unc = 1./np.sqrt(weight)
+            weight = np.nansum(1. / rfrb_uncs ** 2.)
+            rfrb_unc = 1. / np.sqrt(weight)
             self.l3grid.vars["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
             # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
             deriv_snow = sd_corr_fact
-            frb_unc = np.sqrt((deriv_snow*sd_unc)**2. + rfrb_unc**2.)
+            frb_unc = np.sqrt((deriv_snow * sd_unc) ** 2. + rfrb_unc ** 2.)
             self.l3grid.vars["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
             # Calculate the level-3 thickness uncertainty
@@ -1590,7 +1589,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
             if not "sea_ice_draft" in self.l3grid.vars:
                 continue
 
-            sid_l3_unc = np.sqrt(sit_l3_unc**2. + frb_unc**2)
+            sid_l3_unc = np.sqrt(sit_l3_unc ** 2. + frb_unc ** 2.)
             self.l3grid.vars["sea_ice_draft_l3_uncertainty"][yj, xi] = sid_l3_unc
 
 
