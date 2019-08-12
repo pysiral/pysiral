@@ -22,11 +22,14 @@ class ERSSGDR(object):
         self._validate()
         self.nc = ReadNC(self.filename, nan_fill_value=True)
 
-#        for attribute in self.nc.attributes:
-#            print "attribute: %s = %s" % (
-#                attribute, str(getattr(self.nc, attribute)))
-#        for parameter in self.nc.parameters:
-#            print parameter, getattr(self.nc, parameter).shape
+    def guess_mission_from_filename(self):
+        """
+        This seems unnecessary, but some ERS-2 netCDF files have an incorrect mission attribute
+        -> guess mission id from filename
+        :return:
+        """
+        filename = os.path.split(self._filename)[-1]
+        return filename[0:2]
 
     def get_status(self):
         # XXX: Not much functionality here
@@ -87,11 +90,6 @@ class ERSSGDR(object):
         # Loop over each waveform
         for i in np.arange(n_records):
             self.wfm_range[i, :] = tracker_range[i] + (rbi*rbw) - (ntb*rbw)
-
-#        for record in np.arange(n_records):
-#            self.wfm_range[record, :] = tracker_range_20hz[record] + \
-#                (range_bin_index*self.range_bin_width) - \
-#                (self.nominal_tracking_bin*self.range_bin_width)
 
     def _validate(self):
         pass

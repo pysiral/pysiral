@@ -92,7 +92,12 @@ class ERSReaperSGDR(DefaultLoggingClass):
         info = self.l1.info
         sgdr = self.sgdr
         info.set_attribute("pysiral_version", PYSIRAL_VERSION)
-        info.set_attribute("mission", self.cfg.platform_name_dict[str(sgdr.nc.mission)])
+        try:
+            info.set_attribute("mission", self.cfg.platform_name_dict[str(sgdr.nc.mission)])
+        except KeyError:
+            mission_id = self.sgdr.guess_mission_from_filename()
+            info.set_attribute("mission", self.cfg.platform_name_dict[str(mission_id)])
+
         info.set_attribute("mission_data_version", sgdr.nc.software_ver)
         info.set_attribute("orbit", sgdr.nc.abs_orbit)
         info.set_attribute("cycle", sgdr.nc.cycle)
