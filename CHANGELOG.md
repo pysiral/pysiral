@@ -1,5 +1,20 @@
 # History of changes
 
+## Version 0.7.1 (xx. August 2019)
+
+**New Features**
+- [l3proc] Compute temporal statistics of data in grid cell
+- [l3proc] Grid classifiers for different surface_types
+
+**Changes**
+- [l3proc] Major overhaul of Level-3 processing pipeline (requires new processor settings)
+
+**Settings**
+- [l3proc] Added new prototype Level-3 processor definition for AWI CryoSat-2 v2.2
+
+**Bugfixes**
+- [l1preproc] Improve stability of ERS Level-1 preprocessor for cases with incorrect global attributes in REAPER files
+
 ## Version 0.7.0 (7. August 2019)
 
 **New Features**
