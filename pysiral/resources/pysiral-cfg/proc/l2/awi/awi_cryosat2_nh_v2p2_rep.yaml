@@ -120,12 +120,12 @@ auxdata:
     - sic:
          name: c3s_v1p2
          options:
-            exception_on_error: True
+            exception_on_error: False
 
     - sitype:
          name: c3s_v1p0
          options:
-             exception_on_error: True
+             exception_on_error: False
 
     - snow:
             name: clim_w99amsr2
