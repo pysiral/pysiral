@@ -800,7 +800,7 @@ class Level3OutputHandler(OutputHandlerBase):
         self._data_record_type = data_record_type
 
     def get_filename_from_data(self, l3):
-        """ Return the filename for a defined level-2 data object
+        """ Return the filename for a defined level-3 data object
         based on tag filenaming in output definition file """
 
         # Get the filenaming definition (depending on period definition)
@@ -931,7 +931,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._l3_settings_file = l3_settings_file
-        self._output = [output]
+        self._output = output
         self._grid = grid
         self._period = period
         self._parse_l3_settings()

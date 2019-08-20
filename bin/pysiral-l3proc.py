@@ -8,7 +8,6 @@ from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
                             Level3GridDefinition, Level3OutputHandler)
 from pysiral.logging import DefaultLoggingClass
 
-
 from datetime import timedelta
 import argparse
 import time
@@ -17,7 +16,6 @@ import os
 
 
 def pysiral_l3proc():
-
     # parse command line arguments
     args = Level3ProcArgParser()
     args.parse_command_line_arguments()
@@ -36,15 +34,18 @@ def pysiral_l3proc():
 
     # Initialize the output handler
     # Currently the overwrite protection is disabled per default
-    output = Level3OutputHandler(output_def=args.l3_output_file,
-                                 base_directory=args.l3_product_basedir,
-                                 period=args.period,
-                                 doi=args.doi,
-                                 data_record_type=args.data_record_type,
-                                 overwrite_protection=False)
+    output = []
+    for l3_output_file in args.l3_output_file:
+        output_handler = Level3OutputHandler(output_def=l3_output_file,
+                                             base_directory=args.l3_product_basedir,
+                                             period=args.period,
+                                             doi=args.doi,
+                                             data_record_type=args.data_record_type,
+                                             overwrite_protection=False)
+        output.append(output_handler)
 
     # Compile the product def
-    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output,  period)
+    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output, period)
 
     # Initialize the Processor
     l3proc = Level3Processor(product_def)
@@ -70,7 +71,7 @@ def pysiral_l3proc():
 
     # Final reporting
     t1 = time.clock()
-    seconds = int(t1-t0)
+    seconds = int(t1 - t0)
     l3proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
@@ -89,15 +90,16 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
         # Add addtional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
-#        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
-#        start_and_stop_is_set = self._args.start_date is not None and \
-#            self._args.stop_date is not None
-#
-#        if l1b_file_preset_is_set and start_and_stop_is_set:
-#            self.parser.error("-start & -stop and -l1b-files are exclusive")
-#
-#        if not l1b_file_preset_is_set and not start_and_stop_is_set:
-#            self.parser.error("either -start & -stop or -l1b-files required")
+
+    #        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
+    #        start_and_stop_is_set = self._args.start_date is not None and \
+    #            self._args.stop_date is not None
+    #
+    #        if l1b_file_preset_is_set and start_and_stop_is_set:
+    #            self.parser.error("-start & -stop and -l1b-files are exclusive")
+    #
+    #        if not l1b_file_preset_is_set and not start_and_stop_is_set:
+    #            self.parser.error("either -start & -stop or -l1b-files required")
 
     def critical_prompt_confirmation(self):
 
@@ -108,9 +110,9 @@ class Level3ProcArgParser(DefaultLoggingClass):
         # erased for all month
         if self._args.remove_old and not no_prompt:
             message = "You have selected to remove all previous " + \
-                "l3 files for the requested period\n" + \
-                "(Note: use --no-critical-prompt to skip confirmation)\n" + \
-                "Enter \"YES\" to confirm and continue: "
+                      "l3 files for the requested period\n" + \
+                      "(Note: use --no-critical-prompt to skip confirmation)\n" + \
+                      "Enter \"YES\" to confirm and continue: "
             result = raw_input(message)
 
             if result != "YES":
@@ -187,7 +189,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
             msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
             msg = msg + " \nRecognized Level-3 processor setting ids:\n"
             for l3_settings_id in self.pysiral_config.get_setting_ids("proc", "l3"):
-                msg = msg + "  " + l3_settings_id+"\n"
+                msg = msg + "  " + l3_settings_id + "\n"
             self.error.add_error("invalid-l3-settings", msg)
             self.error.raise_on_error()
         else:
@@ -201,7 +203,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
             msg = "Invalid griddef filename or id: %s\n" % l3_griddef
             msg = msg + "    Recognized grid definition ids:\n"
             for griddef_id in self.pysiral_config.get_setting_ids("grid"):
-                msg = msg + "    - " + griddef_id+"\n"
+                msg = msg + "    - " + griddef_id + "\n"
             self.error.add_error("invalid-griddef", msg)
             self.error.raise_on_error()
         else:
@@ -209,17 +211,31 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
     @property
     def l3_output_file(self):
-        l3_output = self._args.l3_output
-        filename = self.pysiral_config.get_settings_file("output", "l3", l3_output)
-        if filename is None:
-            msg = "Invalid output definition filename or id: %s\n" % l3_output
-            msg = msg + "    Recognized output definition ids:\n"
-            for output_id in self.pysiral_config.get_setting_ids("output", "l3"):
-                msg = msg + "    - " + output_id+"\n"
+        """
+        Get the full output definition file path. Multiple output filenames are possible if
+        the command line argument is semicolon-separated list.
+        :return: A list of output definition filenames
+        """
+
+        filenames = []
+        for l3_output in self._args.l3_output.split(";"):
+            filename = self.pysiral_config.get_settings_file("output", "l3", l3_output)
+            if filename is None:
+                msg = "Invalid output definition filename or id: %s\n" % l3_output
+                msg = msg + "    Recognized output definition ids:\n"
+                for output_id in self.pysiral_config.get_setting_ids("output", "l3"):
+                    msg = msg + "    - " + output_id + "\n"
+                self.error.add_error("invalid-outputdef", msg)
+            else:
+                filenames.append(filename)
+
+        if len(filenames) == 0:
+            msg = "No valid output definition file found for argument: %s"
+            msg = msg % (str(self._args.l3_output))
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
-        else:
-            return filename
+
+        return filenames
 
     @property
     def l3_product_basedir(self):
