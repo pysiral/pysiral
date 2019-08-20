@@ -727,7 +727,7 @@ class cTFMRA(BaseRetracker):
         window_size = opt.wfm_smoothing_window_size[radar_mode]
 
         # Use cython implementation of waveform oversampling
-        range_os, wfm_os = cytfmra_interpolate(rng, wfm.astype(np.float32), oversampling)
+        range_os, wfm_os = cytfmra_interpolate(rng.astype(np.float32), wfm.astype(np.float32), oversampling)
 
         # Smoothing
         wfm_os = bnsmooth(wfm_os, window_size)
