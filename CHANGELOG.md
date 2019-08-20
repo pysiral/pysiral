@@ -1,6 +1,6 @@
 # History of changes
 
-## Version 0.7.1 (xx. August 2019)
+## Version 0.7.1 (20. August 2019)
 
 **New Features**
 - [l3proc] Compute temporal statistics of data in grid cell
@@ -8,9 +8,14 @@
 
 **Changes**
 - [l3proc] Major overhaul of Level-3 processing pipeline (requires new processor settings)
+- [l3proc] Allow multiple output files
 
 **Settings**
-- [l3proc] Added new prototype Level-3 processor definition for AWI CryoSat-2 v2.2
+- [l2proc] Added new Level-2 processor definition(s) for AWI CryoSat-2 v2.2
+- [l2proc] Splitted Level-2 processor definition(s) for AWI CryoSat-2 v2.2 
+- [l3proc] Added new Level-3 AWI CryoSat-2 v2.2 processor definitions for nrt and rep (different auxiliary data) 
+- [l3proc] Added new Level-3 AWI CryoSat-2 v2.2 output definitions for regular and extended (plus) output
+- [l3proc] Variable renaming and clean-up of Level-3 AWI CryoSat-2 v2.2 products
 
 **Bugfixes**
 - [l1preproc] Improve stability of ERS Level-1 preprocessor for cases with incorrect global attributes in REAPER files
