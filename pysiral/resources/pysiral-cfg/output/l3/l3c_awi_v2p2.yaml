@@ -2,7 +2,7 @@
 
 # Metadata
 metadata: 
-  output_id: l3c_cs2awi
+  output_id: l3c_cs2awi_v2p2
   data_level: 3
   data_level_description: Level-3 colated (gridded geophysical parameters)
 
@@ -25,7 +25,13 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
+  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly 
+  climatology based on regional merging of Warren Climatology with 50% reduction for 
+  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
+  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea 
+  surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S 
+  Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF 
+  (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
@@ -34,7 +40,9 @@ global_attributes:
   - conventions: "CF-1.6"
   - product_version: "2.2"
   - processing_level: "Level-3 Collated (l3c)"
-  - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
+  - summary: "This dataset contains Level-3 monthly sea ice thickness products from 
+  satellite observations in the northern hemisphere. Level-3 data are raw 
+  observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
   - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p2"
@@ -238,7 +246,8 @@ variables:
     standard_name: "sea_ice_thickness status_flag"
     valid_min: 0
     valid_max: 3
-    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected 
+    (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -246,7 +255,9 @@ variables:
     long_name: status flag for the sea ice thickness retrieval
     valid_min: 0
     valid_max: 5
-    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
+    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask 
+    (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice 
+    (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
     standard_name: "sea_ice_thickness status_flag"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -257,7 +268,9 @@ variables:
     valid_min: 0
     valid_max: 21
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
-    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 6: Baffin Bay, 7: East Greenland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 
+    6: Baffin Bay, 7: East Greenland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 
+    13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -313,15 +326,21 @@ variables:
 
   stat_temporal_coverage_uniformity_factor:
     var_source_name: temporal_coverage_uniformity_factor
-    long_name: "uniformity of data coverage for days in period"
-    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the period of the grid (1: uniform distribution, << 1: singular distribution). It is derived from by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a uniform distribution. Due to its definition with 1 indicating uniformity, the factor is computed as 1-D with D being the result of KS test"
+    long_name: "uniformity of daily sea-ice thickness data coverage in full grid period"
+    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the 
+    period of the grid, e.g. whether all days in the period contribute equally to the full grid period. 
+    The values for this parameter range between close to 0 (singular distribution) and 1 (uniform distribution). 
+    The factor is computed with by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a 
+    uniform distribution (1-D with D being the result of KS test)"
+    valid_min: 0.0
+    valid_max: 1.0
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_temporal_coverage_day_fraction:
     var_source_name: temporal_coverage_day_fraction
-    long_name: fraction of days in full period that have observation"
+    long_name: "fraction of days with sea-ice thickness data coverage in full grid period"
     comment: "This parameter is defined as len(days_with_observations)/number_of_days_in_grid_period"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -329,8 +348,9 @@ variables:
 
   stat_temporal_coverage_period_fraction:
     var_source_name: temporal_coverage_period_fraction
-    long_name: "fraction of data coverage from first to last day relative to full period"
-    comment: "This parameter describes the fraction of the period between the first and the last day with observations (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
+    long_name: "fraction of daily sea-ice thickness data coverage from first to last day relative to full grid period"
+    comment: "This parameter describes the fraction of the period between the first and the last day with observations 
+    (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
     valid_min: 0.0
     valid_max: 1.0
     units: "1"
@@ -339,8 +359,10 @@ variables:
 
   stat_temporal_coverage_weighted_center:
     var_source_name: temporal_coverage_weighted_center
-    long_name: "weighted center of data coverage within grid period"
-    comment: "This parameter describes the temporal center of the days with observations with taken the number observations on indiviual days into account: mean(day number for all observations)/number_of_days_in_grid_period. A value smaller or larger than 0.5 indicates a possible phase bias."
+    long_name: "weighted center of sea-ice thickness data coverage within full grid period"
+    comment: "This parameter describes the temporal center of the days with observations with taken the number observations 
+    on indiviual days into account: mean(day number for all observations)/number_of_days_in_grid_period. A value smaller 
+    or larger than 0.5 indicates a possible phase bias."
     valid_min: 0.0
     valid_max: 1.0
     units: "1"
@@ -349,7 +371,7 @@ variables:
 
   stat_negative_thickness_fraction:
     var_source_name: negative_thickness_fraction
-    long_name: "fraction of negative sea ice thickness values in grid cell"
+    long_name: "fraction of negative sea-ice thickness values"
     valid_min: 0.0
     valid_max: 1.0
     units: "1"

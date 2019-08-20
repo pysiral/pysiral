@@ -256,7 +256,7 @@ sit:
             fyi_density: 35.7
             myi_density: 23.0
 
-# List of filter at different stages of l2 procesing
+# List of filter at different stages of l2 processing
 # (can be list of filters)
 filter:
 
