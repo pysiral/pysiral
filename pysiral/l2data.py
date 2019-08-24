@@ -910,6 +910,10 @@ class L2iNCFileImport(object):
             return self.info.source_mission_id
         except AttributeError:
             pass
+        try:
+            return self.info.platform
+        except AttributeError:
+            pass
         return None
 
     @property

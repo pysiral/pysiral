@@ -698,7 +698,7 @@ class L3MetaData(object):
         (must be a list, since multi-mission grids are supported)
         """
         missions = np.unique(stack.mission)
-        mission_sensor = [SENSOR_NAME_DICT[mission] for mission in missions]
+        mission_sensor = [SENSOR_NAME_DICT[mission.lower()] for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
         source_timeliness = np.unique(stack.timeliness)[0]
