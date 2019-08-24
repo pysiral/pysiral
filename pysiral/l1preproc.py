@@ -216,8 +216,16 @@ class L1PreProcBase(DefaultLoggingClass):
         :return:
         """
 
-        self.output_handler.export_to_netcdf(l1)
-        self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
+        if self.cfg.has_key("export_minimum_n_records"):
+            minimum_n_records = self.cfg.export_minimum_n_records
+        else:
+            minimum_n_records = 0
+
+        if l1.n_records >= minimum_n_records:
+            self.output_handler.export_to_netcdf(l1)
+            self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
+        else:
+            self.log.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
 
     def trim_single_hemisphere_segment_to_polar_region(self, l1):
