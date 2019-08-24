@@ -611,11 +611,7 @@ class L1bDataNC(DefaultLoggingClass):
 
     def _get_variable_attr_dict(self, parameter):
         """ Retrieve the parameter attributes """
-        default_attrs = {
-            "long_name": parameter,
-            "standard_name": parameter,
-            "scale_factor": 1.0,
-            "add_offset": 0.0}
+        default_attrs = {"long_name": parameter}
         if parameter not in self.parameter_attributes:
             # self._missing_parameters.append(parameter)
             return default_attrs
