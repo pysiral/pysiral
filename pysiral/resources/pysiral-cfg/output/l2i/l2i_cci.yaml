@@ -52,6 +52,17 @@ global_attributes:
   - time_coverage_resolution: "satellite_orbit_frequency"
   - standard_name_vocabulary: "CF"
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  - product_version: "{l2_algorithm_id}"
+  - source_mission_name: "{source_mission_name}"
+  - source_mission_id: "{source_mission_id}"
+  - source_mission_sensor: "{source_mission_sensor}"
+  - source_hemisphere: "{source_hemisphere}"
+  - source_timeliness: "{source_timeliness}"
+  - source_auxdata_snow: "{source_auxdata_snow}"
+  - source_auxdata_mss: "{source_auxdata_mss}"
+  - source_auxdata_sic: "{source_auxdata_sic}"
+  - source_auxdata_sitype: "{source_auxdata_sitype}"
+  - source_auxdata_icechart: "{source_auxdata_icechart}" # fmi modification
 
 
 # A list of variables and their attributes
