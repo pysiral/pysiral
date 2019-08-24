@@ -144,8 +144,13 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
     def get_l2_track_vars(self, l2):
         """ Mandadory method of AuxdataBaseClass subclass """
         self._get_requested_date(l2)
-        self._get_data(l2)
-        sitype, uncertainty = self._get_sitype_track(l2)
+        if self.error.status or self._data is None:
+            sitype = self.get_empty_array(l2)
+            uncertainty = self.get_empty_array(l2)
+        else:
+            # Get and return the track
+            sitype, uncertainty = self._get_sitype_track(l2)
+
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
