@@ -1,26 +1,26 @@
 # This is the fmi output definition (with ice chart) for the Level2Processor
 
 # Metadata
-metadata: 
+metadata:
   output_id: l2i
   data_level: 2
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: 
+filenaming:
   default: esacci-seaice-l2i-sithick-{source_mission_sensor_fn:lowercase}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
 product_level_subfolder: l2i
 
-# A list of global attributes 
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
-# A list of global attributes 
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
   - platform: "{source_mission_name}"
-  - sensor: "{source_mission_sensor}"  
+  - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "TBD"
   - tracking_id: "{uuid}"
@@ -28,7 +28,7 @@ global_attributes:
   - product_version: "2.0"
   - processing_level: "Level-2 Intermediate (l2i)"
   - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2017.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2017.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
-  - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"  
+  - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"
   - id: "esacci-seaice-l2i-sithick-{source_mission_sensor_fn}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
@@ -319,4 +319,13 @@ variables:
   geocentric_polar_tide:
     long_name: "geocentric polar tide range correction"
     units: "m"
+    coordinates: time
+
+  flag_waveform_is_valid:
+    long_name: "Level-1 flag indicating issues with the waveform"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0, 1"
+    flag_meaning: "0: waveform is valid, 1: waveform is invalid"
+    units: "1"
     coordinates: time
