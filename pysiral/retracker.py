@@ -27,7 +27,9 @@ import bottleneck as bn
 
 
 class BaseRetracker(object):
-    """ Main Retracker Class (all retrackers must be of instance BaseRetracker)
+    """
+    Main Retracker Class (all retrackers must be of instance BaseRetracker)
+    # TODO: API clean-up is sorely needed.
     """
 
     def __init__(self):
@@ -36,8 +38,17 @@ class BaseRetracker(object):
         self._l1b = None
         self._l2 = None
 
+        # Dictionary containing potential auxiliary output variables of
+        # the retracker algorithm that will be transferred to the l2
+        # data object.
+        # NOTE: This is a bit clunky because retracker algorithm will
+        # not be run on all the waveforms, so a bit extra work is needed
+        # that the output a) has the correct dimension and b) does not
+        # overwrite itself, if the same algorithm is called consecutively.
+        self.auxdata_output = []
+
     def set_options(self, **opt_dict):
-        # TODO: Create options object
+        # TODO: Create options object, respectively use __init__
         self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
 
     def set_indices(self, indices):
@@ -48,7 +59,14 @@ class BaseRetracker(object):
         self._classifier = classifier
 
     def init(self, n_records):
+        # TODO: Move to __init__
         self._create_default_properties(n_records)
+
+    def register_auxdata_output(self, var_id, var_name, value, uncertainty=None):
+        """
+        Add an auxiliary parameter, that will be transferred to the l2data object after retracking
+        """
+        self.auxdata_output.append([var_id, var_name, value, uncertainty])
 
     def retrack(self, l1b, l2):
 
@@ -173,8 +191,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 return
 
             # Get track point and its power
-            tfmra_range, tfmra_power = self.get_threshold_range(
-                filt_rng, filt_wfm, fmi, tfmra_threshold[i])
+            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i])
 
             # Mandatory return function
             self._range[i] = tfmra_range + self._options.offset
@@ -615,13 +632,23 @@ class cTFMRA(BaseRetracker):
         pass
 
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
-        """ API Calling method """
+        """ API Calling method for retrackers """
 
+        # Get the threshold for each waveform and store the data as
+        # auxiliary parameter
+        tfmra_threshold = self.get_tfmra_threshold(indices)
+        self.register_auxdata_output("tfmrathr", "tfmra_threshold", tfmra_threshold)
+
+        # Loop over all waveforms
+        # TODO: This is a candidate for multi-processing
         for i in indices:
 
+            # Do not retrack waveforms that are marked as invalid
+            if not is_valid[i]:
+                continue
+
             # Get the filtered waveform, index of first maximum & norm
-            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
-                rng[i, :], wfm[i, :], radar_mode[i])
+            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], radar_mode[i])
 
             # first maximum finder might have failed
             if fmi == -1:
@@ -630,9 +657,7 @@ class cTFMRA(BaseRetracker):
                 continue
 
             # Get track point and its power
-            tfmra_threshold = self._options.threshold
-            tfmra_range, tfmra_power = self.get_threshold_range(
-                filt_rng, filt_wfm, fmi, tfmra_threshold)
+            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i])
 
             # Set the values
             self._range[i] = tfmra_range + self._options.offset
@@ -651,6 +676,74 @@ class cTFMRA(BaseRetracker):
         if "uncertainty" in self._options:
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
+
+    def get_tfmra_threshold(self, indices):
+        """
+        Compute the TFMRA threshold for each waveform with several options.
+        :param indices: A list of array indices for which to compute thresholds (e.g. for sea ice waveforms)
+        :return: An array of thresholds with the dimensions of the l2 data object, but only values for <indices>
+        """
+
+        # short link to options
+        option = self._options.threshold
+
+        # Init an empy threshold array
+        threshold = np.full(self._l2.longitude.shape, np.nan)
+
+        # [Legacy] Threshold is float in settings file
+        if type(option) is float:
+            threshold[indices] = option
+            return threshold
+
+        # Option 1: fixed threshold for all waveforms
+        if option.type == "fixed":
+            threshold[indices] = option.value
+
+        # Option 2 (deprecated): Threshold as a function of sigma0
+        elif option.type == "sigma_func":
+            sigma0 = self.get_l1b_parameter("classifier", "sigma0")
+            value = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef):
+                value += coef * sigma0**i
+            threshold[indices] = value[indices]
+
+        # Option 3 (deprecated): Threshold as a function of sigma0 and sea ice type
+        elif option.type == "sitype_sigma_func":
+            sigma0 = self.get_l1b_parameter("classifier", "sigma0")
+            sitype = self._l2.sitype
+            value = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef_fyi):
+                value += coef * sigma0**i
+            value_myi = np.zeros(sigma0.shape)
+            for i, coef in enumerate(option.coef_myi):
+                value_myi += coef * sigma0**i
+            myi_list = np.where(sitype > 0.5)[0]
+            value[myi_list] = value_myi[myi_list]
+            threshold[indices] = value[indices]
+
+        # Option 4 (deprecated): Threshold as a function of sigma0 and leading-edge
+        #   width 3rd order polynomial fit. Algorithm for CCI/C3S Envisat CDR
+        elif option.type == "poly_plane_fit":
+
+            # Get the required classifier
+            sigma0 = self.get_l1b_parameter("classifier", "sigma0")
+            lew = self.get_l1b_parameter("classifier", "leading_edge_width")
+            value = np.zeros(sigma0.shape)
+            value += option.intercept
+            for i, coef in enumerate(option.coef_lew):
+                value += coef * lew**(i+1)
+            for i, coef in enumerate(option.coef_sig0):
+                value += coef * sigma0**(i+1)
+            threshold[indices] = value[indices]
+
+        # Catching invalid processor settings
+        else:
+            msg = "treshold type not recognized: %s" % str(option.type)
+            raise ValueError(msg)
+
+        # All done, return the threshold
+        return threshold
+
 
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
@@ -677,6 +770,8 @@ class cTFMRA(BaseRetracker):
             norm[i] = result[3]
 
         return filt_rng, filt_wfm, fmi, norm
+
+
 
     def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
         """
@@ -764,6 +859,10 @@ class cTFMRA(BaseRetracker):
             first_maximum_index = peaks[leading_maxima[0]]
 
         return first_maximum_index
+
+    def normalize_wfm(self, y):
+        norm = np.nanmax(y)
+        return y/norm, norm
 
     def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
         """

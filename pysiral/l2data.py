@@ -153,6 +153,23 @@ class Level2Data(object):
         self.elev[ii] = self.altitude[ii] - retracker.range[ii]
         self.elev.uncertainty[ii] = retracker.uncertainty[ii]
 
+        # Register potential auxiliary data
+        for var_id, var_name, value, uncertainty in retracker.auxdata_output:
+
+            # --- Check if output variable already exists ---
+
+            # Create if new
+            if var_name not in self.auxvar_names:
+                self.set_auxiliary_parameter(var_id, var_name, value, uncertainty)
+
+            # Transfer values for indices if already exists
+            else:
+                auxdata = getattr(self, var_id)
+                auxdata[ii] = value[ii]
+                if uncertainty is not None:
+                    auxdata.uncertainty[ii] = uncertainty[ii]
+                setattr(self, var_id, auxdata)
+
     def set_metadata(self, auxdata_source_dict=None, source_primary_filename=None, l2_algorithm_id=None,
                      l2_version_tag=None):
         if auxdata_source_dict is not None:
