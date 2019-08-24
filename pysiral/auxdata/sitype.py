@@ -192,24 +192,6 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sitype = grid2track.get_from_grid_variable(self._data.ice_type, flipud=False)
         uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty, flipud=False)
-        # sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
-        #
-        # # Convert grid/track coordinates to grid projection coordinates
-        # kwargs = self.cfg.options[l2.hemisphere].projection
-        # p = Proj(**kwargs)
-        # x, y = p(self._data.lon, self._data.lat)
-        # l2x, l2y = p(l2.track.longitude, l2.track.latitude)
-        #
-        # # Convert track projection coordinates to image coordinates
-        # # x: 0 < n_lines; y: 0 < n_cols
-        # dim = self.cfg.options[l2.hemisphere].dimension
-        # x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
-        # y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
-        # ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
-        #
-        # # Extract along track data from grid
-        # sitype = ndimage.map_coordinates(self._data.ice_type, [iy, ix], order=0)
-        # uncertainty = ndimage.map_coordinates(self._data.uncertainty, [iy, ix], order=0)
 
         # Convert flags to myi fraction
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
