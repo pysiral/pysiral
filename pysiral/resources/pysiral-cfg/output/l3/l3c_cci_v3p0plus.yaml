@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview01-plus"
-  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus"
-  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview01-plus"
-  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus"
-  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus"
+  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview01-plus.nc"
+  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
+  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview01-plus.nc"
+  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
+  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
 
 product_level_subfolder: l3c_grid
 
