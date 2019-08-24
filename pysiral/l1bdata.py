@@ -468,6 +468,7 @@ class L1bdataNCFile(Level1bData):
     def parse(self):
         """ populated the L1b data container from the l1bdata netcdf file """
         self.nc = Dataset(self.filename, "r")
+        self.nc.set_auto_scale(False)
         self._import_metadata()
         self._import_timeorbit()
         self._import_waveforms()
@@ -536,6 +537,7 @@ class L1bdataNCFile(Level1bData):
         """
         # Get the datagroup
         datagroup = self.nc.groups["waveform"]
+
         # Set waveform (measurement is nadir)
         self.waveform.set_waveform_data(
             datagroup.variables["power"][:],
