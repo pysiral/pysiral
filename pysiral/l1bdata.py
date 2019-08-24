@@ -89,6 +89,7 @@ Surface Type
 
 """
 
+from pysiral.logging import DefaultLoggingClass
 from pysiral.surface_type import SurfaceType
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
@@ -103,13 +104,16 @@ import os
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 
 
-class Level1bData(object):
+class Level1bData(DefaultLoggingClass):
     """
     Unified L1b Data Class
     """
     data_groups = ["time_orbit", "correction", "classifier", "waveform", "surface_type"]
 
     def __init__(self):
+
+        super(Level1bData, self).__init__(self.__class__.__name__)
+
         self.info = L1bMetaData()
         self.waveform = L1bWaveforms(self.info)
         self.time_orbit = L1bTimeOrbit(self.info)
@@ -153,6 +157,13 @@ class Level1bData(object):
         if range_delta is None:
             # TODO: raise warning
             return
+
+        # Check if NaN's, set values to zero and provide warning
+        nans_indices = np.where(np.isnan(range_delta))[0]
+        if len(nans_indices) > 0:
+            range_delta[nans_indices] = 0.0
+            self.log.warning("NaNs encountered in range correction parameter: %s" % correction)
+
         self.waveform.add_range_delta(range_delta)
 
     def extract_subset(self, subset_list):
@@ -1015,11 +1026,9 @@ class L1bWaveforms(object):
     def set_waveform_data(self, power, range, radar_mode):
         # Validate input
         if power.shape != range.shape:
-            raise ValueError("power and range must be of same shape",
-                             power.shape, range.shape)
+            raise ValueError("power and range must be of same shape", power.shape, range.shape)
         if len(power.shape) != 2:
-            raise ValueError("power and range arrays must be of dimension" +
-                             " (n_records, n_bins)")
+            raise ValueError("power and range arrays must be of dimension (n_records, n_bins)")
 
             # Validate number of records
         self._info.check_n_records(power.shape[0])
@@ -1060,10 +1069,13 @@ class L1bWaveforms(object):
         self._is_valid = self._is_valid[subset_list]
 
     def add_range_delta(self, range_delta):
-        # XXX: Should range delta needs to be reshaped?
+        """
+        Add a range delta to all range bins
+        :param range_delta:
+        :return:
+        """
         range_delta_reshaped = np.repeat(range_delta, self.n_range_bins)
-        range_delta_reshaped = range_delta_reshaped.reshape(
-            self.n_records, self.n_range_bins)
+        range_delta_reshaped = range_delta_reshaped.reshape(self.n_records, self.n_range_bins)
         self._range += range_delta_reshaped
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):

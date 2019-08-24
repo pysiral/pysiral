@@ -171,17 +171,18 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         """
 
         # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
-        time_1Hz =  self.sgdr.time_01
-        time_20Hz = self.sgdr.time_20
+        time_1Hz =  np.array(self.sgdr.time_01)
+        time_20Hz = np.array(self.sgdr.time_20)
 
         grc_dict = self.cfg.range_correction_targets
         for name in grc_dict.keys():
             target_parameter = grc_dict[name]
             if target_parameter is None:
                 continue
-            correction = getattr(self.sgdr, target_parameter)
+            correction = np.array(getattr(self.sgdr, target_parameter))
             if re.search(self.cfg.variable_identifier_1Hz, target_parameter):
                 correction, error_status = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz)
+            correction = self.find_and_interpolate_nans(correction)
             self.l1.correction.set_parameter(name, correction)
 
     def _transfer_classifiers(self):
@@ -204,7 +205,24 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             self.l1.surface_type.add_flag(flag, key)
 
     @staticmethod
-    def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, **kwargs):
+    def find_and_interpolate_nans(variable):
+        """
+        Replace NaN's in variable with linear interpolated values
+        :param variable:
+        :return: interpolated variable
+        """
+        nan_indices = np.where(np.isnan(variable))[0]
+        if len(nan_indices) == 0:
+            return variable
+        else:
+            x = np.arange(len(variable))
+            valid = np.where(np.isfinite(variable))[0]
+            f = interpolate.interp1d(x[valid], variable[valid], bounds_error=False)
+            variable = f(x)
+            return variable
+
+    @staticmethod
+    def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, fill_on_error_value=np.nan, **kwargs):
         """
         Computes a simple linear interpolation to transform a 1Hz into a 20Hz variable
         :param variable_1Hz: an 1Hz variable array
@@ -214,11 +232,13 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         """
         error_status = False
         try:
-            f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
+            is_valid = np.logical_and(np.isfinite(time_1Hz), np.isfinite(variable_1Hz))
+            valid_indices = np.where(is_valid)[0]
+            f = interpolate.interp1d(time_1Hz[valid_indices], variable_1Hz[valid_indices],
+                                     bounds_error=False, **kwargs)
             variable_20Hz = f(time_20Hz)
         except ValueError:
-            fill_value = np.nan
-            variable_20Hz = np.full(time_20Hz.shape, fill_value)
+            variable_20Hz = np.full(time_20Hz.shape, fill_on_error_value)
             error_status = True
         return variable_20Hz, error_status
 
