@@ -16,6 +16,7 @@
 **Settings**
 - [l2proc] Added CCI+ Level-2 processor settings for Envisat (both hemispheres)
 - [l2proc] Added CCI+ l2i data definition
+- [l2proc] Added AWI l2p output definition
 
 **Bugfix**
 - [l1bdata] An issue was resolved that lead to passing wrong datatypes to cythonized functions in cTFMRA
