@@ -195,6 +195,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             # Some of the Envisat range corrections are 1Hz others 20Hz
             # -> Those with "_01" in the variable name need to be
             # extrapolated to 20 Hz
+            error = False
             if re.search(self.cfg.variable_identifier_1Hz, target_parameter):
                 correction, error = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz,
                                                             fill_on_error_value=0.0)
