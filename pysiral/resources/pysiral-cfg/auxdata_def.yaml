@@ -817,6 +817,12 @@ sitype:
 
 region:
 
+    blank_region:
+        pyclass: BlankRegionMask
+        long_name: Dummy region class
+        local_repository: null
+        options: {}
+
     # Adapted region mask from NSIDC
     nsidc_mod:
         pyclass: NSIDCRegionMask
