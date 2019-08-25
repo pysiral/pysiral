@@ -675,8 +675,7 @@ class Level2Processor(DefaultLoggingClass):
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
-            self.log.info("- Write %s data file: %s" % (
-                    output_handler.id, output.export_filename))
+            self.log.info("- Write %s data file: %s" % (output_handler.id, output.export_filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)

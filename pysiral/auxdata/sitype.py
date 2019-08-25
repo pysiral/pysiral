@@ -180,8 +180,6 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
         # Read and prepare input data
         self._data = ReadNC(path)
-        self._data.ice_type = np.flipud(self._data.ice_type[0, :, :])
-        self._data.uncertainty = np.flipud(self._data.uncertainty[0, :, :])
 
     def _get_sitype_track(self, l2):
         """ Extract ice type and ice type uncertainty along the track """
@@ -190,8 +188,8 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
-        sitype = grid2track.get_from_grid_variable(self._data.ice_type, flipud=False)
-        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty, flipud=False)
+        sitype = grid2track.get_from_grid_variable(self._data.ice_type, flipud=True)
+        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty, flipud=True)
 
         # Convert flags to myi fraction
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
