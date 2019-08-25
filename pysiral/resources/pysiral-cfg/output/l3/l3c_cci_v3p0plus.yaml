@@ -28,7 +28,7 @@ global_attributes:
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-C (2010-11 till 2019-04-27) and baseline-D (from 2019-04-28);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
   climatology based on regional merging of Warren Climatology with 50% reduction for 
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
-  Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR}, Sea ice type:  {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;None implemented for southern hemisphere in v3.0-preview1}"
+  Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR}, Sea ice type:  {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;Not implemented for southern hemisphere in v3.0-preview1}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
@@ -61,7 +61,7 @@ Space Agency"
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
   - spatial_resolution: "{grid_spacing_tag} grid spacing"
-  - geospatial_bounds_crs: {source_hemisphere:select;EPSG:6931;EPSG:6932}
+  - geospatial_bounds_crs: "{source_hemisphere:select;EPSG:6931;EPSG:6932}"
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
