@@ -196,7 +196,12 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             # -> Those with "_01" in the variable name need to be
             # extrapolated to 20 Hz
             if re.search(self.cfg.variable_identifier_1Hz, target_parameter):
-                correction, error_status = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz)
+                correction, error = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz,
+                                                            fill_on_error_value=0.0)
+
+            if error:
+                msg = "Failing to create 20Hz range correction variable for %s" % target_parameter
+                self.log.warning(msg)
 
             # Fill NaN gaps
             correction_filtered = self.find_and_interpolate_nans(correction)
@@ -258,22 +263,15 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         :return: the interpolated 20Hz variable
         """
         error_status = False
-
-        is_valid = np.logical_and(np.isfinite(time_1Hz), np.isfinite(variable_1Hz))
-        valid_indices = np.where(is_valid)[0]
-        f = interpolate.interp1d(time_1Hz[valid_indices], variable_1Hz[valid_indices],
-                                 fill_value="extrapolate", bounds_error=False, **kwargs)
-        variable_20Hz = f(time_20Hz)
-
-        # try:
-        #     is_valid = np.logical_and(np.isfinite(time_1Hz), np.isfinite(variable_1Hz))
-        #     valid_indices = np.where(is_valid)[0]
-        #     f = interpolate.interp1d(time_1Hz[valid_indices], variable_1Hz[valid_indices],
-        #                              bounds_error=False, **kwargs)
-        #     variable_20Hz = f(time_20Hz)
-        # except ValueError:
-        #     variable_20Hz = np.full(time_20Hz.shape, fill_on_error_value)
-        #     error_status = True
+        try:
+            is_valid = np.logical_and(np.isfinite(time_1Hz), np.isfinite(variable_1Hz))
+            valid_indices = np.where(is_valid)[0]
+            f = interpolate.interp1d(time_1Hz[valid_indices], variable_1Hz[valid_indices],
+                                     fill_value="extrapolate", bounds_error=False, **kwargs)
+            variable_20Hz = f(time_20Hz)
+        except ValueError:
+            variable_20Hz = np.full(time_20Hz.shape, fill_on_error_value)
+            error_status = True
         return variable_20Hz, error_status
 
     @property
