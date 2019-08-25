@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview01-plus.nc"
-  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
-  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview01-plus.nc"
-  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
-  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview01-plus.nc"
+  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview1-plus.nc"
+  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
+  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview1-plus.nc"
+  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
+  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
 
 product_level_subfolder: l3c_grid
 
@@ -23,45 +23,37 @@ grid_options:
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere;Southern} Sea Ice Thickness Climate Data Record (Development plus version with additional variables and grid statistics that will not be part of the final CRDP)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly 
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-C (2010-11 till 2019-04-27) and baseline-D (from 2019-04-28);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
   climatology based on regional merging of Warren Climatology with 50% reduction for 
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
-  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea 
-  surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S 
-  Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF 
-  (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
+  Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR}, Sea ice type:  {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;None implemented for southern hemisphere in v3.0-preview1}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
   - references: ""
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "2.2"
+  - product_version: "3.0-preview1"
+  - format_version: "CCI Data Standards v2.1"
   - processing_level: "Level-3 Collated (l3c)"
-  - summary: "This dataset contains Level-3 monthly sea ice thickness products from 
-   satellite observations in the northern hemisphere plus additionals statistical 
-   parameters of gridded classifiers. Level-3 data are raw observations processed to 
-   geophysical quantities, and placed onto a regular grid."
+  - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2019.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2019.}"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l3-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p2plus"
+  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview1-plus"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: "None"
+  - doi: "TBD"
   - cdm_data_type: "Grid"
-  - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard."
+  - comment: "Please note that this file is not the release version of the official CRDP, but a preview of the current algorithm state with additional parameters for development purposes) {source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_name: "Stefan Hendricks, Rober Ricker (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine, Heidi Sallila (Finnish Meteorological Institute, Helsinki, Finland)"
   - creator_type: "institution"
-  - creator_url: "http://www.awi.de"
-  - contributor_name: "Stefan Hendricks, Robert Ricker"
-  - contributor_role: "PrincipalInvestigator, Author"
-  - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
-  - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - publisher_url: "www.awi.de"
-  - publisher_email: "info@meereisportal.de"
+  - creator_url: "http://www.awi.de, https://en.ilmatieteenlaitos.fi/"
+  - creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de, eero.rinne@fmi.fi, heidi.sallila@fmi.fi"
+  - project: "Climate Change Initiative – European
+Space Agency"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: 90.0
   - geospatial_lon_min: -180.0
@@ -69,7 +61,7 @@ global_attributes:
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
   - spatial_resolution: "{grid_spacing_tag} grid spacing"
-  - geospatial_bounds_crs: "EPSG:6931"
+  - geospatial_bounds_crs: {source_hemisphere:select;EPSG:6931;EPSG:6932}
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
