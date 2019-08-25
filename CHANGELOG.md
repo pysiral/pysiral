@@ -1,5 +1,10 @@
 # History of changes
 
+## Version 0.7.2.2 (25. August 2019)
+
+**Bugfix**
+- [envisat] Additional fix for all-nan range correction variable in the original SGDR files.
+
 ## Version 0.7.2.1 (25. August 2019)
 
 **Bugfix**
