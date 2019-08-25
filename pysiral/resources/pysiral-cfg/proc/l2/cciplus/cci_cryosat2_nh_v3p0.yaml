@@ -1,7 +1,7 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 
-id: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.2)"
-version_tag: "v2p2awi"
+id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2019 preview 1"
+version_tag: "v3p0-preview1"
 
 # This settings file is valid for
 hemisphere: north

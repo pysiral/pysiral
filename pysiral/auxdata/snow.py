@@ -360,18 +360,14 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
 
     def get_l2_track_vars(self, l2):
 
-        # Extract requested day
-        self._get_requested_date(l2)
+        # Set the requested data
+        self.set_requested_date_from_l2(l2)
 
-        # Check if data for day is already loaded
-        if self._requested_date != self._current_date:
-            self._get_data(l2)
-            self._current_date = self._requested_date
-        else:
-            self.add_handler_message("ICDCSouthernClimatology: Daily grid already present")
+        # Update the external data
+        self.update_external_data()
 
         # Check if error with file I/O
-        if self.error.status:
+        if self.error.status or self._data is None:
             # This will return an empty container
             snow = SnowParameterContainer()
             snow.set_dummy(l2.n_records)
@@ -401,64 +397,44 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
 
-    def _get_data(self, l2):
+    def load_requested_auxdata(self):
         """ Loads file from local repository only if needed """
-        path = self._get_local_repository_filename(l2)
+
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = self.requested_filepath
+
         # Validation
         if not os.path.isfile(path):
-            msg = "ICDCSouthernClimatology: File not found: %s " % path
+            msg = "%s: File not found: %s " % (self.__class__.__name__, path)
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_snow", msg)
             return
+
+        # Store the netCDF data object
         self._data = ReadNC(path)
-        # This step is important for calculation of image coordinates
-        self.add_handler_message("ICDCSouthernClimatology: Loaded SIC file: %s" % path)
 
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        year = l2.track.timestamp[0].year
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [year, month, day]
-
-    def _get_local_repository_filename(self, l2):
-        """ Get the filename (no subfolders as climatology for each day)"""
-        path = self.cfg.local_repository
-        filename = self.cfg.filenaming.format(month=self.month, day=self.day)
-        path = os.path.join(path, filename)
-        return path
 
     def _get_snow_track(self, l2):
+        """ Extract snow depth from grid """
 
-        # TODO: Move functionality to image coordinate class
-
-        # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self.cfg.options[l2.hemisphere].projection
-        p = Proj(**kwargs)
-        x, y = p(self._data.lon, self._data.lat)
-        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
-
-        # Convert track projection coordinates to image coordinates
-        # x: 0 < n_lines; y: 0 < n_cols
-        dim = self.cfg.options[l2.hemisphere].dimension
-        x_min, y_min = np.nanmin(x), np.nanmin(y)
-        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
+        # Extract from grid
+        griddef = self.cfg.options[l2.hemisphere]
+        grid_lons, grid_lats = self._data.lon, self._data.lat
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
 
         # Extract snow depth along track data from grid
         sd_parameter_name = self.cfg.options.snow_depth_nc_variable
         sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
-        sdgrid = np.flipud(sdgrid)
-        sd = ndimage.map_coordinates(sdgrid, [iy, ix], order=0)
-        sd[sd < 0.0] = np.nan
+        snow_depth = grid2track.get_from_grid_variable(sdgrid, flipud=True)
+        snow_depth[snow_depth < 0.0] = np.nan
 
         # Extract snow depth uncertainty
         unc_parameter_name = self.cfg.options.snow_depth_uncertainty_nc_variable
         uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
-        uncgrid = np.flipud(uncgrid)
-        unc = ndimage.map_coordinates(uncgrid, [iy, ix], order=0)
-        unc[unc < 0.0] = np.nan
+        snow_depth_uncertainty = grid2track.get_from_grid_variable(uncgrid, flipud=True)
+        snow_depth_uncertainty[snow_depth_uncertainty < 0.0] = np.nan
 
-        return sd, unc
+        return snow_depth, snow_depth_uncertainty
 
 
 class SnowParameterContainer(object):

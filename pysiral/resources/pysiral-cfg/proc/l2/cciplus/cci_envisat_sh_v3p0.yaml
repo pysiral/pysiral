@@ -1,15 +1,13 @@
-# Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
+# Level-2 processor settings for CCI+ Southern hemisphere CRDP v3.0-preview-1
 
-id: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.2)"
-version_tag: "v2p2awi"
+id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2019 preview 1"
+version_tag: "v3p0-preview1"
 
 # This settings file is valid for
-hemisphere: north
+hemisphere: south
 
-# Level 2 processor settings are mission specific
 mission:
-    id: cryosat2
-
+    id: envisat
 
 # Transfer data from the l1b to the l2 data object (from any data group)
 # The notation is the following:
@@ -99,6 +97,12 @@ transfer_from_l1p:
         antenna_yaw:
             aux_id: toantyaw
             aux_name: antenna_yaw
+            
+    waveform:
+        
+        is_valid:
+            aux_id: flgwfm
+            aux_name: flag_waveform_is_valid
 
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 # NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
@@ -108,14 +112,14 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-            name: nsidc_mod
+            name: blank_region
             options: null
 
     # Load the
     - mss:
             name: dtu18
             options:
-                latitude_range: [45.0, 90.0]
+                latitude_range: [-90.0, -45.0]
 
     - sic:
          name: c3s_v1p2
@@ -123,14 +127,17 @@ auxdata:
             exception_on_error: False
 
     - sitype:
-         name: c3s_v1p0
-         options:
-             exception_on_error: False
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-            name: clim_w99amsr2
-            options:
-                fyi_correction_factor: 0.5
+         name: icdc_climatology_south
+         options:
+             snow_density: 300
+             snow_density_uncertainty: 20
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
 
 # geophysical corrections applied to the l1b range window
 corrections:
@@ -144,77 +151,84 @@ corrections:
     - solid_earth_tide
     - geocentric_polar_tide
 
+# Apply corrections of filters to the l1b input data
+# All pyclasses must be present in the pysiral.filter module
+l1b_pre_filtering:
+
+    # Apply a drift correction to Envisat backcatter
+    # NOTE: 
+    #   The backscatter correction is not part of the Envisat l1bdata v030. In future updates the correction
+    #   will be applied in the actual pre-processor and this correction should be removed from the Level-2
+    #   processor recipe
+    envisat_backscatter_drift_correction: 
+        pyclass: L1bBackscatterDriftCorrection
+        options: 
+            l1b_data_group: classifier
+            l1b_parameter_name: sigma0
+            backscatter_drift_factor: -0.003269253
+            backscatter_base_period: [2011, 6]
+
 # Surface type classification algorithm
 surface_type:
     pyclass: SICCI2
     options:
-        sar:
-            ocean:
-                peakiness_max: 5.0
-                ice_concentration_min: 5.0
-            lead:
-                peakiness_min: [67.30, 66.30, 66.60, 69.90, 69.90, 69.90, 69.90, 69.90, 69.90, 76.00, 73.80, 68.60]
-                sea_ice_backscatter_min: [23.80, 23.20, 23.30, 23.40, 23.40, 23.40, 23.40, 23.40, 23.40, 28.00, 25.80, 24.10]
-                leading_edge_width_max: [0.77, 0.78, 0.78, 0.76, 0.76, 0.76, 0.76, 0.76, 0.76, 0.72, 0.73, 0.76]
-                ice_concentration_min: 70.0
-            sea_ice:
-                peakiness_max: [30.50, 28.70, 28.10, 28.50, 28.50, 28.50, 28.50, 28.50, 28.50, 35.40, 34.90, 31.90]
-                sea_ice_backscatter_min: 2.5
-                sea_ice_backscatter_max: [20.80, 19.90, 19.60, 19.00, 19.00, 19.00, 19.00, 19.00, 19.00, 25.70, 23.20, 21.10]
-                leading_edge_width_min: [1.02, 1.08, 1.10, 1.11, 1.11, 1.11, 1.11, 1.11, 1.11, 0.91, 0.90, 0.97]
-                ice_concentration_min: 70.0
-        sin:
-            ocean:
-                peakiness_max: 5.0
-                ice_concentration_min: 5.0
-            lead:
-                peakiness_min: [264.30, 257.90, 253.60, 264.60, 264.60, 264.60, 264.60, 264.60, 264.60, 291.80, 288.80, 272.60]
-                sea_ice_backscatter_min: [24.90, 25.00, 24.10, 24.50, 24.50, 24.50, 24.50, 24.50, 24.50, 29.00, 27.40, 25.80]
-                leading_edge_width_max: [1.10, 1.11, 1.13, 1.09, 1.09, 1.09, 1.09, 1.09, 1.09, 1.02, 1.03, 1.07]
-                ice_concentration_min: 70.0
-            sea_ice:
-                peakiness_max: [99.40, 94.20, 89.90, 90.00, 90.00, 90.00, 90.00, 90.00, 90.00, 114.40, 113.90, 103.80]
-                sea_ice_backscatter_min: 2.5
-                sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 19.10, 19.10, 19.10, 19.10, 19.10, 24.30, 23.70, 22.00]
-                leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 1.64, 1.64, 1.64, 1.64, 1.64, 1.44, 1.44, 1.51]
-                ice_concentration_min: 70.0
+        ocean:
+            peakiness_max: 5.0
+            ice_concentration_min: 5.0
+        lead:
+            peakiness_min: [56.60, 53.20, 51.90, 50.70, 50.10, 49.30, 49.50, 49.10, 49.30, 51.60, 53.90, 55.10]
+            sea_ice_backscatter_min: [33.20, 32.10, 31.80, 30.80, 29.40, 28.60, 28.60, 28.40, 28.50, 29.50, 31.10, 32.10]
+            leading_edge_width_max: [0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82, 0.82]
+            ice_concentration_min: 70.0
+        sea_ice:
+            peakiness_max: [24.60, 20.70, 19.60, 18.80, 17.50, 16.90, 16.60, 16.10, 16.30, 18.10, 20.70, 22.80]
+            sea_ice_backscatter_min: 2.5
+            sea_ice_backscatter_max: [27.20, 25.40, 26.70, 27.20, 24.60, 23.10, 22.50, 21.70, 22.30, 23.30, 25.20, 26.10]
+            leading_edge_width_min: [0.78, 0.80, 0.80, 0.80, 0.81, 0.80, 0.80, 0.81, 0.81, 0.80, 0.79, 0.78]
+            ice_concentration_min: 70.0
 
 # Retracking algorithm dependent on surface type
-retracker:
-    ocean:
+retracker: 
+    ocean: 
         pyclass: NoneRetracker
         options: null
-    lead:
+    lead: 
         pyclass: cTFMRA
         options:
-            # if arrays than [lrm, sar, sin]
-            threshold: 0.5
+            # if arrays than [lrm, sar, sin]    
+            threshold:
+                type: fixed
+                value: 0.95
             offset: 0.0
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
-            wfm_smoothing_window_size: [11, 11, 21]
-            first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+            wfm_smoothing_window_size: [11, 11, 21] 
+            first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
             first_maximum_local_order: 1
-            range_bias: [-0.022, 0.047, 0.017]
             uncertainty:
                 type: fixed
-                value: 0.1
-    sea_ice:
+                value: 0.15
+    sea_ice: 
         pyclass: cTFMRA
-        options:
-            # if arrays than [lrm, sar, sin]
-            threshold: 0.5
+        options: 
+            # if arrays than [lrm, sar, sin]   
+            threshold:
+                type: poly_plane_fit
+                intercept: 0.8147895184
+                coef_lew: [-0.5555823623, 0.1347526920]
+                coef_sig0: [0.0055934198, -0.0001431595]
             offset: 0.0
+            use_sigma0_threshold_dependency: False
             wfm_oversampling_factor: 10
             wfm_oversampling_method: linear
-            wfm_smoothing_window_size: [11, 11, 21]
-            first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+            wfm_smoothing_window_size: [11, 11, 21] 
+            first_maximum_normalized_threshold: [0.15, 0.15, 0.45] 
             first_maximum_local_order: 1
-            range_bias: [-0.022, 0.047, 0.017]
             uncertainty:
                 type: fixed
-                value: 0.1
+                value: 0.15
 
+            
 # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
 ssa:
     pyclass: SSASmoothedLinear
@@ -256,7 +270,7 @@ sit:
             fyi_density: 35.7
             myi_density: 23.0
 
-# List of filter at different stages of l2 processing
+# List of filter at different stages of l2 procesing
 # (can be list of filters)
 filter:
 
@@ -265,16 +279,16 @@ filter:
         frb_valid_range:
             pyclass: L2ParameterValidRange
             options:
-                valid_minimum_point_value: -0.25
-                valid_maximum_point_value: 2.25
+                valid_minimum_point_value: -0.5
+                valid_maximum_point_value: 2.5
 
     # Filters after thickness computation
     thickness:
         frb_valid_range:
             pyclass: L2ParameterValidRange
             options:
-                valid_minimum_point_value: -0.5
-                valid_maximum_point_value: 10.5
+                valid_minimum_point_value: -1.0
+                valid_maximum_point_value: 11.0
 
 # Tests if l1b orbit file is valid
 validator:
@@ -284,7 +298,7 @@ validator:
         n_leads:
             pyclass: LeadFixedMinimumNumber
             options:
-                minimum_n_leads: 0
+                minimum_n_leads: 3
 
 # Post-Processing (tbd if needed)
 post_processing:

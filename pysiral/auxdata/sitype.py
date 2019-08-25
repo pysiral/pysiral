@@ -143,85 +143,53 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
     def get_l2_track_vars(self, l2):
         """ Mandadory method of AuxdataBaseClass subclass """
-        self._get_requested_date(l2)
-        self._get_data(l2)
-        sitype, uncertainty = self._get_sitype_track(l2)
+
+        # These properties are needed to construct the product path
+        self.start_time = l2.info.start_time
+        self.hemisphere_code = l2.hemisphere_code
+
+        # Set the requested data
+        self.set_requested_date_from_l2(l2)
+
+        # Update the external data
+        self.update_external_data()
+
+        # Check if error with file I/O
+        if self.error.status or self._data is None:
+            sitype = self.get_empty_array(l2)
+            uncertainty = self.get_empty_array(l2)
+        else:
+            # Get and return the track
+            sitype, uncertainty = self._get_sitype_track(l2)
+
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        year = l2.track.timestamp[0].year
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [year, month, day]
-
-    def _get_data(self, l2):
+    def load_requested_auxdata(self):
         """ Loads file from local repository only if needed """
 
-        if self._requested_date == self._current_date:
-            # Data already loaded, nothing to do
-            return
-
-        # construct filename
-        path = self._get_local_repository_filename(l2)
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = self.requested_filepath
 
         # Validation
         if not os.path.isfile(path):
-            msg = "OsiSafSIType: File not found: %s " % path
+            msg = "%s: File not found: %s " % (self.__class__.__name__, path)
+            self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
 
         # Read and prepare input data
         self._data = ReadNC(path)
-        self._data.ice_type = np.flipud(self._data.ice_type[0, :, :])
-        self._data.uncertainty = np.flipud(self._data.uncertainty[0, :, :])
-
-        # Logging
-        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
-        self._current_date = self._requested_date
-
-    def _get_local_repository_filename(self, l2):
-        path = self.cfg.local_repository
-
-        if "auto_product_change" in self.cfg.options:
-            opt = self.cfg.options.auto_product_change
-            product_index = int(l2.info.start_time > opt.date_product_change)
-            product_def = opt.osisaf_product_def[product_index]
-            path = os.path.join(path, product_def["subfolder"])
-            self.cfg.filenaming = product_def["filenaming"]
-            self.cfg.long_name = product_def["long_name"]
-
-        for subfolder_tag in self.cfg.subfolders:
-            subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
-        filename = self.cfg.filenaming.format(
-            year=self.year, month=self.month, day=self.day,
-            hemisphere_code=l2.hemisphere_code)
-        path = os.path.join(path, filename)
-        return path
 
     def _get_sitype_track(self, l2):
         """ Extract ice type and ice type uncertainty along the track """
 
-        # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self.cfg.options[l2.hemisphere].projection
-        p = Proj(**kwargs)
-        x, y = p(self._data.lon, self._data.lat)
-        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
-
-        # Convert track projection coordinates to image coordinates
-        # x: 0 < n_lines; y: 0 < n_cols
-        dim = self.cfg.options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]-(0.5*dim.dx)
-        y_min = y[dim.n_lines-1, 0]-(0.5*dim.dy)
-        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
-
-        # Extract along track data from grid
-        sitype = ndimage.map_coordinates(
-            self._data.ice_type, [iy, ix], order=0)
-        uncertainty = ndimage.map_coordinates(
-            self._data.uncertainty, [iy, ix], order=0)
+        # Extract from grid
+        griddef = self.cfg.options[l2.hemisphere]
+        grid_lons, grid_lats = self._data.lon, self._data.lat
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
+        sitype = grid2track.get_from_grid_variable(self._data.ice_type, flipud=True)
+        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty, flipud=True)
 
         # Convert flags to myi fraction
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
@@ -233,6 +201,34 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         sitype_uncertainty = uncertainty / 100.
 
         return sitype, sitype_uncertainty
+
+    @property
+    def requested_filepath(self):
+        """ Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (auto product changes etc) """
+
+        # Unique to this class is the possibility to auto merge
+        # products. The current implementation supports only two products
+        path = self.cfg.local_repository
+
+        # The path needs to be completed if two products shall be used
+        if self.cfg.options.has_key("auto_product_change"):
+            opt = self.cfg.options.auto_product_change
+            product_index = int(self.start_time > opt.date_product_change)
+            product_def = opt.osisaf_product_def[product_index]
+            path = os.path.join(path, product_def["subfolder"])
+            self.cfg.filenaming = product_def["filenaming"]
+            self.cfg.long_name = product_def["long_name"]
+
+        for subfolder_tag in self.cfg.subfolders:
+            subfolder = getattr(self, subfolder_tag)
+            path = os.path.join(path, subfolder)
+
+        filename = self.cfg.filenaming.format(
+            year=self.year, month=self.month, day=self.day,
+            hemisphere_code=self.hemisphere_code)
+        path = os.path.join(path, filename)
+        return path
 
 
 class ICDCNasaTeam(AuxdataBaseClass):

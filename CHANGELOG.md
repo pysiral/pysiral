@@ -1,5 +1,27 @@
 # History of changes
 
+## Version 0.7.2 (25. August 2019)
+
+**New Features**
+- [l2proc] Allow retracker to add auxiliary variables
+- [output] Variable attributes now can use template format
+
+**Changes**
+- [auxdata] Modernized auxiliary data functions (sitype.OsiSafSITypeCDR, snow.ICDCSouthernClimatology)
+- [l1preproc] variables in l1p/l1bdata now to not contain `scaling_factor` and `add_offset` to avoid issues with newer netCDF4 python module versions
+- [l1preproc] added threshold for minimum size of l1 segments to be written to file
+- [l2proc] cTFRMRA has now all features of SICCI2TfmraEnvisat (now obsolete)
+- [l3proc] cTFMRA adds auxiliary variable `tfmra_threshold`
+
+**Settings**
+- [l2proc] Added CCI+ Level-2 processor settings for Envisat (both hemispheres)
+- [l2proc] Added CCI+ l2i data definition
+- [l2proc] Added AWI l2p output definition
+
+**Bugfix**
+- [l1bdata] An issue was resolved that lead to passing wrong datatypes to cythonized functions in cTFMRA
+- [envisat] Issue with NaNs in Envisat l1p range correction output resolved.
+
 ## Version 0.7.1 (20. August 2019)
 
 **New Features**

@@ -367,8 +367,7 @@ class NCDataFile(DefaultLoggingClass):
 
             # Convert datetime objects to number
             if type(data[0]) is datetime:
-                data = date2num(data, self.time_def.units,
-                                self.time_def.calendar)
+                data = date2num(data, self.time_def.units, self.time_def.calendar)
 
             # Convert bool objects to integer
             if data.dtype.str == "|b1":
@@ -385,14 +384,14 @@ class NCDataFile(DefaultLoggingClass):
                 dimensions = tuple(dims[0:len(data.shape)])
 
             # Create and set the variable
-            var = self._rootgrp.createVariable(
-                    parameter_name, data.dtype.str,
-                    dimensions, zlib=self.zlib)
+            var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
             var[:] = data
 
             # Add Parameter Attributes
             for key in sorted(attribute_dict.keys()):
-                setattr(var, key, attribute_dict[key])
+                attribute = attribute_dict[key]
+                attribute = self.output_handler.fill_template_string(attribute, self.data)
+                setattr(var, key, attribute)
 
     def _create_root_group(self, attdict, **global_attr_keyw):
         """
@@ -611,11 +610,7 @@ class L1bDataNC(DefaultLoggingClass):
 
     def _get_variable_attr_dict(self, parameter):
         """ Retrieve the parameter attributes """
-        default_attrs = {
-            "long_name": parameter,
-            "standard_name": parameter,
-            "scale_factor": 1.0,
-            "add_offset": 0.0}
+        default_attrs = {"long_name": parameter}
         if parameter not in self.parameter_attributes:
             # self._missing_parameters.append(parameter)
             return default_attrs
