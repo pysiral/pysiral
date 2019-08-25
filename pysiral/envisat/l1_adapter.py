@@ -187,8 +187,12 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             # Debug code
             # -> in this case discard the variable
             n_nans = len(np.where(np.isnan(correction))[0])
-            if n_nans > 500:
+            if n_nans > 500 and n_nans < len(correction):
                 msg = "Significant number of NaNs (%g) in range correction variable: %s"
+                msg = msg % (n_nans, target_parameter)
+                self.log.warning(msg)
+            elif n_nans == len(correction):
+                msg = "All-NaN array encountered in range correction variable: %s"
                 msg = msg % (n_nans, target_parameter)
                 self.log.warning(msg)
 
@@ -199,13 +203,12 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             if re.search(self.cfg.variable_identifier_1Hz, target_parameter):
                 correction, error = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz,
                                                             fill_on_error_value=0.0)
-
             if error:
                 msg = "Failing to create 20Hz range correction variable for %s" % target_parameter
                 self.log.warning(msg)
 
-            # Fill NaN gaps
-            correction_filtered = self.find_and_interpolate_nans(correction)
+            # Interpolate NaN's or return a zero-filled array for all-nan input variables
+            correction_filtered = self.find_and_interpolate_nans(correction, fill_on_error_value=0.0)
 
             # Debug code
             # -> in this case discard the variable
@@ -237,7 +240,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             self.l1.surface_type.add_flag(flag, key)
 
     @staticmethod
-    def find_and_interpolate_nans(variable):
+    def find_and_interpolate_nans(variable, fill_on_error_value=np.nan):
         """
         Replace NaN's in variable with linear interpolated values
         :param variable:
@@ -250,8 +253,12 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         else:
             x = np.arange(len(variable))
             valid = np.where(np.logical_not(is_nan))[0]
-            f = interpolate.interp1d(x[valid], variable[valid], fill_value="extrapolate", bounds_error=False)
-            variable_filtered = f(x)
+            try:
+                f = interpolate.interp1d(x[valid], variable[valid], fill_value="extrapolate",
+                                         bounds_error=False)
+                variable_filtered = f(x)
+            except ValueError:
+                variable_filtered = np.full(variable.shape, fill_on_error_value)
         return variable_filtered
 
     @staticmethod
