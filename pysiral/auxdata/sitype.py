@@ -188,8 +188,8 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         griddef = self.cfg.options[l2.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
-        sitype = grid2track.get_from_grid_variable(self._data.ice_type, flipud=True)
-        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty, flipud=True)
+        sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
+        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty[0, :, :], flipud=True)
 
         # Convert flags to myi fraction
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
