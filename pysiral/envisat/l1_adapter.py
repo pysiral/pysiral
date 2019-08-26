@@ -193,7 +193,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
                 self.log.warning(msg)
             elif n_nans == len(correction):
                 msg = "All-NaN array encountered in range correction variable: %s"
-                msg = msg % (n_nans, target_parameter)
+                msg = msg % (target_parameter)
                 self.log.warning(msg)
 
             # Some of the Envisat range corrections are 1Hz others 20Hz
