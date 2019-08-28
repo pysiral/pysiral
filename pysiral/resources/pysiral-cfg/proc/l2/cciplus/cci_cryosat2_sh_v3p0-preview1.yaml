@@ -114,7 +114,7 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-            name: nsidc_mod
+            name: blank_region
             options: null
 
     # Load the
@@ -152,7 +152,7 @@ corrections:
     - geocentric_polar_tide
 
 # Surface type classification algorithm
-
+surface_type:
     pyclass: SICCI2
     options:
         sar:
