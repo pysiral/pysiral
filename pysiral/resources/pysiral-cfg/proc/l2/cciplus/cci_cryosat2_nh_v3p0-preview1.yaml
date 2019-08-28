@@ -100,6 +100,12 @@ transfer_from_l1p:
             aux_id: toantyaw
             aux_name: antenna_yaw
 
+    waveform:
+        
+        is_valid:
+            aux_id: flgwfm
+            aux_name: flag_waveform_is_valid
+
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 # NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 auxdata:
