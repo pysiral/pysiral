@@ -290,7 +290,7 @@ validator:
         n_leads:
             pyclass: LeadFixedMinimumNumber
             options:
-                minimum_n_leads: 0
+                minimum_n_leads: 3
 
 # Post-Processing (tbd if needed)
 post_processing:
