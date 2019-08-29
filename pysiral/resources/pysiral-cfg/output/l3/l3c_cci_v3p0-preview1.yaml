@@ -2,17 +2,17 @@
 
 # Metadata
 metadata: 
-  output_id: l3c_cci_v3p0plus
+  output_id: l3c_cci_v3p0-preview1
   data_level: 3
   data_level_description: Level-3 colated (gridded geophysical parameters)
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview1-plus.nc"
-  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
-  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview1-plus.nc"
-  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
-  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1-plus.nc"
+  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview1.nc"
+  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1.nc"
+  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview1.nc"
+  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1.nc"
+  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview1.nc"
 
 product_level_subfolder: l3c_grid
 
@@ -41,7 +41,7 @@ global_attributes:
   - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2019.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2019.}"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview1-plus"
+  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview1"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "TBD"
