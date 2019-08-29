@@ -20,22 +20,22 @@ global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
   - title: "Collection of daily geophysical & auxiliary sea ice parameters from satellite radar altimetry at footprint resolution"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly climatology based on regional merging of Warren Climatology 
-    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, 
-    Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR}, 
+  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly climatology based on regional merging of Warren Climatology
+    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
+    Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
     Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: ""
+  - references: "Hendricks, S. and Ricker, R. (2019): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.2), hdl:10013/epic.8eb07093-4042-40ab-bfb8-e0c72c1567de"
   - tracking_id: "{uuid}"
   # - conventions: "CF-1.6"
   - product_version: "2.2"
   - processing_level: "Level-2 Pre-processed (l2p)"
   - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
-  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, 
-    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, 
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
+    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
     Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
   - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{grid_id}-{time_coverage_start:%Y%m%d}-fv2p2"
   - naming_authority: "de.awi"
@@ -102,9 +102,9 @@ variables:
     valid_min: 0
     valid_max: 21
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
-    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 
-      5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 
-      11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay,
+      5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea,
+      11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic,
       16: Baltic Sea, 20: land, 21 :land outline"
     units: "1"
     coordinates: time
@@ -113,7 +113,7 @@ variables:
     long_name: "elevation of retracked point above instantaneous sea surface height"
     units: m
     coordinates: time
-    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum 
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum
       light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
