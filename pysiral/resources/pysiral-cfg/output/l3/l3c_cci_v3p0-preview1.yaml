@@ -23,8 +23,8 @@ grid_options:
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere;Southern} Sea Ice Thickness Climate Data Record (Development plus version with additional variables and grid statistics that will not be part of the final CRDP)"
-  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (Preview version 1)"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-C (2010-11 till 2019-04-27) and baseline-D (from 2019-04-28);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
   climatology based on regional merging of Warren Climatology with 50% reduction for 
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
@@ -32,7 +32,7 @@ global_attributes:
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: ""
+  - references: "CCI+ Sea Ice ECV, D2.1 Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
   - product_version: "3.0-preview1"
