@@ -1,5 +1,15 @@
 # History of changes
 
+## Version 0.7.2.3 (29. August 2019)
+
+**Bugfix**
+- [envisat] final correction for range correction NaN issue in l1p files
+- [sitype] corrected incorrect handling of time dimensions in the OSI-SAF CDR sea ice type handler 
+
+**Settings**
+- [l2proc] Updated and corrected CCI+ settings for both platforms and hemispheres
+- [output] Added reference for all public AWI v2.2 products
+
 ## Version 0.7.2.2 (25. August 2019)
 
 **Bugfix**
