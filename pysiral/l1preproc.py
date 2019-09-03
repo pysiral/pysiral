@@ -842,6 +842,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         data_handler_cfg = dict()
         data_handler_cfg["overwrite_protection"] = args.overwrite_protection
         data_handler_cfg["remove_old"] = args.remove_old
+        if args.source_repo_id is not None:
+            data_handler_cfg["local_machine_def_tag"] = args.source_repo_id
         kwargs["output_handler_cfg"] = data_handler_cfg
         kwargs["hemisphere"] = args.hemisphere
         kwargs["platform"] = args.platform
