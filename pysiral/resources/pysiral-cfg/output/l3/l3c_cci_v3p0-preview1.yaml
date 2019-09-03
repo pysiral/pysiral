@@ -245,12 +245,15 @@ variables:
 
   status_flag:
     long_name: status flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
     valid_min: 0
     valid_max: 5
-    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
-    standard_name: "sea_ice_thickness status_flag"
-    grid_mapping: "Lambert_Azimuthal_Grid"
+    flag_values: 0b,1b,2b,3b,4b,5b
+    flag_meaning: "0: nominal sea ice thickness retrieval; 1: no input data; 2: outside sea ice concentration mask; 3: latitude above orbit inclination; 4: land, lake or land ice; 5: sea ice thickness retrieval failed;"
     coordinates: "time lat lon"
+    comment: "Describes the status of the sea-ice thickness retrieval"
+    grid_mapping: "Lambert_Azimuthal_Grid"
 
   region_code:
     long_name: "Region code {source_hemisphere:select;(adapted from NSIDC region mask);not yet implemented for southern hemisphere}"
