@@ -348,6 +348,46 @@ sic:
             type: daily
             link: null
 
+    osisaf430b:
+        pyclass: OsiSafSIC
+        long_name: "Interim Sea Ice Concentration Climate Data Record from EUMETSAT OSI SAF (OSI-SAF 430b)"
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v2p0_{year}{month}{day}1200.nc"
+        local_repository: osisaf430b
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: 90
+                    datum: WGS84
+                    ellps: WGS84
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: -90
+                    datum: WGS84
+                    ellps: WGS84
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: osisaf.met.no
+            pwdfile: null
+            type: daily
+            link: null
+
     osisaf450:
         pyclass: OsiSafSIC
         long_name: OSI-SAF Reprocessed (CDR) Sea Ice Concentration v2.0 (OSI-450)
