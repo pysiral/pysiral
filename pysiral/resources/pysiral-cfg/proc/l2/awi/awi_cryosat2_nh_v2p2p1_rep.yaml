@@ -118,7 +118,7 @@ auxdata:
                 latitude_range: [45.0, 90.0]
 
     - sic:
-         name: osisaf_cdr
+         name: osisaf430b
          options:
             exception_on_error: False
 
