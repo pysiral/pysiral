@@ -1,5 +1,17 @@
 # History of changes
 
+## Version 0.7.2.4 (13. February 2019)
+
+**Bugfix**
+- [l1preproc] bugfix: local_machine_def_tag was not properly set to output handler
+
+**Settings**
+- [l2proc] Added CCI+ output definitions
+- [l2proc] Added l2 processor settings for AWI CryoSat-2 rep v2.2.1 (update of SIC ICDR)
+- [l2proc] Added awi v2.2.1 l2p output definition
+- [l3proc] Added awi v2.2.1 l3c output definition (normal and plus products)
+- [l3proc] Update naming of cci level-3 processor and output definition files
+
 ## Version 0.7.2.3 (29. August 2019)
 
 **Bugfix**
