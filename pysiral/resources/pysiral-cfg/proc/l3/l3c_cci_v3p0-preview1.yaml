@@ -251,12 +251,12 @@ processing_items:
         retrieval_status_target: sea_ice_thickness
         sic_thrs: 70.
         flag_values:
-            no_data: 0 
-            is_below_sic_thrs: 1
-            is_pole_hole: 2
-            is_land: 3
-            retrieval_failed: 4
-            has_retrieval: 5
+            no_data: 1 
+            is_below_sic_thrs: 2
+            is_pole_hole: 3
+            is_land: 4
+            retrieval_failed: 5
+            has_retrieval: 0
 
     # Compute the quality flag
     - label: "Get quality flag"
