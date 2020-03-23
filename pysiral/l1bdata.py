@@ -94,6 +94,8 @@ from pysiral.surface_type import SurfaceType
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
 
+
+from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, num2date, date2num
 from collections import OrderedDict
 import numpy as np
@@ -499,9 +501,7 @@ class L1bdataNCFile(Level1bData):
             attribute_value = getattr(self.nc, attribute_name)
             # Convert timestamps back to datetime objects
             if attribute_name in ["start_time", "stop_time"]:
-                attribute_value = num2date(
-                    attribute_value, self.time_def.units,
-                    calendar=self.time_def.calendar)
+                attribute_value = cn2pyd(attribute_value, self.time_def.units, calendar=self.time_def.calendar)
             # Convert flags (integers back to bool)
             if attribute_name in ["is_orbit_subset", "is_merged_orbit"]:
                 attribute_value = bool(attribute_value)
@@ -536,7 +536,7 @@ class L1bdataNCFile(Level1bData):
             antenna_angles["yaw"])
 
         # Convert the timestamp to datetimes
-        self.time_orbit.timestamp = num2date(
+        self.time_orbit.timestamp = cn2pyd(
              datagroup.variables["timestamp"][:],
              self.time_def.units,
              calendar=self.time_def.calendar)
