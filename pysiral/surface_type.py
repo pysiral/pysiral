@@ -396,6 +396,7 @@ class SICCI2(SurfaceTypeClassifier):
         """
 
         # Pointer
+        opt = options.lead
         month_num = self._month
         parameter = self._classifier
 
@@ -406,20 +407,20 @@ class SICCI2(SurfaceTypeClassifier):
         lead.add(self._is_radar_mode)
 
         # Sigma0
-        sea_ice_backscatter_min = self.get_threshold_value(options, "sea_ice_backscatter_min", month_num)
+        sea_ice_backscatter_min = self.get_threshold_value(opt, "sea_ice_backscatter_min", month_num)
         lead.add(parameter.sigma0 >= sea_ice_backscatter_min)
 
         # Leading Edge Width
-        leading_edge_width_max = self.get_threshold_value(options, "leading_edge_width_max", month_num)
+        leading_edge_width_max = self.get_threshold_value(opt, "leading_edge_width_max", month_num)
         leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
         lead.add(leading_edge_width <= leading_edge_width_max)
 
         # Pulse Peakiness
-        peakiness_min = self.get_threshold_value(options, "leading_edge_width_max", month_num)
+        peakiness_min = self.get_threshold_value(opt, "leading_edge_width_max", month_num)
         lead.add(parameter.peakiness >= peakiness_min)
 
         # Ice Concentration
-        ice_concentration_min = self.get_threshold_value(options, "ice_concentration_min", month_num)
+        ice_concentration_min = self.get_threshold_value(opt, "ice_concentration_min", month_num)
         lead.add(parameter.sic > ice_concentration_min)
 
         # Done, add flag
@@ -433,6 +434,7 @@ class SICCI2(SurfaceTypeClassifier):
         """
 
         # Pointer
+        opt = options.sea_ice
         month_num = self._month
         parameter = self._classifier
 
@@ -443,22 +445,22 @@ class SICCI2(SurfaceTypeClassifier):
         ice.add(self._is_radar_mode)
 
         # Sigma0
-        sea_ice_backscatter_min = self.get_threshold_value(options, "sea_ice_backscatter_min", month_num)
-        sea_ice_backscatter_max = self.get_threshold_value(options, "sea_ice_backscatter_max", month_num)
+        sea_ice_backscatter_min = self.get_threshold_value(opt, "sea_ice_backscatter_min", month_num)
+        sea_ice_backscatter_max = self.get_threshold_value(opt, "sea_ice_backscatter_max", month_num)
         ice.add(parameter.sigma0 >= sea_ice_backscatter_min)
         ice.add(parameter.sigma0 <= sea_ice_backscatter_max)
 
         # Leading Edge Width
-        leading_edge_width_min = self.get_threshold_value(options, "leading_edge_width_min", month_num)
+        leading_edge_width_min = self.get_threshold_value(opt, "leading_edge_width_min", month_num)
         leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
         ice.add(leading_edge_width >= leading_edge_width_min)
 
         # Pulse Peakiness
-        peakiness_max = self.get_threshold_value(options, "peakiness_max", month_num)
+        peakiness_max = self.get_threshold_value(opt, "peakiness_max", month_num)
         ice.add(parameter.peakiness <= peakiness_max)
 
         # Ice Concentration
-        ice_concentration_min = self.get_threshold_value(options, "ice_concentration_min", month_num)
+        ice_concentration_min = self.get_threshold_value(opt, "ice_concentration_min", month_num)
         ice.add(parameter.sic > ice_concentration_min)
 
         # Done, add flag
@@ -474,7 +476,7 @@ class SICCI2(SurfaceTypeClassifier):
         """
 
         # Get the parameters
-        option_value = options[name]
+        option_value = getattr(options, name)
 
         # Check if list
         if type(option_value) is list:
