@@ -1,6 +1,6 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 
-id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2019 preview 1"
+id: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
 version_tag: "v3p0-preview1"
 
 # This settings file is valid for
@@ -8,7 +8,7 @@ hemisphere: north
 
 # Level 2 processor settings are mission specific
 mission:
-    id: envisat
+    id: ers2
 
 # Transfer data from the l1b to the l2 data object (from any data group)
 # The notation is the following:
@@ -154,13 +154,13 @@ corrections:
 l1b_pre_filtering:
 
     # Apply a drift correction to Envisat backcatter
-    # NOTE: 
+    # NOTE:
     #   The backscatter correction is not part of the Envisat l1bdata v030. In future updates the correction
     #   will be applied in the actual pre-processor and this correction should be removed from the Level-2
     #   processor recipe
-    envisat_backscatter_drift_correction: 
+    envisat_backscatter_drift_correction:
         pyclass: L1bBackscatterDriftCorrection
-        options: 
+        options:
             l1b_data_group: classifier
             l1b_parameter_name: sigma0
             backscatter_drift_factor: -0.003269253
