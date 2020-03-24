@@ -9,7 +9,8 @@ from pysiral.config import ConfigInfo, TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from pysiral.path import file_basename
-from netCDF4 import Dataset, num2date
+from ctfime import num2pydate
+from netCDF4 import Dataset
 
 import os
 import glob
@@ -68,7 +69,7 @@ class ReadNC(object):
             # Convert timestamps back to datetime objects
             # TODO: This needs to be handled better
             if attribute_name in ["start_time", "stop_time"]:
-                attribute_value = num2date(
+                attribute_value = num2pydate(
                     attribute_value, self.time_def.units,
                     calendar=self.time_def.calendar)
             setattr(self, attribute_name, attribute_value)

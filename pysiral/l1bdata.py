@@ -96,7 +96,7 @@ from pysiral.config import RadarModes
 
 
 from cftime import num2pydate as cn2pyd
-from netCDF4 import Dataset, num2date, date2num
+from netCDF4 import Dataset, date2num
 from collections import OrderedDict
 import numpy as np
 import copy
@@ -808,17 +808,7 @@ class L1bTimeOrbit(object):
         # Update the timestamp
         time_old_num = date2num(self.timestamp, DATE2NUM_UNIT)
         time_num = np.interp(corrected_indices, indices_map, time_old_num)
-        self.timestamp = num2date(time_num, DATE2NUM_UNIT)
-
-#        import matplotlib.pyplot as plt
-#        plt.figure("time")
-#        plt.scatter(corrected_indices[indices_map], time_old_num, alpha=0.5,
-#                    marker="+", s=80)
-#        plt.scatter(corrected_indices, time_num, alpha=0.5)
-#        plt.scatter(corrected_indices[gap_indices], time_num[gap_indices],
-#                    alpha=0.5, s=120)
-#        plt.show()
-#        stop
+        self.timestamp = num2pydate(time_num, DATE2NUM_UNIT)
 
     def get_parameter_by_name(self, name):
         try:

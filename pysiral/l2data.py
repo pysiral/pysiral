@@ -841,7 +841,7 @@ class L2iNCFileImport(object):
         self._parse()
 
     def _parse(self):
-        from netCDF4 import num2date
+        from ctfime import num2pydate
 
         content = ReadNC(self.filename)
 
@@ -864,7 +864,7 @@ class L2iNCFileImport(object):
             time = self.time
             time_parameter_name = "timestamp"
         self._time_parameter_name = time_parameter_name
-        dt = num2date(time, self.time_def.units, self.time_def.calendar)
+        dt = num2pydate(time, self.time_def.units, self.time_def.calendar)
         setattr(self, "time", dt)
         self.time = self.time
 
