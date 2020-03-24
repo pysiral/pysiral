@@ -9,7 +9,7 @@ from pysiral.config import ConfigInfo, TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from pysiral.path import file_basename
-from ctfime import num2pydate
+from cftime import num2pydate
 from netCDF4 import Dataset
 
 import os

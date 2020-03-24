@@ -5,7 +5,7 @@ import sys
 import xarray
 import numpy as np
 from scipy import interpolate
-from ctfime import num2pydate
+from cftime import num2pydate
 
 from pysiral import __version__ as pysiral_version
 from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness

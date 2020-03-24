@@ -841,7 +841,7 @@ class L2iNCFileImport(object):
         self._parse()
 
     def _parse(self):
-        from ctfime import num2pydate
+        from cftime import num2pydate
 
         content = ReadNC(self.filename)
 

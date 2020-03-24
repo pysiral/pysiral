@@ -6,7 +6,7 @@
 __author__ = "Stefan Hendricks"
 
 import numpy as np
-from ctfime import num2pydate
+from cftime import num2pydate
 
 from pysiral.config import PYSIRAL_VERSION
 from pysiral.classifier import EnvisatWaveformParameter

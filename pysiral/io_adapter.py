@@ -32,7 +32,7 @@ from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from ctfime import num2pydate
+from cftime import num2pydate
 import numpy as np
 
 
@@ -621,7 +621,7 @@ class L1bAdapterSentinel3(object):
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
-        from ctfime import num2pydate
+        from cftime import num2pydate
 
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(
