@@ -22,7 +22,7 @@ def main():
 
     # Copy the entire tree
     print("copy pysiral config files from package to user home: ")
-    dir_util.copy_tree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, verbose=1)
+    dir_util.copy_tree(str(PACKAGE_CONFIG_PATH), str(USER_CONFIG_PATH), verbose=1)
 
 if __name__ == "__main__":
     main()
