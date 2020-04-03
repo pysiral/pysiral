@@ -19,5 +19,6 @@ pyresample
 pyshp
 pyyaml
 scipy
+urllib2
 xmltodict
 xarray
