@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            ConfigInfo, get_yaml_config)
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME, ConfigInfo, get_yaml_config)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pysiral.config import options_from_dictionary
@@ -14,10 +13,9 @@ from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
 from collections import OrderedDict
+from pathlib import Path
 import numpy as np
 import parse
-import sys
-import os
 import re
 
 
@@ -77,7 +75,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def _init_from_output_def(self, output_def):
         """ Adds the information for the output def yaml files (either
         full filename or treedict structure) """
-        if os.path.isfile(output_def):
+        if Path(output_def).is_file():
             try:
                 self._output_def = get_yaml_config(output_def)
             except Exception as ex:
@@ -102,15 +100,15 @@ class OutputHandlerBase(DefaultLoggingClass):
             self.error.add_error("directory-error", msg)
 
     def _get_subdirectories(self, dt):
-        directory = self.basedir
+        directory = Path(self.basedir)
         for subfolder_tag in self.subfolders:
             parameter = getattr(dt, subfolder_tag)
             subfolder = self.subfolder_format[subfolder_tag] % parameter
-            directory = os.path.join(directory, subfolder)
+            directory = directory / subfolder
 
     def _get_directory_from_dt(self, dt):
         subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
-        return os.path.join(self.basedir, *subfolders)
+        return Path(self.basedir) / Path(*subfolders)
 
     def _validate_outputdef(self):
         """ Run a series of tests to check if a valid output definition
@@ -235,9 +233,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
     def get_fullpath_from_data(self, l2):
         """ Return export path and filename based on information
         provided in the l2 data object """
-        export_directory = self.get_directory_from_l2(l2)
-        export_filename = self.get_filename_from_l2(l2)
-        return os.path.join(export_directory, export_filename)
+        return Path(self.get_directory_from_l2(l2)) / self.get_filename_from_l2(l2)
 
     def get_global_attribute_dict(self, l2):
         attr_dict = OrderedDict()
@@ -253,37 +249,35 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
 
         # Get the target directory
         # XXX: Assumption time_range is monthly
-        directory = self._get_directory_from_dt(time_range.start)
+        directory = Path(self._get_directory_from_dt(time_range.start))
         # Get list of output files
-        search_pattern = os.path.join(directory, "*.*")
-        l2output_files = glob(search_pattern)
+        l2output_files = directory.glob("*.*")
 
         # Delete files
-        self.log.info("Removing %g l2 product files [ %s ] in %s" % (
-                len(l2output_files), self.id, directory))
+        self.log.info("Removing %g l2 product files [ %s ] in %s" % (len(l2output_files), self.id, directory))
         for l2output_file in l2output_files:
-                os.remove(l2output_file)
+            Path(l2output_file).unlink()
 
     def _init_product_directory(self):
         """ Get main product directory from local_machine_def, add mandatory
         runtag subdirectory, optional second subdirectory for overwrite
         protection and product level id subfolder"""
         pysiral_config = ConfigInfo()
-        basedir = pysiral_config.local_machine.product_repository
+        basedir = Path(pysiral_config.local_machine.product_repository)
         if not isinstance(self.subdirectory, list):
-            basedir = os.path.join(basedir, self.subdirectory)
+            basedir = basedir / self.subdirectory
         else:
-            basedir = os.path.join(basedir, *self.subdirectory)
+            basedir = basedir / Path(*self.subdirectory)
         if self.overwrite_protection:
-            basedir = os.path.join(basedir, self.now_directory)
-        basedir = os.path.join(basedir, self.product_level_subfolder)
+            basedir = basedir / self.now_directory
+        basedir = basedir / self.product_level_subfolder
         self._set_basedir(basedir)
 
     @property
     def default_output_def_filename(self):
         pysiral_config = ConfigInfo()
         local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        return Path(local_settings_path) / Path(*self.default_file_location)
 
 
 class NCDateNumDef(object):
@@ -485,7 +479,7 @@ class NCDataFile(DefaultLoggingClass):
 
     @property
     def full_path(self):
-        return os.path.join(self.export_path, self.export_filename)
+        return Path(self.export_path) / self.export_filename
 
 
 class L1bDataNC(DefaultLoggingClass):
@@ -522,7 +516,7 @@ class L1bDataNC(DefaultLoggingClass):
     def _validate(self):
         if self.filename is None:
             self._create_filename()
-        self.path = os.path.join(self.output_folder, self.filename)
+        self.path = Path(self.output_folder) / self.filename
 
     def _create_filename(self):
         self.filename = Path(self.l1b.filename.stem+".nc")
@@ -881,7 +875,7 @@ class PysiralOutputFolder(object):
         for subfolder_tag in subfolders:
             parameter = getattr(startdt, subfolder_tag)
             subfolder = stringify[subfolder_tag] % parameter
-            self.path = os.path.join(self.path, subfolder)
+            self.path = Path(self.path) / subfolder
 
     def create(self):
         Path(self.path).mkdir(exist_ok=True, parents=True)
@@ -892,7 +886,7 @@ class PysiralOutputFolder(object):
         export_folder = local_repository[self.mission_id][self.version].l1bdata
         yyyy = "%04g" % self.year
         mm = "%02g" % self.month
-        self.path = os.path.join(export_folder, self.hemisphere, yyyy, mm)
+        self.path = Path(export_folder) / self.hemisphere / yyyy / mm
 
 
 def get_output_class(name):

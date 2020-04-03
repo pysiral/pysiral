@@ -3,7 +3,7 @@
 from pysiral.errorhandler import FileIOErrorHandler
 
 import numpy as np
-import os
+from pathlib import Path
 
 
 class ERSSGDR(object):
@@ -28,7 +28,7 @@ class ERSSGDR(object):
         -> guess mission id from filename
         :return:
         """
-        filename = os.path.split(self._filename)[-1]
+        filename = Path(self._filename).name
         return filename[0:2]
 
     def get_status(self):
@@ -50,7 +50,7 @@ class ERSSGDR(object):
     def filename(self, filename):
         """ Save and validate filenames for header and product file """
         # Test if valid file first
-        self._error.file_undefined = not os.path.isfile(filename)
+        self._error.file_undefined = not Path(filename).is_file()
         if self._error.file_undefined:
             return
         self._filename = filename

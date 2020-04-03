@@ -22,11 +22,11 @@ from scipy.ndimage.filters import maximum_filter
 
 from collections import OrderedDict
 from datetime import datetime, date
+from pathlib import Path
 import itertools
 import uuid
 import numpy as np
 import sys
-import os
 import re
 
 
@@ -836,7 +836,7 @@ class Level3OutputHandler(OutputHandlerBase):
         provided in the l2 data object """
         export_directory = self.get_directory_from_data(l3)
         export_filename = self.get_filename_from_data(l3)
-        return os.path.join(export_directory, export_filename)
+        return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l3):
         attr_dict = OrderedDict()
@@ -852,17 +852,16 @@ class Level3OutputHandler(OutputHandlerBase):
         the default pysiral product directory. Product level id and
         overwrite protection subfolders are added for both options"""
         # argument is directory
-        if os.path.isdir(base_directory_or_id):
-            basedir = base_directory_or_id
+        if Path(base_directory_or_id).is_dir():
+            basedir = Path(base_directory_or_id)
         # argument is id
         else:
-            basedir = self.pysiral_config.local_machine.product_repository
-            basedir = os.path.join(basedir, base_directory_or_id)
+            basedir = Path(self.pysiral_config.local_machine.product_repository) / base_directory_or_id
         # add product level subfolder
-        basedir = os.path.join(basedir, self.product_level_subfolder, self._period)
+        basedir = basedir / self.product_level_subfolder / self._period
         # optional (subfolder with current time)
         if self.overwrite_protection:
-            basedir = os.path.join(basedir, self.now_directory)
+            basedir = basedir / self.now_directory
         # set the directory
         self._set_basedir(basedir)
 
@@ -870,7 +869,7 @@ class Level3OutputHandler(OutputHandlerBase):
     def default_output_def_filename(self):
         pysiral_config = ConfigInfo()
         local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        return Path(local_settings_path) / Path(*self.default_file_location)
 
     @property
     def flip_yc(self):

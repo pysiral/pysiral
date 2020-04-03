@@ -8,7 +8,6 @@ Created on Mon Jul 06 17:57:33 2015
 import unittest
 
 from attrdict import AttrDict
-import os
 
 from pysiral import USER_CONFIG_PATH
 from pysiral.config import get_yaml_config
@@ -22,7 +21,7 @@ class TestDefinitionfiles(unittest.TestCase):
     def testYamlSyntaxOfDefinitionFiles(self):
         def_files = ["mission_def.yaml", "auxdata_def.yaml"]
         for def_file in def_files:
-            filename = os.path.join(USER_CONFIG_PATH, def_file)
+            filename = USER_CONFIG_PATH / def_file
             content = get_yaml_config(filename)
             self.assertIsInstance(content, AttrDict, msg=def_file)
 

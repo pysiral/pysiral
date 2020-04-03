@@ -10,8 +10,8 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from cftime import num2pydate
 from netCDF4 import Dataset
+from pathlib import Path
 
-import os
 import glob
 import tempfile
 import uuid
@@ -133,18 +133,15 @@ class NCMaskedGridData(object):
 
 
 def get_temp_png_filename():
-    return os.path.join(tempfile.gettempdir(), str(uuid.uuid4())+".png")
+    return Path(tempfile.gettempdir()) / str(uuid.uuid4())+".png"
 
 
-def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
-                      version="default"):
-    import glob
+def get_l1bdata_files(mission_id, hemisphere, year, month, config=None, version="default"):
     if config is None:
         config = ConfigInfo()
     l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
-    directory = os.path.join(
-        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+    directory = Path(l1b_repo) / hemisphere / "%04g" % year / "%02g" % month
+    l1bdata_files = sorted(directory.glob("*.nc"))
     return l1bdata_files
 
 
@@ -183,8 +180,8 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
         l1b_repo = repo_branch.l1bdata
     else:
         l1b_repo = repo_branch.l1p
-    directory = os.path.join(l1b_repo, hemisphere, yyyy, mm)
-    all_l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+    directory = Path(l1b_repo) / hemisphere / yyyy / mm
+    all_l1bdata_files = sorted(directory.glob("*.nc"))
 
     # 2) First filtering step: Check if different algorithm baseline values
     # exist in the list of l1bdata files

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import os
+
 import re
 import numpy as np
+
+from pathlib import Path
 
 from pysiral.errorhandler import FileIOErrorHandler
 from pysiral.envisat.sgdr_mds_def import envisat_get_mds_def
@@ -11,7 +13,6 @@ from pysiral.envisat.functions import (mdsr_timestamp_to_datetime,
                                        get_envisat_wfm_range)
 from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
 from pysiral.esa.functions import get_structarr_attr
-from pysiral.iotools import ReadNC
 
 
 class EnvisatSGDR(object):
@@ -70,7 +71,7 @@ class EnvisatSGDR(object):
     def filename(self, filename):
         """ Save and validate filenames for header and product file """
         # Test if valid file first
-        self._error.file_undefined = not os.path.isfile(filename)
+        self._error.file_undefined = not Path(filename).is_file()
         if self._error.file_undefined:
             return
         self._filename = filename

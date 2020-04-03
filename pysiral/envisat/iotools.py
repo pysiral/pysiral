@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
 import glob
 import numpy as np
-
+from pathlib import Path
 from collections import deque
 
 from pysiral.errorhandler import ErrorStatus
@@ -69,17 +68,16 @@ class EnvisatFileList(DefaultLoggingClass):
             self._sorted_list.extend(sgdr_list)
 
     def _get_toplevel_search_folder(self):
-        folder = self.folder
+        folder = Path(self.folder)
         if self.year is not None:
-            folder = os.path.join(folder, "%4g" % self.year)
+            folder = folder / "%4g" % self.year
         if self.month is not None and self.year is not None:
-            folder = os.path.join(folder, "%02g" % self.month)
+            folder = folder / "%02g" % self.month
         return folder
 
     def _get_list_item(self, filename, dirpath):
         """ Return full path and date str """
-        return (os.path.join(dirpath, filename),
-                filename.split("_")[2].split("-")[1][1:])
+        return Path(dirpath) / filename, filename.split("_")[2].split("-")[1][1:]
 
     def _limit_to_time_range(self):
 
@@ -88,8 +86,7 @@ class EnvisatFileList(DefaultLoggingClass):
             return
 
         # Cross-check the data label and day list
-        self._sorted_list = [fn for fn in self._sorted_list if
-                             int(fn[1][-2:]) in self.day_list]
+        self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][-2:]) in self.day_list]
 
         self.log.info("%g files match time range of this month" % (
             len(self._sorted_list)))
@@ -141,13 +138,12 @@ class EnvisatSGDRNC(DefaultLoggingClass):
 
             # Search folder
             lookup_folder = self._get_lookup_folder(year, month, day)
-            if not os.path.isdir(lookup_folder):
+            if not Path(lookup_folder).is_dir():
                 continue
 
             # Query the daily folder
             filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
-            search = os.path.join(lookup_folder, filename_search)
-            sgdr_files = glob.glob(search)
+            sgdr_files = Path(lookup_folder).glob(filename_search)
 
             # Add files to result list
             if len(sgdr_files) == 0:
@@ -155,7 +151,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             self._sorted_list.extend(sorted(sgdr_files))
 
     def _get_lookup_folder(self, year, month, day):
-        return os.path.join(self.cfg.lookup_dir, "%04g" % year, "%02g" % month, "%02g" % day)
+        return Path(self.cfg.lookup_dir) / "%04g" % year / "%02g" % month / "%02g" % day
 
     @property
     def sorted_list(self):

@@ -5,7 +5,7 @@ A short script that should be used to set the location of the pysiral config fil
 import sys
 import argparse
 import shutil
-import os
+from pathlib import Path
 from distutils import log, dir_util
 log.set_verbosity(log.INFO)
 log.set_threshold(log.INFO)
@@ -32,7 +32,7 @@ def main(args):
             sys.exit(2)
 
         # Check if directory exists
-        if os.path.isdir(args.target_create):
+        if Path(args.target_create).is_dir():
             print("Error: Directory exists: %s" % str(args.target_create))
             print("Creating new config dir [FAILED]")
             sys.exit(1)
@@ -49,12 +49,12 @@ def main(args):
 
         # b1: Specific files
         if args.lmd != "":
-            if not os.path.isfile(args.lmd):
+            if not Path(args.lmd).is_file():
                 print("Error: Could copy local_machine_def.yaml: %s" % str(args.lmd))
                 print("Creating new config dir [FAILED]")
                 sys.exit(1)
 
-            head, tail = os.path.split(args.lmd)
+            head, tail = Path(args.lmd).parts
             if tail != "local_machine_def.yaml":
                 print("Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd))
                 print("Creating new config dir [FAILED]")
@@ -63,8 +63,8 @@ def main(args):
 
         # b2: from template
         else:
-            template_filename = os.path.join(PACKAGE_CONFIG_PATH, "templates", "local_machine_def.yaml.template")
-            target_filename = os.path.join(args.target_create, "local_machine_def.yaml")
+            template_filename = PACKAGE_CONFIG_PATH / "templates" / "local_machine_def.yaml.template"
+            target_filename = Path(args.target_create) / "local_machine_def.yaml"
             shutil.copy(template_filename, target_filename)
 
         # c. Change the value in PYSIRAL-CFG-LOC
@@ -80,7 +80,7 @@ def main(args):
             print(" abort")
             sys.exit(2)
 
-        if os.path.isdir(args.target_activate):
+        if Path(args.target_activate).is_dir():
             set_pysiral_cfg_loc(args.target_activate)
             print("Activating config dir [SUCCESS]")
             sys.exit(0)
@@ -107,7 +107,7 @@ def set_pysiral_cfg_loc(target):
     Write the location of the pysiral configuration for the current package
     NOTE: If you don't know what this means: Don't!
     """
-    cfg_loc_file = os.path.join(PACKAGE_ROOT_DIR, "PYSIRAL-CFG-LOC")
+    cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
     with open(cfg_loc_file, 'w') as fh:
         fh.write(target)
 

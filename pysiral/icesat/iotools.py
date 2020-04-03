@@ -4,7 +4,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
 
 from glob import glob
-import os
+from pathlib import Path
 
 
 class ICESatGLAH13Repository(DefaultLoggingClass):
@@ -19,7 +19,7 @@ class ICESatGLAH13Repository(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=class_name)
 
         # Sanity check on path to local repository
-        if os.path.isdir(str(local_repository_path)):
+        if Path(local_repository_path).is_dir():
             self._local_repository_path = local_repository_path
         else:
             msg = "Invalid GLAH13 directory: %s" % str(local_repository_path)
@@ -28,15 +28,12 @@ class ICESatGLAH13Repository(DefaultLoggingClass):
 
     def get_glah13_hdfs(self, time_range):
         search_folder = self._get_full_path(time_range)
-        search = os.path.join(search_folder, self._GLAH13_SEARCH)
-        return sorted(glob(search))
+        return sorted(Path(search_folder).glob(self._GLAH13_SEARCH))
 
     def _get_full_path(self, time_range):
         """ Assuming the time range monthly """
         folder = self.local_repository_path
-        subfolders = ["%04g" % time_range.start.year,
-                      "%02g" % time_range.start.month]
-        return os.path.join(folder, *subfolders)
+        return Path(folder) / "%04g" % time_range.start.year / "%02g" % time_range.start.month
 
     @property
     def local_repository_path(self):

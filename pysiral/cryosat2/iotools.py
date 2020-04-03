@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import glob
 import numpy as np
+from pathlib import Path
 from collections import deque
 
 from pysiral.errorhandler import ErrorStatus
@@ -85,16 +85,16 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
             len(self._sorted_list)))
 
     def _get_toplevel_search_folder(self, mode):
-        folder = getattr(self, "folder_"+mode)
+        folder = Path(getattr(self, "folder_"+mode))
         if self.year is not None:
-            folder = os.path.join(folder, "%4g" % self.year)
+            folder = folder / "%4g" % self.year
         if self.month is not None:
-            folder = os.path.join(folder, "%02g" % self.month)
+            folder = folder, "%02g" / self.month
         return folder
 
     @staticmethod
     def _get_list_item(filename, dirpath):
-        return os.path.join(dirpath, filename), filename.split("_")[6]
+        return Path(dirpath) / filename, filename.split("_")[6]
 
     def _sort_mixed_mode_file_list(self):
         dtypes = [('path', object), ('start_time', object)]
@@ -145,13 +145,11 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         """ Return a list of files for a given lookup directory """
         # Search for specific day
         filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
-        file_search = os.path.join(lookup_dir, filename_search)
-        input_file_list = glob.glob(file_search)
-        return sorted(input_file_list)
+        return sorted(Path(lookup_dir).glob(filename_search))
 
     def _get_lookup_dir(self, year, month, mode):
         yyyy, mm = "%04g" % year, "%02g" % month
-        return os.path.join(self.cfg.lookup_dir[mode], yyyy, mm)
+        return Path(self.cfg.lookup_dir[mode]) / yyyy / mm
 
     def _get_tcs_from_filenames(self, files):
         """
@@ -161,7 +159,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         """
         tcs = []
         for filename in files:
-            filename = os.path.split(filename)[1]
+            filename = str(Path(filename).name)
             filename_segments = filename.split(self.cfg.filename_sep)
             tcs.append(filename_segments[self.cfg.tcs_str_index])
         return tcs

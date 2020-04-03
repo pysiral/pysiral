@@ -12,7 +12,7 @@ from datetime import timedelta
 import argparse
 import time
 import sys
-import os
+from pathlib import Path
 
 
 def pysiral_l2preproc():
@@ -117,7 +117,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
                 "l2p files for the requested period\n" + \
                 "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                 "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
@@ -187,8 +187,8 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2i_product_dir(self):
         l2i_product_dir = self._args.l2i_product_dir
-        if os.path.isdir(l2i_product_dir):
-            return os.path.normpath(l2i_product_dir)
+        if Path(l2i_product_dir).is_dir():
+            return Path(l2i_product_dir).resolve(strict=False)
         else:
             msg = "Invalid l2i product dir: %s" % str(l2i_product_dir)
             self.error.add_error("invalid-l2i-product-dir", msg)

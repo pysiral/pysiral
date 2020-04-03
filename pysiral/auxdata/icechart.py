@@ -16,7 +16,7 @@ import pyproj
 # import gdal
 import datetime
 import numpy as np
-import os
+from pathlib import Path
 
 class IC(AuxdataBaseClass):
 
@@ -53,7 +53,7 @@ class IC(AuxdataBaseClass):
             self.register_auxvar("ic_sa", "icechart_sa", None, None)
             self.register_auxvar("ic_sb", "icechart_sb", None, None)
             self.register_auxvar("ic_sc", "icechart_sc", None, None)
-        
+
     def _get_requested_date(self, l2):
         """ Use first timestamp as reference, date changes are ignored """
         year = l2.track.timestamp[0].year
@@ -67,17 +67,17 @@ class IC(AuxdataBaseClass):
             # Data already loaded, nothing to do
             self.add_handler_message("IC: tif already present")
             return
-        
+
         paths, timedelta = self._get_local_repository_filename(l2)
         self.add_handler_message('IN ICECHART _GET_DATA, PATHS 0: %s' % paths[0])
         #print os.path.isfile(paths[0])
-        
+
         # Validation
-        if not os.path.isfile(paths[0]):
+        if not Path(paths[0]).is_file():
             msg = "IC: File not found: %s " % paths[0]
             self.error.add_error("auxdata_missing_icechart", msg)
             return
-        
+
         self._data_ct = get_tif_image_data(paths[0])
         self._data_ca = get_tif_image_data(paths[1])
         self._data_cb = get_tif_image_data(paths[2])
@@ -85,7 +85,7 @@ class IC(AuxdataBaseClass):
         self._data_sa = get_tif_image_data(paths[4])
         self._data_sb = get_tif_image_data(paths[5])
         self._data_sc = get_tif_image_data(paths[6])
-        
+
         # to flag the CT values =-9 (corresponding to no data in the tif)
         flagged = np.where(self._data_ct == -9)
         self._data_ct[flagged] = np.nan
@@ -95,7 +95,7 @@ class IC(AuxdataBaseClass):
         self._data_sa[flagged] = np.nan
         self._data_sb[flagged] = np.nan
         self._data_sc[flagged] = np.nan
-        
+
         # This step is important for calculation of image coordinates
         #self._data.ice_conc = np.flipud(self._data.ice_conc)
         #self._data_ct = np.flipud(self._data_ct)
@@ -105,28 +105,28 @@ class IC(AuxdataBaseClass):
         #self._data_sa = np.flipud(self._data_sa)
         #self._data_sb = np.flipud(self._data_sb)
         #self._data_sc = np.flipud(self._data_sc)
-        
+
         self.add_handler_message("IC: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0])
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
 
         time = datetime.datetime(int(self.year), int(self.month), int(self.day))
-        
-        path = self.cfg.local_repository
-        
+
+        path = Path(self.cfg.local_repository)
+
         other_icevars = ['CA', 'CB', 'CC', 'SA', 'SB', 'SC']
         for delta in [0, -1, 1, -2, 2, -3, 3, 4, -4, 5, -5, 6, -6, 7, -7]:
             fnames = []
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = os.path.join(path, str(year), str(month), "merged_"+datestring+"_CT.tif")
-            if os.path.isfile(str_filename):
+            str_filename = path / str(year) / str(month) / "merged_"+datestring+"_CT.tif"
+            if str_filename.is_file():
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(os.path.join(path, str(year), str(month), 'merged_'+datestring+'_'+o+'.tif'))
+                    fnames.append(path / str(year) / str(month) / 'merged_'+datestring+'_'+o+'.tif')
                 return fnames, timedelta
                 break
             else:
@@ -153,25 +153,25 @@ class IC(AuxdataBaseClass):
         data_sa = list()
         data_sb = list()
         data_sc = list()
-        
+
         EASE_proj = pyproj.Proj('+proj=laea +lat_0=90 +lon_0=0 +ellps=WGS84 +datum=WGS84 +units=m')
         latlon_proj = pyproj.Proj('+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs')
-        
+
         vec_x, vec_y =  pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
-        
+
         # Convert track projection coordinates to image coordinates
         XX, YY = self.XXYYGrids()
         xOrigin = XX[0][0]
         yOrigin = YY[0][0]
         pixelWidth = XX[0][1]-XX[0][0]
         pixelHeight = YY[1][0]-YY[0][0]
-        
+
         for coords in zip(vec_x,vec_y):
             x = coords[0]
             y = coords[1]
             xOffset = int((x - xOrigin) / pixelWidth)
             yOffset = int((y - yOrigin) / pixelHeight)
-            
+
             stuf = self._data_ct[yOffset][xOffset]
             dct = str(self._data_ct[yOffset][xOffset])  # AMANDINE: why this conversion to string?
             dca = self._data_ca[yOffset][xOffset]
@@ -180,7 +180,7 @@ class IC(AuxdataBaseClass):
             dsa = self._data_sa[yOffset][xOffset]
             dsb = self._data_sb[yOffset][xOffset]
             dsc = self._data_sc[yOffset][xOffset]
-            
+
             # No value in the tif corresponds to -9
             if (dca == -9) and (dcb == -9) and (dcc == -9):
                 #print "ICECHART, all is -9"
@@ -192,7 +192,7 @@ class IC(AuxdataBaseClass):
             data_sa.append(dsa)
             data_sb.append(dsb)
             data_sc.append(dsc)
-            
+
         return [data_ct, data_ca, data_cb, data_cc, data_sa, data_sb, data_sc]
 
 
@@ -246,13 +246,13 @@ class ICA(AuxdataBaseClass):
             return
         paths, timedelta = self._get_local_repository_filename(l2)
         #print 'AARI PATHS 0', paths[0]
-        
+
         # Validation
-        if not os.path.isfile(paths[0]):
+        if not Path(paths[0]).is_file():
             self._msg = "ICA: File not found: %s " % paths[0]
             self.error.add_error("auxdata_missing_sic", self._msg)
             return
-        
+
         self._data_ct = get_tif_image_data(paths[0])
         self._data_ca = get_tif_image_data(paths[1])
         self._data_cb = get_tif_image_data(paths[2])
@@ -289,21 +289,21 @@ class ICA(AuxdataBaseClass):
 
 
         time = datetime.datetime(int(self.year),int(self.month),int(self.day))
-        
-        path = self.cfg.local_repository
-                
+
+        path = Path(self.cfg.local_repository)
+
         other_icevars = ['CA','CB','CC','SA','SB','SC']
         for delta in [0, -1, 1, -2, 2, -3, 3, 4, -4, 5, -5, 6, -6, 7, -7]:
             fnames = []
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = os.path.join(path, str(year), str(month), "merged_aari_"+datestring+"_CT.tif")
-            if os.path.isfile(str_filename):
+            str_filename = path / str(year) / str(month) / "merged_aari_"+datestring+"_CT.tif"
+            if str_filename.is_file():
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(os.path.join(path, str(year), str(month), 'merged_aari_'+datestring+'_'+o+'.tif'))
+                    fnames.append(path / str(year) / str(month) / 'merged_aari_'+datestring+'_'+o+'.tif')
                 return fnames, timedelta
                 break
             else:
@@ -320,7 +320,7 @@ class ICA(AuxdataBaseClass):
         vec_X = np.arange(-5400000, 5400000, 2000) + 1000
         [XX, YY] = np.meshgrid(vec_X, vec_Y)
         return XX,YY
-    
+
     def _get_sic_ic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
         # kwargs = self.cfg.option[l2.hemisphere].projection
@@ -335,9 +335,9 @@ class ICA(AuxdataBaseClass):
 
         EASE_proj = pyproj.Proj('+proj=laea +lat_0=90 +lon_0=0 +ellps=WGS84 +datum=WGS84 +units=m')
         latlon_proj = pyproj.Proj('+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs')
-        
+
         vec_x, vec_y =  pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
-        
+
         # Convert track projection coordinates to image coordinates
         XX, YY = self.XXYYGrids()
         xOrigin = XX[0][0]
@@ -350,7 +350,7 @@ class ICA(AuxdataBaseClass):
             y = coords[1]
             xOffset = int((x - xOrigin) / pixelWidth)
             yOffset = int((y - yOrigin) / pixelHeight)
-            
+
             try:
                 stuf =  self._data_ct[yOffset][xOffset]
                 data_ct.append(str(self._data_ct[yOffset][xOffset]))

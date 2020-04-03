@@ -5,11 +5,11 @@ Created on Tue Jul 14 14:48:01 2015
 @author: Stefan
 """
 
-import os
 import parse
 import xmltodict
 import numpy as np
-from treedict import TreeDict
+from attrdict import AttrDict
+from pathlib import Path
 from dateutil import parser as dtparser
 from datetime import datetime, timedelta
 
@@ -163,8 +163,7 @@ def parse_cryosat_l1b_filename(filename):
     Returns the information in the CryoSat-2 l1b filename
     """
     # Strip path and file extension
-    filename = os.path.basename(filename)
-    filename = os.path.splitext(filename)[0]
+    filename = Path(filename).stem
     # Construct the parser
     parser_str = "CS_{proc_stage}_"
     parser_str += "{instrument}_"
@@ -179,15 +178,15 @@ def parse_cryosat_l1b_filename(filename):
     # Do some post-editing
     # - parse is not that smart when it comes to work with date strings
     # - naming conventions as the rest of pysiral
-    info = TreeDict()
-    info.mission = "cryosat2"
-    info.instrument = result["instrument"].lower()
-    info.radar_mode = result["radar_mode"].lower()
-    info.data_level = "L"+result["data_level"]
-    info.start_dt = dtparser.parse(result["start_dt"])
-    info.stop_dt = dtparser.parse(result["stop_dt"])
-    info.baseline = result["baseline"]
-    return info
+    info = {}
+    info["mission"] = "cryosat2"
+    info["instrument"] = result["instrument"].lower()
+    info["radar_mode"] = result["radar_mode"].lower()
+    info["data_level"] = "L"+result["data_level"]
+    info["start_dt"] = dtparser.parse(result["start_dt"])
+    info["stop_dt"] = dtparser.parse(result["stop_dt"])
+    info["baseline"] = result["baseline"]
+    return AttrDict(info)
 
 
 def parse_cryosat_l1b_xml_header(filename):

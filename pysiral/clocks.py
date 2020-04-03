@@ -12,9 +12,10 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import time
+import urllib2
 import numpy as np
+from pathlib import Path
 
-import os
 import re
 
 
@@ -60,7 +61,6 @@ class UTCTAIConverter(object):
     def update_definition(self):
         """ Get definition file from web """
         # XXX: Requires error catching
-        import urllib2
         req = urllib2.Request(self.url)
         response = urllib2.urlopen(req, timeout=60)
         content = response.readlines()
@@ -75,7 +75,7 @@ class UTCTAIConverter(object):
         """
 
         # Pull definition file if not available
-        if not os.path.isfile(self.local_ls_ietf_definition):
+        if not Path(self.local_ls_ietf_definition).is_file():
             self.update_definition()
 
         # Read from local file
@@ -110,7 +110,7 @@ class UTCTAIConverter(object):
     @property
     def local_ls_ietf_definition(self):
         """ Return the local filename for the IETF leap seconds definition """
-        return os.path.join(USER_CONFIG_PATH, "leap-seconds.list")
+        return USER_CONFIG_PATH / "leap-seconds.list"
 
 
 class StopWatch(object):

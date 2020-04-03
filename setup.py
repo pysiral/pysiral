@@ -7,7 +7,7 @@ from setuptools.extension import Extension
 from setuptools import setup, find_packages
 
 import numpy
-import os
+from pathlib import Path
 
 # Get the readme
 with open('README.md') as f:
@@ -18,13 +18,13 @@ with open('LICENSE') as f:
     license = f.read()
 
 # Get the version
-mypackage_root_dir = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(mypackage_root_dir, "pysiral", 'VERSION')) as version_file:
+mypackage_root_dir = Path(__file__).absolute().parent
+with open(mypackage_root_dir / "pysiral" / 'VERSION') as version_file:
     version = version_file.read().strip()
 
 # cythonized extensions go here
 extensions = [
-    Extension("pysiral.bnfunc.cytfmra", [os.path.join("pysiral", "bnfunc", "cytfmra.pyx")])]
+    Extension("pysiral.bnfunc.cytfmra", [Path("pysiral/bnfunc/cytfmra.pyx")])]
 
 # Package requirements
 with open("requirements.txt") as f:

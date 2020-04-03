@@ -12,7 +12,7 @@ from datetime import timedelta
 import argparse
 import time
 import sys
-import os
+from pathlib import Path
 
 
 def pysiral_l3proc():
@@ -113,7 +113,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
                       "l3 files for the requested period\n" + \
                       "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                       "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
@@ -179,7 +179,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
     @property
     def l2i_product_directory(self):
-        return os.path.join(self.l3_product_basedir, "l2i")
+        return Path(self.l3_product_basedir) / "l2i"
 
     @property
     def l3_settings_file(self):
@@ -241,8 +241,8 @@ class Level3ProcArgParser(DefaultLoggingClass):
     def l3_product_basedir(self):
         """ Returns the base directory (one level below l2i) """
         # 1. Clean up the path
-        product_basedir = os.path.abspath(self._args.l2i_basedir)
-        dirs = os.path.split(product_basedir)
+        product_basedir = Path(self._args.l2i_basedir).resolve(strict=False)
+        dirs = product_basedir.parts
         if dirs[1] == "l2i":
             return dirs[0]
         else:

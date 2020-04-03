@@ -10,8 +10,8 @@ from pysiral.esa.header import (ESAProductHeader, ESAScienceDataSetDescriptors)
 from pysiral.cryosat2.l1b_mds_def import cryosat2_get_mds_def
 from pysiral.cryosat2.functions import (parse_cryosat_l1b_filename,
                                         parse_cryosat_l1b_xml_header)
-import os
 import re
+from pathlib import Path
 import numpy as np
 
 
@@ -163,12 +163,12 @@ class CryoSatL1B(object):
     def filename(self, filename):
         """ Save and validate filenames for header and product file """
         # Test if valid file first
-        self._error.file_undefined = not os.path.isfile(filename)
+        self._error.file_undefined = not Path(filename).is_file()
         if self._error.file_undefined:
             return
         # Split filenames in product and header file
         self._filename_product = filename
-        self._filename_header = os.path.splitext(filename)[0]+".HDR"
+        self._filename_header = Path(filename).with_suffix(".HDR")
 
     @property
     def baseline(self):

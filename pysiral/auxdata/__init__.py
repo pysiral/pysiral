@@ -8,14 +8,12 @@ Created on Fri May 19 14:42:35 2017
 __all__ = ["mss", "icechart", "rio", "sic", "sitype", "snow", "region"]
 
 
-import os
 import re
 
 import numpy as np
 
 import scipy.ndimage as ndimage
-
-
+from pathlib import Path
 from pyproj import Proj
 
 from pysiral.config import options_from_dictionary
@@ -199,12 +197,12 @@ class AuxdataBaseClass(object):
         """ Returns the local file path for the requested date"""
 
         # Main directory
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
 
         # Add the subfolders
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
 
         # Get the period dict (will be constructed from filenaming)
         period_dict = {}
@@ -213,7 +211,7 @@ class AuxdataBaseClass(object):
             attr_name = attr_def[1:-1]
             period_dict[attr_name] = getattr(self, attr_name)
         filename = self.cfg.filenaming.format(**period_dict)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
     @property

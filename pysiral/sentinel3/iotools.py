@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import re
-import os
 import glob
+from pathlib import Path
 from collections import deque
 
 from pysiral.errorhandler import ErrorStatus
@@ -55,23 +55,8 @@ class Sentinel3FileList(DefaultLoggingClass):
                 self._sorted_list.extend(sorted(match))
 
     def _get_toplevel_search_folder(self, year, month):
-        folder = self.folder
-        folder = os.path.join(folder, "%4g" % year)
-        folder = os.path.join(folder, "%02g" % month)
+        folder = Path(self.folder) / "%4g" % year / "%02g" % month
         return folder
-
-#    def _limit_to_time_range(self):
-#
-#        # self.day_list is only set if time_range is not a full month
-#        if not hasattr(self, "day_list"):
-#            return
-#
-#        # Cross-check the data label and day list
-#        self._sorted_list = [fn for fn in self._sorted_list if
-#                             int(fn[1][6:8]) in self.day_list]
-#
-#        self.log.info("%g files match time range of this month" % (
-#            len(self._sorted_list)))
 
 
 class CodaL2SralFileDiscovery(DefaultLoggingClass):
@@ -126,9 +111,7 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
 
     def _get_toplevel_search_folder(self, year, month):
         """ Get the folder for the file search """
-        folder = self.cfg.lookup_dir
-        folder = os.path.join(folder, "%4g" % year)
-        folder = os.path.join(folder, "%02g" % month)
+        folder = Path(self.cfg.lookup_dir) / "%4g" % year / "%02g" % month
         return folder
 
     def _reset_file_list(self):
@@ -166,8 +149,7 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc")
     # one date tag with asterisk and search for match
 
     # split the directories
-    folder, filename = os.path.split(l1nc_filename)
-    directories = folder.split(os.sep)
+    directories = Path(l1nc_filename).parent.parts
 
     # split the dates with asterisk, orbit number should provide unique
     # match for the test data set
@@ -180,14 +162,10 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc")
 
     # Compile the folder again with search pattern
     search_s3_l1b_folder = "_".join(s3_orbit_dir_components)
-    main_dir = os.sep.join(directories[:-1])
-    sral_l1_search = os.path.join(main_dir, search_s3_l1b_folder)
-
-    # Search and return first match. If no match is found return none
-    sral_l1_folder = glob.glob(sral_l1_search)
+    sral_l1_folder = Path(*directories[:-1]).glob(search_s3_l1b_folder)
 
     if len(sral_l1_folder) > 0:
-        l1nc_filename = os.path.join(sral_l1_folder[0], target)
+        l1nc_filename = sral_l1_folder[0] / target
     else:
         return None
     return l1nc_filename
