@@ -1,6 +1,22 @@
 # History of changes
 
-## Version 0.7.2.4 (13. February 2019)
+## Version 0.7.3 (3. April 2020)
+
+**Bugfix**
+- [config] Force remove time zones from data comparison when evaluationg requested time ranges
+
+**Changes**
+- [auxdata] Added flexibility for the use of monthly or fixed thresholds in the SICCI surface type classifier class
+
+**Settings**
+- [l2proc] Added ERS-1/2 v3.0-preview2 initial processor settings (surface type classification only at this point)
+- [missions] Added ERS1 mission definition
+
+**Technical**
+- [modules] replaced netCDF4.date2num with cftime.date2pynum throughout the package due to some weird inconsistencies of the return object type 
+
+
+## Version 0.7.2.4 (13. February 2020)
 
 **Bugfix**
 - [l1preproc] bugfix: local_machine_def_tag was not properly set to output handler

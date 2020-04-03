@@ -6,7 +6,7 @@
 __author__ = "Stefan Hendricks"
 
 import numpy as np
-from netCDF4 import num2date
+from cftime import num2pydate
 
 from pysiral.config import PYSIRAL_VERSION
 from pysiral.classifier import EnvisatWaveformParameter
@@ -125,7 +125,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         sgdr_timestamp = self.sgdr.nc.time_20hz.flatten()
         units = self.cfg.sgdr_timestamp_units
         calendar = self.cfg.sgdr_timestamp_calendar
-        timestamp = num2date(sgdr_timestamp, units, calendar)
+        timestamp = num2pydate(sgdr_timestamp, units, calendar)
         self.l1.time_orbit.timestamp = timestamp
 
         # Mandatory antenna pointing parameter (but not available for ERS)

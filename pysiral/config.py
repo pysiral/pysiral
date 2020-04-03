@@ -37,8 +37,8 @@ from isodate import duration_isoformat
 
 
 # TODO: These have to be removed (see __version__ in __init__.py)
-PYSIRAL_VERSION = "0.7.2.3"
-PYSIRAL_VERSION_FILENAME = "0723"
+PYSIRAL_VERSION = "0.7.3"
+PYSIRAL_VERSION_FILENAME = "073"
 HOSTNAME = socket.gethostname()
 
 # TODO: These have to removed (better use info from mission_def)
@@ -272,8 +272,8 @@ class TimeRangeRequest(DefaultLoggingClass):
 
     def clip_to_mission(self, mission_id):
         mission_info = self.pysiral_config.get_mission_info(mission_id)
-        start = mission_info.data_period.start
-        stop = mission_info.data_period.stop
+        start = mission_info.data_period.start.replace(tzinfo=None)
+        stop = mission_info.data_period.stop.replace(tzinfo=None)
         is_clipped = self.clip_to_range(start, stop)
         if is_clipped:
             self.log.info("Clipped to mission time range: %s till %s" % (

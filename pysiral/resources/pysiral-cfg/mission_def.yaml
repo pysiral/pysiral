@@ -115,6 +115,23 @@ envisat:
                 - geocentric_polar_tide
 
 
+ers1:
+
+    long_name: ERS-1
+
+    docstr:
+        ERS-1 of the European Space Agency (ESA)
+
+    data_period:
+        start: 1991-08-03T00:00:00.00+00
+        stop: 1996-06-02T23:59:59.99+00
+
+    sea_ice_radar_modes: ["lrm"]
+
+    orbit_max_latitude: 82.5
+
+    options: null
+
 ers2:
 
     long_name: ERS-2
