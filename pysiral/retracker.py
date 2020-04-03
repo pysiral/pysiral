@@ -17,7 +17,7 @@ except:
 
 from pysiral.flag import ANDCondition, FlagContainer
 
-from treedict import TreeDict
+from attrdict import AttrDict
 import numpy as np
 import sys
 
@@ -49,7 +49,7 @@ class BaseRetracker(object):
 
     def set_options(self, **opt_dict):
         # TODO: Create options object, respectively use __init__
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def set_indices(self, indices):
         # TODO: Validation

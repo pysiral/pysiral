@@ -11,7 +11,7 @@ from pysiral.config import RadarModes
 from pysiral.flag import FlagContainer, ANDCondition
 
 import numpy as np
-from treedict import TreeDict
+from attrdict import AttrDict
 from collections import OrderedDict
 
 
@@ -218,7 +218,7 @@ class SurfaceTypeClassifier(object):
         return self._surface_type
 
     def set_options(self, **opt_dict):
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def add_classifiers(self, classifier, name):
         self._classifier.add_parameter(classifier, name)

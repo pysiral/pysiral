@@ -3,7 +3,7 @@ from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
 from pysiral.filter import (fill_nan, idl_smooth)
 
-from treedict import TreeDict
+from attrdict import AttrDict
 import scipy.ndimage as ndimage
 import numpy as np
 
@@ -16,7 +16,7 @@ class SSAInterpolator(object):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def interpolate(self, l2):
         self._value = np.ndarray(shape=(l2.n_records))

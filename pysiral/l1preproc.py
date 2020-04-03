@@ -930,12 +930,13 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                 self.error.raise_on_error()
 
             # 2. The value of each branch must be a valid directory or a
-            #    treedict (e.g. for different radar modes) with a list of directories
-            directory_or_treedict = branch[key]
+            #    attr (e.g. for different radar modes) with a list of directories
+            directory_or_attrdict = branch[key]
             try:
-                directories = directory_or_treedict.values(recursive=True)
+                directories = directory_or_attrdict.values(recursive=True)
+                stop
             except AttributeError:
-                directories = [directory_or_treedict]
+                directories = [directory_or_attrdict]
 
             for directory in directories:
                 if not os.path.isdir(directory):

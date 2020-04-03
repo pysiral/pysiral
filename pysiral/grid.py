@@ -10,7 +10,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pyresample import geometry, utils
 
-from treedict import TreeDict
+from attrdict import AttrDict
 from pyproj import Proj
 
 import numpy as np
@@ -110,7 +110,7 @@ class GridDefinition(DefaultLoggingClass):
 
     @property
     def extent(self):
-        return TreeDict.fromdict(self._extent_dict, expand_nested=True)
+        return AttrDict(self._extent_dict)
 
     @property
     def area_extent(self):

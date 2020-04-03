@@ -20,9 +20,9 @@ import os
 import yaml
 import socket
 
-from treedict import TreeDict
-
 import numpy as np
+
+from attrdict import AttrDict
 
 from pysiral import USER_CONFIG_PATH
 
@@ -201,6 +201,7 @@ class ConfigInfo(DefaultLoggingClass):
         return os.path.join(USER_CONFIG_PATH, subfolder)
 
 
+# TODO: Marked as obsolete -> flag_dict now in mission_def yaml.
 class RadarModes(object):
 
     flag_dict = {"lrm": 0, "sar": 1, "sin": 2}
@@ -923,7 +924,7 @@ class DefaultCommandLineArguments(object):
         return options
 
 
-def get_yaml_config(filename, output="treedict"):
+def get_yaml_config(filename, output="attrdict"):
     """
     Parses the contents of a configuration file in .yaml format
     and returns the content in various formats
@@ -937,13 +938,13 @@ def get_yaml_config(filename, output="treedict"):
             "treedict" (default): Returns a treedict object
             "dict": Returns a python dictionary
     """
-    with open(filename, 'r') as f:
-        content_dict = yaml.load(f)
+    with open(filename, 'r') as fileobj:
+        content_dict = yaml.safe_load(fileobj)
 
-    if output == "treedict":
-        return TreeDict.fromdict(content_dict, expand_nested=True)
-    else:
-        return content_dict
+    if output == "attrdict":
+        return AttrDict(content_dict)
+
+    return content_dict
 
 
 def td_branches(t):
@@ -955,11 +956,6 @@ def td_branches(t):
         branch_names = []
         branch_objects = []
     return branch_names, branch_objects
-
-
-def options_from_dictionary(**opt_dict):
-    """ Function for converting option dictionary in Treedict """
-    return TreeDict.fromdict(opt_dict, expand_nested=True)
 
 
 def month_list(start_dt, stop_dt, exclude_month):
