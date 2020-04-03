@@ -5,14 +5,15 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import file_basename
+
+
+from Pathlib import Path
 
 from datetime import timedelta
 import argparse
 import glob
 import time
 import sys
-import os
 import re
 
 
@@ -226,8 +227,8 @@ class Level2ProcArgParser(DefaultLoggingClass):
         if run_tag is None:
             run_tag = self._args.l2_settings
             # Settings file may be specified as full path and not just the id
-            if os.path.isfile(run_tag):
-                run_tag = file_basename(run_tag)
+            if Path(run_tag).is_file():
+                run_tag = Path(run_tag).stem
 
         # split the run-tag on potential path separators
         run_tag = re.split(r'[\\|/]', run_tag)

@@ -3,11 +3,11 @@
 
 from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
                             ConfigInfo, get_yaml_config)
-from pysiral.path import filename_from_path, file_basename
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 from pysiral.config import options_from_dictionary
-from pysiral.path import validate_directory
+
+from pathlib import Path
 
 from glob import glob
 from netCDF4 import Dataset, date2num
@@ -96,8 +96,8 @@ class OutputHandlerBase(DefaultLoggingClass):
     def _create_directory(self, directory):
         """ Convinience method to create a directory and add an error
         when failed """
-        status = validate_directory(directory)
-        if not status:
+        Path(directory).mkdir(exist_ok=True, parents=True)
+        if not Path(directory).is_dir():
             msg = "Unable to create directory: %s" % str(directory)
             self.error.add_error("directory-error", msg)
 
@@ -525,7 +525,7 @@ class L1bDataNC(DefaultLoggingClass):
         self.path = os.path.join(self.output_folder, self.filename)
 
     def _create_filename(self):
-        self.filename = file_basename(self.l1b.filename)+".nc"
+        self.filename = Path(self.l1b.filename.stem+".nc")
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
@@ -813,7 +813,7 @@ class PysiralOutputFilenaming(object):
 
     def parse_filename(self, fn):
         """ Parse info from pysiral output filename """
-        filename = filename_from_path(fn)
+        filename = Path(fn).name
         match_found = False
         for data_level in self._registered_parsers.keys():
             parser = parse.compile(self._registered_parsers[data_level])
@@ -884,7 +884,7 @@ class PysiralOutputFolder(object):
             self.path = os.path.join(self.path, subfolder)
 
     def create(self):
-        validate_directory(self.path)
+        Path(self.path).mkdir(exist_ok=True, parents=True)
 
     def _set_folder_as_l1bdata(self):
         self.data_level = "l1b"

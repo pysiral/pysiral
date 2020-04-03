@@ -13,7 +13,8 @@ from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import (PysiralOutputFilenaming, PysiralOutputFolder,
                             L1bDataNC)
-from pysiral.path import filename_from_path
+
+from pathlib import Path
 
 from datetime import timedelta
 import numpy as np
@@ -131,7 +132,7 @@ class L1bPreProc(DefaultLoggingClass):
 
             # Parse the current file and split into polar ocean segments
             log.info("+ [ Processing %g of %g ]" % (i+1, n))
-            log.info("- Input file: %s" % filename_from_path(l1b_file))
+            log.info("- Input file: %s" % Path(l1b_file).name)
             l1b_segments = self.get_ocean_segments_from_input_file(l1b_file)
 
             # Skip if no relevant data was found

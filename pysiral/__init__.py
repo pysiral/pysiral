@@ -5,7 +5,7 @@
 __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid", "io_adapter",
            "iotools", "l1bdata", "l1bpreproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
-           "logging", "maptools", "mask", "orbit", "output", "path", "proj", "retracker", "roi",
+           "logging", "maptools", "mask", "orbit", "output", "proj", "retracker", "roi",
            "sit", "surface_type", "units", "validator", "waveform"]
 
 
@@ -103,6 +103,28 @@ class MissionDefinitionCatalogue(object):
         # Store Argument
         self._filepath = filepath
 
+        # Read the file and store the content
+        self._content = None
+        with open(self._filepath) as fh:
+            self._content = AttrDict(yaml.safe_load(fh))
+
+    @property
+    def content(self):
+        """
+        The content of the definition file as Attrdict
+        :return: attrdict.AttrDict
+        """
+        return self._content
+
+    @property
+    def platform_ids(self):
+        """
+        A list of id's for each platforms
+        :return: list with platform ids
+        """
+        return list(self.content.platforms.keys())
+
+
 class PysiralPackageConfiguration(object):
     """
     Container for the content of the pysiral definition files
@@ -122,10 +144,22 @@ class PysiralPackageConfiguration(object):
     VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
 
     def __init__(self):
-        """ Read all definition files """
+        """
+        Collect package configuration data from the various definition files and provide an interface
+        to pysiral processor, output and grid definition files
+        """
 
-        # read the definition files in the config folder
-        self._read_config_files()
+        # --- Get information of supported platforms ---
+        # The general information for supported radar altimeter missions (mission_def.yaml for historical reasons)
+        # provides general metadata for each altimeter missions that can be used to sanity checks
+        # and queries for sensor names etc.
+        self.mission_def_filepath = USER_CONFIG_PATH / self._DEFINITION_FILES["mission"]
+        if not self.mission_def_filepath.is_file():
+            error_msg = "Cannot load pysiral package files: \n %s" % self.mission_def_filepath
+            print(error_msg)
+            sys.exit(1)
+        self.mission_def = MissionDefinitionCatalogue(self.mission_def_filepath)
+
         # read the local machine definition file
         self._read_local_machine_file()
 
@@ -151,8 +185,6 @@ class PysiralPackageConfiguration(object):
 
     def get_mission_info(self, mission):
         mission_info = self.mission[mission]
-        if mission_info.data_period.start is None:
-            mission_info.data_period.start = datetime.utcnow()
         if mission_info.data_period.stop is None:
             mission_info.data_period.stop = datetime.utcnow()
         return mission_info
@@ -231,7 +263,7 @@ class PysiralPackageConfiguration(object):
 
     @property
     def mission_ids(self):
-        return self.mission.missions
+        return self.mission_def.missions
 
 # Create a package configuration object as global variable
 psrlcfg = PysiralPackageConfiguration()

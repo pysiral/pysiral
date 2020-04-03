@@ -21,15 +21,13 @@ from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
-from pysiral.path import filename_from_path
 
 from collections import deque, OrderedDict
 from datetime import datetime
 import numpy as np
 import time
 import sys
-import os
-
+from pathlib import Path
 
 class Level2Processor(DefaultLoggingClass):
 
@@ -318,7 +316,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        filename = filename_from_path(l1b_file)
+        filename = Path(l1b_file).name
         self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
@@ -707,8 +705,8 @@ class Level2ProductDefinition(DefaultLoggingClass):
     def _parse_l2_settings(self):
         try:
             self._l2def = get_yaml_config(self._l2_settings_file)
-        except Exception, msg:
-            self.error.add_error("invalid-l2-settings", msg)
+        except Exception as ex:
+            self.error.add_error("invalid-l2-settings", str(ex))
             self.error.raise_on_error()
 
     @property
@@ -801,7 +799,7 @@ class L2ProcessorReport(DefaultLoggingClass):
                     n_discarded_files, error_code, error_description)
                 fhandle.write(msg)
                 for discarded_file in self.error_counter[error_code]:
-                    fn = filename_from_path(discarded_file)
+                    fn = Path(discarded_file).name
                     fhandle.write("  * %s\n" % fn)
 
     def clean_up(self):

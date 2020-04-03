@@ -1,7 +1,7 @@
 
-import os
 import sys
 import numpy as np
+from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
 
@@ -10,7 +10,6 @@ from pysiral.clocks import StopWatch
 from pysiral.config import ConfigInfo, TimeRangeRequest, get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
 from pysiral.errorhandler import ErrorStatus
-from pysiral.path import validate_directory
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import L1bDataNC
 
@@ -873,7 +872,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         """ Query pysiral config to obtain filename for processor definition file """
 
         # A. Check if already filename
-        if os.path.isfile(l1p_settings_id_or_file):
+        if Path(l1p_settings_id_or_file).is_file():
             return l1p_settings_id_or_file
 
         # B. Not a file, try to resolve filename via pysiral config
@@ -934,12 +933,11 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             directory_or_attrdict = branch[key]
             try:
                 directories = directory_or_attrdict.values(recursive=True)
-                stop
             except AttributeError:
                 directories = [directory_or_attrdict]
 
             for directory in directories:
-                if not os.path.isdir(directory):
+                if not Path(directory).is_dir():
                     msg = "Invalid directory in `local_machine_def.yaml`: %s is not a valid directory"
                     msg = msg % directory
                     self.error.add_error("local-machine-def-invalid-dir", msg)
@@ -1042,7 +1040,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self.set_output_filepath(l1)
 
         # Check if path exists
-        validate_directory(self.path)
+        Path(self.path).mkdir(exist_ok=True, parents=True)
 
         # Export the data object
         ncfile = L1bDataNC()

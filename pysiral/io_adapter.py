@@ -25,11 +25,11 @@ from pysiral.clocks import UTCTAIConverter
 from pysiral.esa.functions import get_structarr_attr
 from pysiral.flag import ORCondition
 from pysiral.helper import parse_datetime_str
-from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
                               get_sar_sigma0)
 
+from pathlib import Path
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from cftime import num2pydate
@@ -135,7 +135,7 @@ class L1bAdapterCryoSat(object):
         info.set_attribute("mission_data_version", self.cs2l1b.baseline)
         info.set_attribute("orbit", self.cs2l1b.sph.abs_orbit_start)
         info.set_attribute("cycle", self.cs2l1b.mph.cycle)
-        mission_data_source = filename_from_path(self.cs2l1b.filename)
+        mission_data_source = Path(self.cs2l1b.filename).name
         info.set_attribute("mission_data_source", mission_data_source)
 
         # Get the product timeliness from the processor stage code
@@ -340,7 +340,7 @@ class L1bAdapterEnvisat(object):
         info.set_attribute("cycle", sgdr.mph.cycle)
         info.set_attribute("cycle", sgdr.mph.cycle)
         info.set_attribute("timeliness", "REP")
-        mission_data_source = filename_from_path(sgdr.filename)
+        mission_data_source = Path(sgdr.filename).name
         info.set_attribute("mission_data_source", mission_data_source)
 
     def _transfer_timeorbit(self):
@@ -461,7 +461,7 @@ class L1bAdapterERS(object):
         info.set_attribute("mission_data_version", sgdr.nc.software_ver)
         info.set_attribute("orbit", sgdr.nc.abs_orbit)
         info.set_attribute("cycle", sgdr.nc.cycle)
-        mission_data_source = filename_from_path(sgdr.nc.filename)
+        mission_data_source = Path(sgdr.nc.filename).name
         info.set_attribute("mission_data_source", mission_data_source)
         info.set_attribute("timeliness", "REP")
 

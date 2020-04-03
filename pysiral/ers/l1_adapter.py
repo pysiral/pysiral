@@ -6,19 +6,17 @@
 __author__ = "Stefan Hendricks"
 
 import numpy as np
+from pathlib import Path
 from cftime import num2pydate
 
 from pysiral.config import PYSIRAL_VERSION
-from pysiral.classifier import EnvisatWaveformParameter
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.flag import ORCondition
-from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
-from pysiral.path import filename_from_path
 
 
 class ERSReaperSGDR(DefaultLoggingClass):
@@ -101,7 +99,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         info.set_attribute("mission_data_version", sgdr.nc.software_ver)
         info.set_attribute("orbit", sgdr.nc.abs_orbit)
         info.set_attribute("cycle", sgdr.nc.cycle)
-        mission_data_source = filename_from_path(sgdr.nc.filename)
+        mission_data_source = Path(sgdr.nc.filename).name
         info.set_attribute("mission_data_source", mission_data_source)
         info.set_attribute("timeliness", self.cfg.timeliness)
 

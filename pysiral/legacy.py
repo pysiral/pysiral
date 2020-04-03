@@ -11,7 +11,8 @@ except:
 
 from pysiral.iotools import ReadNC
 from pysiral.maptools import GeoPcolorGrid
-from pysiral.path import (filename_from_path, file_basename)
+
+from pathlib import Path
 
 
 class SICCIGrid(object):
@@ -62,8 +63,7 @@ class SICCIGridFMIPickled(SICCIGrid):
 
     def parse(self):
         self._log(
-            "Parsing sicci pickled grid file: %s" %
-            filename_from_path(self._filename))
+            "Parsing sicci pickled grid file: %s" % Path(self._filename).name)
         G = pickle.load(open(self._filename))
 
         # Extract vector fb values.
@@ -78,7 +78,7 @@ class SICCIGridFMIPickled(SICCIGrid):
         self._register_parameter("sea_ice_freeboard")
 
     def _get_metadata(self):
-        basename = file_basename(self._filename)
+        basename = self._filename.stem
         self.metadata.year = np.int(basename[8:12])
         self.metadata.month = np.int(basename[12:14])
         self._log("Year: %g, Month: %2.2g" % (
@@ -93,9 +93,7 @@ class SICCIGridNC(SICCIGrid):
         self.metadata.source = "sicci netcdf"
 
     def parse(self):
-        self._log(
-            "Parsing cs2awi grid file: %s" %
-            filename_from_path(self._filename))
+        self._log("Parsing cs2awi grid file: %s" % Path(self._filename).name)
         nc = ReadNC(self._filename)
         for parameter in nc.parameters:
             data = np.ma.array(getattr(nc, parameter))
@@ -111,7 +109,7 @@ class SICCIGridNC(SICCIGrid):
         self.sea_ice_freeboard = self.radar_freeboard
 
     def _get_metadata(self):
-        basename = file_basename(self._filename)
+        basename = self._filename.stem
         # TODO: do proper parsing
         strarr = basename.split("_")
         self.metadata.year = np.int(strarr[4][0:4])
@@ -128,9 +126,7 @@ class SICCIGridCS2AWI(SICCIGrid):
         self.metadata.source = "cs2awi netcdf"
 
     def parse(self):
-        self._log(
-            "Parsing cs2awi grid file: %s" %
-            filename_from_path(self._filename))
+        self._log("Parsing cs2awi grid file: %s" % Path(self._filename).name)
         nc = ReadNC(self._filename)
         for parameter in nc.parameters:
             data = np.ma.array(getattr(nc, parameter))
@@ -141,7 +137,7 @@ class SICCIGridCS2AWI(SICCIGrid):
                 parameter, str(np.shape(data))))
 
     def _get_metadata(self):
-        basename = file_basename(self._filename)
+        basename = self._filename.stem
         # TODO: do proper parsing
         strarr = basename.split("_")
         self.metadata.year = np.int(strarr[2][0:4])
