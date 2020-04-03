@@ -947,17 +947,6 @@ def get_yaml_config(filename, output="attrdict"):
     return content_dict
 
 
-def td_branches(t):
-    """ Convenience function to get only the branches of a treedict object """
-    try:
-        branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
-        branch_objects = list(t.iterbranches())
-    except:
-        branch_names = []
-        branch_objects = []
-    return branch_names, branch_objects
-
-
 def month_list(start_dt, stop_dt, exclude_month):
     """ Returns a list of all month (exclude_month applies) """
     # Get an iterator for integer year and month
