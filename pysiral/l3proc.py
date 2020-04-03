@@ -359,8 +359,8 @@ class L3DataGrid(DefaultLoggingClass):
             return attribute
         except AttributeError:
             return "attr_unavailable"
-        except Exception, msg:
-            print "L3DataGrid.get_attribute Exception: " + str(msg) + " for attribute: %s" % attribute_name
+        except Exception as ex:
+            print("L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name)
             sys.exit(1)
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
@@ -440,8 +440,8 @@ class L3DataGrid(DefaultLoggingClass):
         except KeyError:
             parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
             self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
+        except Exception as ex:
+            print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
         return parameter
 
@@ -450,8 +450,8 @@ class L3DataGrid(DefaultLoggingClass):
             self.vars[name] = var
         except KeyError:
             self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
+        except Exception as ex:
+            print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
 
     def _init_metadata_from_l2(self):
@@ -947,8 +947,8 @@ class Level3ProductDefinition(DefaultLoggingClass):
         self.log.info("Parsing settings: %s" % str(self._l3_settings_file))
         try:
             self._l3 = get_yaml_config(self._l3_settings_file)
-        except Exception, msg:
-            self.error.add_error("l3settings-parser-error", msg)
+        except Exception as ex:
+            self.error.add_error("l3settings-parser-error", str(ex))
             self.error.raise_on_error()
 
     def validate(self):

@@ -11,7 +11,7 @@ from attrdict import AttrDict
 import os
 
 from pysiral import USER_CONFIG_PATH
-from .config import get_yaml_config
+from pysiral.config import get_yaml_config
 
 
 class TestDefinitionfiles(unittest.TestCase):

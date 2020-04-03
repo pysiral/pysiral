@@ -80,8 +80,8 @@ class OutputHandlerBase(DefaultLoggingClass):
         if os.path.isfile(output_def):
             try:
                 self._output_def = get_yaml_config(output_def)
-            except Exception, msg:
-                self.error.add_error("outputdef-parser-error", msg)
+            except Exception as ex:
+                self.error.add_error("outputdef-parser-error", ex)
                 self.error.raise_on_error()
         else:
             self._output_def = output_def
@@ -548,7 +548,7 @@ class L1bDataNC(DefaultLoggingClass):
         for datagroup in self.datagroups:
 
             if self.verbose:
-                print datagroup.upper()
+                print(datagroup.upper())
 
             # Create the datagroup
             dgroup = self._rootgrp.createGroup(datagroup)
@@ -575,7 +575,7 @@ class L1bDataNC(DefaultLoggingClass):
                     data = np.int8(data)
                 dimensions = tuple(dims[0:len(data.shape)])
                 if self.verbose:
-                    print " "+parameter, dimensions, data.dtype.str, data.shape
+                    print(" "+parameter, dimensions, data.dtype.str, data.shape)
 
                 var = dgroup.createVariable(parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
@@ -833,7 +833,7 @@ class PysiralOutputFilenaming(object):
                 break
 
         if not match_found:
-            print "Unrecognized filename: %s" % filename
+            print("Unrecognized filename: %s" % filename)
 
     def _datetime_format(self, datetime):
         return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)

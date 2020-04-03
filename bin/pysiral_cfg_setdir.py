@@ -21,28 +21,28 @@ def main(args):
     NOTE: The mutually exclusive selection of the 3 actions is ensured by argparse
     """
 
-    print "Create, activate or reset the pysiral configuration directory (handle with care!)"
+    print("Create, activate or reset the pysiral configuration directory (handle with care!)")
 
     # Action 1:
     if args.target_create is not None:
 
-        var = raw_input("Create and activate config dir %s? [YES/NO]: " % args.target_create)
+        var = input("Create and activate config dir %s? [YES/NO]: " % args.target_create)
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
         # Check if directory exists
         if os.path.isdir(args.target_create):
-            print "Error: Directory exists: %s" % str(args.target_create)
-            print "Creating new config dir [FAILED]"
+            print("Error: Directory exists: %s" % str(args.target_create))
+            print("Creating new config dir [FAILED]")
             sys.exit(1)
 
         # a. Create the user home directory
         try:
             dir_util.copy_tree(PACKAGE_CONFIG_PATH, args.target_create, verbose=1)
         except:
-            print "Error: Could not create directory: %s" % str(args.target_create)
-            print "Creating new config dir [FAILED]"
+            print("Error: Could not create directory: %s" % str(args.target_create))
+            print("Creating new config dir [FAILED]")
             sys.exit(1)
 
         # b. Copy the local_machine_def.yaml
@@ -50,14 +50,14 @@ def main(args):
         # b1: Specific files
         if args.lmd != "":
             if not os.path.isfile(args.lmd):
-                print "Error: Could copy local_machine_def.yaml: %s" % str(args.lmd)
-                print "Creating new config dir [FAILED]"
+                print("Error: Could copy local_machine_def.yaml: %s" % str(args.lmd))
+                print("Creating new config dir [FAILED]")
                 sys.exit(1)
 
             head, tail = os.path.split(args.lmd)
             if tail != "local_machine_def.yaml":
-                print "Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd)
-                print "Creating new config dir [FAILED]"
+                print("Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd))
+                print("Creating new config dir [FAILED]")
                 sys.exit(1)
                 shutil.copy(args.lmd, os.path.join(args.target_create, "local_machine_def.yaml"))
 
@@ -69,36 +69,36 @@ def main(args):
 
         # c. Change the value in PYSIRAL-CFG-LOC
         set_pysiral_cfg_loc(args.target_create)
-        print "Creating new config dir [SUCCESS]"
+        print("Creating new config dir [SUCCESS]")
         sys.exit(0)
 
     # Action 3:
     if args.target_activate is not None:
 
-        var = raw_input("Activate config dir %s? [YES/NO]: " % args.target_activate)
+        var = input("Activate config dir %s? [YES/NO]: " % args.target_activate)
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
         if os.path.isdir(args.target_activate):
             set_pysiral_cfg_loc(args.target_activate)
-            print "Activating config dir [SUCCESS]"
+            print("Activating config dir [SUCCESS]")
             sys.exit(0)
         else:
-            print "Error: Invalid directory: %s" % str(args.target_activate)
-            print "Activating config dir [FAILED]"
+            print("Error: Invalid directory: %s" % str(args.target_activate))
+            print("Activating config dir [FAILED]")
             sys.exit(1)
 
     # Action 3:
     if args.reset:
 
-        var = raw_input("Reset config dir to user home? [YES/NO]: ")
+        var = input("Reset config dir to user home? [YES/NO]: ")
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
         set_pysiral_cfg_loc("USER_HOME")
-        print "Resetting config dir to user home [SUCCESS]"
+        print("Resetting config dir to user home [SUCCESS]")
         sys.exit(0)
 
 

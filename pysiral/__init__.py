@@ -75,9 +75,9 @@ else:
 # if not: create the user configuration directory
 # Also add an initial version of local_machine_def, so that pysiral does not raise an exception
 if not os.path.isdir(USER_CONFIG_PATH):
-    print "Creating pysiral config directory: %s" % USER_CONFIG_PATH
+    print("Creating pysiral config directory: %s" % USER_CONFIG_PATH)
     dir_util.copy_tree(PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, verbose=1)
-    print "Init local machine def"
+    print("Init local machine def")
     template_filename = os.path.join(PACKAGE_CONFIG_PATH, "templates", "local_machine_def.yaml.template")
     target_filename = os.path.join(USER_CONFIG_PATH, "local_machine_def.yaml")
     shutil.copy(template_filename, target_filename)

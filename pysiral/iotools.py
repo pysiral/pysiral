@@ -97,7 +97,7 @@ class ReadNC(object):
                 self.keys.append(key)
                 self.parameters.append(key)
                 if self.verbose:
-                    print key
+                    print(key)
             self.parameters = f.variables.keys()
         f.close()
 

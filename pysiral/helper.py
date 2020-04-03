@@ -87,8 +87,7 @@ def validate_year_month_list(year_month_list, label):
     try:
         datetime(year_month_list[0], year_month_list[1], 1)
     except ValueError:
-        print "Error: Invalid "+label+" (%04g, %02g)" % (
-            year_month_list[0], year_month_list[1])
+        print("Error: Invalid "+label+" (%04g, %02g)" % (year_month_list[0], year_month_list[1]))
 
 
 class ProgressIndicator(object):
@@ -130,16 +129,16 @@ class SimpleTimer(object):
         return time.time() - self.start
 
     def checkpoint(self, name=''):
-        print '{timer} {checkpoint} took {elapsed} seconds'.format(
+        print('{timer} {checkpoint} took {elapsed} seconds'.format(
             timer=self.name,
             checkpoint=name,
             elapsed=self.elapsed,
-        ).strip()
+        ).strip())
         self.last_event = time.time()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
-        print '%s completed in %.8f seconds' % (self.name, self.total)
+        print('%s completed in %.8f seconds' % (self.name, self.total))
         pass

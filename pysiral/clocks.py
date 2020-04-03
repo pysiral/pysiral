@@ -144,5 +144,3 @@ if __name__ == "__main__":
     converter = UTCTAIConverter()
     tai = np.array([datetime(1981, 1, 2)], dtype=object)
     utc = converter.tai2utc(tai)
-    print tai
-    print utc
