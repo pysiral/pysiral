@@ -9,7 +9,7 @@ import unittest
 class TestPackage(unittest.TestCase):
 
     def testAllImports(self):
-        from pysiral import *
+        import pysiral
 
 
 if __name__ == '__main__':
