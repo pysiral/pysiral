@@ -82,10 +82,10 @@ class Warren99(AuxdataBaseClass):
 
     earth_radius = 6371000.8
     water_density = 1024.0
-    p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
     def __init__(self, *args, **kwargs):
         super(Warren99, self).__init__(*args, **kwargs)
+        self.p = Proj(proj="stere", lat_0=90, lon_0=-90, lat_ts=70)
 
     def evaluate(self, lons, lats, month_num):
         """ Return the result of the Warren Climatology for a

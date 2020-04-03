@@ -5,7 +5,7 @@ import sys
 import xarray
 import numpy as np
 from scipy import interpolate
-from netCDF4 import num2date
+from cftime import num2pydate
 
 from pysiral import __version__ as pysiral_version
 from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
@@ -201,8 +201,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         # Transfer the timestamp
         # NOTE: Here it is critical that the xarray does not automatically decodes time since it is
         #       difficult to work with the numpy datetime64 date format. Better to compute datetimes using
-        #       a know num2date conversion
-        tai_datetime = num2date(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
+        #       a know num2pydate conversion
+        tai_datetime = num2pydate(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
         converter = UTCTAIConverter()
         utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
         self.l1.time_orbit.timestamp = utc_timestamp

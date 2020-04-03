@@ -5,6 +5,8 @@ Created on Mon Jul 27 11:25:04 2015
 @author: Stefan
 """
 
+#TODO: options to __init__ (and not classify())
+
 from pysiral.config import RadarModes
 from pysiral.flag import FlagContainer, ANDCondition
 
@@ -387,80 +389,100 @@ class SICCI2(SurfaceTypeClassifier):
         self._surface_type.add_flag(ocean.flag, "ocean")
 
     def _classify_leads(self, options):
+        """
+        Classify leads in sea ice
+        :param options:
+        :return:
+        """
 
+        # Pointer
         opt = options.lead
+        month_num = self._month
         parameter = self._classifier
+
+        # All conditions must be fulfilled
         lead = ANDCondition()
 
         # Mandatory radar mode flag
         lead.add(self._is_radar_mode)
 
-        # Check for monthly thresholds and pick index
-        if type(opt.sea_ice_backscatter_min) is list:
-            index = self._month-1
-            n = len(opt.sea_ice_backscatter_min)
-        else:
-            n = 1
-            index = 0
-
         # Sigma0
-        sea_ice_backscatter_min = np.full(n, opt.sea_ice_backscatter_min)
-        lead.add(parameter.sigma0 >= sea_ice_backscatter_min[index])
+        sea_ice_backscatter_min = self.get_threshold_value(opt, "sea_ice_backscatter_min", month_num)
+        lead.add(parameter.sigma0 >= sea_ice_backscatter_min)
 
         # Leading Edge Width
-        leading_edge_width_max = np.full(n, opt.leading_edge_width_max)
-        leading_edge_width = parameter.leading_edge_width_first_half + \
-            parameter.leading_edge_width_second_half
-        lead.add(leading_edge_width <= leading_edge_width_max[index])
+        leading_edge_width_max = self.get_threshold_value(opt, "leading_edge_width_max", month_num)
+        leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        lead.add(leading_edge_width <= leading_edge_width_max)
 
         # Pulse Peakiness
-        peakiness_min = np.full(n, opt.peakiness_min)
-        lead.add(parameter.peakiness >= peakiness_min[index])
+        peakiness_min = self.get_threshold_value(opt, "leading_edge_width_max", month_num)
+        lead.add(parameter.peakiness >= peakiness_min)
 
         # Ice Concentration
-        lead.add(parameter.sic > opt.ice_concentration_min)
+        ice_concentration_min = self.get_threshold_value(opt, "ice_concentration_min", month_num)
+        lead.add(parameter.sic > ice_concentration_min)
 
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
     def _classify_sea_ice(self, options):
+        """
+        Classify waveforms as sea ice
+        :param options: The option attribute dictionary
+        :return:
+        """
 
+        # Pointer
         opt = options.sea_ice
+        month_num = self._month
         parameter = self._classifier
 
+        # All conditions must be fulfilled
         ice = ANDCondition()
 
         # Mandatory radar mode flag
         ice.add(self._is_radar_mode)
 
-        # Check for monthly thresholds and pick index
-        if type(opt.sea_ice_backscatter_max) is list:
-            index = self._month-1
-            n = len(opt.sea_ice_backscatter_max)
-        else:
-            index = 0
-            n = 1
-
         # Sigma0
-        ice.add(parameter.sigma0 >= opt.sea_ice_backscatter_min)
-        sea_ice_backscatter_max = np.full(n, opt.sea_ice_backscatter_max)
-        ice.add(parameter.sigma0 <= sea_ice_backscatter_max[index])
+        sea_ice_backscatter_min = self.get_threshold_value(opt, "sea_ice_backscatter_min", month_num)
+        sea_ice_backscatter_max = self.get_threshold_value(opt, "sea_ice_backscatter_max", month_num)
+        ice.add(parameter.sigma0 >= sea_ice_backscatter_min)
+        ice.add(parameter.sigma0 <= sea_ice_backscatter_max)
 
         # Leading Edge Width
-        leading_edge_width = parameter.leading_edge_width_first_half + \
-            parameter.leading_edge_width_second_half
-        leading_edge_width_min = np.full(n, opt.leading_edge_width_min)
-        ice.add(leading_edge_width >= leading_edge_width_min[index])
+        leading_edge_width_min = self.get_threshold_value(opt, "leading_edge_width_min", month_num)
+        leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        ice.add(leading_edge_width >= leading_edge_width_min)
 
         # Pulse Peakiness
-        peakiness_max = np.full(n, opt.peakiness_max)
-        ice.add(parameter.peakiness <= peakiness_max[index])
+        peakiness_max = self.get_threshold_value(opt, "peakiness_max", month_num)
+        ice.add(parameter.peakiness <= peakiness_max)
 
         # Ice Concentration
-        ice.add(parameter.sic > opt.ice_concentration_min)
+        ice_concentration_min = self.get_threshold_value(opt, "ice_concentration_min", month_num)
+        ice.add(parameter.sic > ice_concentration_min)
 
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
+
+    def get_threshold_value(self, options, name, month_num):
+        """
+        A unified method to retrieve threshold values from lists (one per month) or a scalar
+        :param options: configuration object
+        :param name: (str) parameter name (must be attribute of) options
+        :param month_num: (int) number of the month (1 - 12)
+        :return: threshold value to use for specific month
+        """
+
+        # Get the parameters
+        option_value = getattr(options, name)
+
+        # Check if list
+        if type(option_value) is list:
+            return option_value[month_num-1]
+        else:
+            return option_value
 
 
 class SICCI1Envisat(SurfaceTypeClassifier):

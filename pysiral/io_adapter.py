@@ -32,7 +32,7 @@ from pysiral.waveform import (get_waveforms_peak_power, TFMRALeadingEdgeWidth,
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from netCDF4 import num2date
+from cftime import num2pydate
 import numpy as np
 
 
@@ -478,7 +478,7 @@ class L1bAdapterERS(object):
         sgdr_timestamp = self.sgdr.nc.time_20hz.flatten()
         units = self.settings.sgdr_timestamp_units
         calendar = self.settings.sgdr_timestamp_calendar
-        timestamp = num2date(sgdr_timestamp, units, calendar)
+        timestamp = num2pydate(sgdr_timestamp, units, calendar)
         self.l1b.time_orbit.timestamp = timestamp
 
         # Update meta data container
@@ -621,7 +621,7 @@ class L1bAdapterSentinel3(object):
 
     def _transfer_timeorbit(self):
         """ Extracts the time/orbit data group from the SGDR data """
-        from netCDF4 import num2date
+        from cftime import num2pydate
 
         # Transfer the orbit position
         self.l1b.time_orbit.set_position(
@@ -633,7 +633,7 @@ class L1bAdapterSentinel3(object):
         units = self.settings.time_units
         calendar = self.settings.time_calendar
         seconds = self.sral.nc.time_20_ku
-        timestamp = num2date(seconds, units, calendar)
+        timestamp = num2pydate(seconds, units, calendar)
         self.l1b.time_orbit.timestamp = timestamp
 
     def _transfer_waveform_collection(self):

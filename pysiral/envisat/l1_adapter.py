@@ -8,7 +8,7 @@ __author__ = "Stefan Hendricks"
 import re
 import numpy as np
 from scipy import interpolate
-from netCDF4 import num2date
+from cftime import num2pydate
 
 from pysiral.config import PYSIRAL_VERSION
 from pysiral.classifier import EnvisatWaveformParameter
@@ -119,7 +119,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         sgdr_timestamp = self.sgdr.time_20
         units = self.cfg.sgdr_timestamp_units
         calendar = self.cfg.sgdr_timestamp_calendar
-        timestamp = num2date(sgdr_timestamp, units, calendar)
+        timestamp = num2pydate(sgdr_timestamp, units, calendar)
         self.l1.time_orbit.timestamp = timestamp
 
         # Mandatory antenna pointing parameter (but not available for ERS)
