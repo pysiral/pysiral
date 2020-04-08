@@ -3,6 +3,9 @@
 Created on Sat Aug 01 17:33:02 2015
 
 @author: Stefan
+
+TODO: Evaluate usefulness (or move to internal module)
+
 """
 
 from pysiral.config import ConfigInfo, TimeRangeIteration
@@ -18,6 +21,7 @@ import uuid
 import numpy as np
 
 
+#TODO: Replace by xarray
 class ReadNC(object):
     """
     Quick & dirty method to parse content of netCDF file into a python object
