@@ -2,7 +2,7 @@
 
 """ """
 
-__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "classifier", "clocks",
+__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid",
            "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "logging", "mask", "output", "proj", "retracker", "roi",
