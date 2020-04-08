@@ -495,28 +495,8 @@ class L1bPreProcJob(DefaultLoggingClass):
 
     def get_mission_preprocessor(self):
         """ Return the mission specific pre-processor class """
+        pass
 
-        from pysiral.cryosat2.preproc import CryoSat2PreProc
-        from pysiral.envisat.preproc import EnvisatPreProc
-        from pysiral.ers.preproc import ERSPreProc
-        from pysiral.sentinel3.preproc import Sentinel3PreProc
-        from pysiral.icesat.preproc import ICESatPreProc
-
-        if self.mission_id == "cryosat2":
-            return CryoSat2PreProc
-        elif self.mission_id == "envisat":
-            return EnvisatPreProc
-        elif self.mission_id == "ers2":
-            return ERSPreProc
-        elif self.mission_id == "sentinel3a":
-            return Sentinel3PreProc
-        elif self.mission_id == "icesat":
-            return ICESatPreProc
-        else:
-            error_code = self.__class__.__name__+" (01)"
-            error_message = "Invalid mission_id: %s" % self.mission_id
-            self.error.add_error(error_code, error_message)
-            self.error.raise_on_error()
 
     @property
     def mission_id(self):

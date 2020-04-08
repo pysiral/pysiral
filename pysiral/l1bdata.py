@@ -1094,26 +1094,3 @@ class L1bWaveforms(object):
     def _get_wfm_shape(self, index):
         shape = np.shape(self._power)
         return shape[index]
-
-
-def get_l1b_adapter(mission):
-    """ Select and returns the correct IO Adapter for the specified mission """
-
-    from pysiral.io_adapter import (
-        L1bAdapterCryoSat, L1bAdapterEnvisat, L1bAdapterERS1,
-        L1bAdapterERS2, L1bAdapterSentinel3A, L1bAdapterICESat)
-
-    if mission == "cryosat2":
-        return L1bAdapterCryoSat
-    elif mission == "envisat":
-        return L1bAdapterEnvisat
-    elif mission == "ers1":
-        return L1bAdapterERS1
-    elif mission == "ers2":
-        return L1bAdapterERS2
-    elif mission == "sentinel3a":
-        return L1bAdapterSentinel3A
-    elif mission == "icesat":
-        return L1bAdapterICESat
-    else:
-        raise ValueError("Unknown mission id: %s" % mission)

@@ -3,8 +3,8 @@
 """ """
 
 __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "icesat", "sentinel3", "classifier", "clocks",
-           "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid", "io_adapter",
-           "iotools", "l1bdata", "l1bpreproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
+           "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid",
+           "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc", "legacy",
            "logging", "maptools", "mask", "orbit", "output", "proj", "retracker", "roi",
            "sit", "surface_type", "units", "validator", "waveform"]
 
