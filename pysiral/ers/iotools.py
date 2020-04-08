@@ -201,8 +201,6 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
                 cycle_folders.append(entry["dir"])
         return cycle_folders
 
-
-
     @property
     def sorted_list(self):
          return list(self._sorted_list)
