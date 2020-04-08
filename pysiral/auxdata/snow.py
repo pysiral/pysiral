@@ -47,7 +47,7 @@ import scipy.ndimage as ndimage
 
 from pyproj import Proj
 import numpy as np
-import os
+from pathlib import Path
 
 class Warren99(AuxdataBaseClass):
 
@@ -263,10 +263,10 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = self.requested_filepath
+        path = Path(self.requested_filepath)
 
         # Validation
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg = self.pyclass+": File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_snow", msg)
@@ -401,10 +401,10 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         """ Loads file from local repository only if needed """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = self.requested_filepath
+        path = Path(self.requested_filepath)
 
         # Validation
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg = "%s: File not found: %s " % (self.__class__.__name__, path)
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_snow", msg)

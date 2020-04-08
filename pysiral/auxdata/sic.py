@@ -42,8 +42,7 @@ from pysiral.iotools import ReadNC
 import scipy.ndimage as ndimage
 from pyproj import Proj
 import numpy as np
-import os
-
+from pathlib import Path
 
 class OsiSafSIC(AuxdataBaseClass):
 
@@ -86,10 +85,10 @@ class OsiSafSIC(AuxdataBaseClass):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = self.requested_filepath
+        path = Path(self.requested_filepath)
 
         #  --- Validation ---
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg = self.pyclass+": File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
@@ -124,25 +123,25 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Unique to this class is the possibility to auto merge
         # products. The current implementation supports only two products
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
 
         # The path needs to be completed if two products shall be used
         if self.cfg.options.has_key("auto_product_change"):
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
-            path = os.path.join(path, product_def["subfolder"])
+            path = path / product_def["subfolder"]
             self.cfg.filenaming = product_def["filenaming"]
             self.cfg.long_name = product_def["long_name"]
 
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
 
         filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
 

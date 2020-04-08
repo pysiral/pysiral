@@ -100,7 +100,7 @@ from netCDF4 import Dataset, date2num
 from collections import OrderedDict
 import numpy as np
 import copy
-import os
+from pathlib import Path
 
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
@@ -447,7 +447,7 @@ class L1bConstructor(Level1bData):
 
     @filename.setter
     def filename(self, value):
-        if os.path.isfile(value):
+        if Path(value).is_file():
             self._filename = value
         else:
             # XXX: An ErrorHandler is needed here

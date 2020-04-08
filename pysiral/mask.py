@@ -19,7 +19,7 @@ from netCDF4 import Dataset
 from pyresample import image, geometry, kd_tree
 import numpy as np
 import struct
-import os
+from pathlib import Path
 
 
 def MaskSourceFile(mask_name, mask_cfg):
@@ -127,7 +127,7 @@ class MaskSourceBase(DefaultLoggingClass):
         # passed to this method
         if nc_filepath is None:
             nc_filename = "%s_%s.nc" % (self.mask_name, griddef.grid_id)
-            nc_filepath = os.path.join(self.mask_dir, nc_filename)
+            nc_filepath = Path(self.mask_dir) / nc_filename
         self.log.info("Export mask file: %s" % nc_filepath)
         self._write_netcdf(nc_filepath, griddef, target_mask)
 
@@ -273,7 +273,7 @@ class MaskLandSea2Min(MaskSourceBase):
 
     @property
     def mask_filepath(self):
-        return os.path.join(self.mask_dir, self.cfg.filename)
+        return Path(self.mask_dir) / self.cfg.filename
 
 
 class MaskW99Valid(MaskSourceBase):
@@ -313,7 +313,7 @@ class MaskW99Valid(MaskSourceBase):
 
     @property
     def mask_filepath(self):
-        return os.path.join(self.mask_dir, self.cfg.filename)
+        return Path(self.mask_dir) / self.cfg.filename
 
 
 class L3Mask(DefaultLoggingClass):
@@ -388,9 +388,9 @@ class L3Mask(DefaultLoggingClass):
             return None
 
         mask_filename = "%s_%s.nc" % (self.mask_name, self.grid_id)
-        filepath = os.path.join(mask_dir, mask_filename)
+        filepath = Path(mask_dir) / mask_filename
 
-        if not os.path.isfile(filepath):
+        if not filepath.is_file():
             msg = "cannot find mask file: %s" % filepath
             self.error.add_error("io-error", msg)
             return None

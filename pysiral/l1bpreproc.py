@@ -6,7 +6,7 @@ Created on Wed Aug 03 17:16:56 2016
 
 """
 
-from pysiral.config import (ConfigInfo, TimeRangeRequest)
+from pysiral.config import (TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.flag import FlagContainer
 from pysiral.helper import (get_first_array_index, get_last_array_index, rle)
@@ -18,7 +18,6 @@ from pathlib import Path
 
 from datetime import timedelta
 import numpy as np
-import os
 import glob
 
 
@@ -110,14 +109,13 @@ class L1bPreProc(DefaultLoggingClass):
                 time_range.start.month)
 
             # Get list of netcdf files
-            search_pattern = os.path.join(export_folder.path, "*.nc")
-            l1bdata_files = glob.glob(search_pattern)
+            l1bdata_files = list(Path(export_folder.path).glob("*.nc"))
 
             # Delete files
             self.log.info("Removing %g l1bdata files in %s" % (
                 len(l1bdata_files), export_folder.path))
             for l1bdata_filename in l1bdata_files:
-                os.remove(l1bdata_filename)
+                Path(l1bdata_filename).unlink()
 
     def merge_and_export_polar_ocean_subsets(self):
         """ loop over remaining files in file list """
