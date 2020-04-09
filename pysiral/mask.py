@@ -7,7 +7,7 @@ Created on Thu Sep 28 14:00:52 2017
 @author: shendric
 """
 
-from pysiral.config import ConfigInfo
+from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -27,10 +27,8 @@ def MaskSourceFile(mask_name, mask_cfg):
 
     error = ErrorStatus(caller_id="MaskSourceFile")
 
-    # Get the full mask filename
-    pysiral_cfg = ConfigInfo()
     try:
-        mask_dir = pysiral_cfg.local_machine.auxdata_repository.mask[mask_name]
+        mask_dir = psrlcfg.local_machine.auxdata_repository.mask[mask_name]
     except KeyError:
         msg = "path to mask %s not in local_machine_def.yaml" % mask_name
         error.add_error("missing-lmd-def", msg)
@@ -374,12 +372,9 @@ class L3Mask(DefaultLoggingClass):
     @property
     def mask_filepath(self):
 
-        # Get config info
-        pysiral_cfg = ConfigInfo()
-
         # Get the path to the mask file
         # (needs to be in local_machine_def.yaml)
-        mask_dir = pysiral_cfg.local_machine.auxdata_repository.mask
+        mask_dir = psrlcfg.local_machine.auxdata_repository.mask
         try:
             mask_dir = mask_dir[self.mask_name]
         except KeyError:

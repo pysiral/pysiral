@@ -8,7 +8,8 @@ TODO: Evaluate usefulness (or move to internal module)
 
 """
 
-from pysiral.config import ConfigInfo, TimeRangeIteration
+from pysiral import psrlcfg
+from pysiral.config import TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from cftime import num2pydate
@@ -142,7 +143,7 @@ def get_temp_png_filename():
 
 def get_l1bdata_files(mission_id, hemisphere, year, month, config=None, version="default"):
     if config is None:
-        config = ConfigInfo()
+        config = psrlcfg
     l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
     directory = Path(l1b_repo) / hemisphere / "%04g" % year / "%02g" % month
     l1bdata_files = sorted(directory.glob("*.nc"))
@@ -159,8 +160,8 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
     """
 
     # parse config data (if not provided)
-    if config is None or not isinstance(config, ConfigInfo):
-        config = ConfigInfo()
+    if config is None or not isinstance(config, psrlcfg):
+        config = psrlcfg
 
     # Validate time_range (needs to be of type TimeRangeIteration)
     try:

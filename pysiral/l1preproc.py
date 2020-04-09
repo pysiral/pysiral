@@ -5,9 +5,9 @@ from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
 
-from pysiral import get_cls
+from pysiral import get_cls, psrlcfg
 from pysiral.clocks import StopWatch
-from pysiral.config import ConfigInfo, TimeRangeRequest, get_yaml_config
+from pysiral.config import TimeRangeRequest, get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
@@ -810,7 +810,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Get pysiral configuration
         # TODO: Move to global
-        self._cfg = ConfigInfo()
+        self._cfg = psrlcfg
 
         # Store command line options
         self._hemisphere = hemisphere
@@ -1018,7 +1018,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=cls_name)
         self.cfg = cfg
 
-        self.pysiral_cfg = ConfigInfo()
+        self.pysiral_cfg = psrlcfg
 
         # Init class properties
         self._path = None
@@ -1077,14 +1077,14 @@ class Level1POutputHandler(DefaultLoggingClass):
         self._filename = filename_template.format(**values)
 
         local_repository = self.pysiral_cfg.local_machine.l1b_repository
-        export_folder = local_repository[l1.info.mission][local_machine_def_tag].l1p
+        export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag].l1p)
         yyyy = "%04g" % l1.time_orbit.timestamp[0].year
         mm = "%02g" % l1.time_orbit.timestamp[0].month
-        self._path = os.path.join(export_folder, l1.info.hemisphere, yyyy, mm)
+        self._path = export_folder / l1.info.hemisphere / yyyy / mm
 
     @property
     def path(self):
-        return self._path
+        return Path(self._path)
 
     @property
     def filename(self):
@@ -1092,4 +1092,4 @@ class Level1POutputHandler(DefaultLoggingClass):
 
     @property
     def last_written_file(self):
-        return os.path.join(self.path, self.filename)
+        return self.path / self.filename

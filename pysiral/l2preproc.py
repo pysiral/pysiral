@@ -5,7 +5,8 @@ Created on Fri Aug 11 17:07:02 2017
 @author: shendric
 """
 
-from pysiral.config import ConfigInfo
+
+from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l2data import Level2PContainer, L2iNCFileImport
 from pysiral.logging import DefaultLoggingClass
@@ -14,7 +15,7 @@ from pysiral.output import Level2Output, OutputHandlerBase
 from collections import OrderedDict
 
 from pathlib import Path
-import sys
+
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -188,6 +189,5 @@ class Level2POutputHandler(OutputHandlerBase):
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
-        local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        local_settings_path = psrlcfg.pysiral_local_path
+        return Path(local_settings_path) / Path(*self.default_file_location)

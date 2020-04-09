@@ -5,9 +5,8 @@ Created on Fri May 19 18:16:09 2017
 @author: Stefan
 """
 
-from pysiral import get_cls
+from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.iotools import get_local_l1bdata_files
@@ -15,7 +14,6 @@ from pysiral.iotools import get_local_l1bdata_files
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-import glob
 from pathlib import Path
 import re
 
@@ -29,7 +27,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
     def __init__(self):
         super(DefaultAuxdataClassHandler, self).__init__(self.__class__.__name__)
-        self.pysiral_config = ConfigInfo()
+        self.pysiral_config = psrlcfg
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
     def get_pyclass(self, auxdata_class, auxdata_id, l2_procdef_opt):
