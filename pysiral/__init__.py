@@ -12,7 +12,6 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "esa", "sentinel3"
 import warnings
 warnings.filterwarnings("ignore")
 
-import re
 import sys
 import yaml
 import shutil
@@ -141,6 +140,7 @@ class PysiralPackageConfiguration(object):
     _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
 
     VALID_SETTING_TYPES = ["proc", "output", "grid"]
+    VALID_PROCESSOR_LEVELS = ["l1", "l2", "l3"]
     VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
 
     def __init__(self):
@@ -194,6 +194,17 @@ class PysiralPackageConfiguration(object):
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
         return ids
 
+    def get_processor_definition_ids(self, processor_level):
+        """
+        Returns a list of available processor definitions ids for a given processor
+        level (see self.VALID_PROCESSOR_LEVELS)
+        :param processor_level:
+        :return:
+        """
+        lookup_directory = self.get_local_setting_path("proc", processor_level)
+        ids = self.get_yaml_setting_filelist(lookup_directory, return_value="ids")
+        return ids
+
     def get_settings_file(self, type, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.
         (data level: l2 or l3). The second argument can either be an
@@ -208,7 +219,7 @@ class PysiralPackageConfiguration(object):
             return None
 
         # Check if filename
-        if setting_id_or_filename.is_file():
+        if Path(setting_id_or_filename).is_file():
             return setting_id_or_filename
 
         # Get all settings files in settings/{data_level} and its
@@ -225,29 +236,34 @@ class PysiralPackageConfiguration(object):
         # Find filename to setting_id
         try:
             index = ids.index(setting_id_or_filename)
-            return files[index]
+            return Path(files[index])
         except:
             return None
 
-    def get_yaml_setting_filelist(self, directory, ignore_obsolete=True):
+    def get_yaml_setting_filelist(self, directory, return_value="both"):
         """ Retrieve all yaml files from a given directory (including
         subdirectories). Directories named "obsolete" are ignored if
         ignore_obsolete=True (default) """
         setting_ids = []
         setting_files = []
         for filepath in directory.rglob("*.yaml"):
-            if "obsolete" in filepath.parts:
-                continue
             setting_ids.append(filepath.name.replace(".yaml", ""))
             setting_files.append(filepath)
-        return setting_ids, setting_files
+        if return_value == "both":
+            return setting_ids, setting_files
+        elif return_value == "ids":
+            return setting_ids
+        elif return_value == "files":
+            return setting_files
+        else:
+            raise ValueError("Unknown return value {} [`both`, `ids`, `files`]".format(str(return_value)))
 
     def get_local_setting_path(self, type, data_level):
         if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
             args = [type]
             if data_level is not None:
                 args.append(data_level)
-            return Path(USER_CONFIG_PATH, *args)
+            return Path(USER_CONFIG_PATH) / Path(*args)
         else:
             return None
 
@@ -264,6 +280,26 @@ class PysiralPackageConfiguration(object):
     @property
     def mission_ids(self):
         return self.mission_def.missions
+
+    @property
+    def user_home_path(self):
+        return CURRENT_USER_HOME_DIR
+
+    @property
+    def package_path(self):
+        return PACKAGE_ROOT_DIR
+
+    @property
+    def config_path(self):
+        return USER_CONFIG_PATH
+
+    @property
+    def local_machine_def_filepath(self):
+        return self.config_path / self._LOCAL_MACHINE_DEF_FILE
+
+    @property
+    def processor_levels(self):
+        return list(self.VALID_PROCESSOR_LEVELS)
 
 # Create a package configuration object as global variable
 psrlcfg = PysiralPackageConfiguration()
