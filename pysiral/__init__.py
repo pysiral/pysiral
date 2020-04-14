@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore")
 
 import sys
 import yaml
+import socket
 import shutil
 from pathlib import Path
 from attrdict import AttrDict
@@ -300,6 +301,15 @@ class PysiralPackageConfiguration(object):
     @property
     def processor_levels(self):
         return list(self.VALID_PROCESSOR_LEVELS)
+
+    @property
+    def hostname(self):
+        return socket.gethostname()
+
+    @property
+    def version(self):
+        return __version__
+
 
 # Create a package configuration object as global variable
 psrlcfg = PysiralPackageConfiguration()

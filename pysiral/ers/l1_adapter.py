@@ -9,7 +9,7 @@ import numpy as np
 from pathlib import Path
 from cftime import num2pydate
 
-from pysiral.config import PYSIRAL_VERSION
+from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.sgdrfile import ERSSGDR
@@ -89,7 +89,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         """ Extract essential metadata information from SGDR file """
         info = self.l1.info
         sgdr = self.sgdr
-        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", psrlcfg.version)
         try:
             info.set_attribute("mission", self.cfg.platform_name_dict[str(sgdr.nc.mission)])
         except KeyError:

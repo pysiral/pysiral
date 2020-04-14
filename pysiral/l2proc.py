@@ -6,7 +6,7 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 from pysiral import get_cls, psrlcfg
-from pysiral.config import TimeRangeRequest, get_yaml_config, PYSIRAL_VERSION, HOSTNAME
+from pysiral.config import TimeRangeRequest, get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
@@ -774,9 +774,9 @@ class L2ProcessorReport(DefaultLoggingClass):
             fhandle.write(lfmt % ("warnings", str(self.n_warnings)))
 
             fhandle.write("\n# Processor & Local Machine Settings\n\n")
-            fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
+            fhandle.write(lfmt % ("pysiral version", psrlcfg.version))
             fhandle.write(lfmt % ("python version", sys.version))
-            fhandle.write(lfmt % ("hostname", HOSTNAME))
+            fhandle.write(lfmt % ("hostname", psrlcfg.hostname))
 
             # More info on this specific run
             fhandle.write(lfmt % ("data period", self.data_period_str))

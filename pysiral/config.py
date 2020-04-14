@@ -36,25 +36,6 @@ from isodate.duration import Duration
 from isodate import duration_isoformat
 
 
-# TODO: These have to be removed (see __version__ in __init__.py)
-PYSIRAL_VERSION = "0.7.3"
-PYSIRAL_VERSION_FILENAME = "073"
-HOSTNAME = socket.gethostname()
-
-# TODO: These have to removed (better use info from mission_def)
-SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
-                    "cryosat2": "SIRAL", "sentinel3a": "SRAL",
-                    "icesat": "GLAS"}
-
-MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
-                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
-                     "icesat": "ICESat"}
-
-ORBIT_INCLINATION_DICT = {"ers1": 81.5, "ers2": 81.5, "envisat": 81.45,
-                          "cryosat2": 88.0, "sentinel3a": 81.35,
-                          "icesat": 86.0}
-
-
 # TODO: Marked as obsolete -> flag_dict now in mission_def yaml.
 class RadarModes(object):
 

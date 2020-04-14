@@ -5,8 +5,7 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 from pysiral import __version__, get_cls, psrlcfg
-from pysiral.config import (get_yaml_config, SENSOR_NAME_DICT,
-                            MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
+from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -487,7 +486,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([MISSION_NAME_DICT[m] for m in ids.split(",")])
+        names = ",".join([psrlcfg.get_sensor_name(m) for m in ids.split(",")])
         return names
 
     def _get_attr_source_timeliness(self, *args):
@@ -698,7 +697,7 @@ class L3MetaData(object):
         (must be a list, since multi-mission grids are supported)
         """
         missions = np.unique(stack.mission)
-        mission_sensor = [SENSOR_NAME_DICT[mission.lower()] for mission in missions]
+        mission_sensor = [psrlcfg.get_sensor_name(mission.lower()) for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
         source_timeliness = np.unique(stack.timeliness)[0]
@@ -1334,7 +1333,7 @@ class Level3StatusFlag(Level3ProcessorItem):
         # Compute conditions for flags
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
-        orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
+        orbit_inclinations = [psrlcfg.get_orbit_inclination(mission_id) for mission_id in mission_ids]
         is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
         is_land = lnd > 0
         has_data = nvw > 0

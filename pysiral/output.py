@@ -2,7 +2,7 @@
 
 
 from pysiral import psrlcfg
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME, get_yaml_config)
+from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
 
@@ -768,40 +768,6 @@ class PysiralOutputFilenaming(object):
             "l1p_v2": "pysiral-l1p-{mission_id}-{source}-{timeliness}-{hemisphere}-{start}-{stop}-{version}.nc",
             "l2i": "l2i_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
             "l3s": "l3s_{version}_{mission_id}_{grid}_{resolution}_{start}_{stop}.nc"}
-
-    def from_l1b(self, l1b):
-        """ Level-1b preprocessed filename """
-        export_filename = self._registered_parsers["l1bdata"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            hemisphere=l1b.info.hemisphere,
-            mission_id=l1b.mission,
-            start=self._datetime_format(l1b.info.start_time),
-            stop=self._datetime_format(l1b.info.stop_time))
-        return export_filename
-
-    def from_l2i(self, l2i):
-        """ Level-2 Intermediate filename """
-        export_filename = self._registered_parsers["l2i"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            hemisphere=l2i.hemisphere,
-            mission_id=l2i.info.mission,
-            start=self._datetime_format(l2i.info.start_time),
-            stop=self._datetime_format(l2i.info.stop_time))
-        return export_filename
-
-    def from_l3s(self, l3s):
-        """ Level-3 super-collocated filename """
-        export_filename = self._registered_parsers["l3s"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            mission_id=l3s.mission,
-            grid=l3s.grid_tag,
-            resolution=l3s.resolution_tag,
-            start=self._datetime_format(l3s.start_period),
-            stop=self._datetime_format(l3s.stop_period))
-        return export_filename
 
     def parse_filename(self, fn):
         """ Parse info from pysiral output filename """
