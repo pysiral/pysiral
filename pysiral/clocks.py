@@ -12,7 +12,6 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import time
-import urllib2
 import numpy as np
 from pathlib import Path
 
