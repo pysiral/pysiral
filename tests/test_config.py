@@ -12,7 +12,10 @@ from pathlib import Path
 from pysiral import psrlcfg
 
 
-class TestPackage(unittest.TestCase):
+class TestConfig(unittest.TestCase):
+
+    def setUp(self):
+        print(self.__class__.__name__)
 
     def testMissionConfig(self):
         self.assertIsInstance(psrlcfg.platforms.content, AttrDict, msg="")
@@ -57,5 +60,5 @@ class TestPackage(unittest.TestCase):
                 self.assertTrue(filepath.is_file())
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestPackage)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestConfig)
     unittest.TextTestRunner(verbosity=2, descriptions=True).run(suite)

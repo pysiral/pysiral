@@ -355,33 +355,28 @@ class GridTrackInterpol(object):
 def get_all_auxdata_classes():
     """
     Get a list of all auxiliary data classes
-    :return:
+    :return: List with auxdata_type, class_name, class for each auxiliary class
     """
+    import importlib
+    import pkgutil
 
-    import_submodules(__name__)
-    print(__name__)
-    return (AuxClassConfig.__subclasses__())
-
-
-import importlib
-import pkgutil
-
-
-def import_submodules(package, recursive=True):
-    """ Import all submodules of a module, recursively, including subpackages
-
-    :param package: package (name or actual module)
-    :type package: str | module
-    :rtype: dict[str, types.ModuleType]
-    """
-    if isinstance(package, str):
-        package = importlib.import_module(package)
+    # Import all submodules of the auxdata module to discover all potential
+    # subclasses of AuxdataBaseClass
+    auxdata_module = importlib.import_module(__name__)
     results = {}
-    for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
-        print(full_name)
+    for loader, name, is_pkg in pkgutil.walk_packages(auxdata_module.__path__):
+        full_name = auxdata_module.__name__ + '.' + name
         results[full_name] = importlib.import_module(full_name)
-        if recursive and is_pkg:
-            results.update(import_submodules(full_name))
-    return results
+
+    # Get a list of AuxdataBaseClass subclasses after import
+    subclass_list = AuxdataBaseClass.__subclasses__()
+
+    # Compile output
+    auxdata_class_results = []
+    for item in subclass_list:
+        module = item.__module__.split(".")[-1]
+        class_name = item.__name__
+        auxdata_class_results.append([module, class_name, item])
+    return auxdata_class_results
+
 

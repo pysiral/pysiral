@@ -16,7 +16,7 @@ from pysiral.config import get_yaml_config
 class TestDefinitionfiles(unittest.TestCase):
 
     def setUp(self):
-        pass
+        print(self.__class__.__name__)
 
     def testYamlSyntaxOfDefinitionFiles(self):
         def_files = ["mission_def.yaml", "auxdata_def.yaml"]
@@ -27,4 +27,4 @@ class TestDefinitionfiles(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDefinitionfiles)
-    unittest.TextTestRunner(verbosity=1).run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)
