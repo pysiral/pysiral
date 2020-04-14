@@ -15,8 +15,8 @@ from pysiral import psrlcfg
 class TestPackage(unittest.TestCase):
 
     def testMissionConfig(self):
-        self.assertIsInstance(psrlcfg.mission_def.content, AttrDict, msg="")
-        self.assertIsInstance(psrlcfg.mission_def.platform_ids, list)
+        self.assertIsInstance(psrlcfg.platforms.content, AttrDict, msg="")
+        self.assertIsInstance(psrlcfg.platforms.ids, list)
 
     def testConfigPath(self):
         self.assertTrue(Path(psrlcfg.user_home_path).is_dir())
