@@ -5,7 +5,7 @@ Created on Sat Apr 23 13:19:45 2016
 @author: Stefan
 """
 
-from pysiral.config import options_from_dictionary
+from attrdict import AttrDict
 
 
 class ValidatorBaseClass(object):
@@ -14,7 +14,7 @@ class ValidatorBaseClass(object):
         pass
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def validate(self, *args, **kwargs):
         error_flag, error_message = self._validate(*args, **kwargs)

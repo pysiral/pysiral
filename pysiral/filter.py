@@ -4,12 +4,13 @@ Created on Sat Apr 23 15:30:53 2016
 
 @author: Stefan
 """
-from pysiral.config import options_from_dictionary
+
 from pysiral.logging import DefaultLoggingClass
 from pysiral.flag import FlagContainer, ORCondition
 
 from scipy.interpolate import interp1d
 from astropy.convolution import convolve
+from attrdict import AttrDict
 import numpy as np
 
 
@@ -20,7 +21,7 @@ class FilterBaseClass(DefaultLoggingClass):
         self._flag = None
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def apply_filter(self, *args, **kwargs):
         self._apply_filter(*args, **kwargs)
@@ -171,11 +172,11 @@ def fill_nan(y):
 
 def smooth_2darray(array, filter_width=5, preserve_gaps=True):
     """ A simple smoothing filter """
-    
+
     # presever nan's and mask
     nan_list = np.where(np.isnan(array))
-    
-    try: 
+
+    try:
         mask = array.mask
         has_mask = True
     except AttributeError:

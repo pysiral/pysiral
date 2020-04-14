@@ -7,13 +7,13 @@ Created on Sun Apr 24 13:57:56 2016
 Module created for FMI version of pysiral
 """
 
+__all__ = ["IC", "ICA"]
 
 from pysiral.auxdata import AuxdataBaseClass
 
 from PIL import Image
 
 import pyproj
-# import gdal
 import datetime
 import numpy as np
 from pathlib import Path

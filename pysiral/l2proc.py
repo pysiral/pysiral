@@ -5,9 +5,8 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral import get_cls
-from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
-                            get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
+from pysiral import get_cls, psrlcfg
+from pysiral.config import TimeRangeRequest, get_yaml_config, PYSIRAL_VERSION, HOSTNAME
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
@@ -63,7 +62,7 @@ class Level2Processor(DefaultLoggingClass):
         self._l1b_files = []
 
         # pysiral config
-        self._config = ConfigInfo()
+        self._config = psrlcfg
 
         # Processor Initialization Flag
         self._initialized = False
@@ -130,7 +129,7 @@ class Level2Processor(DefaultLoggingClass):
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        output_ids, output_defs = td_branches(self.l2def.output)
+        output_ids, output_defs = self.l2def.output.items()
         for output_id, output_def in zip(output_ids, output_defs):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
@@ -232,7 +231,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
-            source_primary_filename = os.path.split(l1b_file)[-1]
+            source_primary_filename = Path(l1b_file).parts[-1]
 
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
@@ -341,7 +340,7 @@ class Level2Processor(DefaultLoggingClass):
         if "l1b_pre_filtering" not in self.l2def:
             return
         # Apply filters
-        names, filters = td_branches(self.l2def.l1b_pre_filtering)
+        names, filters = self.l2def.l1b_pre_filtering.items()
         for name, filter_def in zip(names, filters):
             self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
             l1bfilter = get_filter(filter_def.pyclass)
@@ -362,11 +361,11 @@ class Level2Processor(DefaultLoggingClass):
             verbose = False
 
         # Get and loop over data groups
-        data_groups, vardefs = td_branches(self.l2def.transfer_from_l1p)
+        data_groups, vardefs = self.l2def.transfer_from_l1p.items()
         for data_group, varlist in zip(data_groups, vardefs):
 
             # Get and loop over variables per data group
-            var_names, vardefs = td_branches(varlist)
+            var_names, vardefs = varlist.items()
             for var_name, vardef in zip(var_names, vardefs):
 
                 # Get variable via standard getter method
@@ -432,7 +431,7 @@ class Level2Processor(DefaultLoggingClass):
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
         surface_type_validators = self.l2def.validator.surface_type
-        names, validators = td_branches(surface_type_validators)
+        names, validators = surface_type_validators.items()
         error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
         error_messages = []
@@ -450,7 +449,7 @@ class Level2Processor(DefaultLoggingClass):
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        surface_types, retracker_def = td_branches(self.l2def.retracker)
+        surface_types, retracker_def = self.l2def.retracker.items()
 
         for i, surface_type in enumerate(surface_types):
 
@@ -570,7 +569,7 @@ class Level2Processor(DefaultLoggingClass):
 
         # Extract filters from settings structure
         freeboard_filters = self.l2def.filter.freeboard
-        names, filters = td_branches(freeboard_filters)
+        names, filters = freeboard_filters.items()
 
         # Loop over freeboard filters
         for name, filter_def in zip(names, filters):
@@ -636,7 +635,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _apply_thickness_filter(self, l2):
         thickness_filters = self.l2def.filter.thickness
-        names, filters = td_branches(thickness_filters)
+        names, filters = thickness_filters.items()
         for name, filter_def in zip(names, filters):
             sitfilter = get_filter(filter_def.pyclass)
             sitfilter.set_options(**filter_def.options)
@@ -757,7 +756,7 @@ class L2ProcessorReport(DefaultLoggingClass):
         """ Write a summary file to the defined export directory """
 
         # Create a simple filename
-        filename = os.path.join(directory, "pysiral-l2proc-summary.txt")
+        filename = Path(directory) / "pysiral-l2proc-summary.txt"
         self.log.info("Exporting summary report: %s" % filename)
 
         lfmt = "  %-16s : %s\n"

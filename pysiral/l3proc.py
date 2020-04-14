@@ -4,8 +4,8 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral import __version__, get_cls
-from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
+from pysiral import __version__, get_cls, psrlcfg
+from pysiral.config import (get_yaml_config, SENSOR_NAME_DICT,
                             MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
@@ -867,7 +867,7 @@ class Level3OutputHandler(OutputHandlerBase):
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
+        pysiral_config = psrlcfg
         local_settings_path = pysiral_config.pysiral_local_path
         return Path(local_settings_path) / Path(*self.default_file_location)
 

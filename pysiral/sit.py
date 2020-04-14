@@ -7,7 +7,8 @@ Created on Mon Apr 25 17:15:39 2016
 
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
-from pysiral.config import options_from_dictionary
+
+from attrdict import AttrDict
 import numpy as np
 
 
@@ -17,7 +18,7 @@ class L2ThicknessAlgorithmBaseClass(object):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def get_thickness(self, l2):
         sit, sit_unc, ice_dens, ice_dens_unc = self._get_thickness(l2)

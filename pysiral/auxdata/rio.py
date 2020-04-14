@@ -369,7 +369,6 @@ class RIO(AuxdataBaseClass):
             else:
                 print("Daaaamn, you shouln't be here!", str_iceclass)
 
-
-    	return [data_pc1, data_pc2, data_pc3, data_pc4, data_pc5, data_pc6, data_pc7,
+        return [data_pc1, data_pc2, data_pc3, data_pc4, data_pc5, data_pc6, data_pc7,
                 data_1asuper, data_1a, data_1b, data_1c, data_no_ice_class]
 

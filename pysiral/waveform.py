@@ -5,7 +5,7 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from retracker import cTFMRA
+from pysiral.retracker import cTFMRA
 import numpy as np
 
 from pysiral.logging import DefaultLoggingClass

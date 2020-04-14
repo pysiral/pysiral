@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME, ConfigInfo, get_yaml_config)
+from pysiral import psrlcfg
+from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME, get_yaml_config)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-from pysiral.config import options_from_dictionary
 
-from pathlib import Path
 
-from glob import glob
+
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
 from collections import OrderedDict
 from pathlib import Path
+from attrdict import AttrDict
 import numpy as np
 import parse
 import re
@@ -25,7 +25,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     def __init__(self, output_def):
         super(OutputHandlerBase, self).__init__(self.__class__.__name__)
-        self.pysiral_config = ConfigInfo()
+        self.pysiral_config = psrlcfg
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
@@ -262,8 +262,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         """ Get main product directory from local_machine_def, add mandatory
         runtag subdirectory, optional second subdirectory for overwrite
         protection and product level id subfolder"""
-        pysiral_config = ConfigInfo()
-        basedir = Path(pysiral_config.local_machine.product_repository)
+        basedir = Path(psrlcfg.local_machine.product_repository)
         if not isinstance(self.subdirectory, list):
             basedir = basedir / self.subdirectory
         else:
@@ -275,8 +274,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
-        local_settings_path = pysiral_config.pysiral_local_path
+        local_settings_path = psrlcfg.pysiral_local_path
         return Path(local_settings_path) / Path(*self.default_file_location)
 
 
@@ -306,7 +304,7 @@ class NCDataFile(DefaultLoggingClass):
         self.verbose = False
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def set_processor_settings(self, proc_settings):
         self._proc_settings = proc_settings
@@ -838,7 +836,7 @@ class PysiralOutputFolder(object):
     Class for generating and retrieving output folders
     """
 
-    def __init__(self, config=None, load_config=True):
+    def __init__(self):
         self.error = ErrorStatus()
         self.data_level = None
         self.path = None
@@ -846,12 +844,7 @@ class PysiralOutputFolder(object):
         self.mission_id = None
         self.year = None
         self.month = None
-        if not load_config:
-            return
-        if config is None or not isinstance(config, ConfigInfo):
-            self.config = ConfigInfo()
-        else:
-            self.config = config
+        self.config = psrlcfg
 
     def l1bdata_from_list(self, mission_id, version, hemisphere, year, month):
         self.mission_id = mission_id

@@ -5,18 +5,19 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["mss", "icechart", "rio", "sic", "sitype", "snow", "region"]
+__all__ = ["AuxdataBaseClass", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
+           "sitype", "snow", "region"]
 
 
 import re
 
 import numpy as np
+from attrdict import AttrDict
 
 import scipy.ndimage as ndimage
 from pathlib import Path
 from pyproj import Proj
 
-from pysiral.config import options_from_dictionary
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -266,9 +267,9 @@ class AuxClassConfig(object):
     def set_options(self, **opt_dict):
         """  Pass a dictionary with options """
         if self.options is None:
-            self.options = options_from_dictionary(**opt_dict)
+            self.options = AttrDict(**opt_dict)
         else:
-            self.options.update(options_from_dictionary(**opt_dict))
+            self.options.update(AttrDict(**opt_dict))
 
     def set_local_repository(self, path):
         """ Set the path the local auxdata repository """

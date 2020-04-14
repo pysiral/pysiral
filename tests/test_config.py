@@ -52,7 +52,6 @@ class TestPackage(unittest.TestCase):
 
             # Load all processor definitions (must return a valid AttrDict)
             for proc_def_id in proc_defs:
-
                 filepath = psrlcfg.get_settings_file("proc", processor_level, proc_def_id)
                 self.assertIsInstance(filepath, Path)
                 self.assertTrue(filepath.is_file())
