@@ -108,6 +108,52 @@ class MissionDefinitionCatalogue(object):
         with open(self._filepath) as fh:
             self._content = AttrDict(yaml.safe_load(fh))
 
+    def get_platform_info(self, platform_id):
+        """
+        Return the full configuration attr dict for a given platform id
+        :param platform_id:
+        :return:
+        """
+        platform_info = self._content.platforms.get(platform_id, None)
+        if platform_info is None:
+            return platform_info
+        else:
+            return AttrDict(**platform_info)
+
+
+    def get_name(self, platform_id):
+        """
+        Return the name of a platform.
+        :param platform_id:
+        :return:
+        """
+        platform_info = self.get_platform_info(platform_id)
+        if platform_info is None:
+            return None
+        return platform_info.long_name
+
+    def get_sensor(self, platform_id):
+        """
+        Return the sensor name of a platform
+        :param platform_id:
+        :return:
+        """
+        platform_info = self.get_platform_info(platform_id)
+        if platform_info is None:
+            return None
+        return platform_info.sensor
+
+    def get_orbit_inclination(self, platform_id):
+        """
+        Return the orbit inclination of a platform
+        :param platform_id:
+        :return:
+        """
+        platform_info = self.get_platform_info(platform_id)
+        if platform_info is None:
+            return None
+        return platform_info.orbit_max_latitude
+
     @property
     def content(self):
         """
@@ -117,7 +163,7 @@ class MissionDefinitionCatalogue(object):
         return self._content
 
     @property
-    def platform_ids(self):
+    def ids(self):
         """
         A list of id's for each platforms
         :return: list with platform ids
@@ -134,7 +180,7 @@ class PysiralPackageConfiguration(object):
 
     # Global variables
     _DEFINITION_FILES = {
-        "mission": "mission_def.yaml",
+        "platforms": "mission_def.yaml",
         "auxdata": "auxdata_def.yaml",
     }
 
@@ -154,12 +200,12 @@ class PysiralPackageConfiguration(object):
         # The general information for supported radar altimeter missions (mission_def.yaml for historical reasons)
         # provides general metadata for each altimeter missions that can be used to sanity checks
         # and queries for sensor names etc.
-        self.mission_def_filepath = USER_CONFIG_PATH / self._DEFINITION_FILES["mission"]
+        self.mission_def_filepath = USER_CONFIG_PATH / self._DEFINITION_FILES["platforms"]
         if not self.mission_def_filepath.is_file():
             error_msg = "Cannot load pysiral package files: \n %s" % self.mission_def_filepath
             print(error_msg)
             sys.exit(1)
-        self.mission_def = MissionDefinitionCatalogue(self.mission_def_filepath)
+        self.platforms = MissionDefinitionCatalogue(self.mission_def_filepath)
 
         # read the local machine definition file
         self._read_local_machine_file()
@@ -184,11 +230,11 @@ class PysiralPackageConfiguration(object):
             settings = AttrDict(yaml.safe_load(fileobj))
         return settings
 
-    def get_mission_info(self, mission):
-        mission_info = self.mission[mission]
-        if mission_info.data_period.stop is None:
-            mission_info.data_period.stop = datetime.utcnow()
-        return mission_info
+    # def get_mission_info(self, mission):
+    #     mission_info = self.mission_def.get(mission)
+    #     if mission_info.data_period.stop is None:
+    #         mission_info.data_period.stop = datetime.utcnow()
+    #     return AttrDict(mission_info)
 
     def get_setting_ids(self, type, data_level=None):
         lookup_directory = self.get_local_setting_path(type, data_level)
@@ -279,8 +325,8 @@ class PysiralPackageConfiguration(object):
         setattr(self, "local_machine", local_machine_def)
 
     @property
-    def mission_ids(self):
-        return self.mission_def.missions
+    def platform_ids(self):
+        return self.platforms.ids
 
     @property
     def user_home_path(self):

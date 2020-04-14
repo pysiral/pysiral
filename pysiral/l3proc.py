@@ -486,7 +486,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([psrlcfg.get_sensor_name(m) for m in ids.split(",")])
+        names = ",".join([psrlcfg.platforms.get_sensor(m) for m in ids.split(",")])
         return names
 
     def _get_attr_source_timeliness(self, *args):
@@ -697,7 +697,7 @@ class L3MetaData(object):
         (must be a list, since multi-mission grids are supported)
         """
         missions = np.unique(stack.mission)
-        mission_sensor = [psrlcfg.get_sensor_name(mission.lower()) for mission in missions]
+        mission_sensor = [psrlcfg.platforms.get_sensor(mission.lower()) for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
         source_timeliness = np.unique(stack.timeliness)[0]
@@ -1333,7 +1333,7 @@ class Level3StatusFlag(Level3ProcessorItem):
         # Compute conditions for flags
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
-        orbit_inclinations = [psrlcfg.get_orbit_inclination(mission_id) for mission_id in mission_ids]
+        orbit_inclinations = [psrlcfg.platforms.get_orbit_inclination(mission_id) for mission_id in mission_ids]
         is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
         is_land = lnd > 0
         has_data = nvw > 0

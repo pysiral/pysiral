@@ -303,20 +303,20 @@ class Level2Data(object):
         return mission_id
 
     def _get_attr_source_mission_name(self, *args):
-        mission_name = psrlcfg.get_mission_name(self.info.mission)
+        mission_name = psrlcfg.platforms.get_name(self.info.mission)
         if args[0] == "uppercase":
             mission_name = mission_name.upper()
         return mission_name
 
     def _get_attr_source_mission_sensor(self, *args):
-        mission_sensor = psrlcfg.get_sensor_name(self.info.mission)
+        mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
         """ Same as source mission sensor, only a sanitized version for filenames """
-        mission_sensor = psrlcfg.get_sensor_name(self.info.mission)
+        mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         for character in ["-"]:
             mission_sensor = mission_sensor.replace(character, "")
         if args[0] == "uppercase":
@@ -737,7 +737,7 @@ class Level2PContainer(DefaultLoggingClass):
             pass
 
         metadata.set_attribute("mission", mission_id)
-        mission_sensor = psrlcfg.get_sensor_name(mission_id)
+        mission_sensor = psrlcfg.platforms.get_sensor(mission_id)
         metadata.set_attribute("mission_sensor", mission_sensor)
 
         # Construct level-2 object

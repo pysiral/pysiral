@@ -408,66 +408,6 @@ class Level1bData(DefaultLoggingClass):
         return ";".join(radar_mode_list)
 
 
-class L1bConstructor(Level1bData):
-    """
-    Class to be used to construct a L1b data object from any mission
-    L1b data files
-    """
-
-    # TODO: should be coming from config file
-    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2",
-                               "sentinel3a", "icesat"]
-
-    def __init__(self, config, header_only=False):
-        super(L1bConstructor, self).__init__()
-        self._config = config
-        self._mission = None
-        self._mission_options = None
-        self._filename = None
-        self._header_only = header_only
-        self.error_status = False
-
-    @property
-    def mission(self):
-        return self._mission
-
-    @mission.setter
-    def mission(self, value):
-        if value in self._SUPPORTED_MISSION_LIST:
-            self._mission = value
-        else:
-            # XXX: An ErrorHandler is needed here
-            raise ValueError("Unsupported mission type")
-        # Get mission default options
-        self._mission_options = self._config.get_mission_defaults(value)
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        if Path(value).is_file():
-            self._filename = value
-        else:
-            # XXX: An ErrorHandler is needed here
-            raise IOError("Not a valid path")
-
-    def set_mission_options(self, **kwargs):
-        self._mission_options = kwargs
-
-    def construct(self):
-        """ Parse the file and construct the L1bData object """
-        adapter = get_l1b_adapter(self._mission)(self._config)
-        adapter.filename = self.filename
-        adapter.construct_l1b(self)
-
-    def get_header_info(self):
-        adapter = get_l1b_adapter(self._mission)(self._config)
-        adapter.filename = self.filename
-        adapter.construct_l1b(self, header_only=True)
-
-
 class L1bdataNCFile(Level1bData):
 
     def __init__(self, filename):
