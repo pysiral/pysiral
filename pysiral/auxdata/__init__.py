@@ -18,6 +18,7 @@ import scipy.ndimage as ndimage
 from pathlib import Path
 from pyproj import Proj
 
+from pysiral import import_submodules
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -360,13 +361,16 @@ def get_all_auxdata_classes():
     import importlib
     import pkgutil
 
+
+
     # Import all submodules of the auxdata module to discover all potential
     # subclasses of AuxdataBaseClass
-    auxdata_module = importlib.import_module(__name__)
-    results = {}
-    for loader, name, is_pkg in pkgutil.walk_packages(auxdata_module.__path__):
-        full_name = auxdata_module.__name__ + '.' + name
-        results[full_name] = importlib.import_module(full_name)
+    import_submodules(__name__)
+    # auxdata_module = importlib.import_module(__name__)
+    # results = {}
+    # for loader, name, is_pkg in pkgutil.walk_packages(auxdata_module.__path__):
+    #     full_name = auxdata_module.__name__ + '.' + name
+    #     results[full_name] = importlib.import_module(full_name)
 
     # Get a list of AuxdataBaseClass subclasses after import
     subclass_list = AuxdataBaseClass.__subclasses__()
