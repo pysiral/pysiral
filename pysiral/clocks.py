@@ -7,11 +7,12 @@ Created on Fri Sep 09 17:33:45 2016
 This module is dedicatet to convert between different time standards
 """
 
-from pysiral import USER_CONFIG_PATH
+from pysiral import psrlcfg
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import time
+import urllib
 import numpy as np
 from pathlib import Path
 
@@ -60,8 +61,8 @@ class UTCTAIConverter(object):
     def update_definition(self):
         """ Get definition file from web """
         # XXX: Requires error catching
-        req = urllib2.Request(self.url)
-        response = urllib2.urlopen(req, timeout=60)
+        req = urllib.request(self.url)
+        response = urllib.urlopen(req, timeout=60)
         content = response.readlines()
         with open(self.local_ls_ietf_definition, "w") as fhandle:
             for line in content:
@@ -109,7 +110,7 @@ class UTCTAIConverter(object):
     @property
     def local_ls_ietf_definition(self):
         """ Return the local filename for the IETF leap seconds definition """
-        return USER_CONFIG_PATH / "leap-seconds.list"
+        return psrlcfg.config_path / "leap-seconds.list"
 
 
 class StopWatch(object):

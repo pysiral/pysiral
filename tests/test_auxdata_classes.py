@@ -24,13 +24,6 @@ class TestAuxdataClasses(unittest.TestCase):
         for module, name, class_instance in self.auxdata_classes:
             self.assertTrue(hasattr(class_instance, "get_l2_track_vars"))
 
-    def testAuxdataClassHasL2Method(self):
-        """
-        Test if auxdata class has the mandatory get_l2_track_vars method
-        :return:
-        """
-        for module, name, class_instance in self.auxdata_classes:
-            self.assertTrue(hasattr(class_instance, "get_l2_track_vars"))
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAuxdataClasses)

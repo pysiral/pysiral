@@ -264,6 +264,7 @@ class _PysiralPackageConfiguration(object):
     VALID_SETTING_TYPES = ["proc", "output", "grid"]
     VALID_PROCESSOR_LEVELS = ["l1", "l2", "l3"]
     VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
+    VALID_CONFIG_TARGETS = ["PACKAGE", "USER_HOME"]
 
     def __init__(self):
         """
@@ -292,19 +293,19 @@ class _PysiralPackageConfiguration(object):
         """
         Get the different path information for pysiral. This method will add the following
         attributes to self.path:
-            1. package_root_dir: The root directory of this package
-            2. package_config_dir: The directory of the pysiral config items in this package
+            1. package_root_path: The root directory of this package
+            2. package_config_path: The directory of the pysiral config items in this package
             3. userhome_config_dir: The intended configuration directory in the user home
-            4. config_dir_target: The value given in the `PYSIRAL-CFG-LOC` file
+            4. config_target: The value given in the `PYSIRAL-CFG-LOC` file
         :return: None
         """
 
         # Store the root dir of this pysiral package
-        self._path["package_root_dir"] = PACKAGE_ROOT_DIR
+        self._path["package_root_path"] = PACKAGE_ROOT_DIR
 
         # Get the config directory of the package
         # NOTE: This approach should work for a local script location or an installed package
-        self._path["package_config_dir"] = self._path["package_root_path"] / "resources" / "pysiral-cfg"
+        self._path["package_config_path"] = self._path["package_root_path"] / "resources" / "pysiral-cfg"
 
         # Get an indication of the location for the pysiral configuration path
         # NOTE: In its default version, the text file `PYSIRAL-CFG-LOC` does only contain the
@@ -314,13 +315,13 @@ class _PysiralPackageConfiguration(object):
         #       fully encapsulated pysiral installation in virtual environments
 
         # Get the home directory of the current user
-        self._path["userhome_config_dir"] = Path.home() / ".pysiral-cfg"
+        self._path["userhome_config_path"] = Path.home() / ".pysiral-cfg"
 
         # Read pysiral config location indicator file
         cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
         try:
             with open(cfg_loc_file) as f:
-                self._path["config_dir_target"] = f.read().strip()
+                self._path["config_target"] = f.read().strip()
         except IOError:
             sys.exit("Cannot find PYSIRAL-CFG-LOC file in package (expected: %s)" % cfg_loc_file)
 
@@ -332,22 +333,22 @@ class _PysiralPackageConfiguration(object):
         """
 
         # Make alias of
-        config_dir = self.config_dir
-        package_config_dir = self.path.package_config_dir
+        config_path = self.config_path
+        package_config_path = self.path.package_config_path
 
         # Check if current config dir is package config dir
         # if yes -> nothing to do (files are either there or aren't)
-        if config_dir == package_config_dir:
+        if config_path == package_config_path:
             return
 
         # current current config dir is not package dir and does not exist
         # -> must be populated with content from the package config dir
-        if not config_dir.is_dir():
-            print("Creating pysiral config directory: %s" % config_dir)
-            dir_util.copy_tree(self.path.package_config_dir, config_dir, verbose=1)
+        if not config_path.is_dir():
+            print("Creating pysiral config directory: %s" % config_path)
+            dir_util.copy_tree(self.path.package_config_path, config_path, verbose=1)
             print("Init local machine def")
-            template_filename = package_config_dir / "templates" / "local_machine_def.yaml.template"
-            target_filename = config_dir / "local_machine_def.yaml"
+            template_filename = package_config_path / "templates" / "local_machine_def.yaml.template"
+            target_filename = config_path / "local_machine_def.yaml"
             shutil.copy(template_filename, target_filename)
 
     def _read_config_files(self):
@@ -368,7 +369,7 @@ class _PysiralPackageConfiguration(object):
         # NOTE: This is just general information on altimeter platform and not to be confused with
         #       settings for actual primary data files. These are located in each l1p processor
         #       definition file.
-        self.mission_def_filepath = self.config_dir / self._DEFINITION_FILES["platforms"]
+        self.mission_def_filepath = self.config_path / self._DEFINITION_FILES["platforms"]
         if not self.mission_def_filepath.is_file():
             error_msg = "Cannot load pysiral package files: \n %s" % self.mission_def_filepath
             print(error_msg)
@@ -380,7 +381,7 @@ class _PysiralPackageConfiguration(object):
         # of supported auxiliary data sets. Each auxiliary data set is uniquely defined by
         # the type of auxiliary data set and a name id.
         # The central definition allows to access auxiliary data by its id in processor definition files
-        self.auxdata_def_filepath = self.config_dir / self._DEFINITION_FILES["auxdata"]
+        self.auxdata_def_filepath = self.config_path / self._DEFINITION_FILES["auxdata"]
         if not self.auxdata_def_filepath.is_file():
             error_msg = "Cannot load pysiral package files: \n %s" % self.auxdata_def_filepath
             print(error_msg)
@@ -475,12 +476,45 @@ class _PysiralPackageConfiguration(object):
             args = [type]
             if data_level is not None:
                 args.append(data_level)
-            return Path(self.config_dir) / Path(*args)
+            return Path(self.config_path) / Path(*args)
         else:
             return None
 
+    def reload(self):
+        """
+        Method to trigger reading the configuration files again, e.g. after changing the config target
+        :return:
+        """
+        self._read_config_files()
+        self._check_pysiral_config_path()
+
+    def set_config_target(self, config_target, permanent=False):
+        """
+        Set the configuration target
+        :param config_target:
+        :param permanent:
+        :return:
+        """
+
+        # Input validation
+        if config_target in self.VALID_CONFIG_TARGETS or Path(config_target).is_dir():
+            self._path["config_target"] = config_target
+        else:
+            msg = "Invalid config_target: {} must be {} or valid path"
+            msg = msg.format(str(config_target), ", ".join(self.VALID_CONFIG_TARGETS))
+            raise ValueError(msg)
+
+        if permanent:
+            raise NotImplementedError()
+
     def _read_local_machine_file(self):
-        filename = self.path.current_config_dir / self._LOCAL_MACHINE_DEF_FILE
+        """
+        :return:
+        """
+        filename = self.config_path / self._LOCAL_MACHINE_DEF_FILE
+        if self.current_config_target == "PACKAGE":
+            print("[WARNING] current config target is `PACKAGE` -> looking for `local_machine_def.yaml` in userhome")
+            filename = self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
         try:
             local_machine_def = self.get_yaml_config(filename)
         except IOError:
@@ -498,31 +532,39 @@ class _PysiralPackageConfiguration(object):
         return AttrDict(**self._path)
 
     @property
-    def user_config_dir(self):
-        return self.path.user_config_dir
+    def userhome_config_path(self):
+        return Path(self.path.userhome_config_path)
 
     @property
-    def package_dir(self):
-        return PACKAGE_ROOT_DIR
+    def package_config_path(self):
+        return Path(self.path.package_config_path)
 
     @property
-    def config_dir(self):
+    def package_path(self):
+        return Path(PACKAGE_ROOT_DIR)
+
+    @property
+    def current_config_target(self):
+        return str(self._path["config_target"])
+
+    @property
+    def config_path(self):
         """
-        Construct the target config path based on the value in `PYSIRAL-CFG-LOC`
+        nstruct the target config path based on the value in `PYSIRAL-CFG-LOC`
         :return:
         """
         # Case 1 (default): pysiral config path is in user home
-        if self._path["config_dir_target"] == "USER_HOME":
-            return self._path["userhome_config_dir"]
+        if self._path["config_target"] == "USER_HOME":
+            return self._path["userhome_config_path"]
 
         # Case 2: pysiral config path is the package itself
-        elif self._path["config_dir_target"] == "PACKAGE":
-            return self._path["package_config_dir"]
+        elif self._path["config_target"] == "PACKAGE":
+            return self._path["package_config_path"]
 
         # Case 3: package specific config path
         else:
             # This should be an existing path, but in the case it is not, it is created
-            return self._path["config_dir_target"]
+            return self._path["config_target"]
 
     @property
     def local_machine_def_filepath(self):
@@ -538,7 +580,7 @@ class _PysiralPackageConfiguration(object):
 
     @property
     def version(self):
-        return __version__
+        return str(__version__)
 
 
 # Create a package configuration object as global variable

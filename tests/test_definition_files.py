@@ -11,7 +11,6 @@ import unittest
 from attrdict import AttrDict
 
 from pysiral import psrlcfg
-from pysiral import USER_CONFIG_PATH
 from pysiral.config import get_yaml_config
 
 
@@ -23,7 +22,7 @@ class TestDefinitionfiles(unittest.TestCase):
     def testYamlSyntaxOfDefinitionFiles(self):
         def_files = ["mission_def.yaml", "auxdata_def.yaml"]
         for def_file in def_files:
-            filename = USER_CONFIG_PATH / def_file
+            filename = psrlcfg.config_path / def_file
             content = get_yaml_config(filename)
             self.assertIsInstance(content, AttrDict, msg=def_file)
 
@@ -43,8 +42,22 @@ class TestDefinitionfiles(unittest.TestCase):
         self.assertGreater(len(keys), 0)
 
     def testAuxdataDefinitionContent(self):
+        """
+        Test the content of the auxdata definitions (both in the userhome as well as the package,
+        since they might be different)
+        :return:
+        """
+        current_config_target = psrlcfg.current_config_target
+        for config_target in psrlcfg.VALID_CONFIG_TARGETS:
+            psrlcfg.set_config_target(config_target)
+            psrlcfg.reload()
+            self._testAuxdataDefinitionContent(config_target)
+        psrlcfg.set_config_target(current_config_target)
+        psrlcfg.reload()
+
+    def _testAuxdataDefinitionContent(self, target):
         for category, id, item in psrlcfg.auxdef.items:
-            aux_id = "{}:{}".format(category, id)
+            aux_id = "{}:{}:{}".format(target, category, id)
             config_dict_keys = item.keys
             for required_key in ["options", "long_name", "pyclass", "local_repository"]:
                 self.assertTrue(required_key in config_dict_keys, msg="{} has {}".format(aux_id, required_key))

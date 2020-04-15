@@ -8,7 +8,7 @@ from distutils import log, dir_util
 log.set_verbosity(log.INFO)
 log.set_threshold(log.INFO)
 
-from pysiral import PACKAGE_CONFIG_PATH, USER_CONFIG_PATH
+from pysiral import psrlcfg
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
 
     # Copy the entire tree
     print("copy pysiral config files from package to user home: ")
-    dir_util.copy_tree(str(PACKAGE_CONFIG_PATH), str(USER_CONFIG_PATH), verbose=1)
+    dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.userhome_config_path), verbose=1)
 
 if __name__ == "__main__":
     main()
