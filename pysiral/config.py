@@ -106,13 +106,16 @@ class TimeRangeRequest(DefaultLoggingClass):
         return output
 
     def clip_to_mission(self, mission_id):
-        mission_info = psrlcfg.get_mission_info(mission_id)
-        start = mission_info.data_period.start.replace(tzinfo=None)
-        stop = mission_info.data_period.stop.replace(tzinfo=None)
+        """
+        Make sure there that there is now request for processing in periods where there is no m
+        data of the particular platform
+        :param mission_id:
+        :return:
+        """
+        start, stop = psrlcfg.platforms.get_time_coverage(mission_id)
         is_clipped = self.clip_to_range(start, stop)
         if is_clipped:
-            self.log.info("Clipped to mission time range: %s till %s" % (
-                mission_info.data_period.start, mission_info.data_period.stop))
+            self.log.info("Clipped to mission time range: %s till %s" % (start, stop))
 
     def raise_if_empty(self):
         message = ""

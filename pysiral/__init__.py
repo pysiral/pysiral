@@ -154,6 +154,23 @@ class MissionDefinitionCatalogue(object):
             return None
         return platform_info.orbit_max_latitude
 
+    def get_time_coverage(self, platform_id):
+        """
+        Get the time coverage (start and end of data coverage) of the requested plaform.
+        If the the end data is not defined because the platform is still active, the current
+        date is returned.
+        :param platform_id:
+        :return: time coverage start & time coverage end
+        """
+        platform_info = self.get_platform_info(platform_id)
+        if platform_info is None:
+            return None, None
+        tcs = platform_info.time_coverage.start
+        tce = platform_info.time_coverage.end
+        if tce is None:
+            tce = datetime.utcnow()
+        return tcs, tce
+
     @property
     def content(self):
         """
