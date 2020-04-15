@@ -13,9 +13,6 @@ from pysiral.auxdata import get_all_auxdata_classes
 class TestAuxdataClasses(unittest.TestCase):
 
     def setUp(self):
-
-        print(self.__class__.__name__)
-
         # Get all auxiliary data classes
         self.auxdata_classes = get_all_auxdata_classes()
 

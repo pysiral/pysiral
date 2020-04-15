@@ -11,7 +11,7 @@ import pkgutil
 class TestPackage(unittest.TestCase):
 
     def setUp(self):
-        print(self.__class__.__name__)
+        pass
 
     def testAllImports(self):
         import_submodules("pysiral")

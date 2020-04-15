@@ -15,10 +15,10 @@ from pysiral import psrlcfg
 class TestConfig(unittest.TestCase):
 
     def setUp(self):
-        print(self.__class__.__name__)
+        pass
 
     def testMissionConfig(self):
-        self.assertIsInstance(psrlcfg.platforms.content, AttrDict, msg="")
+        self.assertIsInstance(psrlcfg.platforms.content, AttrDict)
         self.assertIsInstance(psrlcfg.platforms.ids, list)
 
     def testConfigPath(self):
