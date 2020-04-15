@@ -5,10 +5,12 @@ Created on Mon Jul 06 17:57:33 2015
 @author: Stefan
 """
 
+import datetime
 import unittest
 
 from attrdict import AttrDict
 
+from pysiral import psrlcfg
 from pysiral import USER_CONFIG_PATH
 from pysiral.config import get_yaml_config
 
@@ -24,6 +26,28 @@ class TestDefinitionfiles(unittest.TestCase):
             filename = USER_CONFIG_PATH / def_file
             content = get_yaml_config(filename)
             self.assertIsInstance(content, AttrDict, msg=def_file)
+
+    def testPlatformDefinitions(self):
+        self.assertIsInstance(psrlcfg.platforms.ids, list)
+        for platform_id in psrlcfg.platforms.ids:
+            self.assertIsNotNone(psrlcfg.platforms.get_name(platform_id))
+            self.assertIsNotNone(psrlcfg.platforms.get_sensor(platform_id))
+            self.assertIsNotNone(psrlcfg.platforms.get_orbit_inclination(platform_id))
+            tcs, tce = psrlcfg.platforms.get_time_coverage(platform_id)
+            self.assertIsInstance(tcs, datetime.datetime)
+            self.assertIsInstance(tce, datetime.datetime)
+
+    def testAuxdataDefinitionBasic(self):
+        self.assertTrue(hasattr(psrlcfg, "auxdef"))
+        keys = psrlcfg.auxdef.iter_keys
+        self.assertGreater(len(keys), 0)
+
+    def testAuxdataDefinitionContent(self):
+        for category, id, item in psrlcfg.auxdef.items:
+            aux_id = "{}:{}".format(category, id)
+            config_dict_keys = item.keys
+            for required_key in ["options", "long_name", "pyclass", "local_repository"]:
+                self.assertTrue(required_key in config_dict_keys, msg="{} has {}".format(aux_id, required_key))
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDefinitionfiles)

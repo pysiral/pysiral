@@ -3,17 +3,6 @@
 
 # Note: path keywords must be set in local_machine_def.yaml
 
-# list of valid auxiliary data types
-auxdata_types:
-    - mean_sea_surface
-    - ice_concentration
-    - ice_type
-    - ice_type_fraction
-    - snow_depth
-    - snow_density
-    # ice charts added for fmi version
-    - icechart
-
 # List of icechart products (fmi version)
 icechart:
     
@@ -86,7 +75,7 @@ mss:
     dtu10:
         pyclass: DTU1MinGrid
         long_name: DTU10 mean sea surface (1 minute grid)
-        local_directory: dtu10
+        local_repository: dtu10
         filename: DTU10MSS_1min.nc
         options: null
         source:
