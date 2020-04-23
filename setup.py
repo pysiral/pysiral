@@ -24,7 +24,7 @@ with open(mypackage_root_dir / "pysiral" / 'VERSION') as version_file:
 
 # cythonized extensions go here
 extensions = [
-    Extension("pysiral.bnfunc.cytfmra", [Path("pysiral/bnfunc/cytfmra.pyx")])]
+    Extension("pysiral.bnfunc.cytfmra", ["pysiral/bnfunc/cytfmra.pyx"])]
 
 # Package requirements
 with open("requirements.txt") as f:
