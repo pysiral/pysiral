@@ -17,11 +17,9 @@ Created on Mon Jul 06 10:38:41 2015
 
 import re
 import yaml
-import socket
 
 import numpy as np
 
-from pathlib import Path
 from attrdict import AttrDict
 
 from pysiral import psrlcfg
@@ -57,8 +55,8 @@ class RadarModes(object):
         return None
 
     def name(self, index):
-        i = self.flag_dict.values().index(index)
-        return self.flag_dict.keys()[i]
+        i = list(self.flag_dict.values()).index(index)
+        return list(self.flag_dict.keys())[i]
 
     @property
     def num(self):
@@ -561,7 +559,7 @@ class DefaultCommandLineArguments(object):
             "mission": {
                 "action": 'store',
                 "dest": 'mission_id',
-                "choices": psrlcfg.mission_ids,
+                "choices": psrlcfg.platform_ids,
                 "required": True,
                 "help": "pysiral recognized mission id"},
 
@@ -569,7 +567,7 @@ class DefaultCommandLineArguments(object):
             "platform": {
                 "action": 'store',
                 "dest": 'platform',
-                "choices": psrlcfg.mission_ids,
+                "choices": psrlcfg.platform_ids,
                 "required": True,
                 "default": None,
                 "help": "pysiral recognized platform id"},

@@ -565,7 +565,7 @@ class L1bDataNC(DefaultLoggingClass):
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
-                dimensions = tuple(dims[0:len(data.shape)])
+                dimensions = tuple(list(dims)[0:len(data.shape)])
                 if self.verbose:
                     print(" "+parameter, dimensions, data.dtype.str, data.shape)
 

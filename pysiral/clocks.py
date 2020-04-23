@@ -54,7 +54,7 @@ class UTCTAIConverter(object):
 
         # Apply leap seconds
         for i, tai_time in enumerate(tai_datetimes):
-            utc_datetimes[i] = tai_time - timedelta(seconds=leap_seconds[i])
+            utc_datetimes[i] = tai_time - timedelta(seconds=int(leap_seconds[i]))
 
         return utc_datetimes
 

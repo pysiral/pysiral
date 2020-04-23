@@ -1,6 +1,7 @@
 
 import sys
 import numpy as np
+from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
@@ -215,7 +216,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :return:
         """
 
-        if self.cfg.has_key("export_minimum_n_records"):
+        if "export_minimum_n_records" in self.cfg:
             minimum_n_records = self.cfg.export_minimum_n_records
         else:
             minimum_n_records = 0
@@ -501,7 +502,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def target_region_def(self):
-        if not self.cfg.has_key("polar_ocean"):
+        if not "polar_ocean" in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -509,7 +510,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def polar_ocean_props(self):
-        if not self.cfg.has_key("polar_ocean"):
+        if not "polar_ocean" in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -517,7 +518,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def orbit_segment_connectivity_props(self):
-        if not self.cfg.has_key("orbit_segment_connectivity"):
+        if not "orbit_segment_connectivity" in self.cfg:
             msg = "Missing configuration key `orbit_segment_connectivity` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -558,7 +559,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         # Step: Filter small ocean segments
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
-        if self.cfg.polar_ocean.has_key("ocean_mininum_size_nrecords"):
+        if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
             self.log.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
@@ -576,7 +577,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
-        if self.cfg.has_key("timestamp_discontinuities"):
+        if "timestamp_discontinuities" in self.cfg:
             self.log.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
@@ -630,7 +631,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
         # Step: Filter small ocean segments
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
-        if self.cfg.polar_ocean.has_key("ocean_mininum_size_nrecords"):
+        if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
             self.log.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
@@ -641,7 +642,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
-        if self.cfg.has_key("timestamp_discontinuities"):
+        if "timestamp_discontinuities" in self.cfg:
             self.log.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
@@ -696,7 +697,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
         # Step: Filter small ocean segments
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
-        if self.cfg.polar_ocean.has_key("ocean_mininum_size_nrecords"):
+        if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
             self.log.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
@@ -707,7 +708,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
-        if self.cfg.has_key("timestamp_discontinuities"):
+        if "timestamp_discontinuities" in self.cfg:
             self.log.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
@@ -902,7 +903,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Get the value
         expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
         try:
-            branch = primary_input_def[platform][tag]
+            branch = AttrDict(primary_input_def[platform][tag])
         except KeyError:
             msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
             msg = msg % expected_branch_name
@@ -911,7 +912,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Sanity Checks
         # TODO: Obsolete?
-        if branch.isDangling():
+        if branch is None:
             msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
             msg = msg % expected_branch_name
             self.error.add_error("local-machine-def-missing-tag", msg)
@@ -922,7 +923,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         for key in ["source", "l1p"]:
 
             # 1. Branch must have specific keys for input and output
-            if not branch.has_key(key):
+            if not key in branch:
                 msg = "Missing definition in `local_machine_def.yaml`. Expected value: %s.%s"
                 msg = msg % (expected_branch_name, key)
                 self.error.add_error("local-machine-def-missing-tag", msg)
@@ -932,7 +933,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             #    attr (e.g. for different radar modes) with a list of directories
             directory_or_attrdict = branch[key]
             try:
-                directories = directory_or_attrdict.values(recursive=True)
+                directories = directory_or_attrdict.values()
             except AttributeError:
                 directories = [directory_or_attrdict]
 
@@ -944,7 +945,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                     self.error.raise_on_error()
 
         # Update the lookup dir parameter
-        self.l1pprocdef.input_handler.options.lookup_dir = branch.source
+        self.l1pprocdef.input_handler["options"]["lookup_dir"] = branch.source
 
     def _check_if_unambiguous_platform(self):
         """ Checks if the platform is unique, since some l1 processor definitions are valid for a series of
@@ -1077,7 +1078,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self._filename = filename_template.format(**values)
 
         local_repository = self.pysiral_cfg.local_machine.l1b_repository
-        export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag].l1p)
+        export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag]["l1p"])
         yyyy = "%04g" % l1.time_orbit.timestamp[0].year
         mm = "%02g" % l1.time_orbit.timestamp[0].month
         self._path = export_folder / l1.info.hemisphere / yyyy / mm
