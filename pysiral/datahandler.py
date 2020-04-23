@@ -27,7 +27,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
     def __init__(self):
         super(DefaultAuxdataClassHandler, self).__init__(self.__class__.__name__)
-        self.pysiral_config = psrlcfg
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
     def get_pyclass(self, auxdata_class, auxdata_id, l2_procdef_opt):
@@ -118,7 +117,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         """ Get the local repository for the the auxdata type and id """
         if auxdata_id is None:
             return None
-        aux_repo_defs = self.pysiral_config.local_machine.auxdata_repository
+        aux_repo_defs = psrlcfg.local_machine.auxdata_repository
         try:
             local_repo_auxclass = aux_repo_defs[auxdata_class]
         except KeyError:
@@ -130,13 +129,13 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
     def get_auxdata_def(self, auxdata_class, auxdata_id):
         """ Returns the definition in `config/auxdata_def.yaml` for
         specified auxdata class and id """
-        try:
-            auxdata_class_def = self.pysiral_config.auxdata[auxdata_class]
-        except KeyError:
+
+        auxdata_def = psrlcfg.auxdef.get_definition(auxdata_class, auxdata_id)
+        if auxdata_def is None:
             msg = "Invalid auxdata class [%s] in auxdata_def.yaml" % auxdata_class
             self.error.add_error("invalid-auxdata-class", msg)
             self.error.raise_on_error()
-        return auxdata_class_def.get(auxdata_id, None)
+        return auxdata_def.attrdict
 
 
 class DefaultL1bDataHandler(DefaultLoggingClass):

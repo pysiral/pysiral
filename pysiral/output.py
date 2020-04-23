@@ -763,9 +763,7 @@ class PysiralOutputFilenaming(object):
         self.grid = None
 
         self._registered_parsers = {
-            "l1bdata": "l1bdata_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
-            "l1p": "pysiral-l1p-{mission_id}-{source}-{hemisphere}-{start}-{stop}-{version}.nc",
-            "l1p_v2": "pysiral-l1p-{mission_id}-{source}-{timeliness}-{hemisphere}-{start}-{stop}-{version}.nc",
+            "l1p": "pysiral-l1p-{mission_id}-{source}-{timeliness}-{hemisphere}-{start}-{stop}-{version}.nc",
             "l2i": "l2i_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
             "l3s": "l3s_{version}_{mission_id}_{grid}_{resolution}_{start}_{stop}.nc"}
 

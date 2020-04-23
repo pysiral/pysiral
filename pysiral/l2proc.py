@@ -180,9 +180,8 @@ class Level2Processor(DefaultLoggingClass):
         for auxdata_dict in self.l2def.auxdata:
 
             # Extract the information
-            auxdata_type  = auxdata_dict.keys()[0]
+            auxdata_type = list(auxdata_dict.keys())[0]
             auxdata_def = auxdata_dict[auxdata_type]
-
 
             # Get options from l2 processor definition file
             # NOTE: These will intentionally override the default options defined in auxdata_def.yaml
@@ -362,6 +361,7 @@ class Level2Processor(DefaultLoggingClass):
 
         # Get and loop over data groups
         data_groups, vardefs = self.l2def.transfer_from_l1p.items()
+        stop
         for data_group, varlist in zip(data_groups, vardefs):
 
             # Get and loop over variables per data group

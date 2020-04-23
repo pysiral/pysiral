@@ -170,36 +170,16 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
         time_range_is_correct_object = False
     if not time_range_is_correct_object:
         error = ErrorStatus()
-        msg = "Invalid type of time_range, required: %s, was %s" % (
-            type(time_range), type(TimeRangeIteration))
+        msg = "Invalid type of time_range, required: %s, was %s" % (type(time_range), type(TimeRangeIteration))
         error.add_error("invalid-timerange-type", msg)
         error.raise_on_error()
 
     # 1) get list of all files for monthly folders
     yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
 
-    # NOTE: Check if folder is l1p instead of l1bdata
-    #       -> l1p indicated new l1 data version with different filenaming. File structure is still the same
     repo_branch = config.local_machine.l1b_repository[mission_id][version]
-    if repo_branch.has_key("l1bdata"):
-        l1b_repo = repo_branch.l1bdata
-    else:
-        l1b_repo = repo_branch.l1p
-    directory = Path(l1b_repo) / hemisphere / yyyy / mm
+    directory = Path(repo_branch["l1p"]) / hemisphere / yyyy / mm
     all_l1bdata_files = sorted(directory.glob("*.nc"))
-
-    # 2) First filtering step: Check if different algorithm baseline values
-    # exist in the list of l1bdata files
-    algorithm_baselines = [l1bdata_get_baseline(f) for f in all_l1bdata_files]
-    baselines = np.unique(np.array(algorithm_baselines))
-    n_baselines = len(baselines)
-    if not allow_multiple_baselines and n_baselines > 1:
-        error = ErrorStatus()
-        baseline_str_list = ", ".join(baselines)
-        msg = "Multiple l1bdata baselines (%g) [%s] found in directory: %s" % (
-                n_baselines, baseline_str_list, directory)
-        error.add_error("multiple-l1b-baselines", msg)
-        error.raise_on_error()
 
     # 3) Check if files are in requested time range
     # This serves two purporses: a) filter out files with timestamps that do

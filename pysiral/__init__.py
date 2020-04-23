@@ -168,6 +168,10 @@ class _AuxdataCatalogueItem(object):
     def keys(self):
         return self._config_dict.keys()
 
+    @property
+    def attrdict(self):
+        return AttrDict(**self._config_dict)
+
 
 class _AuxdataCatalogue(object):
     """
@@ -210,6 +214,21 @@ class _AuxdataCatalogue(object):
 
         # Return a sorted str list
         return sorted(self.ctlg[category].keys())
+
+    def get_definition(self, category, id):
+        """
+        Retrieve the auxiliary data definition for a category and auxiliary data set id
+        :param category: (str) Auxiliary data category (must be in self.categories)
+        :param id: (str) The ID of the auxililary data set
+        :return: AttrDict or None (if auxiliary dataset does not exist
+        """
+
+        # Check if valid category
+        if category not in self.categories:
+            return None
+
+        # Extract & return the definition
+        return self.ctlg[category].get(id, None)
 
     @property
     def categories(self):

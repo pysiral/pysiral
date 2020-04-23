@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments, TimeRangeRequest)
+from pysiral import psrlcfg
+from pysiral.config import (DefaultCommandLineArguments, TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
 
-from Pathlib import Path
+from pathlib import Path
 
 from datetime import timedelta
 import argparse
@@ -116,7 +117,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = ConfigInfo()
+        self.pysiral_config = psrlcfg
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -148,7 +149,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
                 "l2 files for the requested period\n" + \
                 "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                 "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
