@@ -364,9 +364,9 @@ class NCDataFile(DefaultLoggingClass):
             if level3:
                 if parameter_name not in lonlat_parameter_names:
                     data = np.array([data])
-                    dimensions = tuple(dims[0:len(data.shape)])
+                    dimensions = tuple(list(dims)[0:len(data.shape)])
                 else:
-                    dimensions = tuple(dims[1:len(data.shape)+1])
+                    dimensions = tuple(list(dims)[1:len(data.shape)+1])
             else:
                 dimensions = tuple(list(dims)[0:len(data.shape)])
 
@@ -732,7 +732,7 @@ class Level3Output(NCDataFile):
 
         # Set grid definition
         grid_nc_cfg = self.data.griddef.netcdf_vardef
-        name = grid_nc_cfg.keys(branch_mode="only")[0]
+        name = list(grid_nc_cfg.keys())[0]
         attrs = grid_nc_cfg[name]
         var = rgrp.createVariable(name, "i1", ())
         for key in sorted(attrs.keys()):

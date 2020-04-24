@@ -230,8 +230,15 @@ class L2iDataHandler(DefaultLoggingClass):
     def get_subdirectory_list(self):
         """ Returns a list of all subdirectories of type yyyy/mm """
         subdirectory_list = list()
+
+        # 1. Check if directory exists
+        if not self.product_basedir.is_dir():
+            msg = "Directory {} does not exist".format(str(self.product_basedir))
+            self.error.add_error("invalid-l2i-product-dir", msg)
+            self.error.raise_on_error()
+
         try:
-            years = sorted([f for f in Path(self.product_basedir.iterdir()) if f.is_dir()])
+            years = sorted([f.parts[-1] for f in Path(self.product_basedir).iterdir() if f.is_dir()])
         except StopIteration:
             self.log.warning("No subdirectories in %s" % self.product_basedir)
             return []
@@ -239,7 +246,7 @@ class L2iDataHandler(DefaultLoggingClass):
         years = [y for y in years if re.match(r'[1-3][0-9]{3}', y)]
         for year in years:
             subdir_year = Path(self.product_basedir) / year
-            months = [f for f in subdir_year.iterdir() if f.is_dir()]
+            months = [f.parts[-1] for f in subdir_year.iterdir() if f.is_dir()]
             # filter any invalid directories
             months = [m for m in months if re.match(r'[0-1][0-9]', m)]
             subdirectory_list.extend([[year, m] for m in months])

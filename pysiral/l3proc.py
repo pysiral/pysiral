@@ -80,9 +80,6 @@ class Level3Processor(DefaultLoggingClass):
                 orbitfilter_is_active = orbitfilter.active
             except AttributeError:
                 orbitfilter_is_active = False
-            finally:
-                if orbitfilter.isDangling():
-                    orbitfilter_is_active = False
 
             if orbitfilter_is_active:
 
@@ -217,8 +214,8 @@ class L2iDataStack(DefaultLoggingClass):
         self.stack = {}
 
         # create a stack for each l2 parameter
-        for pardef in self.l2_parameter:
-            self.stack[pardef.branchName()] = self.parameter_stack
+        for parameter_name in self.l2_parameter.keys():
+            self.stack[parameter_name] = self.parameter_stack
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
@@ -254,8 +251,7 @@ class L2iDataStack(DefaultLoggingClass):
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
 
-            for pardef in self.l2_parameter:
-                parameter_name = pardef.branchName()
+            for parameter_name in self.l2_parameter.keys():
                 try:
                     data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
@@ -402,7 +398,7 @@ class L3DataGrid(DefaultLoggingClass):
 
             # Certain parameters in the l2 stack are excluded from gridding
             # (-> indicated by grid_method: none)
-            grid_method = self.l3def.l2_parameter[name].grid_method
+            grid_method = self.l3def.l2_parameter[name]["grid_method"]
             if grid_method == "none":
                 continue
 
@@ -472,11 +468,11 @@ class L3DataGrid(DefaultLoggingClass):
     def _init_parameter_fields(self, pardefs):
         """ Initialize output parameter fields """
         # Store the name of the parameters
-        self._l2_parameter = sorted([pd.branchName() for pd in pardefs])
-        for pardef in pardefs:
-            fillvalue = pardef.fillvalue
-            if pardef.grid_method != "none":
-                self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
+        self._l2_parameter = sorted(pardefs.keys())
+        for parameter_name, pardef in list(pardefs.items()):
+            fillvalue = pardef["fillvalue"]
+            if pardef["grid_method"] != "none":
+                self.add_grid_variable(parameter_name, fillvalue, pardef["dtype"])
 
     def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
@@ -1003,9 +999,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
     def l2_parameter(self):
         """ Extract a list of paramter names to be extracted from
         l2i product files """
-        l2_parameter = sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
-        l2_param_def = [self.l3def.l2_parameter[n] for n in l2_parameter]
-        return l2_param_def
+        return self.l3def.l2_parameter
 
     @property
     def l3_parameter(self):
