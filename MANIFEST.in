@@ -3,7 +3,7 @@ include pysiral/VERSION
 include pysiral/PYSIRAL-CFG-LOC
 include requirements.txt
 include Makefile
-recursive-include bin *.py *.bat
+recursive-include bin *.py
 recursive-include pysiral/resources *
 recursive-include pysiral/bnfunc *
 recursive-include tests *.py
