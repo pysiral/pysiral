@@ -8,7 +8,7 @@ See [webpage at ReadTheDocs.org](https://pysiral.readthedocs.io/en/latest/#)
 
 ### Requirements
 
-pysiral is based on the python 2.7 distribution and depends on several additional packages (see [requirements.txt](requirements.txt))
+pysiral is based on the python 2.7 distribution until version 0.7.3 and on python 3.7 for higher versions. In addition it depends on several additional packages (see [requirements.txt](requirements.txt))
 
 ### Distribution
 
