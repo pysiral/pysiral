@@ -212,7 +212,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         path = Path(self.cfg.local_repository)
 
         # The path needs to be completed if two products shall be used
-        if self.cfg.options.has_key("auto_product_change"):
+        if "auto_product_change" in self.cfg.options:
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]

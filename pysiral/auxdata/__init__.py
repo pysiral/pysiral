@@ -158,7 +158,7 @@ class AuxdataBaseClass(object):
             self.load_requested_auxdata()
             self._current_date = self._requested_date
             if self.has_data_loaded:
-                self.add_handler_message(self.__class__.__name__ + ": Load "+self.requested_filepath)
+                self.add_handler_message(self.__class__.__name__ + ": Load "+str(self.requested_filepath))
         else:
             if self.has_data_loaded:
                 self.add_handler_message(self.__class__.__name__+": Data already present")
@@ -188,7 +188,7 @@ class AuxdataBaseClass(object):
 
     @property
     def exception_on_error(self):
-        if self.cfg.options.has_key("exception_on_error"):
+        if "exception_on_error" in self.cfg.options:
             exception_on_error = self.cfg.options.exception_on_error
         else:
             exception_on_error = False
@@ -317,7 +317,7 @@ class GridTrackInterpol(object):
         self.lats = lats
         self.grid_lons = grid_lons
         self.grid_lats = grid_lats
-        self.griddef = griddef
+        self.griddef = AttrDict(**griddef)
 
         # Compute image coordinates
         self._set_projection()

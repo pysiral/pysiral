@@ -283,8 +283,8 @@ class Level2Data(object):
             else:
                 return np.full(self.arrshape, np.nan)
 
-    def _get_attr_pysiral_version(self, target):
-        return __version__
+    def _get_attr_pysiral_version(self, *args):
+        return psrlcfg.version
 
     def _get_attr_mission_id(self, *args):
         # XXX: Deprecated

@@ -164,7 +164,7 @@ class SSASmoothedLinear(SSAInterpolator):
         """ Check all sections divided by land masses for reliable
         information content """
 
-        filter_options = self._options.marine_segment_filtering
+        filter_options = self._options.marine_segment_filter
         minimum_lead_number = filter_options.minimum_lead_number
         footprint_size = self._options.smooth_filter_width_footprint_size
         section_prop = {"i0": 0.0, "i1": 0.0,

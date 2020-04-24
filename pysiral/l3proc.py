@@ -372,7 +372,7 @@ class L3DataGrid(DefaultLoggingClass):
         """
 
         # Check if variable already exists
-        if self.vars.has_key(parameter_name):
+        if parameter_name in self.vars:
             msg = "Variable overwrite alert: %s" % parameter_name
             self.error.add_error("l3-variable-overwrite", msg)
             self.error.raise_on_error()
@@ -890,7 +890,7 @@ class Level3OutputHandler(OutputHandlerBase):
 
         # This property has been added. Older L3 output definitions may not have it,
         # -> Catch attribute error and return false if attribute does not exist
-        if not self.output_def.grid_options.has_key("time_dim_is_unlimited"):
+        if not "time_dim_is_unlimited" in self.output_def.grid_options:
             msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
             self.log.warning(msg % self.output_def_filename)
             time_dim_is_unlimited = False
@@ -1062,7 +1062,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-2 stack parameter
         for l2_var_name in self.l2_variable_dependencies:
-            if not self.l3grid.l2.stack.has_key(l2_var_name):
+            if not l2_var_name in self.l3grid.l2.stack:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l2_var_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
@@ -1070,7 +1070,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-3 grid parameter
         for l3_var_name in self.l3_variable_dependencies:
-            if not self.l3grid.vars.has_key(l3_var_name):
+            if not l3_var_name in self.l3grid.vars:
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)

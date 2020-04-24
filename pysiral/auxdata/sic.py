@@ -72,7 +72,7 @@ class OsiSafSIC(AuxdataBaseClass):
             sic = self._get_sic_track(l2)
 
             # Fill pole hole
-            if self.cfg.options.has_key("fill_pole_hole"):
+            if "fill_pole_hole" in self.cfg.options:
                 opt = self.cfg.options.fill_pole_hole
                 is_near_pole_hole = l2.track.latitude >= opt.pole_hole_lat_threshold
                 indices = np.where(np.logical_and(is_near_pole_hole, np.isnan(sic)))
@@ -126,7 +126,7 @@ class OsiSafSIC(AuxdataBaseClass):
         path = Path(self.cfg.local_repository)
 
         # The path needs to be completed if two products shall be used
-        if self.cfg.options.has_key("auto_product_change"):
+        if "auto_product_change" in self.cfg.options:
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]

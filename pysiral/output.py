@@ -36,7 +36,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         object (in this case Level2Data) """
         attributes = self.get_template_attrs(template)
         try:
-            result = template.encode("utf-8")
+            result = str(template.encode("utf-8"))
         except AttributeError:
             result = str(template)
         for attribute in attributes:
@@ -64,7 +64,7 @@ class OutputHandlerBase(DefaultLoggingClass):
             template = template.encode('utf-8').strip()
         except AttributeError:
             template = str(template)
-        attr_defs = re.findall("{.*?}", template)
+        attr_defs = re.findall("{.*?}", str(template))
         attrs, options = [], []
         for attr_def in attr_defs:
             attr_name, _, optstr = attr_def[1:-1].partition(":")
@@ -170,9 +170,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     @property
     def variable_def(self):
-        t = self.output_def.variables
-        variables = list(t.iterkeys(recursive=False, branch_mode='only'))
-        variables = sorted(variables)
+        variables = sorted(list(self.output_def.variables.keys()))
         attribute_dicts = [self.output_def.variables[a] for a in variables]
         return zip(variables, attribute_dicts)
 
@@ -373,7 +371,7 @@ class NCDataFile(DefaultLoggingClass):
                 else:
                     dimensions = tuple(dims[1:len(data.shape)+1])
             else:
-                dimensions = tuple(dims[0:len(data.shape)])
+                dimensions = tuple(list(dims)[0:len(data.shape)])
 
             # Create and set the variable
             var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
