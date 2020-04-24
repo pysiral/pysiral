@@ -323,7 +323,7 @@ class NCDataFile(DefaultLoggingClass):
         attr_dict = self.output_handler.get_global_attribute_dict(self.data)
         self._set_global_attributes(attr_dict)
 
-    def _populate_data_groups(self, level3=False):
+    def _populate_data_groups(self, level3=False, flip_yc=False):
 
         lonlat_parameter_names = ["lon", "lat", "longitude", "latitude"]
 
@@ -362,6 +362,8 @@ class NCDataFile(DefaultLoggingClass):
 
             # Set dimensions (dependend on product level)
             if level3:
+                if flip_yc:
+                    data = np.flipud(data)
                 if parameter_name not in lonlat_parameter_names:
                     data = np.array([data])
                     dimensions = tuple(list(dims)[0:len(data.shape)])
@@ -663,26 +665,14 @@ class Level3Output(NCDataFile):
         self.output_handler = output_handler
         self._set_doi()
         self._set_data_record_type()
-        self._preprocess_data()
         self._export_content()
-
-    def _preprocess_data(self):
-        if self.output_handler.flip_yc and not self.data.yc_is_flipped:
-            self.data.yc_is_flipped = True
-            for name, attr_dict in self.output_handler.variable_def:
-                if "var_source_name" in attr_dict.keys():
-                    par_name = attr_dict["var_source_name"]
-                else:
-                    par_name = name
-                var = self.data.get_parameter_by_name(par_name)
-                self.data.set_parameter_by_name(par_name, np.flipud(var))
 
     def _export_content(self):
         self._open_file()
         self._write_global_attributes()
-        self._populate_data_groups(level3=True)
+        self._populate_data_groups(level3=True, flip_yc=self.output_handler.flip_yc)
         self._add_time_variables()
-        self._add_grid_variables()
+        self._add_grid_mapping_variables()
         self._write_to_file()
 
     def _add_time_variables(self):
