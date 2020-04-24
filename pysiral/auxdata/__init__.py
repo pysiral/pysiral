@@ -5,20 +5,20 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["mss", "icechart", "rio", "sic", "sitype", "snow", "region"]
+__all__ = ["AuxdataBaseClass", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
+           "sitype", "snow", "region"]
 
 
-import os
 import re
 
 import numpy as np
+from attrdict import AttrDict
 
 import scipy.ndimage as ndimage
-
-
+from pathlib import Path
 from pyproj import Proj
 
-from pysiral.config import options_from_dictionary
+from pysiral import import_submodules
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -158,7 +158,7 @@ class AuxdataBaseClass(object):
             self.load_requested_auxdata()
             self._current_date = self._requested_date
             if self.has_data_loaded:
-                self.add_handler_message(self.__class__.__name__ + ": Load "+self.requested_filepath)
+                self.add_handler_message(self.__class__.__name__ + ": Load "+str(self.requested_filepath))
         else:
             if self.has_data_loaded:
                 self.add_handler_message(self.__class__.__name__+": Data already present")
@@ -188,7 +188,7 @@ class AuxdataBaseClass(object):
 
     @property
     def exception_on_error(self):
-        if self.cfg.options.has_key("exception_on_error"):
+        if "exception_on_error" in self.cfg.options:
             exception_on_error = self.cfg.options.exception_on_error
         else:
             exception_on_error = False
@@ -199,12 +199,12 @@ class AuxdataBaseClass(object):
         """ Returns the local file path for the requested date"""
 
         # Main directory
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
 
         # Add the subfolders
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
 
         # Get the period dict (will be constructed from filenaming)
         period_dict = {}
@@ -213,7 +213,7 @@ class AuxdataBaseClass(object):
             attr_name = attr_def[1:-1]
             period_dict[attr_name] = getattr(self, attr_name)
         filename = self.cfg.filenaming.format(**period_dict)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
     @property
@@ -268,9 +268,9 @@ class AuxClassConfig(object):
     def set_options(self, **opt_dict):
         """  Pass a dictionary with options """
         if self.options is None:
-            self.options = options_from_dictionary(**opt_dict)
+            self.options = AttrDict(**opt_dict)
         else:
-            self.options.update(options_from_dictionary(**opt_dict))
+            self.options.update(AttrDict(**opt_dict))
 
     def set_local_repository(self, path):
         """ Set the path the local auxdata repository """
@@ -317,7 +317,7 @@ class GridTrackInterpol(object):
         self.lats = lats
         self.grid_lons = grid_lons
         self.grid_lats = grid_lats
-        self.griddef = griddef
+        self.griddef = AttrDict(**griddef)
 
         # Compute image coordinates
         self._set_projection()
@@ -352,5 +352,35 @@ class GridTrackInterpol(object):
         raise NotImplementedError()
         # track_var = self.get_from_grid_variable(*args, **kwargs)
 
+
+def get_all_auxdata_classes():
+    """
+    Get a list of all auxiliary data classes
+    :return: List with auxdata_type, class_name, class for each auxiliary class
+    """
+    import importlib
+    import pkgutil
+
+
+
+    # Import all submodules of the auxdata module to discover all potential
+    # subclasses of AuxdataBaseClass
+    import_submodules(__name__)
+    # auxdata_module = importlib.import_module(__name__)
+    # results = {}
+    # for loader, name, is_pkg in pkgutil.walk_packages(auxdata_module.__path__):
+    #     full_name = auxdata_module.__name__ + '.' + name
+    #     results[full_name] = importlib.import_module(full_name)
+
+    # Get a list of AuxdataBaseClass subclasses after import
+    subclass_list = AuxdataBaseClass.__subclasses__()
+
+    # Compile output
+    auxdata_class_results = []
+    for item in subclass_list:
+        module = item.__module__.split(".")[-1]
+        class_name = item.__name__
+        auxdata_class_results.append([module, class_name, item])
+    return auxdata_class_results
 
 

@@ -5,7 +5,7 @@ A short script that should be used to set the location of the pysiral config fil
 import sys
 import argparse
 import shutil
-import os
+from pathlib import Path
 from distutils import log, dir_util
 log.set_verbosity(log.INFO)
 log.set_threshold(log.INFO)
@@ -21,84 +21,84 @@ def main(args):
     NOTE: The mutually exclusive selection of the 3 actions is ensured by argparse
     """
 
-    print "Create, activate or reset the pysiral configuration directory (handle with care!)"
+    print("Create, activate or reset the pysiral configuration directory (handle with care!)")
 
     # Action 1:
     if args.target_create is not None:
 
-        var = raw_input("Create and activate config dir %s? [YES/NO]: " % args.target_create)
+        var = input("Create and activate config dir %s? [YES/NO]: " % args.target_create)
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
         # Check if directory exists
-        if os.path.isdir(args.target_create):
-            print "Error: Directory exists: %s" % str(args.target_create)
-            print "Creating new config dir [FAILED]"
+        if Path(args.target_create).is_dir():
+            print("Error: Directory exists: %s" % str(args.target_create))
+            print("Creating new config dir [FAILED]")
             sys.exit(1)
 
         # a. Create the user home directory
         try:
             dir_util.copy_tree(PACKAGE_CONFIG_PATH, args.target_create, verbose=1)
         except:
-            print "Error: Could not create directory: %s" % str(args.target_create)
-            print "Creating new config dir [FAILED]"
+            print("Error: Could not create directory: %s" % str(args.target_create))
+            print("Creating new config dir [FAILED]")
             sys.exit(1)
 
         # b. Copy the local_machine_def.yaml
 
         # b1: Specific files
         if args.lmd != "":
-            if not os.path.isfile(args.lmd):
-                print "Error: Could copy local_machine_def.yaml: %s" % str(args.lmd)
-                print "Creating new config dir [FAILED]"
+            if not Path(args.lmd).is_file():
+                print("Error: Could copy local_machine_def.yaml: %s" % str(args.lmd))
+                print("Creating new config dir [FAILED]")
                 sys.exit(1)
 
-            head, tail = os.path.split(args.lmd)
+            head, tail = Path(args.lmd).parts
             if tail != "local_machine_def.yaml":
-                print "Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd)
-                print "Creating new config dir [FAILED]"
+                print("Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd))
+                print("Creating new config dir [FAILED]")
                 sys.exit(1)
                 shutil.copy(args.lmd, os.path.join(args.target_create, "local_machine_def.yaml"))
 
         # b2: from template
         else:
-            template_filename = os.path.join(PACKAGE_CONFIG_PATH, "templates", "local_machine_def.yaml.template")
-            target_filename = os.path.join(args.target_create, "local_machine_def.yaml")
+            template_filename = PACKAGE_CONFIG_PATH / "templates" / "local_machine_def.yaml.template"
+            target_filename = Path(args.target_create) / "local_machine_def.yaml"
             shutil.copy(template_filename, target_filename)
 
         # c. Change the value in PYSIRAL-CFG-LOC
         set_pysiral_cfg_loc(args.target_create)
-        print "Creating new config dir [SUCCESS]"
+        print("Creating new config dir [SUCCESS]")
         sys.exit(0)
 
     # Action 3:
     if args.target_activate is not None:
 
-        var = raw_input("Activate config dir %s? [YES/NO]: " % args.target_activate)
+        var = input("Activate config dir %s? [YES/NO]: " % args.target_activate)
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
-        if os.path.isdir(args.target_activate):
+        if Path(args.target_activate).is_dir():
             set_pysiral_cfg_loc(args.target_activate)
-            print "Activating config dir [SUCCESS]"
+            print("Activating config dir [SUCCESS]")
             sys.exit(0)
         else:
-            print "Error: Invalid directory: %s" % str(args.target_activate)
-            print "Activating config dir [FAILED]"
+            print("Error: Invalid directory: %s" % str(args.target_activate))
+            print("Activating config dir [FAILED]")
             sys.exit(1)
 
     # Action 3:
     if args.reset:
 
-        var = raw_input("Reset config dir to user home? [YES/NO]: ")
+        var = input("Reset config dir to user home? [YES/NO]: ")
         if var != "YES":
-            print " abort"
+            print(" abort")
             sys.exit(2)
 
         set_pysiral_cfg_loc("USER_HOME")
-        print "Resetting config dir to user home [SUCCESS]"
+        print("Resetting config dir to user home [SUCCESS]")
         sys.exit(0)
 
 
@@ -107,7 +107,7 @@ def set_pysiral_cfg_loc(target):
     Write the location of the pysiral configuration for the current package
     NOTE: If you don't know what this means: Don't!
     """
-    cfg_loc_file = os.path.join(PACKAGE_ROOT_DIR, "PYSIRAL-CFG-LOC")
+    cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
     with open(cfg_loc_file, 'w') as fh:
         fh.write(target)
 

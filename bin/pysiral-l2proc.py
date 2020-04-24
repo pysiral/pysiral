@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments, TimeRangeRequest)
+from pysiral import psrlcfg
+from pysiral.config import (DefaultCommandLineArguments, TimeRangeRequest)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import file_basename
+
+
+from pathlib import Path
 
 from datetime import timedelta
 import argparse
 import glob
 import time
 import sys
-import os
 import re
 
 
@@ -115,7 +117,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = ConfigInfo()
+        self.pysiral_config = psrlcfg
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -147,7 +149,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
                 "l2 files for the requested period\n" + \
                 "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                 "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
@@ -226,8 +228,8 @@ class Level2ProcArgParser(DefaultLoggingClass):
         if run_tag is None:
             run_tag = self._args.l2_settings
             # Settings file may be specified as full path and not just the id
-            if os.path.isfile(run_tag):
-                run_tag = file_basename(run_tag)
+            if Path(run_tag).is_file():
+                run_tag = Path(run_tag).stem
 
         # split the run-tag on potential path separators
         run_tag = re.split(r'[\\|/]', run_tag)

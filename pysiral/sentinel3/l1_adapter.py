@@ -1,20 +1,19 @@
 
-import os
+
 import xmltodict
 
 import xarray
 import numpy as np
 from scipy import interpolate
 from cftime import num2pydate
+from pathlib import Path
 
 from pysiral import __version__ as pysiral_version
-from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import folder_from_filename
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
@@ -61,7 +60,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         self.l1 = Level1bData()
 
         # Input Validation
-        if not os.path.isfile(filepath):
+        if not Path(filepath).is_file():
             msg = "Not a valid file: %s" % filepath
             self.log.warning(msg)
             self.error.add_error("invalid-filepath", msg)
@@ -131,8 +130,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         """
         # Retrieve header information from mission settings
         xml_header_file = self.cfg.xml_manifest
-        dataset_folder = folder_from_filename(filepath)
-        filename_header = os.path.join(dataset_folder, xml_header_file)
+        filename_header = Path(filepath).parent / xml_header_file
         self._xmlh = self.parse_sentinel3_l1b_xml_header(filename_header)
 
     def _get_xml_content(self, section_name, tag):

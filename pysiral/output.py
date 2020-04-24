@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
 
-from pysiral.config import (PYSIRAL_VERSION, PYSIRAL_VERSION_FILENAME,
-                            ConfigInfo, get_yaml_config)
-from pysiral.path import filename_from_path, file_basename
+from pysiral import psrlcfg
+from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-from pysiral.config import options_from_dictionary
-from pysiral.path import validate_directory
 
-from glob import glob
+
+
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser
 from collections import OrderedDict
+from pathlib import Path
+from attrdict import AttrDict
 import numpy as np
 import parse
-import sys
-import os
 import re
 
 
@@ -27,7 +25,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     def __init__(self, output_def):
         super(OutputHandlerBase, self).__init__(self.__class__.__name__)
-        self.pysiral_config = ConfigInfo()
+        self.pysiral_config = psrlcfg
         self.error = ErrorStatus()
         self._basedir = "n/a"
         self._init_from_output_def(output_def)
@@ -37,10 +35,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Fill an template string with information of a dataset
         object (in this case Level2Data) """
         attributes = self.get_template_attrs(template)
-        try:
-            result = template.encode("utf-8")
-        except AttributeError:
-            result = str(template)
+        result = str(template)
         for attribute in attributes:
             attribute_name, option, placeholder = attribute
             attribute = dataset.get_attribute(attribute_name, *option)
@@ -66,7 +61,7 @@ class OutputHandlerBase(DefaultLoggingClass):
             template = template.encode('utf-8').strip()
         except AttributeError:
             template = str(template)
-        attr_defs = re.findall("{.*?}", template)
+        attr_defs = re.findall("{.*?}", str(template))
         attrs, options = [], []
         for attr_def in attr_defs:
             attr_name, _, optstr = attr_def[1:-1].partition(":")
@@ -77,11 +72,11 @@ class OutputHandlerBase(DefaultLoggingClass):
     def _init_from_output_def(self, output_def):
         """ Adds the information for the output def yaml files (either
         full filename or treedict structure) """
-        if os.path.isfile(output_def):
+        if Path(output_def).is_file():
             try:
                 self._output_def = get_yaml_config(output_def)
-            except Exception, msg:
-                self.error.add_error("outputdef-parser-error", msg)
+            except Exception as ex:
+                self.error.add_error("outputdef-parser-error", ex)
                 self.error.raise_on_error()
         else:
             self._output_def = output_def
@@ -96,21 +91,21 @@ class OutputHandlerBase(DefaultLoggingClass):
     def _create_directory(self, directory):
         """ Convinience method to create a directory and add an error
         when failed """
-        status = validate_directory(directory)
-        if not status:
+        Path(directory).mkdir(exist_ok=True, parents=True)
+        if not Path(directory).is_dir():
             msg = "Unable to create directory: %s" % str(directory)
             self.error.add_error("directory-error", msg)
 
     def _get_subdirectories(self, dt):
-        directory = self.basedir
+        directory = Path(self.basedir)
         for subfolder_tag in self.subfolders:
             parameter = getattr(dt, subfolder_tag)
             subfolder = self.subfolder_format[subfolder_tag] % parameter
-            directory = os.path.join(directory, subfolder)
+            directory = directory / subfolder
 
     def _get_directory_from_dt(self, dt):
         subfolders = self.get_dt_subfolders(dt, self.subfolder_tags)
-        return os.path.join(self.basedir, *subfolders)
+        return Path(self.basedir) / Path(*subfolders)
 
     def _validate_outputdef(self):
         """ Run a series of tests to check if a valid output definition
@@ -172,9 +167,7 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     @property
     def variable_def(self):
-        t = self.output_def.variables
-        variables = list(t.iterkeys(recursive=False, branch_mode='only'))
-        variables = sorted(variables)
+        variables = sorted(list(self.output_def.variables.keys()))
         attribute_dicts = [self.output_def.variables[a] for a in variables]
         return zip(variables, attribute_dicts)
 
@@ -235,9 +228,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
     def get_fullpath_from_data(self, l2):
         """ Return export path and filename based on information
         provided in the l2 data object """
-        export_directory = self.get_directory_from_l2(l2)
-        export_filename = self.get_filename_from_l2(l2)
-        return os.path.join(export_directory, export_filename)
+        return Path(self.get_directory_from_l2(l2)) / self.get_filename_from_l2(l2)
 
     def get_global_attribute_dict(self, l2):
         attr_dict = OrderedDict()
@@ -253,37 +244,33 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
 
         # Get the target directory
         # XXX: Assumption time_range is monthly
-        directory = self._get_directory_from_dt(time_range.start)
+        directory = Path(self._get_directory_from_dt(time_range.start))
         # Get list of output files
-        search_pattern = os.path.join(directory, "*.*")
-        l2output_files = glob(search_pattern)
+        l2output_files = directory.glob("*.*")
 
         # Delete files
-        self.log.info("Removing %g l2 product files [ %s ] in %s" % (
-                len(l2output_files), self.id, directory))
+        self.log.info("Removing %g l2 product files [ %s ] in %s" % (len(l2output_files), self.id, directory))
         for l2output_file in l2output_files:
-                os.remove(l2output_file)
+            Path(l2output_file).unlink()
 
     def _init_product_directory(self):
         """ Get main product directory from local_machine_def, add mandatory
         runtag subdirectory, optional second subdirectory for overwrite
         protection and product level id subfolder"""
-        pysiral_config = ConfigInfo()
-        basedir = pysiral_config.local_machine.product_repository
+        basedir = Path(psrlcfg.local_machine.product_repository)
         if not isinstance(self.subdirectory, list):
-            basedir = os.path.join(basedir, self.subdirectory)
+            basedir = basedir / self.subdirectory
         else:
-            basedir = os.path.join(basedir, *self.subdirectory)
+            basedir = basedir / Path(*self.subdirectory)
         if self.overwrite_protection:
-            basedir = os.path.join(basedir, self.now_directory)
-        basedir = os.path.join(basedir, self.product_level_subfolder)
+            basedir = basedir / self.now_directory
+        basedir = basedir / self.product_level_subfolder
         self._set_basedir(basedir)
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
-        local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        local_settings_path = psrlcfg.pysiral_local_path
+        return Path(local_settings_path) / Path(*self.default_file_location)
 
 
 class NCDateNumDef(object):
@@ -312,7 +299,7 @@ class NCDataFile(DefaultLoggingClass):
         self.verbose = False
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def set_processor_settings(self, proc_settings):
         self._proc_settings = proc_settings
@@ -336,7 +323,7 @@ class NCDataFile(DefaultLoggingClass):
         attr_dict = self.output_handler.get_global_attribute_dict(self.data)
         self._set_global_attributes(attr_dict)
 
-    def _populate_data_groups(self, level3=False):
+    def _populate_data_groups(self, level3=False, flip_yc=False):
 
         lonlat_parameter_names = ["lon", "lat", "longitude", "latitude"]
 
@@ -375,13 +362,15 @@ class NCDataFile(DefaultLoggingClass):
 
             # Set dimensions (dependend on product level)
             if level3:
+                if flip_yc:
+                    data = np.flipud(data)
                 if parameter_name not in lonlat_parameter_names:
                     data = np.array([data])
-                    dimensions = tuple(dims[0:len(data.shape)])
+                    dimensions = tuple(list(dims)[0:len(data.shape)])
                 else:
-                    dimensions = tuple(dims[1:len(data.shape)+1])
+                    dimensions = tuple(list(dims)[1:len(data.shape)+1])
             else:
-                dimensions = tuple(dims[0:len(data.shape)])
+                dimensions = tuple(list(dims)[0:len(data.shape)])
 
             # Create and set the variable
             var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
@@ -485,7 +474,7 @@ class NCDataFile(DefaultLoggingClass):
 
     @property
     def full_path(self):
-        return os.path.join(self.export_path, self.export_filename)
+        return Path(self.export_path) / self.export_filename
 
 
 class L1bDataNC(DefaultLoggingClass):
@@ -522,10 +511,10 @@ class L1bDataNC(DefaultLoggingClass):
     def _validate(self):
         if self.filename is None:
             self._create_filename()
-        self.path = os.path.join(self.output_folder, self.filename)
+        self.path = Path(self.output_folder) / self.filename
 
     def _create_filename(self):
-        self.filename = file_basename(self.l1b.filename)+".nc"
+        self.filename = Path(self.l1b.filename.stem+".nc")
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
@@ -548,7 +537,7 @@ class L1bDataNC(DefaultLoggingClass):
         for datagroup in self.datagroups:
 
             if self.verbose:
-                print datagroup.upper()
+                print(datagroup.upper())
 
             # Create the datagroup
             dgroup = self._rootgrp.createGroup(datagroup)
@@ -573,9 +562,9 @@ class L1bDataNC(DefaultLoggingClass):
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
-                dimensions = tuple(dims[0:len(data.shape)])
+                dimensions = tuple(list(dims)[0:len(data.shape)])
                 if self.verbose:
-                    print " "+parameter, dimensions, data.dtype.str, data.shape
+                    print(" "+parameter, dimensions, data.dtype.str, data.shape)
 
                 var = dgroup.createVariable(parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
@@ -676,25 +665,14 @@ class Level3Output(NCDataFile):
         self.output_handler = output_handler
         self._set_doi()
         self._set_data_record_type()
-        self._preprocess_data()
         self._export_content()
-
-    def _preprocess_data(self):
-        if self.output_handler.flip_yc:
-            for name, attr_dict in self.output_handler.variable_def:
-                if "var_source_name" in attr_dict.keys():
-                    par_name = attr_dict["var_source_name"]
-                else:
-                    par_name = name
-                var = self.data.get_parameter_by_name(par_name)
-                self.data.set_parameter_by_name(par_name, np.flipud(var))
 
     def _export_content(self):
         self._open_file()
         self._write_global_attributes()
-        self._populate_data_groups(level3=True)
+        self._populate_data_groups(level3=True, flip_yc=self.output_handler.flip_yc)
         self._add_time_variables()
-        self._add_grid_variables()
+        self._add_grid_mapping_variables()
         self._write_to_file()
 
     def _add_time_variables(self):
@@ -722,7 +700,25 @@ class Level3Output(NCDataFile):
         var.units = self.time_def.units
         var[:] = time_bnds
 
-    def _add_grid_variables(self):
+    def _add_grid_mapping_variables(self):
+        """
+        This method adds a variable to the netCDF file that contains the grid definition and is named
+        after the projection. E.g:
+
+        byte Lambert_Azimuthal_Grid;
+            :latitude_of_projection_origin = 90.0; // double
+            :longitude_of_projection_origin = 0.0; // double
+            :proj4_string = "+proj=laea +lon_0=0 +datum=WGS84 +ellps=WGS84 +lat_0=90.0";
+            :semi_major_axis = 6378137.0; // double
+            :false_easting = 0.0; // double
+            :false_northing = 0.0; // double
+            :grid_mapping_name = "lambert_azimuthal_equal_area";
+            :inverse_flattening = 298.257223563; // double
+
+        The information is taken 1:1 from the `netcdf_grid_description` entry in the grid definition file.
+
+        :return:
+        """
 
         rgrp = self._rootgrp
 
@@ -745,7 +741,7 @@ class Level3Output(NCDataFile):
 
         # Set grid definition
         grid_nc_cfg = self.data.griddef.netcdf_vardef
-        name = grid_nc_cfg.keys(branch_mode="only")[0]
+        name = list(grid_nc_cfg.keys())[0]
         attrs = grid_nc_cfg[name]
         var = rgrp.createVariable(name, "i1", ())
         for key in sorted(attrs.keys()):
@@ -771,49 +767,13 @@ class PysiralOutputFilenaming(object):
         self.grid = None
 
         self._registered_parsers = {
-            "l1bdata": "l1bdata_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
-            "l1p": "pysiral-l1p-{mission_id}-{source}-{hemisphere}-{start}-{stop}-{version}.nc",
-            "l1p_v2": "pysiral-l1p-{mission_id}-{source}-{timeliness}-{hemisphere}-{start}-{stop}-{version}.nc",
+            "l1p": "pysiral-l1p-{mission_id}-{source}-{timeliness}-{hemisphere}-{start}-{stop}-{version}.nc",
             "l2i": "l2i_{version}_{mission_id}_{hemisphere}_{start}_{stop}.nc",
             "l3s": "l3s_{version}_{mission_id}_{grid}_{resolution}_{start}_{stop}.nc"}
 
-    def from_l1b(self, l1b):
-        """ Level-1b preprocessed filename """
-        export_filename = self._registered_parsers["l1bdata"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            hemisphere=l1b.info.hemisphere,
-            mission_id=l1b.mission,
-            start=self._datetime_format(l1b.info.start_time),
-            stop=self._datetime_format(l1b.info.stop_time))
-        return export_filename
-
-    def from_l2i(self, l2i):
-        """ Level-2 Intermediate filename """
-        export_filename = self._registered_parsers["l2i"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            hemisphere=l2i.hemisphere,
-            mission_id=l2i.info.mission,
-            start=self._datetime_format(l2i.info.start_time),
-            stop=self._datetime_format(l2i.info.stop_time))
-        return export_filename
-
-    def from_l3s(self, l3s):
-        """ Level-3 super-collocated filename """
-        export_filename = self._registered_parsers["l3s"]
-        export_filename = export_filename.format(
-            version=PYSIRAL_VERSION_FILENAME,
-            mission_id=l3s.mission,
-            grid=l3s.grid_tag,
-            resolution=l3s.resolution_tag,
-            start=self._datetime_format(l3s.start_period),
-            stop=self._datetime_format(l3s.stop_period))
-        return export_filename
-
     def parse_filename(self, fn):
         """ Parse info from pysiral output filename """
-        filename = filename_from_path(fn)
+        filename = Path(fn).name
         match_found = False
         for data_level in self._registered_parsers.keys():
             parser = parse.compile(self._registered_parsers[data_level])
@@ -833,7 +793,7 @@ class PysiralOutputFilenaming(object):
                 break
 
         if not match_found:
-            print "Unrecognized filename: %s" % filename
+            print("Unrecognized filename: %s" % filename)
 
     def _datetime_format(self, datetime):
         return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)
@@ -844,7 +804,7 @@ class PysiralOutputFolder(object):
     Class for generating and retrieving output folders
     """
 
-    def __init__(self, config=None, load_config=True):
+    def __init__(self):
         self.error = ErrorStatus()
         self.data_level = None
         self.path = None
@@ -852,12 +812,7 @@ class PysiralOutputFolder(object):
         self.mission_id = None
         self.year = None
         self.month = None
-        if not load_config:
-            return
-        if config is None or not isinstance(config, ConfigInfo):
-            self.config = ConfigInfo()
-        else:
-            self.config = config
+        self.config = psrlcfg
 
     def l1bdata_from_list(self, mission_id, version, hemisphere, year, month):
         self.mission_id = mission_id
@@ -881,10 +836,10 @@ class PysiralOutputFolder(object):
         for subfolder_tag in subfolders:
             parameter = getattr(startdt, subfolder_tag)
             subfolder = stringify[subfolder_tag] % parameter
-            self.path = os.path.join(self.path, subfolder)
+            self.path = Path(self.path) / subfolder
 
     def create(self):
-        validate_directory(self.path)
+        Path(self.path).mkdir(exist_ok=True, parents=True)
 
     def _set_folder_as_l1bdata(self):
         self.data_level = "l1b"
@@ -892,7 +847,7 @@ class PysiralOutputFolder(object):
         export_folder = local_repository[self.mission_id][self.version].l1bdata
         yyyy = "%04g" % self.year
         mm = "%02g" % self.month
-        self.path = os.path.join(export_folder, self.hemisphere, yyyy, mm)
+        self.path = Path(export_folder) / self.hemisphere / yyyy / mm
 
 
 def get_output_class(name):

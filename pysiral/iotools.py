@@ -3,22 +3,26 @@
 Created on Sat Aug 01 17:33:02 2015
 
 @author: Stefan
+
+TODO: Evaluate usefulness (or move to internal module)
+
 """
 
-from pysiral.config import ConfigInfo, TimeRangeIteration
+from pysiral import psrlcfg
+from pysiral.config import TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
-from pysiral.path import file_basename
 from cftime import num2pydate
 from netCDF4 import Dataset
+from pathlib import Path
 
-import os
 import glob
 import tempfile
 import uuid
 import numpy as np
 
 
+#TODO: Replace by xarray
 class ReadNC(object):
     """
     Quick & dirty method to parse content of netCDF file into a python object
@@ -97,7 +101,7 @@ class ReadNC(object):
                 self.keys.append(key)
                 self.parameters.append(key)
                 if self.verbose:
-                    print key
+                    print(key)
             self.parameters = f.variables.keys()
         f.close()
 
@@ -134,18 +138,15 @@ class NCMaskedGridData(object):
 
 
 def get_temp_png_filename():
-    return os.path.join(tempfile.gettempdir(), str(uuid.uuid4())+".png")
+    return Path(tempfile.gettempdir()) / str(uuid.uuid4())+".png"
 
 
-def get_l1bdata_files(mission_id, hemisphere, year, month, config=None,
-                      version="default"):
-    import glob
+def get_l1bdata_files(mission_id, hemisphere, year, month, config=None, version="default"):
     if config is None:
-        config = ConfigInfo()
+        config = psrlcfg
     l1b_repo = config.local_machine.l1b_repository[mission_id][version].l1bdata
-    directory = os.path.join(
-        l1b_repo, hemisphere, "%04g" % year, "%02g" % month)
-    l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
+    directory = Path(l1b_repo) / hemisphere / "%04g" % year / "%02g" % month
+    l1bdata_files = sorted(directory.glob("*.nc"))
     return l1bdata_files
 
 
@@ -159,8 +160,8 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
     """
 
     # parse config data (if not provided)
-    if config is None or not isinstance(config, ConfigInfo):
-        config = ConfigInfo()
+    if config is None or not isinstance(config, psrlcfg):
+        config = psrlcfg
 
     # Validate time_range (needs to be of type TimeRangeIteration)
     try:
@@ -169,36 +170,16 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
         time_range_is_correct_object = False
     if not time_range_is_correct_object:
         error = ErrorStatus()
-        msg = "Invalid type of time_range, required: %s, was %s" % (
-            type(time_range), type(TimeRangeIteration))
+        msg = "Invalid type of time_range, required: %s, was %s" % (type(time_range), type(TimeRangeIteration))
         error.add_error("invalid-timerange-type", msg)
         error.raise_on_error()
 
     # 1) get list of all files for monthly folders
     yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
 
-    # NOTE: Check if folder is l1p instead of l1bdata
-    #       -> l1p indicated new l1 data version with different filenaming. File structure is still the same
     repo_branch = config.local_machine.l1b_repository[mission_id][version]
-    if repo_branch.has_key("l1bdata"):
-        l1b_repo = repo_branch.l1bdata
-    else:
-        l1b_repo = repo_branch.l1p
-    directory = os.path.join(l1b_repo, hemisphere, yyyy, mm)
-    all_l1bdata_files = sorted(glob.glob(os.path.join(directory, "*.nc")))
-
-    # 2) First filtering step: Check if different algorithm baseline values
-    # exist in the list of l1bdata files
-    algorithm_baselines = [l1bdata_get_baseline(f) for f in all_l1bdata_files]
-    baselines = np.unique(np.array(algorithm_baselines))
-    n_baselines = len(baselines)
-    if not allow_multiple_baselines and n_baselines > 1:
-        error = ErrorStatus()
-        baseline_str_list = ", ".join(baselines)
-        msg = "Multiple l1bdata baselines (%g) [%s] found in directory: %s" % (
-                n_baselines, baseline_str_list, directory)
-        error.add_error("multiple-l1b-baselines", msg)
-        error.raise_on_error()
+    directory = Path(repo_branch["l1p"]) / hemisphere / yyyy / mm
+    all_l1bdata_files = sorted(directory.glob("*.nc"))
 
     # 3) Check if files are in requested time range
     # This serves two purporses: a) filter out files with timestamps that do

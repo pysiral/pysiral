@@ -16,15 +16,13 @@ Created on Mon Jul 06 10:38:41 2015
 """
 
 import re
-import os
 import yaml
-import socket
-
-from treedict import TreeDict
 
 import numpy as np
 
-from pysiral import USER_CONFIG_PATH
+from attrdict import AttrDict
+
+from pysiral import psrlcfg
 
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus
@@ -36,171 +34,7 @@ from isodate.duration import Duration
 from isodate import duration_isoformat
 
 
-# TODO: These have to be removed (see __version__ in __init__.py)
-PYSIRAL_VERSION = "0.7.3"
-PYSIRAL_VERSION_FILENAME = "073"
-HOSTNAME = socket.gethostname()
-
-# TODO: These have to removed (better use info from mission_def)
-SENSOR_NAME_DICT = {"ers1": "RA", "ers2": "RA", "envisat": "RA-2",
-                    "cryosat2": "SIRAL", "sentinel3a": "SRAL",
-                    "icesat": "GLAS"}
-
-MISSION_NAME_DICT = {"ers1": "ERS-1", "ers2": "ERS-2", "envisat": "Envisat",
-                     "cryosat2": "CryoSat-2", "sentinel3a": "Sentinel-3A",
-                     "icesat": "ICESat"}
-
-ORBIT_INCLINATION_DICT = {"ers1": 81.5, "ers2": 81.5, "envisat": 81.45,
-                          "cryosat2": 88.0, "sentinel3a": 81.35,
-                          "icesat": 86.0}
-
-
-class ConfigInfo(DefaultLoggingClass):
-    """
-    Container for the content of the pysiral definition files
-    (in pysiral/configuration) and the local machine definition file
-    (local_machine_definition.yaml)
-    """
-
-    # Global variables
-    _DEFINITION_FILES = {
-        "mission": "mission_def.yaml",
-        "auxdata": "auxdata_def.yaml",
-    }
-
-    # FIXME: This is only a quick fix for a bug that was caused by the removal of `parameter_def.yaml` in v0.6.1
-    # (This list was implemented to ensure consistent naming of geophysical range corrections through all
-    # platform pre-processors.
-    CORRECTION_LIST = ["dry_troposphere", "wet_troposphere", "inverse_barometric", "dynamic_atmosphere",
-                       "ionospheric", "ocean_tide_elastic", "ocean_tide_long_period", "ocean_loading_tide",
-                       "solid_earth_tide", "geocentric_polar_tide"]
-
-    _LOCAL_MACHINE_DEF_FILE = "local_machine_def.yaml"
-
-    VALID_SETTING_TYPES = ["proc", "output", "grid"]
-    VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
-
-    def __init__(self):
-        """ Read all definition files """
-        super(ConfigInfo, self).__init__(self.__class__.__name__)
-
-        self.error = ErrorStatus(self.__class__.__name__)
-        # read the definition files in the config folder
-        self._read_config_files()
-        # read the local machine definition file
-        self._read_local_machine_file()
-
-    @property
-    def mission_ids(self):
-        return self.mission.missions
-
-    def get_mission_defaults(self, mission):
-        mission_options = self.mission[mission].options
-        defaults = {}
-        names, options = td_branches(mission_options)
-        for name, option in zip(names, options):
-            defaults[name] = option.default
-        return defaults
-
-    def get_mission_options(self, mission):
-        mission_options = self.mission[mission].options
-        return mission_options
-
-    def get_mission_settings(self, mission):
-        mission_options = self.mission[mission].settings
-        return mission_options
-
-    def get_mission_info(self, mission):
-        mission_info = self.mission[mission]
-        if mission_info.data_period.start is None:
-            mission_info.data_period.start = datetime.utcnow()
-        if mission_info.data_period.stop is None:
-            mission_info.data_period.stop = datetime.utcnow()
-        return mission_info
-
-    def get_setting_ids(self, type, data_level=None):
-        lookup_directory = self.get_local_setting_path(type, data_level)
-        ids, files = self.get_yaml_setting_filelist(lookup_directory)
-        return ids
-
-    def get_settings_file(self, type, data_level, setting_id_or_filename):
-        """ Returns a processor settings file for a given data level.
-        (data level: l2 or l3). The second argument can either be an
-        direct filename (which validity will be checked) or an id, for
-        which the corresponding file (id.yaml) will be looked up in
-        the default directory """
-
-        if type not in self.VALID_SETTING_TYPES:
-            return None
-
-        if data_level not in self.VALID_DATA_LEVEL_IDS:
-            return None
-
-        # Check if filename
-        if os.path.isfile(setting_id_or_filename):
-            return setting_id_or_filename
-
-        # Get all settings files in settings/{data_level} and its
-        # subdirectories
-        lookup_directory = self.get_local_setting_path(type, data_level)
-        ids, files = self.get_yaml_setting_filelist(lookup_directory)
-
-        # Test if ids are unique and return error for the moment
-        if len(np.unique(ids)) != len(ids):
-            msg = "Non-unique %-%s setting filename" % (type, str(data_level))
-            self.error.add_error("ambiguous-setting-files", msg)
-            self.error.raise_on_error()
-
-        # Find filename to setting_id
-        try:
-            index = ids.index(setting_id_or_filename)
-            return files[index]
-        except:
-            return None
-
-    def get_yaml_setting_filelist(self, directory, ignore_obsolete=True):
-        """ Retrieve all yaml files from a given directory (including
-        subdirectories). Directories named "obsolete" are ignored if
-        ignore_obsolete=True (default) """
-        setting_ids = []
-        setting_files = []
-        for root, dirs, files in os.walk(directory):
-            if os.path.split(root)[-1] == "obsolete" and ignore_obsolete:
-                continue
-            for filename in files:
-                if re.search("yaml$", filename):
-                    setting_ids.append(filename.replace(".yaml", ""))
-                    setting_files.append(os.path.join(root, filename))
-        return setting_ids, setting_files
-
-    def get_local_setting_path(self, type, data_level):
-        if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
-            args = [type]
-            if data_level is not None:
-                args.append(data_level)
-            return os.path.join(USER_CONFIG_PATH, *args)
-        else:
-            return None
-
-    def _read_config_files(self):
-        for key in self._DEFINITION_FILES.keys():
-            filename = os.path.join(USER_CONFIG_PATH, self._DEFINITION_FILES[key])
-            setattr(self, key, get_yaml_config(filename))
-
-    def _read_local_machine_file(self):
-        filename = os.path.join(USER_CONFIG_PATH, self._LOCAL_MACHINE_DEF_FILE)
-        try:
-            local_machine_def = get_yaml_config(filename)
-        except IOError:
-            msg = "local_machine_def.yaml not found (expected: %s)" % filename
-            self.error.add_error("local-machine-def-missing", msg)
-            self.error.raise_on_error()
-        setattr(self, "local_machine", local_machine_def)
-
-    def _return_path(self, subfolder):
-        return os.path.join(USER_CONFIG_PATH, subfolder)
-
-
+# TODO: Marked as obsolete -> flag_dict now in mission_def yaml.
 class RadarModes(object):
 
     flag_dict = {"lrm": 0, "sar": 1, "sin": 2}
@@ -221,8 +55,8 @@ class RadarModes(object):
         return None
 
     def name(self, index):
-        i = self.flag_dict.values().index(index)
-        return self.flag_dict.keys()[i]
+        i = list(self.flag_dict.values()).index(index)
+        return list(self.flag_dict.keys())[i]
 
     @property
     def num(self):
@@ -255,7 +89,6 @@ class TimeRangeRequest(DefaultLoggingClass):
 
     def __init__(self, start_dt, stop_dt, period="monthly", exclude_month=[], raise_if_empty=False):
         super(TimeRangeRequest, self).__init__(self.__class__.__name__)
-        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus()
         self.set_range(start_dt, stop_dt)
         self.set_period(period)
@@ -271,13 +104,16 @@ class TimeRangeRequest(DefaultLoggingClass):
         return output
 
     def clip_to_mission(self, mission_id):
-        mission_info = self.pysiral_config.get_mission_info(mission_id)
-        start = mission_info.data_period.start.replace(tzinfo=None)
-        stop = mission_info.data_period.stop.replace(tzinfo=None)
+        """
+        Make sure there that there is now request for processing in periods where there is no m
+        data of the particular platform
+        :param mission_id:
+        :return:
+        """
+        start, stop = psrlcfg.platforms.get_time_coverage(mission_id)
         is_clipped = self.clip_to_range(start, stop)
         if is_clipped:
-            self.log.info("Clipped to mission time range: %s till %s" % (
-                mission_info.data_period.start, mission_info.data_period.stop))
+            self.log.info("Clipped to mission time range: %s till %s" % (start, stop))
 
     def raise_if_empty(self):
         message = ""
@@ -717,15 +553,13 @@ class DefaultCommandLineArguments(object):
 
     def __init__(self):
 
-        config = ConfigInfo()
-
         self._args = {
 
             # Mission id
             "mission": {
                 "action": 'store',
                 "dest": 'mission_id',
-                "choices": config.mission_ids,
+                "choices": psrlcfg.platform_ids,
                 "required": True,
                 "help": "pysiral recognized mission id"},
 
@@ -733,7 +567,7 @@ class DefaultCommandLineArguments(object):
             "platform": {
                 "action": 'store',
                 "dest": 'platform',
-                "choices": config.mission_ids,
+                "choices": psrlcfg.platform_ids,
                 "required": True,
                 "default": None,
                 "help": "pysiral recognized platform id"},
@@ -923,7 +757,7 @@ class DefaultCommandLineArguments(object):
         return options
 
 
-def get_yaml_config(filename, output="treedict"):
+def get_yaml_config(filename, output="attrdict"):
     """
     Parses the contents of a configuration file in .yaml format
     and returns the content in various formats
@@ -937,29 +771,13 @@ def get_yaml_config(filename, output="treedict"):
             "treedict" (default): Returns a treedict object
             "dict": Returns a python dictionary
     """
-    with open(filename, 'r') as f:
-        content_dict = yaml.load(f)
+    with open(filename, 'r') as fileobj:
+        content_dict = yaml.safe_load(fileobj)
 
-    if output == "treedict":
-        return TreeDict.fromdict(content_dict, expand_nested=True)
-    else:
-        return content_dict
+    if output == "attrdict":
+        return AttrDict(content_dict)
 
-
-def td_branches(t):
-    """ Convenience function to get only the branches of a treedict object """
-    try:
-        branch_names = list(t.iterkeys(recursive=False, branch_mode='only'))
-        branch_objects = list(t.iterbranches())
-    except:
-        branch_names = []
-        branch_objects = []
-    return branch_names, branch_objects
-
-
-def options_from_dictionary(**opt_dict):
-    """ Function for converting option dictionary in Treedict """
-    return TreeDict.fromdict(opt_dict, expand_nested=True)
+    return content_dict
 
 
 def month_list(start_dt, stop_dt, exclude_month):

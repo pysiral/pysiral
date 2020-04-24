@@ -5,9 +5,8 @@ Created on Fri May 19 18:16:09 2017
 @author: Stefan
 """
 
-from pysiral import get_cls
+from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral.config import ConfigInfo
 from pysiral.logging import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.iotools import get_local_l1bdata_files
@@ -15,8 +14,7 @@ from pysiral.iotools import get_local_l1bdata_files
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-import glob
-import os
+from pathlib import Path
 import re
 
 
@@ -29,7 +27,6 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
     def __init__(self):
         super(DefaultAuxdataClassHandler, self).__init__(self.__class__.__name__)
-        self.pysiral_config = ConfigInfo()
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
     def get_pyclass(self, auxdata_class, auxdata_id, l2_procdef_opt):
@@ -79,7 +76,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         if "filename" in auxdata_def:
             local_repository_id = auxdata_def.local_repository
             local_repo = self.get_local_repository(auxdata_class, local_repository_id)
-            filename = os.path.join(local_repo, auxdata_def.filename)
+            filename = Path(local_repo) / auxdata_def.filename
             cfg.set_filename(filename)
 
         # set filenaming (e.g. for sic, sitype, snow)
@@ -120,7 +117,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         """ Get the local repository for the the auxdata type and id """
         if auxdata_id is None:
             return None
-        aux_repo_defs = self.pysiral_config.local_machine.auxdata_repository
+        aux_repo_defs = psrlcfg.local_machine.auxdata_repository
         try:
             local_repo_auxclass = aux_repo_defs[auxdata_class]
         except KeyError:
@@ -132,13 +129,13 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
     def get_auxdata_def(self, auxdata_class, auxdata_id):
         """ Returns the definition in `config/auxdata_def.yaml` for
         specified auxdata class and id """
-        try:
-            auxdata_class_def = self.pysiral_config.auxdata[auxdata_class]
-        except KeyError:
+
+        auxdata_def = psrlcfg.auxdef.get_definition(auxdata_class, auxdata_id)
+        if auxdata_def is None:
             msg = "Invalid auxdata class [%s] in auxdata_def.yaml" % auxdata_class
             self.error.add_error("invalid-auxdata-class", msg)
             self.error.raise_on_error()
-        return auxdata_class_def.get(auxdata_id, None)
+        return auxdata_def.attrdict
 
 
 class DefaultL1bDataHandler(DefaultLoggingClass):
@@ -180,11 +177,10 @@ class L2iDataHandler(DefaultLoggingClass):
         l2i_files = []
         for year, month, day in time_range.days_list:
             lookup_directory = self.get_lookup_directory(year, month)
-            if not os.path.isdir(lookup_directory):
+            if not Path(lookup_directory).is_dir():
                 continue
-            l2i_pattern = self.get_l2i_search_str(
-                    year=year, month=month, day=day)
-            result = glob.glob(os.path.join(lookup_directory, l2i_pattern))
+            l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
+            result = Path(lookup_directory).glob(l2i_pattern)
             l2i_files.extend(sorted(result))
         return l2i_files
 
@@ -201,20 +197,17 @@ class L2iDataHandler(DefaultLoggingClass):
         #      time. This is a pretty safe assumption, but this approach
         #      should be replaced as soon as a proper inspection tool is
         #      available
-        day_search = self.get_l2i_search_str(
-                year=day_dt.year, month=day_dt.month, day=day_dt.day)
-        search_str = os.path.join(lookup_directory, day_search)
-        l2i_files = glob.glob(search_str)
+        day_search = self.get_l2i_search_str(year=day_dt.year, month=day_dt.month, day=day_dt.day)
+        l2i_files = Path(lookup_directory).glob(day_search)
+        l2i_files = list(l2i_files)
 
         # Check if day is the first day of the month
         # yes -> check last file of previous month which might have data
         #        for the target day
         if day_dt.day == 1:
             previous_day = day_dt - timedelta(days=1)
-            lookup_directory = self.get_lookup_directory(
-                    previous_day.year, previous_day.month)
-            search_str = os.path.join(lookup_directory, day_search)
-            additional_l2i_files = glob.glob(search_str)
+            lookup_directory = self.get_lookup_directory(previous_day.year, previous_day.month)
+            additional_l2i_files = Path(lookup_directory).glob(day_search)
             l2i_files.extend(additional_l2i_files)
 
         # All done, return sorted output
@@ -223,7 +216,7 @@ class L2iDataHandler(DefaultLoggingClass):
     def _validate_base_directory(self):
         """ Performs sanity checks and enforces the l2i subfolder """
         # 1. Path must exist
-        if not os.path.isdir(self._base_directory):
+        if not Path(self._base_directory).is_dir():
             msg = "Invalid l2i product directory: %s"
             msg = msg % str(self._base_directory)
             self.error.add_error("invalid-l2i-productdir", msg)
@@ -232,22 +225,29 @@ class L2iDataHandler(DefaultLoggingClass):
     def get_lookup_directory(self, year, month):
         """ Return the sub folders for a given time (datetime object) """
         subfolders = ["%4g" % year, "%02g" % month]
-        lookup_directory = os.path.join(self.product_basedir, *subfolders)
+        lookup_directory = Path(self.product_basedir) / "/".join(subfolders)
         return lookup_directory
 
     def get_subdirectory_list(self):
         """ Returns a list of all subdirectories of type yyyy/mm """
         subdirectory_list = list()
+
+        # 1. Check if directory exists
+        if not self.product_basedir.is_dir():
+            msg = "Directory {} does not exist".format(str(self.product_basedir))
+            self.error.add_error("invalid-l2i-product-dir", msg)
+            self.error.raise_on_error()
+
         try:
-            years = sorted(next(os.walk(self.product_basedir))[1])
+            years = sorted([f.parts[-1] for f in Path(self.product_basedir).iterdir() if f.is_dir()])
         except StopIteration:
             self.log.warning("No subdirectories in %s" % self.product_basedir)
             return []
         # filter any invalid directories
         years = [y for y in years if re.match(r'[1-3][0-9]{3}', y)]
         for year in years:
-            subdir_year = os.path.join(self.product_basedir, year)
-            months = sorted(next(os.walk(subdir_year))[1])
+            subdir_year = Path(self.product_basedir) / year
+            months = [f.parts[-1] for f in subdir_year.iterdir() if f.is_dir()]
             # filter any invalid directories
             months = [m for m in months if re.match(r'[0-1][0-9]', m)]
             subdirectory_list.extend([[year, m] for m in months])

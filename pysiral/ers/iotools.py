@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
+
 import os
 import re
-import glob
-
 import numpy as np
 
 import dateutil
+from pathlib import Path
 from datetime import timedelta
 from parse import compile
 
@@ -78,11 +78,11 @@ class ERSFileList(DefaultLoggingClass):
             self._sorted_list.extend(sublist)
 
     def _get_toplevel_search_folder(self):
-        folder = self.folder
+        folder = Path(self.folder)
         if self.year is not None:
-            folder = os.path.join(folder, "%4g" % self.year)
+            folder = folder / "%4g" % self.year
         if self.month is not None and self.year is not None:
-            folder = os.path.join(folder, "%02g" % self.month)
+            folder = folder / "%02g" % self.month
         return folder
 
 
@@ -184,8 +184,8 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             # Query each cycle folder
             filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
             for cycle_folder in cycle_folders:
-                search_str = os.path.join(cycle_folder, filename_search)
-                sgdr_files = glob.glob(search_str)
+
+                sgdr_files = Path(cycle_folder).glob(filename_search)
                 self._sorted_list.extend(sorted(sgdr_files))
 
     def _get_cycle_folders_from_lookup_table(self, datestr):
@@ -200,8 +200,6 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             if datestr in entry["dates"]:
                 cycle_folders.append(entry["dir"])
         return cycle_folders
-
-
 
     @property
     def sorted_list(self):

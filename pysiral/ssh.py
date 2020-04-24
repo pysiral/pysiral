@@ -3,7 +3,7 @@ from pysiral.auxdata import AuxdataBaseClass
 from pysiral.iotools import ReadNC
 from pysiral.filter import (fill_nan, idl_smooth)
 
-from treedict import TreeDict
+from attrdict import AttrDict
 import scipy.ndimage as ndimage
 import numpy as np
 
@@ -16,7 +16,7 @@ class SSAInterpolator(object):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def interpolate(self, l2):
         self._value = np.ndarray(shape=(l2.n_records))
@@ -164,7 +164,7 @@ class SSASmoothedLinear(SSAInterpolator):
         """ Check all sections divided by land masses for reliable
         information content """
 
-        filter_options = self._options.marine_segment_filtering
+        filter_options = self._options.marine_segment_filter
         minimum_lead_number = filter_options.minimum_lead_number
         footprint_size = self._options.smooth_filter_width_footprint_size
         section_prop = {"i0": 0.0, "i1": 0.0,

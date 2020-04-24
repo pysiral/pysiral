@@ -1,6 +1,5 @@
 
-import os
-import sys
+from pathlib import Path
 
 import xarray
 import numpy as np
@@ -15,7 +14,6 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.path import filename_from_path
 from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
 
 
@@ -58,7 +56,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self.l1 = Level1bData()
 
         # Input Validation
-        if not os.path.isfile(filepath):
+        if not Path(filepath).is_file():
             msg = "Not a valid file: %s" % filepath
             self.log.warning(msg)
             self.error.add_error("invalid-filepath", msg)
@@ -159,7 +157,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         info.set_attribute("mission_data_version", "D")
         info.set_attribute("orbit", metadata["abs_orbit_start"])
         info.set_attribute("cycle", metadata["cycle_number"])
-        info.set_attribute("mission_data_source", filename_from_path(self.filepath))
+        info.set_attribute("mission_data_source", Path(self.filepath).name)
         info.set_attribute("timeliness", cs2_procstage2timeliness(metadata["processing_stage"]))
 
         # Time-Orbit Metadata

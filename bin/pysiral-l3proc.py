@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
-                            TimeRangeRequest)
-from pysiral.datahandler import L2iDataHandler
-from pysiral.errorhandler import ErrorStatus
-from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
-                            Level3GridDefinition, Level3OutputHandler)
-from pysiral.logging import DefaultLoggingClass
 
 from datetime import timedelta
 import argparse
 import time
 import sys
-import os
+from pathlib import Path
+
+from pysiral import psrlcfg
+from pysiral.config import DefaultCommandLineArguments, TimeRangeRequest
+from pysiral.datahandler import L2iDataHandler
+from pysiral.errorhandler import ErrorStatus
+from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
+                            Level3GridDefinition, Level3OutputHandler)
+from pysiral.logging import DefaultLoggingClass
 
 
 def pysiral_l3proc():
@@ -80,7 +81,6 @@ class Level3ProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level3ProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = ConfigInfo()
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -113,7 +113,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
                       "l3 files for the requested period\n" + \
                       "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                       "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
@@ -179,16 +179,16 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
     @property
     def l2i_product_directory(self):
-        return os.path.join(self.l3_product_basedir, "l2i")
+        return Path(self.l3_product_basedir) / "l2i"
 
     @property
     def l3_settings_file(self):
         l3_settings = self._args.l3_settings
-        filename = self.pysiral_config.get_settings_file("proc", "l3", l3_settings)
+        filename = psrlcfg.get_settings_file("proc", "l3", l3_settings)
         if filename is None:
             msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
             msg = msg + " \nRecognized Level-3 processor setting ids:\n"
-            for l3_settings_id in self.pysiral_config.get_setting_ids("proc", "l3"):
+            for l3_settings_id in psrlcfg.get_setting_ids("proc", "l3"):
                 msg = msg + "  " + l3_settings_id + "\n"
             self.error.add_error("invalid-l3-settings", msg)
             self.error.raise_on_error()
@@ -198,11 +198,11 @@ class Level3ProcArgParser(DefaultLoggingClass):
     @property
     def l3_griddef(self):
         l3_griddef = self._args.l3_griddef
-        filename = self.pysiral_config.get_settings_file("grid", None, l3_griddef)
+        filename = psrlcfg.get_settings_file("grid", None, l3_griddef)
         if filename is None:
             msg = "Invalid griddef filename or id: %s\n" % l3_griddef
             msg = msg + "    Recognized grid definition ids:\n"
-            for griddef_id in self.pysiral_config.get_setting_ids("grid"):
+            for griddef_id in psrlcfg.get_setting_ids("grid"):
                 msg = msg + "    - " + griddef_id + "\n"
             self.error.add_error("invalid-griddef", msg)
             self.error.raise_on_error()
@@ -219,11 +219,11 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
         filenames = []
         for l3_output in self._args.l3_output.split(";"):
-            filename = self.pysiral_config.get_settings_file("output", "l3", l3_output)
+            filename = psrlcfg.get_settings_file("output", "l3", l3_output)
             if filename is None:
                 msg = "Invalid output definition filename or id: %s\n" % l3_output
                 msg = msg + "    Recognized output definition ids:\n"
-                for output_id in self.pysiral_config.get_setting_ids("output", "l3"):
+                for output_id in psrlcfg.get_setting_ids("output", "l3"):
                     msg = msg + "    - " + output_id + "\n"
                 self.error.add_error("invalid-outputdef", msg)
             else:
@@ -241,10 +241,10 @@ class Level3ProcArgParser(DefaultLoggingClass):
     def l3_product_basedir(self):
         """ Returns the base directory (one level below l2i) """
         # 1. Clean up the path
-        product_basedir = os.path.abspath(self._args.l2i_basedir)
-        dirs = os.path.split(product_basedir)
-        if dirs[1] == "l2i":
-            return dirs[0]
+        product_basedir = Path(self._args.l2i_basedir).resolve(strict=False)
+        dirs = product_basedir.parts
+        if dirs[-1] == "l2i":
+            return Path(*dirs[:-1])
         else:
             return product_basedir
 

@@ -41,7 +41,7 @@ class ErrorStatus(object):
             for i in range(len(self.codes)):
                 output += "  [%s] %s" % (self.codes[i], self.messages[i])
                 output += "\n"
-            print output
+            print(output)
             sys.exit(1)
 
     def get_all_messages(self):
@@ -88,7 +88,7 @@ class ErrorHandler(object):
         """
         for error_name in self._error_dict.keys():
             if self._error_dict[error_name] and self._raise_on_error:
-                print self._error_dict, self._raise_on_error
+                print(self._error_dict, self._raise_on_error)
                 raise self._exception_type
 
     def test_errors(self):

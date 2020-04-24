@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.path import folder_from_filename
 
+from pathlib import Path
 import numpy as np
-import os
 
 
 class Sentinel3SRALL1b(object):
@@ -28,8 +27,7 @@ class Sentinel3SRALL1b(object):
         xml_header_file = settings.xml_header_file
         xml_metadata_object_index = settings.xml_metadata_object_index
 
-        dataset_folder = folder_from_filename(self.filename)
-        filename_header = os.path.join(dataset_folder, xml_header_file)
+        filename_header = Path(self.filename).parent / xml_header_file
         self._xmlh = parse_sentinel3_l1b_xml_header(filename_header)
 
         # Extract Metadata
@@ -92,7 +90,7 @@ class Sentinel3SRALL1b(object):
     def filename(self, filename):
         """ Save and validate filenames for header and product file """
         # Test if valid file first
-        if not os.path.isfile(filename):
+        if not Path(filename).is_file():
             return
         self._filename = filename
 

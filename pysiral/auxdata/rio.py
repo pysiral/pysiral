@@ -55,7 +55,7 @@ class RIO(AuxdataBaseClass):
         month = l2.track.timestamp[0].month
         day = l2.track.timestamp[0].day
         self._requested_date = [year, month, day]
-        
+
     def IceChartToRIO(self, icechart, ice_class="none", summer=False):
         RIO = list()
         for i in np.arange(len(icechart['CT'])):
@@ -337,7 +337,7 @@ class RIO(AuxdataBaseClass):
         data_1b = list()
         data_1c = list()
         data_no_ice_class = list()
-        
+
         iceclasses = ['PC1','PC2','PC3','PC4','PC5','PC6','PC7','1ASuper','1A','1B','1C','NO ICE CLASS']
         icechart = self.icechart
         for str_iceclass in iceclasses:
@@ -367,9 +367,8 @@ class RIO(AuxdataBaseClass):
             elif str_iceclass =='NO ICE CLASS':
                 data_no_ice_class = RIO
             else:
-                print "Daaaamn, you shouln't be here!", str_iceclass
-		
-     
-    	return [data_pc1, data_pc2, data_pc3, data_pc4, data_pc5, data_pc6, data_pc7,
+                print("Daaaamn, you shouln't be here!", str_iceclass)
+
+        return [data_pc1, data_pc2, data_pc3, data_pc4, data_pc5, data_pc6, data_pc7,
                 data_1asuper, data_1a, data_1b, data_1c, data_no_ice_class]
 

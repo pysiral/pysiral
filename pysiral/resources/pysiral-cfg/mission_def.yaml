@@ -1,300 +1,97 @@
 # Definition file of supported radar altimeter missions in pysiral
 ---
 
-# -----------------------------------------------------------------------------
-# Overview of radar avalailable radar altimeter mission and radar modes
-# -----------------------------------------------------------------------------
-
-# list of all mission
-# (list item are the valid string tags for adressing the missions)
-missions:
-    - cryosat2
-    - envisat
-    - ers1
-    - ers2
-    - sentinel3a
-    - sentinel3b
-    - icesat
-    - icesat2
-
-# These missions are includeed in the pysiral concept but support
-# will be added later in the development phase
-missions_to_be_added:
-    - altika
-
-# list of supported radar altimeter modes
-modes:
-    - sar
-    - sin
-    - lrm
-
-# Support for LRM data will come later with the integration of
-# EnviSat and the ERS-1/2 mission
-modes_to_be_added:
-    - plrm
-
+# list of supported radar altimeter modes and their flag values
+mode_flags:
+    sar: 0
+    sin: 1
+    lrm: 2
+    plrm: 3
+    laser: 4
 
 # -----------------------------------------------------------------------------
 # Definition for each mission
 # (the tag name has to be identical to the one in the mission list)
 # -----------------------------------------------------------------------------
 
-cryosat2:
+platforms: 
+    
+    cryosat2:
+        long_name: CryoSat-2
+        docstr: Cryosphere radar altimeter mission of the European Space Agency (ESA)
+        sensor: SIRAL
+        time_coverage:
+            start: 2010-11-01T00:00:00.00
+            end: null
+        sea_ice_radar_modes: ["sar", "sin"]
+        orbit_max_latitude: 88.0
 
-    long_name: CryoSat-2
-    docstr:
-        Cryosphere radar altimeter mission of the European Space
-        Agency (ESA)
-    data_period:
-        start: 2010-11-01T00:00:00.00+00
-        stop: null
-    sea_ice_radar_modes: ["sar", "sin"]
-    orbit_max_latitude: 88.0
-    options:
-        ionospheric_correction_source:
-            default: ionospheric_gim
-            target: ionosphere
-            type: selector
-            options:
-                - ionospheric_gim
-                - ionospheric_mod
-            docstr:
-                Source of Ionospheric Correction
-    settings:
-        polar_threshold: 50.0
-        max_connected_files_timedelta_seconds: 10
-        max_inner_nonocean_segment_nrecords: 1000
+    envisat:
+        long_name: Envisat
+        sensor: RA-2
+        docstr: Envisat (Enviromental Satellite) of the European Space Agency (ESA)
+        time_coverage:
+            start: 2002-05-14T00:00:00.00
+            end: 2012-03-31T23:59:59.99
+        sea_ice_radar_modes: ["lrm"]
+        orbit_max_latitude: 82.5
+        
+    ers1:
+        long_name: ERS-1
+        sensor: RA
+        docstr: ERS-1 of the European Space Agency (ESA)
+        time_coverage:
+            start: 1991-08-03T00:00:00.00
+            end: 1996-06-02T23:59:59.99
+        sea_ice_radar_modes: ["lrm"]
+        orbit_max_latitude: 82.5
 
-envisat:
+    ers2:
+        long_name: ERS-2
+        sensor: RA
+        docstr: ERS-2 of the European Space Agency (ESA)
+        time_coverage:
+            start: 1995-05-14T00:00:00.00
+            end: 2003-07-02T23:59:59.99
+        sea_ice_radar_modes: ["lrm"]
+        orbit_max_latitude: 82.5
 
-    long_name: Envisat
+    sentinel3a:
+        long_name: Sentinel-3A
+        sensor: SRAL
+        docstr: Cryosphere radar altimeter mission of the European Space Agency (ESA)
+        time_coverage:
+            start: 2016-04-01T00:00:00.00
+            end: null
+        sea_ice_radar_modes: ["sar", "plrm"]
+        orbit_max_latitude: 81.35
 
-    docstr:
-        Envisat (Enviromental Satellite) of the European Space
-        Agency (ESA)
+    sentinel3b:
+        long_name: Sentinel-3B
+        sensor: SRAL
+        docstr: Cryosphere radar altimeter mission of the European Space Agency (ESA)
+        time_coverage:
+            start: 2018-11-10T00:00:00.00
+            end: null
+        sea_ice_radar_modes: ["sar", "plrm"]
+        orbit_max_latitude: 81.35
 
-    data_period:
-        start: 2002-05-14T00:00:00.00+00
-        stop: 2012-03-31T23:59:59.99+00
+    icesat:
+        long_name: ICESat
+        sensor: GLAS
+        docstr: ICESat (Ice, Cloud, and land Elevation Satellite)
+        time_coverage:
+            start: 2003-02-20T00:00:00
+            end: 2009-10-11T23:59:59
+        sea_ice_radar_modes: ["laser"]
+        orbit_max_latitude: 86.0
 
-    sea_ice_radar_modes: ["lrm"]
-
-    orbit_max_latitude: 82.5
-
-    settings:
-
-        # Pre-Pocessor settings
-        polar_threshold: 50.0
-        max_connected_files_timedelta_seconds: 10
-        max_inner_nonocean_segment_nrecords: 1000
-
-        # SGDR settings
-        geophysical_correction_targets:
-
-            # List of 1Hz range corrections to replicate to 18Hz
-            # from mds group "range_correction"
-            range_correction:
-                - dry_troposphere
-                - inverse_barometric
-                - wet_troposphere_model
-                - wet_troposphere_mwr
-                - ra2_ionosphere_ku
-                - doris_ionosphere_ku
-                - model_ionosphere_ku
-                - sea_state_bias_ku
-
-            # List of 1Hz tide parameter to replicate to 18Hz
-            # from mds group "geophysical_information"
-            geophysical_information:
-                - total_geocentric_ocean_tide_1
-                - total_geocentric_ocean_tide_2
-                - ocean_tide_long_period
-                - ocean_loading_tide_1
-                - ocean_loading_tide_2
-                - solid_earth_tide
-                - geocentric_polar_tide
-
-
-ers1:
-
-    long_name: ERS-1
-
-    docstr:
-        ERS-1 of the European Space Agency (ESA)
-
-    data_period:
-        start: 1991-08-03T00:00:00.00+00
-        stop: 1996-06-02T23:59:59.99+00
-
-    sea_ice_radar_modes: ["lrm"]
-
-    orbit_max_latitude: 82.5
-
-    options: null
-
-ers2:
-
-    long_name: ERS-2
-
-    docstr:
-        ERS-2 of the European Space Agency (ESA)
-
-    data_period:
-        start: 1995-05-14T00:00:00.00+00
-        stop: 2003-07-02T23:59:59.99+00
-
-    sea_ice_radar_modes: ["lrm"]
-
-    orbit_max_latitude: 82.5
-
-    options: null
-
-    settings:
-
-        # Radar Altimeter Settings
-        range_bin_width: 0.4545
-        nominal_tracking_bin: 32.5
-
-        # SGDR Input Settings
-        sgdr_n_blocks: 20
-
-        # SGDR timestamp units
-        sgdr_timestamp_units: seconds since 1990-01-01 00:00:00
-        sgdr_timestamp_calendar: gregorian
-
-        # SGDR variable names for geophysical range corrections
-        sgdr_range_correction_targets:
-            dry_troposphere: model_dry_tropo_corr
-            wet_troposphere: model_wet_tropo_corr
-            inverse_barometric: inv_bar_corr
-            dynamic_atmosphere: hf_fluctuations_corr
-            ionosphere: iono_corr_model
-            ocean_tide_elastic: ocean_tide_sol1
-            ocean_tide_long_period: ocean_tide_equil
-            ocean_loading_tide: load_tide_sol1
-            solid_earth_tide: solid_earth_tide
-            geocentric_polar_tide: pole_tide
-            total_geocentric_ocean_tide: Null
-
-        # SGDR variable names for classifier
-        sgdr_classifier_targets:
-            chirp_type: alt_state_flag_chirp_type_20hz
-            pulse_peakiness_sgdr: peakiness_20hz
-            ocog_width: width_20hz
-            ocog_amplitude: amplitude_20hz
-            sigma0_ice1: ice1_sig0_20hz
-            sigma0_ice2: ice2_sig0_20hz
-            sigma0_sitrack: sitrack_sig0_20hz
-            leading_edge_width_ice2: ice2_le_width_20hz
-            elevation_ice1: ice1_elevation_20hz
-            elevation_sitrack: sitrack_elevation_20hz
-
-        # Pre-Processor Settings
-        polar_threshold: 50.0
-        max_connected_files_timedelta_seconds: 10
-        max_inner_nonocean_segment_nrecords: 1000
-
-
-sentinel3a:
-
-    long_name: Sentinel-3A
-
-    docstr:
-        Cryosphere radar altimeter mission of the European Space Agency (ESA)
-
-    data_period:
-        start: 2016-04-01T00:00:00.00+00
-        stop: null
-
-    sea_ice_radar_modes: ["sar"]
-
-    orbit_max_latitude: 81.35
-
-    settings:
-
-        # Instrument Settings
-        radar_mode: sar
-        range_bin_width: 0.468465715626
-        nominal_tracking_bin: 60
-
-        # Dataset settings
-        time_units: seconds since 2000-01-01 00:00:00.0
-        time_calendar: gregorian
-
-        # Metadata information
-        xml_header_file: xfdumanifest.xml
-        xml_metadata_object_index:
-            processing: 0
-            acquisitionPeriod: 1
-            platform: 2
-            generalProductInformation: 3
-            measurementOrbitReference: 4
-            measurementQualityInformation: 5
-            measurementFrameSet: 6
-            sralProductInformation: 7
-
-        # Selection for geophysical corrections
-        range_correction_targets_1Hz:
-            dry_troposphere: mod_dry_tropo_cor_meas_altitude_01
-            wet_troposphere: mod_wet_tropo_cor_meas_altitude_01
-            inverse_barometric: inv_bar_cor_01
-            dynamic_atmosphere: null
-            ionosphere: iono_cor_gim_01_ku
-            ocean_tide_elastic: ocean_tide_non_eq_01
-            ocean_tide_long_period: ocean_tide_eq_01
-            ocean_loading_tide: load_tide_sol1_01
-            solid_earth_tide: solid_earth_tide_01
-            geocentric_polar_tide: pole_tide_01
-            total_geocentric_ocean_tide: null
-
-        # Classifier
-        classifier_targets:
-            ku_mode: mode_id_20_ku
-            agc_quality_flag: agc_qual_20_ku
-            num_stack_waveforms: nb_stack_20_ku
-            peakiness_envisat: peakiness_1_20_ku
-            peakiness_laxon: peakiness_2_20_ku
-            l2_ice_range: range_ice_20_ku
-            sigma0_ocog: sig0_ocog_20_ku
-            sigma0_sea_ice: sig0_sea_ice_sheet_20_ku
-
-        # Pre processors
-        polar_threshold: 50.0
-        max_connected_files_timedelta_seconds: 10
-        max_inner_nonocean_segment_nrecords: 1000
-
-
-icesat:
-
-    long_name: ICESat
-
-    docstr:
-        ICESat (Ice, Cloud,and land Elevation Satellite), NASA
-
-    data_period:
-        start: 2003-02-20T00:00:00+00
-        stop: 2009-10-11T23:59:59+00
-
-    sea_ice_radar_modes: ["lrm"]
-
-    orbit_max_latitude: 86.0
-
-    settings:
-
-        # Instrument Settings
-        radar_mode: sar
-
-        # Dataset settings
-        time_units: seconds since 2000-01-01 00:00:00.0
-        time_calendar: gregorian
-
-        # Selection for geophysical corrections
-        range_correction_group: null
-        range_correction_targets: null
-
-        # Classifier
-        classifier_targets: null
-
-        # Pre processors
-        polar_threshold: 50.0
-        max_inner_nonocean_segment_nrecords: 1000
+    icesat2:
+        long_name: ICESat-2
+        sensor: ATLAS
+        docstr: ICESat-2 (Ice, Cloud, and land Elevation Satellite-2)
+        time_coverage:
+            start: 2018-10-14T00:00:00
+            end: null
+        sea_ice_radar_modes: ["laser"]
+        orbit_max_latitude: 86.0

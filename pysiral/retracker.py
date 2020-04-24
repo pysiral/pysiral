@@ -7,9 +7,8 @@ Created on Fri Jul 31 15:48:58 2015
 
 # cythonized bottleneck functions for cTFMRA
 try:
-    from pysiral.bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
-                                        cytfmra_wfm_noise_level,
-                                        cytfmra_normalize_wfm)
+    from .bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
+                                 cytfmra_wfm_noise_level, cytfmra_normalize_wfm)
     CYTFMRA_OK = True
 except:
     CYTFMRA_OK = False
@@ -17,7 +16,7 @@ except:
 
 from pysiral.flag import ANDCondition, FlagContainer
 
-from treedict import TreeDict
+from attrdict import AttrDict
 import numpy as np
 import sys
 
@@ -49,7 +48,7 @@ class BaseRetracker(object):
 
     def set_options(self, **opt_dict):
         # TODO: Create options object, respectively use __init__
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def set_indices(self, indices):
         # TODO: Validation
@@ -1207,7 +1206,7 @@ def smooth(x, window):
 
 def bnsmooth(x, window):
     """ Bottleneck implementation of the IDL SMOOTH function """
-    pad = (window-1)/2
+    pad = int((window-1)/2)
     n = len(x)
     xpad = np.ndarray(shape=(n+window))
     xpad[0:pad] = 0.0

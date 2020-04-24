@@ -41,7 +41,7 @@ from pysiral.iotools import ReadNC
 import scipy.ndimage as ndimage
 from pyproj import Proj
 import numpy as np
-import os
+from pathlib import Path
 
 
 class OsiSafSIType(AuxdataBaseClass):
@@ -78,10 +78,10 @@ class OsiSafSIType(AuxdataBaseClass):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = self.requested_filepath
+        path = Path(self.requested_filepath)
 
         # Validation
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg = "OsiSafSIType: File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
@@ -122,14 +122,14 @@ class OsiSafSIType(AuxdataBaseClass):
     def requested_filepath(self):
         """ Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (hemisphere code) """
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
         filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
 
@@ -169,10 +169,10 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         """ Loads file from local repository only if needed """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = self.requested_filepath
+        path = Path(self.requested_filepath)
 
         # Validation
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg = "%s: File not found: %s " % (self.__class__.__name__, path)
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
@@ -209,25 +209,25 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
         # Unique to this class is the possibility to auto merge
         # products. The current implementation supports only two products
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
 
         # The path needs to be completed if two products shall be used
-        if self.cfg.options.has_key("auto_product_change"):
+        if "auto_product_change" in self.cfg.options:
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
-            path = os.path.join(path, product_def["subfolder"])
+            path = path / product_def["subfolder"]
             self.cfg.filenaming = product_def["filenaming"]
             self.cfg.long_name = product_def["long_name"]
 
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
 
         filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=self.hemisphere_code)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
 
@@ -266,11 +266,11 @@ class ICDCNasaTeam(AuxdataBaseClass):
             return
 
         # construct filename
-        path = self._get_local_repository_filename(l2)
+        path = Path(self._get_local_repository_filename(l2))
 
         # Check if the file exists, add an error if not
         # (error is not raised at this point)
-        if not os.path.isfile(path):
+        if not path.isfile():
             msg = "ICDCNasaTeam: File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
@@ -297,14 +297,14 @@ class ICDCNasaTeam(AuxdataBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
         filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
     def _get_sitype_track(self, l2):

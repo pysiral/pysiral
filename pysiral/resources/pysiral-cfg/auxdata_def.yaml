@@ -3,17 +3,6 @@
 
 # Note: path keywords must be set in local_machine_def.yaml
 
-# list of valid auxiliary data types
-auxdata_types:
-    - mean_sea_surface
-    - ice_concentration
-    - ice_type
-    - ice_type_fraction
-    - snow_depth
-    - snow_density
-    # ice charts added for fmi version
-    - icechart
-
 # List of icechart products (fmi version)
 icechart:
     
@@ -86,7 +75,7 @@ mss:
     dtu10:
         pyclass: DTU1MinGrid
         long_name: DTU10 mean sea surface (1 minute grid)
-        local_directory: dtu10
+        local_repository: dtu10
         filename: DTU10MSS_1min.nc
         options: null
         source:
@@ -101,7 +90,7 @@ mss:
     dtu13:
         pyclass: DTU1MinGrid
         long_name: DTU13 mean sea surface (1 minute grid)
-        local_directory: dtu13
+        local_repository: dtu13
         filename: DTU13MSS_1min.nc
         options: null
         source:
@@ -433,6 +422,7 @@ sic:
         # The final product directory is computed in the auxdata handler, therefore the local machine definition key
         # `osisafcdr` must be the root directory of the subfolders defined below
         local_repository: osisafcdr
+        long_name: "Merged OSI-SAF product"
         options:
             auto_product_change:
                 # The date defines the time, when the second product will be used
@@ -602,6 +592,7 @@ sic:
         pyclass: OsiSafSIC
         # The final product directory is computed in the auxdata handler, therefore the local machine definition key
         # `osisafcdr` must be the root directory of the subfolders defined below
+        long_name: "Merged C3S CDR/ICDR product"
         local_repository: c3s_v1p2
         options:
             auto_product_change:

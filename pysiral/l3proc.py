@@ -4,9 +4,8 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral import __version__, get_cls
-from pysiral.config import (ConfigInfo, get_yaml_config, SENSOR_NAME_DICT,
-                            MISSION_NAME_DICT, ORBIT_INCLINATION_DICT)
+from pysiral import __version__, get_cls, psrlcfg
+from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.logging import DefaultLoggingClass
@@ -22,11 +21,11 @@ from scipy.ndimage.filters import maximum_filter
 
 from collections import OrderedDict
 from datetime import datetime, date
+from pathlib import Path
 import itertools
 import uuid
 import numpy as np
 import sys
-import os
 import re
 
 
@@ -81,9 +80,6 @@ class Level3Processor(DefaultLoggingClass):
                 orbitfilter_is_active = orbitfilter.active
             except AttributeError:
                 orbitfilter_is_active = False
-            finally:
-                if orbitfilter.isDangling():
-                    orbitfilter_is_active = False
 
             if orbitfilter_is_active:
 
@@ -218,8 +214,8 @@ class L2iDataStack(DefaultLoggingClass):
         self.stack = {}
 
         # create a stack for each l2 parameter
-        for pardef in self.l2_parameter:
-            self.stack[pardef.branchName()] = self.parameter_stack
+        for parameter_name in self.l2_parameter.keys():
+            self.stack[parameter_name] = self.parameter_stack
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
@@ -255,8 +251,7 @@ class L2iDataStack(DefaultLoggingClass):
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
 
-            for pardef in self.l2_parameter:
-                parameter_name = pardef.branchName()
+            for parameter_name in self.l2_parameter.keys():
                 try:
                     data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
@@ -359,8 +354,8 @@ class L3DataGrid(DefaultLoggingClass):
             return attribute
         except AttributeError:
             return "attr_unavailable"
-        except Exception, msg:
-            print "L3DataGrid.get_attribute Exception: " + str(msg) + " for attribute: %s" % attribute_name
+        except Exception as ex:
+            print("L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name)
             sys.exit(1)
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
@@ -373,7 +368,7 @@ class L3DataGrid(DefaultLoggingClass):
         """
 
         # Check if variable already exists
-        if self.vars.has_key(parameter_name):
+        if parameter_name in self.vars:
             msg = "Variable overwrite alert: %s" % parameter_name
             self.error.add_error("l3-variable-overwrite", msg)
             self.error.raise_on_error()
@@ -403,7 +398,7 @@ class L3DataGrid(DefaultLoggingClass):
 
             # Certain parameters in the l2 stack are excluded from gridding
             # (-> indicated by grid_method: none)
-            grid_method = self.l3def.l2_parameter[name].grid_method
+            grid_method = self.l3def.l2_parameter[name]["grid_method"]
             if grid_method == "none":
                 continue
 
@@ -440,8 +435,8 @@ class L3DataGrid(DefaultLoggingClass):
         except KeyError:
             parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
             self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
+        except Exception as ex:
+            print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
         return parameter
 
@@ -450,8 +445,8 @@ class L3DataGrid(DefaultLoggingClass):
             self.vars[name] = var
         except KeyError:
             self.log.warn("Parameter not available: %s" % name)
-        except Exception, msg:
-            print "L3DataGrid.get_parameter_by_name Exception: " + str(msg)
+        except Exception as ex:
+            print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
 
     def _init_metadata_from_l2(self):
@@ -473,11 +468,11 @@ class L3DataGrid(DefaultLoggingClass):
     def _init_parameter_fields(self, pardefs):
         """ Initialize output parameter fields """
         # Store the name of the parameters
-        self._l2_parameter = sorted([pd.branchName() for pd in pardefs])
-        for pardef in pardefs:
-            fillvalue = pardef.fillvalue
-            if pardef.grid_method != "none":
-                self.add_grid_variable(pardef.branchName(), fillvalue, pardef.dtype)
+        self._l2_parameter = sorted(pardefs.keys())
+        for parameter_name, pardef in list(pardefs.items()):
+            fillvalue = pardef["fillvalue"]
+            if pardef["grid_method"] != "none":
+                self.add_grid_variable(parameter_name, fillvalue, pardef["dtype"])
 
     def _get_attr_source_mission_id(self, *args):
         mission_ids = self.metadata.mission_ids
@@ -487,7 +482,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([MISSION_NAME_DICT[m] for m in ids.split(",")])
+        names = ",".join([psrlcfg.platforms.get_sensor(m) for m in ids.split(",")])
         return names
 
     def _get_attr_source_timeliness(self, *args):
@@ -698,7 +693,7 @@ class L3MetaData(object):
         (must be a list, since multi-mission grids are supported)
         """
         missions = np.unique(stack.mission)
-        mission_sensor = [SENSOR_NAME_DICT[mission.lower()] for mission in missions]
+        mission_sensor = [psrlcfg.platforms.get_sensor(mission.lower()) for mission in missions]
         self.set_attribute("mission_ids", ",".join(missions))
         self.set_attribute("mission_sensor", ",".join(mission_sensor))
         source_timeliness = np.unique(stack.timeliness)[0]
@@ -836,7 +831,7 @@ class Level3OutputHandler(OutputHandlerBase):
         provided in the l2 data object """
         export_directory = self.get_directory_from_data(l3)
         export_filename = self.get_filename_from_data(l3)
-        return os.path.join(export_directory, export_filename)
+        return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l3):
         attr_dict = OrderedDict()
@@ -852,25 +847,24 @@ class Level3OutputHandler(OutputHandlerBase):
         the default pysiral product directory. Product level id and
         overwrite protection subfolders are added for both options"""
         # argument is directory
-        if os.path.isdir(base_directory_or_id):
-            basedir = base_directory_or_id
+        if Path(base_directory_or_id).is_dir():
+            basedir = Path(base_directory_or_id)
         # argument is id
         else:
-            basedir = self.pysiral_config.local_machine.product_repository
-            basedir = os.path.join(basedir, base_directory_or_id)
+            basedir = Path(self.pysiral_config.local_machine.product_repository) / base_directory_or_id
         # add product level subfolder
-        basedir = os.path.join(basedir, self.product_level_subfolder, self._period)
+        basedir = basedir / self.product_level_subfolder / self._period
         # optional (subfolder with current time)
         if self.overwrite_protection:
-            basedir = os.path.join(basedir, self.now_directory)
+            basedir = basedir / self.now_directory
         # set the directory
         self._set_basedir(basedir)
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
+        pysiral_config = psrlcfg
         local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        return Path(local_settings_path) / Path(*self.default_file_location)
 
     @property
     def flip_yc(self):
@@ -892,7 +886,7 @@ class Level3OutputHandler(OutputHandlerBase):
 
         # This property has been added. Older L3 output definitions may not have it,
         # -> Catch attribute error and return false if attribute does not exist
-        if not self.output_def.grid_options.has_key("time_dim_is_unlimited"):
+        if not "time_dim_is_unlimited" in self.output_def.grid_options:
             msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
             self.log.warning(msg % self.output_def_filename)
             time_dim_is_unlimited = False
@@ -947,8 +941,8 @@ class Level3ProductDefinition(DefaultLoggingClass):
         self.log.info("Parsing settings: %s" % str(self._l3_settings_file))
         try:
             self._l3 = get_yaml_config(self._l3_settings_file)
-        except Exception, msg:
-            self.error.add_error("l3settings-parser-error", msg)
+        except Exception as ex:
+            self.error.add_error("l3settings-parser-error", str(ex))
             self.error.raise_on_error()
 
     def validate(self):
@@ -1005,9 +999,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
     def l2_parameter(self):
         """ Extract a list of paramter names to be extracted from
         l2i product files """
-        l2_parameter = sorted(self.l3def.l2_parameter.keys(branch_mode="only"))
-        l2_param_def = [self.l3def.l2_parameter[n] for n in l2_parameter]
-        return l2_param_def
+        return self.l3def.l2_parameter
 
     @property
     def l3_parameter(self):
@@ -1064,7 +1056,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-2 stack parameter
         for l2_var_name in self.l2_variable_dependencies:
-            if not self.l3grid.l2.stack.has_key(l2_var_name):
+            if not l2_var_name in self.l3grid.l2.stack:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l2_var_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
@@ -1072,7 +1064,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-3 grid parameter
         for l3_var_name in self.l3_variable_dependencies:
-            if not self.l3grid.vars.has_key(l3_var_name):
+            if not l3_var_name in self.l3grid.vars:
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)
@@ -1335,7 +1327,7 @@ class Level3StatusFlag(Level3ProcessorItem):
         # Compute conditions for flags
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
-        orbit_inclinations = [ORBIT_INCLINATION_DICT[mission_id] for mission_id in mission_ids]
+        orbit_inclinations = [psrlcfg.platforms.get_orbit_inclination(mission_id) for mission_id in mission_ids]
         is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
         is_land = lnd > 0
         has_data = nvw > 0

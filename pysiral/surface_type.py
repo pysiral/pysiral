@@ -11,7 +11,7 @@ from pysiral.config import RadarModes
 from pysiral.flag import FlagContainer, ANDCondition
 
 import numpy as np
-from treedict import TreeDict
+from attrdict import AttrDict
 from collections import OrderedDict
 
 
@@ -218,7 +218,7 @@ class SurfaceTypeClassifier(object):
         return self._surface_type
 
     def set_options(self, **opt_dict):
-        self._options = TreeDict.fromdict(opt_dict, expand_nested=True)
+        self._options = AttrDict(opt_dict)
 
     def add_classifiers(self, classifier, name):
         self._classifier.add_parameter(classifier, name)
@@ -258,7 +258,7 @@ class SurfaceTypeClassifier(object):
             # Obtain radar mode specific options
             # (with failsaife for older settings files)
             if radar_mode in self._options:
-                options = self._options[radar_mode]
+                options = getattr(self._options, radar_mode)
             else:
                 options = self._options
 
@@ -479,7 +479,7 @@ class SICCI2(SurfaceTypeClassifier):
         option_value = getattr(options, name)
 
         # Check if list
-        if type(option_value) is list:
+        if isinstance(option_value, (list, tuple)):
             return option_value[month_num-1]
         else:
             return option_value

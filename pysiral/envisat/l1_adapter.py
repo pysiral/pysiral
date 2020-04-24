@@ -10,8 +10,7 @@ import numpy as np
 from scipy import interpolate
 from cftime import num2pydate
 
-from pysiral.config import PYSIRAL_VERSION
-from pysiral.classifier import EnvisatWaveformParameter
+from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.envisat.functions import (get_envisat_window_delay, get_envisat_wfm_range)
 from pysiral.errorhandler import ErrorStatus
@@ -84,7 +83,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         """ Extract essential metadata information from SGDR file """
         info = self.l1.info
         sgdr = self.sgdr
-        info.set_attribute("pysiral_version", PYSIRAL_VERSION)
+        info.set_attribute("pysiral_version", psrlcfg.version)
         info.set_attribute("mission", "envisat")
         info.set_attribute("mission_data_version", sgdr.software_version)
         info.set_attribute("orbit", sgdr.absolute_orbit_number)

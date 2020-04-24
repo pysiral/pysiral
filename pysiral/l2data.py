@@ -5,8 +5,7 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
-from pysiral import __version__
-from pysiral.config import SENSOR_NAME_DICT, MISSION_NAME_DICT
+from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.logging import DefaultLoggingClass
@@ -284,8 +283,8 @@ class Level2Data(object):
             else:
                 return np.full(self.arrshape, np.nan)
 
-    def _get_attr_pysiral_version(self, target):
-        return __version__
+    def _get_attr_pysiral_version(self, *args):
+        return psrlcfg.version
 
     def _get_attr_mission_id(self, *args):
         # XXX: Deprecated
@@ -304,20 +303,20 @@ class Level2Data(object):
         return mission_id
 
     def _get_attr_source_mission_name(self, *args):
-        mission_name = MISSION_NAME_DICT[self.info.mission]
+        mission_name = psrlcfg.platforms.get_name(self.info.mission)
         if args[0] == "uppercase":
             mission_name = mission_name.upper()
         return mission_name
 
     def _get_attr_source_mission_sensor(self, *args):
-        mission_sensor = SENSOR_NAME_DICT[self.info.mission]
+        mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
         """ Same as source mission sensor, only a sanitized version for filenames """
-        mission_sensor = SENSOR_NAME_DICT[self.info.mission]
+        mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         for character in ["-"]:
             mission_sensor = mission_sensor.replace(character, "")
         if args[0] == "uppercase":
@@ -738,7 +737,7 @@ class Level2PContainer(DefaultLoggingClass):
             pass
 
         metadata.set_attribute("mission", mission_id)
-        mission_sensor = SENSOR_NAME_DICT[mission_id]
+        mission_sensor = psrlcfg.platforms.get_sensor(mission_id)
         metadata.set_attribute("mission_sensor", mission_sensor)
 
         # Construct level-2 object

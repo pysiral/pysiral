@@ -3,4 +3,4 @@ init:
 	python setup.py build_ext --inplace
 
 test:
-	nosetests tests
+	python -m unittest discover -s tests -t tests

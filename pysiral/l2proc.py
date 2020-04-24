@@ -5,9 +5,8 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-from pysiral import get_cls
-from pysiral.config import (td_branches, ConfigInfo, TimeRangeRequest,
-                            get_yaml_config, PYSIRAL_VERSION, HOSTNAME)
+from pysiral import get_cls, psrlcfg
+from pysiral.config import TimeRangeRequest, get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
@@ -21,15 +20,13 @@ from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
-from pysiral.path import filename_from_path
 
 from collections import deque, OrderedDict
 from datetime import datetime
 import numpy as np
 import time
 import sys
-import os
-
+from pathlib import Path
 
 class Level2Processor(DefaultLoggingClass):
 
@@ -65,7 +62,7 @@ class Level2Processor(DefaultLoggingClass):
         self._l1b_files = []
 
         # pysiral config
-        self._config = ConfigInfo()
+        self._config = psrlcfg
 
         # Processor Initialization Flag
         self._initialized = False
@@ -132,8 +129,10 @@ class Level2Processor(DefaultLoggingClass):
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        output_ids, output_defs = td_branches(self.l2def.output)
-        for output_id, output_def in zip(output_ids, output_defs):
+        if not "output" in self.l2def:
+            return
+        # TODO: This method is currently broken, as there is no output key in l2def
+        for output_id, output_def in list(self.l2def.output.items()):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
             output.set_base_export_path(output_def.path)
@@ -183,9 +182,8 @@ class Level2Processor(DefaultLoggingClass):
         for auxdata_dict in self.l2def.auxdata:
 
             # Extract the information
-            auxdata_type  = auxdata_dict.keys()[0]
+            auxdata_type = list(auxdata_dict.keys())[0]
             auxdata_def = auxdata_dict[auxdata_type]
-
 
             # Get options from l2 processor definition file
             # NOTE: These will intentionally override the default options defined in auxdata_def.yaml
@@ -234,7 +232,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
-            source_primary_filename = os.path.split(l1b_file)[-1]
+            source_primary_filename = Path(l1b_file).parts[-1]
 
             # Apply the geophysical range corrections on the waveform range
             # bins in the l1b data container
@@ -318,7 +316,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        filename = filename_from_path(l1b_file)
+        filename = Path(l1b_file).name
         self.log.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
@@ -343,7 +341,7 @@ class Level2Processor(DefaultLoggingClass):
         if "l1b_pre_filtering" not in self.l2def:
             return
         # Apply filters
-        names, filters = td_branches(self.l2def.l1b_pre_filtering)
+        names, filters = self.l2def.l1b_pre_filtering.items()
         for name, filter_def in zip(names, filters):
             self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
             l1bfilter = get_filter(filter_def.pyclass)
@@ -364,12 +362,15 @@ class Level2Processor(DefaultLoggingClass):
             verbose = False
 
         # Get and loop over data groups
-        data_groups, vardefs = td_branches(self.l2def.transfer_from_l1p)
-        for data_group, varlist in zip(data_groups, vardefs):
+        l1p_items = self.l2def.transfer_from_l1p.items()
+        for data_group, varlist in list(l1p_items):
+
+            if data_group == "options":
+                continue
 
             # Get and loop over variables per data group
-            var_names, vardefs = td_branches(varlist)
-            for var_name, vardef in zip(var_names, vardefs):
+            l1p_variables = varlist.items()
+            for var_name, vardef in list(l1p_variables):
 
                 # Get variable via standard getter method
                 # NOTE: Will return None if not found -> create an empty array
@@ -378,7 +379,7 @@ class Level2Processor(DefaultLoggingClass):
                     var = np.full((l2.n_records), np.nan)
 
                 # Add variable to l2 object as auxiliary variable
-                l2.set_auxiliary_parameter(vardef.aux_id, vardef.aux_name, var, None)
+                l2.set_auxiliary_parameter(vardef["aux_id"], vardef["aux_name"], var, None)
 
                 if verbose:
                     self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
@@ -434,13 +435,12 @@ class Level2Processor(DefaultLoggingClass):
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
         surface_type_validators = self.l2def.validator.surface_type
-        names, validators = td_branches(surface_type_validators)
         error_codes = ["l2proc_surface_type_discarded"]
         error_states = []
         error_messages = []
-        for name, validator_def in zip(names, validators):
-            validator = get_validator(validator_def.pyclass)
-            validator.set_options(**validator_def.options)
+        for name, validator_def in list(surface_type_validators.items()):
+            validator = get_validator(validator_def["pyclass"])
+            validator.set_options(**validator_def["options"])
             state, message = validator.validate(l2)
             error_states.append(state)
             error_messages.append(message)
@@ -452,9 +452,8 @@ class Level2Processor(DefaultLoggingClass):
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
-        surface_types, retracker_def = td_branches(self.l2def.retracker)
 
-        for i, surface_type in enumerate(surface_types):
+        for surface_type, retracker_def in list(self.l2def.retracker.items()):
 
             # Check if any waveforms need to be retracked for given
             # surface type
@@ -469,11 +468,11 @@ class Level2Processor(DefaultLoggingClass):
 
             # Retrieve the retracker assiciated with surface type
             # from the l2 settings
-            retracker = get_retracker_class(retracker_def[i].pyclass)
+            retracker = get_retracker_class(retracker_def["pyclass"])
 
             # Set options (if any)
-            if retracker_def[i].options is not None:
-                retracker.set_options(**retracker_def[i].options)
+            if retracker_def["options"] is not None:
+                retracker.set_options(**retracker_def["options"])
 
             # set subset of waveforms
             retracker.set_indices(surface_type_flag.indices)
@@ -494,7 +493,7 @@ class Level2Processor(DefaultLoggingClass):
             if retracker.error_flag.num > 0:
                 l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
             self.log.info("- Retrack class %s with %s in %.3f seconds" % (
-                surface_type, retracker_def[i].pyclass,
+                surface_type, retracker_def["pyclass"],
                 time.time()-timestamp))
 
         # Error handling not yet implemented, return dummy values
@@ -515,7 +514,8 @@ class Level2Processor(DefaultLoggingClass):
         """ Compute radar freeboard and its uncertainty """
 
         afrbalg = get_frb_algorithm(self.l2def.afrb.pyclass)
-        afrbalg.set_options(**self.l2def.rfrb.options)
+        if self.l2def.afrb.options is not None:
+            afrbalg.set_options(**self.l2def.afrb.options)
         afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
 
         # Check and return error status and codes
@@ -570,18 +570,16 @@ class Level2Processor(DefaultLoggingClass):
         - setting the surface type classification to invalid
         """
 
-        # Extract filters from settings structure
-        freeboard_filters = self.l2def.filter.freeboard
-        names, filters = td_branches(freeboard_filters)
+        #TODO: Transform this method into optional processing item
 
         # Loop over freeboard filters
-        for name, filter_def in zip(names, filters):
+        for name, filter_def in list(self.l2def.filter.freeboard.items()):
 
             # Get corresponding class name in pysiral.filter and transfer options
             # XXX: This should be rewritten as (e.g.)
             #   `frbfilter = VariableFilter(filter_def.pyclass, **filter_def.options)`
-            frbfilter = get_filter(filter_def.pyclass)
-            frbfilter.set_options(**filter_def.options)
+            frbfilter = get_filter(filter_def["pyclass"])
+            frbfilter.set_options(**filter_def["options"])
 
             # XXX: This is a temporary fix of an error in the algorithm
             #
@@ -596,8 +594,8 @@ class Level2Processor(DefaultLoggingClass):
             # the filter target (`root.filter.freeboard.frb_valid_range.filter_target`).
             # The default option is the wrong one only for consistency reasons.
             filter_target = "afrb"
-            if filter_def.options.has_key("filter_target"):
-                filter_target = filter_def.options.filter_target
+            if "filter_target" in filter_def["options"]:
+                filter_target = filter_def["options"]["filter_target"]
 
             # Check if action is required
             frbfilter.apply_filter(l2, filter_target)
@@ -606,7 +604,7 @@ class Level2Processor(DefaultLoggingClass):
 
             # Logging
             self.log.info("- Filter message: %s has flagged %g waveforms" % (
-                filter_def.pyclass, frbfilter.flag.num))
+                filter_def["pyclass"], frbfilter.flag.num))
 
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
@@ -637,16 +635,14 @@ class Level2Processor(DefaultLoggingClass):
             l2.set_auxiliary_parameter("idens", "sea_ice_density", ice_dens, ice_dens_unc)
 
     def _apply_thickness_filter(self, l2):
-        thickness_filters = self.l2def.filter.thickness
-        names, filters = td_branches(thickness_filters)
-        for name, filter_def in zip(names, filters):
-            sitfilter = get_filter(filter_def.pyclass)
-            sitfilter.set_options(**filter_def.options)
+        for name, filter_def in list(self.l2def.filter.thickness.items()):
+            sitfilter = get_filter(filter_def["pyclass"])
+            sitfilter.set_options(**filter_def["options"])
             sitfilter.apply_filter(l2, "sit")
             if sitfilter.flag.num == 0:
                 continue
             self.log.info("- Filter message: %s has flagged %g waveforms" % (
-                filter_def.pyclass, sitfilter.flag.num))
+                filter_def["pyclass"], sitfilter.flag.num))
             # Set surface type flag (contains invalid)
             l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
             # Remove invalid thickness values
@@ -675,7 +671,7 @@ class Level2Processor(DefaultLoggingClass):
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
-            self.log.info("- Write %s data file: %s" % (output_handler.id, output.export_filename))
+            self.log.info("- Write {} data file: {}".format(output_handler.id, output.export_filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
@@ -707,8 +703,8 @@ class Level2ProductDefinition(DefaultLoggingClass):
     def _parse_l2_settings(self):
         try:
             self._l2def = get_yaml_config(self._l2_settings_file)
-        except Exception, msg:
-            self.error.add_error("invalid-l2-settings", msg)
+        except Exception as ex:
+            self.error.add_error("invalid-l2-settings", str(ex))
             self.error.raise_on_error()
 
     @property
@@ -759,7 +755,7 @@ class L2ProcessorReport(DefaultLoggingClass):
         """ Write a summary file to the defined export directory """
 
         # Create a simple filename
-        filename = os.path.join(directory, "pysiral-l2proc-summary.txt")
+        filename = Path(directory) / "pysiral-l2proc-summary.txt"
         self.log.info("Exporting summary report: %s" % filename)
 
         lfmt = "  %-16s : %s\n"
@@ -777,9 +773,9 @@ class L2ProcessorReport(DefaultLoggingClass):
             fhandle.write(lfmt % ("warnings", str(self.n_warnings)))
 
             fhandle.write("\n# Processor & Local Machine Settings\n\n")
-            fhandle.write(lfmt % ("pysiral version", PYSIRAL_VERSION))
+            fhandle.write(lfmt % ("pysiral version", psrlcfg.version))
             fhandle.write(lfmt % ("python version", sys.version))
-            fhandle.write(lfmt % ("hostname", HOSTNAME))
+            fhandle.write(lfmt % ("hostname", psrlcfg.hostname))
 
             # More info on this specific run
             fhandle.write(lfmt % ("data period", self.data_period_str))
@@ -801,7 +797,7 @@ class L2ProcessorReport(DefaultLoggingClass):
                     n_discarded_files, error_code, error_description)
                 fhandle.write(msg)
                 for discarded_file in self.error_counter[error_code]:
-                    fn = filename_from_path(discarded_file)
+                    fn = Path(discarded_file).name
                     fhandle.write("  * %s\n" % fn)
 
     def clean_up(self):

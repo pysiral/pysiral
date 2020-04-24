@@ -5,16 +5,17 @@ Created on Fri Aug 11 17:07:02 2017
 @author: shendric
 """
 
-from pysiral.config import ConfigInfo
+
+from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l2data import Level2PContainer, L2iNCFileImport
 from pysiral.logging import DefaultLoggingClass
 from pysiral.output import Level2Output, OutputHandlerBase
-from pysiral.path import filename_from_path
 
 from collections import OrderedDict
-import os
-import sys
+
+from pathlib import Path
+
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -43,9 +44,9 @@ class Level2PreProcessor(DefaultLoggingClass):
         for l2i_file in l2i_files:
             try:
                 l2i = L2iNCFileImport(l2i_file)
-            except Exception, errmsg: 
+            except Exception as ex:
                 msg = "Error (%s) in l2i file: %s"
-                msg = msg % (errmsg, filename_from_path(l2i_file))
+                msg = msg % (ex, Path(l2i_file).name)
                 self.log.error(msg)
                 continue
             l2p.append_l2i(l2i)
@@ -170,13 +171,12 @@ class Level2POutputHandler(OutputHandlerBase):
         """ Get main product directory from local_machine_def, add mandatory
         runtag subdirectory, optional second subdirectory for overwrite
         protection and product level id subfolder"""
-        basedir = self.l2i_product_dir
-        basedir, l2i_subdir = os.path.split(basedir)
-        basedir = os.path.join(basedir, self.product_level_subfolder)
+        basedir = Path(self.l2i_product_dir).parent
+        basedir = basedir / self.product_level_subfolder
         if self.subdirectory is not None:
-            basedir = os.path.join(basedir, self.subdirectory)
+            basedir = basedir / self.subdirectory
         if self.overwrite_protection:
-            basedir = os.path.join(basedir, self.now_directory)
+            basedir = basedir / self.now_directory
         self._set_basedir(basedir)
 
     @property
@@ -189,6 +189,5 @@ class Level2POutputHandler(OutputHandlerBase):
 
     @property
     def default_output_def_filename(self):
-        pysiral_config = ConfigInfo()
-        local_settings_path = pysiral_config.pysiral_local_path
-        return os.path.join(local_settings_path, *self.default_file_location)
+        local_settings_path = psrlcfg.pysiral_local_path
+        return Path(local_settings_path) / Path(*self.default_file_location)

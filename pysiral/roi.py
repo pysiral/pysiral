@@ -6,7 +6,7 @@ Created on Mon Jul 27 13:02:45 2015
 """
 
 from pyproj import Proj
-from treedict import TreeDict
+from attrdict import AttrDict
 import numpy as np
 
 
@@ -19,7 +19,7 @@ class ROIBase(object):
     def set_options(self, **opt_dict):
         options = self.default
         options.update(opt_dict)
-        self._options = TreeDict.fromdict(options, expand_nested=True)
+        self._options = AttrDict(options)
 
     def get_lonlatcrnr(self, close=False):
         try:

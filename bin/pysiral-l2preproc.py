@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
-                            TimeRangeRequest)
-from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import L2iDataHandler
-from pysiral.l2preproc import (Level2PreProcessor,
-                               Level2PreProcProductDefinition)
-from pysiral.logging import DefaultLoggingClass
-
-from datetime import timedelta
 import argparse
 import time
 import sys
-import os
+from pathlib import Path
+from datetime import timedelta
+
+from pysiral import psrlcfg
+from pysiral.config import DefaultCommandLineArguments, TimeRangeRequest
+from pysiral.errorhandler import ErrorStatus
+from pysiral.datahandler import L2iDataHandler
+from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
+from pysiral.logging import DefaultLoggingClass
 
 
 def pysiral_l2preproc():
@@ -97,7 +96,6 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level2PreProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = ConfigInfo()
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -117,7 +115,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
                 "l2p files for the requested period\n" + \
                 "(Note: use --no-critical-prompt to skip confirmation)\n" + \
                 "Enter \"YES\" to confirm and continue: "
-            result = raw_input(message)
+            result = input(message)
 
             if result != "YES":
                 sys.exit(1)
@@ -187,8 +185,8 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2i_product_dir(self):
         l2i_product_dir = self._args.l2i_product_dir
-        if os.path.isdir(l2i_product_dir):
-            return os.path.normpath(l2i_product_dir)
+        if Path(l2i_product_dir).is_dir():
+            return Path(l2i_product_dir).resolve(strict=False)
         else:
             msg = "Invalid l2i product dir: %s" % str(l2i_product_dir)
             self.error.add_error("invalid-l2i-product-dir", msg)
@@ -197,11 +195,11 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2p_output(self):
         l2p_output = self._args.l2p_output
-        filename = self.pysiral_config.get_settings_file("output", "l2p", l2p_output)
+        filename = psrlcfg.get_settings_file("output", "l2p", l2p_output)
         if filename is None:
             msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2p_output_ids = self.pysiral_config.get_setting_ids("output", "l2p")
+            l2p_output_ids = psrlcfg.get_setting_ids("output", "l2p")
             for l2p_output_id in l2p_output_ids:
                 msg = msg + "    - " + l2p_output_id+"\n"
             self.error.add_error("invalid-l2p-outputdef", msg)

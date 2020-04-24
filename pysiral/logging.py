@@ -3,6 +3,9 @@
 Created on Thu Mar 31 21:25:26 2016
 
 @author: Stefan
+
+TODO: Move functionality to __init__
+
 """
 
 from logbook import Logger, StreamHandler

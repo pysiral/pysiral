@@ -5,7 +5,7 @@ Created on Mon Apr 25 17:15:39 2016
 @author: shendric
 """
 
-from pysiral.config import options_from_dictionary
+from attrdict import AttrDict
 from pysiral.errorhandler import ErrorStatus
 
 import numpy as np
@@ -17,7 +17,7 @@ class L2FreeboardAlgorithmBaseClass(object):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def get_freeboard(self, l1b, l2):
         freeboard, freeboard_uncertainty = self._get_freeboard(l1b, l2)
@@ -86,7 +86,7 @@ class L2RadarFreeboardAlgorithmBaseClass(object):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
-        self._options = options_from_dictionary(**opt_dict)
+        self._options = AttrDict(**opt_dict)
 
     def get_radar_freeboard(self, l1b, l2):
         rfrb, rfrb_unc = self._get_radar_freeboard(l1b, l2)

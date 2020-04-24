@@ -100,7 +100,7 @@ from netCDF4 import Dataset, date2num
 from collections import OrderedDict
 import numpy as np
 import copy
-import os
+from pathlib import Path
 
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
@@ -406,66 +406,6 @@ class Level1bData(DefaultLoggingClass):
         for radar_mode_flag in radar_mode_flag_list:
             radar_mode_list.append(radar_modes.name(radar_mode_flag))
         return ";".join(radar_mode_list)
-
-
-class L1bConstructor(Level1bData):
-    """
-    Class to be used to construct a L1b data object from any mission
-    L1b data files
-    """
-
-    # TODO: should be coming from config file
-    _SUPPORTED_MISSION_LIST = ["cryosat2", "envisat", "ers1", "ers2",
-                               "sentinel3a", "icesat"]
-
-    def __init__(self, config, header_only=False):
-        super(L1bConstructor, self).__init__()
-        self._config = config
-        self._mission = None
-        self._mission_options = None
-        self._filename = None
-        self._header_only = header_only
-        self.error_status = False
-
-    @property
-    def mission(self):
-        return self._mission
-
-    @mission.setter
-    def mission(self, value):
-        if value in self._SUPPORTED_MISSION_LIST:
-            self._mission = value
-        else:
-            # XXX: An ErrorHandler is needed here
-            raise ValueError("Unsupported mission type")
-        # Get mission default options
-        self._mission_options = self._config.get_mission_defaults(value)
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        if os.path.isfile(value):
-            self._filename = value
-        else:
-            # XXX: An ErrorHandler is needed here
-            raise IOError("Not a valid path")
-
-    def set_mission_options(self, **kwargs):
-        self._mission_options = kwargs
-
-    def construct(self):
-        """ Parse the file and construct the L1bData object """
-        adapter = get_l1b_adapter(self._mission)(self._config)
-        adapter.filename = self.filename
-        adapter.construct_l1b(self)
-
-    def get_header_info(self):
-        adapter = get_l1b_adapter(self._mission)(self._config)
-        adapter.filename = self.filename
-        adapter.construct_l1b(self, header_only=True)
 
 
 class L1bdataNCFile(Level1bData):
@@ -1094,26 +1034,3 @@ class L1bWaveforms(object):
     def _get_wfm_shape(self, index):
         shape = np.shape(self._power)
         return shape[index]
-
-
-def get_l1b_adapter(mission):
-    """ Select and returns the correct IO Adapter for the specified mission """
-
-    from pysiral.io_adapter import (
-        L1bAdapterCryoSat, L1bAdapterEnvisat, L1bAdapterERS1,
-        L1bAdapterERS2, L1bAdapterSentinel3A, L1bAdapterICESat)
-
-    if mission == "cryosat2":
-        return L1bAdapterCryoSat
-    elif mission == "envisat":
-        return L1bAdapterEnvisat
-    elif mission == "ers1":
-        return L1bAdapterERS1
-    elif mission == "ers2":
-        return L1bAdapterERS2
-    elif mission == "sentinel3a":
-        return L1bAdapterSentinel3A
-    elif mission == "icesat":
-        return L1bAdapterICESat
-    else:
-        raise ValueError("Unknown mission id: %s" % mission)
