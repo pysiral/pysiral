@@ -710,7 +710,25 @@ class Level3Output(NCDataFile):
         var.units = self.time_def.units
         var[:] = time_bnds
 
-    def _add_grid_variables(self):
+    def _add_grid_mapping_variables(self):
+        """
+        This method adds a variable to the netCDF file that contains the grid definition and is named
+        after the projection. E.g:
+
+        byte Lambert_Azimuthal_Grid;
+            :latitude_of_projection_origin = 90.0; // double
+            :longitude_of_projection_origin = 0.0; // double
+            :proj4_string = "+proj=laea +lon_0=0 +datum=WGS84 +ellps=WGS84 +lat_0=90.0";
+            :semi_major_axis = 6378137.0; // double
+            :false_easting = 0.0; // double
+            :false_northing = 0.0; // double
+            :grid_mapping_name = "lambert_azimuthal_equal_area";
+            :inverse_flattening = 298.257223563; // double
+
+        The information is taken 1:1 from the `netcdf_grid_description` entry in the grid definition file.
+
+        :return:
+        """
 
         rgrp = self._rootgrp
 
