@@ -199,6 +199,7 @@ class L2iDataHandler(DefaultLoggingClass):
         #      available
         day_search = self.get_l2i_search_str(year=day_dt.year, month=day_dt.month, day=day_dt.day)
         l2i_files = Path(lookup_directory).glob(day_search)
+        l2i_files = list(l2i_files)
 
         # Check if day is the first day of the month
         # yes -> check last file of previous month which might have data

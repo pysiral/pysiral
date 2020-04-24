@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.config import (ConfigInfo, DefaultCommandLineArguments,
-                            TimeRangeRequest)
-from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import L2iDataHandler
-from pysiral.l2preproc import (Level2PreProcessor,
-                               Level2PreProcProductDefinition)
-from pysiral.logging import DefaultLoggingClass
-
-from datetime import timedelta
 import argparse
 import time
 import sys
 from pathlib import Path
+from datetime import timedelta
+
+from pysiral import psrlcfg
+from pysiral.config import DefaultCommandLineArguments, TimeRangeRequest
+from pysiral.errorhandler import ErrorStatus
+from pysiral.datahandler import L2iDataHandler
+from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
+from pysiral.logging import DefaultLoggingClass
 
 
 def pysiral_l2preproc():
@@ -97,7 +96,6 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level2PreProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = ConfigInfo()
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -197,11 +195,11 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def l2p_output(self):
         l2p_output = self._args.l2p_output
-        filename = self.pysiral_config.get_settings_file("output", "l2p", l2p_output)
+        filename = psrlcfg.get_settings_file("output", "l2p", l2p_output)
         if filename is None:
             msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
             msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2p_output_ids = self.pysiral_config.get_setting_ids("output", "l2p")
+            l2p_output_ids = psrlcfg.get_setting_ids("output", "l2p")
             for l2p_output_id in l2p_output_ids:
                 msg = msg + "    - " + l2p_output_id+"\n"
             self.error.add_error("invalid-l2p-outputdef", msg)
