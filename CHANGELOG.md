@@ -1,5 +1,40 @@
 # History of changes
 
+## Version 0.8.0 (24. April 2020)
+
+### Changes
+- [python3] pysiral now supports python 3 (and python 3 only)
+- [python3] replaced module `treedict` by `attrdict`
+- [python3] replaced module `os` by `pathlib`
+- [python3] various syntax changes with change to python 3
+- [config] all configuration are no read once at the main import of the pysiral package and are accessible via the global variable pysiral.psrlcfg (replaces pysiral.config.ConfigInfo)
+- [config] Various changes to the internal handling of auxiliary and altimeter platform metadata
+- [config] Moved global variables in `pysiral.config` to config file
+- [l1bpreproc] The old l1bpreproc Level-1 pre-processor has been removed. 
+- [test] Expanded tests of basic pysiral functionality (configuration management)
+
+### Clean-up
+- [pysiral] package wide removal of unused code bits
+- [path] Removed `path` module
+- [io_adapter] Removed `io_adapter` module
+- [esa] Removed `esa` module
+- [cryosat2] Removed modules associated with l1bpreproc
+- [envisat] Removed modules associated with l1bpreproc
+- [ers] Removed modules associated with l1bpreproc
+- [icesat] Removed `icesat` module
+- [legacy] Removed `legacy` module
+- [maptools] Removed `maptools` module
+- [orbit] Removed `orbit` module
+- [l1bpreproc] Removed `l1bpreproc` module
+
+### New Features
+- [auxdata] Added functions to query all auxiliary data classes
+- 
+
+### Bugfix
+- [l3proc] flipping of y-coordinate of Level-3 output was handled badly for multiple outputs
+ 
+ 
 ## Version 0.7.3 (3. April 2020)
 
 **Bugfix**
