@@ -30,11 +30,18 @@ extensions = [
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
-
 setup(
     name='pysiral',
     version=version,
     description='python sea ice radar altimetry processing library',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering :: Physics',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.7',
+    ],
     long_description=readme,
     author='Stefan Hendricks',
     author_email='stefan.hendricks@awi.de',
@@ -43,12 +50,12 @@ setup(
     install_requires=requirements,
     packages=find_packages(exclude=('tests', 'docs')),
     include_package_data=True,
-    scripts=['bin/psrl_update_userhome_cfg.py', 'bin/pysiral_cfg_setdir.py',
+    scripts=['bin/psrl_update_userhome_cfg.py',
+             'bin/pysiral_cfg_setdir.py',
              'bin/pysiral-l1preproc.py',
-             'bin/pysiral-l1bpreproc.py', 'bin/pysiral-l1bpreproc.bat',
-             'bin/pysiral-l2proc.py', 'bin/pysiral-l2proc.bat',
-             'bin/pysiral-l2preproc.py', 'bin/pysiral-l2preproc.bat',
-             'bin/pysiral-l3proc.py', 'bin/pysiral-l3proc.bat'],
+             'bin/pysiral-l2proc.py',
+             'bin/pysiral-l2preproc.py',
+             'bin/pysiral-l3proc.py' ],
     cmdclass={'build_ext': build_ext},
     ext_modules=cythonize(extensions),
     include_dirs=[numpy.get_include()]
