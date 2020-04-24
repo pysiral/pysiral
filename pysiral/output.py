@@ -35,10 +35,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         """ Fill an template string with information of a dataset
         object (in this case Level2Data) """
         attributes = self.get_template_attrs(template)
-        try:
-            result = str(template.encode("utf-8"))
-        except AttributeError:
-            result = str(template)
+        result = str(template)
         for attribute in attributes:
             attribute_name, option, placeholder = attribute
             attribute = dataset.get_attribute(attribute_name, *option)

@@ -129,8 +129,10 @@ class Level2Processor(DefaultLoggingClass):
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        output_ids, output_defs = self.l2def.output.items()
-        for output_id, output_def in zip(output_ids, output_defs):
+        if not "output" in self.l2def:
+            return
+        # TODO: This method is currently broken, as there is no output key in l2def
+        for output_id, output_def in list(self.l2def.output.items()):
             output = get_output_class(output_def.pyclass)
             output.set_options(**output_def.options)
             output.set_base_export_path(output_def.path)
@@ -362,6 +364,9 @@ class Level2Processor(DefaultLoggingClass):
         # Get and loop over data groups
         l1p_items = self.l2def.transfer_from_l1p.items()
         for data_group, varlist in list(l1p_items):
+
+            if data_group == "options":
+                continue
 
             # Get and loop over variables per data group
             l1p_variables = varlist.items()
@@ -666,7 +671,7 @@ class Level2Processor(DefaultLoggingClass):
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
-            self.log.info("- Write %s data file: %s" % (output_handler.id, output.export_filename))
+            self.log.info("- Write {} data file: {}".format(output_handler.id, output.export_filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
