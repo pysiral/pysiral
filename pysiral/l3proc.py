@@ -296,6 +296,9 @@ class L3DataGrid(DefaultLoggingClass):
         self._period = period
         self._external_masks = {}
 
+        # Properties
+        self.yc_is_flipped = False
+
         # Check if any output definition requires an unlimited dimension
         # XXX: This is an unsatisfying solution resulting from the current solution that the L3DataGrid
         #      provides fix dimensions for potentially more than one output handler. This need

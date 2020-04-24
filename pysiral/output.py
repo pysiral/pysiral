@@ -667,7 +667,8 @@ class Level3Output(NCDataFile):
         self._export_content()
 
     def _preprocess_data(self):
-        if self.output_handler.flip_yc:
+        if self.output_handler.flip_yc and not self.data.yc_is_flipped:
+            self.data.yc_is_flipped = True
             for name, attr_dict in self.output_handler.variable_def:
                 if "var_source_name" in attr_dict.keys():
                     par_name = attr_dict["var_source_name"]
