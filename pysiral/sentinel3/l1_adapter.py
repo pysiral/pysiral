@@ -118,7 +118,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         Reads the XML header file of a Sentinel 3 L1b Data set
         and returns the contents as an OrderedDict
         """
-        with open(filename) as fd:
+        with open(str(filename)) as fd:
             content_odereddict = xmltodict.parse(fd.read())
         return content_odereddict[u'xfdu:XFDU']
 

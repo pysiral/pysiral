@@ -771,7 +771,7 @@ def get_yaml_config(filename, output="attrdict"):
             "treedict" (default): Returns a treedict object
             "dict": Returns a python dictionary
     """
-    with open(filename, 'r') as fileobj:
+    with open(str(filename), 'r') as fileobj:
         content_dict = yaml.safe_load(fileobj)
 
     if output == "attrdict":

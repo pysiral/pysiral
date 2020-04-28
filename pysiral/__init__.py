@@ -56,7 +56,7 @@ class _MissionDefinitionCatalogue(object):
 
         # Read the file and store the content
         self._content = None
-        with open(self._filepath) as fh:
+        with open(str(self._filepath)) as fh:
             self._content = AttrDict(yaml.safe_load(fh))
 
     def get_platform_info(self, platform_id):
@@ -188,7 +188,7 @@ class _AuxdataCatalogue(object):
         self.filepath = filepath
 
         # Read contents
-        with open(self.filepath) as fh:
+        with open(str(self.filepath)) as fh:
             self._yaml_content = AttrDict(**yaml.safe_load(fh))
 
         # Create a catalogue of the content
@@ -338,7 +338,7 @@ class _PysiralPackageConfiguration(object):
         # Read pysiral config location indicator file
         cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
         try:
-            with open(cfg_loc_file) as f:
+            with open(str(cfg_loc_file)) as f:
                 self._path["config_target"] = f.read().strip()
         except IOError:
             sys.exit("Cannot find PYSIRAL-CFG-LOC file in package (expected: %s)" % cfg_loc_file)
@@ -416,7 +416,7 @@ class _PysiralPackageConfiguration(object):
         :param filename: path to the yaml file
         :return: attrdict.AttrDict
         """
-        with open(filename) as fileobj:
+        with open(str(filename)) as fileobj:
             settings = AttrDict(yaml.safe_load(fileobj))
         return settings
 

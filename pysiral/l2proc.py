@@ -760,7 +760,7 @@ class L2ProcessorReport(DefaultLoggingClass):
 
         lfmt = "  %-16s : %s\n"
         current_time = str(datetime.now()).split(".")[0]
-        with open(filename, "w") as fhandle:
+        with open(str(filename), "w") as fhandle:
 
             # Write infos on settings, host, os, ....
             fhandle.write("# pysiral Level2Processor Summary\n\n")

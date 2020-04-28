@@ -64,7 +64,7 @@ class UTCTAIConverter(object):
         req = urllib.request(self.url)
         response = urllib.urlopen(req, timeout=60)
         content = response.readlines()
-        with open(self.local_ls_ietf_definition, "w") as fhandle:
+        with open(str(self.local_ls_ietf_definition), "w") as fhandle:
             for line in content:
                 fhandle.write(line)
 
@@ -79,7 +79,7 @@ class UTCTAIConverter(object):
             self.update_definition()
 
         # Read from local file
-        with open(self.local_ls_ietf_definition, "r") as fhandle:
+        with open(str(self.local_ls_ietf_definition), "r") as fhandle:
             content = fhandle.readlines()
 
         # Parse content

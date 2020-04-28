@@ -148,6 +148,6 @@ def parse_sentinel3_l1b_xml_header(filename):
     and returns the contents as an OrderedDict
     """
     import xmltodict
-    with open(filename) as fd:
+    with open(str(filename)) as fd:
         content_odereddict = xmltodict.parse(fd.read())
     return content_odereddict[u'xfdu:XFDU']

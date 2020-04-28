@@ -194,7 +194,7 @@ def parse_cryosat_l1b_xml_header(filename):
     Reads the XML header file of a CryoSat-2 L1b Data set
     and returns the contents as an OrderedDict
     """
-    with open(filename) as fd:
+    with open(str(filename)) as fd:
         content_odereddict = xmltodict.parse(fd.read())
     return content_odereddict[u'Earth_Explorer_Header']
 

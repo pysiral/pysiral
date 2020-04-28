@@ -226,7 +226,7 @@ class MaskLandSea2Min(MaskSourceBase):
         n_bytes_header = 1392
 
         # Read the content of the landmask in a string
-        with open(self.mask_filepath, "rb") as fh:
+        with open(str(self.mask_filepath), "rb") as fh:
             # Skip header
             fh.seek(n_bytes_header)
             content = fh.read(xdim*ydim)
