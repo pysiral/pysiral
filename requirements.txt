@@ -16,6 +16,7 @@ pykdtree
 pyproj
 pyresample
 pyshp
+python-dateutil
 pyyaml
 scipy
 xmltodict
