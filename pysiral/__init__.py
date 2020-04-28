@@ -8,10 +8,7 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "clas
            "logging", "mask", "output", "proj", "retracker", "roi",
            "sit", "surface_type", "validator", "waveform"]
 
-
 import warnings
-warnings.filterwarnings("ignore")
-
 import sys
 import yaml
 import socket
@@ -20,10 +17,12 @@ from datetime import datetime
 from pathlib import Path
 from attrdict import AttrDict
 from distutils import log, dir_util
-log.set_verbosity(log.INFO)
-log.set_threshold(log.INFO)
 import importlib
 import pkgutil
+
+warnings.filterwarnings("ignore")
+log.set_verbosity(log.INFO)
+log.set_threshold(log.INFO)
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
@@ -70,7 +69,6 @@ class _MissionDefinitionCatalogue(object):
             return platform_info
         else:
             return AttrDict(**platform_info)
-
 
     def get_name(self, platform_id):
         """
@@ -364,11 +362,11 @@ class _PysiralPackageConfiguration(object):
         # -> must be populated with content from the package config dir
         if not config_path.is_dir():
             print("Creating pysiral config directory: %s" % config_path)
-            dir_util.copy_tree(self.path.package_config_path, config_path, verbose=1)
+            dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml.template"
             target_filename = config_path / "local_machine_def.yaml"
-            shutil.copy(template_filename, target_filename)
+            shutil.copy(str(template_filename), target_filename)
 
     def _read_config_files(self):
         """
