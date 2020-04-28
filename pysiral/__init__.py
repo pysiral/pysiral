@@ -367,7 +367,7 @@ class _PysiralPackageConfiguration(object):
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml.template"
             target_filename = config_path / "local_machine_def.yaml"
-            shutil.copy(str(template_filename), target_filename)
+            shutil.copy(str(template_filename), str(target_filename))
 
     def _read_config_files(self):
         """
