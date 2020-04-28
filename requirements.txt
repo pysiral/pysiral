@@ -11,6 +11,7 @@ isodate
 matplotlib
 netCDF4
 numpy
+PIL
 parse
 pykdtree
 pyproj
