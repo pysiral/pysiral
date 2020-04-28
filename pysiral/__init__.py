@@ -26,8 +26,9 @@ log.set_threshold(log.INFO)
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
+VERSION_FILE_PATH = PACKAGE_ROOT_DIR / "VERSION"
 try:
-    version_file = open(PACKAGE_ROOT_DIR / "VERSION")
+    version_file = open(str(VERSION_FILE_PATH))
     with version_file as f:
         version = f.read().strip()
 except IOError:
