@@ -4,6 +4,7 @@
 
 See [webpage at ReadTheDocs.org](https://pysiral.readthedocs.io/en/latest/#) 
 
+![Python package](https://github.com/shendric/pysiral/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pysiral/badge/?version=latest)](https://pysiral.readthedocs.io/en/latest/?badge=latest)
 
 ### Requirements
