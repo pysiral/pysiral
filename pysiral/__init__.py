@@ -32,7 +32,7 @@ try:
     with version_file as f:
         version = f.read().strip()
 except IOError:
-    sys.exit("Cannot find VERSION file in package (expected: %s" % version_file)
+    sys.exit("Cannot find VERSION file in package (expected: %s" % (PACKAGE_ROOT_DIR / "VERSION"))
 
 # Package Metadata
 __version__ = version
