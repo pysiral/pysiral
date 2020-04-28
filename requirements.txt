@@ -2,6 +2,7 @@ astropy
 attrdict
 bottleneck
 cftime
+cython
 dateutils
 geopy
 h5py
