@@ -5,8 +5,16 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
+from collections import deque, OrderedDict
+from datetime import datetime
+import numpy as np
+import time
+import sys
+from dateperiods import DatePeriod
+from pathlib import Path
+
 from pysiral import get_cls, psrlcfg
-from pysiral.config import TimeRangeRequest, get_yaml_config
+from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
@@ -21,12 +29,6 @@ from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
 from pysiral.sit import get_sit_algorithm
 
-from collections import deque, OrderedDict
-from datetime import datetime
-import numpy as np
-import time
-import sys
-from pathlib import Path
 
 class Level2Processor(DefaultLoggingClass):
 
@@ -245,8 +247,7 @@ class Level2Processor(DefaultLoggingClass):
             # Initialize the orbit level-2 data container
             # TODO: replace by proper product metadata transfer
             try:
-                time_range = TimeRangeRequest(l1b.info.start_time, l1b.info.stop_time, period="custom")
-                period = time_range.iterations[0]
+                period = DatePeriod(l1b.info.start_time, l1b.info.stop_time)
             except SystemExit:
                 msg = "Computation of data period caused exception"
                 self.log.warning("[invalid-l1b]", msg)

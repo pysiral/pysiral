@@ -6,7 +6,7 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "clas
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid",
            "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "logging", "mask", "output", "proj", "retracker", "roi",
-           "sit", "surface_type", "validator", "waveform"]
+           "sit", "surface_type", "validator", "waveform", "psrlcfg"]
 
 import warnings
 import sys
@@ -14,6 +14,7 @@ import yaml
 import socket
 import shutil
 from datetime import datetime
+from dateperiods import DatePeriod
 from pathlib import Path
 from attrdict import AttrDict
 from distutils import log, dir_util
@@ -424,6 +425,15 @@ class _PysiralPackageConfiguration(object):
         lookup_directory = self.get_local_setting_path(type, data_level)
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
         return ids
+
+    def get_platform_period(self, platform_id):
+        """
+        Get a period definition for a given platform ID
+        :param platform_id:
+        :return: dateperiods.DatePeriod
+        """
+        tcs, tce = self.platforms.get_time_coverage(platform_id)
+        return DatePeriod(tcs, tce)
 
     def get_processor_definition_ids(self, processor_level):
         """

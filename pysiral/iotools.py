@@ -8,18 +8,19 @@ TODO: Evaluate usefulness (or move to internal module)
 
 """
 
+import glob
+import tempfile
+import uuid
+import numpy as np
+
+from dateperiods import DatePeriod
+
 from pysiral import psrlcfg
-from pysiral.config import TimeRangeIteration
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 from cftime import num2pydate
 from netCDF4 import Dataset
 from pathlib import Path
-
-import glob
-import tempfile
-import uuid
-import numpy as np
 
 
 #TODO: Replace by xarray
@@ -164,18 +165,14 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
         config = psrlcfg
 
     # Validate time_range (needs to be of type TimeRangeIteration)
-    try:
-        time_range_is_correct_object = time_range.base_period == "monthly"
-    except:
-        time_range_is_correct_object = False
-    if not time_range_is_correct_object:
+    if not isinstance(time_range, DatePeriod):
         error = ErrorStatus()
-        msg = "Invalid type of time_range, required: %s, was %s" % (type(time_range), type(TimeRangeIteration))
+        msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
         error.add_error("invalid-timerange-type", msg)
         error.raise_on_error()
 
     # 1) get list of all files for monthly folders
-    yyyy, mm = "%04g" % time_range.start.year, "%02g" % time_range.start.month
+    yyyy, mm = "%04g" % time_range.tcs.year, "%02g" % time_range.tcs.month
 
     repo_branch = config.local_machine.l1b_repository[mission_id][version]
     directory = Path(repo_branch["l1p"]) / hemisphere / yyyy / mm
@@ -197,7 +194,7 @@ def l1bdata_in_trange(fn, tr):
     fnattr = PysiralOutputFilenaming()
     fnattr.parse_filename(fn)
     # Compute overlap between two start/stop pairs
-    is_overlap = fnattr.start <= tr.stop and fnattr.stop >= tr.start
+    is_overlap = fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
     return is_overlap
 
 
