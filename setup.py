@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import re
+
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 
@@ -30,6 +32,14 @@ extensions = [
 # Package requirements
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
+
+# NOTE: links to git repositories cause the built_ext process to crash.
+# -> Thus we sanitize the requirements string here.
+for i, requirement in enumerate(requirements):
+    m = re.search(r'/(.+?)\.git', requirement)
+    if m:
+        package_name = m.group(1).split("/")[-1]
+        requirements[i] = package_name
 
 setup(
     name='pysiral',
