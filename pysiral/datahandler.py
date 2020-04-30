@@ -175,7 +175,9 @@ class L2iDataHandler(DefaultLoggingClass):
         """ Get all files that fall into time range (May be spread over
         the different year/ month subfolders """
         l2i_files = []
-        for year, month, day in time_range.days_list:
+
+        for daily_periods in time_range.get_segments("day"):
+            year, month, day = daily_periods.tcs.year, daily_periods.tcs.month, daily_periods.tcs.day
             lookup_directory = self.get_lookup_directory(year, month)
             if not Path(lookup_directory).is_dir():
                 continue

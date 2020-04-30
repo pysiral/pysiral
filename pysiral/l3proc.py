@@ -678,7 +678,7 @@ class L3MetaData(object):
     _attribute_list = [
         "mission_ids", "start_time", "stop_time", "grid_name", "period_label",
         "time_coverage_start", "time_coverage_end", "time_coverage_duration",
-        "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
+        "time_coverage_resolution", "pysiral_version", "projection_str", "grid_tag", "resolution_tag",
         "hemisphere", "mission_sensor", "source_auxdata_sic",
         "source_auxdata_sitype", "source_auxdata_snow", "source_timeliness"]
 
@@ -711,10 +711,10 @@ class L3MetaData(object):
 
     def get_time_coverage_from_period(self, period):
         """ Get the start and end of requested data period """
-        self.set_attribute("time_coverage_start", period.start)
-        self.set_attribute("time_coverage_end", period.stop)
-        self.set_attribute("time_coverage_duration",
-                           period.duration_isoformat)
+        # TODO: replace with the period.get_netcdf_attributes() method
+        self.set_attribute("time_coverage_start", period.tcs.dt)
+        self.set_attribute("time_coverage_end", period.tce.dt)
+        self.set_attribute("time_coverage_duration", period.duration.isoformat)
 
     def get_auxdata_infos(self, l2i_info):
         """ Get information on auxiliary data sources from l2i global
@@ -1229,6 +1229,7 @@ class Level3TemporalCoverageStatistics(Level3ProcessorItem):
         # Other parameter for L3DataGrid
         # All statistics are computed with respect to the temporal coverage of the grid
         # (-> the period that has been asked for, not the actual data coverage)
+        # TODO: TCS & TCE as datetime should not be in the metadata, but a property of the data object
         tcs, tce = self.l3grid.metadata.time_coverage_start, self.l3grid.metadata.time_coverage_end
         start_date = date(tcs.year, tcs.month, tcs.day)
         end_date = date(tce.year, tce.month, tce.day)

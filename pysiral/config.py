@@ -215,9 +215,9 @@ class DefaultCommandLineArguments(object):
             "period": {
                 "action": "store",
                 "dest": "period",
-                "default": "monthly",
+                "default": "month",
                 "required": False,
-                "help": 'data period tag (default: monthly)'},
+                "help": 'data period tag (default: month)'},
 
             "l2i-product-dir": {
                 "action": "store",

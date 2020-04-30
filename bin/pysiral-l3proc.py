@@ -6,9 +6,10 @@ import argparse
 import time
 import sys
 from pathlib import Path
+from dateperiods import DatePeriod
 
 from pysiral import psrlcfg
-from pysiral.config import DefaultCommandLineArguments, TimeRangeRequest
+from pysiral.config import DefaultCommandLineArguments
 from pysiral.datahandler import L2iDataHandler
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
@@ -24,8 +25,16 @@ def pysiral_l3proc():
     # Get start time of processor run
     t0 = time.clock()
 
-    # Get monthly iterations from requested period
-    period = TimeRangeRequest(args.start, args.stop, period=args.period)
+    # --- Get the period segments for the Level-3 processor ---
+    # NOTE: These depend on the chosen total time range and the duration period for the grid.
+    period = DatePeriod(args.start, args.stop)
+    if args.period == "custom":
+        period_segments = [period]
+        n_periods = 1
+    else:
+        period_segments = period.get_segments(args.period)
+        n_periods = period_segments.n_periods
+
 
     # Get the output grid
     grid = Level3GridDefinition(args.l3_griddef)
@@ -52,12 +61,11 @@ def pysiral_l3proc():
     l3proc = Level3Processor(product_def)
 
     # Loop over all iterations
-    for time_range in period.iterations:
+    for i, time_range in enumerate(period_segments):
 
         # Report processing period
         msg = "# Processing %s period (%g of %g): %s"
-        msg = msg % (time_range.base_period, time_range.index,
-                     time_range.num_iterations, time_range.date_label)
+        msg = msg % (args.period, i+1, n_periods, time_range.date_label)
         l3proc.log.info(msg)
 
         # Retrieve files
