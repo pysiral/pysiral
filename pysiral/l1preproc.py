@@ -5,10 +5,11 @@ from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
+from dateperiods import DatePeriod
 
 from pysiral import get_cls, psrlcfg
 from pysiral.clocks import StopWatch
-from pysiral.config import TimeRangeRequest, get_yaml_config
+from pysiral.config import get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
@@ -822,7 +823,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self.set_l1p_processor_def(l1p_settings_id_or_file)
 
         # Get full requested time range
-        self._time_range = TimeRangeRequest(tcs, tce, exclude_month=exclude_month)
+        self._time_range = DatePeriod(tcs, tce)
         self.log.info("Requested time range is %s" % self.time_range.label)
 
         # Store the data handler options
@@ -996,6 +997,11 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     @property
     def time_range(self):
         return self._time_range
+
+    @property
+    def period_segments(self):
+        segments = self._time_range.get_segments("month", crop_to_period=True)
+        return segments
 
     @property
     def output_handler_cfg(self):

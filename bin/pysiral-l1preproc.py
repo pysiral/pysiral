@@ -43,7 +43,7 @@ def pysiral_l1preproc(job):
     l1preproc = get_preproc(preproc_def.type, input_adapter, output_handler, preproc_def.options)
 
     # 5. Loop over monthly periods
-    for period in job.time_range.iterations:
+    for period in job.period_segments:
 
         # 5.1 Get input files
         file_list = input_handler.get_file_for_period(period)

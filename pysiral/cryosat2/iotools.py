@@ -128,12 +128,13 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         self._sorted_list = []
 
     def _append_files(self, mode, period):
-        lookup_year, lookup_month = period.start.year, period.start.month
+        lookup_year, lookup_month = period.tcs.year, period.tcs.month
         lookup_dir = self._get_lookup_dir(lookup_year, lookup_month, mode)
         self.log.info("Search directory: %s" % lookup_dir)
         n_files = 0
-        for year, month, day in period.days_list:
+        for daily_period in period.get_segments("day"):
             # Search for specific day
+            year, month, day = daily_period.tcs.year, daily_period.tcs.month, daily_period.tcs.day
             file_list = self._get_files_per_day(lookup_dir, year, month, day)
             tcs_list = self._get_tcs_from_filenames(file_list)
             n_files += len(file_list)
