@@ -3,6 +3,7 @@ attrdict
 bottleneck
 cftime
 cython
+git+git://github.com/mozilla/dateperiods.git
 dateutils
 geopy
 h5py
