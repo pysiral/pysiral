@@ -94,6 +94,7 @@ class ProgressIndicator(object):
 
     def __init__(self, n_steps):
         self.n_steps = n_steps
+        self.index = None
         self.reset()
 
     def reset(self):
@@ -110,7 +111,6 @@ class ProgressIndicator(object):
     @property
     def percent(self):
         return float(self.step)/float(self.n_steps)*100.
-
 
 
 class SimpleTimer(object):

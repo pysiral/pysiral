@@ -5,9 +5,10 @@ import time
 import sys
 from pathlib import Path
 from datetime import timedelta
+from dateperiods import DatePeriod
 
 from pysiral import psrlcfg
-from pysiral.config import DefaultCommandLineArguments, TimeRangeRequest
+from pysiral.config import DefaultCommandLineArguments
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import L2iDataHandler
 from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
@@ -54,9 +55,10 @@ def pysiral_l2preproc():
     # start and/or stop of l2i product availability
     start = args.start if args.start is not None else l2i_handler.start_month
     stop = args.stop if args.stop is not None else l2i_handler.stop_month
-    days = TimeRangeRequest(start, stop, period="daily",
-                            exclude_month=args.exclude_month,
-                            raise_if_empty=True)
+    period = DatePeriod(start, stop)
+    days = period.get_segments("day")
+    if args.exclude_month is not None:
+        days.filter_month(args.exclude_month)
 
     # Processor Initialization
     # NOTE: This is only for later cases. Not much is done here at this
@@ -64,10 +66,10 @@ def pysiral_l2preproc():
     l2preproc = Level2PreProcessor(product_def)
 
 #    # Loop over iterations (one per day)
-    for day in days.iterations:
+    for day in days:
 
         # Do some extra logging
-        l2preproc.log.info("Processing Day [%s]" % day.start_date_label)
+        l2preproc.log.info("Processing Day [%s]" % day.label)
 
 #        XXX: This needs a bit more thought
 #        # Product Data Management
@@ -76,7 +78,7 @@ def pysiral_l2preproc():
 #                output_handler.remove_old(day)
 
         # Get input files
-        l2i_daily_files = l2i_handler.get_files_for_day(day.start)
+        l2i_daily_files = l2i_handler.get_files_for_day(day.tcs.dt)
         if len(l2i_daily_files) == 0:
             l2preproc.log.info("- no l2i products, skip day")
             continue

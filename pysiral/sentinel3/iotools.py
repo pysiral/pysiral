@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import glob
 from pathlib import Path
@@ -7,8 +8,6 @@ from collections import deque
 
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-
-
 
 
 class Sentinel3FileList(DefaultLoggingClass):
@@ -40,7 +39,10 @@ class Sentinel3FileList(DefaultLoggingClass):
     def _get_file_listing(self):
         """ List all files in time range """
 
-        for year, month in self.time_range.month_list:
+        monthly_periods = self.time_range.get_segments("month")
+        for monthly_period in monthly_periods:
+
+            year, month = monthly_period.tcs.year, monthly_period.tcs.month
 
             # Get the file list for each month
             toplevel_folder = self._get_toplevel_search_folder(year, month)
@@ -80,7 +82,7 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
     def get_file_for_period(self, period):
         """
         Query for Sentinel Level-2 files for a specific period.
-        :param period: A pysiral.config.TimeRangeIteration object
+        :param period: dateperiods.DatePeriod
         :return: sorted list of filenames
         """
         # Make sure file list are empty
@@ -91,12 +93,15 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
     def _query(self, period):
         """
         Searches for files in the given period and stores result in property _sorted_list
-        :param period: A pysiral.config.TimeRangeIteration object
+        :param period: dateperiods.DatePeriod
         :return: None
         """
 
         # Loop over all months in the period
-        for year, month in period.month_list:
+        monthly_periods = period.get_segments("month")
+        for monthly_period in monthly_periods:
+
+            year, month = monthly_period.tcs.year, monthly_period.tcs.month
 
             # Get the file list for each month
             toplevel_folder = self._get_toplevel_search_folder(year, month)
@@ -123,6 +128,7 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
     def sorted_list(self):
         """ Return the search result """
         return self._sorted_list
+
 
 def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     """ Returns a list with measurement.nc files for given month """

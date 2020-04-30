@@ -113,7 +113,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
     def get_file_for_period(self, period):
         """
         Query for Sentinel Level-2 files for a specific period.
-        :param period: A pysiral.config.TimeRangeIteration object
+        :param period: dateperiods.DatePeriod
         :return: sorted list of filenames
         """
         # Make sure file list are empty
@@ -129,12 +129,15 @@ class EnvisatSGDRNC(DefaultLoggingClass):
     def _query(self, period):
         """
         Searches for files in the given period and stores result in property _sorted_list
-        :param period: A pysiral.config.TimeRangeIteration object
+        :param period: dateperiods.DatePeriod
         :return: None
         """
 
         # Loop over all months in the period
-        for year, month, day in period.days_list:
+        daily_periods = period.get_segments("day")
+        for daily_period in daily_periods:
+
+            year, month, day = daily_period.tcs.year, daily_period.tcs.month, daily_period.tcs.day
 
             # Search folder
             lookup_folder = self._get_lookup_folder(year, month, day)

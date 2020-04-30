@@ -164,7 +164,7 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
     if config is None or not isinstance(config, psrlcfg):
         config = psrlcfg
 
-    # Validate time_range (needs to be of type TimeRangeIteration)
+    # Validate time_range (needs to be of type dateperiods.DatePeriod)
     if not isinstance(time_range, DatePeriod):
         error = ErrorStatus()
         msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
