@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pysiral import psrlcfg
-from pysiral.config import (DefaultCommandLineArguments, TimeRangeRequest)
+from pysiral.config import (DefaultCommandLineArguments)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
@@ -10,6 +10,7 @@ from pysiral.logging import DefaultLoggingClass
 
 from pathlib import Path
 
+from dateperiods import DatePeriod
 from datetime import timedelta
 import argparse
 import glob
@@ -54,11 +55,19 @@ def pysiral_l2proc_time_range_job(args):
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
 
-    # Break down the time range in individual month
-    start, stop = args.start, args.stop
-    job = TimeRangeRequest(start, stop, exclude_month=args.exclude_month)
-    job.clip_to_mission(mission_id)
-    job.raise_if_empty()
+    # --- Get the period for the Level-2 Processor ---
+    # Evaluate the input arguments
+    period = DatePeriod(args.start, args.stop)
+
+    # Clip the time range to the valid time range of the target platform
+    period = period.intersect(psrlcfg.get_platform_period(mission_id))
+
+    # The Level-2 processor operates in monthly iterations
+    # -> Break down the full period into monthly segments and
+    #    filter specific month that should not be processed
+    period_segments = period.get_segments("month", crop_to_period=True)
+    if args.exclude_month is not None:
+        period_segments.filter_month(args.exclude_month)
 
     # Prepare DataHandler
     l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere, version=args.l1b_version)
@@ -66,8 +75,8 @@ def pysiral_l2proc_time_range_job(args):
     # Processor Initialization
     l2proc = Level2Processor(product_def)
 
-#    # Loop over iterations (one per month)
-    for time_range in job.iterations:
+    # Now loop over the month
+    for time_range in period_segments:
 
         # Do some extra logging
         l2proc.log.info("Processing period: %s" % time_range.label)
