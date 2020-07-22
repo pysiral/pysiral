@@ -230,15 +230,58 @@ class Warren99(AuxdataBaseClass):
 
 
 class Warren99AMSR2Clim(AuxdataBaseClass):
-    """ Class for monthly snow depth & density climatology based on merged Warren99 climatology and
-     monthly AMSR2 snow depth composite (source: IUP) """
+    """
+    Class for monthly snow depth & density climatology based on merged Warren99 climatology and
+    monthly AMSR2 snow depth composite (source: IUP). The source data is organized as
+    netCDF files that contain a:
+
+        1. monthly climatological snow depth and density
+        2. the mask of the W99 region of influence
+        3. uncertainties of geophysical parameters
+
+    This class reads the netCDF data and applies a correction for first-year sea ice areas in regions
+    solely influenced by the Warren99 climatalogy.
+
+    REQUIREMENTS:
+
+        - Level-2 object has attribute `sitype`
+          (sea ice type classication: 0 [fyi] <) sitype <= 1 [myi])
+        - options has attribute `fyi_correction_factor`
+          (factor 0-1 for reduction of snow depth in FYI W99 areas)
+
+    OPTIONAL:
+
+        - options has boolean attribute `daily_scaling`
+          (if True snow depth and density will be scaled between successive month)
+
+    NOTES:
+
+        - This class is mainly designed to be calles from the Level-2 processor for trajectory based data sets.
+          An more generalized version is in planning.
+
+    UPDATES:
+
+        - [July 2020] With AWI CryoSat-2 v2.3 a change was introduced to allow a daily change of the snow depth fields
+          rather than monthly (see github issue: https://github.com/shendric/pysiral/issues/40)
+    """
 
     def __init__(self, *args, **kwargs):
+        """
+        Init the class for getting snow depth on sea ice with density and respective uncertainties.
+        :param args: Arguments for AuxdataBaseClass
+        :param kwargs: Keyword arguments for AuxdataBaseClass
+        """
         super(Warren99AMSR2Clim, self).__init__(*args, **kwargs)
         self._data = None
 
     def get_l2_track_vars(self, l2):
-        """ This is the method that will be evoked by the Level-2 processor """
+        """
+        This is the method that will be evoked by the Level-2 processor. This method will extract the
+        geophysical parameters
+
+        :param l2: The Level-2 data container
+        :return: None
+        """
 
         # Set the requested date
         self.set_requested_date_from_l2(l2)
@@ -260,7 +303,9 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
 
     def load_requested_auxdata(self):
-        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
+        """
+        Mandatory subclass method: Load the data file necessary to satisfy condition for requested date
+        """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
         path = Path(self.requested_filepath)
@@ -279,7 +324,11 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.add_handler_message(self.__class__.__name__+": Loaded snow file: %s" % path)
 
     def _get_snow_track(self, l2):
-        """ Get the along-track data from the loaded data"""
+        """
+        Extract the snow depth and density track along the l2 track
+        :param l2:
+        :return:
+        """
 
         # Extract track data from grid
         griddef = self.cfg.options[l2.hemisphere]
