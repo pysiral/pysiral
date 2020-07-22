@@ -1,7 +1,7 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 
 id: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.3)"
-version_tag: "v2p3awi"
+version_tag: "v2p3awirep"
 
 # This settings file is valid for
 hemisphere: north
