@@ -39,15 +39,13 @@ Important Note:
 
 """
 
+import numpy as np
+from pyproj import Proj
+from pathlib import Path
+
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
-
-import scipy.ndimage as ndimage
-
-from pyproj import Proj
-import numpy as np
-from pathlib import Path
 
 
 class Warren99(AuxdataBaseClass):
@@ -272,7 +270,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         :param kwargs: Keyword arguments for AuxdataBaseClass
         """
         super(Warren99AMSR2Clim, self).__init__(*args, **kwargs)
-        self._data = None
+        self._data = Warren99AMSR2ClimDataContainer(self.cfg, self.use_daily_scaling)
 
     def get_l2_track_vars(self, l2):
         """
@@ -302,26 +300,26 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
 
-    def load_requested_auxdata(self):
+    def update_external_data(self):
         """
-        Mandatory subclass method: Load the data file necessary to satisfy condition for requested date
+        This method overwrites the default behaviour of loading a dedicated file per
+        l2 track object. The functionality is delegated to a specific data class for this
+        auxiliary data set.
+        :return:
         """
-
-        # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = Path(self.requested_filepath)
-
-        # Validation
-        if not path.is_file():
-            msg = self.pyclass+": File not found: %s " % path
-            self.add_handler_message(msg)
-            self.error.add_error("auxdata_missing_snow", msg)
-            return
-
-        # Read the data
-        self._data = ReadNC(path)
-
-        # This step is important for calculation of image coordinates
-        self.add_handler_message(self.__class__.__name__+": Loaded snow file: %s" % path)
+        if self._requested_date[:-1] != self._current_date[:-1]:
+            # NOTE: The implementation of this method needs to be in the subclass
+            self._current_date = self._requested_date
+            self._data.load(self._requested_date)
+            if self._data.has_data_loaded:
+                for filepath in self._data.filepaths:
+                    self.add_handler_message(self.__class__.__name__ + ": Load "+str(filepath))
+        else:
+            if self._data.has_data_loaded:
+                self.add_handler_message(self.__class__.__name__+": Data already present")
+            else:
+                msg = ": No Data: Loading failed in an earlier attempt"
+                self.add_handler_message(self.__class__.__name__ + msg)
 
     def _get_snow_track(self, l2):
         """
@@ -332,7 +330,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
         # Extract track data from grid
         griddef = self.cfg.options[l2.hemisphere]
-        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid_lons, grid_lats = self._data.get_lonlat()
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
 
         # Extract data (Map the extracted tracks directly on the snow parameter container)
@@ -340,7 +338,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         snow = SnowParameterContainer()
         for var_name in var_map.keys():
             source_name = var_map[var_name]
-            sdgrid = getattr(self._data, source_name)
+            sdgrid = self._data.get_var(source_name, self._requested_date)
             setattr(snow, var_name, grid2track.get_from_grid_variable(sdgrid))
 
         # Extract the W99 weight
@@ -367,6 +365,88 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
         return snow
 
+    @property
+    def use_daily_scaling(self):
+        """
+        Return a flag that indicates whether to use daily scaling (absence of flag in options will be treated as no)
+        :return:
+        """
+        if "daily_scaling" not in self.cfg:
+            return False
+        else:
+            return self.cfg.daily_scaling
+
+
+class Warren99AMSR2ClimDataContainer(object):
+    """
+    A dedicated data container for the merged W99/AMSR2 snow climatology. This class has been introduced
+    with the use of daily scaling that requires data to loaded also from month adjacent to the month
+    of the current Level-2 data object
+    """
+
+    def __init__(self, cfg, use_daily_scaling):
+        """
+        Init the class
+        :param cfg: A copy of the auxdata class configuration
+        :param use_daily_scaling:
+        """
+
+        # Properties
+        self.cfg = cfg
+        self.use_daily_scaling = use_daily_scaling
+        self.datasets = []
+
+    def load(self, requested_date):
+        """
+        Load the required data for a target day
+        :param requested_date:
+        :return:
+        """
+        raise NotImplementedError()
+
+    def get_lonlat(self):
+        """
+        Return longitude and latitude variables
+        :return:
+        """
+        raise NotImplementedError()
+
+    def get_var(self, parameter_name, date_tuple):
+        """
+        Get the a geophysical variable from the netCDF(s). If daily scaling is activated, the date information
+        given by date tuple will be used to create output fields that are interpolated between adjacent month.
+        :param parameter_name:
+        :param date_tuple:
+        :return:
+        """
+        raise NotImplementedError()
+
+    @property
+    def w99_weight(self):
+        """
+        Return the static regional mask for the merged climatology
+        :return:
+        """
+        raise NotImplementedError()
+        pass
+
+    @property
+    def has_data_loaded(self):
+        """
+        Status flag if data is present for the current data period
+        :return:
+        """
+        raise NotImplementedError()
+
+    @property
+    def filepaths(self):
+        """
+        Returns a list of the files that have been loaded. These can be up to 3 if daily scaling
+        is activated
+        :return:
+        """
+        raise NotImplementedError()
+
 
 class FixedSnowDepthDensity(AuxdataBaseClass):
     """
@@ -390,8 +470,8 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
         pass
 
     def get_l2_track_vars(self, l2):
-        snow_depth = np.full((l2.n_records), self.cfg.options.fixed_snow_depth)
-        snow_density = np.full((l2.n_records), self.cfg.options.fixed_snow_density)
+        snow_depth = np.full(l2.n_records, self.cfg.options.fixed_snow_depth)
+        snow_density = np.full(l2.n_records, self.cfg.options.fixed_snow_density)
         snow = SnowParameterContainer()
         snow.depth = snow_depth
         snow.density = snow_density
@@ -462,7 +542,6 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         # Store the netCDF data object
         self._data = ReadNC(path)
 
-
     def _get_snow_track(self, l2):
         """ Extract snow depth from grid """
 
@@ -501,10 +580,10 @@ class SnowParameterContainer(object):
         self.density_uncertainty[indices] = np.nan
 
     def set_dummy(self, n_records):
-        self.depth = np.full((n_records), np.nan)
-        self.density = np.full((n_records), np.nan)
-        self.depth_uncertainty = np.full((n_records), np.nan)
-        self.density_uncertainty = np.full((n_records), np.nan)
+        self.depth = np.full(n_records, np.nan)
+        self.density = np.full(n_records, np.nan)
+        self.depth_uncertainty = np.full(n_records, np.nan)
+        self.density_uncertainty = np.full(n_records, np.nan)
 
 
 def get_l2_snow_handler(name):
