@@ -24,5 +24,6 @@ def main():
     print("copy pysiral config files from package to user home: ")
     dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.userhome_config_path), verbose=1)
 
+
 if __name__ == "__main__":
     main()
