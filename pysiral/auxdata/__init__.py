@@ -5,7 +5,7 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["AuxdataBaseClass", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
+__all__ = ["AuxdataBaseClass", "GridTrackInterpol", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
            "sitype", "snow", "region"]
 
 
