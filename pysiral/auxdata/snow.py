@@ -49,6 +49,7 @@ from pyproj import Proj
 import numpy as np
 from pathlib import Path
 
+
 class Warren99(AuxdataBaseClass):
 
     # Snow depth Coefficients
@@ -257,7 +258,6 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # Register Variables
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
-
 
     def load_requested_auxdata(self):
         """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
