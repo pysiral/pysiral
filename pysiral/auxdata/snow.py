@@ -39,13 +39,17 @@ Important Note:
 
 """
 
+import re
 import numpy as np
 from pyproj import Proj
 from pathlib import Path
+from datetime import datetime
+from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
+from pysiral.errorhandler import ErrorStatus
 
 
 class Warren99(AuxdataBaseClass):
@@ -313,7 +317,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
             self._data.load(self._requested_date)
             if self._data.has_data_loaded:
                 for filepath in self._data.filepaths:
-                    self.add_handler_message(self.__class__.__name__ + ": Load "+str(filepath))
+                    self.add_handler_message(self.__class__.__name__ + ": Load {}".format(filepath))
         else:
             if self._data.has_data_loaded:
                 self.add_handler_message(self.__class__.__name__+": Data already present")
@@ -371,10 +375,10 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         Return a flag that indicates whether to use daily scaling (absence of flag in options will be treated as no)
         :return:
         """
-        if "daily_scaling" not in self.cfg:
+        if "daily_scaling" not in self.cfg.options:
             return False
         else:
-            return self.cfg.daily_scaling
+            return self.cfg.options.daily_scaling
 
 
 class Warren99AMSR2ClimDataContainer(object):
@@ -394,22 +398,49 @@ class Warren99AMSR2ClimDataContainer(object):
         # Properties
         self.cfg = cfg
         self.use_daily_scaling = use_daily_scaling
-        self.datasets = []
+        self.data = None
+        self.filepaths = []
+        self.error = ErrorStatus()
 
     def load(self, requested_date):
         """
-        Load the required data for a target day
+        Load the required data. This will load the data for all winter month into memory and the return
+        either a weighted fiels (if `use_daily_scaling` is True) or just the field from the corresponding month
         :param requested_date:
         :return:
         """
-        raise NotImplementedError()
+
+        # Check if data is already loaded
+        if self.has_data_loaded:
+            return
+
+        # Load the data of all month
+        self.data = []
+        for month_num in self.month_nums:
+
+            # Get the target file path
+            filepath = self.get_filepath(month_num)
+
+            # Read the data set (and raise hard error if input is missing)
+            try:
+                nc = open_dataset(filepath)
+                self.data.append(nc)
+                self.filepaths.append(filepath)
+            except FileNotFoundError:
+                msg = "Could not locate file: {}".format(filepath)
+                self.error.add_error("invalid-filepath", msg)
+                self.error.raise_on_error()
 
     def get_lonlat(self):
         """
         Return longitude and latitude variables
         :return:
         """
-        raise NotImplementedError()
+
+        # The grid is the same for all month, therefore we can just retrieve the fields
+        # from the first data sets
+        dset = self.data[0]
+        return dset.longitude.values, dset.latitude.values
 
     def get_var(self, parameter_name, date_tuple):
         """
@@ -419,7 +450,132 @@ class Warren99AMSR2ClimDataContainer(object):
         :param date_tuple:
         :return:
         """
-        raise NotImplementedError()
+
+        # There are three cases that requires a different handling:
+        #
+        # 1. daily scaling is off
+        #    -> return the single field of the single data set for the corresponding month
+        if not self.use_daily_scaling:
+            return self.get_monthly_field(date_tuple[1], parameter_name)
+
+        # 2. daily scaling is on and requested date is a reference date
+        #    -> return the field of the single data set for the reference date
+        is_reference_date = date_tuple[1:] in self.reference_dates
+        if self.use_daily_scaling and is_reference_date:
+            return self.get_monthly_field(date_tuple[1], parameter_name)
+
+        # 3. daily scaling is on and requested date is between reference dates
+        #   -> return a linear interpolated field based on the distance to the two enclosing
+        #      reference dates
+        if self.use_daily_scaling and not is_reference_date:
+            return self.get_weighted_variable(date_tuple, parameter_name)
+
+    def get_filepath(self, month_num):
+        """
+        Return the file path for a given month
+        :param month_num: Number of month (1-12)
+        :return:
+        """
+
+        # Create a dictionary for automatic filepath completion
+        date_dict = dict(month="{:02g}".format(month_num))
+
+        # Main directory
+        path = Path(self.cfg.local_repository)
+
+        # Add the subfolders
+        for subfolder_tag in self.cfg.subfolders:
+            subfolder = date_dict[subfolder_tag]
+            path = path / subfolder
+
+        # Get the period dict (will be constructed from filenaming)
+        period_dict = {}
+        attrs = re.findall("{.*?}", self.cfg.filenaming)
+        for attr_def in attrs:
+            attr_name = attr_def[1:-1]
+            period_dict[attr_name] = date_dict[attr_name]
+        filename = self.cfg.filenaming.format(**period_dict)
+        path = path / filename
+        return path
+
+    def get_monthly_field(self, month_num, parameter_name):
+        """
+        Return the monthly field for given parameter name
+        :param month_num:
+        :param parameter_name:
+        :return:
+        """
+        index = self.month_nums.index(month_num)
+        variable = getattr(self.data[index], parameter_name, None)
+        if variable is None:
+            msg = "Dataset has no variable: {}".format(parameter_name)
+            self.error.add_error("invalid-variable", msg)
+            self.error.raise_on_error()
+        return variable.values
+
+    def get_reference_month_nums(self, date_tuple):
+        """
+        Return the two month required for the interpolation.
+        :param date_tuple: [year, month, day] as integer
+        :return: month_left, month_right, weight_factor
+        """
+
+        # Compute the difference in days between requested days
+        requested_date_dt = datetime(*date_tuple)
+        ref_datetimes = self.get_reference_datetimes(date_tuple)
+        ref_date_offset = [(requested_date_dt-dt).days for dt in ref_datetimes]
+
+        # Find the index of the first month where the difference in day is negative (right boundary)
+        month_right_index = int(np.argmax(np.array(ref_date_offset) < 0))
+        month_left_index = month_right_index - 1
+        month_left, month_right = self.month_nums[month_left_index], self.month_nums[month_right_index]
+
+        # Check solution
+        if month_left_index < 0:
+            msg = "Month not found, check input or bug in code"
+            self.error.add_error("unspecified-error", msg)
+            self.error.raise_on_error()
+
+        # Compute the weighting factor
+        period_n_days = (ref_datetimes[month_right_index] - ref_datetimes[month_left_index]).days
+        weight_factor = float(ref_date_offset[month_left_index])/float(period_n_days)
+
+        # All done
+        return month_left, month_right, weight_factor
+
+    def get_reference_datetimes(self, date_tuple):
+        """
+        Creates datetimes objects for the reference dates for the actual winter season
+        :param date_tuple:
+        :return:
+        """
+
+        # Get the winter id (year of October for October - April winter)
+        winter_id = date_tuple[0]
+        if date_tuple[1] < 10:
+            winter_id -= 1
+        year_vals = [winter_id]*3 + [winter_id+1]*4
+        ref_dts = [datetime(yyyy, mm, dd) for yyyy, (mm, dd) in zip(year_vals, self.reference_dates)]
+        return ref_dts
+
+    def get_weighted_variable(self, date_tuple, parameter_name):
+        """
+        Compute the weighted variable between two reference dates
+        :param date_tuple:
+        :param parameter_name:
+        :return:
+        """
+
+        # Get the fields of both reference month
+        month_num_left, month_num_right, weight_factor = self.get_reference_month_nums(date_tuple)
+        var_left = self.get_monthly_field(month_num_left, parameter_name)
+        var_right = self.get_monthly_field(month_num_right, parameter_name)
+
+        # Get the relative distance (0: var_left, 1: var_right)
+        var = var_left + weight_factor*(var_right-var_left)
+
+        # Done
+        return var
 
     @property
     def w99_weight(self):
@@ -427,8 +583,7 @@ class Warren99AMSR2ClimDataContainer(object):
         Return the static regional mask for the merged climatology
         :return:
         """
-        raise NotImplementedError()
-        pass
+        return self.data[0].w99_weight.values
 
     @property
     def has_data_loaded(self):
@@ -436,16 +591,25 @@ class Warren99AMSR2ClimDataContainer(object):
         Status flag if data is present for the current data period
         :return:
         """
-        raise NotImplementedError()
+        return self.data is not None
 
     @property
-    def filepaths(self):
+    def month_nums(self):
+        return [10, 11, 12, 1, 2, 3, 4]
+
+    @property
+    def reference_dates(self):
         """
-        Returns a list of the files that have been loaded. These can be up to 3 if daily scaling
-        is activated
+        Return the reference dates for the
         :return:
         """
-        raise NotImplementedError()
+        return [[10, 1],   # October 1st (to get full coverage of October)
+                [11, 15],
+                [12, 15],
+                [1, 15],
+                [2, 15],
+                [3, 15],
+                [4, 30]]   # April 30th (to get full coverage of April)
 
 
 class FixedSnowDepthDensity(AuxdataBaseClass):
