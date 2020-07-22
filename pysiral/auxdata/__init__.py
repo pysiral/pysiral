@@ -166,6 +166,28 @@ class AuxdataBaseClass(object):
                 msg = ": No Data: Loading failed in an earlier attempt"
                 self.add_handler_message(self.__class__.__name__ + msg)
 
+    def load_requested_auxdata(self):
+        """
+        This methods raises a NotImplementedError if it is not overwritten by child class
+        :return:
+        """
+        msg = """
+        This Exception is caused because the auxiliary data class ({}) is missing the method `load_requested_auxdata`
+        or AuxdataBaseClass was called directly (which it should not)"""
+        msg = msg.format(self.__class__.__name__)
+        raise NotImplementedError(msg)
+
+    def get_l2_track_vars(self, *args):
+        """
+        This methods raises a NotImplementedError if it is not overwritten by child class
+        :return:
+        """
+        msg = """
+        This Exception is caused because the auxiliary data class ({}) is missing the method `get_l2_track_vars`
+        or AuxdataBaseClass was called directly (which it should not)"""
+        msg = msg.format(self.__class__.__name__)
+        raise NotImplementedError(msg)
+
     def update_l2(self, l2):
         """ Automatically add all auxiliary variables to a Level-2 data object"""
         for auxvar in self._auxvars:
