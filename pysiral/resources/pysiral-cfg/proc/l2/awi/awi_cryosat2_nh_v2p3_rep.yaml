@@ -250,7 +250,7 @@ afrb:
 frb:
     pyclass: SnowGeometricCorrection
     options:
-        vacuum_light_speed_reduction: 0.22
+        vacuum_light_speed_reduction: mallett2020
 
 # Algorithm for getting sea ice thickness from other l2 parameters
 sit:
