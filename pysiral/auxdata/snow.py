@@ -661,6 +661,9 @@ class SeasonalArcticSnowDensityMallett2020(AuxdataBaseClass):
         :return:
         """
 
+        # Set the requested date
+        self.set_requested_date_from_l2(l2)
+
         # --- Compute the factor t for the date of the l2 object ---
         date_tuple = self._requested_date
         winter_id = date_tuple[0] - int(date_tuple[1] < 10)   # The year of the winter in October
@@ -695,7 +698,7 @@ class SeasonalArcticSnowDensityMallett2020(AuxdataBaseClass):
         sdens_unc = np.full(l2.n_records, static_sdens_unc)
 
         # Only use values for records, that are sea ice
-        no_sea_ice = np.where(l2.sea_ice_concentration < 15.)[0]
+        no_sea_ice = np.where(l2.sic < 15.)[0]
         for var in [sdens, sdens_unc]:
             var[no_sea_ice] = np.nan
 
