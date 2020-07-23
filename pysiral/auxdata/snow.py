@@ -311,13 +311,14 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         auxiliary data set.
         :return:
         """
-        if self._requested_date[:-1] != self._current_date[:-1]:
-            # NOTE: The implementation of this method needs to be in the subclass
-            self._current_date = self._requested_date
-            self._data.load(self._requested_date)
+        if not self._data.has_data_loaded:
+            self._data.load()
             if self._data.has_data_loaded:
                 for filepath in self._data.filepaths:
                     self.add_handler_message(self.__class__.__name__ + ": Load {}".format(filepath))
+            else:
+                msg = ": Loading data has failed failed"
+                self.add_handler_message(self.__class__.__name__ + msg)
         else:
             if self._data.has_data_loaded:
                 self.add_handler_message(self.__class__.__name__+": Data already present")
@@ -402,11 +403,10 @@ class Warren99AMSR2ClimDataContainer(object):
         self.filepaths = []
         self.error = ErrorStatus()
 
-    def load(self, requested_date):
+    def load(self):
         """
         Load the required data. This will load the data for all winter month into memory and the return
         either a weighted fiels (if `use_daily_scaling` is True) or just the field from the corresponding month
-        :param requested_date:
         :return:
         """
 
@@ -551,9 +551,7 @@ class Warren99AMSR2ClimDataContainer(object):
         """
 
         # Get the winter id (year of October for October - April winter)
-        winter_id = date_tuple[0]
-        if date_tuple[1] < 10:
-            winter_id -= 1
+        winter_id = date_tuple[0] - int(date_tuple[1] < 10)
         year_vals = [winter_id]*3 + [winter_id+1]*4
         ref_dts = [datetime(yyyy, mm, dd) for yyyy, (mm, dd) in zip(year_vals, self.reference_dates)]
         return ref_dts
