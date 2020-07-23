@@ -169,6 +169,14 @@ snow:
             subfolders: null
         source: None
 
+    snow_density_seasonal_mallett:
+        pyclass: SeasonalArcticSnowDensityMallett2020
+        long_name: Seasonal changing Arctic Snow density
+        local_repository: null
+        options:
+            snow_density_uncertainty: 50.
+        source: None
+
     constant:
         pyclass: FixedSnowDepthDensity
         long_name: Constant snow depth and density

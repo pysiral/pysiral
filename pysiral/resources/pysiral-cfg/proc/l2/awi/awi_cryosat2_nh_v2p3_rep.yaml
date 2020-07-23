@@ -133,6 +133,13 @@ auxdata:
                 daily_scaling: True
                 fyi_correction_factor: 0.5
 
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
+
 # geophysical corrections applied to the l1b range window
 corrections:
     - dry_troposphere
