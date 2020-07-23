@@ -698,7 +698,7 @@ class SeasonalArcticSnowDensityMallett2020(AuxdataBaseClass):
         sdens_unc = np.full(l2.n_records, static_sdens_unc)
 
         # Only use values for records, that are sea ice
-        no_sea_ice = np.where(l2.sic < 15.)[0]
+        no_sea_ice = np.isnan(l2.sic[:])
         for var in [sdens, sdens_unc]:
             var[no_sea_ice] = np.nan
 
