@@ -894,7 +894,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
         """
 
         # Execute the method of the subclass. The class needs to
-        error_flag = self.execute_step(l1b, l2)
+        error_flag = self.execute_procstep(l1b, l2)
 
         # Update the status flag
         self.update_error_flag(l2, error_flag)
@@ -909,12 +909,29 @@ class Level2ProcessorStep(DefaultLoggingClass):
         """
         raise NotImplementedError("Deactivated for test purposes")
 
-    def execute_step(self, l1b, l2):
+    def execute_procstep(self, l1b, l2):
         raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+
+    @staticmethod
+    def get_clean_error_status(shape):
+        """
+        Return an empty (all nominal error status array)
+        :param shape:
+        :return:
+        """
+        return np.full(shape, False)
 
     @property
     def classname(self):
         return self.__class__.__name__
+
+    @property
+    def input_vars(self):
+        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+
+    @property
+    def output_vars(self):
+        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
 
 
 class Level2ProcessorStepOrder(DefaultLoggingClass):
@@ -954,15 +971,18 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
             procstep_def = procstep_item[procstep_type]
 
             # Get the pyclass
-            obj = get_cls(procstep_type, procstep_def["pyclass"])
+            full_module_name = "pysiral.{}".format(procstep_type)
+            obj = get_cls(full_module_name, procstep_def["pyclass"])
 
             # This object should not be None
             if obj is None:
-                msg = "Could not find L2 processing step class: {}.{}".format(procstep_type, procstep_def["pyclass"])
+                msg = "Could not find L2 processing step class: {}.{}".format(full_module_name, procstep_def["pyclass"])
                 self.error.add_error("missing-class", msg)
                 self.error.raise_on_error()
 
-            breakpoint()
+            # Append the class
+            self.log.info("Added L2 processor step class: {}.{}".format(full_module_name, procstep_def["pyclass"]))
+            self._classes.append(obj)
 
     def validate(self):
         """
@@ -972,3 +992,66 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
         """
 
         breakpoint()
+
+
+class L1BL2TransferVariables(Level2ProcessorStep):
+    """
+    Level-2 Processor step class to transfer variables from the
+    l1b to the l2 data object
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initiliaze the class
+        :param arg:
+        :param kwargs:
+        """
+        super(L1BL2TransferVariables, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory method of Level-2 processor
+        :param l1b:
+        :param l2:
+        :return: error_status
+        """
+
+        # Get the error mandatory
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        for data_group, varlist in list(self.cfg.items()):
+
+            if data_group == "options":
+                continue
+
+            # Get and loop over variables per data group
+            l1p_variables = varlist.items()
+            for var_name, vardef in list(l1p_variables):
+
+                # Get variable via standard getter method
+                # NOTE: Will return None if not found -> create an empty array
+                #       -> this will be noted in the error status flag
+                var = l1b.get_parameter_by_name(data_group, var_name)
+                if var is None:
+                    var = np.full(l2.n_records, np.nan)
+                    error_status = np.logical_not(error_status)
+
+                # Add variable to l2 object as auxiliary variable
+                l2.set_auxiliary_parameter(vardef["aux_id"], vardef["aux_name"], var, None)
+                if self.cfg.verbose:
+                    self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
+
+        return error_status
+
+    @property
+    def input_vars(self):
+        return []
+
+    @property
+    def output_vars(self):
+        output_vars = []
+        for data_group, varlist in list(self.cfg.items()):
+            l1p_variables = varlist.items()
+            for var_name, vardef in list(l1p_variables):
+                output_vars.append(vardef["aux_id"])
+        return output_vars
