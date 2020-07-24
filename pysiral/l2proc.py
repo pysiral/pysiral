@@ -50,9 +50,13 @@ class Level2Processor(DefaultLoggingClass):
             auxclass_handler = DefaultAuxdataClassHandler()
         self._auxclass_handler = auxclass_handler
 
+        # TODO: This may also be delegated to its own class (but works for now)
         # This variable will contain a list with the auxiliary data handlers
         self._registered_auxdata_handlers = []
         self._auxhandlers = {}
+
+        # The processing step is a class that links to the different
+        self._procsteps = []
 
         # Output_handler (can be one or many)
         self._output_handler = product_def.output_handler
@@ -73,7 +77,7 @@ class Level2Processor(DefaultLoggingClass):
         self.report = L2ProcessorReport()
 
         # Initialize the class
-        self._initialize_processor()
+        self.initialize_processor()
 
     @property
     def orbit(self):
@@ -106,12 +110,6 @@ class Level2Processor(DefaultLoggingClass):
                 auxdata_dict[auxdata_type] = "unspecified"
         return auxdata_dict
 
-# %% Level2Processor: public methods
-
-#    def initialize(self):
-#        self._initialize_processor()
-#        self._initialize_summary_report()
-
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
 
@@ -124,8 +122,6 @@ class Level2Processor(DefaultLoggingClass):
         self._l2_processing_of_orbit_files()
         self._l2proc_summary_to_file()
         self._clean_up()
-
-# %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
         if "output" not in self.l2def:
@@ -143,29 +139,22 @@ class Level2Processor(DefaultLoggingClass):
         """ All procedures that need to be reset after a run """
         self.report.clean_up()
 
-# %% Level2Processor: initialization
-
-    def _initialize_processor(self):
+    def initialize_processor(self):
         """ Read required auxiliary data sets """
 
         # Instance can be reused
         if self._initialized:
-            # Empty orbit list (or else orbits will acculumate)
+            # Empty orbit list (or else orbits will accumulate)
             self._orbit.clear()
             return
 
         self.log.info("Starting Initialization")
 
-        self.log.info("Processor Settings - range correction list:")
-        for correction in self.l2def.corrections:
-            self.log.info("- %s" % correction)
-        self.log.info("Processor Settings - surface type classificator: %s" % (
-            self.l2def.surface_type.pyclass))
-        self.log.info("Processor Settings - lead interpolator: %s" % (
-            self.l2def.ssa.pyclass))
-
         # Initialize the auxiliary data handlers
-        self._set_auxdata_handlers()
+        self.set_auxdata_handler()
+
+        # Initialize the Level-2 processor step handler
+        self.set_procstep_handler()
 
         # Report on output location
         self._report_output_location()
@@ -174,8 +163,11 @@ class Level2Processor(DefaultLoggingClass):
         self._initialized = True
         self.log.info("Initialization complete")
 
-    def _set_auxdata_handlers(self):
-        """ Adds all auxdata types from the l2 config file to the Level-2 processor instance """
+    def set_auxdata_handler(self):
+        """
+        Adds all auxdata types from the l2 config file to the Level-2 processor instance
+        :return: None
+        """
 
         # The auxdata definition is a list of dictionaries of form {auxdata_type: auxdata_def}
         for auxdata_dict in self.l2def.auxdata:
@@ -200,6 +192,18 @@ class Level2Processor(DefaultLoggingClass):
 
             # Report the auxdata class
             self.log.info("Processor Settings - %s auxdata handler registered" % auxhandler_id.upper())
+
+    def set_procstep_handler(self):
+        """
+        Add the proc
+        :return:
+        """
+
+        self.log.info("Init Processor Steps")
+        cfg = self.l2def.procsteps
+        self._procsteps = Level2ProcessorStepOrder(cfg)
+        self._procsteps.validate()
+        self.log.info("Processor steps initialized and validated")
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
@@ -327,12 +331,14 @@ class Level2Processor(DefaultLoggingClass):
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
 
+    # TODO: Marked as obsolete
     def _apply_range_corrections(self, l1b):
         """ Apply the range corrections """
         # XXX: This should be applied to the L2 data not l1b
         for correction in self.l2def.corrections:
             l1b.apply_range_correction(correction)
 
+    # TODO: Marked as obsolete
     def _apply_l1b_prefilter(self, l1b):
         """ Apply filtering of l1b variables """
         # Backward compatibility with older l2 setting files
@@ -346,6 +352,7 @@ class Level2Processor(DefaultLoggingClass):
             l1bfilter.set_options(**filter_def.options)
             l1bfilter.apply_filter(l1b)
 
+    # TODO: Marked as obsolete
     def _transfer_l1p_vars(self, l1b, l2):
         """ Transfer variables from l1p to l2 object"""
 
@@ -422,6 +429,7 @@ class Level2Processor(DefaultLoggingClass):
         # Return error status list
         return auxdata_error_status, auxdata_error_codes
 
+    # TODO: Marked as obsolete
     def _classify_surface_types(self, l1b, l2):
         """ Run the surface type classification """
         pyclass = self.l2def.surface_type.pyclass
@@ -430,6 +438,7 @@ class Level2Processor(DefaultLoggingClass):
         surface_type.classify(l1b, l2)
         l2.set_surface_type(surface_type.result)
 
+    # TODO: Marked as obsolete
     def _validate_surface_types(self, l2):
         """ Loop over stack of surface type validators """
         surface_type_validators = self.l2def.validator.surface_type
@@ -447,6 +456,7 @@ class Level2Processor(DefaultLoggingClass):
         error_status = True in error_states
         return error_status, error_codes
 
+    # TODO: Marked as obsolete
     def _waveform_retracking(self, l1b, l2):
         """ Retracking: Obtain surface elevation from l1b waveforms """
         # loop over retrackers for each surface type
@@ -497,6 +507,7 @@ class Level2Processor(DefaultLoggingClass):
         # Error handling not yet implemented, return dummy values
         return False, None
 
+    # TODO: Marked as obsolete
     def _estimate_sea_surface_height(self, l2):
 
         # 2. get get sea surface anomaly
@@ -508,6 +519,7 @@ class Level2Processor(DefaultLoggingClass):
         l2.ssa.set_value(ssa.value)
         l2.ssa.set_uncertainty(ssa.uncertainty)
 
+    # TODO: Marked as obsolete
     def _get_altimeter_freeboard(self, l1b, l2):
         """ Compute radar freeboard and its uncertainty """
 
@@ -535,6 +547,7 @@ class Level2Processor(DefaultLoggingClass):
 
         return error_status, error_codes
 
+    # TODO: Marked as obsolete
     def _get_freeboard_from_radar_freeboard(self, l1b, l2):
         """ Convert the altimeter freeboard in radar freeboard """
 
@@ -559,6 +572,7 @@ class Level2Processor(DefaultLoggingClass):
             for error_message in error_messages:
                 self.log.warning("! "+error_message)
 
+    # TODO: Marked as obsolete
     def _apply_freeboard_filter(self, l2):
         """ Apply freeboard filters as defined in the level-2 settings file
         under `root.filter.freeboard`
@@ -610,6 +624,7 @@ class Level2Processor(DefaultLoggingClass):
             # Remove invalid elevations / freeboards
             l2.frb.set_nan_indices(frbfilter.flag.indices)
 
+    # TODO: Marked as obsolete
     def _convert_freeboard_to_thickness(self, l2):
         """
         Convert Freeboard to Thickness
@@ -632,6 +647,7 @@ class Level2Processor(DefaultLoggingClass):
             l2.sit.set_uncertainty(sit_unc)
             l2.set_auxiliary_parameter("idens", "sea_ice_density", ice_dens, ice_dens_unc)
 
+    # TODO: Marked as obsolete
     def _apply_thickness_filter(self, l2):
         for name, filter_def in list(self.l2def.filter.thickness.items()):
             sitfilter = get_filter(filter_def["pyclass"])
@@ -646,6 +662,7 @@ class Level2Processor(DefaultLoggingClass):
             # Remove invalid thickness values
             l2.sit.set_nan_indices(sitfilter.flag.indices)
 
+    # TODO: Marked as obsolete
     def _post_processing_items(self, l2):
         """
 
@@ -919,13 +936,38 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
 
         # A list of the class object (not initialized!)
         self._classes = []
-        self.get_classes()
+        self.get_procstep_classes()
 
-    def get_classes(self):
+    def get_procstep_classes(self):
         """
         Retrieves the required classes from the processor definition files and stores them in a list
         without initializing them. This way a freshly initialized version can be supplied to each
         l2 data object without risk of interference of class properties
+        :return:
+        """
+
+        # Loop
+        for procstep_item in self.cfg:
+
+            # Extract the information
+            procstep_type = list(procstep_item.keys())[0]
+            procstep_def = procstep_item[procstep_type]
+
+            # Get the pyclass
+            obj = get_cls(procstep_type, procstep_def["pyclass"])
+
+            # This object should not be None
+            if obj is None:
+                msg = "Could not find L2 processing step class: {}.{}".format(procstep_type, procstep_def["pyclass"])
+                self.error.add_error("missing-class", msg)
+                self.error.raise_on_error()
+
+            breakpoint()
+
+    def validate(self):
+        """
+        Checkout the difference processing steps and validate input/output variables in
+        the order of the steps
         :return:
         """
 
