@@ -15,9 +15,3 @@ class DefaultLoggingClass(object):
 
     def __init__(self, name):
         self.log = logger
-
-    def info(self, *args, **kwargs):
-        self.log.info(*args, **kwargs)
-
-    def debug(self, *args, **kwargs):
-        self.log.debug(*args, **kwargs)
