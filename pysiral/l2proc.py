@@ -23,7 +23,6 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.ssh import get_l2_ssh_class
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 from pysiral.surface_type import get_surface_type_class
-from pysiral.retracker import get_retracker_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
@@ -926,11 +925,11 @@ class Level2ProcessorStep(DefaultLoggingClass):
         return self.__class__.__name__
 
     @property
-    def input_vars(self):
+    def l2_input_vars(self):
         raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
 
     @property
-    def output_vars(self):
+    def l2_output_vars(self):
         raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
 
 
@@ -1044,11 +1043,11 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         return error_status
 
     @property
-    def input_vars(self):
+    def l2_input_vars(self):
         return []
 
     @property
-    def output_vars(self):
+    def l2_output_vars(self):
         output_vars = []
         for data_group, varlist in list(self.cfg.items()):
             l1p_variables = varlist.items()
