@@ -5,24 +5,26 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
+# Utility methods for retracker:
+from scipy.interpolate import interp1d
+import bottleneck as bn
+
+import sys
+import time
+import numpy as np
+from attrdict import AttrDict
+
+
 # cythonized bottleneck functions for cTFMRA
 try:
     from .bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
                                  cytfmra_wfm_noise_level, cytfmra_normalize_wfm)
     CYTFMRA_OK = True
-except:
+except ImportError:
     CYTFMRA_OK = False
 
-
 from pysiral.flag import ANDCondition, FlagContainer
-
-from attrdict import AttrDict
-import numpy as np
-import sys
-
-# Utility methods for retracker:
-from scipy.interpolate import interp1d
-import bottleneck as bn
+from pysiral.l2proc import Level2ProcessorStep
 
 
 class BaseRetracker(object):
@@ -133,6 +135,82 @@ class BaseRetracker(object):
     @property
     def error_flag(self):
         return FlagContainer(self._flag)
+
+
+class Level2RetrackerContainer(Level2ProcessorStep):
+    """
+    The interface for the Level-2 processor for all retrackers
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the instance
+        :param args:
+        :param kwargs:
+        """
+        super(Level2RetrackerContainer, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory class
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Get the error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        for surface_type, retracker_def in list(self.cfg.retracker.items()):
+
+            # Check if any waveforms need to be retracked for given
+            # surface type
+            surface_type_flag = l2.surface_type.get_by_name(surface_type)
+            if surface_type_flag.num == 0:
+                self.log.info("- no waveforms of type %s" % surface_type)
+                continue
+
+            # Benchmark retracker performance
+            timestamp = time.time()
+
+            # Retrieve the retracker assiciated with surface type from the l2 settings
+            retracker = get_retracker_class(retracker_def["pyclass"])
+
+            # Set options (if any)
+            if retracker_def["options"] is not None:
+                retracker.set_options(**retracker_def["options"])
+
+            # set subset of waveforms
+            retracker.set_indices(surface_type_flag.indices)
+
+            # Add classifier data (some retracker need that)
+            retracker.set_classifier(l1b.classifier)
+
+            # Start the retracking
+            retracker.retrack(l1b, l2)
+
+            # Retrieve the range after retracking
+            l2.update_retracked_range(retracker)
+
+            # XXX: Let the retracker return other parameters?
+            l2.set_radar_mode(l1b.waveform.radar_mode)
+
+            # retrieve potential error status and update surface type flag
+            if retracker.error_flag.num > 0:
+                l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
+            self.log.info("- Retrack class %s with %s in %.3f seconds" % (
+                surface_type, retracker_def["pyclass"],
+                time.time()-timestamp))
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return []
+
+    @property
+    def l2_output_vars(self):
+        return ["radar_mode", "range", "elevation"]
 
 
 class SICCI2TfmraEnvisat(BaseRetracker):
