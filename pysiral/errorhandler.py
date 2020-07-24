@@ -5,6 +5,7 @@ Created on Fri Jul 10 15:25:45 2015
 @author: Stefan
 """
 import sys
+from loguru import logger
 from pathlib import Path
 from inspect import getframeinfo, stack
 from collections import OrderedDict
@@ -41,6 +42,7 @@ class ErrorStatus(object):
 
     def raise_on_error(self):
         """ print error messages and exit program on existing error(s) """
+
         caller = getframeinfo(stack()[1][0])
         filename = Path(caller.filename).name
         if self.status:
@@ -49,7 +51,7 @@ class ErrorStatus(object):
             for i in range(len(self.codes)):
                 output += "  [%s] %s" % (self.codes[i], self.messages[i])
                 output += "\n"
-            print(output)
+            logger.error(output)
             sys.exit(1)
 
     def get_all_messages(self):
