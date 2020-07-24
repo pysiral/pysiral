@@ -37,10 +37,9 @@ class Level2Data(object):
         "sea_surface_anomaly": "ssa",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
-        "sea_ice_thickness": "sit",}
+        "sea_ice_thickness": "sit"}
 
-    _PROPERTY_CATALOG = {
-        "sea_surface_height": "ssh"}
+    _PROPERTY_CATALOG = {"sea_surface_height": "ssh"}
 
     def __init__(self, metadata, time_orbit, period=None):
 
@@ -73,12 +72,6 @@ class Level2Data(object):
 
         # Create Level2 Data Groups
         self._create_l2_data_items()
-
-    def set_surface_type(self, surface_type):
-        self.surface_type = surface_type
-
-    def set_radar_mode(self, radar_mode):
-        self.radar_mode = radar_mode
 
     def set_parameter(self, target, value, uncertainty=None, bias=None):
         """ Convienience method to safely add a parameter with optional
@@ -126,11 +119,11 @@ class Level2Data(object):
 
         # Use L2Elevation Array
         # TODO: This is to cumbersome, replace by xarray at due time
-        param = L2ElevationArray(shape=(self.n_records))
+        param = L2DataArray(shape=self.n_records)
         # Allow value to be None
         # NOTE: In this case an empty value will be generated
         if value is None:
-            value = np.full((self.n_records), np.nan)
+            value = np.full(self.n_records, np.nan)
         param.set_value(value)
         if uncertainty is not None:
             param.set_uncertainty(uncertainty)
@@ -169,6 +162,7 @@ class Level2Data(object):
                     auxdata.uncertainty[ii] = uncertainty[ii]
                 setattr(self, var_id, auxdata)
 
+    # TODO: Metadata needs to become a CF compliant data class
     def set_metadata(self, auxdata_source_dict=None, source_primary_filename=None, l2_algorithm_id=None,
                      l2_version_tag=None):
         if auxdata_source_dict is not None:
@@ -197,20 +191,15 @@ class Level2Data(object):
             parameter = getattr(self, source)
             return parameter.uncertainty
 
-        elif "_bias" in parameter_name:
-            parameter_name = parameter_name.replace("_bias", "")
-            source = catalog[parameter_name]
-            parameter = getattr(self, source)
-            return parameter.bias
-
         else:
             try:
                 source = catalog[parameter_name]
+                parameter = getattr(self, source)
             except KeyError:
                 msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
                 self.error.add_error("l2data-missing-variable", msg)
                 self.error.raise_on_error()
-            parameter = getattr(self, source)
+                parameter = None
             return parameter
 
     def get_attribute(self, attribute_name, *args):
@@ -226,7 +215,7 @@ class Level2Data(object):
 
     def _create_l2_data_items(self):
         for item in self._L2_DATA_ITEMS:
-            setattr(self, item, L2ElevationArray(shape=(self.n_records)))
+            setattr(self, item, L2DataArray(shape=self.n_records))
 
     def _check_if_valid_parameter(self, parameter_name):
         """ Performs a test if parameter name is a valid level-2 parameter
@@ -237,7 +226,7 @@ class Level2Data(object):
         else:
             return True
 
-    def _check_valid_size(self, array, name=""):
+    def _check_valid_size(self, array, **kwargs):
         """ Test if array has the correct size shape=(n_records). Adds error
         if not and returns flag (valid: True, invalid: False) """
         condition = array.ndim == 1 and len(array) == self._n_records
@@ -283,11 +272,12 @@ class Level2Data(object):
             else:
                 return np.full(self.arrshape, np.nan)
 
-    def _get_attr_pysiral_version(self, *args):
+    # TODO: All this needs to go to the metadata class with standardized attributes
+    @staticmethod
+    def _get_attr_pysiral_version(*args):
         return psrlcfg.version
 
     def _get_attr_mission_id(self, *args):
-        # XXX: Deprecated
         return self.info.mission
 
     def _get_attr_source_mission_id(self, *args):
@@ -340,11 +330,9 @@ class Level2Data(object):
         return hemisphere_code
 
     def _get_attr_startdt(self, dtfmt):
-        # XXX: Deprecated
         return self.info.start_time.strftime(dtfmt)
 
     def _get_attr_stopdt(self, dtfmt):
-        # XXX: Deprecated
         return self.info.stop_time.strftime(dtfmt)
 
     def _get_attr_geospatial_lat_min(self, *args):
@@ -359,7 +347,8 @@ class Level2Data(object):
     def _get_attr_geospatial_lon_max(self, *args):
         return self._gett_attr_geospatial_str(np.nanmax(self.longitude))
 
-    def _gett_attr_geospatial_str(self, value):
+    @staticmethod
+    def _gett_attr_geospatial_str(value):
         return "%.4f" % value
 
     def _get_attr_source_auxdata_sic(self, *args):
@@ -412,27 +401,27 @@ class Level2Data(object):
         return self._l2_version_tag
 
     def _get_attr_utcnow(self, *args):
-        datetime = self._creation_time
+        dt = self._creation_time
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_start(self, *args):
-        datetime = self.period.start
+        dt = self.period.start
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_end(self, *args):
-        datetime = self.period.stop
+        dt = self.period.stop
         if re.match("%", args[0]):
-            time_string = datetime.strftime(args[0])
+            time_string = dt.strftime(args[0])
         else:
-            time_string = datetime.isoformat()
+            time_string = dt.isoformat()
         return time_string
 
     def _get_attr_time_coverage_duration(self, *args):
@@ -457,7 +446,8 @@ class Level2Data(object):
             timeliness = timeliness.lower()
         return timeliness
 
-    def _get_attr_uuid(self, *args):
+    @staticmethod
+    def _get_attr_uuid(*args):
         """ Provide an uuid code (for tracking id's) """
         return str(uuid.uuid4())
 
@@ -484,7 +474,7 @@ class Level2Data(object):
 
     @property
     def arrshape(self):
-        return (self.n_records)
+        return self.n_records
 
     @property
     def n_records(self):
@@ -543,8 +533,8 @@ class Level2Data(object):
 
     @property
     def ssh(self):
-        ssh = L2ElevationArray(shape=self._n_records)
-        ssh.set_value(self.mss+self.ssa)
+        ssh = L2DataArray(shape=self._n_records)
+        ssh.set_value(self.mss + self.ssa)
         ssh.set_uncertainty(self.ssa.uncertainty)
         return ssh
 
@@ -572,6 +562,9 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         this must be explicetely set to false """
 
         super(Level2iTimeOrbit, self).__init__(None, **kwargs)
+
+        # Properties
+        self.time = None
 
     def from_l2i_stack(self, l2i_stack, index_list=None):
         """ Creates a TimeOrbit group object from l2i import. This is
@@ -614,7 +607,7 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         self.set_position(self, l2i.longitude, l2i.latitude, dummy_altitude)
 
 
-class L2ElevationArray(np.ndarray):
+class L2DataArray(np.ndarray):
     """
     Recipe from:
     http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
@@ -623,23 +616,19 @@ class L2ElevationArray(np.ndarray):
          cls[list].uncertainty will fail
     """
 
-    def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
-                strides=None, order=None, info=None):
-        obj = np.ndarray.__new__(
-            subtype, shape, dtype, buffer, offset, strides, order)*np.nan
+    def __new__(cls, shape, dtype=float, buffer=None, offset=0, strides=None, order=None, info=None):
+        obj = np.ndarray.__new__(cls, shape, dtype, buffer, offset, strides, order)*np.nan
         obj.uncertainty = np.zeros(shape=shape, dtype=float)
-        obj.bias = np.ones(shape=shape, dtype=float)*0.1
-        obj.source_class = "n/a"
-        obj.source_files = "n/a"
-        obj.long_name = "n/a"
-        obj.unit = "n/a"
+        obj.source_class = ""
+        obj.source_files = ""
+        obj.long_name = ""
+        obj.unit = ""
         return obj
 
     def __array_finalize__(self, obj):
         if obj is None:
             return
         self.uncertainty = getattr(obj, 'uncertainty', None)
-        self.bias = getattr(obj, 'bias', None)
         self.source_class = getattr(obj, 'source_class', None)
         self.source_files = getattr(obj, 'source_files', None)
         self.long_name = getattr(obj, 'long_name', None)
@@ -657,15 +646,11 @@ class L2ElevationArray(np.ndarray):
     def set_uncertainty(self, uncertainty):
         self.uncertainty = uncertainty
 
-    def set_bias(self, bias):
-        self.bias = bias
-
     def set_nan_indices(self, indices):
         value = self[:]
         value[indices] = np.nan
         self.set_value(value)
         self.uncertainty[indices] = np.nan
-        self.bias[indices] = np.nan
 
 
 class Level2PContainer(DefaultLoggingClass):
@@ -713,7 +698,7 @@ class Level2PContainer(DefaultLoggingClass):
         info = self.l2i_stack[0].info
 
         # Old notation (for backward compatibility)
-        #TODO: This will soon be obsolete
+        # TODO: This will soon be obsolete
         try:
             mission_id = info.mission_id
             # Transfer auxdata information
@@ -798,6 +783,7 @@ class Level2PContainer(DefaultLoggingClass):
                 data[parameter] = np.append(data[parameter], stack_data)
         return data
 
+    @staticmethod
     def _get_empty_data_group(self, parameter_list):
         data = {}
         for parameter_name in parameter_list:
@@ -884,6 +870,7 @@ class L2iNCFileImport(object):
                 pass
             setattr(self, target, parameter)
 
+    # TODO: Does this need to be here?
     def project(self, griddef):
         from pyproj import Proj
         p = Proj(**griddef.projection)
