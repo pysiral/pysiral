@@ -5,9 +5,12 @@ Created on Fri Jul 10 15:25:45 2015
 @author: Stefan
 """
 import sys
+from pathlib import Path
+from inspect import getframeinfo, stack
 from collections import OrderedDict
 
 
+# TODO: This is also obsolete
 PYSIRAL_ERROR_CODES = OrderedDict([
     ("auxdata_invalid_class", "Invalid auxdata class name [%s]"),
     ("auxdata_invalid_class_name", "Auxdata class does not exist [%s]"),
@@ -25,6 +28,9 @@ class ErrorStatus(object):
 
     def __init__(self, caller_id=""):
         self.caller_id = caller_id
+        self.status = False
+        self.codes = []
+        self.messages = []
         self.reset()
 
     def add_error(self, code, message):
@@ -35,9 +41,11 @@ class ErrorStatus(object):
 
     def raise_on_error(self):
         """ print error messages and exit program on existing error(s) """
+        caller = getframeinfo(stack()[1][0])
+        filename = Path(caller.filename).name
         if self.status:
-            output = "%s Critical Error(s): (%g)\n" % (
-                self.caller_id, len(self.codes))
+            output = "{} Critical Error(s): {:g} [raised in {} L{}]\n"
+            output = output.format(self.caller_id, len(self.codes), filename, caller.lineno)
             for i in range(len(self.codes)):
                 output += "  [%s] %s" % (self.codes[i], self.messages[i])
                 output += "\n"
