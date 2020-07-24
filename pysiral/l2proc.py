@@ -75,9 +75,6 @@ class Level2Processor(DefaultLoggingClass):
         # Initialize the class
         self._initialize_processor()
 
-
-# %% Level2Processor: class properties
-
     @property
     def orbit(self):
         return self._orbit
@@ -131,7 +128,7 @@ class Level2Processor(DefaultLoggingClass):
 # %% Level2Processor: house keeping methods
 
     def _l2proc_summary_to_file(self):
-        if not "output" in self.l2def:
+        if "output" not in self.l2def:
             return
         # TODO: This method is currently broken, as there is no output key in l2def
         for output_id, output_def in list(self.l2def.output.items()):
@@ -353,7 +350,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Transfer variables from l1p to l2 object"""
 
         # Make this a backward compatible feature (should work without tag in l2 processor definition file)
-        if not "transfer_from_l1p" in self.l2def:
+        if "transfer_from_l1p" not in self.l2def:
             return
 
         # Don't spam the log
@@ -829,3 +826,107 @@ class L2ProcessorReport(DefaultLoggingClass):
     @property
     def n_warnings(self):
         return 0
+
+
+class Level2ProcessorStep(DefaultLoggingClass):
+    """
+    Parent class for any Level-2 processor step class, which may be distributed over the
+    different pysiral modules.
+
+    This class also serves as a template for all sub-classes. Mandatory methods and properties
+    in this class which raise a NotImplementedException must be overwritten by the subclass
+    """
+
+    def __init__(self, cfg):
+        """
+        Init the
+        :param cfg:
+        """
+        super(Level2ProcessorStep, self).__init__(self.__class__.__name__)
+
+        # -- Properties --
+
+        # Class configuration
+        self.cfg = cfg
+
+        # Log messages
+        self.msgs = []
+
+        # Error Status
+        self.error = ErrorStatus()
+
+        # Error flag dict {code: component}
+        self.error_flag_bit_dict = {
+            "l1b": 0,
+            "l2proc": 0,
+            "auxdata": 2,
+            "surface_type": 3,
+            "retracker": 4,
+            "range_correction": 5,
+            "frb": 6,
+            "sit": 7,
+            "filter": 8,
+            "other": 17}
+
+    def execute(self, l1b, l2):
+        """
+        The main entry point for the
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Execute the method of the subclass. The class needs to
+        error_flag = self.execute_step(l1b, l2)
+
+        # Update the status flag
+        self.update_error_flag(l2, error_flag)
+
+    def update_error_flag(self, l2, error_flag):
+        """
+        Add the error_flag of the the processing step to the
+        :param: l2: The Level-2 data container
+        :param: error_flag: An array with the shape of l2.records containing the error flag
+            (False: nominal, True: error)
+        :return:
+        """
+        raise NotImplementedError("Deactivated for test purposes")
+
+    def execute_step(self, l1b, l2):
+        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+
+    @property
+    def classname(self):
+        return self.__class__.__name__
+
+
+class Level2ProcessorStepOrder(DefaultLoggingClass):
+    """
+    A container providing the ordered list of processing steps
+    as initialized classes for each trajectory
+    """
+
+    def __init__(self, cfg):
+        """
+        Initialize this class
+        :param cfg: the procsteps tag from the Level-2 processor definitions file
+        """
+        super(Level2ProcessorStepOrder, self).__init__(self.__class__.__name__)
+
+        # Properties
+        self.cfg = cfg
+        self.error = ErrorStatus()
+
+        # A list of the class object (not initialized!)
+        self._classes = []
+        self.get_classes()
+
+    def get_classes(self):
+        """
+        Retrieves the required classes from the processor definition files and stores them in a list
+        without initializing them. This way a freshly initialized version can be supplied to each
+        l2 data object without risk of interference of class properties
+        :return:
+        """
+
+        breakpoint()
