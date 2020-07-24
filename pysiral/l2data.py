@@ -607,6 +607,7 @@ class Level2iTimeOrbit(L1bTimeOrbit):
         self.set_position(self, l2i.longitude, l2i.latitude, dummy_altitude)
 
 
+# TODO: Is this going to stay, or better replaced by xarray variables?
 class L2DataArray(np.ndarray):
     """
     Recipe from:
