@@ -1054,3 +1054,79 @@ class L1BL2TransferVariables(Level2ProcessorStep):
             for var_name, vardef in list(l1p_variables):
                 output_vars.append(vardef["aux_id"])
         return output_vars
+
+
+class L2ApplyRangeCorrections(Level2ProcessorStep):
+    """
+    Level-2 processing step class for applying geophysical range corrections to the elevations
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class
+        :param args:
+        :param kwargs:
+        """
+        super(L2ApplyRangeCorrections, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory method of Level-2 processor
+        :param l1b:
+        :param l2:
+        :return: error_status
+        """
+
+        # Get the error mandatory
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Apply the range corrections (content of l1b data package)
+        # to the l2 elevation (output of retracker) data
+        for correction_name in self.cfg.options.corrections:
+
+            # Get the range correction field
+            range_delta = l1b.correction.get_parameter_by_name(correction_name)
+
+            # Check if data is in l1p
+            # -> skip with warning if not
+            if range_delta is None:
+                error_status[:] = True
+                self.log.warning("Cannot find range correction: {} - skipping".format(correction_name))
+                continue
+
+            # Check if NaN's, set values to zero and provide warning
+            nans_indices = np.where(np.isnan(range_delta))[0]
+            if len(nans_indices) > 0:
+                range_delta[nans_indices] = 0.0
+                error_status[nans_indices] = True
+                self.log.warning("NaNs encountered in range correction parameter: %s" % correction_name)
+
+            # Apply the range correction
+            #
+            # NOTES:
+            #
+            #    1. It is assumed at this point that the uncertainty of the range correction is
+            #       negligible compared to the remaining uncertainty components, respectively
+            #       is already included in the general range uncertainty budget
+            #
+            #    2. the range correction variable `range_delta` is subtracted from the elevation
+            #       as the it has to be added to range:
+            #
+            #           elevation = altitude - (range + range_correction)
+            #       ->  elevation = altitude - range - range_correction
+            #                       |              |
+            #                       ----------------
+            #                 elevation after retracking
+            #
+            l2.elevation[:] = l2.elevation[:] - range_delta
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["elevation"]
+
+    @property
+    def l2_output_vars(self):
+        output_vars = []
+        return output_vars
