@@ -4,7 +4,7 @@
 plib A collection of python libraries
 """
 
-__all__ = ["functions", "iotools"]
+__all__ = ["functions", "iotools", "cs2_procstage2timeliness"]
 
 
 def cs2_procstage2timeliness(processing_stage_str):
@@ -14,6 +14,5 @@ def cs2_procstage2timeliness(processing_stage_str):
     :param processing_stage_str: A String from the CryoSat-2 product metadata
     :return: the 3-character pysiral timeliness code
     """
-    timeliness_dct = {"n": "nrt", "o": "ntc", "r": "rep", "l": "rep", "test": "tds", "offl": "rep",
-                      "nrt_": "nrt"}
+    timeliness_dct = {"n": "nrt", "o": "ntc", "r": "rep", "l": "rep", "test": "tds", "offl": "rep", "nrt_": "nrt"}
     return timeliness_dct.get(processing_stage_str.lower(), "ukn")

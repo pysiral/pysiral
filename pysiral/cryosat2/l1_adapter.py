@@ -31,6 +31,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Init main class variables
         self.nc = None
+        self.filepath = None
+        self.l1 = None
 
     @staticmethod
     def translate_opmode2radar_mode(op_mode):
@@ -38,11 +40,11 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         translate_dict = {"sar": "sar", "lrm": "lrm", "sarin": "sin"}
         return translate_dict.get(op_mode, None)
 
-
     def get_l1(self, filepath, polar_ocean_check=None):
         """
         Main entry point to the CryoSat-2 Baseline-D Input Adapter
         :param filepath:
+        :param polar_ocean_check:
         :return:
         """
 
@@ -113,25 +115,25 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         return wfm_range
 
     @staticmethod
-    def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, **kwargs):
+    def interp_1hz_to_20hz(variable_1hz, time_1hz, time_20hz, **kwargs):
         """
         Computes a simple linear interpolation to transform a 1Hz into a 20Hz variable
-        :param variable_1Hz: an 1Hz variable array
-        :param time_1Hz: 1Hz reference time
-        :param time_20Hz: 20 Hz reference time
+        :param variable_1hz: an 1Hz variable array
+        :param time_1hz: 1Hz reference time
+        :param time_20hz: 20 Hz reference time
         :return: the interpolated 20Hz variable
         """
         error_status = False
         try:
-            f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
-            variable_20Hz = f(time_20Hz)
+            f = interpolate.interp1d(time_1hz, variable_1hz, bounds_error=False, **kwargs)
+            variable_20hz = f(time_20hz)
         except ValueError:
             fill_value = np.nan
-            variable_20Hz = np.full(time_20Hz.shape, fill_value)
+            variable_20hz = np.full(time_20hz.shape, fill_value)
             error_status = True
-        return variable_20Hz, error_status
+        return variable_20hz, error_status
 
-    def _read_input_netcdf(self, filepath, attributes_only=False):
+    def _read_input_netcdf(self, filepath, **kwargs):
         """ Read the netCDF file via xarray """
         try:
             self.nc = xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
@@ -145,7 +147,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """ Fill the product info """
 
         # Short cuts
-        metadata =  self.nc.attrs
+        metadata = self.nc.attrs
         info = self.l1.info
 
         # Processing environment metadata
@@ -277,18 +279,18 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
 
         # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
-        time_1Hz =  self.nc.time_cor_01.values
-        time_20Hz = self.nc.time_20_ku.values
+        time_1hz = self.nc.time_cor_01.values
+        time_20hz = self.nc.time_20_ku.values
 
         # Loop over all range correction variables defined in the processor definition file
         for key in self.cfg.range_correction_targets.keys():
             pds_var_name = self.cfg.range_correction_targets[key]
-            variable_1Hz = getattr(self.nc, pds_var_name)
-            variable_20Hz, error_status = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
+            variable_1hz = getattr(self.nc, pds_var_name)
+            variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
             if error_status:
                 msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
                 self.log.warning(msg)
-            self.l1.correction.set_parameter(key, variable_20Hz)
+            self.l1.correction.set_parameter(key, variable_20hz)
 
     def _set_surface_type_group(self):
         """
@@ -299,19 +301,19 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
 
         # Get the reference times for interpolating the flag from 1Hz -> 20Hz
-        time_1Hz =  self.nc.time_cor_01.values
-        time_20Hz = self.nc.time_20_ku.values
+        time_1hz = self.nc.time_cor_01.values
+        time_20hz = self.nc.time_20_ku.values
 
         # Interpolate 1Hz surface type flag to 20 Hz
-        surface_type_1Hz = self.nc.surf_type_01.values
-        surface_type_20Hz, error_status = self.interp_1Hz_to_20Hz(surface_type_1Hz, time_1Hz, time_20Hz, kind="nearest")
+        surface_type_1hz = self.nc.surf_type_01.values
+        surface_type_20hz, error_status = self.interp_1hz_to_20hz(surface_type_1hz, time_1hz, time_20hz, kind="nearest")
         if error_status:
             msg = "- Error in 20Hz interpolation for variable `surf_type_01` -> set only dummy"
             self.log.warning(msg)
 
         # Set the flag
         for key in ESA_SURFACE_TYPE_DICT.keys():
-            flag = surface_type_20Hz == ESA_SURFACE_TYPE_DICT[key]
+            flag = surface_type_20hz == ESA_SURFACE_TYPE_DICT[key]
             self.l1.surface_type.add_flag(flag, key)
 
     def _set_classifier_group(self):
@@ -325,8 +327,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
         # Loop over all classifier variables defined in the processor definition file
         for key in self.cfg.classifier_targets.keys():
-            variable_20Hz = getattr(self.nc, self.cfg.classifier_targets[key])
-            self.l1.classifier.add(variable_20Hz, key)
+            variable_20hz = getattr(self.nc, self.cfg.classifier_targets[key])
+            self.l1.classifier.add(variable_20hz, key)
 
         # Calculate Parameters from waveform counts
         # XXX: This is a legacy of the CS2AWI IDL processor
@@ -353,8 +355,6 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self.l1.classifier.add(satellite_velocity_vector[:, 0], "satellite_velocity_x")
         self.l1.classifier.add(satellite_velocity_vector[:, 1], "satellite_velocity_y")
         self.l1.classifier.add(satellite_velocity_vector[:, 2], "satellite_velocity_z")
-
-
 
     @property
     def empty(self):

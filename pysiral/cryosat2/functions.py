@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 
 from pysiral.logging import DefaultLoggingClass
 
+
 class L1PWaveformResampleSIN(DefaultLoggingClass):
     """
     A post-processing class for CryoSat-2 l1p data that resamples the SIN waveform group
@@ -42,8 +43,6 @@ class L1PWaveformResampleSIN(DefaultLoggingClass):
             l1.reduce_waveform_bin_count(self.sin_target_bins)
 
 
-
-
 def get_cryosat2_wfm_power(counts, linear_scale, power_scale):
     """
     Converts the Cryosat-2 waveform counts into a physical unit (Watts)
@@ -69,7 +68,7 @@ def get_cryosat2_wfm_power(counts, linear_scale, power_scale):
     -------
         float list with echo power in Watts
     """
-    return counts*(linear_scale*1e-9)*2.0**(power_scale)
+    return counts*(linear_scale*1e-9)*2.0**power_scale
 
 
 def get_cryosat2_wfm_range(window_delay, n_range_bins):
@@ -124,6 +123,7 @@ def get_cryosat2_wfm_range_userhandbook(window_delay, n_range_bins):
         (2*window_delay*bandwidth - n_range_bins/2.0 + range_bin_index)
     return wfm_range
 
+
 def get_tai_datetime_from_timestamp(mdsr_timestamp):
     """
     Converts the TAI MDSR timestamp into a datetime object
@@ -148,7 +148,7 @@ def get_tai_datetime_from_timestamp(mdsr_timestamp):
 
     """
     timestamps = np.asarray(mdsr_timestamp)
-    output = np.ndarray(shape=(len(timestamps)), dtype=object)
+    output = np.ndarray(shape=timestamps.shape, dtype=object)
     for i, timestamp in enumerate(timestamps):
         output[i] = datetime(2000, 1, 1) + timedelta(
             timestamp.day, timestamp.sec, timestamp.msec)
@@ -178,14 +178,10 @@ def parse_cryosat_l1b_filename(filename):
     # Do some post-editing
     # - parse is not that smart when it comes to work with date strings
     # - naming conventions as the rest of pysiral
-    info = {}
-    info["mission"] = "cryosat2"
-    info["instrument"] = result["instrument"].lower()
-    info["radar_mode"] = result["radar_mode"].lower()
-    info["data_level"] = "L"+result["data_level"]
-    info["start_dt"] = dtparser.parse(result["start_dt"])
-    info["stop_dt"] = dtparser.parse(result["stop_dt"])
-    info["baseline"] = result["baseline"]
+    info = {"mission": "cryosat2", "instrument": result["instrument"].lower(),
+            "radar_mode": result["radar_mode"].lower(), "data_level": "L" + result["data_level"],
+            "start_dt": dtparser.parse(result["start_dt"]), "stop_dt": dtparser.parse(result["stop_dt"]),
+            "baseline": result["baseline"]}
     return AttrDict(info)
 
 
@@ -197,4 +193,3 @@ def parse_cryosat_l1b_xml_header(filename):
     with open(str(filename)) as fd:
         content_odereddict = xmltodict.parse(fd.read())
     return content_odereddict[u'Earth_Explorer_Header']
-
