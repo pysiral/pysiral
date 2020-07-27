@@ -75,7 +75,7 @@ procsteps:
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
-    - l2proc: 
+    -   module: l2proc.procsteps
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
@@ -100,8 +100,8 @@ procsteps:
                 antenna_yaw: [toantyaw, antenna_yaw]
 
     # Surface type classification algorithm
-    - surface_type:
-        pyclass: SICCI2
+    -   module: surface_type
+        pyclass: SICCI2SurfaceType
         options:
             sar:
                 ocean:
@@ -135,7 +135,7 @@ procsteps:
                     ice_concentration_min: 70.0
 
     # Retracking algorithm dependent on surface type
-    - retracker:
+    -   module: retracker
         pyclass: Level2RetrackerContainer
         options:
             ocean:
@@ -173,7 +173,7 @@ procsteps:
                         value: 0.1
 
     # Apply the range corrections 
-    - l2proc: 
+    -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
             corrections: 
@@ -188,7 +188,7 @@ procsteps:
                 - geocentric_polar_tide
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    - ssh:
+    -   module: ssh
         pyclass: SSASmoothedLinear
         options:
             use_ocean_wfm: False
@@ -206,18 +206,18 @@ procsteps:
                 edges_only: false
 
     # Estimation of Radar Freeboard
-    - frb:
+    -   module: frb
         pyclass: RadarFreeboardDefault
         options: null
 
     # Algorithm for converting radar freeboard into freeboard
-    - frb:
+    -   module: frb
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: mallett2020
 
     # Filter invalid freeboard values
-    - filter:
+    -   module: filter
         pyclass: L2ParameterValidRange
         options:
             evaluate: frb
@@ -226,7 +226,7 @@ procsteps:
             valid_maximum_point_value: 2.25
 
     # Algorithm for getting sea ice thickness from other l2 parameters
-    - sit:
+    -   module: sit
         pyclass: SeaIceFreeboardDefault
         options:
             water_density: 1024.0
@@ -238,7 +238,7 @@ procsteps:
                 myi_density: 23.0
 
     # Filters after thickness computation
-    - filter:
+    -   module: filter
         pyclass: L2ParameterValidRange
         options:
             evaluate: sit
@@ -247,6 +247,6 @@ procsteps:
             valid_maximum_point_value: 10.5
 
     # Compute sea ice draft
-    - sit:
-        class_name: L2SeaIceDraft
+    -   module: sit
+        pyclass: L2SeaIceDraft
         options: {}
