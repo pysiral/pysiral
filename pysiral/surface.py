@@ -207,17 +207,16 @@ class ClassifierContainer(object):
         return self._n_records
 
 
-class SurfaceTypeClassifier(DefaultLoggingClass):
+class SurfaceTypeClassifier(object):
     """
     This is a parent class that allows to quickly generate surface type classication schemes
     for the Level-2 processpr
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
         Initializes the class
         """
-        super(SurfaceTypeClassifier, self).__init__(self.__class__.__name__)
 
         # The result of the surface type classification
         # NOTE: This instance contains the number codes for each surface type
