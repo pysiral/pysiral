@@ -96,7 +96,7 @@ import numpy as np
 import copy
 
 from pysiral.logging import DefaultLoggingClass
-from pysiral import surface_type
+from pysiral import surface
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
 
@@ -118,7 +118,7 @@ class Level1bData(DefaultLoggingClass):
         self.time_orbit = L1bTimeOrbit(self.info)
         self.correction = L1bRangeCorrections(self.info)
         self.classifier = L1bClassifiers(self.info)
-        self.surface_type = surface_type.SurfaceType()
+        self.surface_type = surface.SurfaceType()
 
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """

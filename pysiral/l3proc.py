@@ -13,7 +13,7 @@ from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.flag import ORCondition
-from pysiral.surface_type import SurfaceType
+from pysiral.surface import SurfaceType
 from pysiral.sit import frb2sit_errprop
 
 from scipy import stats

@@ -17,7 +17,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
+from pysiral.surface import ESA_SURFACE_TYPE_DICT
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):

@@ -24,7 +24,7 @@ from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from pysiral.logging import DefaultLoggingClass
 from pysiral.ssh import get_l2_ssh_class
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
-from pysiral.surface_type import get_surface_type_class
+# from pysiral.surface import get_surface_type_class
 from pysiral.filter import get_filter
 from pysiral.validator import get_validator
 from pysiral.frb import get_frb_algorithm
@@ -241,13 +241,13 @@ class Level2Processor(DefaultLoggingClass):
             l1b = self._read_l1b_file(l1b_file)
             source_primary_filename = Path(l1b_file).parts[-1]
 
-            # Apply the geophysical range corrections on the waveform range
-            # bins in the l1b data container
-            # TODO: move to level1bData class
-            self._apply_range_corrections(l1b)
-
-            # Apply a pre-filter of the l1b data (can be none)
-            self._apply_l1b_prefilter(l1b)
+            # # Apply the geophysical range corrections on the waveform range
+            # # bins in the l1b data container
+            # # TODO: move to level1bData class
+            # self._apply_range_corrections(l1b)
+            #
+            # # Apply a pre-filter of the l1b data (can be none)
+            # self._apply_l1b_prefilter(l1b)
 
             # Initialize the orbit level-2 data container
             # TODO: replace by proper product metadata transfer
@@ -257,12 +257,14 @@ class Level2Processor(DefaultLoggingClass):
                 msg = "Computation of data period caused exception"
                 self.log.warning("[invalid-l1b]", msg)
                 continue
+
+            # Init the Level-2 data object
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
-            # Transfer l1p parameter to the l2 data object (if applicable)
-            # NOTE: This is only necessary, if parameters from the l1p files (classifiers) should
-            #       be present in the l2i product
-            self._transfer_l1p_vars(l1b, l2)
+            # # Transfer l1p parameter to the l2 data object (if applicable)
+            # # NOTE: This is only necessary, if parameters from the l1p files (classifiers) should
+            # #       be present in the l2i product
+            # self._transfer_l1p_vars(l1b, l2)
 
             # Get auxiliary data from all registered auxdata handlers
             error_status, error_codes = self._get_auxiliary_data(l2)
@@ -270,45 +272,45 @@ class Level2Processor(DefaultLoggingClass):
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
-            # Surface type classification (ocean, ice, lead, ...)
-            # (ice type classification comes later)
-            self._classify_surface_types(l1b, l2)
-
-            # Validate surface type classification
-            # yes/no decision on continuing with orbit
-            error_status, error_codes = self._validate_surface_types(l2)
-            if error_status:
-                self._discard_l1b_procedure(error_codes, l1b_file)
-                continue
-
-            # Get elevation by retracking of different surface types
-            # adds parameter elevation to l2
-            error_status, error_codes = self._waveform_retracking(l1b, l2)
-            if error_status:
-                self._discard_l1b_procedure(error_codes, l1b_file)
-                continue
-
-            # Compute the sea surface anomaly (from mss and lead tie points)
-            # adds parameter ssh, ssa, afrb to l2
-            self._estimate_sea_surface_height(l2)
-
-            # Compute the radar freeboard and its uncertainty
-            self._get_altimeter_freeboard(l1b, l2)
-
-            # get radar(-derived) from altimeter freeboard
-            self._get_freeboard_from_radar_freeboard(l1b, l2)
-
-            # Apply freeboard filter
-            self._apply_freeboard_filter(l2)
-
-            # Convert to thickness
-            self._convert_freeboard_to_thickness(l2)
-
-            # Filter thickness
-            self._apply_thickness_filter(l2)
-
-            # Post processing
-            self._post_processing_items(l2)
+            # # Surface type classification (ocean, ice, lead, ...)
+            # # (ice type classification comes later)
+            # self._classify_surface_types(l1b, l2)
+            #
+            # # Validate surface type classification
+            # # yes/no decision on continuing with orbit
+            # error_status, error_codes = self._validate_surface_types(l2)
+            # if error_status:
+            #     self._discard_l1b_procedure(error_codes, l1b_file)
+            #     continue
+            #
+            # # Get elevation by retracking of different surface types
+            # # adds parameter elevation to l2
+            # error_status, error_codes = self._waveform_retracking(l1b, l2)
+            # if error_status:
+            #     self._discard_l1b_procedure(error_codes, l1b_file)
+            #     continue
+            #
+            # # Compute the sea surface anomaly (from mss and lead tie points)
+            # # adds parameter ssh, ssa, afrb to l2
+            # self._estimate_sea_surface_height(l2)
+            #
+            # # Compute the radar freeboard and its uncertainty
+            # self._get_altimeter_freeboard(l1b, l2)
+            #
+            # # get radar(-derived) from altimeter freeboard
+            # self._get_freeboard_from_radar_freeboard(l1b, l2)
+            #
+            # # Apply freeboard filter
+            # self._apply_freeboard_filter(l2)
+            #
+            # # Convert to thickness
+            # self._convert_freeboard_to_thickness(l2)
+            #
+            # # Filter thickness
+            # self._apply_thickness_filter(l2)
+            #
+            # # Post processing
+            # self._post_processing_items(l2)
 
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
