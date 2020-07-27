@@ -64,7 +64,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
 
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
         Initialize the class.
         """
@@ -128,7 +128,6 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         else:
             raise ValueError("Invalid option `vacuum_light_speed_reduction` [{}]".format(str(config_value)))
 
-
         correction_factor = self._options.vacuum_light_speed_reduction
 
 
@@ -136,7 +135,7 @@ class SnowFreeboardAssumption(L2FreeboardAlgorithmBaseClass):
     # TODO: Add functionality to use snow density
     """ Applies geometric corrections for snow wave progagation """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(SnowFreeboardAssumption, self).__init__()
 
     def _get_freeboard(self, l1b, l2):
@@ -159,7 +158,7 @@ class SnowFreeboardAssumption(L2FreeboardAlgorithmBaseClass):
 
 class L2RadarFreeboardAlgorithmBaseClass(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
@@ -177,7 +176,7 @@ class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
      sea surface anomaly)
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(RadarFreeboardDefault, self).__init__()
 
     def _get_radar_freeboard(self, l1b, l2):
@@ -199,8 +198,7 @@ class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
         - sea surface anomaly
         mss uncertainties is ignored, respectively part of ssa uncertainty
         """
-        rfrb_unc = np.sqrt((l2.elev.uncertainty)**2. +
-                           (l2.ssa.uncertainty)**2.)
+        rfrb_unc = np.sqrt(l2.elev.uncertainty**2. + l2.ssa.uncertainty**2.)
         return rfrb_unc
 
 

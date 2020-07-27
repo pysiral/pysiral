@@ -31,7 +31,7 @@ class SeaIceFreeboardDefault(L2ThicknessAlgorithmBaseClass):
     Ricker et al. 2014 style uncertainty estimation
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(SeaIceFreeboardDefault, self).__init__()
 
     def _get_thickness(self, l2):
@@ -132,7 +132,7 @@ class SnowFreeboardDefault(L2ThicknessAlgorithmBaseClass):
     Ricker et al. 2014 style uncertainty estimation
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(SnowFreeboardDefault, self).__init__()
 
     def _get_thickness(self, l2):
@@ -230,7 +230,7 @@ class SnowFreeboardDefault(L2ThicknessAlgorithmBaseClass):
 class L2SeaIceDraft(DefaultLoggingClass):
     """ A Level-2" post-rocessor item class for computing sea ice draft and its uncertainty """
 
-    def __init__(self, **cfg):
+    def __init__(self, cfg):
         super(L2SeaIceDraft, self).__init__(self.__class__.__name__)
         self.cfg = cfg
 

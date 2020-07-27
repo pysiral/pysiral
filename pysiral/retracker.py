@@ -24,7 +24,7 @@ except ImportError:
     CYTFMRA_OK = False
 
 from pysiral.flag import ANDCondition, FlagContainer
-from pysiral.l2proc import Level2ProcessorStep
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class BaseRetracker(object):

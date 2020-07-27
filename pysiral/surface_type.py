@@ -5,14 +5,14 @@ Created on Mon Jul 27 11:25:04 2015
 @author: Stefan
 """
 
-#TODO: options to __init__ (and not classify())
-
-from pysiral.config import RadarModes
-from pysiral.flag import FlagContainer, ANDCondition
 
 import numpy as np
-from attrdict import AttrDict
 from collections import OrderedDict
+
+from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.logging import DefaultLoggingClass
+from pysiral.config import RadarModes
+from pysiral.flag import FlagContainer, ANDCondition
 
 
 ESA_SURFACE_TYPE_DICT = {
@@ -22,7 +22,7 @@ ESA_SURFACE_TYPE_DICT = {
     "land": 3}
 
 
-class SurfaceType(object):
+class SurfaceType(DefaultLoggingClass):
     """
     Container for surface type information.
 
@@ -48,6 +48,10 @@ class SurfaceType(object):
         "invalid": 8}
 
     def __init__(self):
+        """
+
+        """
+        super(SurfaceType, self).__init__(self.__class__.__name__)
         self._surface_type_flags = []
         self._surface_type = None
         self._n_records = None
@@ -167,6 +171,7 @@ class SurfaceType(object):
 #        if name in ["__getnewargs_ex__", "__deepcopy__"]:
 #            raise AttributeError("%r has no attribute %r" % (type(self), name))
 
+
 class IceType(object):
     """
     Container for ice type information
@@ -204,24 +209,21 @@ class ClassifierContainer(object):
         return self._n_records
 
 
-class SurfaceTypeClassifier(object):
+class Level2SurfaceTypeClassifier(object):
     """ Parent Class for surface type classifiers """
 
     def __init__(self):
+        """
+
+        """
         self._surface_type = SurfaceType()
         self._l1b_surface_type = None
-        self._classifier = ClassifierContainer()
+        self.classifier = ClassifierContainer()
         self._radar_modes = RadarModes()
 
     @property
     def result(self):
         return self._surface_type
-
-    def set_options(self, **opt_dict):
-        self._options = AttrDict(opt_dict)
-
-    def add_classifiers(self, classifier, name):
-        self._classifier.add_parameter(classifier, name)
 
     def set_l1b_surface_type(self, l1b_surface_type):
         self._l1b_surface_type = l1b_surface_type
@@ -231,15 +233,21 @@ class SurfaceTypeClassifier(object):
         self._surface_type = surface_type
 
     def classify(self, l1b, l2):
+        """
+        Classify the surface types
+        :param l1b:
+        :param l2:
+        :return:
+        """
 
         # Add all classifiers from l1bdata
         for classifier_name in l1b.classifier.parameter_list:
             classifier = getattr(l1b.classifier, classifier_name)
-            self.add_classifiers(classifier, classifier_name)
+            self.classifier.add_parameter(classifier, classifier_name)
 
         # add year/month from L1b
-        self._year = l1b.info.start_time.year
-        self._month = l1b.info.start_time.month
+        self.year = l1b.info.start_time.year
+        self.month = l1b.info.start_time.month
 
         # add sea ice concentration
         self.add_classifiers(l2.sic, "sic")
@@ -279,7 +287,7 @@ class SurfaceTypeClassifier(object):
         return name in self._classes
 
     def set_unknown_default(self):
-        flag = np.ones(shape=(self._classifier.n_records), dtype=np.bool)
+        flag = np.ones(shape=self._classifier.n_records, dtype=np.bool)
         self._surface_type.add_flag(flag, "unknown")
 
     def set_l1b_land_mask(self, l1b):
@@ -287,7 +295,7 @@ class SurfaceTypeClassifier(object):
         self._surface_type.add_flag(l1b_land_mask.flag, "land")
 
 
-class RickerTC2014(SurfaceTypeClassifier):
+class RickerTC2014(Level2SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
 
@@ -360,14 +368,20 @@ class RickerTC2014(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
-class SICCI2(SurfaceTypeClassifier):
+class SICCI2SurfaceType(Level2ProcessorStep, Level2SurfaceTypeClassifier):
     """
     new and unified surface type classifier for cryosat2 and envisat
     based on similar (pulse peakiness, backscatter, leading edge width)
     """
 
-    def __init__(self):
-        super(SICCI2, self).__init__()
+    def __init__(self, *args, **kwargs):
+        """
+
+        :param args:
+        :param kwargs:
+        """
+        Level2ProcessorStep.__init__(self, *args, **kwargs)
+        Level2SurfaceTypeClassifier.__init__(self)
         self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
 
     def _classify(self, options):
@@ -397,7 +411,7 @@ class SICCI2(SurfaceTypeClassifier):
 
         # Pointer
         opt = options.lead
-        month_num = self._month
+        month_num = self.month
         parameter = self._classifier
 
         # All conditions must be fulfilled
@@ -426,7 +440,7 @@ class SICCI2(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(lead.flag, "lead")
 
-    def _classify_sea_ice(self, options):
+    def classify_sea_ice(self, options):
         """
         Classify waveforms as sea ice
         :param options: The option attribute dictionary
@@ -435,7 +449,7 @@ class SICCI2(SurfaceTypeClassifier):
 
         # Pointer
         opt = options.sea_ice
-        month_num = self._month
+        month_num = self.month
         parameter = self._classifier
 
         # All conditions must be fulfilled
@@ -466,7 +480,8 @@ class SICCI2(SurfaceTypeClassifier):
         # Done, add flag
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
-    def get_threshold_value(self, options, name, month_num):
+    @staticmethod
+    def get_threshold_value(options, name, month_num):
         """
         A unified method to retrieve threshold values from lists (one per month) or a scalar
         :param options: configuration object
@@ -485,7 +500,7 @@ class SICCI2(SurfaceTypeClassifier):
             return option_value
 
 
-class SICCI1Envisat(SurfaceTypeClassifier):
+class SICCI1Envisat(Level2SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
 
@@ -541,7 +556,7 @@ class SICCI1Envisat(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
-class ICESatFarellEtAl2009(SurfaceTypeClassifier):
+class ICESatFarellEtAl2009(Level2SurfaceTypeClassifier):
     """
     Surface Type classification algorithm from
 
@@ -603,7 +618,7 @@ class ICESatFarellEtAl2009(SurfaceTypeClassifier):
         self._surface_type.add_flag(ice.flag, "sea_ice")
 
 
-class ICESatKhvorostovskyTPEnhanced(SurfaceTypeClassifier):
+class ICESatKhvorostovskyTPEnhanced(Level2SurfaceTypeClassifier):
     """ Classifier based on TC paper from Kirill (lead detection part)
     which uses coincident local dips in reflectivity and elevation
     to identify ssh tie points (see Section 3.3.2 An improved algorithm

@@ -16,7 +16,7 @@ import numpy as np
 
 class FilterBaseClass(DefaultLoggingClass):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(FilterBaseClass, self).__init__(self.__class__.__name__)
         self._flag = None
 
@@ -42,7 +42,7 @@ class L1bBackscatterDriftCorrection(FilterBaseClass):
     applies a monthly linear correction based on the drift factor and
     base period. """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(L1bBackscatterDriftCorrection, self).__init__()
         self.log.name = self.__class__.__name__
 
@@ -69,7 +69,7 @@ class L2ParameterValidRange(FilterBaseClass):
     Requires l2 data container and target (either: "afrb", "rfrb")
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(L2ParameterValidRange, self).__init__()
 
     def _apply_filter(self, l2, target):

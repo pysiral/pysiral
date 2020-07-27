@@ -89,19 +89,16 @@ Surface Type
 
 """
 
-from pysiral.logging import DefaultLoggingClass
-from pysiral.surface_type import SurfaceType
-from pysiral.output import NCDateNumDef
-from pysiral.config import RadarModes
-
-
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
 from collections import OrderedDict
 import numpy as np
 import copy
-from pathlib import Path
 
+from pysiral.logging import DefaultLoggingClass
+from pysiral import surface_type
+from pysiral.output import NCDateNumDef
+from pysiral.config import RadarModes
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 
@@ -121,7 +118,7 @@ class Level1bData(DefaultLoggingClass):
         self.time_orbit = L1bTimeOrbit(self.info)
         self.correction = L1bRangeCorrections(self.info)
         self.classifier = L1bClassifiers(self.info)
-        self.surface_type = SurfaceType()
+        self.surface_type = surface_type.SurfaceType()
 
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """

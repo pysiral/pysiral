@@ -12,7 +12,7 @@ class SSAInterpolator(object):
     """
     Parent class for sea surface anomaly retrieval and interpolation
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.error = ErrorStatus()
 
     def set_options(self, **opt_dict):
@@ -35,7 +35,7 @@ class SSAInterpolator(object):
 class SSASmoothedLinear(SSAInterpolator):
     """ Default CS2AWI Method """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(SSASmoothedLinear, self).__init__()
         self.error.caller_id = self.__class__.__name__
 
