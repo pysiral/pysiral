@@ -176,15 +176,16 @@ procsteps:
     - l2proc: 
         pyclass: L2ApplyRangeCorrections
         options:
-            - dry_troposphere
-            - wet_troposphere
-            - inverse_barometric
-            - ionospheric
-            - ocean_tide_elastic
-            - ocean_tide_long_period
-            - ocean_loading_tide
-            - solid_earth_tide
-            - geocentric_polar_tide
+            corrections: 
+                - dry_troposphere
+                - wet_troposphere
+                - inverse_barometric
+                - ionospheric
+                - ocean_tide_elastic
+                - ocean_tide_long_period
+                - ocean_loading_tide
+                - solid_earth_tide
+                - geocentric_polar_tide
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     - ssh:
