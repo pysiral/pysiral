@@ -50,7 +50,7 @@ class _MissionDefinitionCatalogue(object):
     def __init__(self, filepath):
         """
         Create a catalogue for all altimeter missions definitions
-        :param file_path:
+        :param filepath:
         """
 
         # Store Argument
@@ -145,16 +145,17 @@ class _AuxdataCatalogueItem(object):
     Container for an auxiliary data item
     """
 
-    def __init__(self, category, id, config_dict):
+    def __init__(self, category, auxid, config_dict):
         """
         Data class to manage an auxiliary data set definition
         :param category:
+        :param auxid:
         :param config_dict:
         """
 
         # Arguments
         self._category = category
-        self._id = id
+        self._id = auxid
         self._config_dict = config_dict
 
     @property
@@ -216,11 +217,11 @@ class _AuxdataCatalogue(object):
         # Return a sorted str list
         return sorted(self.ctlg[category].keys())
 
-    def get_definition(self, category, id):
+    def get_definition(self, category, auxid):
         """
         Retrieve the auxiliary data definition for a category and auxiliary data set id
         :param category: (str) Auxiliary data category (must be in self.categories)
-        :param id: (str) The ID of the auxililary data set
+        :param auxid: (str) The ID of the auxililary data set
         :return: AttrDict or None (if auxiliary dataset does not exist
         """
 
@@ -229,7 +230,7 @@ class _AuxdataCatalogue(object):
             return None
 
         # Extract & return the definition
-        return self.ctlg[category].get(id, None)
+        return self.ctlg[category].get(auxid, None)
 
     @property
     def categories(self):
@@ -244,8 +245,8 @@ class _AuxdataCatalogue(object):
         keys = list()
         for category in self.categories:
             ids = self.get_category_items(category)
-            for id in ids:
-                keys.append((category, id))
+            for auxid in ids:
+                keys.append((category, auxid))
         return keys
 
     @property
@@ -256,10 +257,11 @@ class _AuxdataCatalogue(object):
         """
         keys = self.iter_keys
         items = list()
-        for category, id in keys:
-            item = self.ctlg[category][id]
-            items.append((category, id, item))
+        for category, auxid in keys:
+            item = self.ctlg[category][auxid]
+            items.append((category, auxid, item))
         return items
+
 
 class _PysiralPackageConfiguration(object):
     """
@@ -270,7 +272,7 @@ class _PysiralPackageConfiguration(object):
 
     # --- Global variables of the pysiral package configuration ---
 
-    # filenames of definitions files
+    # Filenames of definitions files
     _DEFINITION_FILES = {
         "platforms": "mission_def.yaml",
         "auxdata": "auxdata_def.yaml",
@@ -329,7 +331,7 @@ class _PysiralPackageConfiguration(object):
 
         # Get an indication of the location for the pysiral configuration path
         # NOTE: In its default version, the text file `PYSIRAL-CFG-LOC` does only contain the
-        #       string `USER_HOME`. In this case, pysiral will expect the a .pysiral-cfg subfolder
+        #       string `USER_HOME`. In this case, pysiral will expect the a .pysiral-cfg sub-folder
         #       in the user home. The only other valid option is an absolute path to a specific
         #       directory with the same content as .pysiral-cfg. This was introduced to enable
         #       fully encapsulated pysiral installation in virtual environments
@@ -340,8 +342,8 @@ class _PysiralPackageConfiguration(object):
         # Read pysiral config location indicator file
         cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
         try:
-            with open(str(cfg_loc_file)) as f:
-                self._path["config_target"] = f.read().strip()
+            with open(str(cfg_loc_file)) as fh:
+                self._path["config_target"] = fh.read().strip()
         except IOError:
             sys.exit("Cannot find PYSIRAL-CFG-LOC file in package (expected: %s)" % cfg_loc_file)
 
@@ -422,8 +424,8 @@ class _PysiralPackageConfiguration(object):
             settings = AttrDict(yaml.safe_load(fileobj))
         return settings
 
-    def get_setting_ids(self, type, data_level=None):
-        lookup_directory = self.get_local_setting_path(type, data_level)
+    def get_setting_ids(self, settings_type, data_level=None):
+        lookup_directory = self.get_local_setting_path(settings_type, data_level)
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
         return ids
 
@@ -447,14 +449,14 @@ class _PysiralPackageConfiguration(object):
         ids = self.get_yaml_setting_filelist(lookup_directory, return_value="ids")
         return ids
 
-    def get_settings_file(self, type, data_level, setting_id_or_filename):
+    def get_settings_file(self, settings_type, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.
         (data level: l2 or l3). The second argument can either be an
         direct filename (which validity will be checked) or an id, for
         which the corresponding file (id.yaml) will be looked up in
         the default directory """
 
-        if type not in self.VALID_SETTING_TYPES:
+        if settings_type not in self.VALID_SETTING_TYPES:
             return None
 
         if data_level not in self.VALID_DATA_LEVEL_IDS:
@@ -471,7 +473,7 @@ class _PysiralPackageConfiguration(object):
 
         # Test if ids are unique and return error for the moment
         if len(set(ids)) != len(ids):
-            msg = "Non-unique %-%s setting filename" % (type, str(data_level))
+            msg = "Non-unique %s-%s setting filename" % (type, str(data_level))
             print("ambiguous-setting-files: %s" % msg)
             sys.exit(1)
 
@@ -479,10 +481,11 @@ class _PysiralPackageConfiguration(object):
         try:
             index = ids.index(setting_id_or_filename)
             return Path(files[index])
-        except:
+        except IOError:
             return None
 
-    def get_yaml_setting_filelist(self, directory, return_value="both"):
+    @staticmethod
+    def get_yaml_setting_filelist(directory, return_value="both"):
         """ Retrieve all yaml files from a given directory (including
         subdirectories). Directories named "obsolete" are ignored if
         ignore_obsolete=True (default) """
@@ -500,9 +503,9 @@ class _PysiralPackageConfiguration(object):
         else:
             raise ValueError("Unknown return value {} [`both`, `ids`, `files`]".format(str(return_value)))
 
-    def get_local_setting_path(self, type, data_level):
+    def get_local_setting_path(self, settings_type, data_level):
         if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
-            args = [type]
+            args = [settings_type]
             if data_level is not None:
                 args.append(data_level)
             return Path(self.config_path) / Path(*args)
@@ -638,6 +641,7 @@ def import_submodules(package, recursive=True):
     """ Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
+    :param recursive: Flag if package is a sub-module
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
