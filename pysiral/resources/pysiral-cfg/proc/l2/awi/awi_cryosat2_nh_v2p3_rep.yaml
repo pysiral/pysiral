@@ -100,7 +100,7 @@ procsteps:
                 antenna_yaw: [toantyaw, antenna_yaw]
 
     # Surface type classification algorithm
-    -   module: surface_type
+    -   module: surface
         pyclass: SICCI2SurfaceType
         options:
             sar:
