@@ -539,6 +539,14 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
         else:
             return option_value
 
+    @property
+    def l2_input_vars(self):
+        return ["sic"]
+
+    @property
+    def l2_output_vars(self):
+        return ["surface_type"]
+
 # class SICCI1Envisat(Level2SurfaceTypeClassifier):
 #     """
 #     Surface Type classification algorithm from
