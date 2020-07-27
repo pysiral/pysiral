@@ -60,6 +60,7 @@ class TestConfig(unittest.TestCase):
                 self.assertIsInstance(filepath, Path)
                 self.assertTrue(filepath.is_file())
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestConfig)
     unittest.TextTestRunner(verbosity=2, descriptions=True).run(suite)

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-""" """
+"""
+pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
+"""
 
 __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "flag", "frb", "grid",
@@ -9,22 +11,22 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "clas
            "sit", "surface_type", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "__version__"]
 
-import warnings
 import sys
 import yaml
 import socket
 import shutil
+
+import importlib
+import pkgutil
 from datetime import datetime
 from dateperiods import DatePeriod
 from pathlib import Path
 from attrdict import AttrDict
-from distutils import log, dir_util
-import importlib
-import pkgutil
+from distutils import dir_util
+from loguru import logger
 
+import warnings
 warnings.filterwarnings("ignore")
-log.set_verbosity(log.INFO)
-log.set_threshold(log.INFO)
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
@@ -468,12 +470,12 @@ class _PysiralPackageConfiguration(object):
 
         # Get all settings files in settings/{data_level} and its
         # subdirectories
-        lookup_directory = self.get_local_setting_path(type, data_level)
+        lookup_directory = self.get_local_setting_path(settings_type, data_level)
         ids, files = self.get_yaml_setting_filelist(lookup_directory)
 
         # Test if ids are unique and return error for the moment
         if len(set(ids)) != len(ids):
-            msg = "Non-unique %s-%s setting filename" % (type, str(data_level))
+            msg = "Non-unique %s-%s setting filename" % (settings_type, str(data_level))
             print("ambiguous-setting-files: %s" % msg)
             sys.exit(1)
 
@@ -503,8 +505,16 @@ class _PysiralPackageConfiguration(object):
         else:
             raise ValueError("Unknown return value {} [`both`, `ids`, `files`]".format(str(return_value)))
 
-    def get_local_setting_path(self, settings_type, data_level):
-        if type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
+    def get_local_setting_path(self, settings_type, data_level=None):
+        """
+        Return the absolute path on the local productions system to the configuration file. The
+        returned path depends on the fixed structure below the `resources` directory in the pysiral
+        package and the choice in the config file "PYSIRAL-CFG-LOC"
+        :param settings_type:
+        :param data_level:
+        :return:
+        """
+        if settings_type in self.VALID_SETTING_TYPES and data_level in self.VALID_DATA_LEVEL_IDS:
             args = [settings_type]
             if data_level is not None:
                 args.append(data_level)
@@ -543,10 +553,7 @@ class _PysiralPackageConfiguration(object):
         """
         :return:
         """
-        filename = self.config_path / self._LOCAL_MACHINE_DEF_FILE
-        if self.current_config_target == "PACKAGE":
-            print("[WARNING] current config target is `PACKAGE` -> looking for `local_machine_def.yaml` in userhome")
-            filename = self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
+        filename = self.local_machine_def_filepath
         try:
             local_machine_def = self.get_yaml_config(filename)
         except IOError:
@@ -600,7 +607,12 @@ class _PysiralPackageConfiguration(object):
 
     @property
     def local_machine_def_filepath(self):
-        return self.config_path / self._LOCAL_MACHINE_DEF_FILE
+        if self.current_config_target != "PACKAGE":
+            return self.config_path / self._LOCAL_MACHINE_DEF_FILE
+        else:
+            msg = "Current config path is `PACKAGE`, lookup directory for local_machine_def.yaml changed to `USERHOME`"
+            logger.warning(msg)
+            return self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
 
     @property
     def processor_levels(self):
