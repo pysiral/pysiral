@@ -28,6 +28,16 @@ from loguru import logger
 import warnings
 warnings.filterwarnings("ignore")
 
+# Set standard logger format
+logger.remove()
+fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | ' + \
+      '<level>{level: <8}</level> | ' + \
+      '<cyan>{name: <25}</cyan> | ' + \
+      '<cyan>L{line: <5}</cyan> | ' + \
+      '<level>{message}</level>'
+logger.add(sys.stderr, format=fmt, enqueue=True)
+
+
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
 VERSION_FILE_PATH = PACKAGE_ROOT_DIR / "VERSION"
