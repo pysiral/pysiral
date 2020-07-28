@@ -1,30 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 25 17:15:39 2016
+@author: Stefan Hendricks
 
-@author: shendric
+A python module dedicated to freeboard estimation.
+
 """
 
 import numbers
 import numpy as np
-from attrdict import AttrDict
-from pysiral.errorhandler import ErrorStatus
+
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
-class L2FreeboardAlgorithmBaseClass(object):
-
-    def __init__(self):
-        self.error = ErrorStatus()
-
-    def set_options(self, **opt_dict):
-        self._options = AttrDict(**opt_dict)
-
-    def get_freeboard(self, l1b, l2):
-        freeboard, freeboard_uncertainty = self._get_freeboard(l1b, l2)
-        return freeboard, freeboard_uncertainty
-
-
-class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
+class SnowGeometricCorrection(Level2ProcessorStep):
     """
     Computes the freeboard from radar freeboard by application of geometric corrections for snow wave progagation
     only. No form of penetration correction is applied based on the assumption that radar freeboard is the
@@ -68,15 +56,15 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         """
         Initialize the class.
         """
-        super(SnowGeometricCorrection, self).__init__()
+        super(SnowGeometricCorrection, self).__init__(*args, **kwargs)
 
-    def _get_freeboard(self, l1b, l2):
+    def execute_procstep(self, l1b, l2):
         """
         Compute and apply the geometric correction to the radar freeboard to compute sea-ice freeboard.
-        Only l2 data is needed for this class.
+        Only l2 data is needed for this class and the object will be modified in-place
         :param l1b: The Level-1b data class
         :param l2: The Level-2 data class
-        :return: freeboard and freeboard uncertainty as arrays with expected dimensions
+        :return: None
         """
 
         # Init parameter arrays
@@ -98,7 +86,8 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
         # All done, return values
-        return freeboard, freeboard_uncertainty
+        l2.frb.set_values(freeboard)
+        l2.frb.set_uncertainty(freeboard_uncertainty)
 
     def get_correction_factor(self, l2):
         """
@@ -109,7 +98,7 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         """
 
         # Get the option value from the Level-2 processor definition file
-        config_value = self._options.vacuum_light_speed_reduction
+        config_value = self.cfg.options.vacuum_light_speed_reduction
 
         # Case 1: Number is float value
         # -> return as is
@@ -128,18 +117,30 @@ class SnowGeometricCorrection(L2FreeboardAlgorithmBaseClass):
         else:
             raise ValueError("Invalid option `vacuum_light_speed_reduction` [{}]".format(str(config_value)))
 
-        correction_factor = self._options.vacuum_light_speed_reduction
+    @property
+    def l2_input_vars(self):
+        return ["afrb", "sd", "sdens", "surface_type"]
+
+    @property
+    def l2_output_vars(self):
+        return ["frb"]
 
 
-class SnowFreeboardAssumption(L2FreeboardAlgorithmBaseClass):
-    # TODO: Add functionality to use snow density
-    """ Applies geometric corrections for snow wave progagation """
+class SnowFreeboardAssumption(Level2ProcessorStep):
+    """
+    Assumes the altimeter freeboard is the snow freeboard
+    """
 
     def __init__(self, *args, **kwargs):
-        super(SnowFreeboardAssumption, self).__init__()
+        super(SnowFreeboardAssumption, self).__init__(*args, **kwargs)
 
-    def _get_freeboard(self, l1b, l2):
-        """ Compute the freeboard and its uncertainty """
+    def execute_procstep(self, l1b, l2):
+        """
+        Compute the freeboard and its uncertainty
+        :param l1b:
+        :param l2:
+        :return:
+        """
 
         # Init parameter arrays
         shape = l2.afrb.shape
@@ -155,52 +156,50 @@ class SnowFreeboardAssumption(L2FreeboardAlgorithmBaseClass):
 
         return freeboard, freeboard_uncertainty
 
+    @property
+    def l2_input_vars(self):
+        return ["afrb", "surface_type"]
 
-class L2RadarFreeboardAlgorithmBaseClass(object):
-
-    def __init__(self, **kwargs):
-        self.error = ErrorStatus()
-
-    def set_options(self, **opt_dict):
-        self._options = AttrDict(**opt_dict)
-
-    def get_radar_freeboard(self, l1b, l2):
-        rfrb, rfrb_unc = self._get_radar_freeboard(l1b, l2)
-        return rfrb, rfrb_unc
+    @property
+    def l2_output_vars(self):
+        return ["frb"]
 
 
-class RadarFreeboardDefault(L2RadarFreeboardAlgorithmBaseClass):
+class RadarFreeboardDefault(Level2ProcessorStep):
     """
-    Default Class for computing Radar Freeboard
-    (simple computation based on elevation, mean sea surface and
-     sea surface anomaly)
+    Default Class for computing radar freeboard based on elevation, mean sea surface and
+    sea level anomaly
     """
 
     def __init__(self, *args, **kwargs):
-        super(RadarFreeboardDefault, self).__init__()
+        super(RadarFreeboardDefault, self).__init__(*args, **kwargs)
 
-    def _get_radar_freeboard(self, l1b, l2):
-        """ Compute the radar freeboard and its uncertainty """
-
-        # radar freeboard is simple
-        rfrb = l2.elev - l2.mss - l2.ssa
-
-        # radar freeboard uncertainty is not
-        rfrb_unc = self._get_radar_freeboard_uncertainty(l2)
-
-        return rfrb, rfrb_unc
-
-    def _get_radar_freeboard_uncertainty(self, l2):
+    def execute_procstep(self, l1b, l2):
         """
-        Get the radar freeboard uncertainty based on  error propagation
-        from assumed uncorrelated uncertainties of
-        - elevation (range)
-        - sea surface anomaly
-        mss uncertainties is ignored, respectively part of ssa uncertainty
+        Compute the radar freeboard and its uncertainty and modifies the Level-2 data object in-place
+        :param l1b:
+        :param l2:
+        :return:
         """
-        rfrb_unc = np.sqrt(l2.elev.uncertainty**2. + l2.ssa.uncertainty**2.)
-        return rfrb_unc
 
+        # Compute radar freeboard as the simple difference of
+        # surface elevation - ssh (= mss + sla)
+        rfrb = l2.elev - l2.mss - l2.sla
 
-def get_frb_algorithm(name):
-    return globals()[name]()
+        # Compute radar freeboard uncertainty assuming that the uncertainty
+        # component of the MSS is negligible
+        rfrb_unc = np.sqrt(l2.elev.uncertainty ** 2. + l2.sla.uncertainty ** 2.)
+
+        # Add parameters to Level-2 object
+        # NOTE: Conventions of the Level-2 Processor for radar freeboard variable id
+        #       are `afrb` (altimeter freeboard)
+        l2.afrb.set_values(rfrb)
+        l2.afrb.set_uncertainty(rfrb_unc)
+
+    @property
+    def l2_input_vars(self):
+        return ["elev", "mss", "sla"]
+
+    @property
+    def l2_output_vars(self):
+        return ["afrb"]
