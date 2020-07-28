@@ -21,7 +21,7 @@ import re
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["range", "ssa", "elev", "afrb", "frb", "sit", "radar_mode"]
+    _L2_DATA_ITEMS = ["range", "sla", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
@@ -34,7 +34,7 @@ class Level2Data(object):
         "surface_type": "surface_type_flag",
         "radar_mode": "radar_mode",
         "elevation": "elev",
-        "sea_surface_anomaly": "ssa",
+        "sea_level_anomaly": "sla",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
         "sea_ice_thickness": "sit"}
@@ -534,8 +534,8 @@ class Level2Data(object):
     @property
     def ssh(self):
         ssh = L2DataArray(shape=self._n_records)
-        ssh.set_value(self.mss + self.ssa)
-        ssh.set_uncertainty(self.ssa.uncertainty)
+        ssh.set_value(self.mss + self.sla)
+        ssh.set_uncertainty(self.sla.uncertainty)
         return ssh
 
 
