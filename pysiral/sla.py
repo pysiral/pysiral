@@ -47,6 +47,9 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """
         Mandatory Level-2 processor method that will execute the processing step
         and modify the L2 data object in-place.
+        This method will interpolate ssh tiepoints given by lead (+ ocean) elevations
+        and smooth the result. Filter options are available to filter unreasonable
+        sla values.
         :param l1b:
         :param l2:
         :return:
@@ -60,16 +63,31 @@ class SLASmoothedLinear(Level2ProcessorStep):
         # -> will add properties `sla_uncertainty`
         self.calculate_sla_uncertainty(l2)
 
-        # Step 3 (optional): Filter
+        # Step 3 (optional): Filter small marine segments surrounded by land
+        # Note: This intends to remove small segments in fjords/channels for which
+        #       the SLA computation is very likely not trustworthy
         if "marine_segment_filter" in self.cfg:
             self.marine_segment_filter(l2)
+
+        # Step 4 (optional): Filter SLA segments that are far away from the next SSH
+        #    tie point
         if "tiepoint_maxdist_filter" in self.cfg:
             self.tiepoint_maxdist_filter(l2)
 
-    def smoothed_linear_interpolation_between_tiepoints(self, l2):
-        """ Based in cs2awi code from Robert Ricker """
+        # Step 5: Modify the Level-2 data container with the result in-place
+        l2.sla.set_values(self.sla)
+        l2.sla.set_uncertainty(self.sla_uncertainty)
 
-        # Use ocean and lead elevations
+    def smoothed_linear_interpolation_between_tiepoints(self, l2):
+        """
+        The main SLA computation method in this class
+        :param l2: Level-2 data container
+        :return: None
+        """
+
+        # Collect the first estimate of ssh tie points
+        # NOTE: The use of ocean waveforms is optional and needs to activated
+        #       in the options dictionary of the Level-2 processor definition file
         self.ssh_tiepoints = l2.surface_type.lead.indices
         if self.cfg.use_ocean_wfm:
             self.ssh_tiepoints.append(l2.surface_type.ocean.indices)
@@ -98,11 +116,12 @@ class SLASmoothedLinear(Level2ProcessorStep):
             valid = np.where(offset < threshold)
             self.ssh_tiepoints = self.ssh_tiepoints[index_dict[valid]]
 
+        # Compute the first SLA estimate
         self.sla_raw = np.ndarray(shape=l2.n_records)*np.nan
         self.sla_raw[self.ssh_tiepoints] = mss_frb[self.ssh_tiepoints]
         non_tiepoints = np.where(np.isnan(self.sla_raw))
 
-        # Filtered raw values
+        # Filtered raw values (python implementation of the CS2AWI IDL code)
         # Use custom implementation of IDL SMOOTH:
         # idl_smooth(x, w) equivalent to SMOOTH(x, w, /edge_truncate, /nan)
         sla_filter1 = idl_smooth(self.sla_raw, self.filter_width)
@@ -110,7 +129,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
         # Leave only the original ssh tie points
         sla_filter1[non_tiepoints] = np.nan
 
-        # Fill nans with linear interpolation and contant values at borders
+        # Fill nans with linear interpolation and constant values at borders
         # python: fill_nan(x) = IDL: FILL_NAN(x, /NEIGHBOUR)
         sla_filter2 = fill_nan(sla_filter1)
 
@@ -121,9 +140,11 @@ class SLASmoothedLinear(Level2ProcessorStep):
     def calculate_sla_uncertainty(self, l2):
         """
         Components that add to sea surface anomaly uncertainty
-        - mss uncertainty (if known)
-        - uncertainty of lead elevations
-        - distance to next lead tiepoint
+            - mss uncertainty (if known)
+            - uncertainty of lead elevations
+            - distance to next lead tiepoint
+        :param l2: Level-2 data container
+        :return: None
         """
 
         # short cuts to options
@@ -131,24 +152,23 @@ class SLASmoothedLinear(Level2ProcessorStep):
         sla_unc_min = self.cfg.uncertainty_minimum
         sla_unc_max = self.cfg.uncertainty_maximum
 
-        # get tiepoint distance
+        # get tie point distance
         tiepoint_distance = self.get_tiepoint_distance(l2)
 
-        # Compute the influence of distance to next tiepoints
+        # Compute the influence of distance to next tie points
         # in the range of 0: minimum influence to 1: maximum influence
-        # It is assumed that the uncertainty has a quadratic dependance
-        # on tiepoint distance
+        # It is assumed that the uncertainty has a quadratic dependence
+        # on tie point distance
         tiepoint_distance_scalefact = tiepoint_distance / max_distance
         above_distance_limit = np.where(tiepoint_distance_scalefact > 1.)[0]
         tiepoint_distance_scalefact[above_distance_limit] = 1.
         tiepoint_distance_scalefact = tiepoint_distance_scalefact**2.
 
-        # Compute the sla uncertainty based on a min/max approach
-        # scaled by
+        # Compute the sla uncertainty based on a min/max approach scaled by factor
         sla_unc_range = sla_unc_max - sla_unc_min
         sla_unc = sla_unc_min + sla_unc_range * tiepoint_distance_scalefact
 
-        # Save in class
+        # Save result to instance
         self.sla_uncertainty = sla_unc
 
     def marine_segment_filter(self, l2):
@@ -215,15 +235,19 @@ class SLASmoothedLinear(Level2ProcessorStep):
             marine_segments.append(marine_segment)
 
     def tiepoint_maxdist_filter(self, l2):
-        """  A filter that does not removes sla values which distance to
-        the next ssh tiepoint exceeds a defined threshold """
+        """
+        A filter that does not removes sla values which distance to
+        the next ssh tiepoint exceeds a defined threshold
+        :param l2: Level-2 data container
+        :return: None
+        """
 
         # Get options
         filter_options = self.cfg.tiepoint_maxdist_filter
         edges_only = filter_options.edges_only
         distance_threshold = filter_options.maximum_distance_to_tiepoint
 
-        # Compute distance to next tiepoint
+        # Compute distance to next tie point
         tiepoint_distance = self.get_tiepoint_distance(l2)
 
         # Get indices
@@ -245,8 +269,11 @@ class SLASmoothedLinear(Level2ProcessorStep):
         self.sla[invalid_indices] = np.nan
 
     def get_tiepoint_distance(self, l2):
-        """ Returns the distance in meter to the next ssh tiepoint for
-        each record """
+        """
+        Returns the distance in meter to the next ssh tiepoint for each record
+        :param l2: Level-2 data container
+        :return: array(float32, shape=l2.n_records)
+        """
 
         # prepare parameter arrays
         lead_indices = l2.surface_type.lead.indices
@@ -261,11 +288,31 @@ class SLASmoothedLinear(Level2ProcessorStep):
 
     @property
     def filter_width(self):
+        """
+        Compute the filter width in points
+        :return:
+        """
         filter_width = self.cfg.smooth_filter_width_m / self.cfg.smooth_filter_width_footprint_size
         # Make sure filter width is odd integer
         filter_width = np.floor(filter_width) // 2 * 2 + 1
         filter_width = filter_width.astype(int)
         return filter_width
+
+    @property
+    def l2_input_vars(self):
+        """
+        Mandatory property for Level2ProcessorStep children
+        :return: list (str)
+        """
+        return ["surface_type", "elev", "mss"]
+
+    @property
+    def l2_output_vars(self):
+        """
+        Mandatory property for Level2ProcessorStep children
+        :return: list (str)
+        """
+        return ["sla"]
 
 
 def get_tiepoint_distance(is_tiepoint):
