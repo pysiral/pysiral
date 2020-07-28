@@ -42,7 +42,8 @@ class Level2Processor(DefaultLoggingClass):
         self._l2def = product_def.l2def
 
         # Auxiliary Data Handler
-        # NOTE: retrieves and initializes the auxdata classes based on the l2 processor definition config file
+        # NOTE: retrieves and initializes the auxdata classes
+        #       based on the l2 processor definition config file
         if auxclass_handler is None:
             auxclass_handler = DefaultAuxdataClassHandler()
         self._auxclass_handler = auxclass_handler
@@ -53,7 +54,7 @@ class Level2Processor(DefaultLoggingClass):
         self._auxhandlers = {}
 
         # The processing step is a class that links to the different
-        self._procsteps = []
+        self.procsteps = None
 
         # Output_handler (can be one or many)
         self._output_handler = product_def.output_handler
@@ -75,37 +76,6 @@ class Level2Processor(DefaultLoggingClass):
 
         # Initialize the class
         self.initialize_processor()
-
-    @property
-    def orbit(self):
-        return self._orbit
-
-    @property
-    def has_empty_file_list(self):
-        return len(self._l1b_files) == 0
-
-    @property
-    def l2def(self):
-        return self._l2def
-
-    @property
-    def registered_auxdata_handlers(self):
-        return list(self._registered_auxdata_handlers)
-
-    @property
-    def l2_auxdata_source_dict(self):
-        """ A dictionary that contains the descriptions of the auxiliary data sources """
-        auxdata_dict = {}
-        for auxdata_id, auxdata_type in self.registered_auxdata_handlers:
-            try:
-                handler = self._auxhandlers[auxdata_id]
-                if auxdata_type not in auxdata_dict:
-                    auxdata_dict[auxdata_type] = handler.longname
-                else:
-                    auxdata_dict[auxdata_type] = auxdata_dict[auxdata_type]+", "+handler.longname
-            except AttributeError:
-                auxdata_dict[auxdata_type] = "unspecified"
-        return auxdata_dict
 
     def set_l1b_files(self, l1b_files):
         self._l1b_files = l1b_files
@@ -198,9 +168,42 @@ class Level2Processor(DefaultLoggingClass):
 
         self.log.info("Init Processor Steps")
         cfg = self.l2def.procsteps
-        self._procsteps = Level2ProcessorStepOrder(cfg)
-        self._procsteps.validate()
+        self.procsteps = Level2ProcessorStepOrder(cfg)
+        self.procsteps.validate()
         self.log.info("Processor steps initialized and validated")
+
+    def execute_l2_processor_steps(self, l1b, l2):
+        """
+        Executes all Level-2 processor steps.
+
+        Note: This is where the algorithm are executed in their order defined
+              in the Level-2 processor definition file
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Loop over all Level-2 processing steps.
+        # Note: The property `class_instances` return freshly initialized
+        #       class instances of the respective processor step
+        for procstep_class in self.procsteps.class_instances:
+
+            # Execute the processing step with the mandatory method.
+            # Note: Each processing step is always supplied with both l1b and
+            #       l2 data object, no matter if actually needed
+            class_name = procstep_class.classname
+            self.log.info("Executing processing step {}".format(class_name))
+            procstep_class.execute(l1b, l2)
+
+
+        breakpoint()
+
+
+
+
+
+
+
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
@@ -213,8 +216,6 @@ class Level2Processor(DefaultLoggingClass):
         (e.g. the processor l2 settings)
         """
         self.report.l2_settings_file = self.l2def.l2_settings_file
-
-# %% Level2Processor: orbit processing
 
     def _l2_processing_of_orbit_files(self):
         """ Orbit-wise level2 processing """
@@ -234,14 +235,6 @@ class Level2Processor(DefaultLoggingClass):
             l1b = self._read_l1b_file(l1b_file)
             source_primary_filename = Path(l1b_file).parts[-1]
 
-            # # Apply the geophysical range corrections on the waveform range
-            # # bins in the l1b data container
-            # # TODO: move to level1bData class
-            # self._apply_range_corrections(l1b)
-            #
-            # # Apply a pre-filter of the l1b data (can be none)
-            # self._apply_l1b_prefilter(l1b)
-
             # Initialize the orbit level-2 data container
             # TODO: replace by proper product metadata transfer
             try:
@@ -254,56 +247,14 @@ class Level2Processor(DefaultLoggingClass):
             # Init the Level-2 data object
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
-            # # Transfer l1p parameter to the l2 data object (if applicable)
-            # # NOTE: This is only necessary, if parameters from the l1p files (classifiers) should
-            # #       be present in the l2i product
-            # self._transfer_l1p_vars(l1b, l2)
-
             # Get auxiliary data from all registered auxdata handlers
-            error_status, error_codes = self._get_auxiliary_data(l2)
+            error_status, error_codes = self.get_auxiliary_data(l2)
             if True in error_status:
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
 
-            # # Surface type classification (ocean, ice, lead, ...)
-            # # (ice type classification comes later)
-            # self._classify_surface_types(l1b, l2)
-            #
-            # # Validate surface type classification
-            # # yes/no decision on continuing with orbit
-            # error_status, error_codes = self._validate_surface_types(l2)
-            # if error_status:
-            #     self._discard_l1b_procedure(error_codes, l1b_file)
-            #     continue
-            #
-            # # Get elevation by retracking of different surface types
-            # # adds parameter elevation to l2
-            # error_status, error_codes = self._waveform_retracking(l1b, l2)
-            # if error_status:
-            #     self._discard_l1b_procedure(error_codes, l1b_file)
-            #     continue
-            #
-            # # Compute the sea surface anomaly (from mss and lead tie points)
-            # # adds parameter ssh, ssa, afrb to l2
-            # self._estimate_sea_surface_height(l2)
-            #
-            # # Compute the radar freeboard and its uncertainty
-            # self._get_altimeter_freeboard(l1b, l2)
-            #
-            # # get radar(-derived) from altimeter freeboard
-            # self._get_freeboard_from_radar_freeboard(l1b, l2)
-            #
-            # # Apply freeboard filter
-            # self._apply_freeboard_filter(l2)
-            #
-            # # Convert to thickness
-            # self._convert_freeboard_to_thickness(l2)
-            #
-            # # Filter thickness
-            # self._apply_thickness_filter(l2)
-            #
-            # # Post processing
-            # self._post_processing_items(l2)
+            # Execute all Level-2 processor steps
+            self.execute_l2_processor_steps(l1b, l2)
 
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
@@ -330,65 +281,7 @@ class Level2Processor(DefaultLoggingClass):
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
 
-    # TODO: Marked as obsolete
-    def _apply_range_corrections(self, l1b):
-        """ Apply the range corrections """
-        # XXX: This should be applied to the L2 data not l1b
-        for correction in self.l2def.corrections:
-            l1b.apply_range_correction(correction)
-
-    # # TODO: Marked as obsolete
-    # def _apply_l1b_prefilter(self, l1b):
-    #     """ Apply filtering of l1b variables """
-    #     # Backward compatibility with older l2 setting files
-    #     if "l1b_pre_filtering" not in self.l2def:
-    #         return
-    #     # Apply filters
-    #     names, filters = self.l2def.l1b_pre_filtering.items()
-    #     for name, filter_def in zip(names, filters):
-    #         self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
-    #         l1bfilter = get_filter(filter_def.pyclass)
-    #         l1bfilter.set_options(**filter_def.options)
-    #         l1bfilter.apply_filter(l1b)
-
-    # TODO: Marked as obsolete
-    def _transfer_l1p_vars(self, l1b, l2):
-        """ Transfer variables from l1p to l2 object"""
-
-        # Make this a backward compatible feature (should work without tag in l2 processor definition file)
-        if "transfer_from_l1p" not in self.l2def:
-            return
-
-        # Don't spam the log
-        try:
-            verbose = self.l2def.transfer_from_l1p.options.get("verbose")
-        except:
-            verbose = False
-
-        # Get and loop over data groups
-        l1p_items = self.l2def.transfer_from_l1p.items()
-        for data_group, varlist in list(l1p_items):
-
-            if data_group == "options":
-                continue
-
-            # Get and loop over variables per data group
-            l1p_variables = varlist.items()
-            for var_name, vardef in list(l1p_variables):
-
-                # Get variable via standard getter method
-                # NOTE: Will return None if not found -> create an empty array
-                var = l1b.get_parameter_by_name(data_group, var_name)
-                if var is None:
-                    var = np.full((l2.n_records), np.nan)
-
-                # Add variable to l2 object as auxiliary variable
-                l2.set_auxiliary_parameter(vardef["aux_id"], vardef["aux_name"], var, None)
-
-                if verbose:
-                    self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
-
-    def _get_auxiliary_data(self, l2):
+    def get_auxiliary_data(self, l2):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
 
         # Loop over all auxilary data types. Each type must have:
@@ -689,6 +582,37 @@ class Level2Processor(DefaultLoggingClass):
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
+
+    @property
+    def orbit(self):
+        return self._orbit
+
+    @property
+    def has_empty_file_list(self):
+        return len(self._l1b_files) == 0
+
+    @property
+    def l2def(self):
+        return self._l2def
+
+    @property
+    def registered_auxdata_handlers(self):
+        return list(self._registered_auxdata_handlers)
+
+    @property
+    def l2_auxdata_source_dict(self):
+        """ A dictionary that contains the descriptions of the auxiliary data sources """
+        auxdata_dict = {}
+        for auxdata_id, auxdata_type in self.registered_auxdata_handlers:
+            try:
+                handler = self._auxhandlers[auxdata_id]
+                if auxdata_type not in auxdata_dict:
+                    auxdata_dict[auxdata_type] = handler.longname
+                else:
+                    auxdata_dict[auxdata_type] = auxdata_dict[auxdata_type]+", "+handler.longname
+            except AttributeError:
+                auxdata_dict[auxdata_type] = "unspecified"
+        return auxdata_dict
 
 
 class Level2ProductDefinition(DefaultLoggingClass):
