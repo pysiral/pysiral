@@ -210,7 +210,11 @@ class Level2RetrackerContainer(Level2ProcessorStep):
 
     @property
     def l2_output_vars(self):
-        return ["radar_mode", "range", "elevation"]
+        return ["radar_mode", "range", "elev"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["retracker"]
 
 
 class SICCI2TfmraEnvisat(BaseRetracker):

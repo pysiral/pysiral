@@ -79,6 +79,10 @@ class AlexandrovSeaIceDensity(Level2ProcessorStep):
     def l2_output_vars(self):
         return ["idens"]
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["sit"]
+
 
 class SeaIceFreeboard2SIT(Level2ProcessorStep):
     """
@@ -127,6 +131,10 @@ class SeaIceFreeboard2SIT(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return ["sit"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["sit"]
 
     @property
     def func(self):
@@ -208,6 +216,10 @@ class L2SeaIceDraft(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return ["sid"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["sit"]
 
 
 def icefreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):

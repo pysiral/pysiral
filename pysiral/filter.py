@@ -66,6 +66,10 @@ class L1bEnvisatBackscatterDriftCorrection(Level2ProcessorStep):
     def l2_output_vars(self):
         return []
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
+
 
 class L2ParameterValidRange(Level2ProcessorStep):
     """
@@ -127,6 +131,10 @@ class L2ParameterValidRange(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return []
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
 
 
 def numpy_smooth(x, window):

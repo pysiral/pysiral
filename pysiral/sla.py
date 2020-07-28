@@ -318,6 +318,10 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """
         return ["sla"]
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["sla"]
+
 
 def get_tiepoint_distance(is_tiepoint):
     """

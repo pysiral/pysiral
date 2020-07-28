@@ -41,9 +41,10 @@ class Level2ProcessorStep(DefaultLoggingClass):
             "surface_type": 3,
             "retracker": 4,
             "range_correction": 5,
-            "frb": 6,
-            "sit": 7,
-            "filter": 8,
+            "sla": 6,
+            "frb": 7,
+            "sit": 8,
+            "filter": 9,
             "other": 15}
 
     def execute(self, l1b, l2):
@@ -75,11 +76,8 @@ class Level2ProcessorStep(DefaultLoggingClass):
         """
         # Update the algorithm error flag in the Level-2 data object
         # NOTE: The bit for which the algorithm error flag is applied depends on the
-        #       module hosting the processing step (e.g. `sla`, `sit`, etc)
-        #       If unknown, the bit number will default to 15 (other)
-        default_value = self.error_flag_bit_dict["other"]
-        bit_number = self.error_flag_bit_dict.get(self.cfg.module, default_value)
-        flag_value = 2**bit_number
+        #       on the mandatory value set in each child class of Level2ProcessorStep
+        flag_value = 2**self.error_bit
         flag = error_status.astype(int)*flag_value
         l2.flag = l2.flag + flag
 
@@ -98,6 +96,10 @@ class Level2ProcessorStep(DefaultLoggingClass):
     @property
     def classname(self):
         return self.__class__.__name__
+
+    @property
+    def error_bit(self):
+        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
 
     @property
     def l2_input_vars(self):
@@ -171,7 +173,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
         # Get the initialized classes and check if it has the required methods
         classes = self.class_instances
         for obj in classes:
-            for mandatory_attr in ["execute_procstep", "l2_input_vars", "l2_output_vars"]:
+            for mandatory_attr in ["execute_procstep", "l2_input_vars", "l2_output_vars", "error_bit"]:
                 try:
                     has_attr = hasattr(obj, mandatory_attr)
                 except NotImplementedError:
@@ -262,6 +264,10 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 output_vars.append(vardef[0])
         return output_vars
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["l2proc"]
+
 
 class L2ApplyRangeCorrections(Level2ProcessorStep):
     """
@@ -337,3 +343,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
     def l2_output_vars(self):
         output_vars = []
         return output_vars
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["range_correction"]

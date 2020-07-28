@@ -128,6 +128,10 @@ class SnowGeometricCorrection(Level2ProcessorStep):
     def l2_output_vars(self):
         return ["frb"]
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["frb"]
+
 
 class SnowFreeboardAssumption(Level2ProcessorStep):
     """
@@ -209,3 +213,7 @@ class RadarFreeboardDefault(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return ["afrb"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["frb"]
