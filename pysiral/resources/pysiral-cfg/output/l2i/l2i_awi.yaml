@@ -277,7 +277,7 @@ variables:
     units: "m"
     coordinates: time
 
-  ionospheric:
+  ionosphere:
     long_name: "ionospheric range correction"
     units: "m"
     coordinates: time
@@ -305,4 +305,13 @@ variables:
   geocentric_polar_tide:
     long_name: "geocentric polar tide range correction"
     units: "m"
+    coordinates: time
+
+  flag:
+    long_name: "L2 algorithm error flag"
+    comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
+    units: 1
+    valid_min: 0
+    valid_max: 15
+    flag_meaning: "Errors (bit 0): l1p source data, (bit 1): Level-2 processor (bit 2): auxiliary data (bit 3): surface type classification (bit 4): retracker (bit 5): range_correction (bit 6): freeboard retrieval (bit 7) freeboard to thickness conversion (bit 8) parameter filter (bit 15) other"
     coordinates: time
