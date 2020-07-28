@@ -73,11 +73,12 @@ class Level2Data(object):
         # Create Level2 Data Groups
         self._create_l2_data_items()
 
-    def set_parameter(self, target, value, uncertainty=None, bias=None):
+    def set_parameter(self, target, value, uncertainty=None):
         """ Convienience method to safely add a parameter with optional
         uncertainty and/or bias to the level-2 data structure """
 
         # Sanity checks
+        # TODO: This will need to be overhauled
         is_l2_default = self._check_if_valid_parameter(target)
 
         # Check if the full name has been passed
@@ -109,9 +110,6 @@ class Level2Data(object):
         if uncertainty is not None:
             uncertainty_value = self._get_as_array(uncertainty)
             parameter.set_uncertainty(uncertainty_value)
-        if bias is not None:
-            bias_value = self._get_as_array(bias)
-            parameter.set_bias(bias, bias_value)
         setattr(self, target, parameter)
 
     def set_auxiliary_parameter(self, var_id, var_name, value, uncertainty=None):
