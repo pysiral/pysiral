@@ -22,7 +22,6 @@ from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from pysiral._class_template import DefaultLoggingClass
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
-from pysiral.filter import get_filter
 
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
@@ -338,19 +337,19 @@ class Level2Processor(DefaultLoggingClass):
         for correction in self.l2def.corrections:
             l1b.apply_range_correction(correction)
 
-    # TODO: Marked as obsolete
-    def _apply_l1b_prefilter(self, l1b):
-        """ Apply filtering of l1b variables """
-        # Backward compatibility with older l2 setting files
-        if "l1b_pre_filtering" not in self.l2def:
-            return
-        # Apply filters
-        names, filters = self.l2def.l1b_pre_filtering.items()
-        for name, filter_def in zip(names, filters):
-            self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
-            l1bfilter = get_filter(filter_def.pyclass)
-            l1bfilter.set_options(**filter_def.options)
-            l1bfilter.apply_filter(l1b)
+    # # TODO: Marked as obsolete
+    # def _apply_l1b_prefilter(self, l1b):
+    #     """ Apply filtering of l1b variables """
+    #     # Backward compatibility with older l2 setting files
+    #     if "l1b_pre_filtering" not in self.l2def:
+    #         return
+    #     # Apply filters
+    #     names, filters = self.l2def.l1b_pre_filtering.items()
+    #     for name, filter_def in zip(names, filters):
+    #         self.log.info("- Apply l1b pre-filter: %s" % filter_def.pyclass)
+    #         l1bfilter = get_filter(filter_def.pyclass)
+    #         l1bfilter.set_options(**filter_def.options)
+    #         l1bfilter.apply_filter(l1b)
 
     # TODO: Marked as obsolete
     def _transfer_l1p_vars(self, l1b, l2):
