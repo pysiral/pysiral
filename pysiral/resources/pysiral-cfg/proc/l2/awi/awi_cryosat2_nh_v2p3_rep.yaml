@@ -238,7 +238,7 @@ procsteps:
 
     # Algorithm for getting sea ice thickness from other l2 parameters
     -   module: sit
-        pyclass: SeaIceFreeboardDefault
+        pyclass: SeaIceFreeboard2SIT
         options:
             water_density: 1024.0
 
