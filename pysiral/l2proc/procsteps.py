@@ -80,7 +80,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
         default_value = self.error_flag_bit_dict["other"]
         bit_number = self.error_flag_bit_dict.get(self.cfg.module, default_value)
         flag_value = 2**bit_number
-        flag = error_status.as_type(int)*flag_value
+        flag = error_status.astype(int)*flag_value
         l2.flag = l2.flag + flag
 
     def execute_procstep(self, l1b, l2):
@@ -227,6 +227,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
+        self.log.info("Transfer L1P variables to L2")
         for data_group, varlist in list(self.cfg.options.items()):
 
             # Get and loop over variables per data group
@@ -238,13 +239,13 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 #       -> this will be noted in the error status flag
                 var = l1b.get_parameter_by_name(data_group, var_name)
                 if var is None:
+                    self.log.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
                     var = np.full(l2.n_records, np.nan)
                     error_status = np.logical_not(error_status)
 
                 # Add variable to l2 object as auxiliary variable
-                l2.set_auxiliary_parameter(vardef["aux_id"], vardef["aux_name"], var, None)
-                if self.cfg.verbose:
-                    self.log.info("- Transfered l1p variable: %s.%s" % (data_group, var_name))
+                aux_id, aux_name = vardef
+                l2.set_auxiliary_parameter(aux_id, aux_name, var, None)
 
         return error_status
 

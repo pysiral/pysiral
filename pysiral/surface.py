@@ -56,42 +56,6 @@ class SurfaceType(DefaultLoggingClass):
         super(SurfaceType, self).__init__(self.__class__.__name__)
         self._surface_type_flags = []
         self._surface_type = None
-        self._n_records = None
-
-    @property
-    def flag(self):
-        return self._surface_type
-
-    @property
-    def n_records(self):
-        if self._surface_type is None:
-            n_records = 0
-        else:
-            n_records = len(self._surface_type)
-        self._n_records = n_records
-        return n_records
-
-    @property
-    def dimdict(self):
-        """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
-
-    @property
-    def parameter_list(self):
-        return ["flag"]
-
-    @property
-    def lead(self):
-        return self.get_by_name("lead")
-
-    @property
-    def sea_ice(self):
-        return self.get_by_name("sea_ice")
-
-    @property
-    def land(self):
-        return self.get_by_name("land")
 
     def name(self, index):
         """
@@ -113,21 +77,24 @@ class SurfaceType(DefaultLoggingClass):
         :return:
         """
 
-        """ Add a surface type flag """
+        # Add a surface type flag
         if type_str not in self.SURFACE_TYPE_DICT.keys():
-            # TODO: Error Handling
-            raise("surface type str %s unknown" % type_str)
-        if self._invalid_n_records(len(flag)):
-            raise("invalid number of records: %g (must be %g)" % (
-                len(flag), self._n_records))
+            msg = "surface type str %s unknown" % type_str
+            self.error.add_error("invalid-surface-type-code", msg)
+
+        if self.invalid_n_records(len(flag)):
+            msg = "invalid number of records: %g (must be %g)" % (len(flag), self.n_records)
+            self.error.add_error("invalid-variable-length", msg)
+
+        self.error.raise_on_error()
 
         # Create Flag keyword if necessary
         if self._surface_type is None:
-            self._n_records = len(flag)
-            self._surface_type = np.zeros(shape=self.n_records, dtype=np.int8)
+            self._surface_type = np.zeros(shape=len(flag), dtype=np.int8)
 
         # Update surface type list
-        self._surface_type[np.where(flag)[0]] = self._get_type_id(type_str)
+        indices = np.where(flag)[0]
+        self._surface_type[indices] = self._get_type_id(type_str)
         self._surface_type_flags.append(type_str)
 
     def has_flag(self, type_str):
@@ -156,17 +123,51 @@ class SurfaceType(DefaultLoggingClass):
         surface_type_corrected[indices_map] = self._surface_type
         self._surface_type = surface_type_corrected
 
-    def _invalid_n_records(self, n):
+    def invalid_n_records(self, n):
         """ Check if flag array has the correct length """
-        if self._n_records is None:  # New flag, ok
+        if self.n_records is None:  # New flag, ok
             return False
-        elif self._n_records == n:   # New flag has correct length
+        elif self.n_records == n:   # New flag has correct length
             return False
-        else:                        # New flag has wrong length
+        else:                       # New flag has wrong length
             return True
 
     def _get_type_id(self, name):
         return self.SURFACE_TYPE_DICT[name]
+
+    @property
+    def flag(self):
+        return self._surface_type
+
+    @property
+    def n_records(self):
+        if self._surface_type is None:
+            n_records = None
+        else:
+            n_records = len(self._surface_type)
+        return n_records
+
+    @property
+    def dimdict(self):
+        """ Returns dictionary with dimensions"""
+        dimdict = OrderedDict([("n_records", self.n_records)])
+        return dimdict
+
+    @property
+    def parameter_list(self):
+        return ["flag"]
+
+    @property
+    def lead(self):
+        return self.get_by_name("lead")
+
+    @property
+    def sea_ice(self):
+        return self.get_by_name("sea_ice")
+
+    @property
+    def land(self):
+        return self.get_by_name("land")
 
 
 # TODO: Has this been used yet?
