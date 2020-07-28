@@ -6,10 +6,9 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 import sys
-import time
+
 import numpy as np
 from pathlib import Path
-from attrdict import AttrDict
 from dateperiods import DatePeriod
 from collections import deque, OrderedDict
 from datetime import datetime
@@ -21,7 +20,7 @@ from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral.logging import DefaultLoggingClass
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 from pysiral.filter import get_filter
 
@@ -32,12 +31,12 @@ __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "p
 class Level2Processor(DefaultLoggingClass):
 
     def __init__(self, product_def, auxclass_handler=None):
-        """ Setup of the Level-2 Processor """
-
+        """
+        Init the Level-2 Processor
+        :param product_def:
+        :param auxclass_handler:
+        """
         super(Level2Processor, self).__init__(self.__class__.__name__)
-
-        # Error Status Handler
-        self.error = ErrorStatus(caller_id=self.__class__.__name__)
 
         # Level-2 Algorithm Definition
         # NOTE: This object should ony be called through the property self.l2def
