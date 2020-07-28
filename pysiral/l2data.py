@@ -33,6 +33,7 @@ class Level2Data(object):
         "latitude": "latitude",
         "surface_type": "surface_type_flag",
         "radar_mode": "radar_mode",
+        "flag": "flag",
         "elevation": "elev",
         "sea_level_anomaly": "sla",
         "radar_freeboard": "afrb",
