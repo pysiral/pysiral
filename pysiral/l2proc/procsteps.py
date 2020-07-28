@@ -44,7 +44,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
             "frb": 6,
             "sit": 7,
             "filter": 8,
-            "other": 17}
+            "other": 15}
 
     def execute(self, l1b, l2):
         """
@@ -55,20 +55,33 @@ class Level2ProcessorStep(DefaultLoggingClass):
         """
 
         # Execute the method of the subclass. The class needs to
-        error_flag = self.execute_procstep(l1b, l2)
+        error_status = self.execute_procstep(l1b, l2)
+
+        # Check if the error status is correctly implemented
+        if error_status is None:
+            self.log.warning("Class {} does not provide error status".format(self.classname))
+            error_status = self.get_clean_error_status(l2)
 
         # Update the status flag
-        self.update_error_flag(l2, error_flag)
+        self.update_error_flag(l2, error_status)
 
-    def update_error_flag(self, l2, error_flag):
+    def update_error_flag(self, l2, error_status):
         """
         Add the error_flag of the the processing step to the
         :param: l2: The Level-2 data container
-        :param: error_flag: An array with the shape of l2.records containing the error flag
+        :param: error_status: An array with the shape of l2.records containing the error flag
             (False: nominal, True: error)
         :return:
         """
-        raise NotImplementedError("Deactivated for test purposes")
+        # Update the algorithm error flag in the Level-2 data object
+        # NOTE: The bit for which the algorithm error flag is applied depends on the
+        #       module hosting the processing step (e.g. `sla`, `sit`, etc)
+        #       If unknown, the bit number will default to 15 (other)
+        default_value = self.error_flag_bit_dict["other"]
+        bit_number = self.error_flag_bit_dict.get(self.cfg.module, default_value)
+        flag_value = 2**bit_number
+        flag = error_status.as_type(int)*flag_value
+        l2.flag = l2.flag + flag
 
     def execute_procstep(self, l1b, l2):
         raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
@@ -140,6 +153,13 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
             # Append the class
             self.log.info("Added L2 processor step: {}.{}".format(full_module_name, procstep_def["pyclass"]))
             self._classes.append(obj)
+
+    def get_algorithm_error_flag_bit(self, procstep_module):
+        """
+        Return the corresponding bit (0-15) for the procstep module
+        :param procstep_module: str
+        :return:
+        """
 
     def validate(self):
         """

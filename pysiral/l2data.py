@@ -70,6 +70,9 @@ class Level2Data(object):
         # Other Class properties
         self._is_evenly_spaced = time_orbit.is_evenly_spaced
 
+        # Algorithm error flag
+        self.flag = np.zeros(self.n_records, dtype=np.uint16)
+
         # Create Level2 Data Groups
         self._create_l2_data_items()
 
