@@ -22,7 +22,7 @@ from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from pysiral.logging import DefaultLoggingClass
-from pysiral.ssh import get_l2_ssh_class
+from pysiral.sla import get_l2_ssh_class
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 # from pysiral.surface import get_surface_type_class
 from pysiral.filter import get_filter
