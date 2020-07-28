@@ -1,7 +1,7 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 
 id: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
-version_tag: "v3p0-preview1"
+version_tag: "v3p0-preview2"
 
 # This settings file is valid for
 hemisphere: north
@@ -123,7 +123,7 @@ auxdata:
                 latitude_range: [45.0, 90.0]
 
     - sic:
-         name: c3s_v1p2
+         name: c3s_v2p0
          options:
             exception_on_error: False
 
@@ -135,7 +135,15 @@ auxdata:
     - snow:
             name: clim_w99amsr2
             options:
+                daily_scaling: True
                 fyi_correction_factor: 0.5
+
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
 
 # geophysical corrections applied to the l1b range window
 corrections:

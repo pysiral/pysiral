@@ -1,7 +1,7 @@
 # Level-2 processor settings for CCI+ Southern hemisphere CRDP v3.0-preview-1
 
-id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2019 preview 1"
-version_tag: "v3p0-preview1"
+id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
+version_tag: "v3p0-preview2"
 
 # This settings file is valid for
 hemisphere: south
