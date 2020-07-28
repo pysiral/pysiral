@@ -552,6 +552,10 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
     def l2_output_vars(self):
         return ["surface_type"]
 
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["surface_type"]
+
 # class SICCI1Envisat(Level2SurfaceTypeClassifier):
 #     """
 #     Surface Type classification algorithm from
