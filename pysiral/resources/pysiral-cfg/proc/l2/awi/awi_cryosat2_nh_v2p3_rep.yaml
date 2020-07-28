@@ -188,8 +188,8 @@ procsteps:
                 - geocentric_polar_tide
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    -   module: ssh
-        pyclass: SSASmoothedLinear
+    -   module: sla
+        pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0

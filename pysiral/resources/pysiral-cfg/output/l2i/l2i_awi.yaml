@@ -104,13 +104,13 @@ variables:
     units: m
     coordinates: time
 
-  sea_surface_anomaly:
+  sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
     sstandard_name: sea_surface_height_above_mean_sea_level
     units: m
     coordinates: time
 
-  sea_surface_anomaly_uncertainty:
+  sea_level_uncertainty:
     long_name: "uncertainty of instantaneous sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level standard_error
     units: m
