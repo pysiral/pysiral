@@ -227,10 +227,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
-        for data_group, varlist in list(self.cfg.items()):
-
-            if data_group == "options":
-                continue
+        for data_group, varlist in list(self.cfg.options.items()):
 
             # Get and loop over variables per data group
             l1p_variables = varlist.items()
