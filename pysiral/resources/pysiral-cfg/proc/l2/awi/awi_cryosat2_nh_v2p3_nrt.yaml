@@ -1,5 +1,5 @@
-id: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.3)"
-version_tag: "v2p3-rep"
+id: "AWI CryoSat-2 near real-time sea-ice thickness product (cs2awi v2.3)"
+version_tag: "v2p3-nrt"
 
 # This settings file is valid for
 hemisphere: north
@@ -39,14 +39,17 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s_v2p0
+        name: osisaf
         options:
-            exception_on_error: False
+            # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
+            # All NaN values inside the pole hole latitude threshold will be set to 100%
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
-        name: c3s_v1p0
-        options:
-            exception_on_error: False
+        name: osisaf
+        options: null
 
     - snow:
         name: clim_w99amsr2
