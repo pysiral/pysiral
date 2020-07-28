@@ -220,8 +220,8 @@ procsteps:
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
-            evaluate: frb
-            target: [frb]
+            source_variable: frb
+            target_variables: [frb]
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
 
@@ -241,8 +241,8 @@ procsteps:
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
-            evaluate: sit
-            target: [sit]        
+            source_variable: sit
+            target_variables: [sit]        
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 
