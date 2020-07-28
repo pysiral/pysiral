@@ -37,7 +37,7 @@ class L1bEnvisatBackscatterDriftCorrection(Level2ProcessorStep):
         """
 
         # Get the default error status
-        error_status = self.get_clean_error_status(l2)
+        error_status = self.get_clean_error_status(l2.n_records)
 
         # Get the backcatter value
         datagroup = self.cfg.options.l1b_data_group

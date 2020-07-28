@@ -60,7 +60,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
         # Check if the error status is correctly implemented
         if error_status is None:
             self.log.warning("Class {} does not provide error status".format(self.classname))
-            error_status = self.get_clean_error_status(l2)
+            error_status = self.get_clean_error_status(l2.n_records)
 
         # Update the status flag
         self.update_error_flag(l2, error_status)
@@ -325,7 +325,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             #                       ----------------
             #                 elevation after retracking
             #
-            l2.elevation[:] = l2.elevation[:] - range_delta
+            l2.elev[:] = l2.elev[:] - range_delta
 
         return error_status
 

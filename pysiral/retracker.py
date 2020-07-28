@@ -161,7 +161,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
         # Get the error status
         error_status = self.get_clean_error_status(l2.n_records)
 
-        for surface_type, retracker_def in list(self.cfg.retracker.items()):
+        for surface_type, retracker_def in list(self.cfg.options.items()):
 
             # Check if any waveforms need to be retracked for given
             # surface type
@@ -193,7 +193,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             l2.update_retracked_range(retracker)
 
             # XXX: Let the retracker return other parameters?
-            l2.set_radar_mode(l1b.waveform.radar_mode)
+            l2.radar_mode = l1b.waveform.radar_mode
 
             # retrieve potential error status and update surface type flag
             if retracker.error_flag.num > 0:

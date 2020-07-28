@@ -30,7 +30,7 @@ class AlexandrovSeaIceDensity(Level2ProcessorStep):
         """
 
         # Get the mandatory error status output
-        error_status = self.get_clean_error_status(l2)
+        error_status = self.get_clean_error_status(l2.n_records)
 
         # Boundary conditions (all fyi, all myi)
         rho_i_fyi = self.cfg.options.fyi_density
@@ -110,12 +110,12 @@ class SeaIceFreeboard2SIT(Level2ProcessorStep):
                                l2.idens.uncertainty, l2.sdens.uncertainty)
 
         # Add parameter to Level-2 data object
-        l2.sit.set_values(sit)
+        l2.sit.set_value(sit)
         l2.sit.set_uncertainty(sit_unc)
 
         # Remove any values for non-sea ice waveforms
         is_not_ice = np.logical_not(l2.surface_type.sea_ice.flag)
-        l2.sit.set_nan_mask(is_not_ice)
+        l2.sit.set_nan_indices(np.where(is_not_ice))
 
         # Return the not sea-ice as error status flag
         return is_not_ice
@@ -190,7 +190,7 @@ class L2SeaIceDraft(Level2ProcessorStep):
         """
 
         # Get error status
-        error_status = self.get_clean_error_status(l2)
+        error_status = self.get_clean_error_status(l2.n_records)
 
         # Compute sea-ice draft
         sea_ice_draft = l2.sit - l2.frb

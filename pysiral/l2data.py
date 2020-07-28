@@ -72,6 +72,7 @@ class Level2Data(object):
 
         # Algorithm error flag
         self.flag = np.zeros(self.n_records, dtype=np.uint16)
+        self.radar_mode = np.zeros(self.n_records, dtype=np.uint16)
 
         # Create Level2 Data Groups
         self._create_l2_data_items()

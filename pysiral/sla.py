@@ -75,8 +75,12 @@ class SLASmoothedLinear(Level2ProcessorStep):
             self.tiepoint_maxdist_filter(l2)
 
         # Step 5: Modify the Level-2 data container with the result in-place
-        l2.sla.set_values(self.sla)
+        l2.sla.set_value(self.sla)
         l2.sla.set_uncertainty(self.sla_uncertainty)
+
+        # Return the error status
+        error_status = np.isnan(l2.sla[:])
+        return error_status
 
     def smoothed_linear_interpolation_between_tiepoints(self, l2):
         """
@@ -89,7 +93,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
         # NOTE: The use of ocean waveforms is optional and needs to activated
         #       in the options dictionary of the Level-2 processor definition file
         self.ssh_tiepoints = l2.surface_type.lead.indices
-        if self.cfg.use_ocean_wfm:
+        if self.cfg.options.use_ocean_wfm:
             self.ssh_tiepoints.append(l2.surface_type.ocean.indices)
             self.ssh_tiepoints = np.sort(self.ssh_tiepoints)
 
@@ -99,11 +103,11 @@ class SLASmoothedLinear(Level2ProcessorStep):
         # Remove ssh tie points from the list if their elevation
         # corrected by the median offset of all tie points from the mss
         # exceeds a certain threshold
-        if self.cfg.pre_filtering:
+        if self.cfg.options.pre_filtering:
 
             # Startup
             index_dict = np.arange(l2.surface_type.lead.num)
-            threshold = self.cfg.pre_filter_maximum_mss_median_offset
+            threshold = self.cfg.options.pre_filter_maximum_mss_median_offset
 
             # Compute the mean distance to the mss
             tiepoint_mss_distance = mss_frb[self.ssh_tiepoints]
@@ -148,9 +152,9 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """
 
         # short cuts to options
-        max_distance = self.cfg.uncertainty_tiepoints_distance_max
-        sla_unc_min = self.cfg.uncertainty_minimum
-        sla_unc_max = self.cfg.uncertainty_maximum
+        max_distance = self.cfg.options.uncertainty_tiepoints_distance_max
+        sla_unc_min = self.cfg.options.uncertainty_minimum
+        sla_unc_max = self.cfg.options.uncertainty_maximum
 
         # get tie point distance
         tiepoint_distance = self.get_tiepoint_distance(l2)
@@ -175,9 +179,9 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """ Check all sections divided by land masses for reliable
         information content """
 
-        filter_options = self.cfg.marine_segment_filter
+        filter_options = self.cfg.options.marine_segment_filter
         minimum_lead_number = filter_options.minimum_lead_number
-        footprint_size = self.cfg.smooth_filter_width_footprint_size
+        footprint_size = self.cfg.options.smooth_filter_width_footprint_size
         section_prop = {"i0": 0.0, "i1": 0.0,
                         "width": 0.0, "n_tiepoints": 0,
                         "land_before": (9999.0, 0),
@@ -243,7 +247,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """
 
         # Get options
-        filter_options = self.cfg.tiepoint_maxdist_filter
+        filter_options = self.cfg.options.tiepoint_maxdist_filter
         edges_only = filter_options.edges_only
         distance_threshold = filter_options.maximum_distance_to_tiepoint
 
@@ -283,7 +287,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
         # Compute distance to next lead tiepoint in meter
         tiepoint_distance = get_tiepoint_distance(np.isfinite(lead_elevation))
         tiepoint_distance = tiepoint_distance.astype(np.float32)
-        tiepoint_distance *= self.cfg.smooth_filter_width_footprint_size
+        tiepoint_distance *= self.cfg.options.smooth_filter_width_footprint_size
         return tiepoint_distance
 
     @property
@@ -292,7 +296,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
         Compute the filter width in points
         :return:
         """
-        filter_width = self.cfg.smooth_filter_width_m / self.cfg.smooth_filter_width_footprint_size
+        filter_width = self.cfg.options.smooth_filter_width_m / self.cfg.options.smooth_filter_width_footprint_size
         # Make sure filter width is odd integer
         filter_width = np.floor(filter_width) // 2 * 2 + 1
         filter_width = filter_width.astype(int)

@@ -86,7 +86,7 @@ class SnowGeometricCorrection(Level2ProcessorStep):
         freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
         # All done, return values
-        l2.frb.set_values(freeboard)
+        l2.frb.set_value(freeboard)
         l2.frb.set_uncertainty(freeboard_uncertainty)
 
     def get_correction_factor(self, l2):
@@ -193,7 +193,7 @@ class RadarFreeboardDefault(Level2ProcessorStep):
         # Add parameters to Level-2 object
         # NOTE: Conventions of the Level-2 Processor for radar freeboard variable id
         #       are `afrb` (altimeter freeboard)
-        l2.afrb.set_values(rfrb)
+        l2.afrb.set_value(rfrb)
         l2.afrb.set_uncertainty(rfrb_unc)
 
     @property
