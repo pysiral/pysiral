@@ -88,7 +88,7 @@ procsteps:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 inverse_barometric: [rcib, inverse_barometric]
-                ionospheric: [rcio, ionospheric]
+                ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]
@@ -180,7 +180,7 @@ procsteps:
                 - dry_troposphere
                 - wet_troposphere
                 - inverse_barometric
-                - ionospheric
+                - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
                 - ocean_loading_tide
