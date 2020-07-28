@@ -374,7 +374,7 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
         SurfaceTypeClassifier.__init__(self)
 
         # Set the classes that this classifier will detect
-        self._classes = ["unkown", "ocean", "lead", "sea_ice", "land"]
+        self._classes = ["unknown", "ocean", "lead", "sea_ice", "land"]
 
     def execute_procstep(self, l1b, l2):
         """
@@ -418,6 +418,11 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
 
         # Step 4: Update the l2 data object with the classification result
         l2.surface_type = self.surface_type
+
+        # Step 5: Generate an error flag
+        # -> all surfaces that are marked as unknown
+        error_flag = l2.surface_type.get_by_name("unknown")
+        return error_flag.flag
 
     def classify_ocean(self, opt, is_radar_mode):
         """

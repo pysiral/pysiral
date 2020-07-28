@@ -64,7 +64,7 @@ class SnowGeometricCorrection(Level2ProcessorStep):
         Only l2 data is needed for this class and the object will be modified in-place
         :param l1b: The Level-1b data class
         :param l2: The Level-2 data class
-        :return: None
+        :return: error status flag
         """
 
         # Init parameter arrays
@@ -85,9 +85,12 @@ class SnowGeometricCorrection(Level2ProcessorStep):
         uncertainty = np.sqrt((deriv_snow*l2.sd.uncertainty)**2. + l2.afrb.uncertainty**2.)
         freeboard_uncertainty[is_ice] = uncertainty[is_ice]
 
-        # All done, return values
+        # Set the values in the Level-2 data object
         l2.frb.set_value(freeboard)
         l2.frb.set_uncertainty(freeboard_uncertainty)
+
+        # Return the error flag (where frb is NaN)
+        return np.isnan(l2.frb[:])
 
     def get_correction_factor(self, l2):
         """
@@ -195,6 +198,9 @@ class RadarFreeboardDefault(Level2ProcessorStep):
         #       are `afrb` (altimeter freeboard)
         l2.afrb.set_value(rfrb)
         l2.afrb.set_uncertainty(rfrb_unc)
+
+        # Return the error flag (where frb is NaN)
+        return np.isnan(l2.afrb[:])
 
     @property
     def l2_input_vars(self):

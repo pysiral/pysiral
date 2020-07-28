@@ -195,16 +195,6 @@ class Level2Processor(DefaultLoggingClass):
             self.log.info("Executing processing step {}".format(class_name))
             procstep_class.execute(l1b, l2)
 
-
-        breakpoint()
-
-
-
-
-
-
-
-
     def _report_output_location(self):
         for output_handler in self._output_handler:
             msg = "Level-2 Output [%s]: %s" % (str(output_handler.id), output_handler.basedir)
