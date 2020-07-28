@@ -10,7 +10,7 @@ Created on Thu Sep 28 14:00:52 2017
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
-from pysiral.logging import DefaultLoggingClass
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
 
 from collections import OrderedDict
@@ -30,6 +30,7 @@ def MaskSourceFile(mask_name, mask_cfg):
     try:
         mask_dir = psrlcfg.local_machine.auxdata_repository.mask[mask_name]
     except KeyError:
+        mask_dir = None
         msg = "path to mask %s not in local_machine_def.yaml" % mask_name
         error.add_error("missing-lmd-def", msg)
         error.raise_on_error()
@@ -49,7 +50,6 @@ class MaskSourceBase(DefaultLoggingClass):
 
     def __init__(self, mask_dir, mask_name, cfg):
         super(MaskSourceBase, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus()
         self._cfg = cfg
         self._mask_dir = mask_dir
         self._mask_name = mask_name
@@ -67,8 +67,7 @@ class MaskSourceBase(DefaultLoggingClass):
         self._mask = mask
 
         # Set the area definition
-        pyresample_instances = (geometry.AreaDefinition,
-                                geometry.GridDefinition)
+        pyresample_instances = (geometry.AreaDefinition, geometry.GridDefinition)
         if isinstance(area_def, pyresample_instances):
             self._area_def = area_def
         else:

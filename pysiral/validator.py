@@ -3,6 +3,7 @@
 Created on Sat Apr 23 13:19:45 2016
 
 @author: Stefan
+#TODO: Marked as obsolete?
 """
 
 from attrdict import AttrDict
@@ -43,9 +44,3 @@ class LeadFixedMinimumNumber(ValidatorBaseClass):
                 type(self).__name__, l2.surface_type.lead.num,
                 self._options.minimum_n_leads)
         return error_status, error_message
-
-
-# %% Public Functions
-
-def get_validator(name):
-    return globals()[name]()

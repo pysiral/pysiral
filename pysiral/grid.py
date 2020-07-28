@@ -6,8 +6,7 @@ Created on Sun Jun 11 19:24:04 2017
 """
 
 from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+from pysiral._class_template import DefaultLoggingClass
 from pyresample import geometry, utils
 
 from attrdict import AttrDict
@@ -24,7 +23,6 @@ class GridDefinition(DefaultLoggingClass):
 
     def __init__(self, preset=None):
         super(GridDefinition, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._preset = preset
         self._metadata = {"grid_id": "n/a", "grid_tag": "n/a",
                           "hemisphere": "n/a", "resolution_tag": "n/a",

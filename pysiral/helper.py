@@ -23,7 +23,7 @@ def get_first_array_index(array, value):
     """ Get the index in array of the first occurance of ``value`` """
     try:
         index = list(array).index(value)
-    except:
+    except IndexError:
         index = None
     return index
 
@@ -33,7 +33,7 @@ def get_last_array_index(array, value):
     listarray = list(array)
     try:
         index = (len(listarray) - 1) - listarray[::-1].index(value)
-    except:
+    except IndexError:
         index = None
     return index
 
@@ -50,13 +50,13 @@ def rle(inarray):
     ia = np.array(inarray)                   # force numpy
     n = len(ia)
     if n == 0:
-        return (None, None, None)
+        return None, None, None
     else:
         y = np.array(ia[1:] != ia[:-1])      # pairwise unequal (string safe)
         i = np.append(np.where(y), n - 1)    # must include last element posi
         z = np.diff(np.append(-1, i))        # run lengths
         p = np.cumsum(np.append(0, z))[:-1]  # positions
-        return(z, p, ia[i])
+        return z, p, ia[i]
 
 
 def month_iterator(start_year, start_month, end_year, end_month):
