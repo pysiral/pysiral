@@ -11,6 +11,46 @@ mission:
     id: envisat
 
 
+# A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+# NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
+auxdata:
+
+    # Add region codes
+    # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
+    #       be modified depending on region code
+    - region:
+        name: nsidc_mod
+        options: null
+
+    # Load the
+    - mss:
+        name: dtu18
+        options:
+            latitude_range: [45.0, 90.0]
+
+    - sic:
+         name: c3s_v2p0
+         options:
+            exception_on_error: False
+
+    - sitype:
+         name: c3s_v1p0
+         options:
+             exception_on_error: False
+
+    - snow:
+            name: clim_w99amsr2
+            options:
+                daily_scaling: True
+                fyi_correction_factor: 0.5
+
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
+
 # --- Level-2 processor steps ---
 # 
 # A list auxilliary datasets to be ingested before the execution of the processing steps. 
@@ -203,15 +243,3 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
-
-
-# Apply corrections of filters to the l1b input data
-# All pyclasses must be present in the pysiral.filter module
-l1b_pre_filtering:
-
-    # Apply a drift correction to Envisat backcatter
-    # NOTE: 
-    #   The backscatter correction is not part of the Envisat l1bdata v030. In future updates the correction
-    #   will be applied in the actual pre-processor and this correction should be removed from the Level-2
-    #   processor recipe
-
