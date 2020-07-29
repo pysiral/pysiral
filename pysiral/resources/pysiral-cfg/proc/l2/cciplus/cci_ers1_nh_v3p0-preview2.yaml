@@ -175,6 +175,11 @@ procsteps:
                 - solid_earth_tide
                 - geocentric_polar_tide
 
+    # Apply ERS pulse deblurring correction
+    -   module: retracker
+        pyclass: L2ApplyRangeCoERSPulseDeblurringrrections
+        options: {}
+
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
