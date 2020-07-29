@@ -1275,6 +1275,58 @@ class ICESatGLAH13Elevation(BaseRetracker):
                 self._uncertainty[:] = self._options.uncertainty.value
 
 
+class ERSPulseDeblurring(Level2ProcessorStep):
+    """
+    A processing step applying the pulse deblurring correction of
+    Peacock 1998 to retracked ranges.
+
+    NOTE: Should only be used for ERS-1/2 data
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(ERSPulseDeblurring, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Compute the pulse deblurring correction
+
+            Hcor = h + eps / 5. (eps < 0)
+
+        based on the classifier data transferred from the l1p (epss: epsilon in seconds).
+        :param l1b:
+        :param l2:
+        :return: error_status_flag
+        """
+
+        # Get a clean error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Compute epsilon in meter (eps_m = eps_sec * c / 2.)
+        eps = l2.epss * 0.5 * 299792458.
+
+        # Compute and apply pulse deblurring correction
+        pulse_deblurring_correction = float(eps < 0.) * eps / 5.0
+        l2.elev[:] = l2.elev[:] + pulse_deblurring_correction
+
+        # Add pulse deblurring correction to level-2 auxiliary data
+        l2.set_auxiliary_parameter("pdbc", "pulse_deblurring_correction", pulse_deblurring_correction)
+
+        # Return clean error status (for now)
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["elev", "epss"]
+
+    @property
+    def l2_output_vars(self):
+        return ["pdbc"]
+
+    @property
+    def error_bit(self):
+        return ["retracker"]
+
+
 # %% Function for CryoSat-2 based retracker
 
 def wfm_get_noise_level(wfm, oversample_factor):
