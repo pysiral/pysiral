@@ -6,6 +6,8 @@
 import unittest
 import importlib
 import pkgutil
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestPackage(unittest.TestCase):

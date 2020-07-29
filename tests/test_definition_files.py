@@ -12,6 +12,8 @@ from attrdict import AttrDict
 
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestDefinitionfiles(unittest.TestCase):

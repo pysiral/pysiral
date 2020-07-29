@@ -5,11 +5,12 @@ Testing the pysiral configuration management
 @author: Stefan
 """
 
-import yaml
 import unittest
 from attrdict import AttrDict
 from pathlib import Path
 from pysiral import psrlcfg
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestConfig(unittest.TestCase):
