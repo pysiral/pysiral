@@ -49,7 +49,7 @@ procsteps:
 
     # Envisat specific backscatter correction of degrading RA-2 antenna
     -   module: filter
-        pyclass: L1bBackscatterDriftCorrection
+        pyclass: L1bEnvisatBackscatterDriftCorrection
         options: 
             l1b_data_group: classifier
             l1b_parameter_name: sigma0
