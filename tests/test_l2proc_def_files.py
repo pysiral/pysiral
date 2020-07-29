@@ -46,7 +46,6 @@ class TestL2ProcDef(unittest.TestCase):
                     procsteps = Level2ProcessorStepOrder(content.procsteps)
                     procsteps.validate()
                 except SystemExit:
-                    
                     is_valid = False
                 self.assertTrue(is_valid, "Validating procsteps definition in {}".format(l2procdef_file))
 
