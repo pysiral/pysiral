@@ -124,11 +124,3 @@ level1_preprocessor:
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 5
-
-
-
-
-
-
-
-

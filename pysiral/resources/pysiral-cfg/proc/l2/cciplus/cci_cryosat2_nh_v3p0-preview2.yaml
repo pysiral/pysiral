@@ -72,6 +72,9 @@ procsteps:
                 leading_edge_width: [lew, leading_edge_width]
                 late_tail_to_peak_power: [ltpp, late_tail_to_peak_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
+                stack_peakiness: [spk, stack_peakiness]
+                stack_skewness: [ssk, stack_skewness]
+                stack_kurtosis: [skt, stack_kurtosis]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
