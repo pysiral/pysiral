@@ -62,6 +62,7 @@ class TestDefinitionfiles(unittest.TestCase):
             for required_key in ["options", "long_name", "pyclass", "local_repository"]:
                 self.assertTrue(required_key in config_dict_keys, msg="{} has {}".format(aux_id, required_key))
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDefinitionfiles)
     unittest.TextTestRunner(verbosity=2).run(suite)

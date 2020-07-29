@@ -37,6 +37,7 @@ def import_submodules(package, recursive=True):
             results.update(import_submodules(full_name))
     return results
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPackage)
     unittest.TextTestRunner(verbosity=2).run(suite)

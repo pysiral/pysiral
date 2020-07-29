@@ -7,20 +7,19 @@ Created on Fri Jul 24 14:04:27 2015
 
 import sys
 
-import numpy as np
 from pathlib import Path
 from dateperiods import DatePeriod
 from collections import deque, OrderedDict
 from datetime import datetime
 
 from pysiral import psrlcfg
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral._class_template import DefaultLoggingClass
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
 
 
@@ -311,260 +310,6 @@ class Level2Processor(DefaultLoggingClass):
         # Return error status list
         return auxdata_error_status, auxdata_error_codes
 
-    # # TODO: Marked as obsolete
-    # def _classify_surface_types(self, l1b, l2):
-    #     """ Run the surface type classification """
-    #     pyclass = self.l2def.surface_type.pyclass
-    #     surface_type = get_surface_type_class(pyclass)
-    #     surface_type.set_options(**self.l2def.surface_type.options)
-    #     surface_type.classify(l1b, l2)
-    #     l2.set_surface_type(surface_type.result)
-
-    # # TODO: Marked as obsolete
-    # def _validate_surface_types(self, l2):
-    #     """ Loop over stack of surface type validators """
-    #     surface_type_validators = self.l2def.validator.surface_type
-    #     error_codes = ["l2proc_surface_type_discarded"]
-    #     error_states = []
-    #     error_messages = []
-    #     for name, validator_def in list(surface_type_validators.items()):
-    #         validator = get_validator(validator_def["pyclass"])
-    #         validator.set_options(**validator_def["options"])
-    #         state, message = validator.validate(l2)
-    #         error_states.append(state)
-    #         error_messages.append(message)
-    #         if state:
-    #             self.log.info("- Validator message: "+message)
-    #     error_status = True in error_states
-    #     return error_status, error_codes
-
-    # # TODO: Marked as obsolete
-    # def _waveform_retracking(self, l1b, l2):
-    #     """ Retracking: Obtain surface elevation from l1b waveforms """
-    #     # loop over retrackers for each surface type
-    #
-    #     for surface_type, retracker_def in list(self.l2def.retracker.items()):
-    #
-    #         # Check if any waveforms need to be retracked for given
-    #         # surface type
-    #         surface_type_flag = l2.surface_type.get_by_name(surface_type)
-    #         if surface_type_flag.num == 0:
-    #             self.log.info("- no waveforms of type %s" % surface_type)
-    #             continue
-    #
-    #         # Benchmark retracker performance
-    #         # XXX: is currently the bottleneck of level2 processing
-    #         timestamp = time.time()
-    #
-    #         # Retrieve the retracker assiciated with surface type
-    #         # from the l2 settings
-    #         retracker = get_retracker_class(retracker_def["pyclass"])
-    #
-    #         # Set options (if any)
-    #         if retracker_def["options"] is not None:
-    #             retracker.set_options(**retracker_def["options"])
-    #
-    #         # set subset of waveforms
-    #         retracker.set_indices(surface_type_flag.indices)
-    #
-    #         # Add classifier data (some retracker need that)
-    #         retracker.set_classifier(l1b.classifier)
-    #
-    #         # Start the retracking
-    #         retracker.retrack(l1b, l2)
-    #
-    #         # Retrieve the range after retracking
-    #         l2.update_retracked_range(retracker)
-    #
-    #         # XXX: Let the retracker return other parameters?
-    #         l2.set_radar_mode(l1b.waveform.radar_mode)
-    #
-    #         # retrieve potential error status and update surface type flag
-    #         if retracker.error_flag.num > 0:
-    #             l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
-    #         self.log.info("- Retrack class %s with %s in %.3f seconds" % (
-    #             surface_type, retracker_def["pyclass"],
-    #             time.time()-timestamp))
-    #
-    #     # Error handling not yet implemented, return dummy values
-    #     return False, None
-
-    # # TODO: Marked as obsolete
-    # def _estimate_sea_surface_height(self, l2):
-    #
-    #     # 2. get get sea surface anomaly
-    #     ssa = get_l2_ssh_class(self.l2def.ssa.pyclass)
-    #     ssa.set_options(**self.l2def.ssa.options)
-    #     ssa.interpolate(l2)
-    #
-    #     # dedicated setters, else the uncertainty, bias attributes are broken
-    #     l2.ssa.set_value(ssa.value)
-    #     l2.ssa.set_uncertainty(ssa.uncertainty)
-
-    # # TODO: Marked as obsolete
-    # def _get_altimeter_freeboard(self, l1b, l2):
-    #     """ Compute radar freeboard and its uncertainty """
-    #
-    #     afrbalg = get_frb_algorithm(self.l2def.afrb.pyclass)
-    #     if self.l2def.afrb.options is not None:
-    #         afrbalg.set_options(**self.l2def.afrb.options)
-    #     afrb, afrb_unc = afrbalg.get_radar_freeboard(l1b, l2)
-    #
-    #     # Check and return error status and codes
-    #     # (unlikely in this case)
-    #     error_status = afrbalg.error.status
-    #     error_codes = afrbalg.error.codes
-    #
-    #     if not error_status:
-    #         # Add to l2data
-    #         l2.afrb.set_value(afrb)
-    #         l2.afrb.set_uncertainty(afrb_unc)
-    #
-    #     # on error: display error messages as warning and return status flag
-    #     # (this will cause the processor to report and skip this orbit segment)
-    #     else:
-    #         error_messages = self._snow.error.get_all_messages()
-    #         for error_message in error_messages:
-    #             self.log.warning("! "+error_message)
-    #
-    #     return error_status, error_codes
-
-    # # TODO: Marked as obsolete
-    # def _get_freeboard_from_radar_freeboard(self, l1b, l2):
-    #     """ Convert the altimeter freeboard in radar freeboard """
-    #
-    #     frbgeocorr = get_frb_algorithm(self.l2def.frb.pyclass)
-    #     frbgeocorr.set_options(**self.l2def.frb.options)
-    #     frb, frb_unc = frbgeocorr.get_freeboard(l1b, l2)
-    #
-    #     # Check and return error status and codes (e.g. missing file)
-    #     error_status = frbgeocorr.error.status
-    #     error_codes = frbgeocorr.error.codes
-    #
-    #     # Add to l2data
-    #     if not error_status:
-    #         # Add to l2data
-    #         l2.frb.set_value(frb)
-    #         l2.frb.set_uncertainty(frb_unc)
-    #
-    #     # on error: display error messages as warning and return status flag
-    #     # (this will cause the processor to report and skip this orbit segment)
-    #     else:
-    #         error_messages = frbgeocorr.get_all_messages()
-    #         for error_message in error_messages:
-    #             self.log.warning("! "+error_message)
-
-    # # TODO: Marked as obsolete
-    # def _apply_freeboard_filter(self, l2):
-    #     """ Apply freeboard filters as defined in the level-2 settings file
-    #     under `root.filter.freeboard`
-    #
-    #     Filtering means:
-    #     - setting the freeboard value to nan
-    #     - setting the surface type classification to invalid
-    #     """
-    #
-    #     #TODO: Transform this method into optional processing item
-    #
-    #     # Loop over freeboard filters
-    #     for name, filter_def in list(self.l2def.filter.freeboard.items()):
-    #
-    #         # Get corresponding class name in pysiral.filter and transfer options
-    #         # XXX: This should be rewritten as (e.g.)
-    #         #   `frbfilter = VariableFilter(filter_def.pyclass, **filter_def.options)`
-    #         frbfilter = get_filter(filter_def["pyclass"])
-    #         frbfilter.set_options(**filter_def["options"])
-    #
-    #         # XXX: This is a temporary fix of an error in the algorithm
-    #         #
-    #         # Explanation: The filter target was wrongly set to radar freeboard,
-    #         # meaning that whether a freeboard value was filtered was determined on
-    #         # the wrong parameter. Both values differ by the geometric snow propagation
-    #         # correction (22% of snow depth). While the impact on the high freeboard end
-    #         # is negligible, at the lower (negative) end more freeboard where filtered
-    #         # than necessary since radar freeboard is always lower.
-    #         #
-    #         # The `afrb` filter target was hard coded, thus an option is added to replace
-    #         # the filter target (`root.filter.freeboard.frb_valid_range.filter_target`).
-    #         # The default option is the wrong one only for consistency reasons.
-    #         filter_target = "afrb"
-    #         if "filter_target" in filter_def["options"]:
-    #             filter_target = filter_def["options"]["filter_target"]
-    #
-    #         # Check if action is required
-    #         frbfilter.apply_filter(l2, filter_target)
-    #         if frbfilter.flag.num == 0:
-    #             continue
-    #
-    #         # Logging
-    #         self.log.info("- Filter message: %s has flagged %g waveforms" % (
-    #             filter_def["pyclass"], frbfilter.flag.num))
-    #
-    #         # Set surface type flag (contains invalid)
-    #         l2.surface_type.add_flag(frbfilter.flag.flag, "invalid")
-    #
-    #         # Remove invalid elevations / freeboards
-    #         l2.frb.set_nan_indices(frbfilter.flag.indices)
-
-    # # TODO: Marked as obsolete
-    # def _convert_freeboard_to_thickness(self, l2):
-    #     """
-    #     Convert Freeboard to Thickness
-    #     Note: This step requires the definition of sea ice density
-    #           (usually in the l2 settings)
-    #     """
-    #
-    #     frb2sit = get_sit_algorithm(self.l2def.sit.pyclass)
-    #     frb2sit.set_options(**self.l2def.sit.options)
-    #
-    #     sit, sit_unc, ice_dens, ice_dens_unc = frb2sit.get_thickness(l2)
-    #
-    #     # Check and return error status and codes (e.g. missing file)
-    #     error_status = frb2sit.error.status
-    #
-    #     # Add to l2data
-    #     if not error_status:
-    #         # Add to l2data
-    #         l2.sit.set_value(sit)
-    #         l2.sit.set_uncertainty(sit_unc)
-    #         l2.set_auxiliary_parameter("idens", "sea_ice_density", ice_dens, ice_dens_unc)
-    #
-    # # TODO: Marked as obsolete
-    # def _apply_thickness_filter(self, l2):
-    #     for name, filter_def in list(self.l2def.filter.thickness.items()):
-    #         sitfilter = get_filter(filter_def["pyclass"])
-    #         sitfilter.set_options(**filter_def["options"])
-    #         sitfilter.apply_filter(l2, "sit")
-    #         if sitfilter.flag.num == 0:
-    #             continue
-    #         self.log.info("- Filter message: %s has flagged %g waveforms" % (
-    #             filter_def["pyclass"], sitfilter.flag.num))
-    #         # Set surface type flag (contains invalid)
-    #         l2.surface_type.add_flag(sitfilter.flag.flag, "invalid")
-    #         # Remove invalid thickness values
-    #         l2.sit.set_nan_indices(sitfilter.flag.indices)
-    #
-    # # TODO: Marked as obsolete
-    # def _post_processing_items(self, l2):
-    #     """
-    #
-    #     :param l2:
-    #     :return:
-    #     """
-    #     # Get the post processing options
-    #     post_processing_items = self._l2def.get("post_processing", None)
-    #     if post_processing_items is None:
-    #         self.log.info("No post-processing items defined")
-    #         return
-    #
-    #     # Get the list of post-processing items
-    #     for pp_item in post_processing_items:
-    #         pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
-    #         post_processor = pp_class(**pp_item["options"])
-    #         post_processor.apply(l2)
-    #         msg = "- Level-2 post-processing item `%s` applied" % (pp_item["label"])
-    #         self.log.info(msg)
-
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
@@ -756,5 +501,3 @@ class L2ProcessorReport(DefaultLoggingClass):
     @property
     def n_warnings(self):
         return 0
-
-
