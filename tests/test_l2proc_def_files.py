@@ -9,7 +9,9 @@ Level2Processor conventions
 import yaml
 import unittest
 from attrdict import AttrDict
+
 from pysiral import psrlcfg
+from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from loguru import logger
 logger.disable("pysiral")
 
@@ -22,14 +24,31 @@ class TestL2ProcDef(unittest.TestCase):
         l2proc_ids = psrlcfg.get_setting_ids("proc", "l2")
         self.l2procdef_files = [psrlcfg.get_settings_file("proc", "l2", l2proc_id) for l2proc_id in l2proc_ids]
 
-    def testYAMLSyntax(self):
+    def testConfigFileRootTags(self):
         required_tags = ["id", "version_tag", "hemisphere", "mission", "auxdata", "procsteps"]
         for l2procdef_file in self.l2procdef_files:
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
                 for required_tag in required_tags:
-                    msg = "Search for tag {} in {}".format(required_tag, l2procdef_file)
+                    msg = "Search for root tag `{}` in {}".format(required_tag, l2procdef_file)
                     self.assertTrue(required_tag in content, msg=msg)
+
+    def testConfigFileL2ProcStepContent(self):
+        for l2procdef_file in self.l2procdef_files:
+            with open(str(l2procdef_file)) as fh:
+                content = AttrDict(yaml.safe_load(fh))
+                # This configuration error will be caught in method testConfigFileRootTags
+                # No need to repeat it here
+                if "procsteps" not in content:
+                    continue
+                is_valid = True
+                try:
+                    procsteps = Level2ProcessorStepOrder(content.procsteps)
+                    procsteps.validate()
+                except SystemExit:
+                    
+                    is_valid = False
+                self.assertTrue(is_valid, "Validating procsteps definition in {}".format(l2procdef_file))
 
 
 if __name__ == '__main__':
