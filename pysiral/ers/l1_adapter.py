@@ -7,6 +7,7 @@ __author__ = "Stefan Hendricks"
 
 import numpy as np
 from pathlib import Path
+from loguru import logger
 from cftime import num2pydate
 
 from pysiral import psrlcfg
@@ -38,12 +39,13 @@ class ERSReaperSGDR(DefaultLoggingClass):
 
         # Debug variables
         self.timer = None
+        self.l1 = None
+        self.filepath = None
 
-    def get_l1(self, filepath, polar_ocean_check=None):
+    def get_l1(self, filepath, **kwargs):
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
         :param filepath: The full file path to the netCDF file
-        :param polar_ocean_check: Mandatory parameter but will be ignored as ERS Data is full orbit
         :return: The parsed (or empty) Level-1 data container
         """
 

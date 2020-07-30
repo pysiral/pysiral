@@ -40,9 +40,11 @@ from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
 
 import scipy.ndimage as ndimage
+from loguru import logger
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
+
 
 class OsiSafSIC(AuxdataBaseClass):
 
@@ -155,7 +157,7 @@ class IfremerSIC(AuxdataBaseClass):
         # XXX: This is a dirty hack, but needed for getting SIC lon/lat grid
         self._grid = {}
         for hemisphere in ["north", "south"]:
-            grid_file = os.path.join(self.cfg.local_repository, "grid_%s_12km.nc" % hemisphere)
+            grid_file = Path(self.cfg.local_repository) / "grid_%s_12km.nc" % hemisphere
             self._grid[hemisphere] = ReadNC(grid_file)
 
     def get_l2_track_vars(self, l2):
@@ -177,10 +179,10 @@ class IfremerSIC(AuxdataBaseClass):
         if self._requested_date == self._current_date:
             # Data already loaded, nothing to do
             return
-        path = self._get_local_repository_filename(l2)
+        path = Path(self._get_local_repository_filename(l2))
 
         # Validation
-        if not os.path.isfile(path):
+        if not path.is_file():
             msg ="IfremerSIC: File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
@@ -197,14 +199,14 @@ class IfremerSIC(AuxdataBaseClass):
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
-        path = self.cfg.local_repository
+        path = Path(self.cfg.local_repository)
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
-            path = os.path.join(path, subfolder)
+            path = path / subfolder
         filename = self.cfg.filenaming.format(
             year=self.year, month=self.month, day=self.day,
             hemisphere_code=l2.hemisphere_code)
-        path = os.path.join(path, filename)
+        path = path / filename
         return path
 
     def _get_sic_track(self, l2):

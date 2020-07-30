@@ -5,9 +5,7 @@ from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.logging import DefaultLoggingClass
-
-
-
+from loguru import logger
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 from dateutil import parser as dtparser

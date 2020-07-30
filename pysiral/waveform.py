@@ -5,10 +5,12 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from pysiral.retracker import cTFMRA
-import numpy as np
 
+import numpy as np
+from loguru import logger
+from pysiral.retracker import cTFMRA
 from pysiral.logging import DefaultLoggingClass
+
 
 def get_waveforms_peak_power(wfm, dB=False):
     """
@@ -106,6 +108,7 @@ def sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s,
     Returns
     -------
         sigma_0 (float)
+        :param wf_peak_power_watt:
 
     """
 

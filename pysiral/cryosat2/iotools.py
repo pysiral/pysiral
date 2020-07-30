@@ -3,6 +3,7 @@
 import os
 import numpy as np
 from pathlib import Path
+from loguru import logger
 from collections import deque
 
 from pysiral.errorhandler import ErrorStatus

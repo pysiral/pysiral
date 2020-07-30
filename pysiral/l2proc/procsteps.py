@@ -4,7 +4,7 @@
 """
 
 import numpy as np
-
+from loguru import logger
 from pysiral import get_cls
 from pysiral._class_template import DefaultLoggingClass
 

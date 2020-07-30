@@ -8,6 +8,7 @@ Created on Tue Jul 14 14:48:01 2015
 import parse
 import xmltodict
 import numpy as np
+from loguru import logger
 from attrdict import AttrDict
 from pathlib import Path
 from dateutil import parser as dtparser

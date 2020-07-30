@@ -7,6 +7,7 @@ Created on Fri Jul 24 14:04:27 2015
 
 import sys
 
+from loguru import logger
 from pathlib import Path
 from dateperiods import DatePeriod
 from collections import deque, OrderedDict

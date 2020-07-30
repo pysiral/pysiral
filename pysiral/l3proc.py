@@ -20,6 +20,7 @@ from scipy import stats
 from scipy.ndimage.filters import maximum_filter
 
 from collections import OrderedDict
+from loguru import logger
 from datetime import datetime, date
 from pathlib import Path
 import itertools

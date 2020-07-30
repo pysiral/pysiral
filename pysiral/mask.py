@@ -15,6 +15,7 @@ from pysiral.iotools import ReadNC
 
 from collections import OrderedDict
 from netCDF4 import Dataset
+from loguru import logger
 
 from pyresample import image, geometry, kd_tree
 import numpy as np

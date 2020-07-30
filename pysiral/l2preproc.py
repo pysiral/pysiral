@@ -15,7 +15,7 @@ from pysiral.output import Level2Output, OutputHandlerBase
 from collections import OrderedDict
 
 from pathlib import Path
-
+from loguru import logger
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -150,7 +150,7 @@ class Level2POutputHandler(OutputHandlerBase):
         provided in the l2 data object """
         export_directory = self.get_directory_from_l2(l2)
         export_filename = self.get_filename_from_l2(l2)
-        return os.path.join(export_directory, export_filename)
+        return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l2):
         attr_dict = OrderedDict()

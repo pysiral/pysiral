@@ -7,6 +7,7 @@ import numpy as np
 
 import dateutil
 from pathlib import Path
+from loguru import logger
 from datetime import timedelta
 from parse import compile
 
