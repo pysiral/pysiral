@@ -42,7 +42,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         self.l1 = None
         self.filepath = None
 
-    def get_l1(self, filepath, **kwargs):
+    def get_l1(self, filepath, *args, **kwargs):
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
         :param filepath: The full file path to the netCDF file

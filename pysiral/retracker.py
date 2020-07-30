@@ -15,13 +15,13 @@ import numpy as np
 from loguru import logger
 from attrdict import AttrDict
 
-
 # cythonized bottleneck functions for cTFMRA
 try:
     from .bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
                                  cytfmra_wfm_noise_level, cytfmra_normalize_wfm)
     CYTFMRA_OK = True
 except ImportError:
+    logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
 from pysiral.core.flags import ANDCondition, FlagContainer

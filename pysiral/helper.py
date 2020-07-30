@@ -23,7 +23,7 @@ def get_first_array_index(array, value):
     """ Get the index in array of the first occurance of ``value`` """
     try:
         index = list(array).index(value)
-    except IndexError:
+    except ValueError:
         index = None
     return index
 
@@ -33,7 +33,7 @@ def get_last_array_index(array, value):
     listarray = list(array)
     try:
         index = (len(listarray) - 1) - listarray[::-1].index(value)
-    except IndexError:
+    except ValueError:
         index = None
     return index
 
