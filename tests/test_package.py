@@ -23,6 +23,7 @@ def import_submodules(package, recursive=True):
     """ Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
+    :param recursive: for sub-modules
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
