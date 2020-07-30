@@ -137,31 +137,6 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  radar_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
-    units: m
-    coordinates: "time lon lat"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-
-  radar_freeboard_uncertainty:
-    long_name: "uncertainty of radar freeboard"
-    units: m
-    coordinates: "time lon lat"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-
-  freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
-    standard_name: sea_ice_freeboard
-    units: m
-    coordinates: "time lon lat"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-
-  freeboard_uncertainty:
-    long_name: "freeboard uncertainty"
-    units: m
-    coordinates: "time lon lat"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-
   snow_depth:
     long_name: "thickness of the snow layer"
     standard_name: surface_snow_thickness
