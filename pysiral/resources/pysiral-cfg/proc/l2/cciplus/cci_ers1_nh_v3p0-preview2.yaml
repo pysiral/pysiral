@@ -177,7 +177,7 @@ procsteps:
 
     # Apply ERS pulse deblurring correction
     -   module: retracker
-        pyclass: L2ApplyRangeCoERSPulseDeblurringrrections
+        pyclass: ERSPulseDeblurring
         options: {}
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
