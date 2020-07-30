@@ -12,7 +12,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
-from pysiral.flag import ORCondition
+from pysiral.core.flags import ORCondition
 from pysiral.surface import SurfaceType
 from pysiral.sit import frb2sit_errprop
 
@@ -55,10 +55,10 @@ class Level3Processor(DefaultLoggingClass):
         self._period = period
 
         # Initialize the stack for the l2i orbit files
-        self.log.info("Initialize l2i data stack")
+        logger.info("Initialize l2i data stack")
         stack = L2iDataStack(self._job.grid, self._job.l2_parameter)
 
-        self.log.info("Parsing products (prefilter active: %s)" % (str(self._job.l3def.l2i_prefilter.active)))
+        logger.info("Parsing products (prefilter active: %s)" % (str(self._job.l3def.l2i_prefilter.active)))
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
@@ -69,7 +69,7 @@ class Level3Processor(DefaultLoggingClass):
             try:
                 l2i = L2iNCFileImport(l2i_file)
             except AttributeError:
-                self.log.warning("Attribute Error encountered in %s" % l2i_file)
+                logger.warning("Attribute Error encountered in %s" % l2i_file)
                 continue
 
             # Apply the orbit filter (for masking descending or ascending orbit segments)
@@ -84,7 +84,7 @@ class Level3Processor(DefaultLoggingClass):
             if orbitfilter_is_active:
 
                 # Display warning if filter is active
-                self.log.warning("Orbit filter is active [%s]" % str(orbitfilter.mask_orbits))
+                logger.warning("Orbit filter is active [%s]" % str(orbitfilter.mask_orbits))
 
                 # Get indices to filter
                 if orbitfilter.mask_orbits == "ascending":
@@ -92,7 +92,7 @@ class Level3Processor(DefaultLoggingClass):
                 elif orbitfilter.mask_orbits == "descending":
                     indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
                 else:
-                    self.log.error(
+                    logger.error(
                         "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
                     indices = []
 
@@ -119,7 +119,7 @@ class Level3Processor(DefaultLoggingClass):
             stack.add(l2i)
 
         # Initialize the data grid
-        self.log.info("Initialize l3 data grid")
+        logger.info("Initialize l3 data grid")
         l3 = L3DataGrid(self._job, stack, period)
 
         # Apply the processing items
@@ -128,7 +128,7 @@ class Level3Processor(DefaultLoggingClass):
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
-            self.log.info("Write %s product: %s" % (output_handler.id, output.export_filename))
+            logger.info("Write %s product: %s" % (output_handler.id, output.export_filename))
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -137,7 +137,7 @@ class Level3Processor(DefaultLoggingClass):
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            self.log.info(
+            logger.info(
                 "Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
         self._l3_progress_percent = progress_percent
 
@@ -152,13 +152,13 @@ class Level3Processor(DefaultLoggingClass):
         # Get the post processing options
         processing_items = self._job.l3def.get("processing_items", None)
         if processing_items is None:
-            self.log.info("No processing items defined")
+            logger.info("No processing items defined")
             return
 
         # Get the list of post-processing items
         for pitem in processing_items:
             msg = "Apply Level-3 processing item: `%s`" % (pitem["label"])
-            self.log.info(msg)
+            logger.info(msg)
             pp_class = get_cls(pitem["module_name"], pitem["class_name"], relaxed=False)
             processing_items = pp_class(l3grid, **pitem["options"])
             processing_items.apply()
@@ -335,7 +335,7 @@ class L3DataGrid(DefaultLoggingClass):
         self._init_parameter_fields(job.l2_parameter)
 
         # Grid the Level-2 parameter
-        self.log.info("Grid Level-2 parameter")
+        logger.info("Grid Level-2 parameter")
         self.grid_l2_parameter()
 
     def set_doi(self, doi):
@@ -377,7 +377,7 @@ class L3DataGrid(DefaultLoggingClass):
         self.vars[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
 
         # Log
-        self.log.info("Added grid parameter: %s" % parameter_name)
+        logger.info("Added grid parameter: %s" % parameter_name)
 
     def calculate_longitude_latitude_fields(self):
         """ Geographic coordinates from GridDefinition """
@@ -402,7 +402,7 @@ class L3DataGrid(DefaultLoggingClass):
             if grid_method == "none":
                 continue
 
-            self.log.info("Gridding parameter: %s [%s]" % (name, grid_method))
+            logger.info("Gridding parameter: %s [%s]" % (name, grid_method))
 
             for xi, yj in self.grid_indices:
 
@@ -434,7 +434,7 @@ class L3DataGrid(DefaultLoggingClass):
             parameter = self.vars[name]
         except KeyError:
             parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
-            self.log.warn("Parameter not available: %s" % name)
+            logger.warn("Parameter not available: %s" % name)
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
@@ -444,7 +444,7 @@ class L3DataGrid(DefaultLoggingClass):
         try:
             self.vars[name] = var
         except KeyError:
-            self.log.warn("Parameter not available: %s" % name)
+            logger.warn("Parameter not available: %s" % name)
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
@@ -455,7 +455,7 @@ class L3DataGrid(DefaultLoggingClass):
         :return:
         """
         # Get the metadata information from the L2 stack
-        self.log.info("Compile metadata")
+        logger.info("Compile metadata")
         self._metadata = L3MetaData()
         self._metadata.get_missions_from_stack(self.l2)
         # Actual data coverage
@@ -785,7 +785,7 @@ class Level3OutputHandler(OutputHandlerBase):
 
         super(Level3OutputHandler, self).__init__(output_def)
         self.error.caller_id = self.__class__.__name__
-        self.log.name = self.__class__.__name__
+        logger.name = self.__class__.__name__
 
         self._period = period
         self._doi = doi
@@ -888,7 +888,7 @@ class Level3OutputHandler(OutputHandlerBase):
         # -> Catch attribute error and return false if attribute does not exist
         if not "time_dim_is_unlimited" in self.output_def.grid_options:
             msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
-            self.log.warning(msg % self.output_def_filename)
+            logger.warning(msg % self.output_def_filename)
             time_dim_is_unlimited = False
         else:
             time_dim_is_unlimited = self.output_def.grid_options.time_dim_is_unlimited
@@ -897,7 +897,7 @@ class Level3OutputHandler(OutputHandlerBase):
         if not isinstance(time_dim_is_unlimited, bool):
             msg = "Invalid value type for `grid_options.time_dim_is_unlimited` in %s. Must be bool, value was %s. (Using default: False)"
             msg = msg % (self.output_def_filename, str(time_dim_is_unlimited))
-            self.log.error(msg)
+            logger.error(msg)
             time_dim_is_unlimited = False
 
         return time_dim_is_unlimited
@@ -931,14 +931,14 @@ class Level3ProductDefinition(DefaultLoggingClass):
         self._parse_l3_settings()
 
         # Report settings to log handler
-        self.log.info("Output grid id: %s" % str(self._grid.grid_id))
+        logger.info("Output grid id: %s" % str(self._grid.grid_id))
         for output in self._output:
             msg = "L3 product directory (%s): %s"
             msg = msg % (str(output.id), str(output.basedir))
-            self.log.info(msg)
+            logger.info(msg)
 
     def _parse_l3_settings(self):
-        self.log.info("Parsing settings: %s" % str(self._l3_settings_file))
+        logger.info("Parsing settings: %s" % str(self._l3_settings_file))
         try:
             self._l3 = get_yaml_config(self._l3_settings_file)
         except Exception as ex:
@@ -1495,7 +1495,7 @@ class Level3LoadMasks(Level3ProcessorItem):
                 self.l3grid.add_grid_variable(mask_name, np.nan, "f4")
                 error_msgs = mask.error.get_all_messages()
                 for error_msg in error_msgs:
-                    self.log.error(error_msg)
+                    logger.error(error_msg)
 
 
 class Level3GridUncertainties(Level3ProcessorItem):
@@ -1657,7 +1657,7 @@ class Level3ParameterMask(Level3ProcessorItem):
                     self.l3grid.vars[target][masked_indices] = -1
                 else:
                     msg = "Cannot set nan (or -1) as mask value to parameter: %s " % target
-                    self.log.warning(msg)
+                    logger.warning(msg)
 
     def _get_l3_mask(self, source_param, condition, options):
         """ Return bool array based on a parameter and a predefined

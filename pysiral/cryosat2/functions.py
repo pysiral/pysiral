@@ -28,7 +28,7 @@ class L1PWaveformResampleSIN(DefaultLoggingClass):
         self.sin_target_bins = cfg.get("sin_target_bins", None)
         if self.sin_target_bins is None:
             msg = "Missing option `sin_target_bins` -> SIN waveform will not be resampled!"
-            self.log.warning(msg)
+            logger.warning(msg)
 
     def apply(self, l1):
         """

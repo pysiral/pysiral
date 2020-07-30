@@ -23,7 +23,7 @@ try:
 except ImportError:
     CYTFMRA_OK = False
 
-from pysiral.flag import ANDCondition, FlagContainer
+from pysiral.core.flags import ANDCondition, FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
@@ -167,7 +167,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
-                self.log.info("- no waveforms of type %s" % surface_type)
+                logger.info("- no waveforms of type %s" % surface_type)
                 continue
 
             # Benchmark retracker performance
@@ -198,7 +198,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # retrieve potential error status and update surface type flag
             if retracker.error_flag.num > 0:
                 l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
-            self.log.info("- Retrack class %s with %s in %.3f seconds" % (
+            logger.info("- Retrack class %s with %s in %.3f seconds" % (
                 surface_type, retracker_def["pyclass"],
                 time.time()-timestamp))
 

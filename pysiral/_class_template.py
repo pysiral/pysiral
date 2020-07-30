@@ -1,5 +1,4 @@
 
-from loguru import logger
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -14,5 +13,4 @@ class DefaultLoggingClass(object):
         :param cls_name:
         """
 
-        self.log = logger
         self.error = ErrorStatus(cls_name)

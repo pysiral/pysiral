@@ -189,7 +189,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             output_def = self.default_output_def_filename
         super(DefaultLevel2OutputHandler, self).__init__(output_def)
         self.error.caller_id = self.__class__.__name__
-        self.log.name = self.__class__.__name__
+        logger.name = self.__class__.__name__
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
         self._period = period
@@ -249,7 +249,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         l2output_files = directory.glob("*.*")
 
         # Delete files
-        self.log.info("Removing %g l2 product files [ %s ] in %s" % (len(l2output_files), self.id, directory))
+        logger.info("Removing %g l2 product files [ %s ] in %s" % (len(l2output_files), self.id, directory))
         for l2output_file in l2output_files:
             Path(l2output_file).unlink()
 
@@ -348,7 +348,7 @@ class NCDataFile(DefaultLoggingClass):
             if data is None:
                 msg = "Invalid parameter name for data object: %s"
                 msg = msg % parameter_name
-                self.log.error(msg)
+                logger.error(msg)
                 self.error.add_error("invalid-paramater", msg)
                 self.error.raise_on_error()
 

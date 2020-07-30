@@ -66,11 +66,11 @@ class ERSFileList(DefaultLoggingClass):
             if current_day not in self.day_list:
                 continue
 
-            self.log.info("Searching folder: %s" % dirpath)
+            logger.info("Searching folder: %s" % dirpath)
             # Get the list of all dbl files
             files = [os.path.join(dirpath, fn) for fn in filenames
                      if self.pattern in fn]
-            self.log.info("Found %g level-1b SGDR files" % len(files))
+            logger.info("Found %g level-1b SGDR files" % len(files))
             # reform the list that each list entry is of type
             # [full_path, identifier (start_date)] for later sorting
             # of SAR and SIN files

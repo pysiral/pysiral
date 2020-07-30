@@ -17,7 +17,7 @@ from pysiral._class_template import DefaultLoggingClass
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
-from pysiral.l1bdata import L1bdataNCFile
+
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
@@ -114,7 +114,7 @@ class Level2Processor(DefaultLoggingClass):
             self._orbit.clear()
             return
 
-        self.log.info("Starting Initialization")
+        logger.info("Starting Initialization")
 
         # Initialize the auxiliary data handlers
         self.set_auxdata_handler()
@@ -127,7 +127,7 @@ class Level2Processor(DefaultLoggingClass):
 
         # All done
         self._initialized = True
-        self.log.info("Initialization complete")
+        logger.info("Initialization complete")
 
     def set_auxdata_handler(self):
         """
@@ -157,7 +157,7 @@ class Level2Processor(DefaultLoggingClass):
             self._registered_auxdata_handlers.append((auxhandler_id, auxdata_type))
 
             # Report the auxdata class
-            self.log.info("Processor Settings - %s auxdata handler registered" % auxhandler_id.upper())
+            logger.info("Processor Settings - %s auxdata handler registered" % auxhandler_id.upper())
 
     def set_procstep_handler(self):
         """
@@ -165,11 +165,11 @@ class Level2Processor(DefaultLoggingClass):
         :return:
         """
 
-        self.log.info("Init Processor Steps")
+        logger.info("Init Processor Steps")
         cfg = self.l2def.procsteps
         self.procsteps = Level2ProcessorStepOrder(cfg)
         self.procsteps.validate()
-        self.log.info("Processor steps initialized and validated")
+        logger.info("Processor steps initialized and validated")
 
     def execute_l2_processor_steps(self, l1b, l2):
         """
@@ -191,13 +191,13 @@ class Level2Processor(DefaultLoggingClass):
             # Note: Each processing step is always supplied with both l1b and
             #       l2 data object, no matter if actually needed
             class_name = procstep_class.classname
-            self.log.info("Executing processing step {}".format(class_name))
+            logger.info("Executing processing step {}".format(class_name))
             procstep_class.execute(l1b, l2)
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
             msg = "Level-2 Output [%s]: %s" % (str(output_handler.id), output_handler.basedir)
-            self.log.info(msg)
+            logger.info(msg)
 
     def _initialize_summary_report(self):
         """
@@ -210,7 +210,7 @@ class Level2Processor(DefaultLoggingClass):
         """ Orbit-wise level2 processing """
 
         # TODO: Evaluate parallelization
-        self.log.info("Start Orbit Processing")
+        logger.info("Start Orbit Processing")
 
         n_files = len(self._l1b_files)
 
@@ -218,7 +218,7 @@ class Level2Processor(DefaultLoggingClass):
         for i, l1b_file in enumerate(self._l1b_files):
 
             # Log the current position in the file stack
-            self.log.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
+            logger.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
 
             # Read the the level 1b file (l1bdata netCDF is required)
             l1b = self._read_l1b_file(l1b_file)
@@ -230,7 +230,7 @@ class Level2Processor(DefaultLoggingClass):
                 period = DatePeriod(l1b.info.start_time, l1b.info.stop_time)
             except SystemExit:
                 msg = "Computation of data period caused exception"
-                self.log.warning("[invalid-l1b]", msg)
+                logger.warning("[invalid-l1b]", msg)
                 continue
 
             # Init the Level-2 data object
@@ -257,8 +257,9 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
+        from pysiral.l1bdata import L1bdataNCFile
         filename = Path(l1b_file).name
-        self.log.info("- Parsing l1bdata file: %s" % filename)
+        logger.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         l1b.info.subset_region_name = self.l2def.hemisphere
@@ -266,7 +267,7 @@ class Level2Processor(DefaultLoggingClass):
 
     def _discard_l1b_procedure(self, error_codes, l1b_file):
         """ Log and report discarded l1b orbit segment """
-        self.log.info("- skip file")
+        logger.info("- skip file")
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
 
@@ -291,13 +292,13 @@ class Level2Processor(DefaultLoggingClass):
 
             # Reporting
             for msg in auxclass.msgs:
-                self.log.info("- %s auxdata handler message: %s" % (auxdata_type.upper(), msg))
+                logger.info("- %s auxdata handler message: %s" % (auxdata_type.upper(), msg))
 
             # Check for errors
             if auxclass.error.status:
                 error_messages = auxclass.error.get_all_messages()
                 for error_message in error_messages:
-                    self.log.warning("! "+error_message)
+                    logger.warning("! "+error_message)
                     # auxdata handler is persistent, therefore errors status
                     # needs to be reset before next orbit
                     auxclass.error.reset()
@@ -305,7 +306,7 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_error_status.append(auxclass.error.status)
             auxdata_error_codes.extend(auxclass.error.codes)
 
-            self.log.info("- %s auxdata handler completed" % (auxdata_type.upper()))
+            logger.info("- %s auxdata handler completed" % (auxdata_type.upper()))
 
         # Return error status list
         return auxdata_error_status, auxdata_error_codes
@@ -313,7 +314,7 @@ class Level2Processor(DefaultLoggingClass):
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
-            self.log.info("- Write {} data file: {}".format(output_handler.id, output.export_filename))
+            logger.info("- Write {} data file: {}".format(output_handler.id, output.export_filename))
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
@@ -422,14 +423,14 @@ class L2ProcessorReport(DefaultLoggingClass):
         try:
             self.error_counter[error_code].append(l1b_file)
         except:
-            self.log.warning("Unknown error code (%s), ignoring" % error_code)
+            logger.warning("Unknown error code (%s), ignoring" % error_code)
 
     def write_to_file(self, output_id, directory):
         """ Write a summary file to the defined export directory """
 
         # Create a simple filename
         filename = Path(directory) / "pysiral-l2proc-summary.txt"
-        self.log.info("Exporting summary report: %s" % filename)
+        logger.info("Exporting summary report: %s" % filename)
 
         lfmt = "  %-16s : %s\n"
         current_time = str(datetime.now()).split(".")[0]

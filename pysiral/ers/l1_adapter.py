@@ -13,10 +13,8 @@ from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.sgdrfile import ERSSGDR
-from pysiral.flag import ORCondition
-from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface import ESA_SURFACE_TYPE_DICT
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
 
 
 class ERSReaperSGDR(DefaultLoggingClass):
@@ -49,6 +47,9 @@ class ERSReaperSGDR(DefaultLoggingClass):
         :return: The parsed (or empty) Level-1 data container
         """
 
+        # Import here to avoid circular imports
+        from pysiral.l1bdata import Level1bData
+
         # Store arguments
         self.filepath = filepath
 
@@ -70,7 +71,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         self.timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
+        logger.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
 
         return self.l1
 

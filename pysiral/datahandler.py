@@ -243,7 +243,7 @@ class L2iDataHandler(DefaultLoggingClass):
         try:
             years = sorted([f.parts[-1] for f in Path(self.product_basedir).iterdir() if f.is_dir()])
         except StopIteration:
-            self.log.warning("No subdirectories in %s" % self.product_basedir)
+            logger.warning("No subdirectories in %s" % self.product_basedir)
             return []
         # filter any invalid directories
         years = [y for y in years if re.match(r'[1-3][0-9]{3}', y)]

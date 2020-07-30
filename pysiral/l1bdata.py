@@ -95,10 +95,10 @@ from collections import OrderedDict
 import numpy as np
 import copy
 
-from pysiral.logging import DefaultLoggingClass
-from pysiral import surface
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
+from pysiral.core.flags import SurfaceType
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 
@@ -118,7 +118,7 @@ class Level1bData(DefaultLoggingClass):
         self.time_orbit = L1bTimeOrbit(self.info)
         self.correction = L1bRangeCorrections(self.info)
         self.classifier = L1bClassifiers(self.info)
-        self.surface_type = surface.SurfaceType()
+        self.surface_type = SurfaceType()
 
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """
@@ -161,12 +161,15 @@ class Level1bData(DefaultLoggingClass):
         nans_indices = np.where(np.isnan(range_delta))[0]
         if len(nans_indices) > 0:
             range_delta[nans_indices] = 0.0
-            self.log.warning("NaNs encountered in range correction parameter: %s" % correction)
+            logger.warning("NaNs encountered in range correction parameter: %s" % correction)
 
         self.waveform.add_range_delta(range_delta)
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
+
+        test = copy.deepcopy(self.surface_type)
+
         if len(subset_list) > 0:
             l1b = copy.deepcopy(self)
             l1b.trim_to_subset(subset_list)
@@ -266,8 +269,6 @@ class Level1bData(DefaultLoggingClass):
     def update_waveform_statistics(self):
         """ Compute waveform metadata attributes """
 
-        from pysiral.config import RadarModes
-
         # waveform property infos (lrm, sar, sarin)
         radar_modes = RadarModes()
         radar_mode = self.waveform.radar_mode
@@ -330,7 +331,7 @@ class Level1bData(DefaultLoggingClass):
         # Compute number of leading and trailing bins
         lead_bins = int(maxloc*target_count)
         trail_bins = target_count-lead_bins
-        # Get the start/stop indeces for each waveform
+        # Get the start/stop indices for each waveform
         start, stop = max_index - lead_bins, max_index + trail_bins
         # Create new arrays
         rebin_shape = (n_records, target_count)
@@ -360,7 +361,7 @@ class Level1bData(DefaultLoggingClass):
         try:
             data_group = getattr(self, data_group)
             return getattr(data_group, parameter_name)
-        except:
+        except AttributeError:
             return None
 
     def set_parameter_by_name(self, data_group_name, parameter_name, value):
@@ -379,9 +380,8 @@ class Level1bData(DefaultLoggingClass):
             setattr(data_group, parameter_name, value)
             # Update l1b container
             setattr(self, data_group_name, data_group)
-        except:
-            raise ValueError("Could not set value for %s.%s" % (
-                   data_group_name, parameter_name))
+        except AttributeError:
+            raise ValueError("Could not set value for %s.%s" % (data_group_name, parameter_name))
 
     @property
     def n_records(self):
@@ -745,12 +745,12 @@ class L1bTimeOrbit(object):
         # Update the timestamp
         time_old_num = date2num(self.timestamp, DATE2NUM_UNIT)
         time_num = np.interp(corrected_indices, indices_map, time_old_num)
-        self.timestamp = num2pydate(time_num, DATE2NUM_UNIT)
+        self.timestamp = cn2pyd(time_num, DATE2NUM_UNIT)
 
     def get_parameter_by_name(self, name):
         try:
             return getattr(self, name)
-        except:
+        except AttributeError:
             return None
 
     def __getstate__(self):
@@ -795,7 +795,7 @@ class L1bRangeCorrections(object):
     def get_parameter_by_name(self, name):
         try:
             return getattr(self, name)
-        except:
+        except AttributeError:
             return None
 
     def append(self, annex):
@@ -816,7 +816,7 @@ class L1bRangeCorrections(object):
         the nodata=0.0 value"""
 
         for parameter_name in self.parameter_list:
-            data_corr = np.full((corrected_n_records), 0.0)
+            data_corr = np.full(corrected_n_records, 0.0)
             data_old = self.get_parameter_by_name(parameter_name)
             data_corr[indices_map] = data_old
             self.set_parameter(parameter_name, data_corr)
@@ -864,7 +864,7 @@ class L1bClassifiers(object):
         return parameter_name in self.parameter_list
 
     def get_parameter(self, parameter_name):
-            return getattr(self, parameter_name)
+        return getattr(self, parameter_name)
 
     def append(self, annex):
         for parameter in self.parameter_list:
@@ -969,14 +969,14 @@ class L1bWaveforms(object):
             mode_flag = self.radar_mode_def.get_flag(radar_mode)
             self._radar_mode = np.repeat(mode_flag, self.n_records).astype(np.byte)
         elif len(radar_mode) == self._info.n_records:
-                self._radar_mode = radar_mode.astype(np.int8)
+            self._radar_mode = radar_mode.astype(np.int8)
         else:
             raise ValueError("Invalid radar_mode: ", radar_mode)
 
         # Set valid flag (assumed to be valid for all waveforms)
         # Flag can be set separately using the set_valid_flag method
         if self._is_valid is None:
-            self._is_valid = np.ones(shape=(self.n_records), dtype=bool)
+            self._is_valid = np.ones(shape=self.n_records, dtype=bool)
 
     def set_valid_flag(self, valid_flag):
         # Validate number of records
@@ -1010,7 +1010,7 @@ class L1bWaveforms(object):
         custom values for each parameter, see below"""
 
         # is_valid flag: False for gaps
-        is_valid = np.full((corrected_n_records), False)
+        is_valid = np.full(corrected_n_records, False)
         is_valid[indices_map] = self.is_valid
         self.set_valid_flag(is_valid)
 

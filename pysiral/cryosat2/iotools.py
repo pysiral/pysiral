@@ -60,11 +60,11 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
         # walk through files
         for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
 
-            self.log.info("Searching folder: %s" % dirpath)
+            logger.info("Searching folder: %s" % dirpath)
 
             # Get the list of all dbl files
             cs2files = [fn for fn in filenames if self.pattern in fn]
-            self.log.info("Found %g %s level-1b files" % (len(cs2files), mode))
+            logger.info("Found %g %s level-1b files" % (len(cs2files), mode))
 
             # reform the list that each list entry is of type
             # [full_path, identifier (start_date)] for later sorting
@@ -81,7 +81,7 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
         # Cross-check the data label and day list
         self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][6:8]) in self.day_list]
 
-        self.log.info("%g files match time range of this month" % (len(self._sorted_list)))
+        logger.info("%g files match time range of this month" % (len(self._sorted_list)))
 
     def _get_toplevel_search_folder(self, mode):
         folder = Path(getattr(self, "folder_"+mode))
@@ -132,7 +132,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
     def _append_files(self, mode, period):
         lookup_year, lookup_month = period.tcs.year, period.tcs.month
         lookup_dir = self._get_lookup_dir(lookup_year, lookup_month, mode)
-        self.log.info("Search directory: %s" % lookup_dir)
+        logger.info("Search directory: %s" % lookup_dir)
         n_files = 0
         for daily_period in period.get_segments("day"):
             # Search for specific day
@@ -142,7 +142,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
             n_files += len(file_list)
             for file, tcs in zip(file_list, tcs_list):
                 self._list.append((file, tcs))
-        self.log.info(" Found %g %s files" % (n_files, mode))
+        logger.info(" Found %g %s files" % (n_files, mode))
 
     def _get_files_per_day(self, lookup_dir, year, month, day):
         """ Return a list of files for a given lookup directory """

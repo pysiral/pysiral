@@ -125,7 +125,7 @@ class MaskSourceBase(DefaultLoggingClass):
         if nc_filepath is None:
             nc_filename = "%s_%s.nc" % (self.mask_name, griddef.grid_id)
             nc_filepath = Path(self.mask_dir) / nc_filename
-        self.log.info("Export mask file: %s" % nc_filepath)
+        logger.info("Export mask file: %s" % nc_filepath)
         self._write_netcdf(nc_filepath, griddef, target_mask)
 
     def _write_netcdf(self, nc_filepath, griddef, mask):

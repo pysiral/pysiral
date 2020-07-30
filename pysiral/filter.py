@@ -9,7 +9,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from astropy.convolution import convolve
 
-from pysiral.flag import FlagContainer, ORCondition
+from pysiral.core.flags import FlagContainer, ORCondition
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 

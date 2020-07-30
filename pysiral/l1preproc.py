@@ -1,6 +1,7 @@
 
 import sys
 import numpy as np
+from loguru import logger
 from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
@@ -78,7 +79,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # Validity Check
         n_input_files = len(input_file_list)
         if n_input_files == 0:
-            self.log.warning("Passed empty input file list to process_input_files()")
+            logger.warning("Passed empty input file list to process_input_files()")
             return
 
         # Init helpers
@@ -97,10 +98,10 @@ class L1PreProcBase(DefaultLoggingClass):
             # of the input adaptor. The input handler gets only the filename and the target
             # region to assess whether it is necessary to parse and transform the file content
             # for the sake of computational efficiency.
-            self.log.info("+ Process input file %s" % prgs.get_status_report(i))
+            logger.info("+ Process input file %s" % prgs.get_status_report(i))
             l1 = self.input_adapter.get_l1(input_file, polar_ocean_check)
             if l1 is None:
-                self.log.info("- No polar ocean data for curent job -> skip file")
+                logger.info("- No polar ocean data for curent job -> skip file")
                 continue
 
             # Step 2: Extract and subset
@@ -134,7 +135,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # Get the post processing options
         pre_processing_items = self.cfg.get("pre_processing_items", None)
         if pre_processing_items is None:
-            self.log.info("No pre processing items defined")
+            logger.info("No pre processing items defined")
             return
 
         # Measure time for the different post processors
@@ -149,7 +150,7 @@ class L1PreProcBase(DefaultLoggingClass):
                 post_processor.apply(l1)
             timer.stop()
             msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
-            self.log.info(msg)
+            logger.info(msg)
 
     def l1_stack_merge_and_export(self, l1_segments):
         """
@@ -167,7 +168,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # Case 1: Segment is connected
             # -> Add the l1 segment to the stack and check the next segment.
             if is_connected:
-                self.log.info("- L1 segment connected -> add to stack")
+                logger.info("- L1 segment connected -> add to stack")
                 self.l1_stack.append(l1)
 
             # Case 2: Segment is not connected
@@ -175,7 +176,7 @@ class L1PreProcBase(DefaultLoggingClass):
             #    exported to a l1p netCDF product. The current l1 segment that was unconnected to the stack
             #    will become the next stack
             else:
-                self.log.info("- L1 segment unconnected -> exporting current stack")
+                logger.info("- L1 segment unconnected -> exporting current stack")
                 l1_merged = self.l1_get_merged_stack()
                 self.l1_export_to_netcdf(l1_merged)
                 self.l1_stack = [l1]
@@ -224,9 +225,9 @@ class L1PreProcBase(DefaultLoggingClass):
 
         if l1.n_records >= minimum_n_records:
             self.output_handler.export_to_netcdf(l1)
-            self.log.info("- Written l1p product: %s" % self.output_handler.last_written_file)
+            logger.info("- Written l1p product: %s" % self.output_handler.last_written_file)
         else:
-            self.log.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
+            logger.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
 
     def trim_single_hemisphere_segment_to_polar_region(self, l1):
@@ -561,7 +562,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
         if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
-            self.log.info("- filter ocean segments")
+            logger.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
         # Step: Trim the orbit segment to latitude range for the specific hemisphere
@@ -569,7 +570,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
         #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
         #      `input_file_is_single_hemisphere=False`
-        self.log.info("- extracting polar region subset(s)")
+        logger.info("- extracting polar region subset(s)")
         if self.cfg.polar_ocean.input_file_is_single_hemisphere:
             l1_list = [self.trim_single_hemisphere_segment_to_polar_region(l1)]
         else:
@@ -579,7 +580,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
         if "timestamp_discontinuities" in self.cfg:
-            self.log.info("- split at time discontinuities")
+            logger.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
         # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
@@ -587,7 +588,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
         #       In this case an empty list is returned.
-        self.log.info("- trim outer non-ocean regions")
+        logger.info("- trim outer non-ocean regions")
         l1_trimmed_list = []
         for l1 in l1_list:
             l1_trimmed = self.trim_non_ocean_data(l1)
@@ -633,18 +634,18 @@ class L1PreProcHalfOrbit(L1PreProcBase):
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
         if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
-            self.log.info("- filter ocean segments")
+            logger.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
-        self.log.info("- extracting polar region subset(s)")
+        logger.info("- extracting polar region subset(s)")
         l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
         if "timestamp_discontinuities" in self.cfg:
-            self.log.info("- split at time discontinuities")
+            logger.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
         # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
@@ -652,7 +653,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
         #       In this case an empty list is returned.
-        self.log.info("- trim outer non-ocean regions")
+        logger.info("- trim outer non-ocean regions")
         l1_trimmed_list = []
         for l1 in l1_list:
             l1_trimmed = self.trim_non_ocean_data(l1)
@@ -699,18 +700,18 @@ class L1PreProcFullOrbit(L1PreProcBase):
         # NOTE: The objective is to remove any small marine regions (e.g. in fjords) that do not have any
         #       reasonable chance of freeboard/ssh retrieval early on in the pre-processing.
         if "ocean_mininum_size_nrecords" in self.cfg.polar_ocean:
-            self.log.info("- filter ocean segments")
+            logger.info("- filter ocean segments")
             l1 = self.filter_small_ocean_segments(l1)
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
-        self.log.info("- extracting polar region subset(s)")
+        logger.info("- extracting polar region subset(s)")
         l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
         if "timestamp_discontinuities" in self.cfg:
-            self.log.info("- split at time discontinuities")
+            logger.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
 
         # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
@@ -718,7 +719,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
         #       But there tests before only include if there is ocean data and data above the polar latitude
         #       threshold. It can therefore happen that trimming the non-ocean data leaves an empty Level-1 object.
         #       In this case an empty list is returned.
-        self.log.info("- trim outer non-ocean regions")
+        logger.info("- trim outer non-ocean regions")
         l1_trimmed_list = []
         for l1 in l1_list:
             l1_trimmed = self.trim_non_ocean_data(l1)
@@ -760,7 +761,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 
         # 1 Check: Needs ocean data
         if product_metadata.open_ocean_percent <= 1e-6:
-            self.log.info("- No ocean data")
+            logger.info("- No ocean data")
             return False
 
         # 2. Must be in target hemisphere
@@ -768,7 +769,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         hemisphere = product_metadata.hemisphere
         target_hemisphere = self.cfg.get("target_hemisphere", None)
         if not hemisphere == "global" and not hemisphere in target_hemisphere:
-            self.log.info("- No data in target hemishere: %s" % "".join( self.cfg.target_hemispheres))
+            logger.info("- No data in target hemishere: %s" % "".join( self.cfg.target_hemispheres))
             return False
 
         # 3. Must be at higher latitude than the polar latitude threshold
@@ -777,7 +778,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         if np.amax(lat_range) < polar_latitude_threshold:
             msg = "- No data above polar latitude threshold (min:%.1f, max:%.1f) [req:+/-%.1f]"
             msg = msg % (product_metadata.lat_min, product_metadata.lat_max, polar_latitude_threshold)
-            self.log.info(msg)
+            logger.info(msg)
             return False
 
         # 4. All tests passed
@@ -824,7 +825,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Get full requested time range
         self._time_range = DatePeriod(tcs, tce)
-        self.log.info("Requested time range is %s" % self.time_range.label)
+        logger.info("Requested time range is %s" % self.time_range.label)
 
         # Store the data handler options
         self._output_handler_cfg = output_handler_cfg
@@ -860,7 +861,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         procdef_file_path = self.get_l1p_proc_def_filename(l1p_settings_id_or_file)
 
         # 2. Read the content
-        self.log.info("Parsing L1P processor definition file: %s" % procdef_file_path)
+        logger.info("Parsing L1P processor definition file: %s" % procdef_file_path)
         self._l1pprocdef = get_yaml_config(procdef_file_path)
         self._check_if_unambiguous_platform()
 
@@ -975,7 +976,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # If platform in settings is unambigous, but not provided -> get platform from settings
         if not settings_is_ambigous and not platform_is_known:
             self._platform = self._l1pprocdef.platform
-            self.log.info("- get platform from l1p settings -> %s" % self.platform)
+            logger.info("- get platform from l1p settings -> %s" % self.platform)
 
     @property
     def hemisphere(self):
@@ -1032,7 +1033,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self._filename = None
 
     def remove_old_if_applicable(self, period):
-        self.log.warning("Not implemented: self.remove_old_if_applicable")
+        logger.warning("Not implemented: self.remove_old_if_applicable")
         return
 
     def export_to_netcdf(self, l1):

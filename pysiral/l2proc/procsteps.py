@@ -60,7 +60,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
         # Check if the error status is correctly implemented
         if error_status is None:
-            self.log.warning("Class {} does not provide error status".format(self.classname))
+            logger.warning("Class {} does not provide error status".format(self.classname))
             error_status = self.get_clean_error_status(l2.n_records)
 
         # Update the status flag
@@ -153,7 +153,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
                 self.error.raise_on_error()
 
             # Append the class
-            self.log.info("Added L2 processor step: {}.{}".format(full_module_name, procstep_def["pyclass"]))
+            logger.info("Added L2 processor step: {}.{}".format(full_module_name, procstep_def["pyclass"]))
             self._classes.append(obj)
 
     def get_algorithm_error_flag_bit(self, procstep_module):
@@ -229,7 +229,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
-        self.log.info("Transfer L1P variables to L2")
+        logger.info("Transfer L1P variables to L2")
         for data_group, varlist in list(self.cfg.options.items()):
 
             # Get and loop over variables per data group
@@ -241,7 +241,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 #       -> this will be noted in the error status flag
                 var = l1b.get_parameter_by_name(data_group, var_name)
                 if var is None:
-                    self.log.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
+                    logger.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
                     var = np.full(l2.n_records, np.nan)
                     error_status = np.logical_not(error_status)
 
@@ -304,7 +304,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             # -> skip with warning if not
             if range_delta is None:
                 error_status[:] = True
-                self.log.warning("Cannot find range correction: {} - skipping".format(correction_name))
+                logger.warning("Cannot find range correction: {} - skipping".format(correction_name))
                 continue
 
             # Check if NaN's, set values to zero and provide warning
@@ -312,7 +312,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             if len(nans_indices) > 0:
                 range_delta[nans_indices] = 0.0
                 error_status[nans_indices] = True
-                self.log.warning("NaNs encountered in range correction parameter: %s" % correction_name)
+                logger.warning("NaNs encountered in range correction parameter: %s" % correction_name)
 
             # Apply the range correction
             #

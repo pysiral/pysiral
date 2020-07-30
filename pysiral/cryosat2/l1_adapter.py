@@ -3,6 +3,7 @@ from pathlib import Path
 
 import xarray
 import numpy as np
+from loguru import logger
 from scipy import interpolate
 from cftime import num2pydate
 
@@ -14,7 +15,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface import ESA_SURFACE_TYPE_DICT
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
 class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
@@ -60,7 +61,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         # Input Validation
         if not Path(filepath).is_file():
             msg = "Not a valid file: %s" % filepath
-            self.log.warning(msg)
+            logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
 
@@ -83,7 +84,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % timer.get_seconds())
+        logger.info("- Created L1 object in %.3f seconds" % timer.get_seconds())
 
         # Return the l1 object
         return self.l1
@@ -140,7 +141,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         except:
             msg = "Error encountered by xarray parsing: %s" % filepath
             self.error.add_error("xarray-parse-error", msg)
-            self.log.warning(msg)
+            logger.warning(msg)
             return
 
     def _set_input_file_metadata(self):
@@ -289,7 +290,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
             if error_status:
                 msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
-                self.log.warning(msg)
+                logger.warning(msg)
             self.l1.correction.set_parameter(key, variable_20hz)
 
     def _set_surface_type_group(self):
@@ -309,7 +310,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         surface_type_20hz, error_status = self.interp_1hz_to_20hz(surface_type_1hz, time_1hz, time_20hz, kind="nearest")
         if error_status:
             msg = "- Error in 20Hz interpolation for variable `surf_type_01` -> set only dummy"
-            self.log.warning(msg)
+            logger.warning(msg)
 
         # Set the flag
         for key in ESA_SURFACE_TYPE_DICT.keys():

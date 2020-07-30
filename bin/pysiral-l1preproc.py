@@ -1,14 +1,13 @@
 # NOTE: pysiral-l1preproc is a complete re-design of pysiral-l1bpreproc.py and will successively replace the
 #       older version
 
-
-import argparse
 import sys
+import argparse
 
 from pysiral import get_cls, psrlcfg
 from pysiral.config import DefaultCommandLineArguments
 from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.l1preproc import get_preproc, Level1PreProcJobDef, Level1POutputHandler
 
 
@@ -66,7 +65,6 @@ class Level1PreProcArgParser(DefaultLoggingClass):
 
     def __init__(self):
         super(Level1PreProcArgParser, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus()
         self.pysiral_config = psrlcfg
         self._args = None
 

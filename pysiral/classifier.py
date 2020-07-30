@@ -27,8 +27,8 @@ class CS2OCOGParameter(BaseClassifier):
     def __init__(self, wfm_counts):
         super(CS2OCOGParameter, self).__init__()
         self._n = np.shape(wfm_counts)[0]
-        self._amplitude = np.ndarray(shape=(self._n), dtype=np.float32)
-        self._width = np.ndarray(shape=(self._n), dtype=np.float32)
+        self._amplitude = np.ndarray(shape=self._n, dtype=np.float32)
+        self._width = np.ndarray(shape=self._n, dtype=np.float32)
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):

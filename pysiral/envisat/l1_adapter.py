@@ -7,6 +7,7 @@ __author__ = "Stefan Hendricks"
 
 import re
 import numpy as np
+from loguru import logger
 from scipy import interpolate
 from cftime import num2pydate
 
@@ -17,7 +18,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface import ESA_SURFACE_TYPE_DICT
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):
@@ -71,7 +72,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         self.timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
+        logger.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
 
         return self.l1
 
@@ -189,11 +190,11 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             if n_nans > 500 and n_nans < len(correction):
                 msg = "Significant number of NaNs (%g) in range correction variable: %s"
                 msg = msg % (n_nans, target_parameter)
-                self.log.warning(msg)
+                logger.warning(msg)
             elif n_nans == len(correction):
                 msg = "All-NaN array encountered in range correction variable: %s"
                 msg = msg % (target_parameter)
-                self.log.warning(msg)
+                logger.warning(msg)
 
             # Some of the Envisat range corrections are 1Hz others 20Hz
             # -> Those with "_01" in the variable name need to be
@@ -204,7 +205,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
                                                             fill_on_error_value=0.0)
             if error:
                 msg = "Failing to create 20Hz range correction variable for %s" % target_parameter
-                self.log.warning(msg)
+                logger.warning(msg)
 
             # Interpolate NaN's or return a zero-filled array for all-nan input variables
             correction_filtered = self.find_and_interpolate_nans(correction, fill_on_error_value=0.0)
@@ -214,7 +215,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             n_nans = len(np.where(np.isnan(correction_filtered))[0])
             if n_nans > 0:
                 msg = "Remaining NaN's after filtering in %s" % target_parameter
-                self.log.warning(msg)
+                logger.warning(msg)
 
             # Set the parameter
             self.l1.correction.set_parameter(name, correction_filtered)
