@@ -5,6 +5,7 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 from pysiral import __version__, get_cls, psrlcfg
+from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
@@ -430,15 +431,21 @@ class L3DataGrid(DefaultLoggingClass):
                     self.error.add_error("invalid-l3def", msg)
                     self.error.raise_on_error()
 
-    def get_parameter_by_name(self, name):
+    def get_parameter_by_name(self, name, raise_on_error=True):
         try:
             parameter = self.vars[name]
         except KeyError:
             parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
-            logger.warn("Parameter not available: %s" % name)
+            logger.warning("Parameter not available: %s" % name)
         except Exception as ex:
-            print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
-            sys.exit(1)
+            msg = "L3DataGrid.get_parameter_by_name Exception: " + str(ex)
+            logger.error(msg)
+            # TODO: use error handler
+            if raise_on_error:
+                sys.exit(1)
+            else:
+                parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
+                
         return parameter
 
     def set_parameter_by_name(self, name, var):
@@ -1123,7 +1130,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
         super(Level3SurfaceTypeStatistics, self).__init__(*args, **kwargs)
 
         # Init this class
-        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+        self._surface_type_dict = SURFACE_TYPE_DICT
 
     def apply(self):
         """
@@ -1697,7 +1704,7 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
         super(Level3GriddedClassifiers, self).__init__(*args, **kwargs)
 
         # Surface type dict is required to get subsets
-        self._surface_type_dict = SurfaceType.SURFACE_TYPE_DICT
+        self._surface_type_dict = SURFACE_TYPE_DICT
 
         # Statistical function dictionary
         self._stat_functions = dict(mean=lambda x: np.nanmean(x), sdev=lambda x: np.nanstd(x))
