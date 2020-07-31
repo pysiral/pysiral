@@ -85,21 +85,21 @@ variables:
     standard_name: latitude
     units: degrees_north
 
-  mean_sea_surface:
+  mean_sea_level:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
     standard_name: sea_surface_height_above_reference_ellipsoid
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  sea_surface_anomaly:
+  sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  sea_surface_anomaly_uncertainty:
+  sea_level_anomaly_uncertainty:
     long_name: "uncertainty of instantaneous sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level standard_error
     units: m

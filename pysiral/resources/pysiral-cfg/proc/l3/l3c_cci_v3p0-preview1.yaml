@@ -63,12 +63,12 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_surface_anomaly:
+    sea_level_anomaly:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
 
-    sea_surface_anomaly_uncertainty:
+    sea_level_anomaly_uncertainty:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -202,8 +202,8 @@ processing_items:
         targets:
             - freeboard_uncertainty
             - radar_freeboard_uncertainty
-            - sea_surface_anomaly
-            - sea_surface_anomaly_uncertainty
+            - sea_level_anomaly
+            - sea_level_anomaly_uncertainty
             - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
