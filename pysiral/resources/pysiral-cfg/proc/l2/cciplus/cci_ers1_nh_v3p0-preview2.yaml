@@ -79,7 +79,6 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
-                late_tail_to_peak_power: [ltpp, late_tail_to_peak_power]
                 epsilon_sec: [epss, epsilon_sec]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
