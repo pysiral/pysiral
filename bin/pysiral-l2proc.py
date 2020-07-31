@@ -7,7 +7,7 @@ from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
-
+from loguru import logger
 from pathlib import Path
 
 from dateperiods import DatePeriod
@@ -79,7 +79,7 @@ def pysiral_l2proc_time_range_job(args):
     for time_range in period_segments:
 
         # Do some extra logging
-        l2proc.log.info("Processing period: %s" % time_range.label)
+        logger.info("Processing period: %s" % time_range.label)
 
         # Product Data Management
         if args.remove_old:
@@ -88,7 +88,7 @@ def pysiral_l2proc_time_range_job(args):
 
         # Get input files
         l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
-        l2proc.log.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
+        logger.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
 
         # Process the orbits
         l2proc.process_l1b_files(l1b_files)
@@ -96,7 +96,7 @@ def pysiral_l2proc_time_range_job(args):
     # All done
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 def pysiral_l2proc_l1b_predef_job(args):
@@ -118,7 +118,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     # All done
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class Level2ProcArgParser(DefaultLoggingClass):
@@ -183,12 +183,9 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-input-version", "input-version", "input_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
-            ("--no-critical-prompt", "no-critical-prompt",
-             "no_critical_prompt", False),
-            ("--no-overwrite-protection", "no-overwrite-protection",
-             "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection",
-             "overwrite_protection", False)]
+            ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
+            ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
+            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
 
         # create the parser
         parser = argparse.ArgumentParser()
