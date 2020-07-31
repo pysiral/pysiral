@@ -247,6 +247,11 @@ variables:
     units: 1
     coordinates: time
 
+  pulse_deblurring_correction:
+    long_name: "Pulse deblurring correction (ERS only)"
+    units: meter
+    coordinates: time
+
   antenna_pitch:
     long_name: "antenna bench pitch angle"
     comment: "Pitch angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
