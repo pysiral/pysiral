@@ -180,7 +180,7 @@ class Level2Data(object):
     def set_doi(self, doi):
         self._doi = doi
 
-    def get_parameter_by_name(self, parameter_name):
+    def get_parameter_by_name(self, parameter_name, raise_on_error=True):
         """ Method to retrieve a level-2 parameter """
 
         # Combine parameter and property catalogs
@@ -201,8 +201,9 @@ class Level2Data(object):
             except KeyError:
                 msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
                 self.error.add_error("l2data-missing-variable", msg)
-                self.error.raise_on_error()
-                parameter = None
+                if raise_on_error:
+                    self.error.raise_on_error()
+                parameter = np.full(self.n_records, np.nan)
             return parameter
 
     def get_attribute(self, attribute_name, *args):

@@ -341,7 +341,7 @@ class NCDataFile(DefaultLoggingClass):
             else:
                 var_source_name = parameter_name
 
-            data = self.data.get_parameter_by_name(var_source_name)
+            data = self.data.get_parameter_by_name(var_source_name, raise_on_error=False)
 
             if data is None:
                 msg = "Invalid parameter name for data object: %s"

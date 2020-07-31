@@ -1306,7 +1306,7 @@ class ERSPulseDeblurring(Level2ProcessorStep):
         eps = l2.epss * 0.5 * 299792458.
 
         # Compute and apply pulse deblurring correction
-        pulse_deblurring_correction = float(eps < 0.) * eps / 5.0
+        pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / 5.0
         l2.elev[:] = l2.elev[:] + pulse_deblurring_correction
 
         # Add pulse deblurring correction to level-2 auxiliary data
@@ -1325,7 +1325,7 @@ class ERSPulseDeblurring(Level2ProcessorStep):
 
     @property
     def error_bit(self):
-        return ["retracker"]
+        return self.error_flag_bit_dict["retracker"]
 
 
 # %% Function for CryoSat-2 based retracker
@@ -1339,6 +1339,7 @@ def smooth(x, window):
     """ Numpy implementation of the IDL SMOOTH function """
     return np.convolve(x, np.ones(window)/window, mode='same')
 
+
 def bnsmooth(x, window):
     """ Bottleneck implementation of the IDL SMOOTH function """
     pad = int((window-1)/2)
@@ -1348,6 +1349,7 @@ def bnsmooth(x, window):
     xpad[pad:n+pad] = x
     xpad[n+pad:] = 0.0
     return bn.move_mean(xpad, window=window, axis=0)[window-1:(window+n-1)]
+
 
 def peakdet(v, delta, x=None):
     """

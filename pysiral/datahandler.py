@@ -8,7 +8,7 @@ Created on Fri May 19 18:16:09 2017
 from pysiral import get_cls, psrlcfg
 from loguru import logger
 from pysiral.auxdata import AuxClassConfig
-from pysiral.logging import DefaultLoggingClass
+from pysiral._class_template import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.iotools import get_local_l1bdata_files
 
