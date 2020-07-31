@@ -85,7 +85,7 @@ variables:
     standard_name: latitude
     units: degrees_north
 
-  mean_sea_level:
+  mean_sea_surface:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
     standard_name: sea_surface_height_above_reference_ellipsoid
     units: m
