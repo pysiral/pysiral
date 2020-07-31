@@ -14,7 +14,6 @@ from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
 from pysiral.core.flags import ORCondition
-from pysiral.surface import SurfaceType
 from pysiral.sit import frb2sit_errprop
 
 from scipy import stats
@@ -452,7 +451,7 @@ class L3DataGrid(DefaultLoggingClass):
         try:
             self.vars[name] = var
         except KeyError:
-            logger.warn("Parameter not available: %s" % name)
+            logger.warning("Parameter not available: %s" % name)
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
