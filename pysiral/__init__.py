@@ -403,7 +403,7 @@ class _PysiralPackageConfiguration(object):
         # NOTE: This is just general information on altimeter platform and not to be confused with
         #       settings for actual primary data files. These are located in each l1p processor
         #       definition file.
-        self.mission_def_filepath = self.config_path / self._DEFINITION_FILES["platforms"]
+        self.mission_def_filepath = self.config_path / Path(self._DEFINITION_FILES["platforms"])
         if not self.mission_def_filepath.is_file():
             error_msg = "Cannot load pysiral package files: \n %s" % self.mission_def_filepath
             print(error_msg)
