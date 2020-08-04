@@ -604,16 +604,16 @@ class _PysiralPackageConfiguration(object):
         """
         # Case 1 (default): pysiral config path is in user home
         if self._path["config_target"] == "USER_HOME":
-            return self._path["userhome_config_path"]
+            return Path(self._path["userhome_config_path"])
 
         # Case 2: pysiral config path is the package itself
         elif self._path["config_target"] == "PACKAGE":
-            return self._path["package_config_path"]
+            return Path(self._path["package_config_path"])
 
         # Case 3: package specific config path
         else:
             # This should be an existing path, but in the case it is not, it is created
-            return self._path["config_target"]
+            return Path(self._path["config_target"])
 
     @property
     def local_machine_def_filepath(self):
