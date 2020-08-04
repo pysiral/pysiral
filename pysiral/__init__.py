@@ -367,8 +367,8 @@ class _PysiralPackageConfiguration(object):
         """
 
         # Make alias of
-        config_path = self.config_path
-        package_config_path = self.path.package_config_path
+        config_path = Path(self.config_path)
+        package_config_path = Path(self.path.package_config_path)
 
         # Check if current config dir is package config dir
         # if yes -> nothing to do (files are either there or aren't)
