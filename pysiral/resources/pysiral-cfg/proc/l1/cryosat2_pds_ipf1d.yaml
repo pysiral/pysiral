@@ -10,7 +10,7 @@ input_handler:
         local_machine_def_tag: baseline_d  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
         lookup_modes: [sar, sin]
-        filename_search: CS_*_SIR_*1B_{year:04d}{month:02d}{day:02d}*_D001.nc
+        filename_search: CS_*_SIR_*1B_{year:04d}{month:02d}{day:02d}*_D*.nc
         filename_sep: _   # character to split the filename
         tcs_str_index: 5  # index of time_coverage_start string in file (when splitting filename with filename_sep)
 
