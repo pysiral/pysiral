@@ -493,7 +493,7 @@ class _PysiralPackageConfiguration(object):
         try:
             index = ids.index(setting_id_or_filename)
             return Path(files[index])
-        except IOError:
+        except (IOError, ValueError):
             return None
 
     @staticmethod
