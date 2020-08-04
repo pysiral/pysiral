@@ -3,10 +3,10 @@
 
 import sys
 import argparse
+from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.config import DefaultCommandLineArguments
-from pysiral.errorhandler import ErrorStatus
 from pysiral._class_template import DefaultLoggingClass
 from pysiral.l1preproc import get_preproc, Level1PreProcJobDef, Level1POutputHandler
 
@@ -47,7 +47,7 @@ def pysiral_l1preproc(job):
         # 5.1 Get input files
         file_list = input_handler.get_file_for_period(period)
         if len(file_list) == 0:
-            job.log.warning("No input files found for period: %s, skipping" % period.date_label)
+            logger.warning("No input files found for period: %s, skipping" % period.date_label)
 
         # 5.2 Output management
         # Note: This is only relevant, if the --remove-old keyword is set
@@ -58,7 +58,7 @@ def pysiral_l1preproc(job):
 
     # Report processing time
     job.stopwatch.stop()
-    job.info("Level-1 PreProcessor finished in %s" % job.stopwatch.get_duration())
+    logger.info("Level-1 PreProcessor finished in %s" % job.stopwatch.get_duration())
 
 
 class Level1PreProcArgParser(DefaultLoggingClass):
