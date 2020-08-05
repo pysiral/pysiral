@@ -58,7 +58,6 @@ def main(args):
                 print("Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd))
                 print("Creating new config dir [FAILED]")
                 sys.exit(1)
-                shutil.copy(args.lmd, os.path.join(args.target_create, "local_machine_def.yaml"))
 
         # b2: from template
         else:
