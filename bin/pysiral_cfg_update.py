@@ -25,7 +25,7 @@ def main():
         sys.exit()
 
     # Copy the entire tree
-    logger.info("copy pysiral config files from package to config dir: ")
+    logger.info("copy pysiral config files from package to config dir: {}".format(psrlcfg.config_path))
     dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.config_path), verbose=1)
 
 
