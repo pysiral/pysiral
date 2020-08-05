@@ -58,7 +58,7 @@ setup(
     dependency_links=dependency_links,
     packages=find_packages(exclude=('tests', 'docs')),
     include_package_data=True,
-    scripts=['bin/psrl_update_userhome_cfg.py',
+    scripts=['bin/pysiral_cfg_update.py',
              'bin/pysiral_cfg_setdir.py',
              'bin/pysiral-l1preproc.py',
              'bin/pysiral-l2proc.py',
