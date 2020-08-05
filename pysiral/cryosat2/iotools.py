@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import numpy as np
 from pathlib import Path
 from loguru import logger
@@ -164,7 +165,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         tcs = []
         for filename in files:
             filename = str(Path(filename).name)
-            filename_segments = filename.split(self.cfg.filename_sep)
+            filename_segments = re.split("[_-]+", filename)
             tcs.append(filename_segments[self.cfg.tcs_str_index])
         return tcs
 
