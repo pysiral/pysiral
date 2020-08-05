@@ -541,7 +541,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
         # Override the logger name of the input adapter for better logging experience
-        self.input_adapter.log.name = self.__class__.__name__
+        pass
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -614,7 +614,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcHalfOrbit, self).__init__(self.__class__.__name__, *args)
         # Override the logger name of the input adapter for better logging experience
-        self.input_adapter.log.name = self.__class__.__name__
+        pass
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -679,7 +679,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcFullOrbit, self).__init__(self.__class__.__name__, *args)
         # Override the logger name of the input adapter for better logging experience
-        self.input_adapter.log.name = self.__class__.__name__
+        pass
 
     def extract_polar_ocean_segments(self, l1):
         """

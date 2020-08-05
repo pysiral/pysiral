@@ -5,6 +5,7 @@ from datetime import timedelta
 import argparse
 import time
 import sys
+from loguru import logger
 from pathlib import Path
 from dateperiods import DatePeriod
 
@@ -66,13 +67,13 @@ def pysiral_l3proc():
         # Report processing period
         msg = "# Processing %s period (%g of %g): %s"
         msg = msg % (args.period, i+1, n_periods, time_range.date_label)
-        l3proc.log.info(msg)
+        logger.info(msg)
 
         # Retrieve files
         l2i_files = l2i_handler.get_files_from_time_range(time_range)
-        l3proc.log.info("Num l2i files: %g" % len(l2i_files))
+        logger.info("Num l2i files: %g" % len(l2i_files))
         if len(l2i_files) == 0:
-            l3proc.log.info("Skip data period")
+            logger.info("Skip data period")
             continue
 
         # Start the Level-3 processing
@@ -81,7 +82,7 @@ def pysiral_l3proc():
     # Final reporting
     t1 = time.clock()
     seconds = int(t1 - t0)
-    l3proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class Level3ProcArgParser(DefaultLoggingClass):
