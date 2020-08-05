@@ -8,15 +8,15 @@ metadata:
 
 # Output Definition
 filenaming: 
-  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview1plus.nc"
-  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv3p0-preview1plus.nc"
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview2plus.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv3p0-preview2plus.nc"
 
 product_level_subfolder: l2p_plus
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (Preview version 1)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (preview version 2)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-C (2010-11 till 2019-04-27) and baseline-D (from 2019-04-28);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
   climatology based on regional merging of Warren Climatology with 50% reduction for 
@@ -33,7 +33,7 @@ global_attributes:
   - processing_level: "Level-2 Pre-processed (l2p)"
   - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2019.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2019.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval. (plus version with extended set of variables)"
   - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"  
-  - id: "esacci-seaice-l2p-sit-{hemisphere_code}-{source_mission_sensor:lower}-{source_mission_id}-{time_coverage_start:%Y%m%d}-fv3p0-preview1"
+  - id: "esacci-seaice-l2p-sit-{hemisphere_code}-{source_mission_sensor:lower}-{source_mission_id}-{time_coverage_start:%Y%m%d}-fv3p0-preview2"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: ""
