@@ -597,6 +597,10 @@ class _PysiralPackageConfiguration(object):
         return str(self._path["config_target"])
 
     @property
+    def config_target(self):
+        return str(self._path["config_target"])
+
+    @property
     def config_path(self):
         """
         nstruct the target config path based on the value in `PYSIRAL-CFG-LOC`
