@@ -3,10 +3,8 @@ A short script that updates the settings files in the user home
 """
 
 import sys
-
-from distutils import log, dir_util
-log.set_verbosity(log.INFO)
-log.set_threshold(log.INFO)
+from loguru import logger
+from distutils import dir_util
 
 from pysiral import psrlcfg
 
@@ -20,9 +18,15 @@ def main():
         print(" abort")
         sys.exit()
 
+    # Check if pysiral config path is package
+    # -> in this case copying the files is pointless
+    if psrlcfg.config_target == "PACKAGE":
+        logger.warning("Config target is `PACKAGE`, do not copy files")
+        sys.exit()
+
     # Copy the entire tree
-    print("copy pysiral config files from package to user home: ")
-    dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.userhome_config_path), verbose=1)
+    logger.info("copy pysiral config files from package to config dir: ")
+    dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.config_path), verbose=1)
 
 
 if __name__ == "__main__":
