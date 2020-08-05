@@ -21,7 +21,7 @@ def main():
     # Check if pysiral config path is package
     # -> in this case copying the files is pointless
     if psrlcfg.config_target == "PACKAGE":
-        logger.warning("Config target is `PACKAGE`, do not copy files")
+        logger.warning("Config target is `PACKAGE`, aborting ...")
         sys.exit()
 
     # Copy the entire tree
