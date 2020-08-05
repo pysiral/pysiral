@@ -165,7 +165,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         tcs = []
         for filename in files:
             filename = str(Path(filename).name)
-            filename_segments = re.split("[_-]+", filename)
+            filename_segments = re.split(r"_+|\.", filename)
             tcs.append(filename_segments[self.cfg.tcs_str_index])
         return tcs
 
