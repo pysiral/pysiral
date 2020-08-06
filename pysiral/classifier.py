@@ -9,6 +9,7 @@ LTPP added
 """
 
 import numpy as np
+import bottleneck as bn
 
 
 class BaseClassifier(object):
@@ -27,14 +28,14 @@ class CS2OCOGParameter(BaseClassifier):
     def __init__(self, wfm_counts):
         super(CS2OCOGParameter, self).__init__()
         self._n = np.shape(wfm_counts)[0]
-        self._amplitude = np.ndarray(shape=self._n, dtype=np.float32)
-        self._width = np.ndarray(shape=self._n, dtype=np.float32)
+        self._amplitude = np.ndarray(shape=[self._n], dtype=np.float32)
+        self._width = np.ndarray(shape=[self._n], dtype=np.float32)
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
             y = wfm_counts[i, :].flatten().astype(np.float32)
-            y -= np.nanmean(y[0:11])  # Remove Noise
+            y -= bn.nanmean(y[0:11])  # Remove Noise
             y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             y2 = y**2.0
             self._amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
@@ -63,24 +64,22 @@ class CS2PulsePeakiness(BaseClassifier):
         self._n_range_bins = shape[1]
         self._pad = pad
         dtype = np.float32
-        self._peakiness = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
-        self._peakiness_r = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
-        self._peakiness_l = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
+        self._peakiness = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
+        self._peakiness_r = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
+        self._peakiness_l = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
-                y -= np.nanmean(y[0:11])  # Remove Noise
+                y -= bn.nanmean(y[0:11])  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
                 ypi = np.nanargmax(y)  # Waveform peak index
-                if ypi > 3*self._pad and ypi < self._n_range_bins-4*self._pad:
-                    self._peakiness_l[i] = yp/np.nanmean(
-                        y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
-                    self._peakiness_r[i] = yp/np.nanmean(y[
-                        ypi+1*self._pad:ypi+3*self._pad+1])*3.0
+                if 3*self._pad < ypi < self._n_range_bins-4*self._pad:
+                    self._peakiness_l[i] = yp/bn.nanmean(y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
+                    self._peakiness_r[i] = yp/bn.nanmean(y[ypi+1*self._pad:ypi+3*self._pad+1])*3.0
                     self._peakiness[i] = yp/y.sum()*self._n_range_bins
             except ValueError:
                 self._peakiness_l[i] = np.nan
@@ -99,6 +98,7 @@ class CS2PulsePeakiness(BaseClassifier):
     def peakiness_l(self):
         return self._peakiness_l
 
+
 # Late tail to peak power (LTPP) ratio added for fmi needs
 class S3LTPP(BaseClassifier):
     """
@@ -113,7 +113,7 @@ class S3LTPP(BaseClassifier):
         self._n_range_bins = shape[1]
         self._pad = pad
         dtype = np.float32
-        self._ltpp = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
+        self._ltpp = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
@@ -121,11 +121,11 @@ class S3LTPP(BaseClassifier):
         for i in np.arange(self._n): 
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
-                y -= np.nanmean(y[0:11])  # Remove Noise
+                y -= bn.nanmean(y[0:11])  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
                 
-                if np.isnan(yp): # if the current wf is nan
+                if np.isnan(yp):  # if the current wf is nan
                     # no ltpp can be computed
                     self._ltpp[i] = np.nan
                 else:
@@ -134,9 +134,9 @@ class S3LTPP(BaseClassifier):
                     # gates to compute the late tail:
                     # [ypi+50:ypi+70] if 0padding=2, [ypi+25:ypi+35] if 0padding=1
                     gate_start = ypi + self._pad*25
-                    gate_stop = ypi + self._pad*35 +1
+                    gate_stop = ypi + self._pad*35 + 1
                     
-                    if ( gate_start > self._n_range_bins  or  gate_stop > self._n_range_bins ):
+                    if gate_start > self._n_range_bins or gate_stop > self._n_range_bins:
                         # not enough gates to compute the LTPP
                         self._ltpp[i] = np.nan
                     else:
@@ -149,8 +149,7 @@ class S3LTPP(BaseClassifier):
     def ltpp(self):
         return self._ltpp        
             
-            
-            
+
 class CS2LTPP(BaseClassifier):
     """
     Calculates Late-Tail-to-Peak-Power ratio.
@@ -162,27 +161,27 @@ class CS2LTPP(BaseClassifier):
         self._n_range_bins = shape[1]
         self._pad = pad
         dtype = np.float32
-        self._ltpp = np.ndarray(shape=(self._n), dtype=dtype)*np.nan
+        self._ltpp = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
         # loop over the waveforms
         for i in np.arange(self._n): 
             y = wfm_counts[i, :].flatten().astype(np.float32)
-            y -= np.nanmean(y[0:11])  # Remove Noise
+            y -= bn.nanmean(y[0:11])  # Remove Noise
             y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             yp = np.nanmax(y)  # Waveform peak value
-            ypi = np.nanargmax(y)  # Waveform peak index
-	    
-            # AMANDINE: implementation for wf of 256 bins (128 0padded)?
+            ypi = bn.nanargmax(y)  # Waveform peak index
+
+            # AMANDINE: implementation for wf of 256 bins (128 zero-padded)?
             onediv = float(1)/float(41)
 
-            # AMANDINE: here i seems to be understood as gate indice but it is wf indice!?
+            # AMANDINE: here i seems to be understood as gate index but it is wf index!?
             if i == 256: 
                 break
-            if [i > (ypi + 100)] and [i < (ypi + 140)]: # AMANDINE: syntax to be checked
+            if [i > (ypi + 100)] and [i < (ypi + 140)]:             # AMANDINE: syntax to be checked
                 try:
-                    self._ltpp[i] = (onediv*float(y[i]))/float(yp) # AMANDINE: where is the sum in this formula?
+                    self._ltpp[i] = (onediv*float(y[i]))/float(yp)  # AMANDINE: where is the sum in this formula?
                 except ZeroDivisionError:
                     self._ltpp[i] = np.nan
 
@@ -211,22 +210,23 @@ class EnvisatWaveformParameter(BaseClassifier):
         self._calc_parameter(wfm)
 
     def _init_parameter(self):
-        self.peakiness_old = np.ndarray(shape=(self._n), dtype=np.float32)
-        self.peakiness = np.ndarray(shape=(self._n), dtype=np.float32)*np.nan
+        self.peakiness_old = np.ndarray(shape=self._n, dtype=np.float32)
+        self.peakiness = np.ndarray(shape=self._n, dtype=np.float32)*np.nan
 
     def _calc_parameter(self, wfm):
+
         for i in np.arange(self._n):
             # Discard first bins, they are FFT artefacts anyway
             wave = wfm[i, self.skip:]
 
-            ## old peakiness
+            # old peakiness
             try:
                 pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
             except ZeroDivisionError:
                 pp = np.nan
             self.peakiness_old[i] = pp
 
-            ## new peakiness
+            # new peakiness
             try:
                 self.peakiness[i] = float(max(wave))/float(sum(wave))*self._n_range_bins
             except ZeroDivisionError:
