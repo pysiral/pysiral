@@ -1,4 +1,3 @@
-
 import sys
 import numpy as np
 from loguru import logger
@@ -30,7 +29,7 @@ def get_preproc(type, input_adapter, output_handler, cfg):
     # A lookup dictionary for the appropriate class
     preproc_class_lookup_dict = {"custom_orbit_segment": L1PreProcCustomOrbitSegment,
                                  "half_orbit": L1PreProcHalfOrbit,
-                                 "full_orbit": L1PreProcFullOrbit,}
+                                 "full_orbit": L1PreProcFullOrbit, }
 
     # Try the get the class
     cls = preproc_class_lookup_dict.get(type, None)
@@ -229,7 +228,6 @@ class L1PreProcBase(DefaultLoggingClass):
         else:
             logger.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
-
     def trim_single_hemisphere_segment_to_polar_region(self, l1):
         """
         Extract polar region of interest from a segment that is either north or south (not global)
@@ -263,7 +261,7 @@ class L1PreProcBase(DefaultLoggingClass):
                 is_polar = l1.time_orbit.latitude >= polar_threshold
 
             elif hemisphere == "south":
-                is_polar = l1.time_orbit.latitude <= (-1.0*polar_threshold)
+                is_polar = l1.time_orbit.latitude <= (-1.0 * polar_threshold)
 
             else:
                 msg = "Unknown hemisphere: %s [north|south]" % hemisphere
@@ -314,7 +312,7 @@ class L1PreProcBase(DefaultLoggingClass):
                 is_polar = l1.time_orbit.latitude >= polar_threshold
 
             elif hemisphere == "south":
-                is_polar = l1.time_orbit.latitude <= (-1.0*polar_threshold)
+                is_polar = l1.time_orbit.latitude <= (-1.0 * polar_threshold)
 
             else:
                 msg = "Unknown hemisphere: %s [north|south]" % hemisphere
@@ -345,7 +343,6 @@ class L1PreProcBase(DefaultLoggingClass):
             l1_list = sorted(l1_list, key=attrgetter("tcs"))
 
         return l1_list
-
 
     def filter_small_ocean_segments(self, l1):
         """
@@ -407,10 +404,10 @@ class L1PreProcBase(DefaultLoggingClass):
         last_ocean_index = get_last_array_index(ocean.flag, True)
         if first_ocean_index is None or last_ocean_index is None:
             return None
-        n = l1.info.n_records-1
+        n = l1.info.n_records - 1
         is_full_ocean = first_ocean_index == 0 and last_ocean_index == n
         if not is_full_ocean:
-            ocean_subset = np.arange(first_ocean_index, last_ocean_index+1)
+            ocean_subset = np.arange(first_ocean_index, last_ocean_index + 1)
             l1.trim_to_subset(ocean_subset)
         return l1
 
@@ -451,7 +448,7 @@ class L1PreProcBase(DefaultLoggingClass):
             stop_index = segments_start[index]
             subset_list = np.arange(start_index, stop_index)
             l1_segments.append(l1.extract_subset(subset_list))
-            start_index = segments_start[index+1]
+            start_index = segments_start[index + 1]
 
         # Extract the last subset
         last_subset_list = np.arange(start_index, len(ocean.flag))
@@ -482,11 +479,11 @@ class L1PreProcBase(DefaultLoggingClass):
 
             # Get start start/stop indices pairs
             segments_start = np.array([0])
-            segments_start_indices = np.where(np.ediff1d(time) > dt_threshold)[0]+1
+            segments_start_indices = np.where(np.ediff1d(time) > dt_threshold)[0] + 1
             segments_start = np.append(segments_start, segments_start_indices)
 
-            segments_stop = segments_start[1:]-1
-            segments_stop = np.append(segments_stop, len(time)-1)
+            segments_stop = segments_start[1:] - 1
+            segments_stop = np.append(segments_stop, len(time) - 1)
 
             # Check if only one segment found
             if len(segments_start) == 1:
@@ -496,7 +493,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # Extract subsets
             segment_indices = zip(segments_start, segments_stop)
             for start_index, stop_index in segment_indices:
-                subset_indices = np.arange(start_index, stop_index+1)
+                subset_indices = np.arange(start_index, stop_index + 1)
                 l1_segment = l1.extract_subset(subset_indices)
                 l1_segments.append(l1_segment)
 
@@ -738,6 +735,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
         # All done, return the list of polar ocean segments
         return l1_list
 
+
 class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     """
     A small helper class that can be passed to input adapter to check whether the l1 segment is
@@ -769,7 +767,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         hemisphere = product_metadata.hemisphere
         target_hemisphere = self.cfg.get("target_hemisphere", None)
         if not hemisphere == "global" and not hemisphere in target_hemisphere:
-            logger.info("- No data in target hemishere: %s" % "".join( self.cfg.target_hemispheres))
+            logger.info("- No data in target hemishere: %s" % "".join(self.cfg.target_hemispheres))
             return False
 
         # 3. Must be at higher latitude than the polar latitude threshold
@@ -788,8 +786,8 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 class Level1PreProcJobDef(DefaultLoggingClass):
     """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
 
-    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=[], hemisphere="global", platform=None,
-                 output_handler_cfg={}, source_repo_id=None):
+    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=None, hemisphere="global", platform=None,
+                 output_handler_cfg=None, source_repo_id=None):
         """
         The settings for the Level-1 pre-processor job
         :param l1p_settings_id_or_file: An id of an proc/l1 processor config file (filename excluding the .yaml
@@ -828,6 +826,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         logger.info("Requested time range is %s" % self.time_range.label)
 
         # Store the data handler options
+        if output_handler_cfg is None:
+            output_handler_cfg = {}
         self._output_handler_cfg = output_handler_cfg
 
         # Measure execution time
@@ -1020,7 +1020,6 @@ class Level1POutputHandler(DefaultLoggingClass):
     """
 
     def __init__(self, cfg):
-
         cls_name = self.__class__.__name__
         super(Level1POutputHandler, self).__init__(cls_name)
         self.error = ErrorStatus(caller_id=cls_name)
@@ -1068,7 +1067,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         if local_machine_def_tag is None:
             msg = "Missing mandatory option %s in l1p processor definition file -> aborting"
             msg = msg % "root.output_handler.options.local_machine_def_tag"
-            msg = msg + "\nOptions: \n"+self.cfg.makeReport()
+            msg = msg + "\nOptions: \n" + self.cfg.makeReport()
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
 
