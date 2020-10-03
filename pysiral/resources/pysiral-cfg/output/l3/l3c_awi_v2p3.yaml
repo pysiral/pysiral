@@ -2,17 +2,17 @@
 
 # Metadata
 metadata:
-  output_id: l3c_cs2awi_v2p2
+  output_id: l3c_cs2awi_v2p3
   data_level: 3
   data_level_description: Level-3 colated (gridded geophysical parameters)
 
 # Output Definition (for each period definition)
 filenaming:
-  monthly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p2.nc"
-  weekly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p2.nc"
-  daily: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p2.nc"
-  custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p2.nc"
-  default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p2.nc"
+  monthly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p3.nc"
+  weekly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
+  daily: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3.nc"
+  custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
+  default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
 
 product_level_subfolder: l3c_grid
 
@@ -25,7 +25,7 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline C (ipf1-c), Snow depth: Monthly
+  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly
   climatology based on regional merging of Warren Climatology with 50% reduction for
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
   Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea
@@ -38,14 +38,14 @@ global_attributes:
   - references: "Hendricks, S. and Ricker, R. (2019): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.2), hdl:10013/epic.8eb07093-4042-40ab-bfb8-e0c72c1567de"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "2.2"
+  - product_version: "2.3"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "This dataset contains Level-3 monthly sea ice thickness products from
   satellite observations in the northern hemisphere. Level-3 data are raw
   observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p2"
+  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p3"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
@@ -99,14 +99,14 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  sea_surface_anomaly:
+  sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  sea_surface_anomaly_uncertainty:
+  sea_level_anomaly_uncertainty:
     long_name: "uncertainty of instantaneous sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level standard_error
     units: m
