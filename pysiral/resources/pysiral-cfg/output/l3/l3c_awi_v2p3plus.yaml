@@ -8,9 +8,9 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p3plus.nc"
-  weekly: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3plus.nc"
-  daily: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3plus.nc"
+  month: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p3plus.nc"
+  isoweek: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3plus.nc"
+  day: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3plus.nc"
   custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3plus.nc"
   default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3plus.nc"
 
