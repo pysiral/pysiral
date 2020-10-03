@@ -1,10 +1,10 @@
 metadata:
     label: "AWI CryoSat-2 near real-time sea-ice thickness product (cs2awi v2.3 nrt)"
-    file_version_tag: "v2p3-nrt"
     product_line: awi
     record_type: nrt
     platform: cryosat2
     version: v2p3
+    file_version_tag: "fv2p3"    
     hemisphere: north
 
 
