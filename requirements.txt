@@ -21,5 +21,6 @@ pyshp
 python-dateutil
 pyyaml
 scipy
+scikit-learn
 xmltodict
 xarray
