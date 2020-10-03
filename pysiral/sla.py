@@ -350,3 +350,26 @@ def get_tiepoints_oneway_distance(a, reverse=False):
     if reverse:
         distance = distance[::-1]
     return distance
+
+
+def gaussian_process(sla_raw):
+
+    from sklearn import gaussian_process
+    from sklearn.gaussian_process.kernels import Matern, WhiteKernel
+
+    n = len(sla_raw)
+    x = np.arange(n)
+    y = np.copy(sla_raw)
+    ssh_indices = np.where(np.isfinite(y))[0]
+    mean_val = np.nanmean(sla_raw)
+    y -= mean_val
+    x_fit = x[ssh_indices].reshape(-1, 1)
+    y_fit = y[ssh_indices].reshape(-1, 1)
+    matern_kernel_props = dict(length_scale=200.0, length_scale_bounds=(10, 1000))
+    white_noise_kernel_props = dict(noise_level=1, noise_level_bounds=(0.5, 5))
+    kernel = Matern(**matern_kernel_props) + WhiteKernel(**white_noise_kernel_props)
+    gp = gaussian_process.GaussianProcessRegressor(kernel=kernel)
+    gp.fit(x_fit, y_fit)
+    x_pred = x.reshape(-1, 1)
+    sla, sigma = gp.predict(x_pred, return_std=True)
+    return sla + mean_val
