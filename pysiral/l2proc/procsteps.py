@@ -229,7 +229,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
-        logger.info("Transfer L1P variables to L2")
+        logger.info("- Transfer L1P variables to L2")
         for data_group, varlist in list(self.cfg.options.items()):
 
             # Get and loop over variables per data group
