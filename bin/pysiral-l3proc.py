@@ -36,7 +36,6 @@ def pysiral_l3proc():
         period_segments = period.get_segments(args.period)
         n_periods = period_segments.n_periods
 
-
     # Get the output grid
     grid = Level3GridDefinition(args.l3_griddef)
 
