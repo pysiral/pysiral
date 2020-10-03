@@ -87,20 +87,7 @@ class Level2Processor(DefaultLoggingClass):
     def run(self):
         """ Run the processor """
         self._l2_processing_of_orbit_files()
-        self._l2proc_summary_to_file()
         self._clean_up()
-
-    def _l2proc_summary_to_file(self):
-        if "output" not in self.l2def:
-            return
-        # TODO: This method is currently broken, as there is no output key in l2def
-        for output_id, output_def in list(self.l2def.output.items()):
-            output = get_output_class(output_def.pyclass)
-            output.set_options(**output_def.options)
-            output.set_base_export_path(output_def.path)
-            time_range = self.report.time_range
-            export_folder = output.get_full_export_path(time_range.start)
-            self.report.write_to_file(output_id, export_folder)
 
     def _clean_up(self):
         """ All procedures that need to be reset after a run """
