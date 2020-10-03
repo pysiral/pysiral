@@ -6,6 +6,7 @@ Created on Sat Apr 23 15:30:53 2016
 """
 
 import numpy as np
+import bottleneck as bn
 from scipy.interpolate import interp1d
 from astropy.convolution import convolve
 
@@ -164,7 +165,7 @@ def idl_smooth(x, window):
             kernel_halfsize = i
         if (n-1-i) < kernel_halfsize:
             kernel_halfsize = n-1-i
-        smoothed[i] = np.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
+        smoothed[i] = bn.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
     return smoothed
 
 
