@@ -40,7 +40,6 @@ from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
 
 import scipy.ndimage as ndimage
-from loguru import logger
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
@@ -48,10 +47,11 @@ from pathlib import Path
 
 class OsiSafSIC(AuxdataBaseClass):
 
-
     def __init__(self, *args, **kwargs):
         super(OsiSafSIC, self).__init__(*args, **kwargs)
         self._data = None
+        self.start_time = None
+        self.hemisphere_code = None
 
     def get_l2_track_vars(self, l2):
         """ Main entry point of the class """

@@ -50,6 +50,8 @@ class OsiSafSIType(AuxdataBaseClass):
     def __init__(self, *args, **kwargs):
         super(OsiSafSIType, self).__init__(*args, **kwargs)
         self._data = None
+        self.start_time = None
+        self.hemisphere_code = None
 
     def get_l2_track_vars(self, l2):
         """ Default grid auxiliary data set"""
@@ -106,7 +108,7 @@ class OsiSafSIType(AuxdataBaseClass):
         fillvalues = np.where(sitype == -1)[0]
         sitype[fillvalues] = 0
 
-        # --- Translate sitype codes into myi fraction ---
+        # --- Translate sea-ice type codes into myi fraction ---
         # flag_meanings: -1: fill value, 1: open_water, 2: first_year_ice, 3: multi_year_ice, 4: ambiguous
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5])
         sitype = np.array([translator[value] for value in sitype])
@@ -140,6 +142,8 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
     def __init__(self, *args, **kwargs):
         super(OsiSafSITypeCDR, self).__init__(*args, **kwargs)
         self._data = None
+        self.start_time = None
+        self.hemisphere_code = None
 
     def get_l2_track_vars(self, l2):
         """ Mandadory method of AuxdataBaseClass subclass """
@@ -242,7 +246,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
         self._get_requested_date(l2)
         self._get_data(l2)
         if self.error.status:
-            sitype, sitype_uncertainty = self.get_empty_val(l2), self.get_empty_val(l2)
+            sitype, sitype_uncertainty = self.get_empty_array(l2), self.get_empty_array(l2)
         else:
             sitype, sitype_uncertainty = self._get_sitype_track(l2)
         self.register_auxvar("sitype", "sea_ice_type", sitype, None)
@@ -287,7 +291,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
         self._data.ice_type = myi_fraction[0, :, :]
 
         # Same for the uncertainty variable
-        # (see description directly above for how to access variable namde
+        # (see description directly above for how to access variable name
         #  definition)
         myi_fraction_unc = getattr(self._data, opt.uncertainty_variable_name)
         self._data.ice_type_uncertainty = myi_fraction_unc[0, :, :]
@@ -324,11 +328,9 @@ class ICDCNasaTeam(AuxdataBaseClass):
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
 
         # Extract along track data from grid
-        myi_concentration_percent = ndimage.map_coordinates(
-            self._data.ice_type, [iy, ix], order=0)
+        myi_concentration_percent = ndimage.map_coordinates(self._data.ice_type, [iy, ix], order=0)
 
-        myi_concentration_uncertainty = ndimage.map_coordinates(
-            self._data.ice_type_uncertainty, [iy, ix], order=0)
+        myi_concentration_uncertainty = ndimage.map_coordinates(self._data.ice_type_uncertainty, [iy, ix], order=0)
 
         # Convert percent [0-100] into fraction [0-1]
         sitype = myi_concentration_percent/100.
