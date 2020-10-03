@@ -192,7 +192,7 @@ class Level2Processor(DefaultLoggingClass):
             # Note: Each processing step is always supplied with both l1b and
             #       l2 data object, no matter if actually needed
             class_name = procstep_class.classname
-            logger.info("Executing processing step {}".format(class_name))
+            # logger.debug("Executing processing step {}".format(class_name))
             procstep_class.execute(l1b, l2)
 
     def _report_output_location(self):
