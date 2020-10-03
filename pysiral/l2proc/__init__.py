@@ -39,7 +39,7 @@ class Level2Processor(DefaultLoggingClass):
 
         # Level-2 Algorithm Definition
         # NOTE: This object should ony be called through the property self.l2def
-        self._l2def = product_def.l2def
+        self._l2def = product_def
 
         # Auxiliary Data Handler
         # NOTE: retrieves and initializes the auxdata classes
@@ -249,8 +249,8 @@ class Level2Processor(DefaultLoggingClass):
             # Create output files
             l2.set_metadata(auxdata_source_dict=self.l2_auxdata_source_dict,
                             source_primary_filename=source_primary_filename,
-                            l2_algorithm_id=self.l2def.id,
-                            l2_version_tag=self.l2def.version_tag)
+                            l2_algorithm_id=self.l2def.label,
+                            l2_version_tag=self.l2def.file_version_tag)
             self._create_l2_outputs(l2)
 
             # Add data to orbit stack
@@ -361,9 +361,10 @@ class Level2ProductDefinition(DefaultLoggingClass):
         self.error = ErrorStatus(self.__class__.__name__)
 
         # Mandatory parameter
-        self._run_tag = run_tag
         self._l2_settings_file = l2_settings_file
         self._parse_l2_settings()
+        self._run_tag = None
+        self._set_run_tag(run_tag)
 
         # Optional parameters (may be set to default values if not specified)
         self._output_handler = []
@@ -382,6 +383,20 @@ class Level2ProductDefinition(DefaultLoggingClass):
             self.error.add_error("invalid-l2-settings", str(ex))
             self.error.raise_on_error()
 
+    def _set_run_tag(self, run_tag):
+        """
+        Set the run tag (will be used for defining the output path)
+        :param run_tag:
+        :return:
+        """
+        # Take specified value or construct from metadata of config file if unspecified
+        if run_tag is not None:
+            value = run_tag
+        else:
+            value = "{}/{}/{}/{}/{}".format(self.product_line, self.record_type,
+                                            self.platform, self.version, self.hemisphere_code)
+        self._run_tag = value
+
     @property
     def run_tag(self):
         return self._run_tag
@@ -389,6 +404,47 @@ class Level2ProductDefinition(DefaultLoggingClass):
     @property
     def l2def(self):
         return self._l2def
+
+    @property
+    def auxdata(self):
+        return self.l2def.auxdata
+
+    @property
+    def procsteps(self):
+        return self.l2def.procsteps
+
+    @property
+    def product_line(self):
+        return self.l2def.metadata.product_line
+
+    @property
+    def record_type(self):
+        return self.l2def.metadata.record_type
+
+    @property
+    def platform(self):
+        return self.l2def.metadata.platform
+
+    @property
+    def version(self):
+        return self.l2def.metadata.version
+
+    @property
+    def file_version_tag(self):
+        return self.l2def.metadata.file_version_tag
+
+    @property
+    def label(self):
+        return self.l2def.metadata.label
+
+    @property
+    def hemisphere(self):
+        return self.l2def.metadata.hemisphere
+
+    @property
+    def hemisphere_code(self):
+        codes = dict(north="nh", south="sh")
+        return codes.get(self.hemisphere, "global")
 
     @property
     def output_handler(self):

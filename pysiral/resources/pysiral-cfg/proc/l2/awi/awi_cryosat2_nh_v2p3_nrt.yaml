@@ -1,12 +1,11 @@
-id: "AWI CryoSat-2 near real-time sea-ice thickness product (cs2awi v2.3)"
-version_tag: "v2p3-nrt"
-
-# This settings file is valid for
-hemisphere: north
-
-# Level 2 processor settings are mission specific
-mission:
-    id: cryosat2
+metadata:
+    label: "AWI CryoSat-2 near real-time sea-ice thickness product (cs2awi v2.3 nrt)"
+    file_version_tag: "v2p3-nrt"
+    product_line: awi
+    record_type: nrt
+    platform: cryosat2
+    version: v2p3
+    hemisphere: north
 
 
 # --- Ingest auxiliary data ---

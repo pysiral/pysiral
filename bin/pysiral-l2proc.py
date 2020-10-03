@@ -49,8 +49,8 @@ def pysiral_l2proc_time_range_job(args):
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
-    mission_id = product_def.l2def.mission.id
-    hemisphere = product_def.l2def.hemisphere
+    mission_id = product_def.l2def.metadata.platform
+    hemisphere = product_def.l2def.metadata.hemisphere
 
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
@@ -230,15 +230,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # Get from command line arguments (default: None)
         run_tag = self._args.run_tag
 
-        # If argument is empty use the basename of the l2 settings file
-        if run_tag is None:
-            run_tag = self._args.l2_settings
-            # Settings file may be specified as full path and not just the id
-            if Path(run_tag).is_file():
-                run_tag = Path(run_tag).stem
-
         # split the run-tag on potential path separators
-        run_tag = re.split(r'[\\|/]', run_tag)
+        if run_tag is not None:
+            run_tag = re.split(r'[\\|/]', run_tag)
+
         return run_tag
 
     @property
