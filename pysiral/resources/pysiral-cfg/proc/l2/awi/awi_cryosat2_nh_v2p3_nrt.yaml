@@ -39,17 +39,19 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: osisaf
+        name: osisaf-operational
         options:
             # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
             # All NaN values inside the pole hole latitude threshold will be set to 100%
+            exception_on_error: True
             fill_pole_hole:
                 pole_hole_lat_threshold: 87.0
                 pole_hole_fill_value: 100.
 
     - sitype:
-        name: osisaf
-        options: null
+        name: osisaf-operational
+        options:
+            exception_on_error: True
 
     - snow:
         name: clim_w99amsr2
