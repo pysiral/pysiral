@@ -1,5 +1,55 @@
 # History of changes
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+## [0.9.0] - 2020-10-xx
+
+### Added
+- Deblurring correction for ERS-1/2
+- AWI CryoSat-2 v2.3 processor and output definitions
+- CCI+ v3.0-preview2 processor and output definitions
+- Snow density dependent geometric freeboard correction after Mallett et al., 2020
+- dedicated `l2proc.procsteps` submodule
+- tests for Level-2 processor definition files
+- `core` module that includes basic pysiral functionality (introduced to avoid circular imports)
+
+### Changed
+- Format of this changelog now according to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+- Merged W99/AMSR snow climatology is now daily instead of monthly to avoid unrealistic jumps at the beginning of a month
+- Snow density parametrization in W99/AMSR snow climatology now follows Mallett et al. 2020
+- Level-2 processor are now a customizable list of algorithm steps, not longer a fixed set 
+- Logging system now based on loguru instead of logbook. New logging format.
+- Split content of `surface_type` module between flag definitions and actual surface type classification processor steps
+- Renamed `ssh` module to `sla` (more in line with L2 naming conventions)
+- Made a distinction between dependancies (required packages) and installation reqirements (other github projects) in `setup.py` to avoid crash during `build_ext`
+- Improving the way pysiral handles the different options for the location of the config files
+- Performace improvements (approx. 30%) of Level-1 preprocessor by using `bottleneck.nanmean` instead of `np.nanean`
+
+### Deprecated
+
+### Removed
+- Errorhandler in pysiral.error
+- Unused `bias` field in the L2 data container
+- Deprecated Level-2 processor definitions (incompatible with the new Level-2 processor step definition)
+- Deprecated output definitions
+- `flag` module (functionality can be now found in `core`)
+
+### Fixed
+- Some Level-2 processor definition files had incorrect names for ionospheric correction
+- Issue with Level-3 array orientation (flip) when writing more than one output in the Level-3 processor
+- various bugs in settings files
+
+
 ## Version 0.8.0 (24. April 2020)
 
 ### Changes
@@ -29,7 +79,6 @@
 
 ### New Features
 - [auxdata] Added functions to query all auxiliary data classes
-- 
 
 ### Bugfix
 - [l3proc] flipping of y-coordinate of Level-3 output was handled badly for multiple outputs
