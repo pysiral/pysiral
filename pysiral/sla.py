@@ -37,11 +37,16 @@ class SLASmoothedLinear(Level2ProcessorStep):
         """
         super(SLASmoothedLinear, self).__init__(*args, **kwargs)
 
-        # Init Properties
-        self.ssh_tiepoints = None      # A boolean flag which elevation obs is a valid ssh tiepoint
+        # Init Properties (partly kept for debugging plot)
+        self.ssh_tiepoints = None      # A boolean flag which elevation obs is a valid ssh tie points
+        self.mss = None
         self.sla_raw = None            # The raw (unfiltered) sea level anomaly
         self.sla = None                # The final (filtered) sea level anomaly
+        self.sla_mask = None           # The masked values of the sla (depending on filter settings)
         self.sla_uncertainty = None    # Uncertainty of the sea level anomaly
+        self.ssh_tiepoints_lon = None
+        self.ssh_tiepoints_lat = None
+        self.sla_bias = 0.0
 
     def execute_procstep(self, l1b, l2):
         """
@@ -78,6 +83,9 @@ class SLASmoothedLinear(Level2ProcessorStep):
         l2.sla.set_value(self.sla)
         l2.sla.set_uncertainty(self.sla_uncertainty)
 
+        # The call of the debug_plot method can be activated for R&D/debugging purposes
+        self.debug_plot()
+
         # Return the error status
         error_status = np.isnan(l2.sla[:])
         return error_status
@@ -97,7 +105,11 @@ class SLASmoothedLinear(Level2ProcessorStep):
             self.ssh_tiepoints.append(l2.surface_type.ocean.indices)
             self.ssh_tiepoints = np.sort(self.ssh_tiepoints)
 
+        if "sla_bias" in self.cfg.options:
+            self.sla_bias = self.cfg.options.sla_bias
+
         # Get initial elevation at tie point locations
+        self.mss = np.copy(l2.mss)
         mss_frb = l2.elev - l2.mss
 
         # Remove ssh tie points from the list if their elevation
@@ -120,10 +132,19 @@ class SLASmoothedLinear(Level2ProcessorStep):
             valid = np.where(offset < threshold)
             self.ssh_tiepoints = self.ssh_tiepoints[index_dict[valid]]
 
+        # Save the positions of the remaining tie points
+        self.ssh_tiepoints_lon = l2.longitude[self.ssh_tiepoints]
+        self.ssh_tiepoints_lat = l2.latitude[self.ssh_tiepoints]
+
         # Compute the first SLA estimate
         self.sla_raw = np.ndarray(shape=l2.n_records)*np.nan
         self.sla_raw[self.ssh_tiepoints] = mss_frb[self.ssh_tiepoints]
         non_tiepoints = np.where(np.isnan(self.sla_raw))
+
+        # Get the mean sla bias for this trajectory
+        # Will be removed from the sla
+        self.sla_bias = np.nanmean(self.sla_raw)
+        self.sla_raw -= self.sla_bias
 
         # Filtered raw values (python implementation of the CS2AWI IDL code)
         # Use custom implementation of IDL SMOOTH:
@@ -139,7 +160,9 @@ class SLASmoothedLinear(Level2ProcessorStep):
 
         # Final smoothing
         sla = idl_smooth(sla_filter2, self.filter_width)
-        self.sla = sla
+        self.sla = sla + self.sla_bias
+        self.sla_raw += self.sla_bias
+        self.sla_mask = np.zeros(self.sla.shape)
 
     def calculate_sla_uncertainty(self, l2):
         """
@@ -234,7 +257,7 @@ class SLASmoothedLinear(Level2ProcessorStep):
             marine_segment["n_tiepoints"] = n_tiepoints
 
             if marine_segment["n_tiepoints"] < minimum_lead_number:
-                self.sla[marine_section_indices] = np.nan
+                self.sla_mask[marine_section_indices] = np.nan
 
             marine_segments.append(marine_segment)
 
@@ -289,6 +312,51 @@ class SLASmoothedLinear(Level2ProcessorStep):
         tiepoint_distance = tiepoint_distance.astype(np.float32)
         tiepoint_distance *= self.cfg.options.smooth_filter_width_footprint_size
         return tiepoint_distance
+
+    def debug_plot(self):
+        """
+        This method can be called for R&D purposes.
+
+        WARNING: THE CALL TO THIS METHOD SHOULD NEVER BE ACTIVE IN AN OPERATIONAL ENVIRONMENT
+                 AS IT WILL BLOCK THE PROCESSOR
+
+        :return:
+        """
+
+
+        import cartopy.crs as ccrs
+        import matplotlib.pyplot as plt
+
+        n = len(self.mss)
+        x = np.arange(n)
+
+        # with open(r"D:\temp\sla_test.dat", "w") as fh:
+        #     for i in x:
+        #         fh.write("{:.3f}\n".format(self.sla_raw[i]))
+
+        plt.figure("SSH", figsize=(10, 12))
+        plt.plot(self.mss, label="MSS")
+        plt.scatter(x, self.sla_raw + self.mss, label="SLA raw")
+        plt.legend()
+
+        sla_gp = gaussian_process(self.sla_raw)
+
+        plt.figure("SLA", figsize=(10, 12))
+        plt.scatter(x, self.sla_raw, label="SLA raw")
+        plt.plot(self.sla, color="red", lw=2, label="SLA", zorder=100)
+        plt.plot(sla_gp, color="black", lw=2, label="SLA Gaussian process", zorder=150)
+        plt.legend()
+
+        plt.figure(figsize=(10, 10))
+        proj = ccrs.LambertAzimuthalEqualArea(central_latitude=90)
+        ax = plt.axes(projection=proj)
+        ax.set_xlim(-4000000, 4000000)
+        ax.set_ylim(-4000000, 4000000)
+        ax.stock_img()
+        ax.coastlines()
+        ax.scatter(self.ssh_tiepoints_lon, self.ssh_tiepoints_lat, color="black", marker='x',
+                   transform=ccrs.Geodetic())
+        plt.show()
 
     @property
     def filter_width(self):
