@@ -194,11 +194,12 @@ procsteps:
             prefilter_maximum_mss_median_offset_m: 1.0
             matern_kernel: 
                 length_scale: 1000.0
-                length_scale_bounds: [0.1, 3000.]
+                length_scale_bounds: [500, 3000.]
                 nu: 1.5
             white_noise_kernel:
-                noise_level: 0.01
-                noise_level_bounds: [1.0e-5, 0.075]
+                noise_level: 0.15
+                # noise_level_bounds: [1.0e-5, 0.075]
+            surface_types_masks: ["land", "land_ice", "ocean"]
 
     # Estimation of Radar Freeboard
     -   module: frb
