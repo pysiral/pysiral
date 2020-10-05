@@ -164,8 +164,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
 
         for surface_type, retracker_def in list(self.cfg.options.items()):
 
-            # Check if any waveforms need to be retracked for given
-            # surface type
+            # Check if any waveforms need to be retracked for given surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 logger.info("- no waveforms of type %s" % surface_type)
