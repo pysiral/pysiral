@@ -258,6 +258,24 @@ class SLABaseFunctionality(object):
         filter_width = filter_width.astype(int)
         return filter_width
 
+    @staticmethod
+    def apply_surface_type_masks(sla, sla_unc, l2, surface_types):
+        """
+        Remove sla and sla uncertainty values for a set surface types
+        (Names must match the surface types name definitions in the l2 data containers)
+        :param sla:
+        :param sla_unc:
+        :param l2:
+        :param surface_types:
+        :return:
+        """
+        # Loop over all surface types and modify array in place
+        for surface_type in surface_types:
+            flag = l2.surface_type.get_by_name(surface_type)
+            sla[flag.indices] = np.nan
+            sla_unc[flag.indices] = np.nan
+        return sla, sla_unc
+
 
 class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
     """
@@ -303,7 +321,21 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         white_noise_kernel = self.cfg.options.get("white_noise_kernel", None)
         sla, sla_unc = self.sla_from_gaussian_process(l2, ssh_tiepoint_indices, matern_kernel, white_noise_kernel)
 
-        # Step 3: Modify the Level-2 data container with the result in-place
+        # Step 3: Apply sea-ice and land masks
+        surface_types = self.cfg.options.get("surface_types_masks", [])
+        sla, sla_unc = self.apply_surface_type_masks(sla, sla_unc, l2, surface_types)
+
+        # import matplotlib.pyplot as plt
+        # x = np.arange(l2.n_records)
+        # sla_raw = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
+        # plt.figure(figsize=(10, 8))
+        # plt.scatter(x[ssh_tiepoint_indices], sla_raw, zorder=20)
+        # plt.plot(x, sla, color="red", lw=2, zorder=50)
+        # plt.fill_between(x, sla-sla_unc, sla+sla_unc, zorder=10)
+        # plt.show()
+        # breakpoint()
+
+        # Step 4: Modify the Level-2 data container with the result in-place
         l2.sla.set_value(sla)
         l2.sla.set_uncertainty(sla_unc)
 
@@ -338,12 +370,6 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         x_fit = x[ssh_tiepoint_indices].reshape(-1, 1)
         y_fit = y.reshape(-1, 1)
 
-        # ---
-        # TODO: To be removed
-        # matern_kernel_props = dict(length_scale=200.0, length_scale_bounds=(10, 1000))
-        # white_noise_kernel_props = dict(noise_level=1, noise_level_bounds=(0.5, 5))
-        # ---
-
         # Step 4: Establish the fitting kernel
         # The assumption here is that the covariance decreases with distance (Matern kernel) and
         # that the data is noisy (white noise kernel)
@@ -359,22 +385,14 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         gp = gaussian_process.GaussianProcessRegressor(kernel=kernel)
         gp.fit(x_fit, y_fit)
 
-        # Step 6: Predict sla for the entire track and re-add mean value
+        # Step 6: Predict sla for the entire track and re-add mean value.
+        # The uncertainty value is also output of the prediction
         x_pred = x.reshape(-1, 1)
-        sla, sigma = gp.predict(x_pred, return_std=True)
+        sla, sla_unc = gp.predict(x_pred, return_std=True)
         sla = sla.squeeze() + mean_sla
 
-        # Step 7: Compute uncertainty from result
-
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=(10, 8))
-        plt.scatter(x[ssh_tiepoint_indices], sla_raw, zorder=20)
-        plt.plot(x, sla, color="red", lw=2, zorder=50)
-        plt.fill_between(x, sla-sigma, sla+sigma, zorder=10)
-        plt.show()
-        breakpoint()
-
-        return sla
+        # Return the two parameters
+        return sla, sla_unc
 
     @property
     def l2_input_vars(self):
@@ -425,9 +443,14 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         :return:
         """
 
-        # Step 1: A linear interpolation between lead elevations
-        # -> will add properties `sla_raw`, `ssh_tiepoints` and `sla` to the instance
-        self.gau(l2)
+        # Step 1: Get a list of valid SSH tie points
+        # This method will return a list of indices for all SSH observations
+        # with an optional pre-filtering step
+        filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
+        use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
+        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
+
+        # Step 2: Calculate the SLA by
 
         # Step 2: Compute sea level anomaly uncertainty
         # -> will add properties `sla_uncertainty`
