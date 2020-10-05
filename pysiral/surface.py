@@ -6,6 +6,7 @@ Created on Mon Jul 27 11:25:04 2015
 """
 
 
+from copy import deepcopy
 import numpy as np
 from attrdict import AttrDict
 
@@ -75,7 +76,7 @@ class SurfaceTypeClassifier(object):
         :return:
         """
         for classifier_name in l1b.classifier.parameter_list:
-            classifier = getattr(l1b.classifier, classifier_name)
+            classifier = deepcopy(getattr(l1b.classifier, classifier_name))
             self.classifier.add_parameter(classifier, classifier_name)
 
     def set_unknown_default(self):
