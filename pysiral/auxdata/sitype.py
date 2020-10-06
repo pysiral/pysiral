@@ -431,8 +431,6 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
     :return: Gap-filled sitype, sitype_uncertainty
     """
 
-    sitype_0 = np.copy(sitype)
-
     # Step 1: Find gaps (if any)
     is_seaice = sic >= sic_threshold
     is_sitype_gap = np.isnan(sitype)
@@ -472,18 +470,5 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
     # Step 5: Set uncertainty of all gaps
     sitype_uncertainty[all_gap_indices] = gap_filled_uncertainty
 
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.plot(sitype_0, lw=2, label="sea ice type (orig)")
-    # plt.plot(sitype, lw=1, label="sea ice type (gap filled)")
-    # plt.plot(sic/100, label="sea ice concentration")
-    # plt.legend()
-    #
-    # plt.figure()
-    # plt.plot(gap_dist)
-    #
-    # plt.show()
-    # breakpoint()
-
-    # Return
+    # Return output
     return sitype, sitype_uncertainty
