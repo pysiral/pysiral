@@ -74,40 +74,6 @@ class SLABaseFunctionality(object):
         # All done, return the index list of tie points
         return ssh_tiepoint_indices
 
-    def calculate_sla_uncertainty(self, l2, max_distance, sla_unc_min, sla_unc_max,
-                                  smooth_filter_width_footprint_size):
-        """
-        Components that add to sea surface anomaly uncertainty
-            - mss uncertainty (if known)
-            - uncertainty of lead elevations
-            - distance to next lead tiepoint
-        :param l2:
-        :param max_distance:
-        :param sla_unc_min:
-        :param sla_unc_max:
-        :param smooth_filter_width_footprint_size:
-        :return:
-        """
-
-        # get tie point distance
-        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, smooth_filter_width_footprint_size)
-
-        # Compute the influence of distance to next tie points
-        # in the range of 0: minimum influence to 1: maximum influence
-        # It is assumed that the uncertainty has a quadratic dependence
-        # on tie point distance
-        tiepoint_distance_scalefact = tiepoint_distance / max_distance
-        above_distance_limit = np.where(tiepoint_distance_scalefact > 1.)[0]
-        tiepoint_distance_scalefact[above_distance_limit] = 1.
-        tiepoint_distance_scalefact = tiepoint_distance_scalefact**2.
-
-        # Compute the sla uncertainty based on a min/max approach scaled by factor
-        sla_unc_range = sla_unc_max - sla_unc_min
-        sla_unc = sla_unc_min + sla_unc_range * tiepoint_distance_scalefact
-
-        # Return uncertainty value
-        return sla_unc
-
     def get_tiepoint_distance_from_l2(self, l2, smooth_filter_width_footprint_size):
         """
         Returns the distance in meter to the next ssh tiepoint for each record
@@ -243,7 +209,7 @@ class SLABaseFunctionality(object):
         return mask
 
     @staticmethod
-    def filter_width(smooth_filter_width_m, smooth_filter_width_footprint_size):
+    def get_filter_width(smooth_filter_width_m, smooth_filter_width_footprint_size):
         """
         Compute the filter width in points
         :param smooth_filter_width_m:
@@ -477,107 +443,123 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
         ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
 
+        # Verification that there is any ssh tie points
+        # -> Will return all NaN sla if not
+        if len(ssh_tiepoint_indices) == 0:
+            all_nans = np.full(l2.n_records, np.nan)
+            l2.sla.set_value(all_nans)
+            l2.sla.set_uncertainty(all_nans)
+            error_status = np.isnan(l2.sla[:])
+            return error_status
+
         # Step 2: Calculate the SLA by
+        smooth_filter_width_m = self.cfg.options.get("smooth_filter_width_m", np.nan)
+        footprint_size = self.cfg.options.get("smooth_filter_width_footprint_size", np.nan)
+        filter_width = self.get_filter_width(smooth_filter_width_m, footprint_size)
+        sla = self.smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width)
 
-        # Step 2: Compute sea level anomaly uncertainty
-        # -> will add properties `sla_uncertainty`
-        self.calculate_sla_uncertainty(l2)
+        # Step 3: Compute sea level anomaly uncertainty
+        max_distance = self.cfg.options.get("uncertainty_tiepoints_distance_max", np.nan)
+        sla_unc_min = self.cfg.options.get("uncertainty_minimum", np.nan)
+        sla_unc_max = self.cfg.options.get("uncertainty_maximum", np.nan)
+        sla_unc = self.calculate_sla_uncertainty(l2, max_distance, sla_unc_min, sla_unc_max, footprint_size)
 
-        # Step 3 (optional): Filter small marine segments surrounded by land
+        # Step 4 (optional): Filter small marine segments surrounded by land
         # Note: This intends to remove small segments in fjords/channels for which
         #       the SLA computation is very likely not trustworthy
+        mask = np.full(l2.n_records, False)
         if "marine_segment_filter" in self.cfg:
-            self.marine_segment_filter(l2)
+            minimum_lead_number = self.cfg.options.marine_segment_filter.get("minimum_lead_number", np.nan)
+            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, footprint_size)
+            mask = np.logical_or(mask, filter_mask)
 
-        # Step 4 (optional): Filter SLA segments that are far away from the next SSH
-        #    tie point
+        # Step 5 (optional): Filter SLA segments that are far away from the next SSH tie point
         if "tiepoint_maxdist_filter" in self.cfg:
-            self.tiepoint_maxdist_filter(l2)
+            is_tiepoint = np.full(l2.n_records, False)
+            is_tiepoint[ssh_tiepoint_indices] = True
+            distance_threshold = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", np.nan)
+            edges_only = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", False)
+            filter_mask = self.tiepoint_maxdist_filter(l2, is_tiepoint, distance_threshold, edges_only)
+            mask = np.logical_or(mask, filter_mask)
 
-        # Step 5: Modify the Level-2 data container with the result in-place
-        l2.sla.set_value(self.sla)
-        l2.sla.set_uncertainty(self.sla_uncertainty)
+        # Step 6: Apply filter (if any)
+        if len(np.where(mask)) > 0:
+            sla[mask] = np.nan
+            sla_unc[mask] = np.nan
 
-        # The call of the debug_plot method can be activated for R&D/debugging purposes
-        self.debug_plot()
+        # Step 7: Modify the Level-2 data container with the result in-place
+        l2.sla.set_value(sla)
+        l2.sla.set_uncertainty(sla_unc)
 
         # Return the error status
         error_status = np.isnan(l2.sla[:])
         return error_status
 
-    def smoothed_linear_interpolation_between_tiepoints(self, l2):
+    @staticmethod
+    def smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width):
         """
         The main SLA computation method in this class
         :param l2: Level-2 data container
+        :param ssh_tiepoint_indices:
+        :param filter_width:
         :return: None
         """
 
-        # Collect the first estimate of ssh tie points
-        # NOTE: The use of ocean waveforms is optional and needs to activated
-        #       in the options dictionary of the Level-2 processor definition file
-        self.ssh_tiepoints = l2.surface_type.lead.indices
-        if self.cfg.options.use_ocean_wfm:
-            self.ssh_tiepoints.append(l2.surface_type.ocean.indices)
-            self.ssh_tiepoints = np.sort(self.ssh_tiepoints)
+        # Step 1: Get the observed (noisy) sea surface elevations
+        sla_raw = np.full(l2.n_records, np.nan)
+        sla_raw[ssh_tiepoint_indices] = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
+        non_tiepoints = np.isnan(sla_raw)
 
-        if "sla_bias" in self.cfg.options:
-            self.sla_bias = self.cfg.options.sla_bias
-
-        # Get initial elevation at tie point locations
-        self.mss = np.copy(l2.mss)
-        mss_frb = l2.elev - l2.mss
-
-        # Remove ssh tie points from the list if their elevation
-        # corrected by the median offset of all tie points from the mss
-        # exceeds a certain threshold
-        if self.cfg.options.pre_filtering:
-
-            # Startup
-            index_dict = np.arange(l2.surface_type.lead.num)
-            threshold = self.cfg.options.pre_filter_maximum_mss_median_offset
-
-            # Compute the mean distance to the mss
-            tiepoint_mss_distance = mss_frb[self.ssh_tiepoints]
-            valid_points = np.where(np.isfinite(tiepoint_mss_distance))[0]
-            tiepoint_mss_distance = tiepoint_mss_distance[valid_points]
-            median_mss_offset = np.median(tiepoint_mss_distance)
-
-            # Filter points for outliers
-            offset = np.abs(mss_frb[self.ssh_tiepoints] - median_mss_offset)
-            valid = np.where(offset < threshold)
-            self.ssh_tiepoints = self.ssh_tiepoints[index_dict[valid]]
-
-        # Save the positions of the remaining tie points
-        self.ssh_tiepoints_lon = l2.longitude[self.ssh_tiepoints]
-        self.ssh_tiepoints_lat = l2.latitude[self.ssh_tiepoints]
-
-        # Compute the first SLA estimate
-        self.sla_raw = np.ndarray(shape=l2.n_records)*np.nan
-        self.sla_raw[self.ssh_tiepoints] = mss_frb[self.ssh_tiepoints]
-        non_tiepoints = np.where(np.isnan(self.sla_raw))
-
-        # Get the mean sla bias for this trajectory
-        # Will be removed from the sla
-        self.sla_bias = np.nanmean(self.sla_raw)
-        self.sla_raw -= self.sla_bias
-
-        # Filtered raw values (python implementation of the CS2AWI IDL code)
-        # Use custom implementation of IDL SMOOTH:
+        # Step 2: Create a filtered version of the raw SLA, but don't interpolate yet
+        # Use python implementation of IDL SMOOTH:
         # idl_smooth(x, w) equivalent to SMOOTH(x, w, /edge_truncate, /nan)
-        sla_filter1 = idl_smooth(self.sla_raw, self.filter_width)
-
-        # Leave only the original ssh tie points
+        sla_filter1 = idl_smooth(sla_raw, filter_width)
         sla_filter1[non_tiepoints] = np.nan
 
-        # Fill nans with linear interpolation and constant values at borders
+        # Step 3: Fill nans with linear interpolation and constant values at borders
         # python: fill_nan(x) = IDL: FILL_NAN(x, /NEIGHBOUR)
         sla_filter2 = fill_nan(sla_filter1)
 
-        # Final smoothing
-        sla = idl_smooth(sla_filter2, self.filter_width)
-        self.sla = sla + self.sla_bias
-        self.sla_raw += self.sla_bias
-        self.sla_mask = np.zeros(self.sla.shape)
+        # Step 4: The sea level anomaly is the smoothed version
+        # of the gap filled sla
+        sla = idl_smooth(sla_filter2, filter_width)
+
+        # All done, return value
+        return sla
+
+    def calculate_sla_uncertainty(self, l2, max_distance, sla_unc_min, sla_unc_max,
+                                  smooth_filter_width_footprint_size):
+        """
+        Components that add to sea surface anomaly uncertainty
+            - mss uncertainty (if known)
+            - uncertainty of lead elevations
+            - distance to next lead tiepoint
+        :param l2:
+        :param max_distance:
+        :param sla_unc_min:
+        :param sla_unc_max:
+        :param smooth_filter_width_footprint_size:
+        :return:
+        """
+
+        # get tie point distance
+        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, smooth_filter_width_footprint_size)
+
+        # Compute the influence of distance to next tie points
+        # in the range of 0: minimum influence to 1: maximum influence
+        # It is assumed that the uncertainty has a quadratic dependence
+        # on tie point distance
+        tiepoint_distance_scalefact = tiepoint_distance / max_distance
+        above_distance_limit = np.where(tiepoint_distance_scalefact > 1.)[0]
+        tiepoint_distance_scalefact[above_distance_limit] = 1.
+        tiepoint_distance_scalefact = tiepoint_distance_scalefact**2.
+
+        # Compute the sla uncertainty based on a min/max approach scaled by factor
+        sla_unc_range = sla_unc_max - sla_unc_min
+        sla_unc = sla_unc_min + sla_unc_range * tiepoint_distance_scalefact
+
+        # Return uncertainty value
+        return sla_unc
 
     @property
     def l2_input_vars(self):
@@ -598,52 +580,3 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
-
-    def debug_plot(self):
-        """
-        This method can be called for R&D purposes.
-
-        WARNING: THE CALL TO THIS METHOD SHOULD NEVER BE ACTIVE IN AN OPERATIONAL ENVIRONMENT
-                 AS IT WILL BLOCK THE PROCESSOR
-
-        :return:
-        """
-
-        import cartopy.crs as ccrs
-        import matplotlib.pyplot as plt
-
-        n = len(self.mss)
-        x = np.arange(n)
-
-        # with open(r"D:\temp\sla_test.dat", "w") as fh:
-        #     for i in x:
-        #         fh.write("{:.3f}\n".format(self.sla_raw[i]))
-
-        plt.figure("SSH", figsize=(10, 12))
-        plt.plot(self.mss, label="MSS")
-        plt.scatter(x, self.sla_raw + self.mss, label="SLA raw")
-        plt.legend()
-
-        sla_gp = gaussian_process(self.sla_raw)
-
-        plt.figure("SLA", figsize=(10, 12))
-        plt.scatter(x, self.sla_raw, label="SLA raw")
-        plt.plot(self.sla, color="red", lw=2, label="SLA", zorder=100)
-        plt.plot(sla_gp, color="black", lw=2, label="SLA Gaussian process", zorder=150)
-        plt.legend()
-
-        # plt.figure(figsize=(10, 10))
-        # proj = ccrs.LambertAzimuthalEqualArea(central_latitude=90)
-        # ax = plt.axes(projection=proj)
-        # ax.set_xlim(-4000000, 4000000)
-        # ax.set_ylim(-4000000, 4000000)
-        # ax.stock_img()
-        # ax.coastlines()
-        # ax.scatter(self.ssh_tiepoints_lon, self.ssh_tiepoints_lat, color="black", marker='x',
-        #            transform=ccrs.Geodetic())
-        plt.show()
-
-
-
-
-
