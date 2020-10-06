@@ -4,7 +4,7 @@ metadata:
     record_type: nrt
     platform: cryosat2
     version: v2p3
-    file_version_tag: "fv2p3"    
+    file_version_tag: "v2p3"    
     hemisphere: north
 
 
