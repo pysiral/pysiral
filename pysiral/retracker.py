@@ -170,9 +170,13 @@ class Level2RetrackerContainer(Level2ProcessorStep):
         # Get the error status
         error_status = self.get_clean_error_status(l2.n_records)
 
+        # Retracker are surface type dependent
+        # -> Loop over all requested surface types in the
+        #    l2 processor definition file
         for surface_type, retracker_def in list(self.cfg.options.items()):
 
-            # Check if any waveforms need to be retracked for given surface type
+            # Check first if there are any waveforms of the requested
+            # surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
                 logger.info("- no waveforms of type %s" % surface_type)
@@ -181,7 +185,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # Benchmark retracker performance
             timestamp = time.time()
 
-            # Retrieve the retracker assiciated with surface type from the l2 settings
+            # Retrieve the retracker associated with surface type from the l2 settings
             retracker = get_retracker_class(retracker_def["pyclass"])
 
             # Set options (if any)
@@ -194,10 +198,10 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # Add classifier data (some retracker need that)
             retracker.set_classifier(l1b.classifier)
 
-            # Start the retracking
+            # Start the retracker procedure
             retracker.retrack(l1b, l2)
 
-            # Retrieve the range after retracking
+            # Update range value of the Level-2 data object
             l2.update_retracked_range(retracker)
 
             # XXX: Let the retracker return other parameters?
@@ -833,7 +837,6 @@ class cTFMRA(BaseRetracker):
         # All done, return the threshold
         return threshold
 
-
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
         Returns the intermediate product (oversampled range bins,
@@ -916,7 +919,8 @@ class cTFMRA(BaseRetracker):
 
         return range_os, wfm_os
 
-    def get_first_maximum_index(self, wfm, peak_minimum_power):
+    @staticmethod
+    def get_first_maximum_index(wfm, peak_minimum_power):
         """
         Return the index of the first peak (first maximum) on
         the leading edge before the absolute power maximum.
@@ -947,11 +951,13 @@ class cTFMRA(BaseRetracker):
 
         return first_maximum_index
 
-    def normalize_wfm(self, y):
-        norm = np.nanmax(y)
+    @staticmethod
+    def normalize_wfm(y):
+        norm = bn.nanmax(y)
         return y/norm, norm
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
