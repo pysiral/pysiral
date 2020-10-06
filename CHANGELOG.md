@@ -48,6 +48,7 @@
 ### Fixed
 - Some Level-2 processor definition files had incorrect names for ionospheric correction
 - Issue with Level-3 array orientation (flip) when writing more than one output in the Level-3 processor
+- Issue in the Level-2 processor that resulted in land flags being overwritten by the surface type classification algorithm
 - Handling of measurement confidence flag in CryoSat-2 baseline-D L1b that resulted in all SARin waveforms being labeled as invalid
 - various minor bugs in settings files such as duplicate variable definitions/typos
 
