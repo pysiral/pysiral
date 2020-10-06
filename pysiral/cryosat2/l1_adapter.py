@@ -267,7 +267,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         radar_mode = self.translate_opmode2radar_mode(op_mode)
         self.l1.waveform.set_waveform_data(wfm_power, wfm_range, radar_mode)
 
-        # Get the valid flags
+        # --- Get the valid flag ---
         #
         # From the documentation
         # :comment = "Measurement confidence flags. Generally the MCD flags indicate problems when set.
@@ -275,8 +275,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         #             Serious errors are indicated by setting the most significant bit, i.e. block_degraded,
         #             in which case the block must not be processed. Other error settings can be regarded
         #             as warnings.";
-
-        # :flag_masks = -2147483648, block_degraded
+        #
+        # :flag_masks = -2147483648, block_degraded        <- most severe error
         #                1073741824, blank_block
         #                536870912, datation_degraded
         #                268435456, orbit_prop_error
@@ -295,17 +295,16 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         #                32768, trk_echo_error
         #                16384, echo_rx1_error
         #                8192, echo_rx2_error
-        #                4096, npm_error
+        #                4096, npm_error                   <- Defined as maximum permissible error level
         #                2048, cal1_pwr_corr_type
-        #                128, phase_pert_cor_missing
+        #                128, phase_pert_cor_missing       <- Seems to be always set for SARin
         #                64, cal2_missing
         #                32, cal2_default
         #                16, power_scale_error
         #                8, attitude_cor_missing
         #                1, phase_pert_cor_default
-
         measurement_confident_flag = self.nc.flag_mcd_20_ku.values
-        valid_flag = measurement_confident_flag < 4096
+        valid_flag = 0 <= measurement_confident_flag <= 4096
         self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
