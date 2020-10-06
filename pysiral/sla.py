@@ -32,11 +32,10 @@ class SLABaseFunctionality(object):
     cllection of mostly static method that can be pinned to all other using inheritance.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         """
         Init the class (nothing is done here)
         """
-        super(SLABaseFunctionality, self).__init__(*args, **kwargs)
         pass
 
     @staticmethod
@@ -161,15 +160,14 @@ class SLABaseFunctionality(object):
 
         return invalid_indices
 
-    @staticmethod
-    def get_tiepoint_distance(is_tiepoint):
+    def get_tiepoint_distance(self, is_tiepoint):
         """
         Calculates the distance to the next tie point in array entries
         :param is_tiepoint: boolean array
         :return:
         """
-        distance_forward = get_tiepoints_oneway_distance(is_tiepoint)
-        distance_reverse = get_tiepoints_oneway_distance(is_tiepoint, reverse=True)
+        distance_forward = self.get_tiepoints_oneway_distance(is_tiepoint)
+        distance_reverse = self.get_tiepoints_oneway_distance(is_tiepoint, reverse=True)
         return np.minimum(distance_forward, distance_reverse)
 
     @staticmethod
@@ -276,6 +274,26 @@ class SLABaseFunctionality(object):
             sla_unc[flag.indices] = np.nan
         return sla, sla_unc
 
+    @staticmethod
+    def get_tiepoints_oneway_distance(a, reverse=False):
+        """ loops through array and determines distance to latest flag=true """
+        n = len(a)
+        distance = np.full(a.shape, n + 1, dtype=np.int32)
+        if reverse:
+            a = a[::-1]
+        dist = n
+        for i in np.arange(n):
+            if a[i]:
+                dist = 0
+            elif dist == n:
+                pass
+            else:
+                dist += 1
+            distance[i] = dist
+        if reverse:
+            distance = distance[::-1]
+        return distance
+
 
 class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
     """
@@ -314,6 +332,15 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
         use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
         ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
+
+        # Verification that there is any ssh tie points
+        # -> Will return all NaN sla if not
+        if len(ssh_tiepoint_indices) == 0:
+            all_nans = np.full(l2.n_records, np.nan)
+            l2.sla.set_value(all_nans)
+            l2.sla.set_uncertainty(all_nans)
+            error_status = np.isnan(l2.sla[:])
+            return error_status
 
         # Step 2: A linear interpolation between lead elevations
         # -> will add properties `sla_raw`, `ssh_tiepoints` and `sla` to the instance
@@ -572,8 +599,6 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
 
-
-
     def debug_plot(self):
         """
         This method can be called for R&D purposes.
@@ -619,23 +644,6 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         plt.show()
 
 
-def get_tiepoints_oneway_distance(a, reverse=False):
-    """ loops through array and determines distance to latest flag=true """
-    n = len(a)
-    distance = np.full(a.shape, n+1, dtype=np.int32)
-    if reverse:
-        a = a[::-1]
-    dist = n
-    for i in np.arange(n):
-        if a[i]:
-            dist = 0
-        elif dist == n:
-            pass
-        else:
-            dist += 1
-        distance[i] = dist
-    if reverse:
-        distance = distance[::-1]
-    return distance
+
 
 
