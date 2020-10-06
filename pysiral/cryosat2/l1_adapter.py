@@ -268,8 +268,44 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self.l1.waveform.set_waveform_data(wfm_power, wfm_range, radar_mode)
 
         # Get the valid flags
+        #
+        # From the documentation
+        # :comment = "Measurement confidence flags. Generally the MCD flags indicate problems when set.
+        #             If the whole MCD is 0 then no problems or non-nominal conditions were detected.
+        #             Serious errors are indicated by setting the most significant bit, i.e. block_degraded,
+        #             in which case the block must not be processed. Other error settings can be regarded
+        #             as warnings.";
+
+        # :flag_masks = -2147483648, block_degraded
+        #                1073741824, blank_block
+        #                536870912, datation_degraded
+        #                268435456, orbit_prop_error
+        #                134217728, orbit_file_change
+        #                67108864, orbit_gap
+        #                33554432, echo_saturated
+        #                16777216, other_echo_error
+        #                8388608, sarin_rx1_error
+        #                4194304, sarin_rx2_error
+        #                2097152, window_delay_error
+        #                1048576, agc_error
+        #                524288, cal1_missing
+        #                262144, cal1_default
+        #                131072, doris_uso_missing
+        #                65536, ccal1_default
+        #                32768, trk_echo_error
+        #                16384, echo_rx1_error
+        #                8192, echo_rx2_error
+        #                4096, npm_error
+        #                2048, cal1_pwr_corr_type
+        #                128, phase_pert_cor_missing
+        #                64, cal2_missing
+        #                32, cal2_default
+        #                16, power_scale_error
+        #                8, attitude_cor_missing
+        #                1, phase_pert_cor_default
+
         measurement_confident_flag = self.nc.flag_mcd_20_ku.values
-        valid_flag = measurement_confident_flag == 0
+        valid_flag = measurement_confident_flag < 4096
         self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
