@@ -304,7 +304,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         #                8, attitude_cor_missing
         #                1, phase_pert_cor_default
         measurement_confident_flag = self.nc.flag_mcd_20_ku.values
-        valid_flag = 0 <= measurement_confident_flag <= 4096
+        valid_flag = (measurement_confident_flag >= 0) & (measurement_confident_flag <= 4096)
         self.l1.waveform.set_valid_flag(valid_flag)
 
     def _set_range_correction_group(self):
