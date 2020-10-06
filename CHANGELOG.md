@@ -33,7 +33,7 @@
 - Renamed `ssh` module to `sla` (more in line with L2 naming conventions)
 - Made a distinction between dependancies (required packages) and installation reqirements (other github projects) in `setup.py` to avoid crash during `build_ext`
 - Improving the way pysiral handles the different options for the location of the config files
-- Performace improvements (approx. 30%) of Level-1 preprocessor by using `bottleneck.nanmean` instead of `np.nanean`
+- Performace improvements (approx. 30%) of Level-1 preprocessor by using `bottleneck.nanmean` instead of `np.nanmean`
 
 ### Deprecated
 
@@ -43,11 +43,13 @@
 - Deprecated Level-2 processor definitions (incompatible with the new Level-2 processor step definition)
 - Deprecated output definitions
 - `flag` module (functionality can be now found in `core`)
+- `retracker.NoneRetracker` (no longer needed)
 
 ### Fixed
 - Some Level-2 processor definition files had incorrect names for ionospheric correction
 - Issue with Level-3 array orientation (flip) when writing more than one output in the Level-3 processor
-- various bugs in settings files
+- Handling of measurement confidence flag in CryoSat-2 baseline-D L1b that resulted in all SARin waveforms being labeled as invalid
+- various minor bugs in settings files such as duplicate variable definitions/typos
 
 
 ## Version 0.8.0 (24. April 2020)
