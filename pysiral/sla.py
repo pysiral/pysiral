@@ -85,7 +85,7 @@ class SLABaseFunctionality(object):
         # prepare parameter arrays
         lead_indices = l2.surface_type.lead.indices
         lead_elevation = np.full(l2.n_records, np.nan, dtype=np.float32)
-        lead_elevation[lead_indices] = self.sla[lead_indices]
+        lead_elevation[lead_indices] = l2.elev[lead_indices]
 
         # Compute distance to next lead tie point in meter
         tiepoint_distance = self.get_tiepoint_distance(np.isfinite(lead_elevation))
