@@ -67,8 +67,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Parse the input file
         self._read_input_netcdf(filepath, attributes_only=True)
-
-        if self.error.status:
+        if self.nc is None:
             return self.empty
 
         # Get metadata
@@ -141,6 +140,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         except:
             msg = "Error encountered by xarray parsing: %s" % filepath
             self.error.add_error("xarray-parse-error", msg)
+            self.nc = None
             logger.warning(msg)
             return
 
