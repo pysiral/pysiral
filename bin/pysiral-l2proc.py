@@ -194,8 +194,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             argparse_dict = clargs.get_argparse_dict(
                 argtype, destination, required)
             parser.add_argument(argname, **argparse_dict)
-
-        parser.set_defaults(overwrite_protection=True)
+        parser.set_defaults(overwrite_protection=False)
 
         return parser
 
