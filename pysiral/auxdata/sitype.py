@@ -445,17 +445,24 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
         return sitype, sitype_uncertainty
 
     # Step 2: Compute the distance of a sea ice type gap to the next valid value
-    gap_dist = SLABaseFunctionality().get_tiepoint_distance(is_valid_sitype)
+    # Must have at at least some valid sea ice type values
+    if not is_sitype_gap.all():
+        gap_dist = SLABaseFunctionality().get_tiepoint_distance(is_valid_sitype)
 
-    # Step 3: Fill closer gaps with nearest neighbour approach
-    fillable_gap_nn = np.logical_and(fillable_gap, gap_dist <= max_valid_nn_dist)
-    nn_gap_indices = np.where(fillable_gap_nn)[0]
-    if len(nn_gap_indices) > 0:
-        x = np.arange(len(sitype))
-        nn_interp = interpolate.interp1d(x[is_valid_sitype], sitype[is_valid_sitype],
-                                         kind="nearest", fill_value="extrapolate",
-                                         bounds_error=False)
-        sitype[nn_gap_indices] = nn_interp(x[nn_gap_indices])
+        # Step 3: Fill closer gaps with nearest neighbour approach
+        fillable_gap_nn = np.logical_and(fillable_gap, gap_dist <= max_valid_nn_dist)
+        nn_gap_indices = np.where(fillable_gap_nn)[0]
+        if len(nn_gap_indices) > 0:
+            x = np.arange(len(sitype))
+            nn_interp = interpolate.interp1d(x[is_valid_sitype], sitype[is_valid_sitype],
+                                             kind="nearest", fill_value="extrapolate",
+                                             bounds_error=False)
+            sitype[nn_gap_indices] = nn_interp(x[nn_gap_indices])
+
+    # If no valid sea-ice type information is available than all
+    # gap values exceed the maximum nearest neighbour distance
+    else:
+        gap_dist = np.full(sitype.shape, max_valid_nn_dist + 1)
 
     # Step 4: Fill rest of the gaps with ambiguous
     ambiguos_gaps = np.logical_and(fillable_gap, gap_dist > max_valid_nn_dist)
