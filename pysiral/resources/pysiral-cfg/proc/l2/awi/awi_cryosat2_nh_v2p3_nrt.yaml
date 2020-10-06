@@ -197,7 +197,7 @@ procsteps:
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
             pre_filtering: true
-            pre_filter_maximum_mss_median_offset: 5.0 # in meter
+            filter_max_mss_offset_m: 1.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
