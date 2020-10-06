@@ -215,11 +215,11 @@ snow:
 sic:
 
     # OSI-SAf
-    osisaf:
+    osisaf-operational:
         pyclass: OsiSafSIC
         long_name: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_repository: osisaf
+        local_repository: osisaf_operational
         options:
             north:
                 projection:
@@ -775,11 +775,11 @@ sitype:
         options: null
 
     # OSI-SAf
-    osisaf:
+    osisaf-operational:
         pyclass: OsiSafSIType
         long_name: OSI-SAF Global Sea Ice Type (OSI-403-b)
         filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_repository: osisaf
+        local_repository: osisaf_operational
         options:
             north:
                 projection:
