@@ -7,6 +7,7 @@ Created on Fri Jul 31 15:48:58 2015
 
 # Utility methods for retracker:
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 import bottleneck as bn
 
 import sys
@@ -39,6 +40,9 @@ class BaseRetracker(object):
         self._classifier = None
         self._l1b = None
         self._l2 = None
+        self._range = None
+        self._power = None
+        self._options = AttrDict()
 
         # Dictionary containing potential auxiliary output variables of
         # the retracker algorithm that will be transferred to the l2
@@ -113,9 +117,13 @@ class BaseRetracker(object):
     def _create_default_properties(self, n_records):
         # XXX: Currently only range and status (False: ok)
         for parameter in ["_range", "_power"]:
-            setattr(self, parameter, np.full((n_records), np.nan))
-        self._uncertainty = np.full((n_records), 0.0, dtype=np.float32)
-        self._flag = np.zeros(shape=(n_records), dtype=np.bool)
+            setattr(self, parameter, np.full(n_records, np.nan))
+        self._uncertainty = np.full(n_records, 0.0, dtype=np.float32)
+        self._flag = np.zeros(shape=n_records, dtype=np.bool)
+
+    def create_retracker_properties(self, n_records):
+        # Will have to be overwritten
+        pass
 
     @property
     def range(self):
@@ -262,8 +270,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             wfm_skipped[0:5] = 0
 
             # Get the filtered waveform, index of first maximum & norm
-            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
-                rng[i, :], wfm_skipped, radar_mode[i])
+            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(rng[i, :], wfm_skipped, radar_mode[i])
 
             # first maximum finder might have failed
             if fmi == -1:
@@ -305,7 +312,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 value += coef * sigma0**i
             threshold[indices] = value[indices]
 
-        # dependend in sitype and sigma0
+        # dependent in sea ice type and sigma0
         elif option.type == "sitype_sigma_func":
             value = np.zeros(sigma0.shape)
             for i, coef in enumerate(option.coef_fyi):
@@ -660,7 +667,8 @@ class TFMRA(BaseRetracker):
 
         return first_maximum_index
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -852,8 +860,6 @@ class cTFMRA(BaseRetracker):
 
         return filt_rng, filt_wfm, fmi, norm
 
-
-
     def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
         """
         Return the distance between two thresholds t0 < t1
@@ -970,25 +976,6 @@ class cTFMRA(BaseRetracker):
         return tfmra_range, tfmra_power
 
 
-class NoneRetracker(BaseRetracker):
-    """
-    A dummy retracker that just returns NaN's but does not flag
-    the result as invalid. Should be used if a certain surface type
-    should not be used
-    """
-
-    def __init__(self):
-        super(NoneRetracker, self).__init__()
-
-    def create_retracker_properties(self, n_records):
-        pass
-
-    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
-        self._range[indices] = np.nan
-        self._power[indices] = np.nan
-        self._flag[indices] = False
-
-
 class SICCILead(BaseRetracker):
 
     def __init__(self):
@@ -998,8 +985,7 @@ class SICCILead(BaseRetracker):
         parameter = ["retracked_bin", "maximum_power_bin", "sigma", "k",
                      "alpha", "power_in_echo_tail", "rms_echo_and_model"]
         for parameter_name in parameter:
-            setattr(self, parameter_name,
-                    np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
+            setattr(self, parameter_name, np.ndarray(shape=n_records, dtype=np.float32) * np.nan)
 
     def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
@@ -1009,7 +995,7 @@ class SICCILead(BaseRetracker):
             self._filter_results()
 
     def _sicci_lead_retracker(self, range, wfm, indices):
-        from scipy.optimize import curve_fit
+
         # retracker options (see l2 settings file)
         skip = self._options.skip_first_bins
         initial_guess = self._options.initial_guess
@@ -1331,7 +1317,7 @@ class ERSPulseDeblurring(Level2ProcessorStep):
 
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
-    return np.nanmean(wfm[0:5*oversample_factor])
+    return bn.nanmean(wfm[0:5*oversample_factor])
 
 
 def smooth(x, window):
@@ -1522,6 +1508,7 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
         return np.nan
 
 # %% Retracker getter funtion
+
 
 def get_retracker_class(name):
 
