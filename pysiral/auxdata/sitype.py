@@ -37,8 +37,10 @@ Important Note:
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
+from pysiral.sla import SLABaseFunctionality
 
 import scipy.ndimage as ndimage
+from scipy import interpolate
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
@@ -72,6 +74,16 @@ class OsiSafSIType(AuxdataBaseClass):
 
         # Get the data
         sitype, uncertainty = self._get_sitype_track(l2)
+
+        # (Optional) Fill gaps in the sea ice type product
+        # where the sea-ice concentration data indicates the
+        # presence of sea ice. This usually happens close to
+        # coastlines since the sea-ice type product has a larger
+        # land exclusion zone than SIC (which leads to loss of
+        # data, e.g. in the Canadian Archipelago)
+        fill_gaps = self.cfg.options.get("fill_valid_sic_gaps", False)
+        if fill_gaps:
+            sitype, uncertainty = fill_sitype_gaps(sitype, uncertainty, l2.sic[:])
 
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
@@ -146,7 +158,11 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         self.hemisphere_code = None
 
     def get_l2_track_vars(self, l2):
-        """ Mandadory method of AuxdataBaseClass subclass """
+        """
+        Mandadory method of AuxdataBaseClass subclass
+        :param l2: Level-2 Data object
+        :return:
+        """
 
         # These properties are needed to construct the product path
         self.start_time = l2.info.start_time
@@ -165,6 +181,16 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         else:
             # Get and return the track
             sitype, uncertainty = self._get_sitype_track(l2)
+
+        # (Optional) Fill gaps in the sea ice type product
+        # where the sea-ice concentration data indicates the
+        # presence of sea ice. This usually happens close to
+        # coastlines since the sea-ice type product has a larger
+        # land exclusion zone than SIC (which leads to loss of
+        # data, e.g. in the Canadian Archipelago)
+        fill_gaps = self.cfg.options.get("fill_valid_sic_gaps", False)
+        if fill_gaps:
+            sitype, uncertainty = fill_sitype_gaps(sitype, uncertainty, l2.sic[:])
 
         # Register the data
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
@@ -386,3 +412,71 @@ class FYIDefault(AuxdataBaseClass):
         except TypeError:
             pass
         return 0.0
+
+
+def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_filled_uncertainty=0.5,
+                     max_valid_nn_dist=150, ambiguos_sitype_value=0.5):
+    """
+    Fill gaps in sea ice type that are indicated as sea ice in the sea ice concentration product.
+    Gaps close to a valid sea-ice type value will be filled using a nearest neighbour approach,
+    further gaps will be labeled as ambiguous. Any gap-filled value will be associated with a
+    large uncertainty.
+    :param sitype: sea-ice type array
+    :param sitype_uncertainty: sea-ice type uncertainty array
+    :param sic: sea-ice concentration array
+    :param sic_threshold: threshold in percent as to when a waveform can be intepreted as sea ice
+    :param gap_filled_uncertainty: the sea-ice type uncertainty value associated with gap filled values
+    :param max_valid_nn_dist: The maximum distance (in points) for valid nearest neighbour interpolation
+    :param ambiguos_sitype_value: The value associated to ambiguous gaps
+    :return: Gap-filled sitype, sitype_uncertainty
+    """
+
+    sitype_0 = np.copy(sitype)
+
+    # Step 1: Find gaps (if any)
+    is_seaice = sic >= sic_threshold
+    is_sitype_gap = np.isnan(sitype)
+    is_valid_sitype = np.logical_not(is_sitype_gap)
+    fillable_gap = np.logical_and(is_seaice, is_sitype_gap)
+    all_gap_indices = np.where(fillable_gap)[0]
+
+    # Check if there is anything to do
+    if len(all_gap_indices) == 0:
+        return sitype, sitype_uncertainty
+
+    # Step 2: Compute the distance of a sea ice type gap to the next valid value
+    gap_dist = SLABaseFunctionality().get_tiepoint_distance(is_valid_sitype)
+
+    # Step 3: Fill closer gaps with nearest neighbour approach
+    fillable_gap_nn = np.logical_and(fillable_gap, gap_dist <= max_valid_nn_dist)
+    nn_gap_indices = np.where(fillable_gap_nn)[0]
+    if len(nn_gap_indices) > 0:
+        x = np.arange(len(sitype))
+        nn_interp = interpolate.interp1d(x[is_valid_sitype], sitype[is_valid_sitype],
+                                         kind="nearest", fill_value="extrapolate",
+                                         bounds_error=False)
+        sitype[nn_gap_indices] = nn_interp(x[nn_gap_indices])
+
+    # Step 4: Fill rest of the gaps with ambiguous
+    ambiguos_gaps = np.logical_and(fillable_gap, gap_dist > max_valid_nn_dist)
+    ambiguos_gap_indices = np.where(ambiguos_gaps)[0]
+    sitype[ambiguos_gap_indices] = ambiguos_sitype_value
+
+    # Step 5: Set uncertainty of all gaps
+    sitype_uncertainty[all_gap_indices] = gap_filled_uncertainty
+
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.plot(sitype_0, lw=2, label="sea ice type (orig)")
+    # plt.plot(sitype, lw=1, label="sea ice type (gap filled)")
+    # plt.plot(sic/100, label="sea ice concentration")
+    # plt.legend()
+    #
+    # plt.figure()
+    # plt.plot(gap_dist)
+    #
+    # plt.show()
+    # breakpoint()
+
+    # Return
+    return sitype, sitype_uncertainty
