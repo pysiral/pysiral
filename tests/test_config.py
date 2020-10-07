@@ -23,7 +23,6 @@ class TestConfig(unittest.TestCase):
         self.assertIsInstance(psrlcfg.platforms.ids, list)
 
     def testConfigPath(self):
-        self.assertTrue(Path(psrlcfg.userhome_config_path).is_dir())
         self.assertTrue(Path(psrlcfg.package_config_path).is_dir())
         self.assertTrue(Path(psrlcfg.package_path).is_dir())
         self.assertTrue(Path(psrlcfg.config_path).is_dir())
