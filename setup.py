@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from setuptools.extension import Extension
-from setuptools import setup, find_packages
+import re
 
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
+
+from setuptools.extension import Extension
+from setuptools import setup, find_packages
 
 import numpy
 from pathlib import Path
@@ -33,6 +35,14 @@ with open("requirements.txt") as f:
 install_requires = [r for r in requirements_content if r.find("git+")]
 dependency_links = [r for r in requirements_content if not r.find("git+")]
 
+
+# NOTE: links to git repositories cause the built_ext process to crash.
+# -> Thus we sanitize the requirements string here.
+for i, requirement in enumerate(requirements):
+    m = re.search(r'/(.+?)\.git', requirement)
+    if m:
+        package_name = m.group(1).split("/")[-1]
+        requirements[i] = package_name
 
 setup(
     name='pysiral',
