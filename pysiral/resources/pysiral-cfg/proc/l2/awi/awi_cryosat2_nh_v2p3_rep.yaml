@@ -186,18 +186,21 @@ procsteps:
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
-        pyclass: SLAGaussianProcess
+        pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
-            prefilter_maximum_mss_median_offset_m: 1.0
-            matern_kernel: 
-                length_scale: 1000.0
-                length_scale_bounds: [500, 3000.]
-                nu: 1.5
-            white_noise_kernel:
-                noise_level: 0.15
-                # noise_level_bounds: [1.0e-5, 0.075]
-            surface_types_masks: ["land", "land_ice", "ocean"]
+            smooth_filter_width_m: 100000.0
+            smooth_filter_width_footprint_size: 300.0
+            pre_filtering: true
+            filter_max_mss_offset_m: 1.0 # in meter
+            uncertainty_tiepoints_distance_max: 100000.
+            uncertainty_minimum: 0.02
+            uncertainty_maximum: 0.10
+            marine_segment_filter:
+                minimum_lead_number: 0
+            tiepoint_maxdist_filter:
+                maximum_distance_to_tiepoint: 200000.
+                edges_only: True
 
     # Estimation of Radar Freeboard
     -   module: frb
