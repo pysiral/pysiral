@@ -33,7 +33,7 @@ auxdata:
 
     # Load the
     - mss:
-        name: dtu18
+        name: dtu15
         options:
             latitude_range: [45.0, 90.0]
 
@@ -202,11 +202,11 @@ procsteps:
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
             marine_segment_filter:
-                minimum_lead_number: 0
+                minimum_lead_number: 1
             tiepoint_maxdist_filter:
-                maximum_distance_to_tiepoint: 400000.
-                edges_only: false
-
+                maximum_distance_to_tiepoint: 200000.
+                edges_only: False
+                
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
