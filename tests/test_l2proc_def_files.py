@@ -25,7 +25,8 @@ class TestL2ProcDef(unittest.TestCase):
         self.l2procdef_files = [psrlcfg.get_settings_file("proc", "l2", l2proc_id) for l2proc_id in l2proc_ids]
 
     def testConfigFileRootTags(self):
-        required_tags = ["id", "version_tag", "hemisphere", "mission", "auxdata", "procsteps"]
+        required_tags = ["metadata", "auxdata", "procsteps"]
+        required_tags = ["metadata", "auxdata", "procsteps"]
         for l2procdef_file in self.l2procdef_files:
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
