@@ -12,16 +12,17 @@
 
 ### Fixed
 
-## [0.9.0] - 2020-10-xx
+## [0.9.0] - 2020-10-07
 
 ### Added
 - Deblurring correction for ERS-1/2
-- AWI CryoSat-2 v2.3 processor and output definitions
+- AWI CryoSat-2 v2.3 NRT and REP processor and output definitions
 - CCI+ v3.0-preview2 processor and output definitions
 - Snow density dependent geometric freeboard correction after Mallett et al., 2020
 - dedicated `l2proc.procsteps` submodule
 - tests for Level-2 processor definition files
 - `core` module that includes basic pysiral functionality (introduced to avoid circular imports)
+- SLA estimator that uses Gaussion Process Estimatation based on covariance and noise level of lead elevations (work in progress)
 
 ### Changed
 - Format of this changelog now according to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
@@ -34,8 +35,11 @@
 - Made a distinction between dependancies (required packages) and installation reqirements (other github projects) in `setup.py` to avoid crash during `build_ext`
 - Improving the way pysiral handles the different options for the location of the config files
 - Performace improvements (approx. 30%) of Level-1 preprocessor by using `bottleneck.nanmean` instead of `np.nanmean`
+- Added `fill_valid_sic_gaps` boolean flag to OSI-SAF sea ice type auxiliary classes to reduce data gaps near coasts
+- Refactored code in `pysiral.sla`
 
 ### Deprecated
+- modules `iotools`, `roi`, `validator`  (will be removed shortly)
 
 ### Removed
 - Errorhandler in pysiral.error
@@ -43,13 +47,14 @@
 - Deprecated Level-2 processor definitions (incompatible with the new Level-2 processor step definition)
 - Deprecated output definitions
 - `flag` module (functionality can be now found in `core`)
-- `retracker.NoneRetracker` (no longer needed)
+- `retracker.NoneRetracker` (no need to specify any longer)
 
 ### Fixed
 - Some Level-2 processor definition files had incorrect names for ionospheric correction
 - Issue with Level-3 array orientation (flip) when writing more than one output in the Level-3 processor
 - Issue in the Level-2 processor that resulted in land flags being overwritten by the surface type classification algorithm
-- Handling of measurement confidence flag in CryoSat-2 baseline-D L1b that resulted in all SARin waveforms being labeled as invalid
+- Issue in CryoSat-2 baseline-D l1 pre-processor that resulted in all SARin waveforms being labeled as invalid due to a wrong interpretation of the measurement confidence flag
+- Issue in the CryoSat-2 baseline-D l1 pre-processor that resulted in all files being ignored after a faulty netCDF file
 - various minor bugs in settings files such as duplicate variable definitions/typos
 
 
