@@ -1,14 +1,12 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
-
-id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
-version_tag: "v3p0-preview2"
-
-# This settings file is valid for
-hemisphere: north
-
-# Level 2 processor settings are mission specific
-mission:
-    id: cryosat2
+metadata:
+    label: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
+    product_line: cci
+    record_type: cdr
+    platform: cryosat2
+    version: v3p0-preview2
+    file_version_tag: v3p0-preview2    
+    hemisphere: north
 
 
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)

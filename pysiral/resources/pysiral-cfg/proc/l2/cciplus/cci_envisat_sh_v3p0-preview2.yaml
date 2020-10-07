@@ -1,13 +1,12 @@
 # Level-2 processor settings for CCI+ Southern hemisphere CRDP v3.0-preview-2
-
-id: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
-version_tag: "v3p0-preview2"
-
-# This settings file is valid for
-hemisphere: south
-
-mission:
-    id: envisat
+metadata:
+    label: "ESA CCI+ Envisat reprocessed southern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
+    product_line: c3s
+    record_type: cdr
+    platform: envisat
+    version: v3p0-preview2
+    file_version_tag: v3p0-preview2    
+    hemisphere: soith
 
 # A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
 # NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets

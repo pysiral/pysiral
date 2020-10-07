@@ -1,13 +1,12 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
-id: "ESA CCI+ ERS-1 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
-version_tag: "v3p0-preview2"
-
-# This settings file is valid for
-hemisphere: north
-
-# Level 2 processor settings are mission specific
-mission:
-    id: ers1
+metadata:
+    label: "ESA CCI+ ERS-1 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
+    product_line: cci
+    record_type: cdr
+    platform: ers1
+    version: v3p0-preview2
+    file_version_tag: v3p0-preview2    
+    hemisphere: north
 
 # Transfer data from the l1b to the l2 data object (from any data group)
 # The notation is the following:
