@@ -15,23 +15,9 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
-import re
 import yaml
-
-import numpy as np
-
 from attrdict import AttrDict
-
 from pysiral import psrlcfg
-
-from pysiral.logging import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
-from pysiral.helper import month_iterator, days_iterator, get_month_time_range
-
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-from isodate.duration import Duration
-from isodate import duration_isoformat
 
 
 # TODO: Marked as obsolete -> flag_dict now in mission_def yaml.
@@ -292,5 +278,3 @@ def get_yaml_config(filename, output="attrdict"):
         return AttrDict(content_dict)
 
     return content_dict
-
-
