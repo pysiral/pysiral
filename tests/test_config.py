@@ -23,7 +23,6 @@ class TestConfig(unittest.TestCase):
         self.assertIsInstance(psrlcfg.platforms.ids, list)
 
     def testConfigPath(self):
-        self.assertTrue(Path(psrlcfg.userhome_config_path).is_dir())
         self.assertTrue(Path(psrlcfg.package_config_path).is_dir())
         self.assertTrue(Path(psrlcfg.package_path).is_dir())
         self.assertTrue(Path(psrlcfg.config_path).is_dir())
@@ -33,10 +32,11 @@ class TestConfig(unittest.TestCase):
         Test the local machine definition
         :return:
         """
-        self.assertTrue(hasattr(psrlcfg, "local_machine_def_filepath"))
-        lmd_filepath = psrlcfg.local_machine_def_filepath
-        self.assertIsInstance(lmd_filepath, Path)
-        self.assertTrue(lmd_filepath.is_file())
+        if psrlcfg.local_machine is not None:
+            self.assertTrue(hasattr(psrlcfg, "local_machine_def_filepath"))
+            lmd_filepath = psrlcfg.local_machine_def_filepath
+            self.assertIsInstance(lmd_filepath, Path)
+            self.assertTrue(lmd_filepath.is_file())
 
     def testL1ProcessorDefinitions(self):
         """

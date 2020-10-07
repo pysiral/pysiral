@@ -27,6 +27,7 @@
 - Performace improvements (approx. 30%) of Level-1 preprocessor by using `bottleneck.nanmean` instead of `np.nanmean`
 - Added `fill_valid_sic_gaps` boolean flag to OSI-SAF sea ice type auxiliary classes to reduce data gaps near coasts
 - Refactored code in `pysiral.sla`
+- Dropped official python 3.5 support (github check does fail, but unrelated to pysiral code)
 
 ### Deprecated
 - modules `iotools`, `roi`, `validator`  (will be removed shortly)

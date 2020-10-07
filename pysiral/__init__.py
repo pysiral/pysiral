@@ -569,7 +569,7 @@ class _PysiralPackageConfiguration(object):
         except IOError:
             msg = "local_machine_def.yaml not found (expected: %s)" % filename
             print("local-machine-def-missing: %s" % msg)
-            sys.exit(1)
+            local_machine_def = None
         setattr(self, "local_machine", local_machine_def)
 
     @property
