@@ -26,13 +26,21 @@ class TestL2ProcDef(unittest.TestCase):
 
     def testConfigFileRootTags(self):
         required_tags = ["metadata", "auxdata", "procsteps"]
-        required_tags = ["metadata", "auxdata", "procsteps"]
         for l2procdef_file in self.l2procdef_files:
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
                 for required_tag in required_tags:
                     msg = "Search for root tag `{}` in {}".format(required_tag, l2procdef_file)
                     self.assertTrue(required_tag in content, msg=msg)
+
+    def testConfigMetadataTags(self):
+        required_tags = ["label", "product_line", "record_type", "platform", "file_version_tag", "hemisphere"]
+        for l2procdef_file in self.l2procdef_files:
+            with open(str(l2procdef_file)) as fh:
+                content = AttrDict(yaml.safe_load(fh))
+                for required_tag in required_tags:
+                    msg = "Search for root tag `{}` in {}".format(required_tag, l2procdef_file)
+                    self.assertTrue(required_tag in content.metadata, msg=msg)
 
     def testConfigFileL2ProcStepContent(self):
         for l2procdef_file in self.l2procdef_files:
