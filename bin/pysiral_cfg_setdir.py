@@ -6,11 +6,10 @@ import sys
 import argparse
 import shutil
 from pathlib import Path
-from distutils import log, dir_util
-log.set_verbosity(log.INFO)
-log.set_threshold(log.INFO)
+from distutils import dir_util
 
-from pysiral import PACKAGE_CONFIG_PATH, USER_CONFIG_PATH, PACKAGE_ROOT_DIR
+from pysiral import psrlcfg
+
 
 def main(args):
     """
@@ -39,7 +38,7 @@ def main(args):
 
         # a. Create the user home directory
         try:
-            dir_util.copy_tree(PACKAGE_CONFIG_PATH, args.target_create, verbose=1)
+            dir_util.copy_tree(psrlcfg.package_config_path, args.target_create, verbose=1)
         except:
             print("Error: Could not create directory: %s" % str(args.target_create))
             print("Creating new config dir [FAILED]")
@@ -59,11 +58,10 @@ def main(args):
                 print("Error: argument not named `local_machine_def.yaml`: %s" % str(args.lmd))
                 print("Creating new config dir [FAILED]")
                 sys.exit(1)
-                shutil.copy(args.lmd, os.path.join(args.target_create, "local_machine_def.yaml"))
 
         # b2: from template
         else:
-            template_filename = PACKAGE_CONFIG_PATH / "templates" / "local_machine_def.yaml.template"
+            template_filename = psrlcfg.package_config_path / "templates" / "local_machine_def.yaml.template"
             target_filename = Path(args.target_create) / "local_machine_def.yaml"
             shutil.copy(template_filename, target_filename)
 
@@ -107,7 +105,7 @@ def set_pysiral_cfg_loc(target):
     Write the location of the pysiral configuration for the current package
     NOTE: If you don't know what this means: Don't!
     """
-    cfg_loc_file = PACKAGE_ROOT_DIR / "PYSIRAL-CFG-LOC"
+    cfg_loc_file = psrlcfg.package_path / "PYSIRAL-CFG-LOC"
     with open(cfg_loc_file, 'w') as fh:
         fh.write(target)
 
@@ -139,6 +137,7 @@ def get_args():
     args = parser.parse_args()
 
     return args
+
 
 if __name__ == "__main__":
     args = get_args()

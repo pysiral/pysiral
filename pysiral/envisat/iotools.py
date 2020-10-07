@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import glob
+import os
 import numpy as np
+from loguru import logger
 from pathlib import Path
 from collections import deque
 
@@ -55,14 +56,14 @@ class EnvisatFileList(DefaultLoggingClass):
         # walk through files
         for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
 
-            self.log.info("Searching folder: %s" % dirpath)
+            logger.info("Searching folder: %s" % dirpath)
 
             # Get the list of all .N1 files
             sgdr_files = [fn for fn in filenames if self.pattern in fn]
             sgdr_files = sorted(sgdr_files)
 
             # Report total number of files
-            self.log.info("Found %g level-1b SGDR files" % len(sgdr_files))
+            logger.info("Found %g level-1b SGDR files" % len(sgdr_files))
 
             sgdr_list = [self._get_list_item(fn, dirpath) for fn in sgdr_files]
             self._sorted_list.extend(sgdr_list)
@@ -88,7 +89,7 @@ class EnvisatFileList(DefaultLoggingClass):
         # Cross-check the data label and day list
         self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][-2:]) in self.day_list]
 
-        self.log.info("%g files match time range of this month" % (
+        logger.info("%g files match time range of this month" % (
             len(self._sorted_list)))
 
 

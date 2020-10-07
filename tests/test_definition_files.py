@@ -12,6 +12,8 @@ from attrdict import AttrDict
 
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestDefinitionfiles(unittest.TestCase):
@@ -61,6 +63,7 @@ class TestDefinitionfiles(unittest.TestCase):
             config_dict_keys = item.keys
             for required_key in ["options", "long_name", "pyclass", "local_repository"]:
                 self.assertTrue(required_key in config_dict_keys, msg="{} has {}".format(aux_id, required_key))
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDefinitionfiles)

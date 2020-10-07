@@ -169,6 +169,14 @@ snow:
             subfolders: null
         source: None
 
+    snow_density_seasonal_mallett:
+        pyclass: SeasonalArcticSnowDensityMallett2020
+        long_name: Seasonal changing Arctic Snow density
+        local_repository: null
+        options:
+            snow_density_uncertainty: 50.
+        source: None
+
     constant:
         pyclass: FixedSnowDepthDensity
         long_name: Constant snow depth and density
@@ -207,11 +215,11 @@ snow:
 sic:
 
     # OSI-SAf
-    osisaf:
+    osisaf-operational:
         pyclass: OsiSafSIC
         long_name: OSI-SAF Global Sea Ice Concentration (OSI-401-b)
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_repository: osisaf
+        local_repository: osisaf_operational
         options:
             north:
                 projection:
@@ -515,7 +523,7 @@ sic:
             type: daily
             link: null
 
-    # C3S climate data record c1.0
+    # C3S climate data record v1.2
     c3s_cdr_v1p2:
         pyclass: OsiSafSIC
         long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v1p2
@@ -550,7 +558,6 @@ sic:
         source:
             transfer: thredds
             server_url: http://thredds.met.no/thredds/fileServer/c3s/reproc_ice_conc_files
-
 
     # C3S interim climate data record v1.2
     c3s_icdr_v1p2:
@@ -634,6 +641,123 @@ sic:
             transfer: thredds
             server_url: Null
 
+    # C3S climate data record v1.2
+    c3s_cdr_v2p0:
+        pyclass: OsiSafSIC
+        long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v2p0
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_cdr-v2p0_{year}{month}{day}1200.nc"
+        local_repository: c3s_cdr_v2p0
+        options:
+            variable_name: ice_conc
+            uncertainty_variable_name: total_standard_error
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: https://thredds.met.no/thredds/catalog/c3s/cdr_ice_conc_v2p0_files
+
+    # C3S interim climate data record v1.2
+    c3s_icdr_v2p0:
+        pyclass: OsiSafSIC
+        long_name: C3S Sea Ice Concentration Interim Climate Data Record (ICDR) - v2p0
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v2p0_{year}{month}{day}1200.nc"
+        local_repository: c3s_icdr_v2p0
+        options:
+            variable_name: ice_conc
+            uncertainty_variable_name: total_standard_error
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: https://thredds.met.no/thredds/catalog/c3s/icdr_ice_conc_v2p0_files
+
+    c3s_v2p0:
+        pyclass: OsiSafSIC
+        # The final product directory is computed in the auxdata handler, therefore the local machine definition key
+        # `osisafcdr` must be the root directory of the subfolders defined below
+        long_name: "Merged C3S CDR/ICDR product (v2.0)"
+        local_repository: c3s_v2p0
+        options:
+            auto_product_change:
+                # The date defines the time, when the second product will be used
+                date_product_change: 2016-01-01T00:00:00
+                osisaf_product_def:
+                    - subfolder: c3s_cdr_v2p0
+                      long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v2p0
+                      filenaming: "ice_conc_{hemisphere_code}_ease2-250_cdr-v2p0_{year}{month}{day}1200.nc"
+                    - subfolder: c3s_icdr_v2p0
+                      long_name: C3S Sea Ice Concentration Interim Climate Data Record (CDR) - v2p0
+                      filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v2p0_{year}{month}{day}1200.nc"
+            variable_name: ice_conc
+            uncertainty_variable_name: total_standard_error
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: -90
+                dimension:
+                    n_cols: 432
+                    n_lines: 432
+                    dx: 25000
+                    dy: 25000
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: thredds
+            server_url: Null
 
 # List of sea ice type products
 sitype:
@@ -651,11 +775,11 @@ sitype:
         options: null
 
     # OSI-SAf
-    osisaf:
+    osisaf-operational:
         pyclass: OsiSafSIType
         long_name: OSI-SAF Global Sea Ice Type (OSI-403-b)
         filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
-        local_repository: osisaf
+        local_repository: osisaf_operational
         options:
             north:
                 projection:

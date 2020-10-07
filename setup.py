@@ -17,7 +17,7 @@ with open('README.md') as f:
 
 # Get the licence
 with open('LICENSE') as f:
-    license = f.read()
+    license_text = f.read()
 
 # Get the version
 mypackage_root_dir = Path(__file__).absolute().parent
@@ -31,7 +31,10 @@ extensions = [
 
 # Package requirements
 with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+    requirements_content = f.read().splitlines()
+install_requires = [r for r in requirements_content if r.find("git+")]
+dependency_links = [r for r in requirements_content if not r.find("git+")]
+
 
 # NOTE: links to git repositories cause the built_ext process to crash.
 # -> Thus we sanitize the requirements string here.
@@ -60,16 +63,17 @@ setup(
     author='Stefan Hendricks',
     author_email='stefan.hendricks@awi.de',
     url='https://github.com/shendric/pysiral',
-    license=license,
-    install_requires=requirements,
+    license=license_text,
+    install_requires=install_requires,
+    dependency_links=dependency_links,
     packages=find_packages(exclude=('tests', 'docs')),
     include_package_data=True,
-    scripts=['bin/psrl_update_userhome_cfg.py',
+    scripts=['bin/pysiral_cfg_update.py',
              'bin/pysiral_cfg_setdir.py',
              'bin/pysiral-l1preproc.py',
              'bin/pysiral-l2proc.py',
              'bin/pysiral-l2preproc.py',
-             'bin/pysiral-l3proc.py' ],
+             'bin/pysiral-l3proc.py'],
     cmdclass={'build_ext': build_ext},
     ext_modules=cythonize(extensions),
     include_dirs=[numpy.get_include()]

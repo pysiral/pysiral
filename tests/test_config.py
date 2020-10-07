@@ -5,11 +5,12 @@ Testing the pysiral configuration management
 @author: Stefan
 """
 
-import yaml
 import unittest
 from attrdict import AttrDict
 from pathlib import Path
 from pysiral import psrlcfg
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestConfig(unittest.TestCase):
@@ -59,6 +60,7 @@ class TestConfig(unittest.TestCase):
                 filepath = psrlcfg.get_settings_file("proc", processor_level, proc_def_id)
                 self.assertIsInstance(filepath, Path)
                 self.assertTrue(filepath.is_file())
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestConfig)

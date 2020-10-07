@@ -3,6 +3,8 @@
 import argparse
 import time
 import sys
+
+from loguru import logger
 from pathlib import Path
 from datetime import timedelta
 from dateperiods import DatePeriod
@@ -69,7 +71,7 @@ def pysiral_l2preproc():
     for day in days:
 
         # Do some extra logging
-        l2preproc.log.info("Processing Day [%s]" % day.label)
+        logger.info("Processing Day [%s]" % day.label)
 
 #        XXX: This needs a bit more thought
 #        # Product Data Management
@@ -80,9 +82,9 @@ def pysiral_l2preproc():
         # Get input files
         l2i_daily_files = l2i_handler.get_files_for_day(day.tcs.dt)
         if len(l2i_daily_files) == 0:
-            l2preproc.log.info("- no l2i products, skip day")
+            logger.info("- no l2i products, skip day")
             continue
-        l2preproc.log.info("- Found %g l2i product files" % len(l2i_daily_files))
+        logger.info("- Found %g l2i product files" % len(l2i_daily_files))
 
         # Process the orbits
         l2preproc.process_l2i_files(l2i_daily_files, day)
@@ -90,7 +92,7 @@ def pysiral_l2preproc():
     # All done, log processor time
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2preproc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class Level2PreProcArgParser(DefaultLoggingClass):

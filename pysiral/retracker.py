@@ -5,24 +5,28 @@ Created on Fri Jul 31 15:48:58 2015
 @author: Stefan
 """
 
+# Utility methods for retracker:
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+import bottleneck as bn
+
+import sys
+import time
+import numpy as np
+from loguru import logger
+from attrdict import AttrDict
+
 # cythonized bottleneck functions for cTFMRA
 try:
     from .bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
                                  cytfmra_wfm_noise_level, cytfmra_normalize_wfm)
     CYTFMRA_OK = True
-except:
+except ImportError:
+    logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
-
-from pysiral.flag import ANDCondition, FlagContainer
-
-from attrdict import AttrDict
-import numpy as np
-import sys
-
-# Utility methods for retracker:
-from scipy.interpolate import interp1d
-import bottleneck as bn
+from pysiral.core.flags import ANDCondition, FlagContainer
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class BaseRetracker(object):
@@ -36,6 +40,9 @@ class BaseRetracker(object):
         self._classifier = None
         self._l1b = None
         self._l2 = None
+        self._range = None
+        self._power = None
+        self._options = AttrDict()
 
         # Dictionary containing potential auxiliary output variables of
         # the retracker algorithm that will be transferred to the l2
@@ -110,9 +117,13 @@ class BaseRetracker(object):
     def _create_default_properties(self, n_records):
         # XXX: Currently only range and status (False: ok)
         for parameter in ["_range", "_power"]:
-            setattr(self, parameter, np.full((n_records), np.nan))
-        self._uncertainty = np.full((n_records), 0.0, dtype=np.float32)
-        self._flag = np.zeros(shape=(n_records), dtype=np.bool)
+            setattr(self, parameter, np.full(n_records, np.nan))
+        self._uncertainty = np.full(n_records, 0.0, dtype=np.float32)
+        self._flag = np.zeros(shape=n_records, dtype=np.bool)
+
+    def create_retracker_properties(self, n_records):
+        # Will have to be overwritten
+        pass
 
     @property
     def range(self):
@@ -133,6 +144,89 @@ class BaseRetracker(object):
     @property
     def error_flag(self):
         return FlagContainer(self._flag)
+
+
+class Level2RetrackerContainer(Level2ProcessorStep):
+    """
+    The interface for the Level-2 processor for all retrackers
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the instance
+        :param args:
+        :param kwargs:
+        """
+        super(Level2RetrackerContainer, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory class
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Get the error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Retracker are surface type dependent
+        # -> Loop over all requested surface types in the
+        #    l2 processor definition file
+        for surface_type, retracker_def in list(self.cfg.options.items()):
+
+            # Check first if there are any waveforms of the requested
+            # surface type
+            surface_type_flag = l2.surface_type.get_by_name(surface_type)
+            if surface_type_flag.num == 0:
+                logger.info("- no waveforms of type %s" % surface_type)
+                continue
+
+            # Benchmark retracker performance
+            timestamp = time.time()
+
+            # Retrieve the retracker associated with surface type from the l2 settings
+            retracker = get_retracker_class(retracker_def["pyclass"])
+
+            # Set options (if any)
+            if retracker_def["options"] is not None:
+                retracker.set_options(**retracker_def["options"])
+
+            # set subset of waveforms
+            retracker.set_indices(surface_type_flag.indices)
+
+            # Add classifier data (some retracker need that)
+            retracker.set_classifier(l1b.classifier)
+
+            # Start the retracker procedure
+            retracker.retrack(l1b, l2)
+
+            # Update range value of the Level-2 data object
+            l2.update_retracked_range(retracker)
+
+            # XXX: Let the retracker return other parameters?
+            l2.radar_mode = l1b.waveform.radar_mode
+
+            # retrieve potential error status and update surface type flag
+            if retracker.error_flag.num > 0:
+                l2.surface_type.add_flag(retracker.error_flag.flag, "invalid")
+            logger.info("- Retrack class %s with %s in %.3f seconds" % (
+                surface_type, retracker_def["pyclass"],
+                time.time()-timestamp))
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return []
+
+    @property
+    def l2_output_vars(self):
+        return ["radar_mode", "range", "elev"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["retracker"]
 
 
 class SICCI2TfmraEnvisat(BaseRetracker):
@@ -180,8 +274,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             wfm_skipped[0:5] = 0
 
             # Get the filtered waveform, index of first maximum & norm
-            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(
-                rng[i, :], wfm_skipped, radar_mode[i])
+            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(rng[i, :], wfm_skipped, radar_mode[i])
 
             # first maximum finder might have failed
             if fmi == -1:
@@ -223,7 +316,7 @@ class SICCI2TfmraEnvisat(BaseRetracker):
                 value += coef * sigma0**i
             threshold[indices] = value[indices]
 
-        # dependend in sitype and sigma0
+        # dependent in sea ice type and sigma0
         elif option.type == "sitype_sigma_func":
             value = np.zeros(sigma0.shape)
             for i, coef in enumerate(option.coef_fyi):
@@ -578,7 +671,8 @@ class TFMRA(BaseRetracker):
 
         return first_maximum_index
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -743,7 +837,6 @@ class cTFMRA(BaseRetracker):
         # All done, return the threshold
         return threshold
 
-
     def get_preprocessed_wfm(self, rng, wfm, radar_mode, is_valid):
         """
         Returns the intermediate product (oversampled range bins,
@@ -769,8 +862,6 @@ class cTFMRA(BaseRetracker):
             norm[i] = result[3]
 
         return filt_rng, filt_wfm, fmi, norm
-
-
 
     def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
         """
@@ -828,7 +919,8 @@ class cTFMRA(BaseRetracker):
 
         return range_os, wfm_os
 
-    def get_first_maximum_index(self, wfm, peak_minimum_power):
+    @staticmethod
+    def get_first_maximum_index(wfm, peak_minimum_power):
         """
         Return the index of the first peak (first maximum) on
         the leading edge before the absolute power maximum.
@@ -859,11 +951,13 @@ class cTFMRA(BaseRetracker):
 
         return first_maximum_index
 
-    def normalize_wfm(self, y):
-        norm = np.nanmax(y)
+    @staticmethod
+    def normalize_wfm(y):
+        norm = bn.nanmax(y)
         return y/norm, norm
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -888,25 +982,6 @@ class cTFMRA(BaseRetracker):
         return tfmra_range, tfmra_power
 
 
-class NoneRetracker(BaseRetracker):
-    """
-    A dummy retracker that just returns NaN's but does not flag
-    the result as invalid. Should be used if a certain surface type
-    should not be used
-    """
-
-    def __init__(self):
-        super(NoneRetracker, self).__init__()
-
-    def create_retracker_properties(self, n_records):
-        pass
-
-    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
-        self._range[indices] = np.nan
-        self._power[indices] = np.nan
-        self._flag[indices] = False
-
-
 class SICCILead(BaseRetracker):
 
     def __init__(self):
@@ -916,8 +991,7 @@ class SICCILead(BaseRetracker):
         parameter = ["retracked_bin", "maximum_power_bin", "sigma", "k",
                      "alpha", "power_in_echo_tail", "rms_echo_and_model"]
         for parameter_name in parameter:
-            setattr(self, parameter_name,
-                    np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
+            setattr(self, parameter_name, np.ndarray(shape=n_records, dtype=np.float32) * np.nan)
 
     def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
@@ -927,7 +1001,7 @@ class SICCILead(BaseRetracker):
             self._filter_results()
 
     def _sicci_lead_retracker(self, range, wfm, indices):
-        from scipy.optimize import curve_fit
+
         # retracker options (see l2 settings file)
         skip = self._options.skip_first_bins
         initial_guess = self._options.initial_guess
@@ -1193,16 +1267,69 @@ class ICESatGLAH13Elevation(BaseRetracker):
                 self._uncertainty[:] = self._options.uncertainty.value
 
 
+class ERSPulseDeblurring(Level2ProcessorStep):
+    """
+    A processing step applying the pulse deblurring correction of
+    Peacock 1998 to retracked ranges.
+
+    NOTE: Should only be used for ERS-1/2 data
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(ERSPulseDeblurring, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Compute the pulse deblurring correction
+
+            Hcor = h + eps / 5. (eps < 0)
+
+        based on the classifier data transferred from the l1p (epss: epsilon in seconds).
+        :param l1b:
+        :param l2:
+        :return: error_status_flag
+        """
+
+        # Get a clean error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Compute epsilon in meter (eps_m = eps_sec * c / 2.)
+        eps = l2.epss * 0.5 * 299792458.
+
+        # Compute and apply pulse deblurring correction
+        pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / 5.0
+        l2.elev[:] = l2.elev[:] + pulse_deblurring_correction
+
+        # Add pulse deblurring correction to level-2 auxiliary data
+        l2.set_auxiliary_parameter("pdbc", "pulse_deblurring_correction", pulse_deblurring_correction)
+
+        # Return clean error status (for now)
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["elev", "epss"]
+
+    @property
+    def l2_output_vars(self):
+        return ["pdbc"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["retracker"]
+
+
 # %% Function for CryoSat-2 based retracker
 
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
-    return np.nanmean(wfm[0:5*oversample_factor])
+    return bn.nanmean(wfm[0:5*oversample_factor])
 
 
 def smooth(x, window):
     """ Numpy implementation of the IDL SMOOTH function """
     return np.convolve(x, np.ones(window)/window, mode='same')
+
 
 def bnsmooth(x, window):
     """ Bottleneck implementation of the IDL SMOOTH function """
@@ -1213,6 +1340,7 @@ def bnsmooth(x, window):
     xpad[pad:n+pad] = x
     xpad[n+pad:] = 0.0
     return bn.move_mean(xpad, window=window, axis=0)[window-1:(window+n-1)]
+
 
 def peakdet(v, delta, x=None):
     """
@@ -1386,6 +1514,7 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
         return np.nan
 
 # %% Retracker getter funtion
+
 
 def get_retracker_class(name):
 

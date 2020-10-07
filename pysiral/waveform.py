@@ -5,10 +5,12 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from pysiral.retracker import cTFMRA
-import numpy as np
 
+import numpy as np
+from loguru import logger
+from pysiral.retracker import cTFMRA
 from pysiral.logging import DefaultLoggingClass
+
 
 def get_waveforms_peak_power(wfm, dB=False):
     """
@@ -106,6 +108,7 @@ def sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s,
     Returns
     -------
         sigma_0 (float)
+        :param wf_peak_power_watt:
 
     """
 
@@ -162,7 +165,7 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
             option_value = cfg.get(option_name, None)
             if option_value is None:
                 msg = "Missing option `%s` -> No computation of leading edge width!" % option_name
-                self.log.warning(msg)
+                logger.warning(msg)
             setattr(self, option_name, option_value)
 
     def apply(self, l1):
@@ -222,7 +225,7 @@ class L1PSigma0(DefaultLoggingClass):
         tx_power = l1.get_parameter_by_name("classifier", "transmit_power")
         if tx_power is None:
             msg = "classifier `transmit_power` must exist for this pre-processor item -> aborting"
-            self.log.warning(msg)
+            logger.warning(msg)
             return
         altitude = l1.time_orbit.altitude
 
@@ -232,7 +235,7 @@ class L1PSigma0(DefaultLoggingClass):
         sat_vel_z = l1.get_parameter_by_name("classifier", "satellite_velocity_z")
         if sat_vel_x is None or sat_vel_y is None or sat_vel_z is None:
             msg = "classifier `satellite_velocity_[x|y|z]` must exist for this pre-processor item -> aborting"
-            self.log.warning(msg)
+            logger.warning(msg)
             return
         velocity = np.sqrt(sat_vel_x**2. + sat_vel_y**2. + sat_vel_z**2.)
 
@@ -259,7 +262,7 @@ class L1PWaveformPeakiness(DefaultLoggingClass):
             option_value = cfg.get(option_name, None)
             if option_value is None:
                 msg = "Missing option `%s` -> No computation of peakiness!" % option_name
-                self.log.warning(msg)
+                logger.warning(msg)
             setattr(self, option_name, option_value)
 
         # Init Parameters

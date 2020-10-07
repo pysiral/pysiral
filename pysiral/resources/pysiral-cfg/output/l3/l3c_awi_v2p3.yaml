@@ -1,0 +1,379 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata:
+  output_id: l3c_cs2awi_v2p3
+  data_level: 3
+  data_level_description: Level-3 colated (gridded geophysical parameters)
+
+# Output Definition (for each period definition)
+filenaming:
+  month: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p3.nc"
+  isoweek: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
+  day: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3.nc"
+  custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
+  default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p3.nc"
+
+product_level_subfolder: l3c_grid
+
+grid_options:
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
+  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly
+  climatology based on regional merging of Warren Climatology with 50% reduction for
+  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
+  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU18 global mean sea
+  surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S
+  Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF
+  (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: "Hendricks, S. and Ricker, R. (2019): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.2), hdl:10013/epic.8eb07093-4042-40ab-bfb8-e0c72c1567de"
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: "2.3"
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: "This dataset contains Level-3 monthly sea ice thickness products from
+  satellite observations in the northern hemisphere. Level-3 data are raw
+  observations processed to geophysical quantities, and placed onto a regular grid."
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p3"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Grid"
+  - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard."
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
+  - creator_url: "http://www.awi.de"
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
+  - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
+  - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - publisher_url: "www.awi.de"
+  - publisher_email: "info@meereisportal.de"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - spatial_resolution: "{grid_spacing_tag} grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+    
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  mean_sea_surface:
+    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
+    standard_name: sea_surface_height_above_reference_ellipsoid
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_level_anomaly:
+    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_level_anomaly_uncertainty:
+    long_name: "uncertainty of instantaneous sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard_uncertainty:
+    var_source_name: radar_freeboard_l3_uncertainty
+    long_name: "uncertainty of radar freeboard"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard:
+    var_source_name: freeboard
+    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_uncertainty:
+    var_source_name: freeboard_l3_uncertainty
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (computed as error of a weighted mean)"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification standard_error
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    standard_name: sea_ice_area_fraction
+    units: percent
+    valid_min: 0.0
+    valid_max: 100.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: surface_snow_thickness
+    units: m
+    valid_min: 0.0
+    valid_max: 0.6
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density:
+    long_name: "density of the snow layer"
+    standard_name: snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    standard_name: snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_density:
+    long_name: "density of the sea ice layer"
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness:
+    long_name: thickness of the sea ice layer
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: "time lat lon"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    ancillary_variables: "uncertainty status_flag quality_indicator_flag"
+    comment: "this field is the primary sea ice thickness estimate for this data record"
+
+  sea_ice_thickness_uncertainty:
+    var_source_name: sea_ice_thickness_l3_uncertainty
+    long_name: algorithm uncertainty (error propagation) of sea ice thickness including uncertainty reduction of random components by gridding
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_draft:
+    long_name: depth of the sea-ice layer below the water surface
+    standard_name: sea_ice_draft
+    units: m
+    coordinates: "time lat lon"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+
+  sea_ice_draft_uncertainty:
+    var_source_name: sea_ice_draft_l3_uncertainty
+    long_name: algorithm uncertainty (error propagation) of sea ice draft including uncertainty reduction of random components by gridding
+    standard_name: sea_ice_draft standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  quality_flag:
+    long_name: quality indicator flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    valid_min: 0
+    valid_max: 3
+    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected
+    (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  status_flag:
+    long_name: status flag for the sea ice thickness retrieval
+    valid_min: 0
+    valid_max: 5
+    flag_meaning: "(flag 0): no input data (flag 1): outside sea ice concentration mask
+    (flag 2): latitude above orbit inclination (flag 3): land, lake or land ice
+    (flag 4): sea ice thickness retrieval failed (flag 5): sea ice thickness retrieval successful"
+    standard_name: "sea_ice_thickness status_flag"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "Region code (adapted from NSIDC region mask)"
+    comment: "Added flag for Baltic Sea (flag value 16)"
+    valid_min: 0
+    valid_max: 21
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John,
+    6: Baffin Bay, 7: East Greenland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea,
+    13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_radar_mode:
+    var_source_name: radar_mode
+    long_name: "radar mode flag"
+    valid_min: 0
+    valid_max: 2
+    flag_values: "0, 1, 2"
+    flag_meaning: "0: pulse limited (lrm), 1: sar, 2: sar interferometric"
+    comment: "median of radar mode flags within grid cells"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_n_total_waveforms:
+    var_source_name: n_total_waveforms
+    long_name: "number of total measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_n_valid_waveforms:
+    var_source_name: n_valid_waveforms
+    long_name: "number of valid measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+
+  stat_valid_fraction:
+    var_source_name: valid_fraction
+    long_name: "fraction of valid to total waveforms"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+
+  stat_lead_fraction:
+    var_source_name: lead_fraction
+    long_name: "lead waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_ice_fraction:
+    var_source_name: ice_fraction
+    long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_temporal_coverage_uniformity_factor:
+    var_source_name: temporal_coverage_uniformity_factor
+    long_name: "uniformity of daily sea-ice thickness data coverage in full grid period"
+    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the
+    period of the grid, e.g. whether all days in the period contribute equally to the full grid period.
+    The values for this parameter range between close to 0 (singular distribution) and 1 (uniform distribution).
+    The factor is computed with by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a
+    uniform distribution (1-D with D being the result of KS test)"
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_temporal_coverage_day_fraction:
+    var_source_name: temporal_coverage_day_fraction
+    long_name: "fraction of days with sea-ice thickness data coverage in full grid period"
+    comment: "This parameter is defined as len(days_with_observations)/number_of_days_in_grid_period"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_temporal_coverage_period_fraction:
+    var_source_name: temporal_coverage_period_fraction
+    long_name: "fraction of daily sea-ice thickness data coverage from first to last day relative to full grid period"
+    comment: "This parameter describes the fraction of the period between the first and the last day with observations
+    (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_temporal_coverage_weighted_center:
+    var_source_name: temporal_coverage_weighted_center
+    long_name: "weighted center of sea-ice thickness data coverage within full grid period"
+    comment: "This parameter describes the temporal center of the days with observations with taken the number observations
+    on indiviual days into account: mean(day number for all observations)/number_of_days_in_grid_period. A value smaller
+    or larger than 0.5 indicates a possible phase bias."
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_negative_thickness_fraction:
+    var_source_name: negative_thickness_fraction
+    long_name: "fraction of negative sea-ice thickness values"
+    valid_min: 0.0
+    valid_max: 1.0
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"

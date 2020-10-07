@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import numpy as np
 from pathlib import Path
+from loguru import logger
 from collections import deque
 
 from pysiral.errorhandler import ErrorStatus
@@ -40,8 +42,8 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
             self.day_list = np.arange(time_range.start.day, time_range.stop.day+1)
 
         # Search all sar/sin product files per month
-        self._search_specific_mode_files("sar")
-        self._search_specific_mode_files("sin")
+        for radar_mode in ["sar", "sin"]:
+            self._search_specific_mode_files(radar_mode)
 
         # Sort sar/sin files by acquisition date
         self._sort_mixed_mode_file_list()
@@ -60,11 +62,11 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
         # walk through files
         for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
 
-            self.log.info("Searching folder: %s" % dirpath)
+            logger.info("Searching folder: %s" % dirpath)
 
             # Get the list of all dbl files
             cs2files = [fn for fn in filenames if self.pattern in fn]
-            self.log.info("Found %g %s level-1b files" % (len(cs2files), mode))
+            logger.info("Found %g %s level-1b files" % (len(cs2files), mode))
 
             # reform the list that each list entry is of type
             # [full_path, identifier (start_date)] for later sorting
@@ -81,15 +83,14 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
         # Cross-check the data label and day list
         self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][6:8]) in self.day_list]
 
-        self.log.info("%g files match time range of this month" % (
-            len(self._sorted_list)))
+        logger.info("%g files match time range of this month" % (len(self._sorted_list)))
 
     def _get_toplevel_search_folder(self, mode):
         folder = Path(getattr(self, "folder_"+mode))
         if self.year is not None:
             folder = folder / "%4g" % self.year
         if self.month is not None:
-            folder = folder, "%02g" / self.month
+            folder = folder, "%02g" % self.month
         return folder
 
     @staticmethod
@@ -112,6 +113,9 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         # Save config
         self.cfg = cfg
 
+        # Properties
+        self._sorted_list = []
+
         # Init empty file lists
         self._reset_file_list()
 
@@ -130,7 +134,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
     def _append_files(self, mode, period):
         lookup_year, lookup_month = period.tcs.year, period.tcs.month
         lookup_dir = self._get_lookup_dir(lookup_year, lookup_month, mode)
-        self.log.info("Search directory: %s" % lookup_dir)
+        logger.info("Search directory: %s" % lookup_dir)
         n_files = 0
         for daily_period in period.get_segments("day"):
             # Search for specific day
@@ -140,7 +144,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
             n_files += len(file_list)
             for file, tcs in zip(file_list, tcs_list):
                 self._list.append((file, tcs))
-        self.log.info(" Found %g %s files" % (n_files, mode))
+        logger.info(" Found %g %s files" % (n_files, mode))
 
     def _get_files_per_day(self, lookup_dir, year, month, day):
         """ Return a list of files for a given lookup directory """
@@ -160,8 +164,7 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         """
         tcs = []
         for filename in files:
-            filename = str(Path(filename).name)
-            filename_segments = filename.split(self.cfg.filename_sep)
+            filename_segments = re.split(r"_+|\.", str(Path(filename).name))
             tcs.append(filename_segments[self.cfg.tcs_str_index])
         return tcs
 
@@ -171,5 +174,3 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         self._sorted_list = np.array(self._list, dtype=dtypes)
         self._sorted_list.sort(order='start_time')
         return [item[0] for item in self._sorted_list]
-
-    # @property

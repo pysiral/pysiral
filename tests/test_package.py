@@ -6,6 +6,8 @@
 import unittest
 import importlib
 import pkgutil
+from loguru import logger
+logger.disable("pysiral")
 
 
 class TestPackage(unittest.TestCase):
@@ -21,6 +23,7 @@ def import_submodules(package, recursive=True):
     """ Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
+    :param recursive: for sub-modules
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
@@ -36,6 +39,7 @@ def import_submodules(package, recursive=True):
         if recursive and is_pkg:
             results.update(import_submodules(full_name))
     return results
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPackage)

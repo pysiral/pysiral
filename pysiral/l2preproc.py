@@ -15,7 +15,7 @@ from pysiral.output import Level2Output, OutputHandlerBase
 from collections import OrderedDict
 
 from pathlib import Path
-
+from loguru import logger
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -47,19 +47,19 @@ class Level2PreProcessor(DefaultLoggingClass):
             except Exception as ex:
                 msg = "Error (%s) in l2i file: %s"
                 msg = msg % (ex, Path(l2i_file).name)
-                self.log.error(msg)
+                logger.error(msg)
                 continue
             l2p.append_l2i(l2i)
 
         # Merge the l2i object to a single L2Data object
         l2 = l2p.get_merged_l2()
         if l2 is None:
-            self.log.warning("- No valid freeboard data found for, skip day")
+            logger.warning("- No valid freeboard data found for, skip day")
             return
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
-        self.log.info("- Wrote %s data file: %s" % (self.job.output_handler.id, output.export_filename))
+        logger.info("- Wrote %s data file: %s" % (self.job.output_handler.id, output.export_filename))
 
     @property
     def job(self):
@@ -106,7 +106,7 @@ class Level2POutputHandler(OutputHandlerBase):
             output_def = self.default_output_def_filename
         super(Level2POutputHandler, self).__init__(output_def)
         self.error.caller_id = self.__class__.__name__
-        self.log.name = self.__class__.__name__
+        logger.name = self.__class__.__name__
         self.l2i_product_dir = l2i_product_dir
         self._period = period
         self._doi = doi
@@ -150,7 +150,7 @@ class Level2POutputHandler(OutputHandlerBase):
         provided in the l2 data object """
         export_directory = self.get_directory_from_l2(l2)
         export_filename = self.get_filename_from_l2(l2)
-        return os.path.join(export_directory, export_filename)
+        return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l2):
         attr_dict = OrderedDict()

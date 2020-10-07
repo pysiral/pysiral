@@ -39,15 +39,18 @@ Important Note:
 
 """
 
+import re
+import numpy as np
+from pyproj import Proj
+from pathlib import Path
+from datetime import datetime
+from xarray import open_dataset
+
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
 from pysiral.iotools import ReadNC
+from pysiral.errorhandler import ErrorStatus
 
-import scipy.ndimage as ndimage
-
-from pyproj import Proj
-import numpy as np
-from pathlib import Path
 
 class Warren99(AuxdataBaseClass):
 
@@ -229,15 +232,58 @@ class Warren99(AuxdataBaseClass):
 
 
 class Warren99AMSR2Clim(AuxdataBaseClass):
-    """ Class for monthly snow depth & density climatology based on merged Warren99 climatology and
-     monthly AMSR2 snow depth composite (source: IUP) """
+    """
+    Class for monthly snow depth & density climatology based on merged Warren99 climatology and
+    monthly AMSR2 snow depth composite (source: IUP). The source data is organized as
+    netCDF files that contain a:
+
+        1. monthly climatological snow depth and density
+        2. the mask of the W99 region of influence
+        3. uncertainties of geophysical parameters
+
+    This class reads the netCDF data and applies a correction for first-year sea ice areas in regions
+    solely influenced by the Warren99 climatalogy.
+
+    REQUIREMENTS:
+
+        - Level-2 object has attribute `sitype`
+          (sea ice type classication: 0 [fyi] <) sitype <= 1 [myi])
+        - options has attribute `fyi_correction_factor`
+          (factor 0-1 for reduction of snow depth in FYI W99 areas)
+
+    OPTIONAL:
+
+        - options has boolean attribute `daily_scaling`
+          (if True snow depth and density will be scaled between successive month)
+
+    NOTES:
+
+        - This class is mainly designed to be calles from the Level-2 processor for trajectory based data sets.
+          An more generalized version is in planning.
+
+    UPDATES:
+
+        - [July 2020] With AWI CryoSat-2 v2.3 a change was introduced to allow a daily change of the snow depth fields
+          rather than monthly (see github issue: https://github.com/shendric/pysiral/issues/40)
+    """
 
     def __init__(self, *args, **kwargs):
+        """
+        Init the class for getting snow depth on sea ice with density and respective uncertainties.
+        :param args: Arguments for AuxdataBaseClass
+        :param kwargs: Keyword arguments for AuxdataBaseClass
+        """
         super(Warren99AMSR2Clim, self).__init__(*args, **kwargs)
-        self._data = None
+        self._data = Warren99AMSR2ClimDataContainer(self.cfg, self.use_daily_scaling)
 
     def get_l2_track_vars(self, l2):
-        """ This is the method that will be evoked by the Level-2 processor """
+        """
+        This is the method that will be evoked by the Level-2 processor. This method will extract the
+        geophysical parameters
+
+        :param l2: The Level-2 data container
+        :return: None
+        """
 
         # Set the requested date
         self.set_requested_date_from_l2(l2)
@@ -258,32 +304,38 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
         self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
 
-
-    def load_requested_auxdata(self):
-        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
-
-        # Retrieve the file path for the requested date from a property of the auxdata parent class
-        path = Path(self.requested_filepath)
-
-        # Validation
-        if not path.is_file():
-            msg = self.pyclass+": File not found: %s " % path
-            self.add_handler_message(msg)
-            self.error.add_error("auxdata_missing_snow", msg)
-            return
-
-        # Read the data
-        self._data = ReadNC(path)
-
-        # This step is important for calculation of image coordinates
-        self.add_handler_message(self.__class__.__name__+": Loaded snow file: %s" % path)
+    def update_external_data(self):
+        """
+        This method overwrites the default behaviour of loading a dedicated file per
+        l2 track object. The functionality is delegated to a specific data class for this
+        auxiliary data set.
+        :return:
+        """
+        if not self._data.has_data_loaded:
+            self._data.load()
+            if self._data.has_data_loaded:
+                for filepath in self._data.filepaths:
+                    self.add_handler_message(self.__class__.__name__ + ": Load {}".format(filepath))
+            else:
+                msg = ": Loading data has failed failed"
+                self.add_handler_message(self.__class__.__name__ + msg)
+        else:
+            if self._data.has_data_loaded:
+                self.add_handler_message(self.__class__.__name__+": Data already present")
+            else:
+                msg = ": No Data: Loading failed in an earlier attempt"
+                self.add_handler_message(self.__class__.__name__ + msg)
 
     def _get_snow_track(self, l2):
-        """ Get the along-track data from the loaded data"""
+        """
+        Extract the snow depth and density track along the l2 track
+        :param l2:
+        :return:
+        """
 
         # Extract track data from grid
         griddef = self.cfg.options[l2.hemisphere]
-        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid_lons, grid_lats = self._data.get_lonlat()
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
 
         # Extract data (Map the extracted tracks directly on the snow parameter container)
@@ -291,7 +343,7 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         snow = SnowParameterContainer()
         for var_name in var_map.keys():
             source_name = var_map[var_name]
-            sdgrid = getattr(self._data, source_name)
+            sdgrid = self._data.get_var(source_name, self._requested_date)
             setattr(snow, var_name, grid2track.get_from_grid_variable(sdgrid))
 
         # Extract the W99 weight
@@ -318,18 +370,352 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
 
         return snow
 
+    @property
+    def use_daily_scaling(self):
+        """
+        Return a flag that indicates whether to use daily scaling (absence of flag in options will be treated as no)
+        :return:
+        """
+        if "daily_scaling" not in self.cfg.options:
+            return False
+        else:
+            return self.cfg.options.daily_scaling
+
+
+class Warren99AMSR2ClimDataContainer(object):
+    """
+    A dedicated data container for the merged W99/AMSR2 snow climatology. This class has been introduced
+    with the use of daily scaling that requires data to loaded also from month adjacent to the month
+    of the current Level-2 data object
+    """
+
+    def __init__(self, cfg, use_daily_scaling):
+        """
+        Init the class
+        :param cfg: A copy of the auxdata class configuration
+        :param use_daily_scaling:
+        """
+
+        # Properties
+        self.cfg = cfg
+        self.use_daily_scaling = use_daily_scaling
+        self.data = None
+        self.filepaths = []
+        self.error = ErrorStatus()
+
+    def load(self):
+        """
+        Load the required data. This will load the data for all winter month into memory and the return
+        either a weighted fiels (if `use_daily_scaling` is True) or just the field from the corresponding month
+        :return:
+        """
+
+        # Check if data is already loaded
+        if self.has_data_loaded:
+            return
+
+        # Load the data of all month
+        self.data = []
+        for month_num in self.month_nums:
+
+            # Get the target file path
+            filepath = self.get_filepath(month_num)
+
+            # Read the data set (and raise hard error if input is missing)
+            try:
+                nc = open_dataset(filepath)
+                self.data.append(nc)
+                self.filepaths.append(filepath)
+            except FileNotFoundError:
+                msg = "Could not locate file: {}".format(filepath)
+                self.error.add_error("invalid-filepath", msg)
+                self.error.raise_on_error()
+
+    def get_lonlat(self):
+        """
+        Return longitude and latitude variables
+        :return:
+        """
+
+        # The grid is the same for all month, therefore we can just retrieve the fields
+        # from the first data sets
+        dset = self.data[0]
+        return dset.longitude.values, dset.latitude.values
+
+    def get_var(self, parameter_name, date_tuple):
+        """
+        Get the a geophysical variable from the netCDF(s). If daily scaling is activated, the date information
+        given by date tuple will be used to create output fields that are interpolated between adjacent month.
+        :param parameter_name:
+        :param date_tuple:
+        :return:
+        """
+
+        # There are three cases that requires a different handling:
+        #
+        # 1. daily scaling is off
+        #    -> return the single field of the single data set for the corresponding month
+        if not self.use_daily_scaling:
+            return self.get_monthly_field(date_tuple[1], parameter_name)
+
+        # 2. daily scaling is on and requested date is a reference date
+        #    -> return the field of the single data set for the reference date
+        is_reference_date = date_tuple[1:] in self.reference_dates
+        if self.use_daily_scaling and is_reference_date:
+            return self.get_monthly_field(date_tuple[1], parameter_name)
+
+        # 3. daily scaling is on and requested date is between reference dates
+        #   -> return a linear interpolated field based on the distance to the two enclosing
+        #      reference dates
+        if self.use_daily_scaling and not is_reference_date:
+            return self.get_weighted_variable(date_tuple, parameter_name)
+
+    def get_filepath(self, month_num):
+        """
+        Return the file path for a given month
+        :param month_num: Number of month (1-12)
+        :return:
+        """
+
+        # Create a dictionary for automatic filepath completion
+        date_dict = dict(month="{:02g}".format(month_num))
+
+        # Main directory
+        path = Path(self.cfg.local_repository)
+
+        # Add the subfolders
+        for subfolder_tag in self.cfg.subfolders:
+            subfolder = date_dict[subfolder_tag]
+            path = path / subfolder
+
+        # Get the period dict (will be constructed from filenaming)
+        period_dict = {}
+        attrs = re.findall("{.*?}", self.cfg.filenaming)
+        for attr_def in attrs:
+            attr_name = attr_def[1:-1]
+            period_dict[attr_name] = date_dict[attr_name]
+        filename = self.cfg.filenaming.format(**period_dict)
+        path = path / filename
+        return path
+
+    def get_monthly_field(self, month_num, parameter_name):
+        """
+        Return the monthly field for given parameter name
+        :param month_num:
+        :param parameter_name:
+        :return:
+        """
+        index = self.month_nums.index(month_num)
+        variable = getattr(self.data[index], parameter_name, None)
+        if variable is None:
+            msg = "Dataset has no variable: {}".format(parameter_name)
+            self.error.add_error("invalid-variable", msg)
+            self.error.raise_on_error()
+        return variable.values
+
+    def get_reference_month_nums(self, date_tuple):
+        """
+        Return the two month required for the interpolation.
+        :param date_tuple: [year, month, day] as integer
+        :return: month_left, month_right, weight_factor
+        """
+
+        # Compute the difference in days between requested days
+        requested_date_dt = datetime(*date_tuple)
+        ref_datetimes = self.get_reference_datetimes(date_tuple)
+        ref_date_offset = [(requested_date_dt-dt).days for dt in ref_datetimes]
+
+        # Find the index of the first month where the difference in day is negative (right boundary)
+        month_right_index = int(np.argmax(np.array(ref_date_offset) < 0))
+        month_left_index = month_right_index - 1
+        month_left, month_right = self.month_nums[month_left_index], self.month_nums[month_right_index]
+
+        # Check solution
+        if month_left_index < 0:
+            msg = "Month not found, check input or bug in code"
+            self.error.add_error("unspecified-error", msg)
+            self.error.raise_on_error()
+
+        # Compute the weighting factor
+        period_n_days = (ref_datetimes[month_right_index] - ref_datetimes[month_left_index]).days
+        weight_factor = float(ref_date_offset[month_left_index])/float(period_n_days)
+
+        # All done
+        return month_left, month_right, weight_factor
+
+    def get_reference_datetimes(self, date_tuple):
+        """
+        Creates datetimes objects for the reference dates for the actual winter season
+        :param date_tuple:
+        :return:
+        """
+
+        # Get the winter id (year of October for October - April winter)
+        winter_id = date_tuple[0] - int(date_tuple[1] < 10)
+        year_vals = [winter_id]*3 + [winter_id+1]*4
+        ref_dts = [datetime(yyyy, mm, dd) for yyyy, (mm, dd) in zip(year_vals, self.reference_dates)]
+        return ref_dts
+
+    def get_weighted_variable(self, date_tuple, parameter_name):
+        """
+        Compute the weighted variable between two reference dates
+        :param date_tuple:
+        :param parameter_name:
+        :return:
+        """
+
+        # Get the fields of both reference month
+        month_num_left, month_num_right, weight_factor = self.get_reference_month_nums(date_tuple)
+        var_left = self.get_monthly_field(month_num_left, parameter_name)
+        var_right = self.get_monthly_field(month_num_right, parameter_name)
+
+        # Get the relative distance (0: var_left, 1: var_right)
+        var = var_left + weight_factor*(var_right-var_left)
+
+        # Done
+        return var
+
+    @property
+    def w99_weight(self):
+        """
+        Return the static regional mask for the merged climatology
+        :return:
+        """
+        return self.data[0].w99_weight.values
+
+    @property
+    def has_data_loaded(self):
+        """
+        Status flag if data is present for the current data period
+        :return:
+        """
+        return self.data is not None
+
+    @property
+    def month_nums(self):
+        return [10, 11, 12, 1, 2, 3, 4]
+
+    @property
+    def reference_dates(self):
+        """
+        Return the reference dates for the
+        :return:
+        """
+        return [[10, 1],   # October 1st (to get full coverage of October)
+                [11, 15],
+                [12, 15],
+                [1, 15],
+                [2, 15],
+                [3, 15],
+                [4, 30]]   # April 30th (to get full coverage of April)
+
+
+class SeasonalArcticSnowDensityMallett2020(AuxdataBaseClass):
+    """
+    Returns a seasonal varying but regionally static snow density from Mallett et al. 2020. The density
+    is computed as a linear function of time (elapsed month since the October for the Arctic winter season):
+
+        rho_snow = 6.50 * t + 274.51
+
+    with t: month since October.
+
+    Reference:
+
+        Mallett, R. D. C., Lawrence, I. R., Stroeve, J. C., Landy, J. C., and Tsamados, M.:
+        Brief communication: Conventional assumptions involving the speed of radar waves in snow
+        introduce systematic underestimates to sea ice thickness and seasonal growth rate estimates,
+        The Cryosphere, 14, 251–260, https://doi.org/10.5194/tc-14-251-2020, 2020.
+
+    Notes:
+
+        - This parametrization is valid stricly only for the northern hemisphere
+
+        - Here we interpret the time t not as month since October but as fractional month
+          (computed via days since Oct 15) to avoid artifical jumps of geophysical paramters
+          between the last day of a month and the first of a next one.
+
+    Example entry in l2 proc config files:
+
+        - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(SeasonalArcticSnowDensityMallett2020, self).__init__(*args, **kwargs)
+
+    def subclass_init(self):
+        """
+        Not requires
+        :return:
+        """
+        pass
+
+    def get_l2_track_vars(self, l2):
+        """
+        Mandatory method for the Level-2 processor. Registers snow density (and only density)
+        as the auxiliary parameter.
+        :param l2:
+        :return:
+        """
+
+        # Set the requested date
+        self.set_requested_date_from_l2(l2)
+
+        # --- Compute the factor t for the date of the l2 object ---
+        date_tuple = self._requested_date
+        winter_id = date_tuple[0] - int(date_tuple[1] < 10)   # The year of the winter in October
+
+        # Number of days since October 15.
+        epoch, l2date = datetime(winter_id, 10, 15), datetime(*date_tuple)
+        n_days = (l2date-epoch).days
+
+        # Compute the daily t-factor based on that t should the value of 6 on April 15.
+        # of the winter seasons. There are 182 days between Oct. 15 and the following
+        # 15th of April.
+        #
+        # Notes:
+        #   - In case of a leap year the factor t will be slightly above 6 on April 15.
+        #     This is intended.
+        #   - The t factor will be negative before Oct. 15. This is intended
+        t = float(n_days)/182. * 6.
+
+        # Compute the fixed snow depth
+        static_sdens = 6.5 * t + 274.51
+
+        # Get the snow density uncertainty
+        if "snow_density_uncertainty" in self.cfg.options:
+            static_sdens_unc = self.cfg.options.snow_density_uncertainty
+        else:
+            msg = ": Warning - snow_density_uncertainty missing in processor definition (set to 0.0)"
+            self.add_handler_message(self.__class__.__name__ + msg)
+            static_sdens_unc = 0.0
+
+        # Create variables
+        sdens = np.full(l2.n_records, static_sdens)
+        sdens_unc = np.full(l2.n_records, static_sdens_unc)
+
+        # Only use values for records, that are sea ice
+        no_sea_ice = np.isnan(l2.sic[:])
+        for var in [sdens, sdens_unc]:
+            var[no_sea_ice] = np.nan
+
+        # Register the auxiliary variable
+        self.register_auxvar("sdens", "snow_density", sdens, sdens_unc)
+
 
 class FixedSnowDepthDensity(AuxdataBaseClass):
     """
-    Returns constant depth & density (values from l2 processor definition)
+    Returns constant depth & density (values from l2 processor definition).
 
     Example entry in l2 proc config files:
 
         - snow:
             name: constant
             options:
-                fixed_snow_depth: 0.2
-                fixed_snow_density: 300
+                snow_density_uncertainty: 50
 
     TODO: Add uncertainties
     """
@@ -341,8 +727,8 @@ class FixedSnowDepthDensity(AuxdataBaseClass):
         pass
 
     def get_l2_track_vars(self, l2):
-        snow_depth = np.full((l2.n_records), self.cfg.options.fixed_snow_depth)
-        snow_density = np.full((l2.n_records), self.cfg.options.fixed_snow_density)
+        snow_depth = np.full(l2.n_records, self.cfg.options.fixed_snow_depth)
+        snow_density = np.full(l2.n_records, self.cfg.options.fixed_snow_density)
         snow = SnowParameterContainer()
         snow.depth = snow_depth
         snow.density = snow_density
@@ -413,7 +799,6 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         # Store the netCDF data object
         self._data = ReadNC(path)
 
-
     def _get_snow_track(self, l2):
         """ Extract snow depth from grid """
 
@@ -452,10 +837,10 @@ class SnowParameterContainer(object):
         self.density_uncertainty[indices] = np.nan
 
     def set_dummy(self, n_records):
-        self.depth = np.full((n_records), np.nan)
-        self.density = np.full((n_records), np.nan)
-        self.depth_uncertainty = np.full((n_records), np.nan)
-        self.density_uncertainty = np.full((n_records), np.nan)
+        self.depth = np.full(n_records, np.nan)
+        self.density = np.full(n_records, np.nan)
+        self.depth_uncertainty = np.full(n_records, np.nan)
+        self.density_uncertainty = np.full(n_records, np.nan)
 
 
 def get_l2_snow_handler(name):

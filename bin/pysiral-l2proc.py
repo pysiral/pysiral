@@ -7,7 +7,7 @@ from pysiral.datahandler import DefaultL1bDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
-
+from loguru import logger
 from pathlib import Path
 
 from dateperiods import DatePeriod
@@ -49,8 +49,8 @@ def pysiral_l2proc_time_range_job(args):
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
-    mission_id = product_def.l2def.mission.id
-    hemisphere = product_def.l2def.hemisphere
+    mission_id = product_def.l2def.metadata.platform
+    hemisphere = product_def.l2def.metadata.hemisphere
 
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
@@ -79,7 +79,7 @@ def pysiral_l2proc_time_range_job(args):
     for time_range in period_segments:
 
         # Do some extra logging
-        l2proc.log.info("Processing period: %s" % time_range.label)
+        logger.info("Processing period: %s" % time_range.label)
 
         # Product Data Management
         if args.remove_old:
@@ -88,7 +88,7 @@ def pysiral_l2proc_time_range_job(args):
 
         # Get input files
         l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
-        l2proc.log.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
+        logger.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
 
         # Process the orbits
         l2proc.process_l1b_files(l1b_files)
@@ -96,7 +96,7 @@ def pysiral_l2proc_time_range_job(args):
     # All done
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 def pysiral_l2proc_l1b_predef_job(args):
@@ -118,7 +118,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     # All done
     t1 = time.clock()
     seconds = int(t1-t0)
-    l2proc.log.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
 class Level2ProcArgParser(DefaultLoggingClass):
@@ -183,12 +183,9 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-input-version", "input-version", "input_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
-            ("--no-critical-prompt", "no-critical-prompt",
-             "no_critical_prompt", False),
-            ("--no-overwrite-protection", "no-overwrite-protection",
-             "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection",
-             "overwrite_protection", False)]
+            ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
+            ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
+            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
 
         # create the parser
         parser = argparse.ArgumentParser()
@@ -197,8 +194,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             argparse_dict = clargs.get_argparse_dict(
                 argtype, destination, required)
             parser.add_argument(argname, **argparse_dict)
-
-        parser.set_defaults(overwrite_protection=True)
+        parser.set_defaults(overwrite_protection=False)
 
         return parser
 
@@ -233,15 +229,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # Get from command line arguments (default: None)
         run_tag = self._args.run_tag
 
-        # If argument is empty use the basename of the l2 settings file
-        if run_tag is None:
-            run_tag = self._args.l2_settings
-            # Settings file may be specified as full path and not just the id
-            if Path(run_tag).is_file():
-                run_tag = Path(run_tag).stem
-
         # split the run-tag on potential path separators
-        run_tag = re.split(r'[\\|/]', run_tag)
+        if run_tag is not None:
+            run_tag = re.split(r'[\\|/]', run_tag)
+
         return run_tag
 
     @property
@@ -255,7 +246,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     @property
     def l2_settings_file(self):
         l2_settings = self._args.l2_settings
-        filename = self.pysiral_config.get_settings_file("proc","l2", l2_settings)
+        filename = self.pysiral_config.get_settings_file("proc", "l2", l2_settings)
         if filename is None:
             msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
             msg = msg + " \nRecognized Level-2 processor setting ids:\n"

@@ -5,83 +5,137 @@ Created on Sat Apr 23 15:30:53 2016
 @author: Stefan
 """
 
-from pysiral.logging import DefaultLoggingClass
-from pysiral.flag import FlagContainer, ORCondition
-
+import numpy as np
+import bottleneck as bn
 from scipy.interpolate import interp1d
 from astropy.convolution import convolve
-from attrdict import AttrDict
-import numpy as np
+
+from pysiral.core.flags import FlagContainer, ORCondition
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
-class FilterBaseClass(DefaultLoggingClass):
-
-    def __init__(self):
-        super(FilterBaseClass, self).__init__(self.__class__.__name__)
-        self._flag = None
-
-    def set_options(self, **opt_dict):
-        self._options = AttrDict(**opt_dict)
-
-    def apply_filter(self, *args, **kwargs):
-        self._apply_filter(*args, **kwargs)
-
-    @property
-    def flag(self):
-        return self._flag
-
-    @property
-    def options(self):
-        return self._options
-
-
-# %% Filter for Level2Processor
-
-class L1bBackscatterDriftCorrection(FilterBaseClass):
-    """ Very specific filter to correct backscatter drift. The filter
+class L1bEnvisatBackscatterDriftCorrection(Level2ProcessorStep):
+    """
+    Very specific filter to correct backscatter drift. The filter
     applies a monthly linear correction based on the drift factor and
-    base period. """
+    base period.
 
-    def __init__(self):
-        super(L1bBackscatterDriftCorrection, self).__init__()
-        self.log.name = self.__class__.__name__
+    Notes:
 
-    def _apply_filter(self, l1b):
-        """ Apply the backscatter correction """
-        # Get the backscatter value
-        datagroup = self.options.l1b_data_group
-        name = self.options.l1b_parameter_name
+        1. This class is very specifically designed for correcting
+           the sigma0 value of the degrading Envisat RA-2 antenna
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(L1bEnvisatBackscatterDriftCorrection, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Apply a backscatter correction
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Get the default error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Get the backcatter value
+        datagroup = self.cfg.options.l1b_data_group
+        name = self.cfg.options.l1b_parameter_name
         value = l1b.get_parameter_by_name(datagroup, name)
+
         # Compute the drift correction
-        year_base, month_base = self.options.backscatter_base_period
+        year_base, month_base = self.cfg.options.backscatter_base_period
         year, month = l1b.info.start_time.year, l1b.info.start_time.month
-        time_shift_factor = (year_base - year) * 12 + \
-            (month_base - month)
-        sigma0_drift_factor = self.options.backscatter_drift_factor
+        time_shift_factor = (year_base - year) * 12 + (month_base - month)
+        sigma0_drift_factor = self.cfg.options.backscatter_drift_factor
         sigma0_drift = time_shift_factor * sigma0_drift_factor
-        # Apply and update the backscatter
+
+        # Apply and update the backscatter by changing the l1b data object in-place
         value += sigma0_drift
         l1b.set_parameter_by_name(datagroup, name, value)
 
+        # Done
+        return error_status
 
-class L2ParameterValidRange(FilterBaseClass):
-    """ Filters freeboard outliers by simple min/max thresholding
-    Requires l2 data container and target (either: "afrb", "rfrb")
+    @property
+    def l2_input_vars(self):
+        return []
+
+    @property
+    def l2_output_vars(self):
+        return []
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
+
+
+class L2ParameterValidRange(Level2ProcessorStep):
+    """
+    Filters L2 variables that are outside a valid range.
+
+    Usage in Level-2 processor definition files:
+
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: <source_variable>
+            target_variables: [<target_variables>]
+            valid_minimum_point_value: <min_val>
+            valid_maximum_point_value: <max_val>
+
+    will lead to that all target_variables will be set to np.nan if either
+
+        source_variable < min_val  of source_variable > max_val
+
     """
 
-    def __init__(self):
-        super(L2ParameterValidRange, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(L2ParameterValidRange, self).__init__(*args, **kwargs)
 
-    def _apply_filter(self, l2, target):
-        parameter = getattr(l2, target)
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory method for Level2ProcessorStep will change l2 data object in place
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Step 1: Get the filter flag
+        parameter = getattr(l2, self.cfg.options.source_variable)
         invalid = ORCondition()
-        invalid.add(parameter < self._options.valid_minimum_point_value)
-        invalid.add(parameter > self._options.valid_maximum_point_value)
-        self._flag = FlagContainer(invalid.flag)
+        invalid.add(parameter < self.cfg.options.valid_minimum_point_value)
+        invalid.add(parameter > self.cfg.options.valid_maximum_point_value)
+        filter_flag = FlagContainer(invalid.flag)
 
+        # Check if any flag was raised
+        if filter_flag.num == 0:
+            return filter_flag.flag
 
-def get_filter(name):
-    return globals()[name]()
+        # Modify target variables
+        for parameter_id in self.cfg.options.target_variables:
+            var = getattr(l2, parameter_id)
+            var.set_nan_indices(filter_flag.flag)
+            setattr(l2, parameter_id, var)
+
+        # The filter flag can be used as error_status
+        return filter_flag.flag
+
+    @property
+    def l2_input_vars(self):
+        input_vars = [self.cfg.options.source_variable]
+        input_vars.extend(self.cfg.options.target_variables)
+        return input_vars
+
+    @property
+    def l2_output_vars(self):
+        return []
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
 
 
 def numpy_smooth(x, window):
@@ -107,30 +161,12 @@ def idl_smooth(x, window):
     n = len(x)
     for i in np.arange(n):
         kernel_halfsize = np.floor((window-1)/2).astype(int)
-        if (i < kernel_halfsize):
+        if i < kernel_halfsize:
             kernel_halfsize = i
-        if (n-1-i < kernel_halfsize):
+        if (n-1-i) < kernel_halfsize:
             kernel_halfsize = n-1-i
-        smoothed[i] = np.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
+        smoothed[i] = bn.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
     return smoothed
-
-
-# TODO: Custom implementation of a gaussian weighted smoother?
-def gauss_smooth(x, window):
-    pass
-#    from astropy.convolution import Gaussian1DKernel
-#    smoothed = np.copy(x)*np.nan
-#    # get a gaussi
-#    kernel = Gaussian1DKernel(10)
-#    n = len(x)
-#    for i in np.arange(n):
-#        kernel_halfsize = np.floor((window-1)/2).astype(int)
-#        if (i < kernel_halfsize):
-#            kernel_halfsize = i
-#        if (n-1-i < kernel_halfsize):
-#            kernel_halfsize = n-1-i
-#        smoothed[i] = np.nanmean(x[i-kernel_halfsize:i+kernel_halfsize+1])
-#    return smoothed
 
 
 def spline_smooth(y, window):
@@ -178,7 +214,6 @@ def smooth_2darray(array, filter_width=5, preserve_gaps=True):
 
     try:
         mask = array.mask
-        has_mask = True
     except AttributeError:
         mask = np.zeros(array.shape)
 

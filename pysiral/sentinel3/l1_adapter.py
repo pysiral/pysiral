@@ -4,6 +4,7 @@ import xmltodict
 
 import xarray
 import numpy as np
+from loguru import logger
 from scipy import interpolate
 from cftime import num2pydate
 from pathlib import Path
@@ -14,7 +15,7 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
 class Sentinel3CODAL2Wat(DefaultLoggingClass):
@@ -62,7 +63,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         # Input Validation
         if not Path(filepath).is_file():
             msg = "Not a valid file: %s" % filepath
-            self.log.warning(msg)
+            logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
 
@@ -88,7 +89,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         self.timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
+        logger.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
 
         # Return the l1 object
         return self.l1
@@ -159,7 +160,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         except:
             msg = "Error encountered by xarray parsing: %s" % filepath
             self.error.add_error("xarray-parse-error", msg)
-            self.log.warning(msg)
+            logger.warning(msg)
             return
 
     def _set_input_file_metadata(self):
@@ -318,7 +319,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
             variable_20Hz, error_status = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
             if error_status:
                 msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % var_name
-                self.log.warning(msg)
+                logger.warning(msg)
             self.l1.correction.set_parameter(key, variable_20Hz)
 
     def _set_surface_type_group(self):

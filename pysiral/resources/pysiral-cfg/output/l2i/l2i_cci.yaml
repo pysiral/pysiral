@@ -125,13 +125,13 @@ variables:
     units: m
     coordinates: time
 
-  sea_surface_anomaly:
+  sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
     sstandard_name: sea_surface_height_above_mean_sea_level
     units: m
     coordinates: time
 
-  sea_surface_anomaly_uncertainty:
+  sea_level_anomaly_uncertainty:
     long_name: "uncertainty of instantaneous sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level standard_error
     units: m
@@ -247,6 +247,11 @@ variables:
     units: 1
     coordinates: time
 
+  pulse_deblurring_correction:
+    long_name: "Pulse deblurring correction (ERS only)"
+    units: meter
+    coordinates: time
+
   antenna_pitch:
     long_name: "antenna bench pitch angle"
     comment: "Pitch angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
@@ -305,7 +310,7 @@ variables:
     units: "m"
     coordinates: time
 
-  ionospheric:
+  ionosphere:
     long_name: "ionospheric range correction"
     units: "m"
     coordinates: time
@@ -342,4 +347,13 @@ variables:
     flag_values: "0, 1"
     flag_meaning: "0: waveform is valid, 1: waveform is invalid"
     units: "1"
+    coordinates: time
+
+  flag:
+    long_name: "L2 algorithm error flag"
+    comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
+    units: 1
+    valid_min: 0
+    valid_max: 15
+    flag_meaning: "Errors (bit 0): l1p source data, (bit 1): Level-2 processor (bit 2): auxiliary data (bit 3): surface type classification (bit 4): retracker (bit 5): range_correction (bit 6) sea level anomaly (bit 7): freeboard retrieval  (bit 8) freeboard to thickness conversion (bit 9) parameter filter (bit 15) other"
     coordinates: time

@@ -7,16 +7,15 @@ __author__ = "Stefan Hendricks"
 
 import numpy as np
 from pathlib import Path
+from loguru import logger
 from cftime import num2pydate
 
 from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.sgdrfile import ERSSGDR
-from pysiral.flag import ORCondition
-from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
-from pysiral.surface_type import ESA_SURFACE_TYPE_DICT
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
 
 
 class ERSReaperSGDR(DefaultLoggingClass):
@@ -40,14 +39,18 @@ class ERSReaperSGDR(DefaultLoggingClass):
 
         # Debug variables
         self.timer = None
+        self.l1 = None
+        self.filepath = None
 
-    def get_l1(self, filepath, polar_ocean_check=None):
+    def get_l1(self, filepath, *args, **kwargs):
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
         :param filepath: The full file path to the netCDF file
-        :param polar_ocean_check: Mandatory parameter but will be ignored as ERS Data is full orbit
         :return: The parsed (or empty) Level-1 data container
         """
+
+        # Import here to avoid circular imports
+        from pysiral.l1bdata import Level1bData
 
         # Store arguments
         self.filepath = filepath
@@ -70,7 +73,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         self._set_l1_data_groups()
 
         self.timer.stop()
-        self.log.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
+        logger.info("- Created L1 object in %.3f seconds" % self.timer.get_seconds())
 
         return self.l1
 

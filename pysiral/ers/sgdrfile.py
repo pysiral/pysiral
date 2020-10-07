@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from pysiral.errorhandler import FileIOErrorHandler
-
 import numpy as np
 from pathlib import Path
+
+from pysiral.iotools import ReadNC
 
 
 class ERSSGDR(object):
 
-    def __init__(self, settings, raise_on_error=False):
+    def __init__(self, settings):
 
         # Error Handling
-        self._init_error_handling(raise_on_error)
         self._radar_mode = "lrm"
         self._filename = None
         self.n_records = 0
         self.settings = settings
+        self.nc = None
 
     def parse(self):
-        from pysiral.iotools import ReadNC
         self._validate()
         self.nc = ReadNC(self.filename, nan_fill_value=True)
 
@@ -31,7 +30,8 @@ class ERSSGDR(object):
         filename = Path(self._filename).name
         return filename[0:2]
 
-    def get_status(self):
+    @staticmethod
+    def get_status():
         # XXX: Not much functionality here
         return False
 
@@ -50,19 +50,11 @@ class ERSSGDR(object):
     def filename(self, filename):
         """ Save and validate filenames for header and product file """
         # Test if valid file first
-        self._error.file_undefined = not Path(filename).is_file()
-        if self._error.file_undefined:
-            return
         self._filename = filename
 
     @property
     def radar_mode(self):
         return self._radar_mode
-
-    def _init_error_handling(self, raise_on_error):
-        self._error = FileIOErrorHandler()
-        self._error.raise_on_error = raise_on_error
-        self._error.file_undefined = True
 
     def _prepare_waveform_power_and_range(self):
         """
