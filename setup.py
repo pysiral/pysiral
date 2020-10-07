@@ -38,11 +38,11 @@ dependency_links = [r for r in requirements_content if not r.find("git+")]
 
 # NOTE: links to git repositories cause the built_ext process to crash.
 # -> Thus we sanitize the requirements string here.
-for i, requirement in enumerate(requirements):
+for i, requirement in enumerate(requirements_content):
     m = re.search(r'/(.+?)\.git', requirement)
     if m:
         package_name = m.group(1).split("/")[-1]
-        requirements[i] = package_name
+        requirements_content[i] = package_name
 
 setup(
     name='pysiral',
