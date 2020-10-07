@@ -1,12 +1,12 @@
-id: "C3S CryoSat-2 Arctic sea-ice thickness (interim) climate data record v1.0"
-version_tag: "c3sv1p0"
+metadata:
+    label: "C3S CryoSat-2 Arctic sea-ice thickness interim climate data record v1.0"
+    product_line: c3s
+    record_type: cdr
+    platform: cryosat2
+    version: v1p0
+    file_version_tag: v1p0    
+    hemisphere: north
 
-# Level 2 processor settings are mission specific
-mission:
-    id: cryosat2
-    
-# Regions Settings (for file selection and potential subsetting
-hemisphere: north
 
 # Sources of ancillary datasets
 # (the tag "name" links to the corresponding tag in config/auxdata.yaml)
