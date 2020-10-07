@@ -7,7 +7,7 @@ Created on Mon Jul 06 17:57:33 2015
 
 import datetime
 import unittest
-
+from pathlib import Path
 from attrdict import AttrDict
 
 from pysiral import psrlcfg
@@ -51,6 +51,8 @@ class TestDefinitionfiles(unittest.TestCase):
         """
         current_config_target = psrlcfg.current_config_target
         for config_target in psrlcfg.VALID_CONFIG_TARGETS:
+            if config_target == "USER_HOME" and not Path(psrlcfg.userhome_config_path).is_dir():
+                continue
             psrlcfg.set_config_target(config_target)
             psrlcfg.reload()
             self._testAuxdataDefinitionContent(config_target)
