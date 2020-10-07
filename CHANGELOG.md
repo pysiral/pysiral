@@ -1,17 +1,5 @@
 # History of changes
 
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
 ## [0.9.0] - 2020-10-07
 
 ### Added
@@ -28,7 +16,9 @@
 - Format of this changelog now according to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Merged W99/AMSR snow climatology is now daily instead of monthly to avoid unrealistic jumps at the beginning of a month
 - Snow density parametrization in W99/AMSR snow climatology now follows Mallett et al. 2020
-- Level-2 processor are now a customizable list of algorithm steps, not longer a fixed set 
+- Level-2 processor definition now contains a customizable list of algorithm steps (`procsteps`) instead of a fixed set to allow more customization
+- Level-2 processor definition now contains a `metadata` group in level-2 processor definition files. Replaces older `id`, `mission`, `version_tag` and `hemisphere` entries
+- Default output directory for level-2 data is defined as series of subfolders based on the `metadata` group in the processor file. 
 - Logging system now based on loguru instead of logbook. New logging format.
 - Split content of `surface_type` module between flag definitions and actual surface type classification processor steps
 - Renamed `ssh` module to `sla` (more in line with L2 naming conventions)
