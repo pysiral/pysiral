@@ -37,7 +37,7 @@ global_attributes:
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
     Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
     Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3"
+  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
