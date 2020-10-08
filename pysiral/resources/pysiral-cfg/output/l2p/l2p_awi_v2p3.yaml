@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming:
-  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p2p1.nc"
-  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p2p1.nc"
+  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3.nc"
+  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3.nc"
 
 product_level_subfolder: l2p_trajectory
 
@@ -22,21 +22,22 @@ global_attributes:
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
   - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
     with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
-    Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF interim climate data record (OSI-430-b)}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
+    Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
+    Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "Hendricks, S. and Ricker, R. (2019): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.2), hdl:10013/epic.8eb07093-4042-40ab-bfb8-e0c72c1567de"
+  - references: "Hendricks, S. and Ricker, R. (2020): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.3)"
   - tracking_id: "{uuid}"
   # - conventions: "CF-1.6"
-  - product_version: "2.2.1"
+  - product_version: "2.3"
   - processing_level: "Level-2 Pre-processed (l2p)"
   - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
     Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
     Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{grid_id}-{time_coverage_start:%Y%m%d}-fv2p2p1"
+  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{grid_id}-{time_coverage_start:%Y%m%d}-fv2p3"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
