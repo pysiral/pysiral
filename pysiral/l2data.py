@@ -111,10 +111,13 @@ class Level2Data(object):
             return
 
         # Set values, uncertainty bias
-        parameter.set_value(value)
-        if uncertainty is not None:
-            uncertainty_value = self._get_as_array(uncertainty)
-            parameter.set_uncertainty(uncertainty_value)
+        if isinstance(parameter, L2DataArray):
+            parameter.set_value(value)
+            if uncertainty is not None:
+                uncertainty_value = self._get_as_array(uncertainty)
+                parameter.set_uncertainty(uncertainty_value)
+        else:
+            parameter = value
         setattr(self, target, parameter)
 
     def set_auxiliary_parameter(self, var_id, var_name, value, uncertainty=None):
