@@ -213,8 +213,6 @@ class Level2Data(object):
         """ Return a string for a given attribute name. This method is
         required for the output data handler """
 
-        attr_getter = getattr(self, "_get_attr_" + attribute_name)
-        attribute = attr_getter(*args)
         try:
             attr_getter = getattr(self, "_get_attr_"+attribute_name)
             attribute = attr_getter(*args)
