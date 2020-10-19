@@ -53,6 +53,7 @@ auxdata:
         options:
             daily_scaling: True
             fyi_correction_factor: 0.5
+            exception_on_error: False
 
     # Note: The snow density in this class will overwrite the snow density
     #       from the W99/AMSR2 climatology (this is intended)
