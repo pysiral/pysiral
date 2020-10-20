@@ -762,7 +762,8 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
             sd, sd_unc = self._get_snow_track(l2)
 
             # Apply along-track smoothing if required
-            if self.cfg.options.smooth_snowdepth:
+            smooth_snowdepth = self.cfg.options.get("self.cfg.options", False)
+            if smooth_snowdepth:
                 filter_width = self.cfg.options.smooth_filter_width_m
                 # Convert filter width to index
                 filter_width /= l2.footprint_spacing
