@@ -5,7 +5,7 @@ metadata:
     record_type: cdr
     platform: envisat
     version: v3p0-preview2
-    file_version_tag: v3p0-preview2    
+    file_version_tag: v3p0-preview2
     hemisphere: north
 
 
