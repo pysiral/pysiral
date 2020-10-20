@@ -33,6 +33,7 @@ Important Note:
 """
 
 import numpy as np
+from loguru import logger
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
@@ -95,11 +96,60 @@ class CCIAntarcticSeas(AuxdataBaseClass):
         :return:
         """
 
+        # Get a default region code value (ice free ocean)
+        # -> Land will be explicitely set
+        # -> Definition of seas should be complete
+        default_code = self.cfg.options.get("ice_free_ocean_code", -1)
+        if not default_code:
+            logger.warning("Missing options: ice_free_ocean_code")
+        region_code = np.full(l2.n_records, default_code).astype(int)
+
+        # Step 1: Transfer Land/inland ice/lake flags from surface type flag to region code
+        from_surface_types = self.cfg.options.get("from_surface_types", [])
+        if not from_surface_types:
+            logger.warning("No code for land/land ice")
+        for surface_type, code in from_surface_types:
+            flag = l2.surface_type.get_by_name(surface_type)
+            code = self.cfg.options.get(surface_type, -1)
+            region_code[flag.indices] = code
+
+        # Step 2: Identify and set the Antarctic seas
+        region_def = self.cfg.options.get("region_def", [])
+        if not from_surface_types:
+            logger.error("No definition of polar seas")
+
+        # Loop over all regions
+        for region_definition in region_def:
+
+            # Expand information
+            code, name, lon_min, lon_max, lat_limit = region_definition
+
+            # Compute angle of between region longitudes
+            region_angle_range_deg = self.get_lon_angular_distance(lon_max, lon_min)
+
+            # Compute angles between data and two limits
+
+            # Data is in region if sum of angles to both limits equals the angular
+            # distance between the region limits
+            
+
+    @staticmethod
+    def get_lon_angular_distance(lon1, lon2):
+        """
+        Return the angular distance between two longitude values that
+        follow come in units of degrees east and degrees west
+        :param lon1:
+        :param lon2:
+        :return: angular distance
+        """
+
+
+
+
 
 
         # Register the variable
         self.register_auxvar("reg_code", "region_code", region_code, None)
-
 
 
 class BlankRegionMask(AuxdataBaseClass):
