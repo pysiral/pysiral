@@ -984,13 +984,18 @@ region:
         local_repository: null
         options:
             ice_free_ocean_code: 1
+            land_code: 20
+            attributes: # This is not used yet
+                flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: land"
+                flag_values:  "0, 1, 2, 3, 4, 5, 6, 20"
+                long_name:  "Region code for Antarctic Seas"
             region_def:
                 # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
-                - [1, "Indian Ocean", 20.0,  90.0, -50.]
-                - [2, "Western Pacific Ocean", 90.0, 160.0, -50.]
-                - [3, "Ross Sea", 160.0,  -130.0, -50.]
-                - [4, "Bellingshausen and Amundsen Seas", -130.0,  -60.0, -50.]
-                - [5, "Weddell Sea", -160.0,  20.0, -50.]
+                - [2, "Indian Ocean", 20.0,  90.0, -50.]
+                - [3, "Western Pacific Ocean", 90.0, 160.0, -50.]
+                - [4, "Ross Sea", 160.0,  -130.0, -50.]
+                - [5, "Bellingshausen and Amundsen Seas", -130.0,  -60.0, -50.]
+                - [6, "Weddell Sea", -160.0,  20.0, -50.]
 
     # Adapted region mask from NSIDC
     nsidc_mod:
