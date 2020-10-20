@@ -26,7 +26,7 @@ auxdata:
                 latitude_range: [-90.0, -45.0]
 
     - sic:
-         name: c3s_v1p2
+         name: c3s_v2p0
          options:
             exception_on_error: False
 
