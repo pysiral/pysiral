@@ -29,7 +29,7 @@ auxdata:
     - sic:
          name: c3s_v2p0
          options:
-            exception_on_error: False
+            exception_on_error: True
 
     - sitype:
          name: fyi_default
