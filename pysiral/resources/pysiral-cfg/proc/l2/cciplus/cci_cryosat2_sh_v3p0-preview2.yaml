@@ -17,7 +17,7 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: blank_region
+        name: cci_ant
         options: null
 
     # Load the
