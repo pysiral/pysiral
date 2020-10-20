@@ -978,6 +978,20 @@ region:
         local_repository: null
         options: {}
 
+    cci_ant:
+        pyclass: CCIAntarcticSeas
+        long_name: Definition of Antarctic seas based on their longitude
+        local_repository: null
+        options:
+            ice_free_ocean_code: 1
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [1, "Indian Ocean", 20.0,  90.0, -50.]
+                - [2, "Western Pacific Ocean", 90.0, 160.0, -50.]
+                - [3, "Ross Sea", 160.0,  -130.0, -50.]
+                - [4, "Bellingshausen and Amundsen Seas", -130.0,  -60.0, -50.]
+                - [5, "Weddell Sea", -160.0,  20.0, -50.]
+
     # Adapted region mask from NSIDC
     nsidc_mod:
         pyclass: NSIDCRegionMask
