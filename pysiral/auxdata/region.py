@@ -60,6 +60,48 @@ class NSIDCRegionMask(AuxdataBaseClass):
         self.register_auxvar("reg_code", "region_code", region_code, None)
 
 
+class CCIAntarcticSeas(AuxdataBaseClass):
+    """
+    Provides region codes for the *southern hemisphere only* based on longitude ranges
+    from Antarctic Seas (source: Stefanie Arndt, AWI, pers comm).
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class
+        :param args:
+        :param kwargs:
+        """
+        super(CCIAntarcticSeas, self).__init__(*args, **kwargs)
+
+    def get_l2_track_vars(self, l2):
+        """
+        API method, will return the region cose based on longitude and latitude values.
+        The location of the sea, the corresponding code and names are defined in the
+        auxiliary data catalog `auxdata_def.yaml` in the pysiral resources directory.
+
+        The expected structure of the options is:
+
+        options:
+            inland_sea_or_lake_code: 0
+            ice_free_ocean_code: 1
+            land_code: 20
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [1, "Indian Ocean", 20.0,  90.0, -50.]
+                - ...
+
+        :param l2:
+        :return:
+        """
+
+
+
+        # Register the variable
+        self.register_auxvar("reg_code", "region_code", region_code, None)
+
+
+
 class BlankRegionMask(AuxdataBaseClass):
     """ A dummy region code class """
 
