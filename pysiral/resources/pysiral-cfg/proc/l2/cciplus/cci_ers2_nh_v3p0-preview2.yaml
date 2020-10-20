@@ -109,9 +109,6 @@ procsteps:
     -   module: retracker
         pyclass: Level2RetrackerContainer
         options:
-            ocean:
-                pyclass: NoneRetracker
-                options: null
             lead:
                 pyclass: cTFMRA
                 options:
