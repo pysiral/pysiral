@@ -157,9 +157,7 @@ procsteps:
         pyclass: L2ApplyRangeCorrections
         options:
             corrections: 
-                - dry_troposphere
                 - wet_troposphere
-                - inverse_barometric
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
