@@ -5,7 +5,7 @@ metadata:
     record_type: cdr
     platform: ers1
     version: v3p0-preview2
-    file_version_tag: v3p0-preview2    
+    file_version_tag: v3p0-preview2
     hemisphere: north
 
 # Transfer data from the l1b to the l2 data object (from any data group)
