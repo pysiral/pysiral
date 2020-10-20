@@ -8,9 +8,9 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  monthly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview2.nc"
-  weekly: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
-  daily: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview2.nc"
+  month: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview2.nc"
+  isoweek: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
+  day: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview2.nc"
   custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
   default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
 
@@ -23,28 +23,27 @@ grid_options:
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (preview version 2)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (preview version 2)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-C (2010-11 till 2019-04-27) and baseline-D (from 2019-04-28);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
-  climatology based on regional merging of Warren Climatology with 50% reduction for 
-  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
-  Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR}, Sea ice type:  {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;Not implemented for southern hemisphere in v3.0-preview1}"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-D;envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
+  climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
+  Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU18 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;Not implemented for southern hemisphere in v3.0-preview2}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "CCI+ Sea Ice ECV, D2.1 Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
+  - references: "TBD"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "3.0-preview1"
+  - product_version: "3.0-preview2"
   - format_version: "CCI Data Standards v2.1"
   - processing_level: "Level-3 Collated (l3c)"
-  - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2019.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2019.}"
+  - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2020.}"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
   - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview2"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: "TBD"
+  - doi: "None"
   - cdm_data_type: "Grid"
   - comment: "Please note that this file is not the release version of the official CRDP, but a preview of the current algorithm state with additional parameters for development purposes) {source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
@@ -52,8 +51,7 @@ global_attributes:
   - creator_type: "institution"
   - creator_url: "http://www.awi.de, https://en.ilmatieteenlaitos.fi/"
   - creator_email: "stefan.hendricks@awi.de, robert.ricker@awi.de, eero.rinne@fmi.fi, heidi.sallila@fmi.fi"
-  - project: "Climate Change Initiative – European
-Space Agency"
+  - project: "Climate Change Initiative – European Space Agency"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: 90.0
   - geospatial_lon_min: -180.0
