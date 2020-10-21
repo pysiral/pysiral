@@ -980,7 +980,7 @@ region:
 
     cci_ant:
         pyclass: CCIAntarcticSeas
-        long_name: Definition of Antarctic seas based on their longitude
+        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
         local_repository: null
         options:
             ice_free_ocean_code: 1
@@ -995,9 +995,9 @@ region:
                 - [5, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
                 - [6, "Weddell Sea", -160.0,  20.0, -40.0]
             attributes: # This is not used yet
-                flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: land"
+                flag_meaning: "0: Land Ice, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land"
                 flag_values:  "0, 1, 2, 3, 4, 5, 6, 20"
-                long_name:  "Region code for Antarctic Seas"
+                long_name:  "Antarctic Sea "
 
     # Adapted region mask from NSIDC
     nsidc_mod:
