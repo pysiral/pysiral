@@ -34,6 +34,7 @@ Important Note:
 
 import numpy as np
 from loguru import logger
+from typing import Union
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
@@ -104,6 +105,11 @@ class CCIAntarcticSeas(AuxdataBaseClass):
             logger.warning("Missing options: ice_free_ocean_code")
         region_code = np.full(l2.n_records, default_code).astype(int)
 
+        # Verify latitudes are actually in the southern hemisphere
+        if (l2.latitude > 0).any():
+            msg = "Northern hemisphere positions detected, region code will be erronous"
+            logger.error(msg)
+
         # Step 1: Transfer Land/inland ice/lake flags from surface type flag to region code
         from_surface_types = self.cfg.options.get("from_surface_types", [])
         if not from_surface_types:
@@ -125,16 +131,25 @@ class CCIAntarcticSeas(AuxdataBaseClass):
             code, name, lon_min, lon_max, lat_limit = region_definition
 
             # Compute angle of between region longitudes
-            region_angle_range_deg = self.get_lon_angular_distance(lon_max, lon_min)
+            area_angle_dist = self.get_angular_distance(lon_max, lon_min)
 
             # Compute angles between data and two limits
+            lon_dist1 = self.get_angular_distance(lon_max, l2.longitude)
+            lon_dist2 = self.get_angular_distance(lon_min, l2.longitude)
 
             # Data is in region if sum of angles to both limits equals the angular
-            # distance between the region limits
-            
+            # distance between the region limits and is below latitude threshold
+            in_lon_range = lon_dist1 + lon_dist2 - area_angle_dist < 1.-0e-9
+            in_lat_range = l2.latitude < lat_limit
+            in_region = np.logical_and(in_lon_range, in_lat_range)
+            region_code[in_region] = code
+
+        # Register the variable
+        self.register_auxvar("reg_code", "region_code", region_code, None)
 
     @staticmethod
-    def get_lon_angular_distance(lon1, lon2):
+    def get_angular_distance(lon1: Union[float, int, np.array],
+                             lon2: Union[float, int, np.array]) -> Union[float, int, np.array]:
         """
         Return the angular distance between two longitude values that
         follow come in units of degrees east and degrees west
@@ -143,13 +158,17 @@ class CCIAntarcticSeas(AuxdataBaseClass):
         :return: angular distance
         """
 
+        # Compute angle
+        phi = np.abs(lon2 - lon1) % 360
 
+        # Choose smaller of the two possible angles
+        # NOTE: The statement below is equivalent to
+        #           360. - phi if phi > 180. else phi
+        #       but works for numbers and array alike
+        is_larger_angle = phi > 180.
+        distance = 360. * is_larger_angle + (-1 ** is_larger_angle) * phi
 
-
-
-
-        # Register the variable
-        self.register_auxvar("reg_code", "region_code", region_code, None)
+        return distance
 
 
 class BlankRegionMask(AuxdataBaseClass):
