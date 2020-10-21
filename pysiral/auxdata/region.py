@@ -90,9 +90,7 @@ class AntarcticSeas(AuxdataBaseClass):
         The expected structure of the options is:
 
         options:
-            inland_sea_or_lake_code: 0
             ice_free_ocean_code: 1
-            land_code: 20
             region_def:
                 # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
                 - [1, "Indian Ocean", 20.0,  90.0, -50.]
@@ -106,28 +104,19 @@ class AntarcticSeas(AuxdataBaseClass):
         # -> Land will be explicitly set
         # -> Definition of seas should be complete
         default_code = self.cfg.options.get("ice_free_ocean_code", -1)
-        if not default_code:
-            logger.warning("Missing options: ice_free_ocean_code")
+        if default_code == -1:
+            logger.warning("- Missing options: ice_free_ocean_code")
         region_code = np.full(l2.n_records, default_code).astype(int)
 
         # Verify latitudes are actually in the southern hemisphere
         if (l2.latitude > 0).any():
-            msg = "Northern hemisphere positions detected, region code will be erronous"
+            msg = "- Northern hemisphere positions detected, region code will be erronous"
             logger.error(msg)
 
-        # Step 1: Transfer Land/inland ice/lake flags from surface type flag to region code
-        from_surface_types = self.cfg.options.get("from_surface_types", [])
-        if not from_surface_types:
-            logger.warning("No code for land/land ice")
-        for surface_type, code in from_surface_types:
-            flag = l2.surface_type.get_by_name(surface_type)
-            code = self.cfg.options.get(surface_type, -1)
-            region_code[flag.indices] = code
-
-        # Step 2: Identify and set the Antarctic seas
+        # Identify and set the Antarctic seas
         region_def = self.cfg.options.get("region_def", [])
-        if not from_surface_types:
-            logger.error("No definition of polar seas")
+        if not region_def:
+            logger.error("- No definition of polar seas")
 
         # Loop over all regions
         for region_definition in region_def:
