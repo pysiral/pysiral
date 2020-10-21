@@ -67,6 +67,11 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
                 error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
                 self.error.add_error(error_id, error_message)
                 self.error.raise_on_error()
+            empty_str = len(local_repo) == 0 if local_repo is not None else False
+            if empty_str:
+                msg = "Path definition for {}.{} exists in local_machine_def.yaml, but is empty string"
+                msg = msg.format(auxdata_class, auxdata_id)
+                logger.warning(msg)
             cfg.set_local_repository(local_repo)
 
         # set doc str (should be mandatory for all auxdata handlers)
