@@ -79,7 +79,7 @@ class AntarcticSeas(AuxdataBaseClass):
         :param args:
         :param kwargs:
         """
-        super(CCIAntarcticSeas, self).__init__(*args, **kwargs)
+        super(AntarcticSeas, self).__init__(*args, **kwargs)
 
     def get_l2_track_vars(self, l2):
         """

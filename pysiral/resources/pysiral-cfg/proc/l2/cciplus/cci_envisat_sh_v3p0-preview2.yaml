@@ -16,7 +16,7 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-            name: cci_ant
+            name: antarctic_seas
             options: null
 
     # Load the

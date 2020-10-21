@@ -978,9 +978,10 @@ region:
         local_repository: null
         options: {}
 
-    cci_ant:
-        pyclass: CCIAntarcticSeas
-        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
+    antarctic_seas:
+        pyclass: AntarcticSeas
+        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S 
+        (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
         local_repository: null
         options:
             ice_free_ocean_code: 1
