@@ -989,11 +989,11 @@ region:
                 - ["land_ice", 0]
             region_def:
                 # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
-                - [2, "Indian Ocean", 20.0,  90.0, -50.0]
-                - [3, "Western Pacific Ocean", 90.0, 160.0, -50.0]
-                - [4, "Ross Sea", 160.0,  -130.0, -50.0]
-                - [5, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -50.0]
-                - [6, "Weddell Sea", -160.0,  20.0, -50.0]
+                - [2, "Indian Ocean", 20.0,  90.0, -40.0]
+                - [3, "Western Pacific Ocean", 90.0, 160.0, -40.0]
+                - [4, "Ross Sea", 160.0,  -130.0, -40.0]
+                - [5, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
+                - [6, "Weddell Sea", -160.0,  20.0, -40.0]
             attributes: # This is not used yet
                 flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: land"
                 flag_values:  "0, 1, 2, 3, 4, 5, 6, 20"
