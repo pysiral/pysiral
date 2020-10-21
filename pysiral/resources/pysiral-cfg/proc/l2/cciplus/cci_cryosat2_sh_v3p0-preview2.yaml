@@ -43,6 +43,7 @@ auxdata:
              snow_density_uncertainty: 50.
              smooth_snow_depth: true
              smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---

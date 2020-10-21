@@ -28,7 +28,7 @@ auxdata:
     - sic:
          name: c3s_v2p0
          options:
-            exception_on_error: False
+            exception_on_error: True
 
     - sitype:
          name: fyi_default
@@ -42,6 +42,8 @@ auxdata:
              snow_density_uncertainty: 20
              smooth_snow_depth: true
              smooth_filter_width_m: 25000.0
+             exception_on_error: True
+             
 
 procsteps: 
 

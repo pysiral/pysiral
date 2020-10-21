@@ -166,9 +166,9 @@ variables:
     coordinates: time
 
   region_code:
-    long_name: "Region code based on {source_hemisphere:select;modified NSIDC region mask);Antarctic seas based on their longitude range 
-    with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012): Antarctic sea ice variability and trends, 1979–2010, 
-    The Cryosphere)"
+    long_name: "Region code from {source_hemisphere:select;modified NSIDC region mask;Antarctic seas based on their longitude range 
+    with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, 
+    The Cryosphere)}"
     comment: "{source_hemisphere:select;Added flag for Baltic Sea (flag value 16);}"
     valid_min: 0
     valid_max: 21

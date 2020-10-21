@@ -985,9 +985,6 @@ region:
         local_repository: null
         options:
             ice_free_ocean_code: 1
-            from_surface_type:
-                - ["land", 20]
-                - ["land_ice", 0]
             region_def:
                 # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
                 - [2, "Indian Ocean", 20.0,  90.0, -40.0]
