@@ -133,7 +133,7 @@ class AntarcticSeas(AuxdataBaseClass):
 
             # Data is in region if sum of angles to both limits equals the angular
             # distance between the region limits and is below latitude threshold
-            in_lon_range = lon_dist1 + lon_dist2 - area_angle_dist < 1.-0e-9
+            in_lon_range = (lon_dist1 + lon_dist2 - area_angle_dist) < 1.-0e-9
             in_lat_range = l2.latitude < lat_limit
             in_region = np.logical_and(in_lon_range, in_lat_range)
             region_code[in_region] = code
@@ -160,7 +160,7 @@ class AntarcticSeas(AuxdataBaseClass):
         #           360. - phi if phi > 180. else phi
         #       but works for numbers and array alike
         is_larger_angle = phi > 180.
-        distance = 360. * is_larger_angle + (-1 ** is_larger_angle) * phi
+        distance = 360. * is_larger_angle + (-1) ** is_larger_angle * phi
 
         return distance
 
