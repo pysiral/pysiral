@@ -1373,7 +1373,7 @@ class Level3QualityFlag(Level3ProcessorItem):
     required_options = ["add_rule_flags", "rules"]
     l2_variable_dependencies = []
     l3_variable_dependencies = ["sea_ice_thickness", "n_valid_waveforms", "negative_thickness_fraction",
-                                "lead_fraction", "warren99_is_valid"]
+                                "lead_fraction"]
     l3_output_variables = dict(quality_flag=dict(dtype="i1", fill_value=0))
 
     def __init__(self, *args, **kwargs):
