@@ -35,9 +35,9 @@ Important Note:
 import numpy as np
 from loguru import logger
 from typing import Union
+from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
 
 
 class NSIDCRegionMask(AuxdataBaseClass):
@@ -48,21 +48,26 @@ class NSIDCRegionMask(AuxdataBaseClass):
         super(NSIDCRegionMask, self).__init__(*args, **kwargs)
 
         # The region mask is static, parse the file during init
-        self._data = ReadNC(self.cfg.filename)
+        self.nc = open_dataset(self.cfg.filename)
 
     def get_l2_track_vars(self, l2):
+        """
+        API method to map gridded region id on the trajectory
+        :param l2:
+        :return:
+        """
 
         # Extract from grid
         griddef = self.cfg.options[l2.hemisphere]
-        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid_lons, grid_lats = self.nc.longitude.values, self.nc.latitude.values
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
-        region_code = grid2track.get_from_grid_variable(self._data.region_id, flipud=False)
+        region_code = grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=False)
 
         # Register the variable
         self.register_auxvar("reg_code", "region_code", region_code, None)
 
 
-class CCIAntarcticSeas(AuxdataBaseClass):
+class AntarcticSeas(AuxdataBaseClass):
     """
     Provides region codes for the *southern hemisphere only* based on longitude ranges
     from Antarctic Seas (source: Stefanie Arndt, AWI, pers comm).
@@ -98,7 +103,7 @@ class CCIAntarcticSeas(AuxdataBaseClass):
         """
 
         # Get a default region code value (ice free ocean)
-        # -> Land will be explicitely set
+        # -> Land will be explicitly set
         # -> Definition of seas should be complete
         default_code = self.cfg.options.get("ice_free_ocean_code", -1)
         if not default_code:
