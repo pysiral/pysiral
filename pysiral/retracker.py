@@ -946,9 +946,8 @@ class cTFMRA(BaseRetracker):
         leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]
 
         # Identify the first maximum
-        first_maximum_index = absolute_maximum_index
+        first_maximum_index = int(absolute_maximum_index)
         if len(leading_maxima) > 0:
-            # first_maximum_index = leading_maxima[0]
             first_maximum_index = peaks[leading_maxima[0]]
 
         return first_maximum_index
