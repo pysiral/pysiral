@@ -68,10 +68,13 @@ input_adapter:
             sigma0_ice1: ice1_sig0_20hz
             sigma0_ice2: ice2_sig0_20hz
             leading_edge_width_ice2: ice2_le_width_20hz
-            elevation_ice1: ice1_elevation_20hz
-            elevation_sitrack: sitrack_elevation_20hz
+            ice1_range: ice1_range_20hz
+            ice2_range: ice2_range_20hz
+            sitrack_range: sitrack_range_20hz
+            ocean_range: ocean_range_20hz
+            significant_wave_height: swh_20hz
+            center_of_gravity_corr: cog_corr_20hz
             epsilon_sec: htl_disc_out
-
 
 
 # Output handler (will always be default handler -> only options)
