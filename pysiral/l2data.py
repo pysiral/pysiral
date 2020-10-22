@@ -141,7 +141,7 @@ class Level2Data(object):
 
     def update_retracked_range(self, retracker):
         # Update only for indices (surface type) supplied by retracker class
-        # XXX: should get an overhaul
+        # TODO: should get an overhaul
         ii = retracker.indices
         self.range[ii] = retracker.range[ii]
         self.range.uncertainty[ii] = retracker.uncertainty[ii]

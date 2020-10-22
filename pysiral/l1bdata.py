@@ -885,7 +885,7 @@ class L1bClassifiers(object):
         the nodata=nan value"""
 
         for parameter_name in self.parameter_list:
-            data_corr = np.full((corrected_n_records), np.nan)
+            data_corr = np.full(corrected_n_records, np.nan)
             data_old = self.get_parameter(parameter_name)
             data_corr[indices_map] = data_old
             self.add(data_corr, parameter_name)
