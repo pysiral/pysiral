@@ -938,7 +938,7 @@ class cTFMRA(BaseRetracker):
         # Find relative maxima before the absolute maximum
 
         try:
-            peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index])
+            peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index+1])
         except:
             return -1
 
