@@ -3,7 +3,7 @@ metadata:
     label: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
     product_line: cci
     record_type: cdr
-    platform: ers1
+    platform: ers2
     version: v3p0-preview2
     file_version_tag: v3p0-preview2    
     hemisphere: north
