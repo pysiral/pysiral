@@ -933,7 +933,7 @@ class cTFMRA(BaseRetracker):
         try:
             absolute_maximum_index = bn.nanargmax(wfm)
         except ValueError:
-            return 0
+            return -1
 
         # Find relative maxima before the absolute maximum
 
