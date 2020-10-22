@@ -1299,7 +1299,10 @@ class ERSPulseDeblurring(Level2ProcessorStep):
 
         # Compute and apply pulse deblurring correction
         pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / 5.0
-        l2.elev[:] = l2.elev[:] + pulse_deblurring_correction
+        for target_variable in self.target_variables:
+            var = l2.get_parameter_by_name(target_variable)
+            var[:] = var[:] + pulse_deblurring_correction
+            l2.set_parameter(target_variable, var[:], var.uncertainty[:])
 
         # Add pulse deblurring correction to level-2 auxiliary data
         l2.set_auxiliary_parameter("pdbc", "pulse_deblurring_correction", pulse_deblurring_correction)
@@ -1314,6 +1317,10 @@ class ERSPulseDeblurring(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return ["pdbc"]
+
+    @property
+    def target_variables(self):
+        return self.cfg.options.get("target_variables", ["elevation"])
 
     @property
     def error_bit(self):
