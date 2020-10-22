@@ -145,6 +145,25 @@ procsteps:
                         type: fixed
                         value: 0.15
 
+    # Apply ERS pulse deblurring correction
+    -   module: retracker
+        pyclass: ERSMultipleElevations
+        options: 
+            predefined_retrackers: [ocean, ice1, ice2, sitrack]
+            classifier_name_fmt: "{}_range"
+            output_name_fmt: "elevation_{}"
+
+    # Apply ERS pulse deblurring correction
+    -   module: retracker
+        pyclass: ERSPulseDeblurring
+        options: 
+            target_variables:
+                - elevation
+                - elevation_ocean
+                - elevation_ice1
+                - elevation_ice2
+                - elevation_sitrack
+
     # Apply the range corrections 
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
@@ -159,11 +178,12 @@ procsteps:
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
-
-    # Apply ERS pulse deblurring correction
-    -   module: retracker
-        pyclass: ERSPulseDeblurring
-        options: {}
+            target_variables:
+                - elevation
+                - elevation_ocean
+                - elevation_ice1
+                - elevation_ice2
+                - elevation_sitrack
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
