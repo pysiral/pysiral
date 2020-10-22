@@ -331,13 +331,24 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             #                       ----------------
             #                 elevation after retracking
             #
-            l2.elev[:] = l2.elev[:] - range_delta
+            for target_variable in self.target_variables:
+                var = l2.get_parameter_by_name(target_variable)
+                var[:] = var[:] - range_delta
+                l2.set_parameter(target_variable, var[:], var.uncertainty[:])
 
         return error_status
 
     @property
+    def target_variables(self):
+        """
+        Return target variables from config file or default value
+        :return:
+        """
+        return self.cfg.options.get("target_variables", ["elevation"])
+
+    @property
     def l2_input_vars(self):
-        return ["elevation"]
+        return self.target_variables
 
     @property
     def l2_output_vars(self):
