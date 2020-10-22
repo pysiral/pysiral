@@ -42,7 +42,7 @@ class ERSFileList(DefaultLoggingClass):
         # Create a list of day if not full month is required
         if not time_range.is_full_month:
             self.day_list = np.arange(
-                time_range.start.day, time_range.stop.day+1)
+                time_range.start.day, time_range.stop.day + 1)
 
         self._get_file_listing()
 
@@ -51,6 +51,10 @@ class ERSFileList(DefaultLoggingClass):
         return self._sorted_list
 
     def _get_file_listing(self):
+        """
+        Look for files
+        :return:
+        """
         search_toplevel_folder = self._get_toplevel_search_folder()
         # walk through files
         for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
@@ -102,7 +106,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
         # Save config
         self.cfg = cfg
 
-        # Establish a lookup table for thats maps cycles to days from the cycle folder names
+        # Establish a lookup table that maps cycles to days from the cycle folder names
         self._create_date_lookup_table()
 
         # Init empty file lists
@@ -119,7 +123,6 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
         self._query(period)
         return self.sorted_list
 
-
     def _create_date_lookup_table(self):
         """
         Get a look up table based on the folder names for each cycle. The content will be stored in
@@ -128,9 +131,9 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
         """
 
         # --- Parameters ---
-        lookup_dir = self.cfg.lookup_dir                  # The main repository directory
-        regex = self.cfg.cycle_folder_regex               # The regex expression used to identify cycle folders
-        folder_parser = compile(self.cfg.folder_parser)   # a parser string indicating parameters in folder name
+        lookup_dir = self.cfg.lookup_dir  # The main repository directory
+        regex = self.cfg.cycle_folder_regex  # The regex expression used to identify cycle folders
+        folder_parser = compile(self.cfg.folder_parser)  # a parser string indicating parameters in folder name
 
         # --- Find all cycle folders ---
         # Note: the regex only applies to the subfolder name, not the full path
@@ -147,7 +150,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             tcs, tce = dateutil.parser.parse(result["tcs"]), dateutil.parser.parse(result["tce"])
 
             # Compute list of dates between two datetimes
-            delta = tce-tcs
+            delta = tce - tcs
             dates = []
             for i in range(delta.days + 1):
                 date = tcs + timedelta(days=i)
@@ -188,7 +191,6 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             # Query each cycle folder
             filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
             for cycle_folder in cycle_folders:
-
                 sgdr_files = Path(cycle_folder).glob(filename_search)
                 self._sorted_list.extend(sorted(sgdr_files))
 
@@ -207,4 +209,4 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
 
     @property
     def sorted_list(self):
-         return list(self._sorted_list)
+        return list(self._sorted_list)

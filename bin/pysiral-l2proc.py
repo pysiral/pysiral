@@ -8,7 +8,6 @@ from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
 from loguru import logger
-from pathlib import Path
 
 from dateperiods import DatePeriod
 from datetime import timedelta
