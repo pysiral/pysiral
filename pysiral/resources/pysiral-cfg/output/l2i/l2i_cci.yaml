@@ -85,6 +85,11 @@ variables:
     units: degrees north
     coordinates: time
 
+  altitude:
+    long_name: altitude of satellite platform
+    units: m
+    coordinates: time
+
   surface_type:
     long_name: "surface type classification flag"
     units: "1"
@@ -112,12 +117,38 @@ variables:
     coordinates: time
 
   elevation:
-    long_name: "elevation of retracked point above WGS84 ellipsoid (satellite altitude - range corrections - retracker range)"
+    long_name: "elevation of retracked point above WGS84 ellipsoid with range corrections applied"
+    comment: "corresponds the primary retracking method"
     units: m
     coordinates: time
 
   elevation_uncertainty:
     long_name: "uncertainty of retracked point above WGS84 ellipsoid (= satellite altitude - range corrections - retracker range)"
+    comment: "corresponds the primary retracking method"
+    units: m
+    coordinates: time
+
+  elevation_ocean:
+    long_name: "elevation of retracked point above WGS84 ellipsoid with ocean retracker with range corrections applied"
+    comment: "not available for all platforms"
+    units: m
+    coordinates: time
+
+  elevation_ice1:
+    long_name: "elevation of retracked point above WGS84 ellipsoid with ICE1 retracker with range corrections applied"
+    comment: "not available for all platforms"
+    units: m
+    coordinates: time
+
+  elevation_ice2:
+    long_name: "elevation of retracked point above WGS84 ellipsoid with ICE2 retracker with range corrections applied"
+    comment: "not available for all platforms"
+    units: m
+    coordinates: time
+
+  elevation_sitrack:
+    long_name: "elevation of retracked point above WGS84 ellipsoid with sea ice retracker with range corrections applied"
+    comment: "not available for all platforms"
     units: m
     coordinates: time
 
