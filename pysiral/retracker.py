@@ -640,11 +640,13 @@ class TFMRA(BaseRetracker):
 
         return range_os, wfm_os
 
-    def normalize_wfm(self, y):
+    @staticmethod
+    def normalize_wfm(y):
         norm = np.nanmax(y)
         return y/norm, norm
 
-    def get_first_maximum_index(self, wfm, peak_minimum_power):
+    @staticmethod
+    def get_first_maximum_index(wfm, peak_minimum_power):
         """
         Return the index of the first peak (first maximum) on
         the leading edge before the absolute power maximum.
@@ -780,7 +782,7 @@ class cTFMRA(BaseRetracker):
         # short link to options
         option = self._options.threshold
 
-        # Init an empy threshold array
+        # Init an empty threshold array
         threshold = np.full(self._l2.longitude.shape, np.nan)
 
         # [Legacy] Threshold is float in settings file
