@@ -124,7 +124,10 @@ class SLABaseFunctionality(object):
             edge_condition = np.logical_or(before_first_lead, after_last_lead)
             invalid_indices = invalid_indices[np.where(edge_condition)[0]]
 
-        return invalid_indices
+        # Create and return mask
+        mask = np.full(l2.n_records, False)
+        mask[invalid_indices] = True
+        return mask
 
     def get_tiepoint_distance(self, is_tiepoint):
         """
@@ -468,18 +471,18 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         # Note: This intends to remove small segments in fjords/channels for which
         #       the SLA computation is very likely not trustworthy
         mask = np.full(l2.n_records, False)
-        if "marine_segment_filter" in self.cfg:
+        if "marine_segment_filter" in self.cfg.options:
             minimum_lead_number = self.cfg.options.marine_segment_filter.get("minimum_lead_number", np.nan)
             filter_mask = self.marine_segment_filter(l2, minimum_lead_number, footprint_size)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 5 (optional): Filter SLA segments that are far away from the next SSH tie point
-        if "tiepoint_maxdist_filter" in self.cfg:
+        if "tiepoint_maxdist_filter" in self.cfg.options:
             is_tiepoint = np.full(l2.n_records, False)
             is_tiepoint[ssh_tiepoint_indices] = True
             distance_threshold = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", np.nan)
             edges_only = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", False)
-            filter_mask = self.tiepoint_maxdist_filter(l2, is_tiepoint, distance_threshold, edges_only)
+            filter_mask = self.tiepoint_maxdist_filter(l2, edges_only, distance_threshold, footprint_size)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 6: Apply filter (if any)

@@ -28,7 +28,6 @@ global_attributes:
   - source_auxdata_mss: "{source_auxdata_mss}"
   - source_auxdata_sic: "{source_auxdata_sic}"
   - source_auxdata_sitype: "{source_auxdata_sitype}"
-  - source_auxdata_icechart: "{source_auxdata_icechart}" # fmi modification
   - references: "pysiral version: {pysiral_version:default}"
   - cdm_data_type: Trajectory
   - date_created: "{utcnow}"

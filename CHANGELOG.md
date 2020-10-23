@@ -1,5 +1,25 @@
 # History of changes
 
+## [0.9.4] - 2020-10-19
+
+### Fixed
+- Some filters were not applied correctly in the sea-level anomaly estimation
+
+## [0.9.3] - 2020-10-08
+
+### Fixed
+- Issues with Level-2 output format
+
+## [0.9.2] - 2020-10-08
+
+### Fixed
+- Issues with Level-2 pre-processor
+
+## [0.9.1] - 2020-10-08
+
+### Fixed
+- Added missing Level-2 pre-processor definitions for CryoSat-2 v2.3
+
 ## [0.9.0] - 2020-10-07
 
 ### Added

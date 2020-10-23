@@ -111,10 +111,13 @@ class Level2Data(object):
             return
 
         # Set values, uncertainty bias
-        parameter.set_value(value)
-        if uncertainty is not None:
-            uncertainty_value = self._get_as_array(uncertainty)
-            parameter.set_uncertainty(uncertainty_value)
+        if isinstance(parameter, L2DataArray):
+            parameter.set_value(value)
+            if uncertainty is not None:
+                uncertainty_value = self._get_as_array(uncertainty)
+                parameter.set_uncertainty(uncertainty_value)
+        else:
+            parameter = value
         setattr(self, target, parameter)
 
     def set_auxiliary_parameter(self, var_id, var_name, value, uncertainty=None):
@@ -413,7 +416,7 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_start(self, *args):
-        dt = self.period.start
+        dt = self.period.tcs.dt
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -421,7 +424,7 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_end(self, *args):
-        dt = self.period.stop
+        dt = self.period.tce.dt
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -429,7 +432,7 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_duration(self, *args):
-        return self.period.duration_isoformat
+        return self.period.duration.isoformat
 
     def _get_attr_time_resolution(self, *args):
         tdelta = self.time[-1]-self.time[0]
@@ -789,7 +792,7 @@ class Level2PContainer(DefaultLoggingClass):
         return data
 
     @staticmethod
-    def _get_empty_data_group(self, parameter_list):
+    def _get_empty_data_group(parameter_list):
         data = {}
         for parameter_name in parameter_list:
             data[parameter_name] = np.array([], dtype=np.float32)
