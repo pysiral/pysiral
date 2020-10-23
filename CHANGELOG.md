@@ -1,5 +1,17 @@
 # History of changes
 
+## [0.9.5] - xxxx-xx-xx
+
+### Added
+- Option to have multiple elevations from different retrackers to l2i output (range must be in l1p) 
+
+### Changed
+- Updated the CCI+ v3.0-preview2 processor and output definitions
+
+### Fixed
+- Minor issue with detection first maximum in TFMRA (cython implementation)
+- Degradation in CCI+ CryoSat-2 Antarctic data due to incorrect choice of geophysical range corrections
+
 ## [0.9.4] - 2020-10-19
 
 ### Fixed
