@@ -753,8 +753,8 @@ class ICDCSouthernClimatology(AuxdataBaseClass):
         # if the requested date is February 29, since no
         # corresponding source file exists. As a fix, the data in
         # in this case is set back to the February 28.
-        if self.month == 2 and self.day == 29:
-            self.set_requested_date(self.year, self.month, 28)
+        if self.month == "02" and self.day == "29":
+            self.set_requested_date(int(self.year), int(self.month), 28)
 
         # Update the external data
         self.update_external_data()
