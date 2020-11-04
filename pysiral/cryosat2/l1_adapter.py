@@ -70,9 +70,31 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         if self.nc is None:
             return self.empty
 
+        # CAVEAT: An issue has been identified with baseline-D L1b data when the orbit solution
+        # is based on predicted orbits and not the DORIS solution (Nov 2020).
+        # The source of the orbit data can be identified by the `vector_source` global attribute
+        # in the L1b source files. This can take/should take the following values:
+        #
+        #     nrt:  "fos predicted" (predicted orbit)
+        #           "doris_navigator" (DORIS Nav solution)
+        #
+        #     rep:  "doris_precise" (final and precise DORIS solution)
+        #
+        # To prevent l1 data with erroneous orbit solution entering the processing chain, l1 data
+        # with the predicted orbit can be excluded here. The process of exclusion requires to set
+        # a flag in the l1 processor definition for the input handler:
+        #
+        #   exclude_predicted_orbits: True
+        #
+        exclude_predicted_orbits = self.cfg.get("exclude_predicted_orbits", False)
+        is_predicted_orbit = self.nc.vector_source.lower().strip() == "fos predicted"
+        logger.debug(self.nc.vector_source.lower().strip())
+        if is_predicted_orbit and exclude_predicted_orbits:
+            logger.warning("Predicted orbit solution detected -> skip file")
+            return self.empty
+
         # Get metadata
         self._set_input_file_metadata()
-
         if polar_ocean_check is not None:
             has_polar_ocean_data = polar_ocean_check.has_polar_ocean_segments(self.l1.info)
             if not has_polar_ocean_data:
