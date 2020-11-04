@@ -50,6 +50,13 @@ input_adapter:
             transmit_power: transmit_pwr_20_ku
             noise_power: noise_power_20_ku
 
+        # This is a flag that prevents L1b files with a predicted orbits with
+        # potentially erroneous platform altitude to be processed towards l1p
+        # This is in reaction to an issue identified in Nov 2020 with CryoSat-2
+        # NRT data. Setting this option to true will automatically reject all
+        # l1b input files with the `vector_source: "fos predicted"` global
+        # attribute
+        exclude_predicted_orbits: True
 
 
 # Output handler (will always be default handler -> only options)
