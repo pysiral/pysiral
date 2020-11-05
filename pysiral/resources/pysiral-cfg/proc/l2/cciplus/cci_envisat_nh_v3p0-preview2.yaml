@@ -68,7 +68,6 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
-                late_tail_to_peak_power: [ltpp, late_tail_to_peak_power]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -114,6 +113,14 @@ procsteps:
                     sea_ice_backscatter_max: [22.50, 21.80, 21.30, 20.40, 0.00, 0.00, 0.00, 0.00, 0.00, 25.90, 24.60, 22.80]
                     leading_edge_width_min: [0.81, 0.83, 0.83, 0.83, 0.00, 0.00, 0.00, 0.00, 0.00, 0.78, 0.78, 0.80]
                     ice_concentration_min: 70.0
+
+    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
+    -   module: retracker
+        pyclass: SGDRMultipleElevations
+        options: 
+            predefined_retrackers: [ocean, ice1, ice2, sitrack]
+            classifier_name_fmt: "{}_range"
+            output_name_fmt: "elevation_{}"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
