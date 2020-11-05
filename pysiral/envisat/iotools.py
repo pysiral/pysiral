@@ -147,7 +147,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
 
             # Query the daily folder
             filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
-            sgdr_files = Path(lookup_folder).glob(filename_search)
+            sgdr_files = list(Path(lookup_folder).glob(filename_search))
 
             # Add files to result list
             if len(sgdr_files) == 0:
@@ -155,7 +155,8 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             self._sorted_list.extend(sorted(sgdr_files))
 
     def _get_lookup_folder(self, year, month, day):
-        return Path(self.cfg.lookup_dir) / "%04g" % year / "%02g" % month / "%02g" % day
+        yyyy, mm, dd = "%04g" % year, "%02g" % month, "%02g" % day
+        return Path(self.cfg.lookup_dir) / yyyy / mm / dd
 
     @property
     def sorted_list(self):
