@@ -73,6 +73,10 @@ input_adapter:
             range_sea_ice: range_sea_ice_20_ku
             retracking_sea_ice_qual: retracking_sea_ice_qual_20_ku
             swh_ocean: swh_ocean_20_ku
+            ice1_range: range_ice1_20_ku
+            ice2_range: range_ice2_20_ku
+            sitrack_range: range_sea_ice_20_ku
+            ocean_range: range_ocean_20_ku
             slope_first_trailing_edge_ice2: slope_first_trailing_edge_ice2_20_ku
 
 # Output handler (will always be default handler -> only options)
