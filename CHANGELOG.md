@@ -1,9 +1,10 @@
 # History of changes
 
-## [0.9.5] - xxxx-xx-xx
+## [0.9.5] - 2020-11-05
 
 ### Added
 - Option to have multiple elevations from different retrackers to l2i output (range must be in l1p) 
+- Option to reject CryoSat-2 l1b source file based on the status of orbit solution (coarse predicted orbits leads to freeboard elevation issues in CryoSat-2 baseline-D NRT data)
 
 ### Changed
 - Updated the CCI+ v3.0-preview2 processor and output definitions
@@ -11,6 +12,8 @@
 ### Fixed
 - Minor issue with detection first maximum in TFMRA (cython implementation)
 - Degradation in CCI+ CryoSat-2 Antarctic data due to incorrect choice of geophysical range corrections
+- Crash in Envisat SGDR input handler when constructing the lookup directory for SGDR data
+- Crash of the southern hemisphere snow climatology happening on February 29. 
 
 ## [0.9.4] - 2020-10-19
 
