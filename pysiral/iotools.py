@@ -115,7 +115,6 @@ class NCMaskedGridData(object):
         self.parse()
 
     def parse(self):
-        from pysiral.iotools import ReadNC
 
         nc = ReadNC(self.filename)
 
@@ -179,7 +178,7 @@ def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
     all_l1bdata_files = sorted(directory.glob("*.nc"))
 
     # 3) Check if files are in requested time range
-    # This serves two purporses: a) filter out files with timestamps that do
+    # This serves two purposes: a) filter out files with timestamps that do
     # not belong in the directory. b) get a subset if required
     l1bdata_files_checked = [l1bdata_file for l1bdata_file in all_l1bdata_files
                              if l1bdata_in_trange(l1bdata_file, time_range)]
