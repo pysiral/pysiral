@@ -145,9 +145,9 @@ procsteps:
                         type: fixed
                         value: 0.15
 
-    # Apply ERS pulse deblurring correction
+    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
     -   module: retracker
-        pyclass: ERSMultipleElevations
+        pyclass: SGDRMultipleElevations
         options: 
             predefined_retrackers: [ocean, ice1, ice2, sitrack]
             classifier_name_fmt: "{}_range"

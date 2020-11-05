@@ -1355,7 +1355,7 @@ class ERSPulseDeblurring(Level2ProcessorStep):
         return self.error_flag_bit_dict["retracker"]
 
 
-class ERSMultipleElevations(Level2ProcessorStep):
+class SGDRMultipleElevations(Level2ProcessorStep):
     """
     A processing step that computes elevation from a set of
     already retracked ranges and sets these as auxiliary
@@ -1371,7 +1371,7 @@ class ERSMultipleElevations(Level2ProcessorStep):
     """
 
     def __init__(self, *args, **kwargs):
-        super(ERSMultipleElevations, self).__init__(*args, **kwargs)
+        super(SGDRMultipleElevations, self).__init__(*args, **kwargs)
 
     def execute_procstep(self, l1b, l2):
         """

@@ -117,6 +117,14 @@ procsteps:
                     leading_edge_width_min: [0.90, 0.90, 0.90, 0.90, 0.00, 0.00, 0.00, 0.00, 0.00, 0.93, 0.89, 0.89]
                     ice_concentration_min: 70.0
 
+# Add elevations from other retrackers in SGDR (ERS/Envisat only)
+    -   module: retracker
+        pyclass: SGDRMultipleElevations
+        options: 
+            predefined_retrackers: [ocean, ice1, ice2, sitrack]
+            classifier_name_fmt: "{}_range"
+            output_name_fmt: "elevation_{}"
+
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
