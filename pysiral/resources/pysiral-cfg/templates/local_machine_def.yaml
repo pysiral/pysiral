@@ -52,14 +52,15 @@ auxdata_repository:
 
     # Mean Sea Surface Products
     mss:
+        # TODO: Enter directory DTU15 mean-sea surface netCDF file
         dtu15: ''
+        # TODO: Enter directory DTU18 mean-sea surface netCDF file
         dtu18: ''
 
     # Sea Ice Concentration Products
     sic:
         # Can remain empty until operational processing with delay < 16 days
         osisaf_operational: ''
-        c3s_v2p0: ''
         # TODO: Enter directory with C3S sea-ice concentration icdr data
         #       (expects yyyy/mm as subfolders)
         c3s_icdr_v2p0: ''
@@ -71,7 +72,6 @@ auxdata_repository:
     sitype:
         # Can remain empty until operational processing with delay < 16 days
         osisaf_operational: ''
-        c3s_v1p0: ''
         # TODO: Enter directory with C3S sea-ice type icdr data
         #       (expects yyyy/mm as subfolders)
         c3s_icdr_v1p0: ''
@@ -81,4 +81,6 @@ auxdata_repository:
 
     # Snow Products
     snow:
+        # TODO: Enter directory with monthly merged snow climatology netCDF files
+        #       (expects all files in this directory)
         clim_w99amsr2: ''
