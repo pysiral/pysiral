@@ -38,6 +38,7 @@ Important Note:
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
+from pysiral import psrlcfg
 
 import scipy.ndimage as ndimage
 from pyproj import Proj
@@ -132,7 +133,16 @@ class OsiSafSIC(AuxdataBaseClass):
             opt = self.cfg.options.auto_product_change
             product_index = int(self.start_time > opt.date_product_change)
             product_def = opt.osisaf_product_def[product_index]
-            path = path / product_def["subfolder"]
+            aux_repo_defs = psrlcfg.local_machine.auxdata_repository
+            try:
+                path = aux_repo_defs["sic"][product_def["subfolder"]]
+            except KeyError:
+                msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.sic.%"
+                msg = msg % product_def["subfolder"]
+                self.error.add_error("missing-localmachinedef-tag", msg)
+                self.error.raise_on_error()
+            path = Path(path)
+
             self.cfg.filenaming = product_def["filenaming"]
             self.cfg.long_name = product_def["long_name"]
 
