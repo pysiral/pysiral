@@ -523,78 +523,6 @@ sic:
             type: daily
             link: null
 
-    # C3S climate data record v1.2
-    c3s_cdr_v1p2:
-        pyclass: OsiSafSIC
-        long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v1p2
-        filenaming: "ice_conc_{hemisphere_code}_ease-125_reproc_{year}{month}{day}1200.nc4"
-        local_repository: c3s_cdr_v1p2
-        options:
-            variable_name: ice_conc
-            uncertainty_variable_name: uncertainty
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 849
-                    n_lines: 849
-                    dx: 12500
-                    dy: 12500
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 849
-                    n_lines: 849
-                    dx: 12500
-                    dy: 12500
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: http://thredds.met.no/thredds/fileServer/c3s/reproc_ice_conc_files
-
-    # C3S interim climate data record v1.2
-    c3s_icdr_v1p2:
-        pyclass: OsiSafSIC
-        long_name: C3S Sea Ice Concentration Interim Climate Data Record (CDR) - v1p2
-        filenaming: "ice_conc_{hemisphere_code}_ease-125_cont-reproc_{year}{month}{day}1200.nc"
-        local_repository: c3s_icdr_v1p2
-        options:
-            variable_name: ice_conc
-            uncertainty_variable_name: uncertainty
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 849
-                    n_lines: 849
-                    dx: 12500
-                    dy: 12500
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 849
-                    n_lines: 849
-                    dx: 12500
-                    dy: 12500
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: http://thredds.met.no/thredds/fileServer/c3s/contreproc_ice_conc_files/
-
     c3s_v1p2:
         pyclass: OsiSafSIC
         # The final product directory is computed in the auxdata handler, therefore the local machine definition key
@@ -641,84 +569,11 @@ sic:
             transfer: thredds
             server_url: Null
 
-    # C3S climate data record v1.2
-    c3s_cdr_v2p0:
-        pyclass: OsiSafSIC
-        long_name: C3S Sea Ice Concentration Climate Data Record (CDR) - v2p0
-        filenaming: "ice_conc_{hemisphere_code}_ease2-250_cdr-v2p0_{year}{month}{day}1200.nc"
-        local_repository: c3s_cdr_v2p0
-        options:
-            variable_name: ice_conc
-            uncertainty_variable_name: total_standard_error
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: https://thredds.met.no/thredds/catalog/c3s/cdr_ice_conc_v2p0_files
-
-    # C3S interim climate data record v1.2
-    c3s_icdr_v2p0:
-        pyclass: OsiSafSIC
-        long_name: C3S Sea Ice Concentration Interim Climate Data Record (ICDR) - v2p0
-        filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v2p0_{year}{month}{day}1200.nc"
-        local_repository: c3s_icdr_v2p0
-        options:
-            variable_name: ice_conc
-            uncertainty_variable_name: total_standard_error
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: https://thredds.met.no/thredds/catalog/c3s/icdr_ice_conc_v2p0_files
-
     c3s_v2p0:
         pyclass: OsiSafSIC
         # The final product directory is computed in the auxdata handler, therefore the local machine definition key
         # `osisafcdr` must be the root directory of the subfolders defined below
-        long_name: "Merged C3S CDR/ICDR product (v2.0)"
-        local_repository: c3s_v2p0
+        long_name: C3S Sea Ice Concentration (interim) Climate Data Record ((i)CDR) - v2p0
         options:
             auto_product_change:
                 # The date defines the time, when the second product will be used
@@ -818,84 +673,10 @@ sitype:
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
 
-    # C3S climate data record c1.0
-    c3s_cdr_v1p0:
-        pyclass: OsiSafSITypeCDR
-        long_name: C3S Sea Ice Type Climate Data Record (CDR) - v1p0
-        filenaming: "ice_type_{hemisphere_code}_ease2-250_cdr-v1p0_{year}{month}{day}1200.nc"
-        local_repository: c3s_icdr_v1p0
-        options:
-            variable_name: ice_type
-            uncertainty_variable_name: uncertainty
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: http://thredds.met.no/thredds/fileServer/c3s/reproc_ice_type_files
-
-    # C3S interim climate data record c1.0
-    c3s_icdr_v1p0:
-        pyclass: OsiSafSITypeCDR
-        long_name: C3S Sea Ice Type Interim Climate Data Record (ICDR) - v1p0
-        filenaming: "ice_type_{hemisphere_code}_ease2-250_icdr-v1p0_{year}{month}{day}1200.nc"
-        local_repository: osisaf_c3s_icdr_v1p0
-        options:
-            variable_name: ice_type
-            uncertainty_variable_name: uncertainty
-            north:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-            south:
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: thredds
-            server_url: http://thredds.met.no/thredds/fileServer/c3s/contreproc_ice_type_files
-            type: daily
-
+    # C3S sea-ice type CDR/ICDR
     c3s_v1p0:
         pyclass: OsiSafSITypeCDR
-        long_name: C3S Sea Ice Type Interim Climate Data Record (ICDR) - v1p0
-        filenaming: "ice_type_{hemisphere_code}_ease2-250_icdr-v1p0_{year}{month}{day}1200.nc"
-        local_repository: c3s_v1p0
+        long_name: C3S Sea Ice Type (interim) Climate Data Record ((i)CDR) - v1p0
         options:
             auto_product_change:
                 # The date defines the time, when the second product will be used
