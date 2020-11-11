@@ -381,7 +381,7 @@ class _PysiralPackageConfiguration(object):
             print("Creating pysiral config directory: %s" % config_path)
             dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
             print("Init local machine def")
-            template_filename = package_config_path / "templates" / "local_machine_def.yaml.template"
+            template_filename = package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = config_path / "local_machine_def.yaml"
             shutil.copy(str(template_filename), str(target_filename))
 
