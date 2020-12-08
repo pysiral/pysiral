@@ -13,6 +13,7 @@ from collections import OrderedDict
 from pathlib import Path
 from attrdict import AttrDict
 import numpy as np
+import cftime
 import parse
 import re
 
@@ -397,9 +398,8 @@ class NCDataFile(DefaultLoggingClass):
         """
         for key in attdict.keys():
             content = attdict[key]
-            if type(content) is datetime:
-                attdict[key] = date2num(
-                    content, self.time_def.units, self.time_def.calendar)
+            if isinstance(content, (datetime, cftime.datetime, cftime.real_datetime)):
+                attdict[key] = date2num(content, self.time_def.units, self.time_def.calendar)
 
     def _convert_bool_attributes(self, attdict):
         """
