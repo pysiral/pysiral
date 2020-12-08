@@ -359,7 +359,7 @@ class NCDataFile(DefaultLoggingClass):
             if data.dtype.str == "|b1":
                 data = np.int8(data)
 
-            # Set dimensions (dependend on product level)
+            # Set dimensions (dependent on product level)
             if level3:
                 if flip_yc:
                     data = np.flipud(data)
@@ -401,7 +401,8 @@ class NCDataFile(DefaultLoggingClass):
             if isinstance(content, (datetime, cftime.datetime, cftime.real_datetime)):
                 attdict[key] = date2num(content, self.time_def.units, self.time_def.calendar)
 
-    def _convert_bool_attributes(self, attdict):
+    @staticmethod
+    def _convert_bool_attributes(attdict):
         """
         Replace l1b info parameters of type bool ['b1'] by a integer
         representation to match requirements for netCDF attribute data type
@@ -412,7 +413,8 @@ class NCDataFile(DefaultLoggingClass):
             if type(content) is bool:
                 attdict[key] = int(content)
 
-    def _convert_nonetype_attributes(self, attdict):
+    @staticmethod
+    def _convert_nonetype_attributes(attdict):
         """
         Replace l1b info parameters of type bool ['b1'] by a integer
         representation to match requirements for netCDF attribute data type
