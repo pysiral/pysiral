@@ -105,6 +105,16 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+        
+    surface_type:
+        grid_method: none
+        dtype: i4
+        fillvalue: -1
+
 # ==================================================
 # Level-2 Pre-Filter
 # ==================================================
@@ -177,103 +187,65 @@ grid_settings:
 # Post processing for gridded parameters
 # ==================================================
 
-# Mask grid cells 
-# Note: The masking is exectuted in the alphabetical order of the mask names.
-#       If there is a dependance between following mask procedures this needs
-#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+processing_items:
 
-l3_masks:
+    # Compute surface type statistics based on surface type classification
+    - label: "Load masks"
+      module_name: pysiral.l3proc
+      class_name: Level3LoadMasks
+      options:
+        mask_names: ["warren99_is_valid", "landsea"]
 
-# Apply freeboard filter to mss, ssa for visualization purposes
-
-    freeboard_nan_mask: 
-        source: freeboard
-        condition: "is_nan"
-        targets:
-            - freeboard_uncertainty
-            - radar_freeboard_uncertainty
-            - sea_surface_anomaly
-            - sea_surface_anomaly_uncertainty
-            - mean_sea_surface
-            - ice_density
-            - ice_density_uncertainty
-            - sea_ice_type
-            - sea_ice_type_uncertainty
-
-# All these parameter will be set to nan if sea_ice_concentration is 0 or nan
-# Note: We do not use 15% threshold convention for the ice edge, as sea_ice_concentration
-#       is only a monthly average from the daily fields in the l2i orbits
-
-    sea_ice_concentration_mask:
-        source: sea_ice_concentration
-        condition: "is_nan; is_smaller"
-        is_smaller_threshold: 15.0
-        connect_conditions: "or"
-        targets:
-            - n_total_waveforms
-            - n_valid_waveforms
-            - valid_fraction
-            - lead_fraction
-            - ice_fraction
-            - negative_thickness_fraction
-            - sea_ice_type
-            - snow_depth
-            - snow_depth_uncertainty
-            - snow_density
-            - snow_density_uncertainty
-            - sea_ice_concentration
-
-l3_post_processing:
+    # Compute surface type statistics based on surface type classification
+    - label: "Compute surface type statistics"
+      module_name: pysiral.l3proc
+      class_name: Level3SurfaceTypeStatistics
+      options: {}
 
     # Compute the status flag
-    status_flag: 
+    - label: "Get status flag"
+      module_name: pysiral.l3proc
+      class_name: Level3StatusFlag
+      options: 
+        retrieval_status_target: sea_ice_thickness
+        sic_thrs: 70.
+        flag_values:
+            no_data: 0 
+            is_below_sic_thrs: 1
+            is_pole_hole: 2
+            is_land: 3
+            retrieval_failed: 4
+            has_retrieval: 5
 
-        options: 
-            retrieval_status_target: sea_ice_thickness
-            sic_thrs: 70.
-            flag_values:
-                no_data: 0 
-                is_below_sic_thrs: 1
-                is_pole_hole: 2
-                is_land: 3
-                retrieval_failed: 4
-                has_retrieval: 5
-
-    # Compute the quality indicator flag
-    quality_indicator_flag:
-
-        options:
-
-            # This setting is currently without effect
-            add_rule_flags: maximum_value
-
-            # A list of rules that will be checked
-            rules: 
-
-                # Mark everything outside of the Warren99 Climatology as biased
-                # Note: This method requires loading the external mask with id `warren99_is_valid`
-                qif_warren99_valid_flag:
-                    type: method
-                    target_flag: 3
-            
-                # Check for lead fractions not only in the grid cell but also in the adjacent 
-                # grid cells. Idea is that grid cell with low lead fractions have still high 
-                # confidence if enough leads in the neighbourhood
-                qif_lead_availability:
-                    search_radius_m: 75000.
-                    area_lead_fraction_minimum: 0.1
-                    target_flag: 2
-
-                # Check radar mode for SARin mode (only applicable for CryoSat-2)
-                qif_cs2_radar_mode_is_sin:
-                    target_flag: 2
-
-                # Check number of waveforms and raise flag if low
-                qif_n_waveforms:
-                    thresholds: [50, 10]
-                    target_flags: [2, 3]
-
-                # Check the negative thickness fraction and raise flag if high
-                qif_high_negative_thickness_fraction:
-                    thresholds: [0.2, 0.4]
-                    target_flags: [2, 3]
+    # Compute the quality flag
+    - label: "Get quality flag"
+      module_name: pysiral.l3proc
+      class_name: Level3QualityFlag
+      options:
+        # This setting is currently without effect
+        add_rule_flags: maximum_value
+        # A list of rules that will be checked
+        rules: 
+            # Mark everything outside of the Warren99 Climatology as biased
+            # Note: This method requires loading the external mask with id `warren99_is_valid`
+            qif_warren99_valid_flag:
+                type: method
+                target_flag: 3
+            # Check for lead fractions not only in the grid cell but also in the adjacent 
+            # grid cells. Idea is that grid cell with low lead fractions have still high 
+            # confidence if enough leads in the neighbourhood
+            qif_lead_availability:
+                search_radius_m: 75000.
+                area_lead_fraction_minimum: 0.1
+                target_flag: 2
+            # Check radar mode for SARin mode (only applicable for CryoSat-2)
+            qif_cs2_radar_mode_is_sin:
+                target_flag: 2
+            # Check number of waveforms and raise flag if low
+            qif_n_waveforms:
+                thresholds: [50, 10]
+                target_flags: [2, 3]
+            # Check the negative thickness fraction and raise flag if high
+            qif_high_negative_thickness_fraction:
+                thresholds: [0.2, 0.4]
+                target_flags: [2, 3]
