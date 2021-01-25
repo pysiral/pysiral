@@ -356,8 +356,9 @@ class L3DataGrid(DefaultLoggingClass):
         except AttributeError:
             return "attr_unavailable"
         except Exception as ex:
-            print("L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name)
-            sys.exit(1)
+            msg = "L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name
+            logger.error(msg)
+            return "unknown"
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
         """
@@ -469,7 +470,10 @@ class L3DataGrid(DefaultLoggingClass):
         self._metadata.get_data_period_from_stack(self.l2)
         # Requested time coverage (might not be the actual coverage)
         self._metadata.get_time_coverage_from_period(self._period)
-        self._metadata.get_auxdata_infos(self.l2.l2i_info)
+        try:
+            self._metadata.get_auxdata_infos(self.l2.l2i_info)
+        except AttributeError:
+            pass
         self._metadata.get_projection_parameter(self._griddef)
 
     def _init_parameter_fields(self, pardefs):
@@ -701,8 +705,15 @@ class L3MetaData(object):
         """
         missions = np.unique(stack.mission)
         mission_sensor = [psrlcfg.platforms.get_sensor(mission.lower()) for mission in missions]
-        self.set_attribute("mission_ids", ",".join(missions))
-        self.set_attribute("mission_sensor", ",".join(mission_sensor))
+
+        try:
+            self.set_attribute("mission_ids", ",".join(missions))
+        except TypeError:
+            self.set_attribute("mission_ids", "unkown")
+        try:
+            self.set_attribute("mission_sensor", ",".join(mission_sensor))
+        except TypeError:
+            self.set_attribute("mission_ids", "unkown")
         source_timeliness = np.unique(stack.timeliness)[0]
         if len(source_timeliness) != 1:
             # XXX: Different timeliness should not be mixed
@@ -724,23 +735,25 @@ class L3MetaData(object):
         self.set_attribute("time_coverage_duration", period.duration.isoformat)
 
     def get_auxdata_infos(self, l2i_info):
-        """ Get information on auxiliary data sources from l2i global
-        attributes """
+        """
+        Get information on auxiliary data sources from l2i global
+        attributes
+        TODO: This part is deprecated
+        :param l2i_info:
+        :return:
+        """
         try:
             self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
         except AttributeError:
-            self.set_attribute("source_auxdata_sic",
-                               l2i_info.source_auxdata_sic)
+            self.set_attribute("source_auxdata_sic", l2i_info.source_auxdata_sic)
         try:
             self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
         except AttributeError:
-            self.set_attribute("source_auxdata_sitype",
-                               l2i_info.source_auxdata_sitype)
+            self.set_attribute("source_auxdata_sitype", l2i_info.source_auxdata_sitype)
         try:
             self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
         except AttributeError:
-            self.set_attribute("source_auxdata_snow",
-                               l2i_info.source_auxdata_snow)
+            self.set_attribute("source_auxdata_snow", l2i_info.source_auxdata_snow)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)

@@ -169,12 +169,13 @@ class DefaultL1bDataHandler(DefaultLoggingClass):
 class L2iDataHandler(DefaultLoggingClass):
     """ Class for retrieving default l1b directories and filenames """
 
-    def __init__(self, base_directory, force_l2i_subfolder=True):
+    def __init__(self, base_directory, force_l2i_subfolder=True, search_str="l2i"):
         super(L2iDataHandler, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._base_directory = base_directory
         self._force_l2i_subfolder = force_l2i_subfolder
         self._subdirectory_list = self.get_subdirectory_list()
+        self._search_str = search_str
         self._validate_base_directory()
 
     def get_files_from_time_range(self, time_range):
@@ -225,8 +226,8 @@ class L2iDataHandler(DefaultLoggingClass):
         """ Performs sanity checks and enforces the l2i subfolder """
         # 1. Path must exist
         if not Path(self._base_directory).is_dir():
-            msg = "Invalid l2i product directory: %s"
-            msg = msg % str(self._base_directory)
+            msg = "Invalid %s product directory: %s"
+            msg = msg % (self._search_str, str(self._base_directory))
             self.error.add_error("invalid-l2i-productdir", msg)
             self.error.raise_on_error()
 
@@ -284,7 +285,7 @@ class L2iDataHandler(DefaultLoggingClass):
             raise ValueError("year & month must be set if day is set")
         if len(date_str) > 1:
             date_str += "*"
-        l2i_file_pattern = "*l2i%s.nc" % date_str
+        l2i_file_pattern = "*%s%s.nc" % (self._search_str, date_str)
         return l2i_file_pattern
 
     @property
