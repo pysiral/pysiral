@@ -555,9 +555,8 @@ class L1bDataNC(DefaultLoggingClass):
                 data = getattr(content, parameter)
 
                 # Convert datetime objects to number
-                if type(data[0]) is datetime:
-                    data = date2num(data, self.time_def.units,
-                                    self.time_def.calendar)
+                if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
+                    data = date2num(data, self.time_def.units, self.time_def.calendar)
 
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
@@ -582,9 +581,8 @@ class L1bDataNC(DefaultLoggingClass):
         """
         for key in attdict.keys():
             content = attdict[key]
-            if type(content) is datetime:
-                attdict[key] = date2num(
-                    content, self.time_def.units, self.time_def.calendar)
+            if isinstance(content, (datetime, cftime.datetime, cftime.real_datetime)):
+                attdict[key] = date2num(content, self.time_def.units, self.time_def.calendar)
 
     def _convert_bool_attributes(self, attdict):
         """
