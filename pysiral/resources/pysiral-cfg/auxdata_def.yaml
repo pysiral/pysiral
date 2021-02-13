@@ -128,6 +128,19 @@ mss:
             type: static
             link: /pub/DTU18/1_MIN/DTU18MSS_1min.nc
 
+
+# Mean dynamic topography class
+mdt: 
+    dtu17:
+        pyclass: DTUMDTGrid
+        long_name: DTU17 mean dynamic topography (1/8 degree grid)
+        local_repository: dtu17
+        filename: dtu17mdt2.nc
+        options: null
+        source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
+
+
+
 # List of snow depth (density products)
 snow:
 

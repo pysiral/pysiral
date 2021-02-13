@@ -30,6 +30,12 @@ auxdata:
         options:
             latitude_range: [45.0, 90.0]
 
+    # Load the
+    - mdt:
+        name: dtu17
+        options:
+            latitude_range: [45.0, 90.0]
+
     - sic:
         name: c3s_v2p0
         options:
