@@ -21,7 +21,7 @@ import re
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["range", "sla", "elev", "afrb", "frb", "sit", "radar_mode"]
+    _L2_DATA_ITEMS = ["range", "sla", "dot", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
@@ -36,6 +36,7 @@ class Level2Data(object):
         "flag": "flag",
         "elevation": "elev",
         "sea_level_anomaly": "sla",
+        "dynamic_ocean_topography": "dot",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
         "sea_ice_thickness": "sit"}
