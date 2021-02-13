@@ -24,7 +24,7 @@ def pysiral_l3proc():
     args.parse_command_line_arguments()
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # --- Get the period segments for the Level-3 processor ---
     # NOTE: These depend on the chosen total time range and the duration period for the grid.
@@ -79,7 +79,7 @@ def pysiral_l3proc():
         l3proc.process_l2i_files(l2i_files, time_range)
 
     # Final reporting
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1 - t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 

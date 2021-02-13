@@ -35,7 +35,7 @@ def pysiral_l2preproc():
 
     # Start the level-2 pre-processor
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # Get the product definition
     product_def = Level2PreProcProductDefinition()
@@ -90,7 +90,7 @@ def pysiral_l2preproc():
         l2preproc.process_l2i_files(l2i_daily_files, day)
 
     # All done, log processor time
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1-t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
