@@ -20,6 +20,7 @@ NOTES:
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
+import numpy as np
 
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
@@ -37,8 +38,8 @@ class DynamicOceanTopography(Level2ProcessorStep):
         """
         Mandatory Level-2 processor method that will execute the processing step and modify the
         L2 data object in-place.
-        This method adds the dynamic ocean topography fields (dot) to the l2 data object
-        sla values.
+        This method only sets the value of the dynamic ocean topography fields (dot) since
+        DOT is a standard Level-2 data item.
         :param l1b:
         :param l2:
         :return:
@@ -48,9 +49,12 @@ class DynamicOceanTopography(Level2ProcessorStep):
         #    1. DOT = SSH - geoid
         #    2. DOT = SLA + MDT
         # Here we use the second variant
-        dot = l2.sla + l2.mdt
+        dot = l2.sla[:] + l2.mdt[:]
         l2.dot.set_value(dot)
         l2.dot.set_uncertainty(l2.sla.uncertainty)
+
+        error_status = np.isnan(l2.dot[:])
+        return error_status
 
     @property
     def l2_input_vars(self):
