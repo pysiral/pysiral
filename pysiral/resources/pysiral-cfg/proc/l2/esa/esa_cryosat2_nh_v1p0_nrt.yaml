@@ -212,7 +212,12 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
-                
+
+    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
+    -   module: dot
+        pyclass: DynamicOceanTopography
+        options: null
+
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault

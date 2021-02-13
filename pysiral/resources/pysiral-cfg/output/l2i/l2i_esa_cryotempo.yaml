@@ -99,6 +99,24 @@ variables:
     units: m
     coordinates: time
 
+  sea_level_anomaly:
+    long_name: ""
+    standard_name: sea_level_anomaly
+    units: m
+    coordinates: time
+
+  mean_dynamic_topography:
+    long_name: ""
+    standard_name: mean_dynamic_topography
+    units: m
+    coordinates: time
+
+  dynamic_ocean_topography:
+    long_name: ""
+    standard_name: dynamic_ocean_topography
+    units: m
+    coordinates: time
+
   freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
