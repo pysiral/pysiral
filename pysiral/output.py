@@ -352,7 +352,7 @@ class NCDataFile(DefaultLoggingClass):
                 self.error.raise_on_error()
 
             # Convert datetime objects to number
-            if type(data[0]) is datetime:
+            if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
                 data = date2num(data, self.time_def.units, self.time_def.calendar)
 
             # Convert bool objects to integer
