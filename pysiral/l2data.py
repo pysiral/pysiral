@@ -63,6 +63,7 @@ class Level2Data(object):
         self._l2_algorithm_id = "unkown"
         self._l2_version_tag = "unkown"
         self._doi = ""
+        self._data_record_type = None
 
         # Define time of dataset creation as the time of object initialization
         # to avoid slightly different timestamps for repated calls of datetime.now()
