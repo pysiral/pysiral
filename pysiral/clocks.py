@@ -60,7 +60,7 @@ class UTCTAIConverter(object):
 
     def update_definition(self):
         """ Get definition file from web """
-        # XXX: Requires error catching
+        # TODO: Requires error catching
         req = urllib.request(self.url)
         response = urllib.urlopen(req, timeout=60)
         content = response.readlines()
@@ -96,15 +96,15 @@ class UTCTAIConverter(object):
             timestamp = self.epoch + timedelta(seconds=int(arr[0]))
             self.leap_seconds_timestamp = np.append(self.leap_seconds_timestamp, timestamp)
 
-    def _get_leap_seconds_for_utc_time(self, datetime):
+    def _get_leap_seconds_for_utc_time(self, dt):
         """ Returns applicable leap seconds for given datetime """
         # find the closet leap seconds change
-        timedeltas = datetime - self.leap_seconds_timestamp
+        timedeltas = dt - self.leap_seconds_timestamp
         positive_day_offsets = np.array([td.days > 0 for td in timedeltas])
         applicable_ls_indices = np.where(positive_day_offsets)[0]
         try:
             return self.leap_seconds[applicable_ls_indices[-1]]
-        except:
+        except IndexError:
             return 0
 
     @property
@@ -116,6 +116,8 @@ class UTCTAIConverter(object):
 class StopWatch(object):
 
     def __init__(self):
+        self.t0 = None
+        self.t1 = None
         self.reset()
 
     def reset(self):
@@ -137,10 +139,3 @@ class StopWatch(object):
         elapsed_seconds = self.t1 - self.t0
         duration = datum + relativedelta(seconds=elapsed_seconds)
         return duration.strftime(fmt)
-
-
-if __name__ == "__main__":
-    # XXX: test code
-    converter = UTCTAIConverter()
-    tai = np.array([datetime(1981, 1, 2)], dtype=object)
-    utc = converter.tai2utc(tai)
