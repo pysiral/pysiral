@@ -787,7 +787,7 @@ class Level3Output(NCDataFile):
         rgrp = self._rootgrp
 
         # Set Time Variable
-        var = rgrp.createVariable("time", "f8", ('time'), zlib=self.zlib)
+        var = rgrp.createVariable("time", "f8", tuple(['time']), zlib=self.zlib)
         var.standard_name = "time"
         var.units = self.time_def.units
         var.long_name = "reference time of product"
@@ -830,7 +830,7 @@ class Level3Output(NCDataFile):
         rgrp = self._rootgrp
 
         # Set x coordinate
-        var = rgrp.createVariable("xc", "f8", ('xc'), zlib=self.zlib)
+        var = rgrp.createVariable("xc", "f8", tuple(['xc']), zlib=self.zlib)
         var.standard_name = "projection_x_coordinate"
         var.units = "km"
         var.long_name = "x coordinate of projection (eastings)"
@@ -840,7 +840,7 @@ class Level3Output(NCDataFile):
         yc_km = self.data.griddef.yc_km
         if self.output_handler.flip_yc:
             yc_km = np.flip(yc_km, 0)
-        var = rgrp.createVariable("yc", "f8", ('yc'), zlib=self.zlib)
+        var = rgrp.createVariable("yc", "f8", tuple(['yc']), zlib=self.zlib)
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
         var.long_name = "y coordinate of projection (eastings)"
@@ -893,7 +893,7 @@ class PysiralOutputFilenaming(object):
                     if parameter in ["start", "stop"]:
                         try:
                             value = dtparser.parse(value)
-                        except:
+                        except dtparser.ParserError:
                             match_found = False
                             break
                     setattr(self, parameter, value)
