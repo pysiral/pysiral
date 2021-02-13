@@ -803,7 +803,10 @@ class Level3OutputHandler(OutputHandlerBase):
         if output_def == "default":
             output_def = self.default_output_def_filename
 
-        super(Level3OutputHandler, self).__init__(output_def)
+        super(Level3OutputHandler, self).__init__(
+            output_def, applicable_data_level=3, subfolder_tags=["year"],
+            default_file_location=["settings", "outputdef", "l3_default.yaml"])
+
         self.error.caller_id = self.__class__.__name__
         logger.name = self.__class__.__name__
 
