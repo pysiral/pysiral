@@ -75,7 +75,3 @@ class DynamicOceanTopography(Level2ProcessorStep):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
-
-
-if __name__ == "__main__":
-    main()
