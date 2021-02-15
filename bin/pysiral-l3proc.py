@@ -40,7 +40,7 @@ def pysiral_l3proc():
     grid = Level3GridDefinition(args.l3_griddef)
 
     # Initialize the interface to the l2i products
-    l2i_handler = L2iDataHandler(args.l2i_product_directory, search_str="l2")
+    l2i_handler = L2iDataHandler(args.l2i_product_directory, search_str="l2", force_l2i_subfolder=False)
 
     # Initialize the output handler
     # Currently the overwrite protection is disabled per default
@@ -187,7 +187,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
     @property
     def l2i_product_directory(self):
-        return Path(self.l3_product_basedir) / "l2i"
+        return Path(self._args.l2i_basedir)
 
     @property
     def l3_settings_file(self):
