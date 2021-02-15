@@ -583,3 +583,115 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
+
+class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
+    """
+    Get the raw SLA.
+    This class will compute the sea level anomaly (sla)
+    :sectionauthor: D. J. Brockley (UCL)
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class. Options will be passed to parent class
+        (pysiral.l2proc.procsteps.Level2ProcessorStep)
+        :param args:
+        :param kwargs:
+        """
+
+        # Init both base classes
+        Level2ProcessorStep.__init__(self, *args, **kwargs)
+        SLABaseFunctionality.__init__(self)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory Level-2 processor method that will execute the processing step
+        and modify the L2 data object in-place.
+        This method will extracts raw SLA measurements by computing elev-mss
+        at lead (+ ocean) locations.
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        # Step 1: Get a list of valid SSH tie points
+        # This method will return a list of indices for all SSH observations
+        # with an optional pre-filtering step
+        filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
+        use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
+        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
+
+        # Verification that there is any ssh tie points
+        # -> Will return all NaN sla if not
+        if len(ssh_tiepoint_indices) == 0:
+            all_nans = np.full(l2.n_records, np.nan)
+            l2.sla.set_value(all_nans)
+            l2.sla.set_uncertainty(all_nans)
+            error_status = np.isnan(l2.sla[:])
+            return error_status
+
+        # Step 2: Get sla = elev - mss
+        sla, sla_unc = self.sla_from_raw_process(l2, ssh_tiepoint_indices)
+
+        # Step 3: Apply sea-ice and land masks
+        surface_types = self.cfg.options.get("surface_types_masks", [])
+        sla, sla_unc = self.apply_surface_type_masks(sla, sla_unc, l2, surface_types)
+
+        # import matplotlib.pyplot as plt
+        # x = np.arange(l2.n_records)
+        # sla_raw = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
+        # plt.figure(figsize=(10, 8))
+        # plt.scatter(x[ssh_tiepoint_indices], sla_raw, zorder=20)
+        # plt.plot(x, sla, color="red", lw=2, zorder=50)
+        # plt.fill_between(x, sla-sla_unc, sla+sla_unc, zorder=10)
+        # plt.show()
+        # breakpoint()
+
+        # Step 4: Modify the Level-2 data container with the result in-place
+        l2.sla.set_value(sla)
+        l2.sla.set_uncertainty(sla_unc)
+        # FIXME: Dummy code to just put a value into adt for testing
+        l2.adt.set_value(np.arange(len(sla)))
+        l2.adt.set_uncertainty(np.zeros(sla.shape))
+
+        # Return the error status
+        error_status = np.isnan(l2.sla[:])
+        return error_status
+
+    @staticmethod
+    def sla_from_raw_process(l2, ssh_tiepoint_indices):
+        """
+        Compute sea level anomaly
+        :param l2:
+        :param ssh_tiepoint_indices:
+        :return:
+        """
+
+        # Step 1: Get the observed (noisy) sea surface elevations
+        sla_raw = np.full(l2.n_records, np.nan)
+        sla_raw[ssh_tiepoint_indices] = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
+        # FIXME Need an actual error estimate, but how?
+        sla_unc = np.zeros(sla_raw.shape)
+
+        # Return the two parameters
+        return sla_raw, sla_unc
+
+    @property
+    def l2_input_vars(self):
+        """
+        Mandatory property for Level2ProcessorStep children
+        :return: list (str)
+        """
+        return ["surface_type", "elev", "mss"]
+
+    @property
+    def l2_output_vars(self):
+        """
+        Mandatory property for Level2ProcessorStep children
+        :return: list (str)
+        """
+        return ["sla"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["sla"]
