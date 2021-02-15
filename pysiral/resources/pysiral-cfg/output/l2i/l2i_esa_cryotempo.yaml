@@ -105,6 +105,12 @@ variables:
     units: m
     coordinates: time
 
+  mean_sea_surface:
+    long_name: ""
+    standard_name: mean_sea_surface
+    units: m
+    coordinates: time
+
   mean_dynamic_topography:
     long_name: ""
     standard_name: mean_dynamic_topography
@@ -126,6 +132,13 @@ variables:
   freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard standard_error
+    units: m
+    coordinates: time
+
+  freeboard_filtered:
+    long_name: "freeboard of the sea ice layer"
+    comment: "Filtered with a 450km lowess filter"
+    standard_name: sea_ice_freeboard
     units: m
     coordinates: time
 
