@@ -21,7 +21,7 @@ import re
 
 class Level2Data(object):
 
-    _L2_DATA_ITEMS = ["range", "sla", "elev", "afrb", "frb", "sit", "radar_mode", "adt"]
+    _L2_DATA_ITEMS = ["range", "sla", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
@@ -38,8 +38,7 @@ class Level2Data(object):
         "sea_level_anomaly": "sla",
         "radar_freeboard": "afrb",
         "freeboard": "frb",
-        "sea_ice_thickness": "sit",
-        "absolute_dynamic_topography": "adt"}
+        "sea_ice_thickness": "sit"}
 
     _PROPERTY_CATALOG = {"sea_surface_height": "ssh"}
 
