@@ -31,7 +31,7 @@ class RadarModes(object):
     def get_flag(self, mode_name):
         try:
             return self.flag_dict[mode_name]
-        except:
+        except KeyError:
             return None
 
     def get_name(self, flag):

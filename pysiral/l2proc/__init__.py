@@ -42,7 +42,7 @@ class Level2Processor(DefaultLoggingClass):
         self._l2def = product_def
 
         # Auxiliary Data Handler
-        # NOTE: retrieves and initializes the auxdata classes
+        # NOTE: retrieves and initializes the auxiliary data classes
         #       based on the l2 processor definition config file
         if auxclass_handler is None:
             auxclass_handler = DefaultAuxdataClassHandler()

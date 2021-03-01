@@ -57,6 +57,11 @@ auxdata_repository:
         # TODO: Enter directory DTU18 mean-sea surface netCDF file
         dtu18: ''
 
+    # Mean Dynamic Topography Products
+    mdt:
+        # TODO: Enter directory DTU17 mean dynamic topography netCDF file
+        dtu17: ''
+
     # Sea Ice Concentration Products
     sic:
         # Can remain empty until operational processing with delay < 16 days

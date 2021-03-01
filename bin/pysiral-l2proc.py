@@ -44,7 +44,7 @@ def pysiral_l2proc_time_range_job(args):
     """ This is a Level-2 Processor job for a given time range """
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
@@ -93,7 +93,7 @@ def pysiral_l2proc_time_range_job(args):
         l2proc.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1-t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
@@ -102,7 +102,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     """ A more simple Level-2 job with a predefined list of l1b data files """
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
@@ -115,7 +115,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     l2proc.process_l1b_files(args.l1b_predef_files)
 
     # All done
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1-t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 

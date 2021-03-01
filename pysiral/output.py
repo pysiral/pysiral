@@ -19,14 +19,45 @@ import re
 
 
 class OutputHandlerBase(DefaultLoggingClass):
+    """
+    A class that defines properties of output files (content, location, format)
+    based on the output definition, data container and other processor settings
+    """
 
     subfolder_format = {"month": "%02g", "year": "%04g", "day": "%02g"}
 
-    def __init__(self, output_def):
+    def __init__(self, output_def, applicable_data_level=None, subfolder_tags=None,
+                 default_file_location=None):
+        """
+        Init the output handler with the content of the output definition file and
+        keywords specific for the data processing levels. These keywords have to be
+        set during the initialization of the parent (this) class.
+
+        TODO: Move applicable data level and subfolder tags to output definition file
+        TODO: Remove default_file_location
+
+        :param output_def: (str or pathlib.Path): The full file path to the output definition file
+        :param applicable_data_level: (int) Intended processing level for validation of output definition
+        :param subfolder_tags: (str list) A list of intended sub-folders and their meaning
+            (example ["year", "month"])
+        :param default_file_location: A list relative to the pysiral resource directory of sub-directories
+            and filenames that links to the default output definition for the respectice
+            data processing level (deprecated)
+        """
+
+        # Init the parent
         super(OutputHandlerBase, self).__init__(self.__class__.__name__)
         self.pysiral_config = psrlcfg
         self.error = ErrorStatus()
         self._basedir = "n/a"
+
+        # Attributes
+        self._doi = None
+        self.subfolders = None
+        self.subfolder_tags = subfolder_tags
+        self.applicable_data_level = applicable_data_level
+        self.default_file_location = default_file_location
+
         self._init_from_output_def(output_def)
         self.output_def_filename = output_def
 
@@ -53,7 +84,8 @@ class OutputHandlerBase(DefaultLoggingClass):
             subfolders.append(subfolder)
         return subfolders
 
-    def get_template_attrs(self, template):
+    @staticmethod
+    def get_template_attrs(template):
         """ Extract attribute names and options (if defined) for a
         give template string """
         try:
@@ -130,7 +162,7 @@ class OutputHandlerBase(DefaultLoggingClass):
     def id(self):
         try:
             return self._output_def.metadata.output_id
-        except:
+        except (AttributeError, KeyError):
             return None
 
     @property
@@ -172,36 +204,59 @@ class OutputHandlerBase(DefaultLoggingClass):
 
 
 class DefaultLevel2OutputHandler(OutputHandlerBase):
-    """ Default output handler with pysiral conventions. Uses product
-    directory from local_machine_def.yaml as standard repository """
-
-    # Some fixed parameters for this class
-    default_file_location = ["settings", "outputdef", "l2i_default.yaml"]
-    subfolder_tags = ["year", "month"]
-    applicable_data_level = 2
+    """
+    Default output handler with pysiral conventions. Uses product directory from
+    local_machine_def.yaml as standard repository
+    """
 
     def __init__(self, output_def="default", subdirectory="default_output",
                  overwrite_protection=True, period="default"):
+        """
+        Init the Level-2 output handler
+        :param output_def: (str) The full ilepath of the output definition file
+        :param subdirectory: (str) The subdirectory relativ to the standard pysiral output path defined
+            in the local_machine_def.yaml file
+        :param overwrite_protection: (bool) If true an additional sub-directory will be added to the
+            output path with the exact date and time of this run. The intention is to avoid over-writing
+            existing files
+        :param period: (str) An identifier string for the period. This string will be used to choose
+            the filename template from the output definition file
+        """
+
         # Fall back to default output if no output_def is given
         # (allows default initialization for the Level2 processor)
         if output_def == "default":
             output_def = self.default_output_def_filename
-        super(DefaultLevel2OutputHandler, self).__init__(output_def)
+
+        # Init the parent class with Level-2 data output parameters
+        super(DefaultLevel2OutputHandler, self).__init__(
+            output_def, applicable_data_level=2, subfolder_tags=["year", "month"],
+            default_file_location=["settings", "outputdef", "l2i_default.yaml"])
+
         self.error.caller_id = self.__class__.__name__
         logger.name = self.__class__.__name__
+
         self.subdirectory = subdirectory
         self.overwrite_protection = overwrite_protection
         self._period = period
+
+        # Set parameters for this class
         self._init_product_directory()
 
     def get_filename_from_data(self, l2):
-        """ Return the filename for a defined level-2 data object
-        based on tag filenaming in output definition file """
-        # Get the filenaming definition (depending on period definition)
+        """
+        Return the filename for a defined level-2 data object based on tag filenaming
+        in output definition file
+        :param l2: l2data.Level2Data
+        :return: str
+        """
+
+        # Get the filename definition (depending on period definition)
+        filename_template = ""
         try:
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
-            # Fall back to default if no filenaming convention for given
+            # Fall back to default if no filename convention for given
             # data period
             if period_id not in template_ids:
                 period_id = "default"
@@ -213,21 +268,30 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             msg = msg % (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
+
+        # Fill the tags in the filename template
         filename = self.fill_template_string(filename_template, l2)
         return filename
 
     def get_directory_from_data(self, l2, create=True):
-        """ Return the output directory based on information provided
-        in an l2 data object """
+        """
+        Return the output directory based on information provided in an l2 data object
+        :param l2:
+        :param create:
+        :return:
+        """
         directory = self._get_directory_from_dt(l2.info.start_time)
         if create:
             self._create_directory(directory)
         return directory
 
     def get_fullpath_from_data(self, l2):
-        """ Return export path and filename based on information
-        provided in the l2 data object """
-        return Path(self.get_directory_from_l2(l2)) / self.get_filename_from_l2(l2)
+        """
+        Return export path and filename based on information provided in the l2 data object
+        :param l2:
+        :return:
+        """
+        return Path(self.get_directory_from_data(l2)) / self.get_filename_from_data(l2)
 
     def get_global_attribute_dict(self, l2):
         attr_dict = OrderedDict()
@@ -245,7 +309,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         # XXX: Assumption time_range is monthly
         directory = Path(self._get_directory_from_dt(time_range.start))
         # Get list of output files
-        l2output_files = directory.glob("*.*")
+        l2output_files = list(directory.glob("*.*"))
 
         # Delete files
         logger.info("Removing %g l2 product files [ %s ] in %s" % (len(l2output_files), self.id, directory))
@@ -285,13 +349,32 @@ class NCDateNumDef(object):
 
 class NCDataFile(DefaultLoggingClass):
 
-    def __init__(self):
+    def __init__(self, output_handler):
+        """
+        Init the netCDF output parent class.
+        NOTE: This class should only be used as a parent class.
+        :param output_handler: An output handler class for the different processing level
+        """
+
+        # Init parent
         class_name = self.__class__.__name__
         super(NCDataFile, self).__init__(class_name)
         self.error = ErrorStatus(caller_id=class_name)
+
+        # Output handler property
+        self.output_handler = output_handler
+
+        # Class attributes
+        self.data = None
         self.filename = None
+        self.base_export_path = None
+        self.parameter_attributes = None
+
         self.time_def = NCDateNumDef()
+
+        # TODO: Make this an option?
         self.zlib = True
+
         self._rootgrp = None
         self._options = None
         self._proc_settings = None
@@ -305,10 +388,6 @@ class NCDataFile(DefaultLoggingClass):
 
     def set_base_export_path(self, path):
         self.base_export_path = path
-
-    def get_full_export_path(self, startdt):
-        self._get_full_export_path(startdt)
-        return self.export_path
 
     def _set_doi(self):
         if self.output_handler.has_doi:
@@ -352,7 +431,7 @@ class NCDataFile(DefaultLoggingClass):
                 self.error.raise_on_error()
 
             # Convert datetime objects to number
-            if type(data[0]) is datetime:
+            if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
                 data = date2num(data, self.time_def.units, self.time_def.calendar)
 
             # Convert bool objects to integer
@@ -480,9 +559,12 @@ class NCDataFile(DefaultLoggingClass):
 class L1bDataNC(DefaultLoggingClass):
     """
     Class to export a L1bdata object into a netcdf file
+    NOTE: This class is different from the other netCDF output classes as
+          it uses data groups.
     """
 
     def __init__(self):
+
         super(L1bDataNC, self).__init__(self.__class__.__name__)
 
         self.datagroups = ["waveform", "surface_type", "time_orbit", "classifier", "correction"]
@@ -496,7 +578,7 @@ class L1bDataNC(DefaultLoggingClass):
 
         self.output_folder = None
         self.l1b = None
-        # TODO: Remove parameter attributes alltogether with l1 setting files
+        # TODO: Remove parameter attributes altogether with l1 setting files
         self.parameter_attributes = []
 
     def export(self):
@@ -524,6 +606,9 @@ class L1bDataNC(DefaultLoggingClass):
     def _create_root_group(self, attdict, **global_attr_keyw):
         """
         Create the root group and add l1b metadata as global attributes
+        :param attdict: A dictionary containing the global attributes
+        :param global_attr_keyw:
+        :return:
         """
         self._convert_datetime_attributes(attdict)
         self._convert_bool_attributes(attdict)
@@ -539,25 +624,24 @@ class L1bDataNC(DefaultLoggingClass):
             if self.verbose:
                 print(datagroup.upper())
 
-            # Create the datagroup
+            # Create the data group
             dgroup = self._rootgrp.createGroup(datagroup)
             content = getattr(self.l1b, datagroup)
 
             # Create the dimensions
-            # (must be available as OrderedDict in Datagroup Container
+            # (must be available as OrderedDict in data group container
             dims = content.dimdict.keys()
             for key in dims:
                 dgroup.createDimension(key, content.dimdict[key])
 
-            # Now add variables for each parameter in datagroup
+            # Now add variables for each parameter in data group
             for parameter in content.parameter_list:
 
                 data = getattr(content, parameter)
 
                 # Convert datetime objects to number
-                if type(data[0]) is datetime:
-                    data = date2num(data, self.time_def.units,
-                                    self.time_def.calendar)
+                if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
+                    data = date2num(data, self.time_def.units, self.time_def.calendar)
 
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
@@ -576,26 +660,40 @@ class L1bDataNC(DefaultLoggingClass):
 
     def _convert_datetime_attributes(self, attdict):
         """
-        Replace l1b info parameters of type datetime.datetime by a double
-        representation to match requirements for netCDF attribute data type
-        rules
+        Change any datetime-like object to a netCDF compatible numerical representation
+        :param attdict: dictionary-like
+        :return:
         """
+
         for key in attdict.keys():
             content = attdict[key]
-            if type(content) is datetime:
-                attdict[key] = date2num(
-                    content, self.time_def.units, self.time_def.calendar)
+            if isinstance(content, (datetime, cftime.datetime, cftime.real_datetime)):
+                attdict[key] = date2num(content, self.time_def.units, self.time_def.calendar)
 
-    def _convert_bool_attributes(self, attdict):
+    @staticmethod
+    def _convert_bool_attributes(attdict):
         """
-        Replace l1b info parameters of type bool ['b1'] by a integer
-        representation to match requirements for netCDF attribute data type
-        rules
+        Replace l1b info parameters of type bool ['b1'] by a integer representation
+        to match requirements for netCDF attribute data type rules
+        :param attdict: dictionary-like
+        :return:
         """
         for key in attdict.keys():
             content = attdict[key]
             if type(content) is bool:
                 attdict[key] = int(content)
+
+    @staticmethod
+    def _convert_nonetype_attributes(attdict):
+        """
+        Change empty (None) values in an attrdict to an empty string
+        :param attdict: dictionary like
+        :return: None, will be change in place
+        """
+        for key in attdict.keys():
+            content = attdict[key]
+            if content is None:
+                attdict[key] = ""
 
     def _get_variable_attr_dict(self, parameter):
         """ Retrieve the parameter attributes """
@@ -605,17 +703,6 @@ class L1bDataNC(DefaultLoggingClass):
             return default_attrs
         else:
             return dict(self.parameter_attributes[parameter])
-
-    def _convert_nonetype_attributes(self, attdict):
-        """
-        Replace l1b info parameters of type bool ['b1'] by a integer
-        representation to match requirements for netCDF attribute data type
-        rules
-        """
-        for key in attdict.keys():
-            content = attdict[key]
-            if content is None:
-                attdict[key] = ""
 
     def _open_file(self):
         self._rootgrp = Dataset(self.path, "w")
@@ -628,7 +715,9 @@ class Level1POutput(NCDataFile):
     """ Class to export a l2data object into a netcdf file """
 
     def __init__(self, data, output_handler):
-        pass
+        super(Level1POutput, self).__init__(output_handler)
+        self.data = data
+
 
 class Level2Output(NCDataFile):
     """
@@ -636,9 +725,18 @@ class Level2Output(NCDataFile):
     """
 
     def __init__(self, data, output_handler):
-        super(Level2Output, self).__init__()
+        """
+        A class for data of processing level-2 (l2i, l2p)
+        :param data: The data container (l2data.Level2Data)
+        :param output_handler: The output handler (pysiral.output.DefaultLevel2OutputHandler)
+        """
+
+        # Init the parent
+        super(Level2Output, self).__init__(output_handler)
+
+        # Store the data container
+        # FIXME: The data container does not need to be stored here, can be piped to _export_content()
         self.data = data
-        self.output_handler = output_handler
         self._set_doi()
         try:
             self._set_data_record_type()
@@ -647,6 +745,9 @@ class Level2Output(NCDataFile):
         self._export_content()
 
     def _export_content(self):
+        """
+        :return:
+        """
         self.path = self.full_path
         self._open_file()
         self._write_global_attributes()
@@ -655,14 +756,15 @@ class Level2Output(NCDataFile):
 
 
 class Level3Output(NCDataFile):
-    """ Class to export a Level-3 data object into a netcdf file.
+    """
+    Class to export a Level-3 data object into a netcdf file.
     Differences to Level2Output are small but substantial (e.g.
-    with the additional time dimension) """
+    with the additional time dimension)
+    """
 
     def __init__(self, data, output_handler):
-        super(Level3Output, self).__init__()
+        super(Level3Output, self).__init__(output_handler)
         self.data = data
-        self.output_handler = output_handler
         self._set_doi()
         self._set_data_record_type()
         self._export_content()
@@ -676,11 +778,16 @@ class Level3Output(NCDataFile):
         self._write_to_file()
 
     def _add_time_variables(self):
+        """
+        Add the required variables describing the temporal coverage and the reference time of
+        the Level-3 data product.
+        :return:
+        """
 
         rgrp = self._rootgrp
 
         # Set Time Variable
-        var = rgrp.createVariable("time", "f8", ('time'), zlib=self.zlib)
+        var = rgrp.createVariable("time", "f8", tuple(['time']), zlib=self.zlib)
         var.standard_name = "time"
         var.units = self.time_def.units
         var.long_name = "reference time of product"
@@ -723,7 +830,7 @@ class Level3Output(NCDataFile):
         rgrp = self._rootgrp
 
         # Set x coordinate
-        var = rgrp.createVariable("xc", "f8", ('xc'), zlib=self.zlib)
+        var = rgrp.createVariable("xc", "f8", tuple(['xc']), zlib=self.zlib)
         var.standard_name = "projection_x_coordinate"
         var.units = "km"
         var.long_name = "x coordinate of projection (eastings)"
@@ -733,7 +840,7 @@ class Level3Output(NCDataFile):
         yc_km = self.data.griddef.yc_km
         if self.output_handler.flip_yc:
             yc_km = np.flip(yc_km, 0)
-        var = rgrp.createVariable("yc", "f8", ('yc'), zlib=self.zlib)
+        var = rgrp.createVariable("yc", "f8", tuple(['yc']), zlib=self.zlib)
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
         var.long_name = "y coordinate of projection (eastings)"
@@ -750,8 +857,8 @@ class Level3Output(NCDataFile):
 
 class PysiralOutputFilenaming(object):
     """
-    Class for generating and parsing of pysiral output
-    filenames for all data levels
+    Class for generating and parsing of pysiral output  filenames for all data levels
+    TODO: Find out if this is still needed (probably for l1p) and remove if obsolet
     """
 
     def __init__(self):
@@ -786,7 +893,7 @@ class PysiralOutputFilenaming(object):
                     if parameter in ["start", "stop"]:
                         try:
                             value = dtparser.parse(value)
-                        except:
+                        except dtparser.ParserError:
                             match_found = False
                             break
                     setattr(self, parameter, value)
@@ -795,8 +902,9 @@ class PysiralOutputFilenaming(object):
         if not match_found:
             print("Unrecognized filename: %s" % filename)
 
-    def _datetime_format(self, datetime):
-        return "{dt:%Y%m%dT%H%M%S}".format(dt=datetime)
+    @staticmethod
+    def _datetime_format(dt):
+        return "{dt:%Y%m%dT%H%M%S}".format(dt=dt)
 
 
 class PysiralOutputFolder(object):
@@ -812,6 +920,7 @@ class PysiralOutputFolder(object):
         self.mission_id = None
         self.year = None
         self.month = None
+        self.hemisphere = None
         self.config = psrlcfg
 
     def l1bdata_from_list(self, mission_id, version, hemisphere, year, month):
@@ -845,8 +954,8 @@ class PysiralOutputFolder(object):
         self.data_level = "l1b"
         local_repository = self.config.local_machine.l1b_repository
         export_folder = local_repository[self.mission_id][self.version].l1bdata
-        yyyy = "%04g" % self.year
-        mm = "%02g" % self.month
+        yyyy = "{:04g}".format(self.year)
+        mm = "{:02g}".format(self.month)
         self.path = Path(export_folder) / self.hemisphere / yyyy / mm
 
 

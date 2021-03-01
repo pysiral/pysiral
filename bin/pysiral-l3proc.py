@@ -24,7 +24,7 @@ def pysiral_l3proc():
     args.parse_command_line_arguments()
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # --- Get the period segments for the Level-3 processor ---
     # NOTE: These depend on the chosen total time range and the duration period for the grid.
@@ -40,7 +40,7 @@ def pysiral_l3proc():
     grid = Level3GridDefinition(args.l3_griddef)
 
     # Initialize the interface to the l2i products
-    l2i_handler = L2iDataHandler(args.l2i_product_directory, search_str="l2")
+    l2i_handler = L2iDataHandler(args.l2i_product_directory, search_str="l2", force_l2i_subfolder=False)
 
     # Initialize the output handler
     # Currently the overwrite protection is disabled per default
@@ -79,7 +79,7 @@ def pysiral_l3proc():
         l3proc.process_l2i_files(l2i_files, time_range)
 
     # Final reporting
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1 - t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
@@ -187,7 +187,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
 
     @property
     def l2i_product_directory(self):
-        return Path(self.l3_product_basedir) / "l2i"
+        return Path(self._args.l2i_basedir)
 
     @property
     def l3_settings_file(self):
