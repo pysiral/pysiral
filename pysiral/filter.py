@@ -7,10 +7,8 @@ Created on Sat Apr 23 15:30:53 2016
 
 import numpy as np
 import bottleneck as bn
-from scipy.interpolate import interp1d, UnivariateSpline
-from astropy.convolution import convolve, Box1DKernel
-
-import statsmodels.api as sm
+from scipy.interpolate import interp1d
+from astropy.convolution import convolve
 
 from pysiral.core.flags import FlagContainer, ORCondition
 from pysiral.l2proc.procsteps import Level2ProcessorStep
@@ -140,98 +138,6 @@ class L2ParameterValidRange(Level2ProcessorStep):
         return self.error_flag_bit_dict["filter"]
 
 
-class ParameterSmoother(Level2ProcessorStep):
-    """
-    Creates a filtered/smoothed copy of a given parameter.
-
-    Usage in Level-2 processor definition files:
-
-    -   module: filter
-        pyclass: ParameterSmoother
-        options:
-            source_variable: <source_variable>
-            target_variable_name: <output variable auxiliary data name>
-            target_variable_id: <output variable auxiliary data id>
-            smoothing_method: <the method for the smoothing: box_filter|gaussian_process>
-            smoother_args: dict
-            retain_nan_mask: bool
-
-    will register a new auxiliary variable output_variable_name|output_variable_id to the
-    Level-2 data object
-    """
-    def __init__(self, *args, **kwargs):
-        super(ParameterSmoother, self).__init__(*args, **kwargs)
-
-    def execute_procstep(self, l1b, l2):
-        """
-        Compute the smoother
-        :param l1b:
-        :param l2:
-        :return:
-        """
-
-        # Get the error flag
-        error_status = self.get_clean_error_status(l2.n_records)
-
-        # Get the output name and id of the resulting auxiliary data variable
-        auxid = self.cfg.options.target_variable_id
-        auxname = self.cfg.options.target_variable_name
-
-        # Get a dictionary of the filter function
-        filter_func = {"box_filter": self.box_filter_smoother,
-                       "lowess": self.lowess_smoother}
-
-        # check if requested smoothing method is implemented
-        if self.cfg.options.smoothing_method not in filter_func.keys():
-            error_status[:] = True
-            msg = "Not-Implemented: Smoothing method: {}".format(self.cfg.options.smoothing_method)
-            self.error.add_error("filter-not-implemented", msg)
-            l2.register_auxvar(auxid, auxname, np.full(error_status.shape, np.nan), None)
-            return error_status
-
-        # Get the source parameter
-        var = getattr(l2, self.cfg.options.source_variable)
-        result = filter_func[self.cfg.options.smoothing_method](var[:],  **self.cfg.options.smoother_args)
-        var_filtered, var_filtered_unc = result
-
-        # Add the result as auxiliary data set without an uncertainty
-        l2.set_auxiliary_parameter(auxid, auxname, var_filtered)
-        return error_status
-
-    @staticmethod
-    def box_filter_smoother(x, window=5):
-        return astropy_smooth(np.array(x), window)
-
-    @staticmethod
-    def lowess_smoother(y, **smoother_args):
-        lowess = sm.nonparametric.lowess
-        x = np.arange(y.shape[0])
-
-        # Compute the data fraction to use at each y-value
-        #
-        #
-        data_fraction = 1501./float(y.shape[0])
-        data_fraction = data_fraction if data_fraction <= 1. else 1.
-
-        # Compute the lowess filter with potential keywords from the config file
-        filter_props = smoother_args.get("filter_props", {})
-        z = lowess(y, x, frac=data_fraction, return_sorted=False, **filter_props)
-
-        return z, None
-
-    @property
-    def l2_input_vars(self):
-        return [self.cfg.options.source_variable]
-
-    @property
-    def l2_output_vars(self):
-        return [self.cfg.options.target_variable_id]
-
-    @property
-    def error_bit(self):
-        return self.error_flag_bit_dict["filter"]
-
-
 def numpy_smooth(x, window):
     return np.convolve(x, np.ones(window)/window)
 
@@ -242,9 +148,10 @@ def scipy_smooth(x, window):
     return uniform_filter(x, size=window)
 
 
-def astropy_smooth(x, window, boundary="extend", normalize_kernel=True):
+def astropy_smooth(x, window):
+    from astropy.convolution import convolve, Box1DKernel
     kernel = Box1DKernel(window)
-    smoothed = convolve(x, kernel, boundary=boundary, normalize_kernel=normalize_kernel)
+    smoothed = convolve(x, kernel, boundary="extend", normalize_kernel=True)
     return smoothed
 
 
@@ -263,6 +170,7 @@ def idl_smooth(x, window):
 
 
 def spline_smooth(y, window):
+    from scipy.interpolate import UnivariateSpline
     x = np.arange(len(y))
     no_nan = np.where(np.isfinite(y))
     spl = UnivariateSpline(x[no_nan], y[no_nan], s=len(y)/window, k=4)
