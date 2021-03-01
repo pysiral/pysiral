@@ -625,17 +625,17 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
         # -> Will return all NaN sla if not
         if len(ssh_tiepoint_indices) == 0:
             all_nans = np.full(l2.n_records, np.nan)
-            l2.sla.set_value(all_nans)
-            l2.sla.set_uncertainty(all_nans)
-            error_status = np.isnan(l2.sla[:])
+            l2.sla_raw.set_value(all_nans)
+            l2.sla_raw.set_uncertainty(all_nans)
+            error_status = np.isnan(l2.sla_raw[:])
             return error_status
 
         # Step 2: Get sla = elev - mss
-        sla, sla_unc = self.sla_from_raw_process(l2, ssh_tiepoint_indices)
+        sla_raw, sla_raw_unc = self.sla_from_raw_process(l2, ssh_tiepoint_indices)
 
         # Step 3: Apply sea-ice and land masks
         surface_types = self.cfg.options.get("surface_types_masks", [])
-        sla, sla_unc = self.apply_surface_type_masks(sla, sla_unc, l2, surface_types)
+        sla_raw, sla_raw_unc = self.apply_surface_type_masks(sla_raw, sla_raw_unc, l2, surface_types)
 
         # import matplotlib.pyplot as plt
         # x = np.arange(l2.n_records)
@@ -648,11 +648,8 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
         # breakpoint()
 
         # Step 4: Modify the Level-2 data container with the result in-place
-        l2.sla.set_value(sla)
-        l2.sla.set_uncertainty(sla_unc)
-        # FIXME: Dummy code to just put a value into adt for testing
-        l2.adt.set_value(np.arange(len(sla)))
-        l2.adt.set_uncertainty(np.zeros(sla.shape))
+        l2.sla_raw.set_value(sla)
+        l2.sla_raw.set_uncertainty(sla_unc)
 
         # Return the error status
         error_status = np.isnan(l2.sla[:])
