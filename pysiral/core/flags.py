@@ -158,6 +158,10 @@ class SurfaceType(DefaultLoggingClass):
         return self.get_by_name("lead")
 
     @property
+    def ocean(self):
+        return self.get_by_name("ocean")
+
+    @property
     def sea_ice(self):
         return self.get_by_name("sea_ice")
 
