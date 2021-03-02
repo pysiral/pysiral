@@ -56,8 +56,12 @@ class SLABaseFunctionality(object):
 
         # (Optional) Add ocean waveforms if applicable
         if use_ocean_wfm:
-            ssh_tiepoint_indices = ssh_tiepoint_indices.append(l2.surface_type.ocean.indices)
-            ssh_tiepoint_indices = np.sort(ssh_tiepoint_indices)
+            try:
+                ssh_tiepoint_indices = np.append(ssh_tiepoint_indices,l2.surface_type.ocean.indices)
+                ssh_tiepoint_indices = np.sort(ssh_tiepoint_indices)
+            except AttributeError:
+                # TODO: DJB Does the L2 surface type not get the ocean attribute if no ocean is present?
+                pass
 
         # Remove indices that point to a valid range value
         valid_range = np.isfinite(l2.elev[ssh_tiepoint_indices])
