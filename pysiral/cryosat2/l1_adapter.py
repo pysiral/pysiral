@@ -16,7 +16,7 @@ from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.logging import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
-
+import re
 
 class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
@@ -417,3 +417,70 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
     @property
     def empty(self):
         return None
+
+class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
+    def __init__(self, cfg, raise_on_error=False):
+        ESACryoSat2PDSBaselineD.__init__(self, cfg, raise_on_error)
+
+    def _set_l1_data_groups(self):
+        ESACryoSat2PDSBaselineD._set_l1_data_groups(self)
+        fespath = self._get_fes_path(self.filepath)
+        if not Path(fespath).is_file():
+            msg = "Not a valid file: %s" % fespath
+            logger.warning(msg)
+            self.error.add_error("invalid-filepath", msg)
+            raise FileNotFoundError
+        try:
+            nc_fes = xarray.open_dataset(fespath, decode_times=False, mask_and_scale=True)
+
+            #time_1hz = self.nc.time_cor_01.values
+            #time_20hz = self.nc.time_20_ku.values
+
+            msg = "Patching FES2014b tide data from: %s" % fespath
+            logger.info(msg)
+
+            # ocean_tide_elastic: ocean_tide_01
+            variable_20hz = getattr(nc_fes, 'ocean_tide_20')
+            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            #if error_status:
+            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_01'
+            #    logger.warning(msg)
+            #    raise FileNotFoundError
+            self.l1.correction.set_parameter('ocean_tide_elastic', variable_20hz)
+
+            # ocean_tide_long_period: ocean_tide_eq_01
+            variable_20hz = getattr(nc_fes, 'ocean_tide_eq_20')
+            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            #if error_status:
+            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_eq_01'
+            #    logger.warning(msg)
+            #    raise FileNotFoundError
+            self.l1.correction.set_parameter('ocean_tide_long_period', variable_20hz)
+
+            # ocean_loading_tide: load_tide_01
+            variable_20hz = getattr(nc_fes, 'load_tide_20')
+            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            #if error_status:
+            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'load_tide_01'
+            #    logger.warning(msg)
+            #    raise FileNotFoundError
+            self.l1.correction.set_parameter('ocean_loading_tide', variable_20hz)
+        except:
+            msg = "Error encountered by xarray parsing: %s" % fespath
+            self.error.add_error("xarray-parse-error", msg)
+            self.nc = None
+            logger.warning(msg)
+            raise FileNotFoundError
+
+
+    def _get_fes_path(self,filepath):
+        # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
+        # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
+        newpath = str(filepath)
+        p = re.compile('L1B')
+        newpath = p.sub('L1B/FES2014', newpath)
+        p = re.compile('nc')
+        newpath = p.sub('fes2014b.nc', newpath)
+        p = re.compile('TEST')
+        newpath = p.sub('LTA_', newpath)
+        return newpath
