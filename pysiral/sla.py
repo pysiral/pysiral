@@ -56,7 +56,7 @@ class SLABaseFunctionality(object):
 
         # (Optional) Add ocean waveforms if applicable
         if use_ocean_wfm:
-            ssh_tiepoint_indices = ssh_tiepoint_indices.append(l2.surface_type.ocean.indices)
+            ssh_tiepoint_indices = np.append(ssh_tiepoint_indices, l2.surface_type.ocean.indices)
             ssh_tiepoint_indices = np.sort(ssh_tiepoint_indices)
 
         # Remove indices that point to a valid range value
