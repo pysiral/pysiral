@@ -450,14 +450,33 @@ class NCDataFile(DefaultLoggingClass):
             else:
                 dimensions = tuple(list(dims)[0:len(data.shape)])
 
-            # Create and set the variable
-            var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-            var[:] = data
+            dtype = np.byte
+            flag_mask_vals = []
+
+            # flag_mask attributes need special handling
+            if 'flag_mask' in attribute_dict.keys():
+                # Check to see if data is currently using less bits than the flag allows
+                flag_mask_vals = [int(x) for x in str(attribute_dict['flag_mask']).split(sep=',')]
+                if max(flag_mask_vals) >= 128:
+                    dtype = np.short
+                if max(flag_mask_vals) >= 65536:
+                    dtype = np.int32
+                # Create and set the variable with the wider type
+                var = self._rootgrp.createVariable(parameter_name, dtype, dimensions, zlib=self.zlib)
+                var[:] = data.astype(dtype)
+            else:
+                # Create and set the variable
+                var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
+                var[:] = data
 
             # Add Parameter Attributes
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
-                attribute = self.output_handler.fill_template_string(attribute, self.data)
+                if key == 'flag_mask':
+                    # Use values pre-computed above
+                    attribute = np.asarray(flag_mask_vals, dtype=dtype)
+                else:
+                    attribute = self.output_handler.fill_template_string(attribute, self.data)
                 setattr(var, key, attribute)
 
     def _create_root_group(self, attdict, **global_attr_keyw):
