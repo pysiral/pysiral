@@ -234,3 +234,4 @@ sh.exe.stackdump
 docs/api/
 docs/pysiral.*.rst
 docs/pysiral.rst
+.vscode/
