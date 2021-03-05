@@ -135,7 +135,7 @@ mdt:
         pyclass: DTUMDTGrid
         long_name: DTU17 mean dynamic topography (1/8 degree grid)
         local_repository: dtu17
-        filename: dtu17mdt2.nc
+        filename: dtu17mdt2_err.nc
         options: null
         source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
 

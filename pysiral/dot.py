@@ -50,8 +50,9 @@ class DynamicOceanTopography(Level2ProcessorStep):
         #    2. DOT = SLA + MDT
         # Here we use the second variant
         dot = l2.sla[:] + l2.mdt[:]
+        dot_unc = np.sqrt((1./np.sqrt(3.)*l2.mdt.uncertainty[:])**2. + (l2.sla.uncertainty[:])**2.)
         l2.dot.set_value(dot)
-        l2.dot.set_uncertainty(l2.sla.uncertainty)
+        l2.dot.set_uncertainty(dot_unc)
 
         error_status = np.isnan(l2.dot[:])
         return error_status

@@ -71,7 +71,8 @@ class DTUMDTGrid(AuxdataBaseClass):
                                                    dtu_grid.lat.values <= lat_range[1]))[0]
 
         # Crop data to subset
-        self.mean_dynamic_topography = dtu_grid.z.values[latitude_indices, :]
+        self.mean_dynamic_topography = dtu_grid.MDT.values[latitude_indices, :]
+        self.mean_dynamic_topography_uncertainty = dtu_grid.err.values[latitude_indices, :]
         self.longitude = dtu_grid.lon.values
         self.latitude = dtu_grid.lat.values[latitude_indices]
 
@@ -95,7 +96,8 @@ class DTUMDTGrid(AuxdataBaseClass):
         iy = (latitude - mdt_lat_min)/mdt_lat_step
 
         # Extract and return the elevation along the track
-        mdt_track_elevation = ndimage.map_coordinates(self.mean_dynamic_topography, [iy, ix])
+        mdt = ndimage.map_coordinates(self.mean_dynamic_topography, [iy, ix])
+        mdt_err = ndimage.map_coordinates(self.mean_dynamic_topography_uncertainty, [iy, ix])
 
         # Register auxdata variable
-        self.register_auxvar("mdt", "mean_dynamic_topography", mdt_track_elevation, None)
+        self.register_auxvar("mdt", "mean_dynamic_topography", mdt, mdt_err)
