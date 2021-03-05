@@ -1,0 +1,134 @@
+# This is the fmi output definition (with ice chart) for the Level2Processor
+
+# Metadata
+metadata: 
+  output_id: l2i
+  data_level: 2
+  data_level_description: Level-2 (geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming: 
+  default: CS_OFFL_SIR_THM_PO_ARCTIC__{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
+product_level_subfolder: l2
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
+  - title: "CryoSat-2 sea-ice freeboard at full sensor resolution"
+  - institution: "TBD"
+  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
+    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
+    Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
+    Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: "TBD"
+  - tracking_id: "{uuid}"
+  - product_version: "1.0"
+  - processing_level: "Level-2 (l2)"
+  - summary: ""
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
+    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
+    Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface"
+  - id: "esa-cryotempo-l2-seaice-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
+  - naming_authority: "TBD"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Trajectory"
+  - comment: ""
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "TBD"
+  - creator_type: "TBD"
+  - creator_url: "TBD"
+  - contributor_name: "TBD"
+  - contributor_role: "TBD"
+  - project: "ESA CryoTEMPO"
+  - publisher_name: "TBD"
+  - publisher_url: "TBD"
+  - publisher_email: "TBD"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+  
+  time:
+    long_name: utc time
+    units: seconds since 1970-01-01
+
+  longitude:
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees east
+    coordinates: time
+
+  latitude:
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees north
+    coordinates: time
+
+  radar_mode:
+    long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
+    units: "1"
+    coordinates: time
+
+  surface_type:
+    long_name: "surface type classification flag"
+    units: "1"
+    flag_meaning: "0: unknown, 1: ocean, 2: lead, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid"
+    coordinates: time
+
+  sea_level_anomaly:
+    long_name: ""
+    standard_name: sea_level_anomaly
+    units: m
+    coordinates: time
+
+  sea_level_anomaly_raw:
+    long_name: ""
+    standard_name: sea_level_anomaly
+    units: m
+    coordinates: time
+
+  mean_sea_surface:
+    long_name: ""
+    standard_name: mean_sea_surface
+    units: m
+    coordinates: time
+
+  mean_dynamic_topography:
+    long_name: ""
+    standard_name: mean_dynamic_topography
+    units: m
+    coordinates: time
+
+  dynamic_ocean_topography:
+    long_name: ""
+    standard_name: dynamic_ocean_topography
+    units: m
+    coordinates: time
+
+  flag:
+    long_name: "L2 algorithm error flag"
+    comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
+    units: 1
+    valid_min: 0
+    valid_max: 15
+    flag_meaning: "Errors (bit 0): l1p source data, (bit 1): Level-2 processor (bit 2): auxiliary data (bit 3): surface type classification (bit 4): retracker (bit 5): range_correction (bit 6): sea level anomaly (bit 7): freeboard retrieval (bit 9): parameter filter (bit 15): other"
+    coordinates: time
