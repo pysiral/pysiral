@@ -475,6 +475,10 @@ class NCDataFile(DefaultLoggingClass):
                 if key == 'flag_mask':
                     # Use values pre-computed above
                     attribute = np.asarray(flag_mask_vals, dtype=dtype)
+                elif key == 'flag_values':
+                    # The flag_values attribute also needs to be converted to a list of the correct datatype
+                    flag_values = [int(x) for x in str(attribute_dict['flag_values']).split(sep=',')]
+                    attribute = np.asarray(flag_values, dtype=data.dtype)
                 else:
                     attribute = self.output_handler.fill_template_string(attribute, self.data)
                 setattr(var, key, attribute)
