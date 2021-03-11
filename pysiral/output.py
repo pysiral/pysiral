@@ -463,9 +463,9 @@ class NCDataFile(DefaultLoggingClass):
             flag_mask_vals = []
 
             # flag_mask attributes need special handling
-            if 'flag_mask' in attribute_dict.keys():
+            if 'flag_masks' in attribute_dict.keys():
                 # Check to see if data is currently using less bits than the flag allows
-                flag_mask_vals = [int(x) for x in str(attribute_dict['flag_mask']).split(sep=',')]
+                flag_mask_vals = [int(x) for x in str(attribute_dict['flag_masks']).split(sep=',')]
                 if max(flag_mask_vals) >= 128:
                     dtype = np.short
                 if max(flag_mask_vals) >= 65536:
@@ -481,7 +481,7 @@ class NCDataFile(DefaultLoggingClass):
             # Add Parameter Attributes
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
-                if key == 'flag_mask':
+                if key == 'flag_masks':
                     # Use values pre-computed above
                     attribute = np.asarray(flag_mask_vals, dtype=dtype)
                 elif key == 'flag_values':
