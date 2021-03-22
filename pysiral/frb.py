@@ -189,19 +189,26 @@ class RadarFreeboardDefault(Level2ProcessorStep):
         :return:
         """
 
+        shape = l2.elev.shape
+        radar_freeboard = np.full(shape, np.nan, dtype=np.float32)
+        radar_freeboard_uncertainty = np.full(shape, np.nan, dtype=np.float32)
+
+        # Compute freeboard only for sea ice waveforms
+        is_ice = l2.surface_type.sea_ice.indices
+
         # Compute radar freeboard as the simple difference of
         # surface elevation - ssh (= mss + sla)
-        rfrb = l2.elev - l2.mss - l2.sla
+        radar_freeboard[is_ice] = l2.elev[is_ice] - l2.mss[is_ice] - l2.sla[is_ice]
 
         # Compute radar freeboard uncertainty assuming that the uncertainty
         # component of the MSS is negligible
-        rfrb_unc = np.sqrt(l2.elev.uncertainty ** 2. + l2.sla.uncertainty ** 2.)
+        radar_freeboard_uncertainty[is_ice] = np.sqrt(l2.elev.uncertainty[is_ice] ** 2. + l2.sla.uncertainty[is_ice] ** 2.)
 
         # Add parameters to Level-2 object
         # NOTE: Conventions of the Level-2 Processor for radar freeboard variable id
         #       are `afrb` (altimeter freeboard)
-        l2.afrb.set_value(rfrb)
-        l2.afrb.set_uncertainty(rfrb_unc)
+        l2.afrb.set_value(radar_freeboard)
+        l2.afrb.set_uncertainty(radar_freeboard_uncertainty)
 
         # Return the error flag (where frb is NaN)
         return np.isnan(l2.afrb[:])
@@ -217,3 +224,4 @@ class RadarFreeboardDefault(Level2ProcessorStep):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["frb"]
+
