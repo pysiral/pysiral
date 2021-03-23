@@ -91,11 +91,11 @@ variables:
     comment: "Latitude of nadir location [-90,+90]. Positive latitude is North latitude, negative latitude is South latitude."
 
   radar_mode:
-    long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
-    flag_values: 0, 1, 2
+    long_name: "SIRAL instrument mode flag"
+    flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
     coordinates: time
-    comment: "Instrument measurement mode at the time of the measurement"
+    comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height"

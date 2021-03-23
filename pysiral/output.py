@@ -432,6 +432,13 @@ class NCDataFile(DefaultLoggingClass):
 
             data = self.data.get_parameter_by_name(var_source_name, raise_on_error=False)
 
+            # Change radar_mode to instrument_mode to meet the Cryo-TEMPO ICD
+            # FIXME would be better to do this by having a list of renames in the output spec
+            # Not sure on the best way to handle the '+1' though
+            if parameter_name == 'radar_mode':
+                parameter_name = 'instrument_mode'
+                data = data[:] + 1
+
             if data is None:
                 msg = "Invalid parameter name for data object: %s"
                 msg = msg % parameter_name
