@@ -419,7 +419,8 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_start(self, *args):
-        dt = self.period.tcs.dt
+        # Cryo-TEMPO change from start of invocation timeperiod to start of L2 object coverage
+        dt = self.info.start_time
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -427,7 +428,8 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_end(self, *args):
-        dt = self.period.tce.dt
+        # Cryo-TEMPO change from end of invocation timeperiod to end of L2 object coverage
+        dt = self.info.stop_time
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
