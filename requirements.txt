@@ -22,5 +22,6 @@ python-dateutil
 pyyaml
 scipy
 scikit-learn
+statsmodels
 xmltodict
 xarray
