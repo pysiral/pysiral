@@ -96,7 +96,18 @@ variables:
     flag_meanings: "LRM SAR SARIn"
     coordinates: time
     comment: "Instrument measurement mode at the time of the measurement"
-  
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height"
+    units: m
+    coordinates: time
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+
+  radar_freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    units: m
+    coordinates: time
+
   freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
