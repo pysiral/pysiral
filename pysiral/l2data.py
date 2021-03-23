@@ -456,6 +456,28 @@ class Level2Data(object):
             timeliness = timeliness.lower()
         return timeliness
 
+    def _get_attr_cycle(self, *args):
+        """ Return the cycle number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = str(self.info.cycle)
+        except AttributeError:
+            cycle = -1
+        if cycle is None:
+            cycle = -1
+        return cycle
+
+    def _get_attr_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            orbit = str(self.info.orbit)
+        except AttributeError:
+            orbit = -1
+        if orbit is None:
+            orbit = -1
+        return orbit
+
     @staticmethod
     def _get_attr_uuid(*args):
         """ Provide an uuid code (for tracking id's) """
