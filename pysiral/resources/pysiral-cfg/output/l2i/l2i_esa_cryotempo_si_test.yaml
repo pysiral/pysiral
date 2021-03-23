@@ -18,42 +18,14 @@ product_level_subfolder: l2
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - Conventions: "CF-1.7"
-  - title: "CryoSat-2 sea-ice freeboard at full sensor resolution"
-  - institution: "TBD"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
-    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
-    Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
-    Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
-    Tide: ESA L1b FES2004 tides replaced with FES2014b"
+  - title: "Cryo-TEMPO Sea Ice Thematic Product"
+  - project: "ESA Cryo-TEMPO"
+  - creator_name: "ESA Cryo-TEMPO Project"
+  - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
+  - date_created: "{utcnow}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
-  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "TBD"
-  - tracking_id: "{uuid}"
-  - product_version: "TEST PRODUCT 1.0"
-  - processing_level: "Level-2 (l2)"
-  - summary: ""
-  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
-  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
-    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
-    Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface"
-  - id: "esa-cryotempo-l2-seaice-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
-  - naming_authority: "TBD"
-  - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: "None"
-  - cdm_data_type: "Trajectory"
-  - comment: ""
-  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: "TBD"
-  - creator_type: "TBD"
-  - creator_url: "TBD"
-  - contributor_name: "TBD"
-  - contributor_role: "TBD"
-  - project: "ESA CryoTEMPO"
-  - publisher_name: "TBD"
-  - publisher_url: "TBD"
-  - publisher_email: "TBD"
+  - zone: "Arctic"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
@@ -62,11 +34,49 @@ global_attributes:
   - geospatial_vertical_max: 0.0
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
-  - time_coverage_duration: "{time_coverage_duration}"
-  - time_coverage_resolution: "{time_coverage_duration:period}"
-  - standard_name_vocabulary: "CF Standard Name Table (v77, 19 January 2021)"
-  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  - product_baseline: "A"
+  - product_version: "001"
+  - Conventions: "CF-1.7"
+  - cycle_number: "{cycle}"
+  - rel_orbit_number: "TBD"
+  - abs_orbit_number: "{orbit}"
+  - cnes_subcycle: "N/A"
+  - cnes_track: "N/A"
+  - cdm_data_type: "Trajectory"
+  - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
+  - doi: "None"
 
+#  - institution: "TBD"
+#  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
+#    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
+#    Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
+#    Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
+#    Tide: ESA L1b FES2004 tides replaced with FES2014b"
+#  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+#  - references: "TBD"
+#  - tracking_id: "{uuid}"
+#  - processing_level: "Level-2 (l2)"
+#  - summary: ""
+#  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+#  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
+#    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
+#    Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface"
+#  - id: "esa-cryotempo-l2-seaice-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
+#  - naming_authority: "TBD"
+#  - keywords_vocabulary: "GCMD Science Keywords"
+#  - doi: "None"
+#  - cdm_data_type: "Trajectory"
+#  - comment: ""
+#  - creator_type: "TBD"
+#  - contributor_name: "TBD"
+#  - contributor_role: "TBD"
+#  - publisher_name: "TBD"
+#  - publisher_url: "TBD"
+#  - publisher_email: "TBD"
+#  - time_coverage_duration: "{time_coverage_duration}"
+#  - time_coverage_resolution: "{time_coverage_duration:period}"
+#  - standard_name_vocabulary: "CF Standard Name Table (v77, 19 January 2021)"
+#  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
