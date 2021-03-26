@@ -104,6 +104,8 @@ variables:
     long_name: "SIRAL instrument mode flag"
     flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
+    valid_min: 1
+    valid_max: 3
     coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
