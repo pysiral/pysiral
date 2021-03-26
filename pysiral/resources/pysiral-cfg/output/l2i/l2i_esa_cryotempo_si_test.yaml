@@ -11,7 +11,7 @@ metadata:
 
 # Output Definition
 filenaming: 
-  default: CS_TEST_SIR_TDP_SI_ARCTIC_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
+  default: CS_TEST_SIR_TDP_SI_ARCTIC_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
 product_level_subfolder: l2
 
 # A list of global attributes 
@@ -36,12 +36,12 @@ global_attributes:
   - time_coverage_end: "{time_coverage_end}"
   - product_baseline: "A"
   - product_version: "001"
-  - Conventions: "CF-1.7"
+  - Conventions: "CF-1.8"
   - cycle_number: "{cycle}"
-  - rel_orbit_number: "TBD"
+  - rel_orbit_number: "{rel_orbit}"
   - abs_orbit_number: "{orbit}"
-  - cnes_subcycle: "N/A"
-  - cnes_track: "N/A"
+  - cnes_subcycle: "{cnes_subcycle}"
+  - cnes_track: "{cnes_track}"
   - cdm_data_type: "Trajectory"
   - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
   - doi: "None"

@@ -464,10 +464,21 @@ class Level2Data(object):
         try:
             cycle = str(self.info.cycle)
         except AttributeError:
-            cycle = -1
+            cycle = "-1"
         if cycle is None:
-            cycle = -1
+            cycle = "-1"
         return cycle
+
+    def _get_attr_fncycle(self, *args):
+        """ Return the cycle number of the l1b source data. Set default to
+        -1 """
+        try:
+            fncycle = '{:0>2}'.format(str(self.info.cycle))
+        except AttributeError:
+            fncycle = "-1"
+        if fncycle is None:
+            fncycle = "-1"
+        return fncycle
 
     def _get_attr_orbit(self, *args):
         """ Return the orbit number of the l1b source data. Set default to
@@ -475,10 +486,71 @@ class Level2Data(object):
         try:
             orbit = str(self.info.orbit)
         except AttributeError:
-            orbit = -1
+            orbit = "-1"
         if orbit is None:
-            orbit = -1
+            orbit = "-1"
         return orbit
+
+    def _get_attr_rel_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            rel_orbit = str(self.info.rel_orbit)
+        except AttributeError:
+            rel_orbit = "-1"
+        if rel_orbit is None:
+            rel_orbit = "-1"
+        return rel_orbit
+
+    def _get_attr_fnrel_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            fnrel_orbit = '{:0>5}'.format(str(self.info.rel_orbit))
+        except AttributeError:
+            fnrel_orbit = "000-1"
+        if fnrel_orbit is None:
+            fnrel_orbit = "000-1"
+        return fnrel_orbit
+
+    @staticmethod
+    def cycle_to_subcycle(cy, tr):
+        NB_TRACKS = 10688  # cycle of 368.24 days
+        NB_SUB_TRACKS = 840  # sub-cycle of 28.94 days
+
+        absolute_tr = (cy - 1) * NB_TRACKS + tr
+        sub_cy = ((absolute_tr - 1) // NB_SUB_TRACKS) + 1
+        sub_tr = ((absolute_tr - 1) % NB_SUB_TRACKS) + 1
+        return sub_cy, sub_tr
+
+    # Add CNES sub-cycle. Need to check what to do after orbit change in Jul 2020
+    def _get_attr_cnes_subcycle(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = int(self.info.cycle)
+            rel_orbit = int(self.info.rel_orbit)
+            cnes_subcycle, cnes_track = self.cycle_to_subcycle(cycle, rel_orbit)
+            cnes_subcycle = str(cnes_subcycle)
+        except AttributeError:
+            cnes_subcycle = "-1"
+        if cnes_subcycle is None:
+            cnes_subcycle = "-1"
+        return cnes_subcycle
+
+    def _get_attr_cnes_track(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = int(self.info.cycle)
+            rel_orbit = int(self.info.rel_orbit)
+            cnes_subcycle, cnes_track = self.cycle_to_subcycle(cycle, rel_orbit)
+            cnes_track = str(cnes_track)
+        except AttributeError:
+            cnes_track = "-1"
+        if cnes_track is None:
+            cnes_track = "-1"
+        return cnes_track
 
     @staticmethod
     def _get_attr_uuid(*args):
