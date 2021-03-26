@@ -186,18 +186,18 @@ procsteps:
             valid_maximum_point_value: 2.25
             
     # Create a filtered/smoothed version of sea-ice freeboard
-#    -   module: filter
-#        pyclass: ParameterSmoother
-#        options:
-#            source_variable: frb
-#            target_variable_name: freeboard_filtered
-#            target_variable_id: frbflt
-#            smoothing_method: lowess
-#            smoother_args:
+    -   module: filter
+        pyclass: ParameterSmoother
+        options:
+            source_variable: frb
+            target_variable_name: sea_ice_freeboard_filtered
+            target_variable_id: frbflt
+            smoothing_method: lowess
+            smoother_args:
 #                # The lowess filter size in statsmodels implementation uses
 #                # in fractions of data points to determine the filter size
 #                # The lowess filter therefore computes the data fraction
 #                # from the `filter_size_n_points` keyword
-#                filter_size_n_points: 1501
-#                filter_props:
-#                     it: 1
+                filter_size_n_points: 1501
+                filter_props:
+                     it: 1

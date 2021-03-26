@@ -197,18 +197,35 @@ procsteps:
         options: null
 
     # Create a filtered/smoothed version of sla
-#    -   module: filter
-#        pyclass: ParameterSmoother
-#        options:
-#            source_variable: sla_raw
-#            target_variable_name: sla_filtered
-#            target_variable_id: slaflt
-#            smoothing_method: lowess
-#            smoother_args:
+    -   module: filter
+        pyclass: ParameterSmoother
+        options:
+            source_variable: sla
+            target_variable_name: sea_level_anomaly_filtered
+            target_variable_id: slaflt
+            smoothing_method: lowess
+            smoother_args:
 #                # The lowess filter size in statsmodels implementation uses
 #                # in fractions of data points to determine the filter size
 #                # The lowess filter therefore computes the data fraction
 #                # from the `filter_size_n_points` keyword
-#                filter_size_n_points: 1501
-#                filter_props:
-#                     it: 1
+                filter_size_n_points: 1501
+                filter_props:
+                     it: 1
+
+    # Create a filtered/smoothed version of dot
+    -   module: filter
+        pyclass: ParameterSmoother
+        options:
+            source_variable: dot
+            target_variable_name: dynamic_ocean_topography_filtered
+            target_variable_id: dotflt
+            smoothing_method: lowess
+            smoother_args:
+#                # The lowess filter size in statsmodels implementation uses
+#                # in fractions of data points to determine the filter size
+#                # The lowess filter therefore computes the data fraction
+#                # from the `filter_size_n_points` keyword
+                filter_size_n_points: 1501
+                filter_props:
+                     it: 1
