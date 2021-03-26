@@ -39,7 +39,7 @@ class Level2Data(object):
         "sea_level_anomaly_raw": "sla_raw",
         "dynamic_ocean_topography": "dot",
         "radar_freeboard": "afrb",
-        "freeboard": "frb",
+        "sea_ice_freeboard": "frb",
         "sea_ice_thickness": "sit"}
 
     _PROPERTY_CATALOG = {"sea_surface_height": "ssh"}

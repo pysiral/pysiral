@@ -107,70 +107,70 @@ variables:
     long_name: "SIRAL instrument mode flag"
     flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
-    coordinates: time
+    coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
     comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
     long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
   
-  freeboard:
+  sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
-    ancillary_variables: freeboard_uncertainty
-    coordinates: time
+    ancillary_variables: sea_ice_freeboard_uncertainty
+    coordinates: longitude latitude
 
-  freeboard_uncertainty:
+  sea_ice_freeboard_uncertainty:
     long_name: "freeboard uncertainty"
 #    standard_name: sea_ice_freeboard standard_error
     units: m
-    coordinates: time
+    coordinates: longitude latitude
     
   snow_depth:
     long_name: "snow depth"
     standard_name: surface_snow_thickness
     units: m
     ancillary_variables: snow_depth_uncertainty
-    coordinates: time
+    coordinates: longitude latitude
     
   snow_depth_uncertainty:
     long_name: "snow_depth_uncertainty"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
     
   surface_type:
     long_name: "surface type classification flag"
     flag_values: 0, 1, 2, 3, 4, 5, 6, 7, 8
     flag_meanings: "unknown ocean lead polynya sea_ice closed_sea land_ice land invalid"
-    coordinates: time
+    coordinates: longitude latitude
     comment: "Surface type at the nadir location"
         
   sea_level_anomaly:
     long_name: "sea level anomaly"
     standard_name: sea_level_anomaly
     units: m
-    coordinates: time
+    coordinates: longitude latitude
 
   mean_sea_surface:
     long_name: "mean sea surface"
     standard_name: mean_sea_surface
     units: m
-    coordinates: time
+    coordinates: longitude latitude
     
-#  freeboard_filtered:
-#    long_name: "freeboard of the sea ice layer"
-#    comment: "Filtered with a 450km lowess filter"
-#    standard_name: sea_ice_freeboard
-#    units: m
-#    coordinates: time
+  sea_ice_freeboard_filtered:
+    long_name: "freeboard of the sea ice layer"
+    comment: "Filtered with a 450km lowess filter"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: longitude latitude
 
   flag:
     long_name: "L2 algorithm error flag"
@@ -178,4 +178,4 @@ variables:
     comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
     flag_masks: 1, 2, 4, 8, 16, 32, 64, 128, 256, 1024, 32768
     flag_meanings: "l1p_source-data Level-2_processor auxiliary_data surface_type_classification retracker range_correction sea_level_anomaly freeboard_retrieval parameter_filter other"
-    coordinates: time
+    coordinates: longitude latitude

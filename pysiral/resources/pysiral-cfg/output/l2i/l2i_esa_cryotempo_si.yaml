@@ -104,41 +104,49 @@ variables:
     long_name: "SIRAL instrument mode flag"
     flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
-    coordinates: time
+    coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height"
     units: m
-    coordinates: time
+    ancillary_variables: radar_freeboard_uncertainty
+    coordinates: longitude latitude
     comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
     long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
 
-  freeboard:
+  sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
-    ancillary_variables: freeboard_uncertainty
-    coordinates: time
+    ancillary_variables: sea_ice_freeboard_uncertainty
+    coordinates: longitude latitude
 
-  freeboard_uncertainty:
+  sea_ice_freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
+    
+  sea_ice_freeboard_filtered:
+    long_name: "freeboard of the sea ice layer"
+    comment: "Filtered with a 450km lowess filter"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: longitude latitude
     
   snow_depth:
     long_name: "snow depth"
     standard_name: surface_snow_thickness
     units: m
     ancillary_variables: snow_depth_uncertainty
-    coordinates: time
+    coordinates: longitude latitude
     
   snow_depth_uncertainty:
     long_name: "snow_depth_uncertainty"
     units: m
-    coordinates: time
+    coordinates: longitude latitude
     
