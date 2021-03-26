@@ -181,6 +181,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         info.set_attribute("mission_sensor", "siral")
         info.set_attribute("mission_data_version", "D")
         info.set_attribute("orbit", metadata["abs_orbit_start"])
+        info.set_attribute("rel_orbit", metadata["rel_orbit_number"])
         info.set_attribute("cycle", metadata["cycle_number"])
         info.set_attribute("mission_data_source", Path(self.filepath).name)
         info.set_attribute("timeliness", cs2_procstage2timeliness(metadata["processing_stage"]))
