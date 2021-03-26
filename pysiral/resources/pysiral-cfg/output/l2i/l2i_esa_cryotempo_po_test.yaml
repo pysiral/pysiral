@@ -130,10 +130,10 @@ variables:
     comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
 
   sea_level_anomaly_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the sea level anomaly"
+    long_name: "sea level anomaly uncertainty"
     units: m
     coordinates: longitude latitude
-    comment: "The estimated uncertainty in the quantity sea_level_anomaly."
+    comment: "Algorithm uncertainty (error propagation) of the sea level anomaly"
     
   sea_level_anomaly_raw:
     long_name: "sea level anomaly (unsmoothed 20 Hz values)"
@@ -141,7 +141,35 @@ variables:
     units: m
     coordinates: longitude latitude
     comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. No smoothing or interpolation applied."
+
+  sea_level_anomaly_filtered:
+    long_name: "Filtered sea level anomaly"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: longitude latitude
+    comment: "Filtered with a 450km lowess filter"
     
+  dynamic_ocean_topography:
+    long_name: "dynamic ocean topography"
+    standard_name: sea_surface_height_above_geoid
+    units: m
+    coordinates: longitude latitude
+    ancillary_variables: dynamic_ocean_topography_uncertainty
+    comment: "Dynamic ocean topography: the height of the sea surface above the geoid at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
+    
+  dynamic_ocean_topography_uncertainty:
+    long_name: "dynamic ocean topography uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "Algorithm uncertainty (error propagation) of the dynamic ocean topography"
+
+  dynamic_ocean_topography_filtered:
+    long_name: "Filtered dynamic ocean topography"
+    standard_name: sea_surface_height_above_geoid
+    units: m
+    coordinates: longitude latitude
+    comment: "Filtered with a 450km lowess filter"
+      
   mean_sea_surface:
     long_name: "mean sea surface"
     standard_name: mean_sea_surface
@@ -153,20 +181,6 @@ variables:
     standard_name: mean_dynamic_topography
     units: m
     coordinates: longitude latitude
-
-  dynamic_ocean_topography:
-    long_name: "dynamic ocean topography"
-    standard_name: sea_surface_height_above_geoid
-    units: m
-    coordinates: longitude latitude
-    ancillary_variables: dynamic_ocean_topography_uncertainty
-    comment: "Dynamic ocean topography: the height of the sea surface above the geoid at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
-    
-  dynamic_ocean_topography_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the dynamic ocean topography"
-    units: m
-    coordinates: longitude latitude
-    comment: "The estimated uncertainty in the quantity dynamic_ocean_topography."
         
   flag:
     long_name: "L2 algorithm error flag"

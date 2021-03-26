@@ -103,7 +103,7 @@ variables:
     coordinates: time
     comment: "Latitude of nadir location [-90,+90]. Positive latitude is North latitude, negative latitude is South latitude."
 
-  radar_mode:
+  instrument_mode:
     long_name: "SIRAL instrument mode flag"
     flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
@@ -113,16 +113,18 @@ variables:
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
   radar_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height"
+    long_name: "Radar freeboard"
     units: m
+    ancillary_variables: radar_freeboard_uncertainty
     coordinates: longitude latitude
     comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    long_name: "Radar freeboard uncertainty"
     units: m
     coordinates: longitude latitude
-  
+    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    
   sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
@@ -131,10 +133,17 @@ variables:
     coordinates: longitude latitude
 
   sea_ice_freeboard_uncertainty:
-    long_name: "freeboard uncertainty"
-#    standard_name: sea_ice_freeboard standard_error
+    long_name: "sea ice freeboard uncertainty"
     units: m
     coordinates: longitude latitude
+    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    
+  sea_ice_freeboard_filtered:
+    long_name: "smoothed freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: longitude latitude
+    comment: "Filtered with a 450km lowess filter"
     
   snow_depth:
     long_name: "snow depth"
@@ -142,11 +151,13 @@ variables:
     units: m
     ancillary_variables: snow_depth_uncertainty
     coordinates: longitude latitude
+    comment: "Snow depth interpolated from model"
     
   snow_depth_uncertainty:
-    long_name: "snow_depth_uncertainty"
+    long_name: "snow depth uncertainty"
     units: m
     coordinates: longitude latitude
+    comment: "Uncertainty of the snow depth."
     
   surface_type:
     long_name: "surface type classification flag"
