@@ -41,6 +41,7 @@ global_attributes:
   - cnes_track: "{cnes_track}"
   - cdm_data_type: "Trajectory"
   - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
+  - sw_version: "{pysiral_version}"
   - doi: "None"
 
 #  - institution: "TBD"
