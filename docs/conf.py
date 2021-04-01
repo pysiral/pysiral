@@ -58,7 +58,8 @@ release = u''
 extensions = [
     'sphinx.ext.todo',
     'sphinx_automodapi.automodapi',
-    'sphinxcontrib.mermaid'
+    'sphinxcontrib.mermaid',
+    'sphinx.ext.mathjax'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
