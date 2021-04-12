@@ -129,12 +129,13 @@ variables:
     units: m
     ancillary_variables: sea_ice_freeboard_uncertainty
     coordinates: longitude latitude
-
+    comment: "freeboard of the sea ice layer"
+     
   sea_ice_freeboard_uncertainty:
     long_name: "sea ice freeboard uncertainty"
     units: m
     coordinates: longitude latitude
-    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    comment: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
     
   sea_ice_freeboard_filtered:
     long_name: "smoothed freeboard of the sea ice layer"
