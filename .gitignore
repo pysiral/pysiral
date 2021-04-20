@@ -234,4 +234,14 @@ sh.exe.stackdump
 docs/api/
 docs/pysiral.*.rst
 docs/pysiral.rst
-.vscode/
+doxygen/html
+doxygen/latex
+venv
+.idea
+classes_pysiral.png
+make_docs.sh
+Doxyfile
+cytfmra.cpython-37m-darwin.so
+pysiral_classes.png
+pysiral_classes.txt
+.vscode/settings.json

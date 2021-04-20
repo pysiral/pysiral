@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A short script that should be used to set the location of the pysiral config file for the
 """

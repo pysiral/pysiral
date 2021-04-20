@@ -648,11 +648,11 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
         # breakpoint()
 
         # Step 4: Modify the Level-2 data container with the result in-place
-        l2.sla_raw.set_value(sla)
-        l2.sla_raw.set_uncertainty(sla_unc)
+        l2.sla_raw.set_value(sla_raw)
+        l2.sla_raw.set_uncertainty(sla_raw_unc)
 
         # Return the error status
-        error_status = np.isnan(l2.sla[:])
+        error_status = np.isnan(l2.sla_raw[:])
         return error_status
 
     @staticmethod

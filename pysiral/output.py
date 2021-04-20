@@ -346,6 +346,15 @@ class NCDateNumDef(object):
         self.units = "seconds since 1970-01-01"
         self.calendar = "standard"
 
+class NCDateNumDef2000(object):
+    """
+    Holds definition for datetime conversion to numbers and vice versa
+    for netCDF operations
+    """
+
+    def __init__(self):
+        self.units = "seconds since 2000-01-01"
+        self.calendar = "standard"
 
 class NCDataFile(DefaultLoggingClass):
 
@@ -423,6 +432,13 @@ class NCDataFile(DefaultLoggingClass):
 
             data = self.data.get_parameter_by_name(var_source_name, raise_on_error=False)
 
+            # Change radar_mode to instrument_mode to meet the Cryo-TEMPO ICD
+            # FIXME would be better to do this by having a list of renames in the output spec
+            # Not sure on the best way to handle the '+1' though
+            if parameter_name == 'radar_mode':
+                parameter_name = 'instrument_mode'
+                data = data[:] + 1
+
             if data is None:
                 msg = "Invalid parameter name for data object: %s"
                 msg = msg % parameter_name
@@ -450,14 +466,37 @@ class NCDataFile(DefaultLoggingClass):
             else:
                 dimensions = tuple(list(dims)[0:len(data.shape)])
 
-            # Create and set the variable
-            var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-            var[:] = data
+            dtype = np.byte
+            flag_mask_vals = []
+
+            # flag_mask attributes need special handling
+            if 'flag_masks' in attribute_dict.keys():
+                # Check to see if data is currently using less bits than the flag allows
+                flag_mask_vals = [int(x) for x in str(attribute_dict['flag_masks']).split(sep=',')]
+                if max(flag_mask_vals) >= 128:
+                    dtype = np.short
+                if max(flag_mask_vals) >= 65536:
+                    dtype = np.int32
+                # Create and set the variable with the wider type
+                var = self._rootgrp.createVariable(parameter_name, dtype, dimensions, zlib=self.zlib)
+                var[:] = data.astype(dtype)
+            else:
+                # Create and set the variable
+                var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
+                var[:] = data
 
             # Add Parameter Attributes
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
-                attribute = self.output_handler.fill_template_string(attribute, self.data)
+                if key == 'flag_masks':
+                    # Use values pre-computed above
+                    attribute = np.asarray(flag_mask_vals, dtype=dtype)
+                elif key == 'flag_values':
+                    # The flag_values attribute also needs to be converted to a list of the correct datatype
+                    flag_values = [int(x) for x in str(attribute_dict['flag_values']).split(sep=',')]
+                    attribute = np.asarray(flag_values, dtype=data.dtype)
+                else:
+                    attribute = self.output_handler.fill_template_string(attribute, self.data)
                 setattr(var, key, attribute)
 
     def _create_root_group(self, attdict, **global_attr_keyw):
@@ -733,6 +772,8 @@ class Level2Output(NCDataFile):
 
         # Init the parent
         super(Level2Output, self).__init__(output_handler)
+        # Reset the time epoch
+        self.time_def = NCDateNumDef2000()
 
         # Store the data container
         # FIXME: The data container does not need to be stored here, can be piped to _export_content()
