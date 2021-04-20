@@ -15,6 +15,7 @@ import sys
 import yaml
 import socket
 import shutil
+import subprocess
 
 import importlib
 import pkgutil
@@ -52,6 +53,15 @@ except IOError:
 __version__ = version
 __author__ = "Stefan Hendricks"
 __author_email__ = "stefan.hendricks@awi.de"
+
+# Get git version (allows tracing of the exact commit)
+# TODO: This only works when the code is in a git repository (and not as installed python package)
+try:
+    __software_version__ = subprocess.check_output(["git", "log", "--pretty=format:%H", "-n", "1"])
+    __software_version__ = __software_version__.strip().decode("utf-8")
+except (FileNotFoundError, subprocess.CalledProcessError):
+    __software_version__ = None
+breakpoint()
 
 
 class _MissionDefinitionCatalogue(object):
