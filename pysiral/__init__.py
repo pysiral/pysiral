@@ -61,7 +61,6 @@ try:
     __software_version__ = __software_version__.strip().decode("utf-8")
 except (FileNotFoundError, subprocess.CalledProcessError):
     __software_version__ = None
-breakpoint()
 
 
 class _MissionDefinitionCatalogue(object):
