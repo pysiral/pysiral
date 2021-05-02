@@ -59,6 +59,10 @@ class Level2Data(object):
         # To be filled during the set auxdata method
         self._auxiliary_catalog = {}
 
+        # A dictionary containing information for auxiliary data with
+        # more then one dimension
+        self._multidim_auxiliary_catalog = {}
+
         # Metadata
         self._auxdata_source_dict = {}
         self._source_primary_filename = "unkown"
@@ -141,6 +145,24 @@ class Level2Data(object):
         # Register auxiliary parameter (this allows to find the parameter
         # by its long name
         self._auxiliary_catalog[var_name] = var_id
+
+    def set_multidim_auxiliary_parameter(self, var_id, var_name, value, dim_dict):
+        """
+        Adds an auxiliary parameter to the data object different dimensions than
+        the standard (l2.n_records) default data array.
+        :param var_id: (str) The target id for the variable
+        :param var_name: (str) The long name of the variable
+        :param value: (np.ndarray) The auxiliary parameter
+        :param dim_dict: (dictionary) The dimenstion dictionary
+        :return:
+        """
+        setattr(self, var_id, value)
+        # Register auxiliary parameter (this allows to find the parameter by its long name
+        self._auxiliary_catalog[var_name] = var_id
+        self._multidim_auxiliary_catalog[var_name] = dim_dict
+
+    def get_multidim_auxdata_dimdict(self, var_name):
+        return self._multidim_auxiliary_catalog.get(var_name, None)
 
     def set_data_record_type(self, data_record_type):
         self._data_record_type = data_record_type

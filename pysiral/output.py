@@ -423,16 +423,25 @@ class NCDataFile(DefaultLoggingClass):
             self._rootgrp.createDimension(key, dimdict[key])
 
         for parameter_name, attribute_dict in self.output_handler.variable_def:
+
             # Check if parameter name is also the the name or the source
             # parameter
-
             if "var_source_name" in attribute_dict.keys():
                 attribute_dict = dict(attribute_dict)
                 var_source_name = attribute_dict.pop("var_source_name")
             else:
                 var_source_name = parameter_name
 
+            # Get the data container
             data = self.data.get_parameter_by_name(var_source_name, raise_on_error=False)
+
+            # Check if the data exists
+            if data is None:
+                msg = "Invalid parameter name for data object: %s"
+                msg = msg % parameter_name
+                logger.error(msg)
+                self.error.add_error("invalid-paramater", msg)
+                self.error.raise_on_error()
 
             # Change radar_mode to instrument_mode to meet the Cryo-TEMPO ICD
             # FIXME would be better to do this by having a list of renames in the output spec
@@ -440,13 +449,6 @@ class NCDataFile(DefaultLoggingClass):
             if parameter_name == 'radar_mode':
                 parameter_name = 'instrument_mode'
                 data = data[:] + 1
-
-            if data is None:
-                msg = "Invalid parameter name for data object: %s"
-                msg = msg % parameter_name
-                logger.error(msg)
-                self.error.add_error("invalid-paramater", msg)
-                self.error.raise_on_error()
 
             # Convert datetime objects to number
             if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
@@ -466,7 +468,22 @@ class NCDataFile(DefaultLoggingClass):
                 else:
                     dimensions = tuple(list(dims)[1:len(data.shape)+1])
             else:
-                dimensions = tuple(list(dims)[0:len(data.shape)])
+                if len(data.shape) == 1:
+                    dimensions = tuple(list(dims)[0:len(data.shape)])
+                else:
+
+                    # Register the additional dimension
+                    aux_dimdict = self.data.get_multidim_auxdata_dimdict(parameter_name)
+                    for dim_name, dim_value in aux_dimdict["new_dims"]:
+                        self._rootgrp.createDimension(dim_name, dim_value)
+
+                    # Add the dimension variable
+                    for name, dim_data in aux_dimdict["add_dims"]:
+                        dimvar = self._rootgrp.createVariable(name, dim_data.dtype.str, name, zlib=self.zlib)
+                        dimvar[:] = dim_data
+
+                    # The full dimension
+                    dimensions = aux_dimdict["dimensions"]
 
             dtype = np.byte
             flag_mask_vals = []
@@ -488,17 +505,18 @@ class NCDataFile(DefaultLoggingClass):
                 var[:] = data
 
             # Add Parameter Attributes
+            # NOTE: The parameter attributes may be template strings and there are special cases with
+            #       flags when the data type of the attribute is not a string
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
+                attribute = self.output_handler.fill_template_string(attribute, self.data)
                 if key == 'flag_masks':
                     # Use values pre-computed above
                     attribute = np.asarray(flag_mask_vals, dtype=dtype)
                 elif key == 'flag_values':
                     # The flag_values attribute also needs to be converted to a list of the correct datatype
-                    flag_values = [int(x) for x in str(attribute_dict['flag_values']).split(sep=',')]
+                    flag_values = [int(x) for x in attribute.split(sep=',')]
                     attribute = np.asarray(flag_values, dtype=data.dtype)
-                else:
-                    attribute = self.output_handler.fill_template_string(attribute, self.data)
                 setattr(var, key, attribute)
 
     def _create_root_group(self, attdict, **global_attr_keyw):
