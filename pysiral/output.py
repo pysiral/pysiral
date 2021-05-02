@@ -346,6 +346,7 @@ class NCDateNumDef(object):
         self.units = "seconds since 1970-01-01"
         self.calendar = "standard"
 
+
 class NCDateNumDef2000(object):
     """
     Holds definition for datetime conversion to numbers and vice versa
@@ -355,6 +356,7 @@ class NCDateNumDef2000(object):
     def __init__(self):
         self.units = "seconds since 2000-01-01"
         self.calendar = "standard"
+
 
 class NCDataFile(DefaultLoggingClass):
 
@@ -773,7 +775,7 @@ class Level2Output(NCDataFile):
         # Init the parent
         super(Level2Output, self).__init__(output_handler)
         # Reset the time epoch
-        self.time_def = NCDateNumDef2000()
+        self.time_def = NCDateNumDef()
 
         # Store the data container
         # FIXME: The data container does not need to be stored here, can be piped to _export_content()
