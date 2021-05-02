@@ -88,9 +88,9 @@ class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
     def _get_toplevel_search_folder(self, mode):
         folder = Path(getattr(self, "folder_"+mode))
         if self.year is not None:
-            folder = folder / "%4g" % self.year
+            folder = folder / "{:04g}".format(self.year)
         if self.month is not None:
-            folder = folder, "%02g" % self.month
+            folder = folder / "{:02g}".format(self.month)
         return folder
 
     @staticmethod
