@@ -1431,6 +1431,79 @@ class SGDRMultipleElevations(Level2ProcessorStep):
         return self.error_flag_bit_dict["other"]
 
 
+class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
+    """
+    Level-2 processor step to compute elevations from a range of TFMRA thresholds.
+    NOTE: Computational expensive, should be handled with care
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(TFMRAMultiThresholdFreeboards, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Computes the elevation of a range of defined of TFMRA retrackers thresholds to all
+        lead or ice elevations.
+        :param l1b:
+        :param l2:
+        :return: error_status_flag
+        """
+
+        # Get a clean error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Get the retracker and retrack only sea-ice surfaces
+        tfmra = cTFMRA()
+        tfmra.set_default_options()
+        filt_rng, filt_wfm, fmi, norm = tfmra.get_preprocessed_wfm(l1b.waveform.range,
+                                                                   l1b.waveform.power,
+                                                                   l1b.waveform.radar_mode,
+                                                                   l2.surface_type.sea_ice.flag)
+
+        # Get the target thresholds
+        threshold_min, threshold_max = self.cfg.options.threshold_range
+        threshold_res = self.cfg.options.threshold_res
+        thresholds = np.arange(threshold_min, threshold_max+0.1*threshold_res, threshold_res)
+
+        # Construct the output array
+        ranges = np.full((l2.n_records, thresholds.size), np.nan)
+
+        for i in np.where(l2.surface_type.sea_ice.flag)[0]:
+            for j, threshold in enumerate(thresholds):
+                retracked_range, _ = tfmra.get_threshold_range(filt_rng[i, :], filt_wfm[i, :], fmi[i], threshold)
+                ranges[i, j] = retracked_range
+
+        # Convert ranges to freeboards using the already pre-computed steps.
+        # NOTE: This specifically assumes that the sea surface height is constant
+        freeboards = np.full(ranges.shape, np.nan)
+        for j in np.arange(thresholds.size):
+            freeboards[:, j] = l2.altitude - ranges[:, j] - l2.rctotal - l2.mss - l2.sla + l2.sgcor
+
+        # Register results as auxiliary data variable
+        dim_dict = {"new_dims": (("tfmra_thresholds", thresholds.size), ),
+                    "dimensions": ("time", "tfmra_thresholds"),
+                    "add_dims": (("tfmra_thresholds", thresholds), )}
+        l2.set_multidim_auxiliary_parameter("thfrbs", "threshold_freeboards", freeboards, dim_dict)
+
+        # Return clean error status (for now)
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["range"]
+
+    @property
+    def l2_output_vars(self):
+        return ["tfmra_elevation_range"]
+
+    @property
+    def auxid_fmt(self):
+        return "elev{}"
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
+
 # %% Function for CryoSat-2 based retracker
 
 def wfm_get_noise_level(wfm, oversample_factor):
