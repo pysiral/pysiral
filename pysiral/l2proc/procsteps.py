@@ -293,6 +293,9 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
+        # Keep the total range correction
+        total_range_correction = np.full(l2.n_records, 0.0)
+
         # Apply the range corrections (content of l1b data package)
         # to the l2 elevation (output of retracker) data
         for correction_name in self.cfg.options.corrections:
@@ -336,6 +339,12 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
                 var[:] = var[:] - range_delta
                 l2.set_parameter(target_variable, var[:], var.uncertainty[:])
 
+            # store the range correction in the total range correction array
+            total_range_correction += range_delta
+
+        # Add the total range correction to the l2 auxiliary variables
+        l2.set_auxiliary_parameter("rctotal", "total_range_correction", total_range_correction)
+
         return error_status
 
     @property
@@ -352,7 +361,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
 
     @property
     def l2_output_vars(self):
-        output_vars = []
+        output_vars = ["rctotal"]
         return output_vars
 
     @property
