@@ -1,5 +1,18 @@
 # History of changes
 
+## [0.9-6] - unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+
 ## [0.9.5] - 2020-11-05
 
 ### Added
