@@ -89,6 +89,11 @@ class SnowGeometricCorrection(Level2ProcessorStep):
         l2.frb.set_value(freeboard)
         l2.frb.set_uncertainty(freeboard_uncertainty)
 
+        # Register the snow geometric correction as a auxiliary variable
+        is_not_ice = np.logical_not(l2.surface_type.sea_ice.flag)
+        geometric_correction[is_not_ice] = np.nan
+        l2.set_auxiliary_parameter("sgcor", "snow_geometric_correction", geometric_correction)
+
         # Return the error flag (where frb is NaN)
         return np.isnan(l2.frb[:])
 
@@ -126,7 +131,7 @@ class SnowGeometricCorrection(Level2ProcessorStep):
 
     @property
     def l2_output_vars(self):
-        return ["frb"]
+        return ["frb", "sgcorr"]
 
     @property
     def error_bit(self):
