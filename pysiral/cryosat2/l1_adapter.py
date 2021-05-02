@@ -473,7 +473,6 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
             logger.warning(msg)
             raise FileNotFoundError
 
-
     def _get_fes_path(self,filepath):
         # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
         # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
