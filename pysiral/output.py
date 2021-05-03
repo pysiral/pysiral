@@ -443,13 +443,6 @@ class NCDataFile(DefaultLoggingClass):
                 self.error.add_error("invalid-paramater", msg)
                 self.error.raise_on_error()
 
-            # Change radar_mode to instrument_mode to meet the Cryo-TEMPO ICD
-            # FIXME would be better to do this by having a list of renames in the output spec
-            # Not sure on the best way to handle the '+1' though
-            if parameter_name == 'radar_mode':
-                parameter_name = 'instrument_mode'
-                data = data[:] + 1
-
             # Convert datetime objects to number
             if isinstance(data[0], (datetime, cftime.datetime, cftime.real_datetime)):
                 data = date2num(data, self.time_def.units, self.time_def.calendar)

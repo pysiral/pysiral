@@ -101,7 +101,7 @@ variables:
     coordinates: time
     comment: "Latitude of nadir location [-90,+90]. Positive latitude is North latitude, negative latitude is South latitude."
 
-  radar_mode:
+  instrument_mode:
     long_name: "SIRAL instrument mode flag"
     flag_values: 1, 2, 3
     flag_meanings: "LRM SAR SARIn"
