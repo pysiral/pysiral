@@ -43,12 +43,12 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    freeboard:
+    sea_ice_freeboard:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
 
-    freeboard_uncertainty:
+    sea_ice_freeboard_uncertainty:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -153,7 +153,7 @@ l2i_prefilter:
     active: True
     nan_source: sea_ice_thickness
     nan_targets:
-        - freeboard
+        - sea_ice_freeboard
         - radar_freeboard
 
 # ==================================================
@@ -197,10 +197,10 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3ParameterMask
       options:
-        source: freeboard
+        source: sea_ice_freeboard
         condition: "is_nan"
         targets:
-            - freeboard_uncertainty
+            - sea_ice_freeboard_uncertainty
             - radar_freeboard_uncertainty
             - sea_level_anomaly
             - sea_level_anomaly_uncertainty

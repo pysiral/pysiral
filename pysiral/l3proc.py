@@ -1532,7 +1532,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
     # Mandatory properties
     required_options = ["water_density", "snow_depth_correction_factor", "max_l3_uncertainty"]
     l2_variable_dependencies = ["radar_freeboard_uncertainty", "sea_ice_thickness"]
-    l3_variable_dependencies = ["sea_ice_thickness", "freeboard", "snow_depth", "sea_ice_density",
+    l3_variable_dependencies = ["sea_ice_thickness", "sea_ice_freeboard", "snow_depth", "sea_ice_density",
                                 "snow_density", "snow_depth_uncertainty", "sea_ice_density_uncertainty",
                                 "snow_density_uncertainty"]
     l3_output_variables = dict(radar_freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
@@ -1565,7 +1565,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
                 continue
 
             # Get parameters
-            frb = self.l3grid.vars["freeboard"][yj, xi]
+            frb = self.l3grid.vars["sea_ice_freeboard"][yj, xi]
             sd = self.l3grid.vars["snow_depth"][yj, xi]
             rho_i = self.l3grid.vars["sea_ice_density"][yj, xi]
             rho_s = self.l3grid.vars["snow_density"][yj, xi]
