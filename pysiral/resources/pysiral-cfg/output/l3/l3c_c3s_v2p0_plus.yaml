@@ -281,6 +281,18 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  landsea_flag:
+    var_source_name: landsea
+    long_name: "land/sea flag"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0, 1"
+    flag_meaning: "land/lake, ocean"
+    comment: "Source CCI land/sea/lake masks"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   stat_n_total_waveforms:
     var_source_name: n_total_waveforms
     long_name: "number of total measurements per grid cell"
@@ -314,6 +326,15 @@ variables:
   stat_ice_fraction:
     var_source_name: ice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_ocean_fraction:
+    long_name: "fraction of grid cell covered by ocean"
+    valid_min: 0
+    valid_max: 1
+    comment: "Source CCI land/sea/lake masks"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"

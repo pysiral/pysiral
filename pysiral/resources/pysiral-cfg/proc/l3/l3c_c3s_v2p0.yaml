@@ -179,7 +179,19 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3LoadMasks
       options:
-        mask_names: ["warren99_is_valid", "landsea"]
+        mask_names: ["warren99_is_valid"]
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load CCI land mask"
+      module_name: pysiral.l3proc
+      class_name: Level3LoadCCILandMask
+      options:
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_fraction
+
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
