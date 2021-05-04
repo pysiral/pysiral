@@ -330,6 +330,7 @@ class _PysiralPackageConfiguration(object):
         self._check_pysiral_config_path()
 
         # --- Read the configuration files ---
+        self.local_machine = None
         self._read_config_files()
 
     def _get_pysiral_path_information(self):
@@ -579,7 +580,7 @@ class _PysiralPackageConfiguration(object):
             msg = "local_machine_def.yaml not found (expected: %s)" % filename
             print("local-machine-def-missing: %s" % msg)
             local_machine_def = None
-        setattr(self, "local_machine", local_machine_def)
+        self.local_machine = local_machine_def
 
     @property
     def platform_ids(self):
