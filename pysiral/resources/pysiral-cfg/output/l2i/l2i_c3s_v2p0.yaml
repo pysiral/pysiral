@@ -18,7 +18,10 @@ product_level_subfolder: l2i
 global_attributes:
   - title: "C3S 312b Lot 3: Northern Hemisphere Sea Ice Thickness Climate Data Record"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Monthly
+  climatology based on regional merging of Warren Climatology with 50% reduction for
+  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
+  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S sea-ice concentration climate data record v2.0, Sea ice type: C3S sea-ice type climate data record v2.0"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
@@ -107,17 +110,14 @@ variables:
     coordinates: time
 
   region_code:
-    long_name: "Region code from {source_hemisphere:select;modified NSIDC region mask;Antarctic seas based on their longitude range 
-    with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, 
-    The Cryosphere)}"
-    comment: "{source_hemisphere:select;Added flag for Baltic Sea (flag value 16);}"
+    long_name: "Region code from modified NSIDC region mask"
+    comment: "Added flag for Baltic Sea (flag value 16)"
     valid_min: 0
     valid_max: 21
-    flag_values: "{source_hemisphere:select;0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21;0, 1, 2, 3, 4, 5, 6, 20}"
-    flag_meaning: "{source_hemisphere:select;0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
+    flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 
     6: Baffin Bay, 7: East Greenland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 
-    13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline;0: Land Ice, 1: Ice-free Oceans, 
-    2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land}"
+    13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
     units: "1"
     coordinates: time
 
@@ -186,13 +186,13 @@ variables:
     units: m
     coordinates: time
 
-  freeboard:
+  sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: time
 
-  freeboard_uncertainty:
+  sea_ice_freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -263,18 +263,6 @@ variables:
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness standard error
-    units: m
-    coordinates: time
-
-  sea_ice_draft:
-    long_name: "depth of the sea-ice layer below the water surface"
-    standard_name: sea_ice_draft
-    units: m
-    coordinates: time
-    
-  sea_ice_draft_uncertainty:
-    long_name: "uncertainty of the sea ice layer draft"
-    standard_name: sea_ice_draft standard error
     units: m
     coordinates: time
 
