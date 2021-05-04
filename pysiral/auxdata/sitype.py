@@ -213,7 +213,11 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         self._data = ReadNC(path)
 
     def _get_sitype_track(self, l2):
-        """ Extract ice type and ice type uncertainty along the track """
+        """
+        Extract ice type and ice type uncertainty along the track
+        :param l2:
+        :return: sitype (array), sitype_uncertainty (array)
+        """
 
         # Extract from grid
         griddef = self.cfg.options[l2.hemisphere]
@@ -223,15 +227,31 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty[0, :, :], flipud=True)
 
         # Convert flags to myi fraction
-        translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5, np.nan])
-        fillvalues = np.where(sitype == -1)[0]
-        sitype[fillvalues] = 5
+        translator = np.array([np.nan,   # flag value 0 (not used)
+                               np.nan,   # flag value 1 (ice-free ocean)
+                               0.0,      # flag value 2 (first-year sea ice)
+                               1.0,      # flag value 3 (multi-year sea ice)
+                               0.5,      # flag value 4 (ambiguous ice type)
+                               np.nan])  # flag value 5 (generic flag value for fill_value)
+
+        # The fill value of the sea ice type as changed for different product version
+        # To assure backwards compatibility the fill value defaults to -1 (sitype v1p0)
+        # an for newer versions it must be specified in the options
+        fill_value = self.cfg.options.get("fill_value", -1)
+        fillvalue_locations = np.where(sitype == fill_value)[0]
+        sitype[fillvalue_locations] = 5
         sitype = np.array([translator[value] for value in sitype])
 
-        # Uncertainty in product is in %
-        sitype_uncertainty = uncertainty / 100.
+        # --- Ensure uncertainty units are fractions and not percent ---
+        # In the sea-ice type cdr/icdr v1.0 the unit of uncertainty in percent
+        # while from v2.0 on the unit is fraction. Therefore a switch has been
+        # introduced for v2.0 that turn the unit conversion (default) off
+        uncertainty_unit_is_percent = self.cfg.options.get("uncertainty_unit_is_percent", True)
+        if uncertainty_unit_is_percent:
+            uncertainty = uncertainty / 100.
 
-        return sitype, sitype_uncertainty
+        # All done, return values
+        return sitype, uncertainty
 
     @property
     def requested_filepath(self):
