@@ -83,6 +83,9 @@ auxdata_repository:
         # TODO: Enter directory with C3S sea-ice type cdr data
         #       (expects yyyy/mm as subfolders)
         c3s_cdr_v1p0: ''
+        # TODO: Enter directory with C3S sea-ice type cdr data
+        #       (expects yyyy/mm as subfolders)
+        c3s_cdr_v2p0: ''
 
     # Snow Products
     snow:
