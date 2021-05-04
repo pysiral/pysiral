@@ -1,0 +1,125 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata: 
+  output_id: l3c
+  data_level: 3
+  data_level_description: Level-3 super-colocated (gridded geophysical parameters)
+
+# Output Definition
+filenaming: 
+  monthly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m}.nc"
+  weekly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  daily: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}.nc"
+  custom: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  default: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  
+product_level_subfolder: l3c
+
+grid_options: 
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Sea Ice Thickness"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Warren Climatology with 50% reduction for first-year sea ice, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration {data_record_type:select;CDR;ICDR} v1p2, Sea ice type: C3S Sea Ice Type {data_record_type:select;CDR;ICDR} v2p0"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"  
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
+  - references: "Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 2"
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: "2p0"
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness {data_record_type:select;Climate Data Record (CDR);Interim Climate Data Record (ICDR)} from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020"
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - id: "c3s-sit-{data_record_type}-v2p0-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "{doi}"
+  - cdm_data_type: "Grid"
+  - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard. Please consult the Product User Guide (PUG) for more information."
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
+  - creator_url: "http://www.awi.de"
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
+  - project: "European Union Copernicus Climate Change Services (C3S)"
+  - publisher_name: "Copernicus Climate Data Store"
+  - publisher_url: "https://climate.copernicus.eu/climate-data-store"
+  - publisher_email: "copernicus-support@ecmwf.int"
+  - geospatial_lat_min: "{geospatial_lat_min}"   
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - cdm_data_type: "Grid"  
+  - spatial_resolution: "25.0 km grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Copernicus License: https://cds-dev.copernicus-climate.eu/api/v2/terms/static/20180314_Copernicus_License_V1.1.pdf"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+    
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  sea_ice_thickness:
+    long_name: thickness of the sea ice layer
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: "time lat lon"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    ancillary_variables: "uncertainty status_flag quality_indicator_flag"
+    comment: "this field is the primary sea ice thickness estimate for this climate data record"
+
+  uncertainty:
+    var_source_name: sea_ice_thickness_uncertainty
+    long_name: algorithm uncertainty of the sea ice thickness retrieval
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "algorithm uncertainty based on error propagation describes the maximum uncertainty for each grid cell"
+
+  quality_flag:
+    long_name: quality indicator flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
+    valid_min: 0
+    valid_max: 3
+    flag_meaning: "0: no thickness data; 1: nominal retrieval quality, no biases expected; 2: intermediate retrieval quality, bias likely; 3: low retrieval quality, bias expected"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval (status flag: 5)"
+
+  status_flag:
+    long_name: status flag for the sea ice thickness retrieval
+    standard_name: "sea_ice_thickness status_flag"
+    unit: 1
+    valid_min: 0
+    valid_max: 5
+    flag_meaning: "0: no input data; 1: outside sea ice concentration mask; 2: latitude above orbit inclination; 3: land, lake or land ice; 4: sea ice thickness retrieval failed; 5: sea ice thickness retrieval successful"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Describes the status of the sea-ice thickness retrieval"
