@@ -149,8 +149,12 @@ class OsiSafSIType(AuxdataBaseClass):
 
 
 class OsiSafSITypeCDR(AuxdataBaseClass):
-    """ Class for reprocessed OSISAF sea ice type products (e.g. for C3S).
-    Needs to be merged into single OsiSafSitype class at some point """
+    """
+    Class for reprocessed OSISAF sea ice type products (e.g. for C3S). Currently supports the
+    - C3S sea ice type climate data record v1.0
+    - C2s sea ice type interim climate data record v1.0
+    - C3S sea ice tyoe climate data record v2.0
+    """
 
     def __init__(self, *args, **kwargs):
         super(OsiSafSITypeCDR, self).__init__(*args, **kwargs)
@@ -160,9 +164,12 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
     def get_l2_track_vars(self, l2):
         """
-        Mandadory method of AuxdataBaseClass subclass
+        Mandadory method of AuxdataBaseClass subclass.
+        Registers two variables to the Level-2 data container:
+            - MYI fraction (id: sitype, name: sea_ice_type)
+            - MYI fraction uncertainty (id: sitype.uncertainty, name: sea_ice_type_uncertainty)
         :param l2: Level-2 Data object
-        :return:
+        :return: None
         """
 
         # These properties are needed to construct the product path
@@ -183,6 +190,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
             # Get and return the track
             sitype, uncertainty = self._get_sitype_track(l2)
 
+        # FIXME: Is this relevant?
         # (Optional) Fill gaps in the sea ice type product
         # where the sea-ice concentration data indicates the
         # presence of sea ice. This usually happens close to
@@ -193,7 +201,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         if fill_gaps:
             sitype, uncertainty = fill_sitype_gaps(sitype, uncertainty, l2.sic[:])
 
-        # Register the data
+        # Register the sea ice type data to the L2 data object
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
     def load_requested_auxdata(self):
@@ -263,6 +271,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         Documentation of the flag from the product files (v2.0). Fill value may differ between
         sea-ice type CDR versions:
 
+            ```
             byte ice_type(time=1, yc=432, xc=432);
                   :_FillValue = -127B; // byte
                   :long_name = "Classification of sea ice into the classes of first-year ice and multiyear ice";
@@ -279,6 +288,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
                                         flag 4: Ambiguous ice with non-significant classification";
                   :ancillary_variables = "uncertainty status_flag";
                   :comment = "this field is the primary sea ice type estimate for this climate data record";
+            ```
 
         :param flag: (int) The sea ice classification flag value
         :return: myi_fraction: (float) MYI fraction
