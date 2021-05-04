@@ -346,6 +346,7 @@ class NCDateNumDef(object):
         self.units = "seconds since 1970-01-01"
         self.calendar = "standard"
 
+
 class NCDateNumDef2000(object):
     """
     Holds definition for datetime conversion to numbers and vice versa
@@ -355,6 +356,7 @@ class NCDateNumDef2000(object):
     def __init__(self):
         self.units = "seconds since 2000-01-01"
         self.calendar = "standard"
+
 
 class NCDataFile(DefaultLoggingClass):
 
