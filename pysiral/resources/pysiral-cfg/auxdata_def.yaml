@@ -736,6 +736,8 @@ sitype:
         pyclass: OsiSafSITypeCDR
         long_name: C3S Sea Ice Type (interim) Climate Data Record ((i)CDR) - v2p0
         options:
+            fill_value: -127
+            uncertainty_unit_is_percent: False
             auto_product_change:
                 # The date defines the time, when the second product will be used
                 date_product_change: 2020-05-01T00:00:00
