@@ -24,8 +24,7 @@ grid_options:
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - title: "Sea Ice Thickness"
-  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum fuer Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration {data_record_type:select;CDR;ICDR} v2p0, Sea ice type: C3S Sea Ice Type {data_record_type:select;CDR;ICDR} v2p0"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"  
@@ -45,7 +44,7 @@ global_attributes:
   - cdm_data_type: "Grid"
   - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard. Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum fuer Polar und Meeresforschung"
   - creator_type: "institution"
   - creator_url: "http://www.awi.de"
   - contributor_name: "Stefan Hendricks, Robert Ricker"
