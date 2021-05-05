@@ -95,7 +95,7 @@ variables:
     comment: "this field is the primary sea ice thickness estimate for this climate data record"
 
   uncertainty:
-    var_source_name: sea_ice_thickness_uncertainty
+    var_source_name: sea_ice_thickness_l3_uncertainty
     long_name: algorithm uncertainty of the sea ice thickness retrieval
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -108,7 +108,8 @@ variables:
     unit: 1
     valid_min: 0
     valid_max: 3
-    flag_meaning: "0: no thickness data; 1: nominal retrieval quality, no biases expected; 2: intermediate retrieval quality, bias likely; 3: low retrieval quality, bias expected"
+    flag_values: "0, 1, 2, 3"
+    flag_meaning: "no thickness data, nominal retrieval quality and no biases expected, intermediate retrieval quality with likely bias, low retrieval quality with expected bias"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval (status flag: 5)"
@@ -119,7 +120,8 @@ variables:
     unit: 1
     valid_min: 0
     valid_max: 5
-    flag_meaning: "0: no input data; 1: outside sea ice concentration mask; 2: latitude above orbit inclination; 3: land, lake or land ice; 4: sea ice thickness retrieval failed; 5: sea ice thickness retrieval successful"
+    flag_values: "0, 1, 2, 3, 4, 5"
+    flag_meaning: "nominal retrieval, no input data, outside sea ice concentration mask, latitude above orbit inclination, land or lake or land ice, sea ice thickness retrieval failed"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"

@@ -175,13 +175,6 @@ grid_settings:
 processing_items:
 
     # Compute surface type statistics based on surface type classification
-    - label: "Load masks"
-      module_name: pysiral.l3proc
-      class_name: Level3LoadMasks
-      options:
-        mask_names: ["warren99_is_valid"]
-
-    # Compute surface type statistics based on surface type classification
     - label: "Load CCI land mask"
       module_name: pysiral.l3proc
       class_name: Level3LoadCCILandMask
@@ -279,11 +272,7 @@ processing_items:
         add_rule_flags: maximum_value
         # A list of rules that will be checked
         rules: 
-            # Mark everything outside of the Warren99 Climatology as biased
-            # Note: This method requires loading the external mask with id `warren99_is_valid`
-            qif_warren99_valid_flag:
-                type: method
-                target_flag: 3
+
             # Check for lead fractions not only in the grid cell but also in the adjacent 
             # grid cells. Idea is that grid cell with low lead fractions have still high 
             # confidence if enough leads in the neighbourhood

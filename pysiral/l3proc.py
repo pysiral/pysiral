@@ -829,6 +829,11 @@ class Level3OutputHandler(OutputHandlerBase):
         try:
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
+
+            # Add a translation for the current dissonace between dateperiod
+            # period id's and the pysiral convention
+            period_id_dict = dict(month="monthly", isoweek="weekly")
+            period_id = period_id_dict.get(period_id, period_id)
             # Fall back to default if no filenaming convention for given
             # data period
             if period_id not in template_ids:
@@ -887,12 +892,6 @@ class Level3OutputHandler(OutputHandlerBase):
             basedir = basedir / self.now_directory
         # set the directory
         self._set_basedir(basedir)
-
-    @property
-    def default_output_def_filename(self):
-        pysiral_config = psrlcfg
-        local_settings_path = pysiral_config.pysiral_local_path
-        return Path(local_settings_path) / Path(*self.default_file_location)
 
     @property
     def flip_yc(self):
