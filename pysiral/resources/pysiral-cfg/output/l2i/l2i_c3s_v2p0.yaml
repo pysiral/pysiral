@@ -18,7 +18,7 @@ product_level_subfolder: l2i
 global_attributes:
   - title: "C3S 312b Lot 3: Northern Hemisphere Sea Ice Thickness Climate Data Record"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Monthly
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. doi 10.5270/EN1-85m0a7b}, Snow depth: Monthly
   climatology based on regional merging of Warren Climatology with 50% reduction for
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
   Bremen in remaining ice-covered regions, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S sea-ice concentration climate data record v2.0, Sea ice type: C3S sea-ice type climate data record v2.0"

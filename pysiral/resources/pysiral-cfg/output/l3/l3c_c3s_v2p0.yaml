@@ -89,7 +89,7 @@ variables:
     coverage_content_type: coordinate
 
   sea_ice_thickness:
-    long_name: Sea Ice Thickness
+    long_name: "Sea Ice Thickness"
     standard_name: sea_ice_thickness
     units: m
     coordinates: "time lat lon"
@@ -105,7 +105,7 @@ variables:
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
-    coverage_content_type: qualityInformation
+    coverage_content_type: auxiliaryInformation
 
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag

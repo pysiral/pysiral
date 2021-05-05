@@ -46,6 +46,7 @@ global_attributes:
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum fuer Polar und Meeresforschung"
   - creator_type: "institution"
+  - creator_email: "stefan.hendricks@awi.de"
   - creator_url: "http://www.awi.de"
   - contributor_name: "Stefan Hendricks, Robert Ricker"
   - contributor_role: "PrincipalInvestigator, Author"
@@ -59,7 +60,7 @@ global_attributes:
   - geospatial_lon_max: 180.0
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
-  - cdm_data_type: "Grid"  
+  - cdm_data_type: "grid"  
   - spatial_resolution: "25.0 km grid spacing"
   - geospatial_bounds_crs: "EPSG:6931"
   - time_coverage_start: "{time_coverage_start}"
@@ -78,12 +79,14 @@ variables:
     long_name: longitude coordinate
     standard_name: longitude
     units: degrees_east
+    coverage_content_type: coordinate
     
   lat:
     var_source_name: latitude
     long_name: latitude coordinate
     standard_name: latitude
     units: degrees_north
+    coverage_content_type: coordinate
 
   mean_sea_surface:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
@@ -202,13 +205,14 @@ variables:
     coordinates: "time lat lon"
 
   sea_ice_thickness:
-    long_name: thickness of the sea ice layer
+    long_name: "Sea Ice Thickness"
     standard_name: sea_ice_thickness
     units: m
     coordinates: "time lat lon"
     grid_mapping: "Lambert_Azimuthal_Grid"
     ancillary_variables: "uncertainty status_flag quality_flag"
     comment: "this field is the primary sea ice thickness estimate for this climate data record"
+    coverage_content_type: physicalMeasurement
 
   uncertainty:
     var_source_name: sea_ice_thickness_l3_uncertainty
@@ -217,6 +221,7 @@ variables:
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    coverage_content_type: auxiliaryInformation
 
   sea_ice_draft:
     long_name: depth of the sea-ice layer below the water surface
@@ -236,19 +241,20 @@ variables:
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag
     standard_name: "quality_flag"
-    unit: 1
+    units: 1
     valid_min: 0
     valid_max: 3
     flag_values: "0, 1, 2, 3"
     flag_meanings: "no_data nominal_quality intermediate_quality low_quality"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
-    comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval"
+    coverage_content_type: qualityInformation
+    comment: "The expert assessment on retrieval quality is only provided for grid cess with valid thickness retrieval"    
 
   status_flag:
     long_name: Sea Ice Thickness Status Flag
     standard_name: "status_flag"
-    unit: 1
+    units: 1
     valid_min: 0
     valid_max: 5
     flag_values: "0, 1, 2, 3, 4, 5"
@@ -256,6 +262,7 @@ variables:
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
     grid_mapping: "Lambert_Azimuthal_Grid"
+    coverage_content_type: qualityInformation
 
   region_code:
     long_name: "Region code from select;modified NSIDC region mask 
