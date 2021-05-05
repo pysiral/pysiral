@@ -25,13 +25,13 @@ grid_options:
 global_attributes:
   - title: "Sea Ice Thickness"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Warren Climatology with 50% reduction for first-year sea ice, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration {data_record_type:select;CDR;ICDR} v1p2, Sea ice type: C3S Sea Ice Type {data_record_type:select;CDR;ICDR} v2p0"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:European Space Agency, 2018, RA-2 Sensor and Geophysical Data Record - SGDR. Version 3.0. https://doi.org/10.5270/EN1-85m0a7b}, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration {data_record_type:select;CDR;ICDR} v2p0, Sea ice type: C3S Sea Ice Type {data_record_type:select;CDR;ICDR} v2p0"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"  
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 2"
   - tracking_id: "{uuid}"
-  - conventions: "CF-1.6"
+  - Conventions: "CF-1.6"
   - product_version: "2p0"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness {data_record_type:select;Climate Data Record (CDR);Interim Climate Data Record (ICDR)} from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020"
@@ -91,37 +91,38 @@ variables:
     units: m
     coordinates: "time lat lon"
     grid_mapping: "Lambert_Azimuthal_Grid"
-    ancillary_variables: "uncertainty status_flag quality_indicator_flag"
+    ancillary_variables: "uncertainty status_flag quality_flag"
     comment: "this field is the primary sea ice thickness estimate for this climate data record"
 
   uncertainty:
     var_source_name: sea_ice_thickness_l3_uncertainty
-    long_name: algorithm uncertainty of the sea ice thickness retrieval
+    long_name: Sea Ice Thickness Uncertainty
+    standard_name: sea_ice_thickness standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
-    comment: "algorithm uncertainty based on error propagation describes the maximum uncertainty for each grid cell"
 
   quality_flag:
-    long_name: quality indicator flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
+    long_name: Sea Ice Thickness Quality Flag
+    standard_name: "quality_flag"
     unit: 1
     valid_min: 0
     valid_max: 3
     flag_values: "0, 1, 2, 3"
-    flag_meaning: "no thickness data, nominal retrieval quality and no biases expected, intermediate retrieval quality with likely bias, low retrieval quality with expected bias"
+    flag_meanings: "no_data nominal_quality intermediate_quality low_quality"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
-    comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval (status flag: 5)"
+    comment: "Provides an expert guess on data quality and is only computed for valid thickness retrieval"
 
   status_flag:
-    long_name: status flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
+    long_name: Sea Ice Thickness Status Flag
+    standard_name: "status_flag"
     unit: 1
     valid_min: 0
     valid_max: 5
     flag_values: "0, 1, 2, 3, 4, 5"
-    flag_meaning: "nominal retrieval, no input data, outside sea ice concentration mask, latitude above orbit inclination, land or lake or land ice, sea ice thickness retrieval failed"
+    flag_meanings: "nominal_retrieval no_data open_ocean satellite_pole_hole land_lake_landice retrieval_failed"
+    
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
