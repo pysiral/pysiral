@@ -1353,11 +1353,22 @@ class Level3StatusFlag(Level3ProcessorItem):
         nvw = self.l3grid.vars["n_valid_waveforms"]
         lnd = self.l3grid.vars["landsea"]
 
-        # Compute conditions for flags
+        # --- Compute conditions for flags ---
+
+        # Get sea ice mask
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
+
+        # Get the pole hole information
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
         orbit_inclinations = [psrlcfg.platforms.get_orbit_inclination(mission_id) for mission_id in mission_ids]
-        is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
+
+        # NOTE: due to varying grid cell size, it is no sufficient to just check which grid cell coordinate
+        #       is outside the orbit coverage
+        is_pole_hole = np.logical_and(
+            np.abs(self.l3grid.vars["latitude"]) > (np.amin(orbit_inclinations)-1.0),
+            flag_values["no_data"])
+
+        # Check where the retrieval has failed
         is_land = lnd > 0
         has_data = nvw > 0
         has_retrieval = np.isfinite(par)
