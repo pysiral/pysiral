@@ -496,7 +496,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([psrlcfg.platforms.get_sensor(m) for m in ids.split(",")])
+        names = ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
         return names
 
     def _get_attr_source_timeliness(self, *args):
