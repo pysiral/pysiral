@@ -323,6 +323,7 @@ class Level1bData(DefaultLoggingClass):
         --------
         maxloc (float, default=0.4)
             preferred location of the maximum of the waveform in the subset
+        #TODO: Move to waveform class
         """
         # Extract original waveform
         orig_power, orig_range = self.waveform.power, self.waveform.range
@@ -356,6 +357,42 @@ class Level1bData(DefaultLoggingClass):
             range[i, :] = orig_range[i, start[i]:stop[i]]
         # Push to waveform container
         self.waveform.set_waveform_data(power, range, self.radar_modes)
+
+    def increase_waveform_bin_count(self, target_count):
+        """
+        Increase the bin count of waveform power and range arrays.
+        (e.g. for merging CryoSat-2 LRM [128 bins] and SAR [256 bins])
+
+        Creates a subset and updates the l1b.waveform container
+
+        Arguments
+        ---------
+        target_count (int)
+            target number of waveform bins
+            (needs to be bigger than full waveform bin count)
+
+        #TODO: Move to waveform class
+        """
+        # Extract original waveform
+        orig_power, orig_range = self.waveform.power, self.waveform.range
+        n_records, n_bins = orig_power.shape
+
+        # Add the zero bins at the beginning of the range window
+        pwr = np.full((n_records, target_count), 0.0)
+        pwr[:, 0:n_bins] = orig_power
+
+        # Extend the range
+        rng = np.full((n_records, target_count), 0.0)
+        rng[:, 0:n_bins] = orig_range
+
+        n_new_bins = target_count-n_bins
+        approx_bins_size = rng[0, 1] - rng[0, 0]
+        artificial_range = np.arange(1, n_new_bins+1)*approx_bins_size
+        rng[:, n_bins:] = np.tile(artificial_range, (n_records, 1))
+        rng[:, n_bins:] += np.tile(rng[:, n_bins-1], (n_new_bins, 1)).transpose()
+
+        # Push to waveform container
+        self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
 
     def get_parameter_by_name(self, data_group, parameter_name):
         """ API method to retrieve any parameter from any data group """
