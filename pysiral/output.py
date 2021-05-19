@@ -844,10 +844,11 @@ class Level3Output(NCDataFile):
         var = rgrp.createVariable("time", "f8", tuple(['time']), zlib=self.zlib)
         var.standard_name = "time"
         var.units = self.time_def.units
-        var.long_name = "reference time of product"
+        var.long_name = "Time"
         var.axis = "T"
         var.calendar = self.time_def.calendar
         var.bounds = "time_bnds"
+        var.coverage_content_type = "coordinate"
         var[:] = date2num(self.data.metadata.time_coverage_start,
                           self.time_def.units, self.time_def.calendar)
 
@@ -858,7 +859,9 @@ class Level3Output(NCDataFile):
         time_bnds = [[date2num(dt, td_units, td_cal) for dt in time_bounds_dt]]
         dims = ("time", "nv")
         var = rgrp.createVariable("time_bnds", "f8", dims, zlib=self.zlib)
+        var.long_name = "Time Bounds"
         var.units = self.time_def.units
+        var.coverage_content_type = "coordinate"
         var[:] = time_bnds
 
     def _add_grid_mapping_variables(self):
@@ -888,6 +891,7 @@ class Level3Output(NCDataFile):
         var.standard_name = "projection_x_coordinate"
         var.units = "km"
         var.long_name = "x coordinate of projection (eastings)"
+        var.coverage_content_type = "coordinate"
         var[:] = self.data.griddef.xc_km
 
         # Set y coordinate
@@ -898,6 +902,7 @@ class Level3Output(NCDataFile):
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
         var.long_name = "y coordinate of projection (eastings)"
+        var.coverage_content_type = "coordinate"
         var[:] = yc_km
 
         # Set grid definition
