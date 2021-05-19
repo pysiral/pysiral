@@ -245,7 +245,7 @@ variables:
     valid_min: 0
     valid_max: 3
     flag_values: "0, 1, 2, 3"
-    flag_meanings: "no_data nominal_quality intermediate_quality low_quality"
+    flag_meanings: "nominal_quality intermediate_quality low_quality no_data"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation

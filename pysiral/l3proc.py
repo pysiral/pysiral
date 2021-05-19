@@ -1427,7 +1427,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         lfr = np.copy(self.l3grid.vars["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
-        qif[np.where(np.isfinite(sit))] = 1
+        qif[np.where(np.isfinite(sit))] = 0
 
         # Get a list of all the rules
         quality_flag_rules = self.rules.keys()
@@ -1483,8 +1483,8 @@ class Level3QualityFlag(Level3ProcessorItem):
                 flag[np.where(ntf > threshold)] = target_flag
             qif = np.maximum(qif, flag)
 
-        # Set all flags with no data to zero again
-        qif[np.where(np.isnan(sit))] = 0
+        # Set all flags with no data to last flag value again
+        qif[np.where(np.isnan(sit))] = 3
 
         # Set flag again
         self.l3grid.vars["quality_flag"] = qif

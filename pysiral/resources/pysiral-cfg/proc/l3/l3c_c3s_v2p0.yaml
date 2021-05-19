@@ -279,21 +279,21 @@ processing_items:
             qif_lead_availability:
                 search_radius_m: 75000.
                 area_lead_fraction_minimum: 0.1
-                target_flag: 2
+                target_flag: 1
             
             # Check radar mode for SARin mode (only applicable for CryoSat-2)
             qif_cs2_radar_mode_is_sin:
-                target_flag: 2
+                target_flag: 1
             
             # Check number of waveforms and raise flag if low
             qif_n_waveforms:
                 thresholds: [50, 10]
-                target_flags: [2, 3]
+                target_flags: [1, 2]
             
             # Check the negative thickness fraction and raise flag if high
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
-                target_flags: [2, 3]
+                target_flags: [1, 2]
 
     # Compute the status flag
     - label: "grid surface type classifiers"
