@@ -406,8 +406,8 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
 
         # fmi version: Calculate the LTPP
-        ltpp = CS2LTPP(wfm_counts)
-        self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
+        # ltpp = CS2LTPP(wfm_counts)
+        # self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
 
         # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
         satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
@@ -418,6 +418,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
     @property
     def empty(self):
         return None
+
 
 class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
     def __init__(self, cfg, raise_on_error=False):
