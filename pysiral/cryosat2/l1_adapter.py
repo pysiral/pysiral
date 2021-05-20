@@ -18,6 +18,7 @@ from pysiral.logging import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 import re
 
+
 class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
     def __init__(self, cfg, raise_on_error=False):
@@ -435,16 +436,16 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
         try:
             nc_fes = xarray.open_dataset(fespath, decode_times=False, mask_and_scale=True)
 
-            #time_1hz = self.nc.time_cor_01.values
-            #time_20hz = self.nc.time_20_ku.values
+            # time_1hz = self.nc.time_cor_01.values
+            # time_20hz = self.nc.time_20_ku.values
 
             msg = "Patching FES2014b tide data from: %s" % fespath
             logger.info(msg)
 
             # ocean_tide_elastic: ocean_tide_01
             variable_20hz = getattr(nc_fes, 'ocean_tide_20')
-            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
-            #if error_status:
+            # variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            # if error_status:
             #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_01'
             #    logger.warning(msg)
             #    raise FileNotFoundError
@@ -452,8 +453,8 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
 
             # ocean_tide_long_period: ocean_tide_eq_01
             variable_20hz = getattr(nc_fes, 'ocean_tide_eq_20')
-            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
-            #if error_status:
+            # variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            # if error_status:
             #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_eq_01'
             #    logger.warning(msg)
             #    raise FileNotFoundError
@@ -461,11 +462,11 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
 
             # ocean_loading_tide: load_tide_01
             variable_20hz = getattr(nc_fes, 'load_tide_20')
-            #variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
-            #if error_status:
-            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'load_tide_01'
-            #    logger.warning(msg)
-            #    raise FileNotFoundError
+            # variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            # if error_status:
+            #     msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'load_tide_01'
+            #     logger.warning(msg)
+            #     raise FileNotFoundError
             self.l1.correction.set_parameter('ocean_loading_tide', variable_20hz)
         except:
             msg = "Error encountered by xarray parsing: %s" % fespath
