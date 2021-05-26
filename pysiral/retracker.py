@@ -890,19 +890,21 @@ class cTFMRA(BaseRetracker):
             filt_wfm[i, :] = result[1]
             fmi[i] = result[2]
             norm[i] = result[3]
-
         return filt_rng, filt_wfm, fmi, norm
 
     def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
         """
         Return the distance between two thresholds t0 < t1
         """
+
         width = np.full(rng.shape[0], np.nan, dtype=np.float32)
         for i in np.arange(rng.shape[0]):
             if fmi[i] is None:
                 continue
+ 
             r0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0)
             r1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1)
+
             width[i] = r1[0] - r0[0]
 
         # some irregular waveforms might produce negative width values
@@ -925,6 +927,7 @@ class cTFMRA(BaseRetracker):
         # (needs to be above radar mode dependent noise threshold)
         fmnt = self._options.first_maximum_normalized_threshold[radar_mode]
         peak_minimum_power = fmnt + noise_level
+
         fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power)
 
         return filt_rng, filt_wfm, fmi, norm
@@ -964,9 +967,11 @@ class cTFMRA(BaseRetracker):
             return -1
 
         # Find relative maxima before the absolute maximum
-
+        # but exclude the first range bins for Artifacts in ERS/Envisat
+        skip = 55
         try:
-            peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index+1])
+            #peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index+1])
+            peaks = cytfmra_findpeaks(wfm[skip:absolute_maximum_index+1])+skip
         except:
             return -1
 
@@ -999,7 +1004,10 @@ class cTFMRA(BaseRetracker):
         tfmra_power = threshold*first_maximum_power
 
         # Use linear interpolation to get exact range value
-        points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
+        # but exclude the first range bins for Artifacts in ERS/Envisat
+        skip = 55
+        #points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
+        points = np.where(wfm[skip:first_maximum_index] > tfmra_power)[0]+skip
 
         if len(points) == 0:
             return np.nan, np.nan
