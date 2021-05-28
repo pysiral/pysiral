@@ -778,12 +778,17 @@ class cTFMRA(BaseRetracker):
 
         # The bin range of the waveform where the noise level should be detected
         # NOTE: In the config file the bins values refer to the actual range bins
-        #       and not to the oversampled waveforms.
-        noise_level_range_idx = self._options.noise_level_range_bin_idx
+        #       and not to the oversampled waveforms. This settings depends on
+        #       the specific sensor and a default value should not be used.
+        #       Thus a ValueError is raised if the option is missing
+        noise_level_range_idx = self._options.get("noise_level_range_bin_idx", None)
+        if noise_level_range_idx is None:
+            raise ValueError("Missing ctfmra option: noise_level_range_bin_idx")
 
         # Waveforms from some altimeter have artefacts at the beginning of the
         # waveform that may be misclassified as a first maximum.
-        fmi_first_valid_idx = self._options.first_maximum_ignore_leading_bins
+        # NOTE: This setting also depends on the sensor, but a default can be used.
+        fmi_first_valid_idx = self._options.get("first_maximum_ignore_leading_bins", 0)
 
         # A factor by how much points the waveform should be oversampled
         # before smoothing
