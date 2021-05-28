@@ -2,7 +2,7 @@
 """
 Created on Fri Jul 31 15:48:58 2015
 
-@author: Stefan
+@author: Stefan Hendrics
 """
 
 # Utility methods for retracker:
@@ -100,18 +100,26 @@ class BaseRetracker(object):
                         l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
 
+    def l2_retrack(self, rng, pwr, indices, radar_mode, is_valid):
+        """
+        Abstract method, not to be called directly but expected to be overwritten
+        by the child class
+        :return:
+        """
+        raise NotImplementedError("BaseRetracker.l2_retrack should not be called directly")
+
     def get_l1b_parameter(self, data_group, parameter_name):
         """ Get any valid level-2 paremeter name """
         try:
             return self._l1b.get_parameter_by_name(data_group, parameter_name)
-        except:
+        except (KeyError, AttributeError):
             return None
 
     def get_l2_parameter(self, parameter_name):
         """ Get any valid level-2 paremeter name """
         try:
             return self._l2.get_parameter_by_name(parameter_name)
-        except:
+        except (KeyError, AttributeError):
             return None
 
     def _create_default_properties(self, n_records):
@@ -700,7 +708,10 @@ class TFMRA(BaseRetracker):
 
 
 class cTFMRA(BaseRetracker):
-    """ Default Retracker from AWI CryoSat-2 production system """
+    """
+    The default TFMRA retracker implementation using cythonized
+    functions for numerical perfomrance
+    """
 
     DOCSTR = r"Threshold first maximum retracker (TFMRA)"
 
@@ -986,11 +997,6 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def normalize_wfm(y):
-        norm = bn.nanmax(y)
-        return y/norm, norm
-
-    @staticmethod
     def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
@@ -1167,6 +1173,9 @@ class SICCIOcog(BaseRetracker):
 
     def __init__(self):
         super(SICCIOcog, self).__init__()
+        self.retracked_bin = None
+        self.leading_edge_width = None
+        self.tail_shape = None
 
     def create_retracker_properties(self, n_records):
         parameter = ["retracked_bin", "leading_edge_width", "tail_shape"]
@@ -1514,6 +1523,7 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
 
 # %% Function for CryoSat-2 based retracker
 
+
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
     return bn.nanmean(wfm[0:5*oversample_factor])
@@ -1659,8 +1669,7 @@ def P_lead(t, t_0, k, sigma, a):
     # F is piecewise. These are (Truth where applicable) * (Function)
     F_1 = (t <= t_0) * (t_diff/sigma)
     F_2 = (t >= (t_b+t_0)) * (np.sqrt(np.abs(t_diff)*k))
-    F_L = np.logical_and(
-        t > t_0, t < (t_b+t_0)) * (aaa*t_diff**3 + aa*t_diff**2+t_diff/sigma)
+    F_L = np.logical_and(t > t_0, t < (t_b+t_0)) * (aaa*t_diff**3 + aa*t_diff**2+t_diff/sigma)
     # Compile F
     F = F_1 + F_L + F_2
     return a*np.exp(-F*F)  # Return e^-f^2(t)
