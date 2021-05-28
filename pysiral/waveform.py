@@ -145,7 +145,9 @@ class TFMRALeadingEdgeWidth(object):
         # Compute filtered waveform and index of first maximum once
         self.tfmra = cTFMRA()
         self.tfmra.set_default_options()
+
         filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(rng, wfm, radar_mode, is_ocean)
+
         self.wfm, self.rng, self.fmi = filt_wfm, filt_rng, fmi
 
     def get_width_from_thresholds(self, thres0, thres1):
@@ -187,6 +189,7 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
 
         # Compute the leading edge width (requires TFMRA retracking)
         width = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
+        
         lew = width.get_width_from_thresholds(thrs_start, thrs_end)
         lew1 = width.get_width_from_thresholds(thrs_start, thrs_center)
         lew2 = width.get_width_from_thresholds(thrs_center, thrs_end)
