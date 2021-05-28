@@ -85,11 +85,11 @@ def cytfmra_interpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-def cytfmra_wfm_noise_level(double[:] wfm, int oversample_factor):
-    """ According to CS2AWI TFMRA implementation """
-    cpdef double[:] early_wfm = wfm[0:5*oversample_factor]
+def cytfmra_wfm_noise_level(double[:] wfm, int i0, int i1):
+    """ Compute the noise level if defined set of the waveform """
+    cpdef double[:] early_wfm = wfm[i0:i1]
     cdef double noise_level
-    noise_level = np.sum(early_wfm)/float(len(early_wfm))
+    noise_level = bn.nanmean(early_wfm)
     return noise_level
 
 
