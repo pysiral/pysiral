@@ -438,11 +438,13 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
         return range_os, wfm_os
 
-    def normalize_wfm(self, y):
+    @staticmethod
+    def normalize_wfm(y):
         norm = np.nanmax(y)
         return y/norm, norm
 
-    def get_first_maximum_index(self, wfm, peak_minimum_power):
+    @staticmethod
+    def get_first_maximum_index(wfm, peak_minimum_power):
         """
         Return the index of the first peak (first maximum) on
         the leading edge before the absolute power maximum.
@@ -469,7 +471,8 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
         return first_maximum_index
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -502,7 +505,10 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
 
 class TFMRA(BaseRetracker):
-    """ Default Retracker from AWI CryoSat-2 production system """
+    """
+    Default Retracker from AWI CryoSat-2 production system (pure python implementation)
+    FIXME: This implementation is deprecated and should be removed in favor of cTFMRA
+    """
 
     DOCSTR = r"Threshold first maximum retracker (TFMRA)"
 
@@ -1290,9 +1296,6 @@ class ICESatGLAH13Elevation(BaseRetracker):
 
     def __init__(self):
         super(ICESatGLAH13Elevation, self).__init__()
-
-    def set_default_options(self):
-        self.set_options(**self.default_options_dict)
 
     def create_retracker_properties(self, n_records):
         pass
