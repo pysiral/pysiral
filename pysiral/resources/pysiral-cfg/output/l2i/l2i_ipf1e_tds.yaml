@@ -306,6 +306,15 @@ variables:
     units: 1
     coordinates: time
 
+  tfmra_first_maximum_index:
+    long_name: "index of the first maximum found by the tfmra retracker"
+    units: 1
+    coordinates: time
+
+  tfmra_noise_power:
+    long_name: "Noise power detected by the tfrma retracker"
+    coordinates: time
+
   threshold_freeboards:
     long_name: "freeboards computed with a range of retracker thresholds"
     units: m
