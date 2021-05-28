@@ -819,9 +819,9 @@ class cTFMRA(BaseRetracker):
             filt_rng, filt_wfm, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], oversampling_factor, window_size)
 
             # Get noise level in normalized units
-            i0, i1 = noise_level_range_idx*oversampling_factor
+            i0, i1 = [idx * oversampling_factor for idx in noise_level_range_idx]
             noise_level_normed = cytfmra_wfm_noise_level(filt_wfm, i0, i1)
-            tfmra_noise_power[i] = noise_level_normed*norm
+            tfmra_noise_power[i] = noise_level_normed * norm
 
             # Find first maxima
             # (needs to be above radar mode dependent noise threshold)
