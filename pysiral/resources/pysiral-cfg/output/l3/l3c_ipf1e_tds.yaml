@@ -400,6 +400,12 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  stat_tfmra_noise_power:
+    var_source_name: tfmra_noise_power
+    long_name: "Waveform noise power from TFMRA"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   stat_sigma0_mean:
     var_source_name: stat_sigma0_all_mean
     long_name: "average radar backscatter coefficient (all waveforms)"

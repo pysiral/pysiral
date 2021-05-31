@@ -28,6 +28,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    tfmra_noise_power:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
     surface_type:
         grid_method: none
         dtype: i4
