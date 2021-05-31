@@ -724,8 +724,24 @@ class cTFMRA(BaseRetracker):
     def __init__(self):
         super(cTFMRA, self).__init__()
 
-    def set_default_options(self):
-        self.set_options(**self.default_options_dict)
+    def set_default_options(self, specified_options=None):
+        """
+        Set the default options for the cTFMRA retracker. This can be modified
+        by the specified_options keyword that will overwrite the values in the
+        default options dictionary
+        :param specified_options: (dict or dict-like) specific options
+        :return:
+        """
+
+        # Create a copy of the default options
+        options = dict(**self.default_options_dict)
+
+        # Update options (if applicable)
+        specified_options = specified_options if specified_options is not None else {}
+        options.update(specified_options)
+
+        # Set class options
+        self.set_options(**options)
 
     @property
     def default_options_dict(self):
