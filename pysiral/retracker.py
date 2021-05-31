@@ -746,14 +746,23 @@ class cTFMRA(BaseRetracker):
     @property
     def default_options_dict(self):
         default_options_dict = {
+            # The power threshold for retracking point (normalized first maximum power)
             "threshold": 0.5,
+            # Offset applied to the retracked range
             "offset": 0.0,
+            # Indices of ranges bins for the noise power computation
             "noise_level_range_bin_idx": [0, 5],
+            # Filter setting: Waveform oversampling factor
             "wfm_oversampling_factor": 10,
+            # Filter setting: Waveform oversampling method
             "wfm_oversampling_method": "linear",
+            # Filter setting: Oversampled waveform boxfilter size [lrm, sar, sarin]
             "wfm_smoothing_window_size": [11, 11, 51],
+            # First maximum detection: Minimum power of first maximum (normalized maximum power)
             "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
+            # First maximum detection: Peak detection setting
             "first_maximum_local_order": 1,
+            # First maximum detection: First valid range bin index for first maximum
             "first_maximum_ignore_leading_bins": 0}
         return default_options_dict
 
