@@ -141,28 +141,65 @@ class TFMRALeadingEdgeWidth(object):
     between first maximum power thresholds
     """
 
-    def __init__(self, rng, wfm, radar_mode, is_ocean):
-        # Compute filtered waveform and index of first maximum once
+    def __init__(self, rng, wfm, radar_mode, retrack_flag, tfmra_options=None):
+        """
+        Compute filtered waveform and index of first maximum once. Calling this class
+        will cause the a preliminary retracking of the waveforms indicated by the
+        retracker flag. The information is stored in the class and the leading edge
+        width can be extraced with the `get_width_from_thresholds` method.
+
+        :param rng: (np.array, dim=(n_records, n_range_bins))
+            Waveform range bins
+        :param wfm: (np.array, dim=(n_records, n_range_bins))
+            Waveform power in arbitrary units
+        :param radar_mode: (np.array, dim=(n_records))
+            radar mode flag
+        :param retrack_flag: (np.array, dim=(n_records))
+            flag indicating which waveforms should be retracked
+        :param tfmra_options: (doct)
+        """
+
+        # Init the cTFRMA retracker
         self.tfmra = cTFMRA()
-        self.tfmra.set_default_options()
+        self.tfmra.set_default_options(tfmra_options)
 
-        filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(rng, wfm, radar_mode, is_ocean)
-
+        # Pre-process the waveforms for retracking and store the result to self
+        filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(rng, wfm, radar_mode, retrack_flag)
         self.wfm, self.rng, self.fmi = filt_wfm, filt_rng, fmi
 
     def get_width_from_thresholds(self, thres0, thres1):
-        """ returns the width between two thresholds in the range [0:1] """
+        """
+        Returns the range difference in range bin units between two thresholds,
+        by subtracting the range value of thresh0 from thresh1. This is done
+        for all waveforms passed to this class during initialization.
+        Intended to compute the width of the leading edge.
+        :param thres0: (float) The minimum threshold
+        :param thres1: (float) The minimum threshold
+        :return:
+        """
         width = self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
         return width
 
 
 class L1PLeadingEdgeWidth(DefaultLoggingClass):
     """
-    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
-    using three TFMRA thresholds """
+    A L1P pre-processor item class for computing leading edge width of a waveform
+    using the TFMRA retracker as the difference between two thresholds. The
+    unit for leading edge width are range bins """
 
     def __init__(self, **cfg):
+        """
+        Init the class with the mandatory options
+        :param cfg: (dict) Required options (see self.required.options)Ä
+        """
         super(L1PLeadingEdgeWidth, self).__init__(self.__class__.__name__)
+
+        # Init Required Options
+        self.tfmra_leading_edge_start = None
+        self.tfmra_leading_edge_end = None
+        self.tfmra_options = None
+
+        # Get the option settings from the input
         for option_name in self.required_options:
             option_value = cfg.get(option_name, None)
             if option_value is None:
@@ -179,30 +216,23 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
         """
 
         # Prepare input
-        wfm = l1.waveform.power
-        rng = l1.waveform.range
         radar_mode = l1.waveform.radar_mode
         is_ocean = l1.surface_type.get_by_name("ocean").flag
-        thrs_start = self.tfmra_leading_edge_start
-        thrs_center = self.tfmra_leading_edge_center
-        thrs_end = self.tfmra_leading_edge_end
 
         # Compute the leading edge width (requires TFMRA retracking)
-        width = TFMRALeadingEdgeWidth(rng, wfm, radar_mode, is_ocean)
-        
-        lew = width.get_width_from_thresholds(thrs_start, thrs_end)
-        lew1 = width.get_width_from_thresholds(thrs_start, thrs_center)
-        lew2 = width.get_width_from_thresholds(thrs_center, thrs_end)
+        width = TFMRALeadingEdgeWidth(l1.waveform.range, l1.waveform.power, radar_mode, is_ocean,
+                                      tfmra_options=self.tfmra_options)
+        lew = width.get_width_from_thresholds(self.tfmra_leading_edge_start, self.tfmra_leading_edge_end)
 
         # Add result to classifier group
         l1.classifier.add(lew, "leading_edge_width")
-        l1.classifier.add(lew1, "leading_edge_width_first_half")
-        l1.classifier.add(lew2, "leading_edge_width_second_half")
         l1.classifier.add(width.fmi, "first_maximum_index")
 
     @property
     def required_options(self):
-        return ["tfmra_leading_edge_start", "tfmra_leading_edge_center", "tfmra_leading_edge_end"]
+        return ["tfmra_leading_edge_start",
+                "tfmra_leading_edge_end",
+                "tfmra_options"]
 
 
 class L1PSigma0(DefaultLoggingClass):
