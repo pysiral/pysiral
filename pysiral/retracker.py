@@ -864,18 +864,22 @@ class cTFMRA(BaseRetracker):
                 continue
 
             # Get track point and its power
-            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i])
+            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i],
+                                                                fmi_first_valid_idx_filt)
 
             # waveform_index = "{:06g}".format(i)
             # treshold_str = "{:03g}".format(tfmra_threshold[i]*100)
             # surface_type = {"095": "Lead", "050": "Ice"}
             # title = "{} Waveform (index: {})".format(surface_type[treshold_str], waveform_index)
+            #
             # import matplotlib.pyplot as plt
             # from pathlib import Path
             # from matplotlib.ticker import MultipleLocator
             # plt.figure(figsize=(10, 10))
             # plt.title(title)
             # ax = plt.gca()
+            # plt.scatter(filt_rng[fmi]-filt_rng[0], filt_wfm[fmi], marker="s", color="red", s="80",
+            #             label="first maximum")
             # plt.scatter(rng[i, :]-rng[i, 0], wfm[i, :]/np.nanmax(wfm[i, :]), marker="s", color="0.0",
             #             label="raw waveform")
             # plt.plot(filt_rng-filt_rng[0], filt_wfm, lw=2, label="filtered waveform")
@@ -883,14 +887,14 @@ class cTFMRA(BaseRetracker):
             # retracked_range = tfmra_range - rng[i, 0]
             # plt.axvline(retracked_range, color="red", lw=2, label=label)
             # plt.legend()
-            # plt.xlim(retracked_range-2, retracked_range+10)
+            # # plt.xlim(retracked_range-2, retracked_range+10)
             # ax.xaxis.set_major_locator(MultipleLocator(1))
             # ax.xaxis.set_minor_locator(MultipleLocator(0.2))
             # plt.grid(which="major", axis="x", color="0.75", lw=0.2)
             # plt.grid(which="minor", axis="x", color="0.25", lw=0.1)
             # plt.xlabel("Range Window (meter)")
             # plt.ylabel("Normalized Waveform Power")
-            # output_path = Path(r"D:\temp\ers_tfmra_test\filter_width_11")
+            # output_path = Path(r"D:\temp\ers_tfmra_test\valid_idx")
             # output_filename = "tfmra_waveform_{}_{}.png".format(treshold_str, waveform_index)
             # plt.savefig(output_path / output_filename)
 
