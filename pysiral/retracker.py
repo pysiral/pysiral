@@ -852,7 +852,8 @@ class cTFMRA(BaseRetracker):
             # (needs to be above radar mode dependent noise threshold)
             fmnt = first_maximum_normalized_threshold[radar_mode[i]]
             peak_minimum_power = fmnt + noise_level_normed
-            fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx)
+            fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
+            fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx_filt)
             tfmra_first_maximum_index[i] = fmi
 
             # first maximum finder might have failed
@@ -1047,7 +1048,8 @@ class cTFMRA(BaseRetracker):
             # (needs to be above radar mode dependent noise threshold)
             fmnt = first_maximum_normalized_threshold[radar_mode[i]]
             peak_minimum_power = fmnt + noise_level_normed
-            fmi[i] = self.get_first_maximum_index(filt_wfm[i, :], peak_minimum_power, fmi_first_valid_idx)
+            fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
+            fmi[i] = self.get_first_maximum_index(filt_wfm[i, :], peak_minimum_power, fmi_first_valid_idx_filt)
 
         return filt_rng, filt_wfm, fmi, norm
 
@@ -1118,7 +1120,7 @@ class cTFMRA(BaseRetracker):
         #       with an option to ignore the first range bins, which contain
         #       FFT artefacts for some platforms (e.g. ERS-1/2 & Envisat)
         #       The first valid index for the first maximum needs to be
-        #       specified in the config file and defaults to 0. 
+        #       specified in the config file and defaults to 0.
         peaks = cytfmra_findpeaks(wfm[first_valid_idx:absolute_maximum_index+1])+first_valid_idx
 
         # Check if relative maximum are above the required threshold
@@ -1171,9 +1173,9 @@ class SICCILead(BaseRetracker):
         for parameter_name in parameter:
             setattr(self, parameter_name, np.ndarray(shape=n_records, dtype=np.float32) * np.nan)
 
-    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
+    def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
         # Run the retracker
-        self._sicci_lead_retracker(range, wfm, indices)
+        self._sicci_lead_retracker(rng, wfm, indices)
         # Filter the results
         if self._options.filter.use_filter:
             self._filter_results()
