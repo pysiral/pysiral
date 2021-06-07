@@ -801,6 +801,10 @@ class cTFMRA(BaseRetracker):
         # Apply a fixed range offset, e.g. in the case of a known and constant retracker bias
         fixed_range_offset = self._options.offset
 
+        # A factor by how much points the waveform should be oversampled
+        # before smoothing
+        oversampling_factor = self._options.wfm_oversampling_factor
+
         # The bin range of the waveform where the noise level should be detected
         # NOTE: In the config file the bins values refer to the actual range bins
         #       and not to the oversampled waveforms. This settings depends on
@@ -814,10 +818,8 @@ class cTFMRA(BaseRetracker):
         # waveform that may be misclassified as a first maximum.
         # NOTE: This setting also depends on the sensor, but a default can be used.
         fmi_first_valid_idx = self._options.get("first_maximum_ignore_leading_bins", 0)
-
-        # A factor by how much points the waveform should be oversampled
-        # before smoothing
-        oversampling_factor = self._options.wfm_oversampling_factor
+        # The value above with the oversampling factor
+        fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
 
         # The window size for the box filter (radar mode dependant list)
         wfm_smoothing_window_size = self._options.wfm_smoothing_window_size
@@ -852,7 +854,6 @@ class cTFMRA(BaseRetracker):
             # (needs to be above radar mode dependent noise threshold)
             fmnt = first_maximum_normalized_threshold[radar_mode[i]]
             peak_minimum_power = fmnt + noise_level_normed
-            fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
             fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx_filt)
             tfmra_first_maximum_index[i] = fmi
 
@@ -1097,7 +1098,7 @@ class cTFMRA(BaseRetracker):
         return filt_rng, filt_wfm, norm
 
     @staticmethod
-    def get_first_maximum_index(wfm, peak_minimum_power, first_valid_idx):
+    def get_first_maximum_index(wfm, peak_minimum_power, first_valid_idx=0):
         """
         Return the index of the first peak (first maximum) on the leading edge
         before the absolute power maximum. The first peak is only valid if
@@ -1134,10 +1135,16 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold, first_valid_idx=0):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
+        :param rng: (np.array, dim=(n_range_bins) Window delay in meters
+        :param wfm: (np.array, dim=(n_range_bins) Waveform power in normalized units
+        :param first_maximum_index: (int) Index of first maximum
+        :param threshold: (float) Power threshold
+        :param first_valid_idx: (int) First valid index for first maximum / leading edge
+        :return: tfmra range (float), tfmra power (float)
         """
 
         # get first index greater as threshold power
@@ -1147,11 +1154,9 @@ class cTFMRA(BaseRetracker):
         tfmra_power = threshold*first_maximum_power
 
         # Use linear interpolation to get exact range value
-        # but exclude the first range bins for Artifacts in ERS/Envisat
-        skip = 55
-        # points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
-        points = np.where(wfm[skip:first_maximum_index] > tfmra_power)[0]+skip
+        points = np.where(wfm[first_valid_idx:first_maximum_index] > tfmra_power)[0]+first_valid_idx
 
+        # Check if something went wrong with the first maximum
         if len(points) == 0:
             return np.nan, np.nan
 
