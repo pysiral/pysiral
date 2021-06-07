@@ -101,9 +101,10 @@ level1_preprocessor:
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
-                  tfmra_leading_edge_start: 0.05
-                  tfmra_leading_edge_center: 0.5
                   tfmra_leading_edge_end: 0.95
+                  tfmra_options:
+                    noise_level_range_bin_idx: [0, 5]
+                    first_maximum_ignore_leading_bins: 0
             
             # Compute the sigma_0
             - label: "Compute Sigma0"

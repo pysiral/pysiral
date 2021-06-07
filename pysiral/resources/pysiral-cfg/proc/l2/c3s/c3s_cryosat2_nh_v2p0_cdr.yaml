@@ -123,6 +123,7 @@ procsteps:
                         type: fixed
                         value: 0.95
                     offset: 0.0
+                    noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
@@ -140,6 +141,7 @@ procsteps:
                         type: fixed
                         value: 0.50
                     offset: 0.0
+                    noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
