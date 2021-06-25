@@ -901,7 +901,7 @@ class Level3Output(NCDataFile):
         var = rgrp.createVariable("yc", "f8", tuple(['yc']), zlib=self.zlib)
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
-        var.long_name = "y coordinate of projection (eastings)"
+        var.long_name = "y coordinate of projection (northing)"
         var.coverage_content_type = "coordinate"
         var[:] = yc_km
 
