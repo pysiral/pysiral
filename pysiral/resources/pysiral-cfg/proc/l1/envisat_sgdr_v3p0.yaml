@@ -49,7 +49,7 @@ input_adapter:
             wet_troposphere: mod_wet_tropo_cor_reanalysis_20
             inverse_barometric: inv_bar_cor_01
             dynamic_atmosphere: Null
-            ionosphere: iono_cor_alt_20_ku
+            ionosphere: iono_cor_gim_01_ku
             ocean_tide_elastic: ocean_tide_sol1_01
             ocean_tide_long_period: ocean_tide_eq_01
             ocean_loading_tide: load_tide_sol1_01
