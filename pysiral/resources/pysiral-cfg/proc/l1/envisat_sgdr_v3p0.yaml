@@ -42,7 +42,7 @@ input_adapter:
         # expression to identify 1Hz parameters (re.search(variable_identifier_1Hz, variable_name))
         # -> will be used to automatically interpolate range corrections from 1Hz to 20Hz, as these
         #    are mixed in the Envisat SGDR
-        variable_identifier_1Hz: "01$"
+        variable_identifier_1Hz: "01"
         
         range_correction_targets:
             dry_troposphere: mod_dry_tropo_cor_reanalysis_20
