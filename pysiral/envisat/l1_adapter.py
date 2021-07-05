@@ -43,6 +43,10 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         # Debug variables
         self.timer = None
 
+        # Properties
+        self.filepath = None
+        self.l1 = None
+
     def get_l1(self, filepath, polar_ocean_check=None):
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
@@ -171,7 +175,7 @@ class EnvisatSGDRNC(DefaultLoggingClass):
         """
 
         # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
-        time_1Hz =  np.array(self.sgdr.time_01)
+        time_1Hz = np.array(self.sgdr.time_01)
         time_20Hz = np.array(self.sgdr.time_20)
 
         # Loop over all range correction in config file
@@ -187,13 +191,13 @@ class EnvisatSGDRNC(DefaultLoggingClass):
             # Debug code
             # -> in this case discard the variable
             n_nans = len(np.where(np.isnan(correction))[0])
-            if n_nans > 500 and n_nans < len(correction):
+            if 500 < n_nans < len(correction):
                 msg = "Significant number of NaNs (%g) in range correction variable: %s"
                 msg = msg % (n_nans, target_parameter)
                 logger.warning(msg)
             elif n_nans == len(correction):
                 msg = "All-NaN array encountered in range correction variable: %s"
-                msg = msg % (target_parameter)
+                msg = msg % target_parameter
                 logger.warning(msg)
 
             # Some of the Envisat range corrections are 1Hz others 20Hz
