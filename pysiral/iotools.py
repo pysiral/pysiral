@@ -23,7 +23,7 @@ from netCDF4 import Dataset
 from pathlib import Path
 
 
-#TODO: Replace by xarray
+# TODO: Replace by xarray
 class ReadNC(object):
     """
     Quick & dirty method to parse content of netCDF file into a python object
@@ -33,6 +33,7 @@ class ReadNC(object):
                  nan_fill_value=False, global_attrs_only=False):
         self.error = ErrorStatus()
         self.time_def = NCDateNumDef()
+        self.keys = []
         self.parameters = []
         self.attributes = []
         self.verbose = verbose
@@ -53,17 +54,15 @@ class ReadNC(object):
 
     def read_content(self):
 
-        self.keys = []
-
         # Open the file
         try:
             f = Dataset(self.filename)
+            f.set_auto_scale(self.autoscale)
         except RuntimeError:
             msg = "Cannot read netCDF file: %s" % self.filename
             self.error.add_error("nc-runtime-error", msg)
             self.error.raise_on_error()
 
-        f.set_auto_scale(self.autoscale)
         # Try to update the time units
         # NOTE: This has become necessary with the use of
         #       variable epochs
@@ -82,9 +81,8 @@ class ReadNC(object):
             # Convert timestamps back to datetime objects
             # TODO: This needs to be handled better
             if attribute_name in ["start_time", "stop_time"]:
-                attribute_value = num2pydate(
-                    attribute_value, self.time_def.units,
-                    calendar=self.time_def.calendar)
+                attribute_value = num2pydate(attribute_value, self.time_def.units,
+                                             calendar=self.time_def.calendar)
             setattr(self, attribute_name, attribute_value)
 
         # Get the variables

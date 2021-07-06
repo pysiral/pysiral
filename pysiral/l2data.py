@@ -20,7 +20,6 @@ import re
 
 
 class Level2Data(object):
-
     _L2_DATA_ITEMS = ["range", "sla", "sla_raw", "dot", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
@@ -239,7 +238,7 @@ class Level2Data(object):
         required for the output data handler """
 
         try:
-            attr_getter = getattr(self, "_get_attr_"+attribute_name)
+            attr_getter = getattr(self, "_get_attr_" + attribute_name)
             attribute = attr_getter(*args)
             return attribute
         except AttributeError:
@@ -462,9 +461,9 @@ class Level2Data(object):
         return self.period.duration.isoformat
 
     def _get_attr_time_resolution(self, *args):
-        tdelta = self.time[-1]-self.time[0]
+        tdelta = self.time[-1] - self.time[0]
         seconds = tdelta.total_seconds() + 1e-6 * tdelta.microseconds
-        resolution = seconds/self.n_records
+        resolution = seconds / self.n_records
         return "%.2f seconds" % resolution
 
     def _get_attr_source_timeliness(self, *args):
@@ -746,7 +745,7 @@ class L2DataArray(np.ndarray):
     """
 
     def __new__(cls, shape, dtype=float, buffer=None, offset=0, strides=None, order=None, info=None):
-        obj = np.ndarray.__new__(cls, shape, dtype, buffer, offset, strides, order)*np.nan
+        obj = np.ndarray.__new__(cls, shape, dtype, buffer, offset, strides, order) * np.nan
         obj.uncertainty = np.zeros(shape=shape, dtype=float)
         obj.source_class = ""
         obj.source_files = ""
@@ -883,7 +882,7 @@ class Level2PContainer(DefaultLoggingClass):
             value = data[parameter_name]
 
             # Test if uncertainty exists
-            uncertainty_name = parameter_name+"_uncertainty"
+            uncertainty_name = parameter_name + "_uncertainty"
             if uncertainty_name in parameter_list_all:
                 uncertainty = data[uncertainty_name]
             else:
@@ -974,11 +973,12 @@ class L2iNCFileImport(object):
         if hasattr(self, "time"):
             time = self.time
             time_parameter_name = "time"
+        # FIXME: The use of `timestamp is deprecated, compliance with CF style can be assumed
         else:
             time = self.time
             time_parameter_name = "timestamp"
         self._time_parameter_name = time_parameter_name
-        dt = num2pydate(time, self.time_def.units, self.time_def.calendar)
+        dt = num2pydate(time, content.time_def.units, content.time_def.calendar)
         setattr(self, "time", dt)
         self.time = self.time
 
@@ -1006,8 +1006,8 @@ class L2iNCFileImport(object):
         self.projx, self.projy = p(self.longitude, self.latitude)
         # Convert projection coordinates to grid indices
         extent = griddef.extent
-        self.xi = np.floor((self.projx + extent.xsize/2.0)/extent.dx)
-        self.yj = np.floor((self.projy + extent.ysize/2.0)/extent.dy)
+        self.xi = np.floor((self.projx + extent.xsize / 2.0) / extent.dx)
+        self.yj = np.floor((self.projy + extent.ysize / 2.0) / extent.dy)
 
     @property
     def n_records(self):

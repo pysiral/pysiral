@@ -189,7 +189,7 @@ class L2iDataHandler(DefaultLoggingClass):
             if not Path(lookup_directory).is_dir():
                 continue
             l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
-            result = Path(lookup_directory).glob(l2i_pattern)
+            result = list(Path(lookup_directory).glob(l2i_pattern))
             l2i_files.extend(sorted(result))
         return l2i_files
 
@@ -285,7 +285,7 @@ class L2iDataHandler(DefaultLoggingClass):
             raise ValueError("year & month must be set if day is set")
         if len(date_str) > 1:
             date_str += "*"
-        l2i_file_pattern = "*%s%s.nc" % (self._search_str, date_str)
+        l2i_file_pattern = "%s.nc" % date_str
         return l2i_file_pattern
 
     @property
