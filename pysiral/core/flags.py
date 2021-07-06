@@ -30,6 +30,19 @@ SURFACE_TYPE_DICT = {
     "land": 7,
     "invalid": 8}
 
+# bit values for a 16 bit integer (multitple choice)
+WAVEFORM_CLASSIFICATION_BIT_DICT = {
+    "valid": 0,               # Power value usable for retracking ...
+    "absolute_maximum": 1,    # range bin with the global maximum
+    "first_maximum": 2,       # range bin with first maximum (may also be absolute maximum)
+    "leading_edge": 3,        # range bin(s) in the leading edge (excluding maximum)
+    "trailing_edge": 4,       # range bin(s) in the trailing edge (excluding maximum)
+    "noise_floor": 5,         # valid noise floor in the beginning of the waveform
+    "side_lobe_artefact": 6,  # side lobe artefacts (if notable and detectable)
+    "fft_artefact": 7,        # fft artefacts in the beginning of the waveform (older altimeters)
+    "off_nadir_artefact": 8,  # off-nadir lobe artefacts (if notable and detectable)
+    "unclassified": 15}       # initial flag, respectively unidentified range bin(s)
+
 
 class SurfaceType(DefaultLoggingClass):
     """

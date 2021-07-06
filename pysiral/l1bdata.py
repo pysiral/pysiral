@@ -932,7 +932,7 @@ class L1bWaveforms(object):
     """ Container for Echo Power Waveforms """
 
     _valid_radar_modes = ["lrm", "sar", "sin"]
-    _parameter_list = ["power", "range", "radar_mode", "is_valid"]
+    _parameter_list = ["power", "range", "radar_mode", "is_valid", "classification_flag"]
     _attribute_list = ["echo_power_unit"]
 
     def __init__(self, info):
@@ -945,6 +945,7 @@ class L1bWaveforms(object):
         self._range = None
         self._radar_mode = None
         self._is_valid = None
+        self._classification_flag = None
 
     @property
     def power(self):
@@ -956,15 +957,15 @@ class L1bWaveforms(object):
 
     @property
     def radar_mode(self):
-        return self._radar_mode
+        return np.copy(self._radar_mode)
 
     @property
     def is_valid(self):
-        return self._is_valid
+        return np.copy(self._is_valid)
 
     @property
     def parameter_list(self):
-        return self._parameter_list
+        return list(self._parameter_list)
 
     @property
     def n_range_bins(self):
@@ -988,7 +989,15 @@ class L1bWaveforms(object):
         dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
         return dimdict
 
-    def set_waveform_data(self, power, range, radar_mode):
+    def set_waveform_data(self, power, range, radar_mode, classification_flag=None):
+        """
+        Set the waveform data
+        :param power:
+        :param range:
+        :param radar_mode:
+        :param classification_flag:
+        :return:
+        """
         # Validate input
         if power.shape != range.shape:
             raise ValueError("power and range must be of same shape", power.shape, range.shape)
@@ -1020,6 +1029,17 @@ class L1bWaveforms(object):
         # Validate number of records
         self._info.check_n_records(len(valid_flag))
         self._is_valid = valid_flag
+
+    def set_classification_flag(self, classification_flag):
+        """
+        Add or update the waveform classification flag
+        :param classification_flag: intarray with shape (n_records, n_range_bins)
+        :return:
+        """
+        # Validate number of records
+        if classification_flag.shape != self.power.shape:
+            raise ValueError(f"Invalid dimensions: {classification_flag.shape} [{self.power.shape}]")
+        self._classification_flag = classification_flag
 
     def append(self, annex):
         self._power = np.concatenate((self._power, annex.power), axis=0)
