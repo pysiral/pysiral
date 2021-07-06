@@ -64,6 +64,14 @@ class ReadNC(object):
             self.error.raise_on_error()
 
         f.set_auto_scale(self.autoscale)
+        # Try to update the time units
+        # NOTE: This has become necessary with the use of
+        #       variable epochs
+        try:
+            time_units = f.variables["time"].units
+            self.time_def.units = time_units
+        except (KeyError, AttributeError):
+            pass
 
         # Get the global attributes
         for attribute_name in f.ncattrs():
