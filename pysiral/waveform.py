@@ -336,3 +336,27 @@ class L1PWaveformPeakiness(DefaultLoggingClass):
     @property
     def required_options(self):
         return ["skip_first_range_bins"]
+
+
+class L1PLeadingEdgeQuality(DefaultLoggingClass):
+
+    def __init__(self, **cfg):
+        super(L1PLeadingEdgeQuality, self).__init__(self.__class__.__name__)
+        for option_name in self.required_options:
+            option_value = cfg.get(option_name, None)
+            if option_value is None:
+                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                logger.warning(msg)
+            setattr(self, option_name, option_value)
+
+    def apply(self, l1):
+        """
+        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        :param l1: l1bdata.Level1bData instance
+        :return: None
+        """
+        breakpoint()
+
+    @property
+    def required_options(self):
+        return ["skip_first_range_bins"]
