@@ -8,11 +8,12 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming:
-  month: "esa-cryotempo-l3c-sithick-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv1p0qc.nc"
-  isoweek: "esa-cryotempo-l3c-sithick-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv1p0qc.nc"
-  day: "esa-cryotempo-l3c-sithick-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv1p0qc.nc"
-  custom: "esa-cryotempo-l3c-sithick-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv1p0qc.nc"
-  default: "esa-cryotempo-l3c-sithick-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv1p0qc.nc"
+  month: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m}-A001.nc"
+  monthly: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m}-A001.nc"
+  isoweek: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-A001.nc"
+  day: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}-A001.nc"
+  custom: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-A001.nc"
+  default: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-A001.nc"
 
 product_level_subfolder: l3c_grid
 
@@ -23,7 +24,7 @@ grid_options:
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "Gridded Cryo-TEMPO output (for quality control purposes only)"
+  - title: "Gridded Cryo-TEMPO sea ice output (for quality control purposes only)"
   - institution: ""
   - source: ""
   - platform: "CryoSat-2"
@@ -36,7 +37,7 @@ global_attributes:
   - processing_level: "Level-3 Collated (l3c)"
   - summary: ""
   - keywords: ""
-  - id: "esa-cryotempo-l3-cryosat2-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv1p0qc"
+  - id: "esa-cryotempo-l3-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-A001"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
@@ -83,27 +84,6 @@ variables:
     standard_name: latitude
     units: degrees_north
 
-  mean_sea_surface:
-    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
-    standard_name: sea_surface_height_above_reference_ellipsoid
-    units: m
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
-  sea_level_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
-    standard_name: sea_surface_height_above_mean_sea_level
-    units: m
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
-  sea_level_anomaly_uncertainty:
-    long_name: "uncertainty of instantaneous sea surface height"
-    standard_name: sea_surface_height_above_mean_sea_level standard_error
-    units: m
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
     units: m
@@ -118,7 +98,6 @@ variables:
     coordinates: "time lat lon"
 
   sea_ice_freeboard:
-    var_source_name: freeboard
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
@@ -126,7 +105,6 @@ variables:
     coordinates: "time lat lon"
 
   sea_ice_freeboard_uncertainty:
-    var_source_name: freeboard_uncertainty
     long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (level-2 mean)"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -134,7 +112,6 @@ variables:
     coordinates: "time lat lon"
 
   sea_ice_freeboard_filtered:
-    var_source_name: freeboard_filtered
     long_name: "sea-ice freeboard with along-track lowess filter"
     standard_name: sea_ice_freeboard
     units: m
@@ -157,27 +134,12 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  mean_dynamic_topography:
-    long_name: ""
-    standard_name: mean_dynamic_topography
-    units: m
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
-  dynamic_ocean_topography:
-    long_name: ""
-    standard_name: dynamic_ocean_topography
-    units: m
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
-  stat_radar_mode:
-    var_source_name: radar_mode
+  instrument_mode:
     long_name: "radar mode flag"
-    valid_min: 0
-    valid_max: 2
-    flag_values: "0, 1, 2"
-    flag_meaning: "0: pulse limited (lrm), 1: sar, 2: sar interferometric"
+    valid_min: 1
+    valid_max: 3
+    flag_values: "1, 2, 3"
+    flag_meanings: "1: pulse limited (lrm), 2: sar, 3: sar interferometric"
     comment: "median of radar mode flags within grid cells"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"

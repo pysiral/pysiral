@@ -13,11 +13,6 @@ l2_parameter:
         dtype: M
         fillvalue: null
 
-    surface_type:
-        grid_method: none
-        dtype: i4
-        fillvalue: -1
-
     radar_freeboard:
         grid_method: average
         dtype: f4
@@ -28,42 +23,17 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    freeboard:
+    sea_ice_freeboard:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
 
-    freeboard_uncertainty:
+    sea_ice_freeboard_uncertainty:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
     
-    freeboard_filtered:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    mean_dynamic_topography:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    dynamic_ocean_topography:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_level_anomaly:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_level_anomaly_uncertainty:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    mean_sea_surface:
+    sea_ice_freeboard_filtered:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -78,7 +48,7 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    radar_mode:
+    instrument_mode:
         grid_method: median
         dtype: i4
         fillvalue: -1
@@ -106,8 +76,8 @@ grid_settings:
 # ==================================================
 
 # Mask grid cells 
-# Note: The masking is exectuted in the alphabetical order of the mask names.
-#       If there is a dependance between following mask procedures this needs
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
 
 processing_items:
@@ -117,4 +87,4 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3LoadMasks
       options:
-        mask_names: ["warren99_is_valid", "landsea"]
+        mask_names: ["landsea"]
