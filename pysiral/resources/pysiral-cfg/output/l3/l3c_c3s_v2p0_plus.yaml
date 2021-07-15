@@ -14,7 +14,7 @@ filenaming:
   custom: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   default: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   
-product_level_subfolder: l3c
+product_level_subfolder: l3c-plus
 
 grid_options: 
   flip_yc: True
