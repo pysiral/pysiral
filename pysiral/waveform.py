@@ -339,23 +339,67 @@ class L1PWaveformPeakiness(DefaultLoggingClass):
 
 
 class L1PLeadingEdgeQuality(DefaultLoggingClass):
+    """
+    Class to compute a leading edge width quality indicator
+    Requires `first_maximum_index` classifier parameter
+    """
 
     def __init__(self, **cfg):
         super(L1PLeadingEdgeQuality, self).__init__(self.__class__.__name__)
         for option_name in self.required_options:
             option_value = cfg.get(option_name, None)
             if option_value is None:
-                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                msg = "Missing option `%s` -> No computation of leading edge width quality!" % option_name
                 logger.warning(msg)
             setattr(self, option_name, option_value)
 
     def apply(self, l1):
         """
-        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        Adds a quality indicator for the leading edge
         :param l1: l1bdata.Level1bData instance
         :return: None
         """
-        breakpoint()
+
+        wfm_power = l1.waveform.power
+        leq = np.full(l1.info.n_records, np.nan)
+
+        # import matplotlib.pyplot as plt
+        for i in np.arange(l1.info.n_records):
+
+            wfm = wfm_power[i, :]
+            wfm /= np.nanmax(wfm)
+            # TODO: Move leading edge power threshold to options
+            fmi = cTFMRA.get_first_maximum_index(wfm.astype(float), 0.25)
+
+            fmi_power = wfm[fmi]
+
+            power_diff = wfm[1:fmi+1]-wfm[0:fmi]
+            positive_power_diff = power_diff[power_diff > 0]
+            total_power_raise = np.sum(positive_power_diff) + wfm[0]
+
+            # Leading edge quality indicator
+            leq[i] = total_power_raise / fmi_power
+
+        l1.classifier.add(leq, "leading_edge_quality")
+
+            # x = np.arange(wfm.shape[0])
+
+            # plt.figure(dpi=150)
+            # plt.plot(power_diff)
+            #
+            # plt.figure(dpi=150)
+            # plt.plot(power_diff[power_diff > 0])
+        #     if np.mod(i, 100) == 0:
+        #         plt.figure(dpi=150)
+        #         plt.plot(x, wfm)
+        #         plt.scatter(x[fmi], fmi_power)
+        #         plt.annotate(f"lweq = {lewq:.2f}", (5, 0.8))
+        #         plt.annotate(f"fmi power = {fmi_power:.2f}", (5, 0.7))
+        #         plt.annotate(f"power raise = {total_power_raise:.2f}", (5, 0.6))
+        #
+        #     plt.show()
+        #
+        # breakpoint()
 
     @property
     def required_options(self):

@@ -111,7 +111,8 @@ level1_preprocessor:
             - label: "Compute Leading Edge Quality"
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
-              options: {}
+              options: 
+                skip_first_range_bins: 0
 
             # Compute the sigma_0
             - label: "Compute Sigma0"
