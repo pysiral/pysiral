@@ -373,7 +373,7 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             if fmi[i] == -1:
                 continue
 
-            fmi_power = wfm[fmi]
+            fmi_power = wfm[fmi[i]]
 
             power_diff = wfm[1:fmi[i]+1]-wfm[0:fmi[i]]
             positive_power_diff = power_diff[power_diff > 0]
