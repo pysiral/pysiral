@@ -226,7 +226,6 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
 
         # Add result to classifier group
         l1.classifier.add(lew, "leading_edge_width")
-        l1.classifier.add(width.fmi, "first_maximum_index")
 
     @property
     def required_options(self):
@@ -362,6 +361,7 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
 
         wfm_power = l1.waveform.power
         leq = np.full(l1.info.n_records, np.nan)
+        fmi = np.full(l1.info.n_records, -1, dtype=int)
 
         # import matplotlib.pyplot as plt
         for i in np.arange(l1.info.n_records):
@@ -369,11 +369,11 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             wfm = wfm_power[i, :]
             wfm /= np.nanmax(wfm)
             # TODO: Move leading edge power threshold to options
-            fmi = cTFMRA.get_first_maximum_index(wfm.astype(float), 0.25)
+            fmi[i] = cTFMRA.get_first_maximum_index(wfm.astype(float), 0.25)
 
             fmi_power = wfm[fmi]
 
-            power_diff = wfm[1:fmi+1]-wfm[0:fmi]
+            power_diff = wfm[1:fmi[i]+1]-wfm[0:fmi[i]]
             positive_power_diff = power_diff[power_diff > 0]
             total_power_raise = np.sum(positive_power_diff) + wfm[0]
 
@@ -381,6 +381,7 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             leq[i] = total_power_raise / fmi_power
 
         l1.classifier.add(leq, "leading_edge_quality")
+        l1.classifier.add(fmi, "first_maximum_index")
 
             # x = np.arange(wfm.shape[0])
 
