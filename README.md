@@ -7,7 +7,7 @@ See [webpage at ReadTheDocs.org](https://pysiral.readthedocs.io/en/latest/#)
 ![Python package](https://github.com/shendric/pysiral/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pysiral/badge/?version=latest)](https://pysiral.readthedocs.io/en/latest/?badge=latest)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python Version](https://img.shields.io/badge/python-3.6_3.7_3.8-orange)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.6,_3.7,_3.8-blue)](https://www.python.org/downloads/)
 
 ### Requirements
 
