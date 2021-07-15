@@ -6,7 +6,7 @@ See [webpage at ReadTheDocs.org](https://pysiral.readthedocs.io/en/latest/#)
 
 ![Python package](https://github.com/shendric/pysiral/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pysiral/badge/?version=latest)](https://pysiral.readthedocs.io/en/latest/?badge=latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ### Requirements
 
