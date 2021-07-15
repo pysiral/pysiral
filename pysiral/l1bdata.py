@@ -952,6 +952,12 @@ class L1bWaveforms(object):
         return np.copy(self._power)
 
     @property
+    def classification_flag(self):
+        if self._classification_flag is None:
+            return np.full(self.n_records, -1, dtype=int)
+        return np.copy(self._classification_flag)
+
+    @property
     def range(self):
         return np.copy(self._range)
 
