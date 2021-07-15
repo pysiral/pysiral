@@ -370,6 +370,8 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             wfm /= np.nanmax(wfm)
             # TODO: Move leading edge power threshold to options
             fmi[i] = cTFMRA.get_first_maximum_index(wfm.astype(float), 0.25)
+            if fmi[i] == -1:
+                continue
 
             fmi_power = wfm[fmi]
 
