@@ -363,7 +363,7 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
         # Create output parameters
         leq = np.full(l1.info.n_records, np.nan)              # leading edge quality
         fmi = np.full(l1.info.n_records, -1, dtype=int)       # first maximum index
-        fmp = np.full(l1.info.n_records, -1, dtype=int)       # first maximum power fraction (to peak power)
+        fmp = np.full(l1.info.n_records, np.nan)              # first maximum power fraction (to peak power)
 
         # --- Get the required options ---
 
@@ -421,9 +421,9 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             #     plt.figure(dpi=150)
             #     plt.plot(x, wfm)
             #     plt.plot(x[i0:i1], wfm[i0:i1], color="red")
-            #     plt.scatter(x[fmi[i]], fmi_power)
-            #     plt.annotate(f"leq = {leq[i]:.3f}", (5, 0.8))
-            #     plt.annotate(f"fmi power = {fmi_power:.3f}", (5, 0.7))
+            #     plt.scatter(x[fmi[i]], fmp[i])
+            #     plt.annotate(f"leq[{i}] = {leq[i]:.3f}", (5, 0.8))
+            #     plt.annotate(f"fmi power = {fmp[i]:.3f}", (5, 0.7))
             #     plt.annotate(f"power raise = {total_power_raise:.3f}", (5, 0.6))
             #     plt.show()
 
