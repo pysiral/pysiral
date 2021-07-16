@@ -315,7 +315,11 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
 
         # Leading Edge Width
         leading_edge_width_max = self.get_threshold_value(opt, "leading_edge_width_max", month_num)
-        leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        # TODO: Ensure leading_edge_width is always available as a parameter
+        if "leading_edge_width_first_half" in self.classifier.parameter_list:
+            leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        else:
+            leading_edge_width = parameter.leading_edge_width
         lead.add(leading_edge_width <= leading_edge_width_max)
 
         # Pulse Peakiness
