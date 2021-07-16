@@ -19,18 +19,37 @@ from pysiral.core.flags import ANDCondition
 class ClassifierContainer(object):
 
     def __init__(self):
-        self.parameter_list = []
-        self._n_records = None
+        self._parameters = {}
 
     def add_parameter(self, parameter, parameter_name):
-        setattr(self, parameter_name, parameter)
-        self.parameter_list.append(parameter_name)
-        if self._n_records is None:
-            self._n_records = len(parameter)
+        if self.parameter_list != 0:
+            if parameter.shape != self.shape:
+                raise ValueError(f"Invalid dimension: {parameter.shape} for {parameter_name} [{self.shape}]")
+        self._parameters[parameter_name] = parameter
+
+    def __getattr__(self, item):
+        """
+        Modify the attribute getter to provide a shortcut to the data content
+        :param item: Name of the parameter
+        :return:
+        """
+        if item in list(self._vars.keys()):
+            return self._parameters[item]
+        else:
+            raise AttributeError()
 
     @property
-    def n_records(self):
-        return self._n_records
+    def n_parameters(self):
+        return len(self.parameter_list)
+
+    @property
+    def parameter_list(self):
+        return list(self._parameters.keys())
+
+    @property
+    def shape(self):
+        shape = list(set([p.shape for p in self._parameters.values()]))
+        return shape[0]
 
 
 class SurfaceTypeClassifier(object):
