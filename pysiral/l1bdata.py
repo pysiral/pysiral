@@ -124,7 +124,7 @@ class Level1bData(DefaultLoggingClass):
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """
 
-        # Append data in each datagroup
+        # Append data in each data group
         for data_group in self.data_groups:
             this_data_group = getattr(self, data_group)
             annex_data_group = getattr(l1b_annex, data_group)
@@ -141,7 +141,7 @@ class Level1bData(DefaultLoggingClass):
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
 
-        # Trim all datagroups
+        # Trim all data groups
         for data_group in self.data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
@@ -325,20 +325,26 @@ class Level1bData(DefaultLoggingClass):
             preferred location of the maximum of the waveform in the subset
         #TODO: Move to waveform class
         """
+
         # Extract original waveform
         orig_power, orig_range = self.waveform.power, self.waveform.range
         n_records, n_bins = orig_power.shape
+
         # Get the bin with the waveform maximum
         max_index = np.argmax(orig_power, axis=1)
+
         # Compute number of leading and trailing bins
         lead_bins = int(maxloc*target_count)
         trail_bins = target_count-lead_bins
+
         # Get the start/stop indices for each waveform
         start, stop = max_index - lead_bins, max_index + trail_bins
+
         # Create new arrays
         rebin_shape = (n_records, target_count)
         power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
         range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+
         # Validity check
         overflow = np.where(stop > n_bins)[0]
         if len(overflow) > 0:
@@ -351,10 +357,12 @@ class Level1bData(DefaultLoggingClass):
             offset = start[underflow]
             stop[underflow] -= offset
             start[underflow] -= offset
+
         # Extract the waveform with reduced bin count
         for i in np.arange(n_records):
             power[i, :] = orig_power[i, start[i]:stop[i]]
             range[i, :] = orig_range[i, start[i]:stop[i]]
+
         # Push to waveform container
         self.waveform.set_waveform_data(power, range, self.radar_modes)
 
@@ -501,7 +509,7 @@ class L1bdataNCFile(Level1bData):
             try:
                 value = datagroup.variables["antenna_%s" % angle][:]
             except KeyError:
-                value = np.full((self.time_orbit.longitude.shape), 0.0)
+                value = np.full(self.time_orbit.longitude.shape, 0.0)
             antenna_angles[angle] = value
 
         # Set satellite position data (measurement is nadir)
