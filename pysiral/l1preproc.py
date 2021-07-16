@@ -1087,7 +1087,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag]["l1p"])
         yyyy = "%04g" % l1.time_orbit.timestamp[0].year
         mm = "%02g" % l1.time_orbit.timestamp[0].month
-        self._path = export_folder / l1.info.hemisphere / yyyy / mm
+        self._path = export_folder / self.cfg.version["version_file_tag"] / l1.info.hemisphere / yyyy / mm
 
     @property
     def path(self):
