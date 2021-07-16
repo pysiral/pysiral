@@ -130,13 +130,17 @@ level1_preprocessor:
                     lrm: 0.5
                     sar: 0.25
                     sin: 0.25
-
                 # Number of range bins prior to the first maximum
                 # that are to compute the quality factor
                 leading_edge_lookup_window:
                     lrm: 20
                     sar: 30
                     sin: 60
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+                    sar: 10
+                    sin: 10
 
             # Compute the sigma_0
             - label: "Compute Sigma0"
