@@ -345,12 +345,10 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
 
     def __init__(self, **cfg):
         super(L1PLeadingEdgeQuality, self).__init__(self.__class__.__name__)
+        self.cfg = cfg
         for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
-            if option_value is None:
-                msg = "Missing option `%s` -> No computation of leading edge width quality!" % option_name
-                logger.warning(msg)
-            setattr(self, option_name, option_value)
+            if option_name not in self.cfg.keys():
+                logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
 
     def apply(self, l1):
         """
@@ -359,51 +357,81 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
         :return: None
         """
 
+        # Get the waveform power
         wfm_power = l1.waveform.power
-        leq = np.full(l1.info.n_records, np.nan)
-        fmi = np.full(l1.info.n_records, -1, dtype=int)
 
-        # import matplotlib.pyplot as plt
+        # Create output parameters
+        leq = np.full(l1.info.n_records, np.nan)              # leading edge quality
+        fmi = np.full(l1.info.n_records, -1, dtype=int)       # first maximum index
+        fmp = np.full(l1.info.n_records, -1, dtype=int)       # first maximum power fraction (to peak power)
+
+        # --- Get the required options ---
+
+        # Waveform window in number of range bins before the first maximum
+        leading_edge_lookup_window = self.cfg.get("leading_edge_lookup_window", None)
+        if leading_edge_lookup_window is None:
+            return
+
+        # The window for the quality computation depends on the radar mode
+        window = leading_edge_lookup_window.get(l1.radar_modes, None)
+        if window is None:
+            logger.error(f"Missing search range window for radar mode {l1.radar_modes}")
+            return
+
+        # Normalized power threshold for identifications of the first maximum
+        first_maximum_normalized_power_threshold = self.cfg.get("first_maximum_normalized_power_threshold", None)
+        if first_maximum_normalized_power_threshold is None:
+            return
+
+        # The power threshold depends on the radar mode
+        power_threshold = first_maximum_normalized_power_threshold.get(l1.radar_modes, None)
+        if window is None:
+            logger.error(f"Missing search range window for radar mode {l1.radar_modes}")
+            return
+
+        # Loop over all waveforms
         for i in np.arange(l1.info.n_records):
 
-            wfm = wfm_power[i, :]
-            wfm /= np.nanmax(wfm)
-            # TODO: Move leading edge power threshold to options
-            fmi[i] = cTFMRA.get_first_maximum_index(wfm.astype(float), 0.25)
+            # Prepare the waveform data
+            wfm = wfm_power[i, :]    # Get the subset
+            wfm /= np.nanmax(wfm)    # Normalize
+            wfm = wfm.astype(float)  # Specific data type needed for the cythonized code
+
+            # Get the first maximum index
+            fmi[i] = cTFMRA.get_first_maximum_index(wfm, power_threshold)
             if fmi[i] == -1:
                 continue
 
-            fmi_power = wfm[fmi[i]]
+            # Save the power values
+            fmp[i] = wfm[fmi[i]]
 
-            power_diff = wfm[1:fmi[i]+1]-wfm[0:fmi[i]]
+            # Get the search range
+            i0, i1 = fmi[i]-window, fmi[i]+1
+            i0 = i0 if i0 > 1 else 1   # ensure the lower index stays in the valid range
+            power_diff = wfm[i0:i1]-wfm[i0-1:i1-1]
             positive_power_diff = power_diff[power_diff > 0]
-            total_power_raise = np.sum(positive_power_diff) + wfm[0]
+            total_power_raise = np.sum(positive_power_diff) + wfm[i0]
 
             # Leading edge quality indicator
-            leq[i] = total_power_raise / fmi_power
+            leq[i] = total_power_raise / fmp[i]
 
+            # import matplotlib.pyplot as plt
+            # if l1.radar_modes == "sin":
+            #     x = np.arange(wfm.shape[0])
+            #     plt.figure(dpi=150)
+            #     plt.plot(x, wfm)
+            #     plt.plot(x[i0:i1], wfm[i0:i1], color="red")
+            #     plt.scatter(x[fmi[i]], fmi_power)
+            #     plt.annotate(f"leq = {leq[i]:.3f}", (5, 0.8))
+            #     plt.annotate(f"fmi power = {fmi_power:.3f}", (5, 0.7))
+            #     plt.annotate(f"power raise = {total_power_raise:.3f}", (5, 0.6))
+            #     plt.show()
+
+        # Add the classifier to the l1 object
         l1.classifier.add(leq, "leading_edge_quality")
         l1.classifier.add(fmi, "first_maximum_index")
-
-            # x = np.arange(wfm.shape[0])
-
-            # plt.figure(dpi=150)
-            # plt.plot(power_diff)
-            #
-            # plt.figure(dpi=150)
-            # plt.plot(power_diff[power_diff > 0])
-        #     if np.mod(i, 100) == 0:
-        #         plt.figure(dpi=150)
-        #         plt.plot(x, wfm)
-        #         plt.scatter(x[fmi], fmi_power)
-        #         plt.annotate(f"lweq = {lewq:.2f}", (5, 0.8))
-        #         plt.annotate(f"fmi power = {fmi_power:.2f}", (5, 0.7))
-        #         plt.annotate(f"power raise = {total_power_raise:.2f}", (5, 0.6))
-        #
-        #     plt.show()
-        #
-        # breakpoint()
+        l1.classifier.add(fmp, "first_maximum_power")
 
     @property
     def required_options(self):
-        return ["skip_first_range_bins"]
+        return ["leading_edge_lookup_window", "first_maximum_normalized_power_threshold"]
