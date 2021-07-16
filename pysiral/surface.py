@@ -22,7 +22,7 @@ class ClassifierContainer(object):
         self._parameters = {}
 
     def add_parameter(self, parameter, parameter_name):
-        if self.parameter_list != 0:
+        if self.n_parameters != 0:
             if parameter.shape != self.shape:
                 raise ValueError(f"Invalid dimension: {parameter.shape} for {parameter_name} [{self.shape}]")
         self._parameters[parameter_name] = parameter
@@ -33,7 +33,7 @@ class ClassifierContainer(object):
         :param item: Name of the parameter
         :return:
         """
-        if item in list(self._vars.keys()):
+        if item in list(self._parameters.keys()):
             return self._parameters[item]
         else:
             raise AttributeError()
@@ -48,6 +48,8 @@ class ClassifierContainer(object):
 
     @property
     def shape(self):
+        if self.n_parameters == 0:
+            return ()
         shape = list(set([p.shape for p in self._parameters.values()]))
         return shape[0]
 
@@ -359,7 +361,11 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
 
         # Leading Edge Width
         leading_edge_width_min = self.get_threshold_value(opt, "leading_edge_width_min", month_num)
-        leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        # TODO: Ensure leading_edge_width is always available as a parameter
+        if "leading_edge_width_first_half" in self.classifier.parameter_list:
+            leading_edge_width = parameter.leading_edge_width_first_half + parameter.leading_edge_width_second_half
+        else:
+            leading_edge_width = parameter.leading_edge_width
         ice.add(leading_edge_width >= leading_edge_width_min)
 
         # Pulse Peakiness
