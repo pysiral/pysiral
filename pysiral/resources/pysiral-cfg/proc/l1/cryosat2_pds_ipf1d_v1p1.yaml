@@ -95,6 +95,14 @@ level1_preprocessor:
               class_name: L1PWaveformResampleSIN
               options:
                   sin_target_bins: 256
+
+            # Pad LRM waveforms to the same size as SAR waveforms
+            # NOTE: This will only have an effect of LRM segments
+            - label: "Pad LRM waveforms"
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PWaveformPadLRM
+              options:
+                  lrm_target_bins: 256
             
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
