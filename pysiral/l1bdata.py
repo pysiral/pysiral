@@ -665,6 +665,7 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = None
         self._antenna_roll = None
         self._antenna_yaw = None
+        self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
 
     @property
@@ -696,6 +697,10 @@ class L1bTimeOrbit(object):
         return np.array(self._antenna_yaw)
 
     @property
+    def orbit_flag(self):
+        return np.array(self._orbit_flag)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -708,7 +713,7 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
 
     @property
     def geolocation_parameter_list(self):
@@ -749,6 +754,11 @@ class L1bTimeOrbit(object):
         # Set a dummy value for pitch, roll & yaw for backward compability
         if self.antenna_pitch is None:
             self.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
+
+        # Compute orbit flag (0: ascending, 1: descending)
+        latitude_rate = latitude[1:] - latitude[:-1]
+        latitude_rate = np.insert(latitude_rate, 0, latitude_rate[0])
+        self._orbit_flag = (latitude_rate < 0).astype(int)
 
     def set_antenna_attitude(self, pitch, roll, yaw):
         # Check dimensions
