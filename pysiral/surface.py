@@ -509,17 +509,21 @@ class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
             conditions:
                 - logical expression with parameter name in brackets {}
 
-        This will be translated into a series of conditions.
+        The expression will be evaluated with `eval()` at run time and merged
+        via AND:
 
-            <value lower bound> [<operator lower bound> parameter <operator upper bound> <value upper bound>
+            flag = condition1 AND condition2 AND condition3 ....
 
-        that are connected by AND.
+        If the `exclude` option is set, a condition will be added that the
+        the current surface type cannot be any waveform that was previously
+        (see order in `cfg.options.surface_types`) attributed to another
+        surface type.
 
         :param opt_dict:
         :return:
         """
 
-        # init the flag
+        # Init the flag
         surface_type_flag = ANDCondition()
 
         # A per radar mode classification is mandatory
@@ -534,10 +538,21 @@ class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
         for expression in opt_dict["conditions"]:
 
             # Construct and evaluate the expression
+            # NOTE: `eval()` uses the run time parameter space. Thus, the
+            #       expression is copied and changed to the variable name
+            #       `parameter´
+
+            # Get the parameter value from the classifier container
             parameter_name = self._get_expr_param(expression)
             parameter = self.classifier.get(parameter_name)
+
+            # Update the expression to local namespace
             expression = str(expression).replace(f"{{{parameter_name}}}", "parameter")
+
+            # Evaluate the (updated) expression
             flag = eval(expression)
+
+            # Update the surface type flag
             surface_type_flag.add(flag)
 
         # The exclude option can be used as a conditions "is not this surface type"
@@ -547,12 +562,13 @@ class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
             exclude_surface_type_flag = self.surface_type.get_by_name(opt_dict["exclude"])
             surface_type_flag.add(np.logical_not(exclude_surface_type_flag.flag))
 
-        # All done
+        # All done, return the flag
         return surface_type_flag
 
     def _get_parameter_list(self) -> List[str]:
         """
-        Construct a list of required parameters from the configuration file
+        Construct a list of required parameters from the configuration file. This method
+        checks all conditions for parameter name in curly brackets.
         :return: list of parameters that can be retrieved with `l2.get_parameter_by_name()`
         """
         parameter_list = []
@@ -569,11 +585,17 @@ class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
     @staticmethod
     def _get_expr_param(expression: str) -> Union[str, None]:
         """
-        Get the parameter from an expression in the config file
-        :param expression:
+        Get the parameter from an expression in the config file. E.g.
+        for the expression:
+
+            `{sea_ice_concentration} >= 15.0`
+
+        the return value will be `sea_ice_concentration`
+        :param expression: The expression from the config file
         :return:
         """
-        return re.search(r"{(.*?)}", expression).group(1)
+        parameter_name = re.search(r"{(.*?)}", expression).group(1)
+        return parameter_name
 
     @property
     def l2_input_vars(self) -> List[str]:
