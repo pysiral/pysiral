@@ -8,7 +8,6 @@ TODO: Evaluate usefulness (or move to internal module)
 
 """
 
-import glob
 import tempfile
 import uuid
 import numpy as np
@@ -156,51 +155,6 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None, version=
     return l1bdata_files
 
 
-def get_local_l1bdata_files(mission_id, time_range, hemisphere, config=None,
-                            version="default", allow_multiple_baselines=True):
-    """
-    Returns a list of l1bdata files for a given mission, hemisphere, version
-    and time range
-    XXX: Note: this function will slowly replace `get_l1bdata_files`, which
-         is limited to full month
-    """
-
-    # parse config data (if not provided)
-    if config is None or not isinstance(config, psrlcfg):
-        config = psrlcfg
-
-    # Validate time_range (needs to be of type dateperiods.DatePeriod)
-    if not isinstance(time_range, DatePeriod):
-        error = ErrorStatus()
-        msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
-        error.add_error("invalid-timerange-type", msg)
-        error.raise_on_error()
-
-    # 1) get list of all files for monthly folders
-    yyyy, mm = "%04g" % time_range.tcs.year, "%02g" % time_range.tcs.month
-
-    repo_branch = config.local_machine.l1b_repository[mission_id][version]
-    directory = Path(repo_branch["l1p"]) / hemisphere / yyyy / mm
-    all_l1bdata_files = sorted(directory.glob("*.nc"))
-
-    # 3) Check if files are in requested time range
-    # This serves two purposes: a) filter out files with timestamps that do
-    # not belong in the directory. b) get a subset if required
-    l1bdata_files_checked = [l1bdata_file for l1bdata_file in all_l1bdata_files
-                             if l1bdata_in_trange(l1bdata_file, time_range)]
-
-    # Done return list (empty or not)
-    return l1bdata_files_checked, directory
-
-
-def l1bdata_in_trange(fn, tr):
-    """ Returns flag if filename is within time range """
-    # Parse infos from l1bdata filename
-    fnattr = PysiralOutputFilenaming()
-    fnattr.parse_filename(fn)
-    # Compute overlap between two start/stop pairs
-    is_overlap = fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
-    return is_overlap
 
 
 def l1bdata_get_baseline(filename):
