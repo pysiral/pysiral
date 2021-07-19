@@ -2,18 +2,21 @@
 """
 Created on Mon Jul 27 11:25:04 2015
 
-@author: Stefan
 """
 
 
-from copy import deepcopy
 import numpy as np
+from typing import List
+from copy import deepcopy
+from loguru import logger
 from attrdict import AttrDict
 
-from pysiral.core.flags import SurfaceType
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+
 from pysiral.config import RadarModes
-from pysiral.core.flags import ANDCondition
+from pysiral.core.flags import SurfaceType, ANDCondition
+from pysiral.l1bdata import L1bdataNCFile
+from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2data import Level2Data
 
 
 class ClassifierContainer(object):
@@ -82,7 +85,7 @@ class SurfaceTypeClassifier(object):
         # (see SurfaceType.SURFACE_TYPE_DICT for the names)
         self._classes = []
 
-    def set_initial_classification(self, surface_type):
+    def set_initial_classification(self, surface_type: SurfaceType) -> None:
         """
         This method sets an initial surface type classification
         :param surface_type:
@@ -90,38 +93,50 @@ class SurfaceTypeClassifier(object):
         """
         self.surface_type = surface_type
 
-    def transfer_l1b_classifier(self, l1b):
+    def transfer_l1b_classifier(self, l1: L1bdataNCFile) -> None:
         """
         A standard functionality to transfer all l1b classifier
-        :param l1b:
+        :param l1:
         :return:
         """
-        for classifier_name in l1b.classifier.parameter_list:
-            classifier = deepcopy(getattr(l1b.classifier, classifier_name))
+        for classifier_name in l1.classifier.parameter_list:
+            classifier = deepcopy(getattr(l1.classifier, classifier_name))
             self.classifier.add_parameter(classifier, classifier_name)
 
-    def set_unknown_default(self):
+    def add_classifier_parameter(self, l2: Level2Data, parameter_list: List[str]) -> None:
+        """
+        Retrieve a list of parameters from the l2 and add to the classifier
+        parameter container
+        :param l2:
+        :param parameter_list:
+        :return:
+        """
+        for parameter_name in parameter_list:
+            parameter = l2.get_parameter_by_name(parameter_name)
+            self.classifier.add_parameter(parameter, parameter_name)
+
+    def set_unknown_default(self, n_records: int) -> None:
         """
         This method can be used to initialize the surface type with unknown values
         :return:
         """
-        flag = np.ones(shape=self.classifier.n_records, dtype=np.bool)
+        flag = np.ones(shape=n_records, dtype=np.bool)
         self.surface_type.add_flag(flag, "unknown")
 
-    def set_l1b_land_mask(self, l1b):
+    def set_l1b_land_mask(self, l1: L1bdataNCFile) -> None:
         """
-        Use this method to transfer the l1b land mask to the l2 surface type classification.
+        Use this method to transfer the l1 land mask to the l2 surface type classification.
 
         NOTE: Highly recommended to do this at the end of the surface type classication
               in order to overwrite potential mis-classifications.
 
-        :param l1b:
+        :param l1:
         :return:
         """
-        l1b_land_mask = l1b.surface_type.get_by_name("land")
-        self.surface_type.add_flag(l1b_land_mask.flag, "land")
+        l1_land_mask = l1.surface_type.get_by_name("land")
+        self.surface_type.add_flag(l1_land_mask.flag, "land")
 
-    def has_class(self, name):
+    def has_class(self, name: str) -> bool:
         return name in self._classes
 
 
