@@ -141,6 +141,14 @@ class DefaultCommandLineArguments(object):
                 "required": False,
                 "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
 
+            # fetch the level-1p file version
+            "l1p-version": {
+                "action": "store",
+                "dest": "l1p-version",
+                "default": None,
+                "required": False,
+                "help": 'file version of the l1p file'},
+
             # fetch the level-2 settings file
             "l1p-settings": {
                 "action": "store",

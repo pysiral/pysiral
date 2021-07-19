@@ -4,7 +4,7 @@
 from pysiral import psrlcfg
 from pysiral.config import (DefaultCommandLineArguments)
 from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import DefaultL1bDataHandler
+from pysiral.datahandler import L1PDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
@@ -70,7 +70,8 @@ def pysiral_l2proc_time_range_job(args):
         period_segments.filter_month(args.exclude_month)
 
     # Prepare DataHandler
-    l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere, version=args.l1b_version)
+    l1b_data_handler = L1PDataHandler(mission_id, hemisphere, source_version=args.source_version,
+                                      file_version=args.file_version)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)
@@ -181,6 +182,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-l1b-files", "l1b_files", "l1b_files_preset", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
+            ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
@@ -258,8 +260,12 @@ class Level2ProcArgParser(DefaultLoggingClass):
             return filename
 
     @property
-    def l1b_version(self):
+    def source_version(self):
         return self._args.input_version
+
+    @property
+    def file_version(self):
+        return self._args.l1p_version
 
     @property
     def l1b_predef_files(self):
