@@ -6,6 +6,7 @@
 __author__ = "Stefan Hendricks"
 
 import numpy as np
+from typing import List
 from collections import OrderedDict
 
 from pysiral._class_template import DefaultLoggingClass
@@ -64,11 +65,12 @@ class SurfaceType(DefaultLoggingClass):
 
         """
         super(SurfaceType, self).__init__(self.__class__.__name__)
+
         self.surface_type_dict = dict(**SURFACE_TYPE_DICT)
         self._surface_type_flags = []
         self._surface_type = None
 
-    def name(self, flag_value):
+    def name(self, flag_value: int) -> List[bool]:
         """
         Return the flag name for a give flag value
         :param flag_value:
@@ -77,10 +79,10 @@ class SurfaceType(DefaultLoggingClass):
         i = list(self.surface_type_dict.values()).index(flag_value)
         return list(self.surface_type_dict.keys())[i]
 
-    def set_flag(self, flag):
+    def set_flag(self, flag: np.ndarray) -> None:
         self._surface_type = flag
 
-    def add_flag(self, flag, type_str):
+    def add_flag(self, flag: np.ndarray, type_str: str) -> None:
         """
         Add a flag to the
         :param flag:
@@ -108,17 +110,18 @@ class SurfaceType(DefaultLoggingClass):
         self._surface_type[indices] = self._get_type_id(type_str)
         self._surface_type_flags.append(type_str)
 
-    def has_flag(self, type_str):
+    def has_flag(self, type_str: str) -> bool:
         return type_str in self._surface_type_flags
 
-    def get_by_name(self, name):
+    def get_by_name(self, name: str) -> 'FlagContainer':
         if name in self.surface_type_dict.keys():
             type_id = self._get_type_id(name)
-            return FlagContainer(self._surface_type == type_id)
+            flag = np.array(self._surface_type == type_id)
+            return FlagContainer(flag)
         else:
             return FlagContainer(np.zeros(shape=self.n_records, dtype=np.bool))
 
-    def append(self, annex):
+    def append(self, annex: 'SurfaceType') -> None:
         self._surface_type = np.append(self._surface_type, annex.flag)
 
     def set_subset(self, subset_list):
@@ -132,7 +135,7 @@ class SurfaceType(DefaultLoggingClass):
         surface_type_corrected[indices_map] = self._surface_type
         self._surface_type = surface_type_corrected
 
-    def invalid_n_records(self, n):
+    def invalid_n_records(self, n: int) -> bool:
         """ Check if flag array has the correct length """
         if self.n_records is None:  # New flag, ok
             return False
@@ -141,15 +144,15 @@ class SurfaceType(DefaultLoggingClass):
         else:                       # New flag has wrong length
             return True
 
-    def _get_type_id(self, name):
+    def _get_type_id(self, name: str) -> int:
         return self.surface_type_dict[name]
 
     @property
-    def flag(self):
+    def flag(self) -> np.ndarray:
         return self._surface_type
 
     @property
-    def n_records(self):
+    def n_records(self) -> int:
         if self._surface_type is None:
             n_records = None
         else:
@@ -157,29 +160,29 @@ class SurfaceType(DefaultLoggingClass):
         return n_records
 
     @property
-    def dimdict(self):
+    def dimdict(self) -> 'OrderedDict':
         """ Returns dictionary with dimensions"""
         dimdict = OrderedDict([("n_records", self.n_records)])
         return dimdict
 
     @property
-    def parameter_list(self):
+    def parameter_list(self) -> List[str]:
         return ["flag"]
 
     @property
-    def lead(self):
+    def lead(self) -> 'FlagContainer':
         return self.get_by_name("lead")
 
     @property
-    def ocean(self):
+    def ocean(self) -> 'FlagContainer':
         return self.get_by_name("ocean")
 
     @property
-    def sea_ice(self):
+    def sea_ice(self) -> 'FlagContainer':
         return self.get_by_name("sea_ice")
 
     @property
-    def land(self):
+    def land(self) -> 'FlagContainer':
         return self.get_by_name("land")
 
 
@@ -206,31 +209,34 @@ class IceType(object):
 
 class FlagContainer(object):
 
-    def __init__(self, flag):
+    def __init__(self, flag: np.ndarray = None) -> None:
         self._flag = flag
 
-    def set_flag(self, flag):
+    def set_flag(self, flag: np.ndarray) -> None:
         self._flag = flag
+
+    def add(self, flag: np.ndarray) -> None:
+        raise NotImplementedError("FlagContainer should not be called directly")
 
     @property
-    def indices(self):
+    def indices(self) -> np.ndarray:
         return np.where(self._flag)[0]
 
     @property
-    def flag(self):
+    def flag(self) -> np.ndarray:
         return self._flag
 
     @property
-    def num(self):
+    def num(self) -> int:
         return len(self.indices)
 
 
 class ANDCondition(FlagContainer):
 
     def __init__(self):
-        super(ANDCondition, self).__init__(None)
+        super(ANDCondition, self).__init__()
 
-    def add(self, flag):
+    def add(self, flag: np.ndarray) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:
@@ -240,9 +246,9 @@ class ANDCondition(FlagContainer):
 class ORCondition(FlagContainer):
 
     def __init__(self):
-        super(ORCondition, self).__init__(None)
+        super(ORCondition, self).__init__()
 
-    def add(self, flag):
+    def add(self, flag: np.ndarray) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:
