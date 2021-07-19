@@ -14,6 +14,7 @@ from collections import deque, OrderedDict
 from datetime import datetime
 
 from pysiral import psrlcfg
+from pysiral.l1bdata import L1bdataNCFile
 from pysiral._class_template import DefaultLoggingClass
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
@@ -245,7 +246,6 @@ class Level2Processor(DefaultLoggingClass):
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
-        from pysiral.l1bdata import L1bdataNCFile
         filename = Path(l1b_file).name
         logger.info("- Parsing l1bdata file: %s" % filename)
         l1b = L1bdataNCFile(l1b_file)
