@@ -127,6 +127,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         try:
             local_repo_auxclass = aux_repo_defs[auxdata_class]
         except KeyError:
+            local_repo_auxclass = {}
             msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.%s" % auxdata_class
             self.error.add_error("missing-localmachinedef-tag", msg)
             self.error.raise_on_error()
