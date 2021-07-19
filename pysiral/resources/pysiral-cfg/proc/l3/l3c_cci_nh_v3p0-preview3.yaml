@@ -200,7 +200,7 @@ processing_items:
         source: sea_ice_freeboard
         condition: "is_nan"
         targets:
-            - freeboard_uncertainty
+            - sea_ice_freeboard_uncertainty
             - radar_freeboard_uncertainty
             - sea_level_anomaly
             - sea_level_anomaly_uncertainty
