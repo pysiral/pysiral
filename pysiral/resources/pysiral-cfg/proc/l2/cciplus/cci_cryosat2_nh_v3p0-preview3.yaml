@@ -104,9 +104,10 @@ procsteps:
     #
     # <surface_type_code>:  -> [ocean, lead, sea_ice]
     #   - radar_mode: <radar_mode>
+    #     exclude: <surface type> 
     #     conditions:
-    #         - parameter: <l2_parameter_longname>
-    #           bounds: [min, max]
+    #         - logical expression including the parameter name in {}, e.g.
+    #           "{sea_ice_concentration} < 15.0"
     #         - ...
     #   - ...
 
@@ -125,22 +126,17 @@ procsteps:
 
                 - radar_mode: lrm
                   conditions: 
-                      - parameter: sea_ice_concentration
-                        bounds: [0.0, 15.0]
+                      - "{sea_ice_concentration} < 15.0"
 
                 - radar_mode: sar
                   conditions: 
-                      - parameter: pulse_peakiness
-                        bounds: [0.0, 5.0]
-                      - parameter: sea_ice_concentration
-                        bounds: [0.0, 15.0]
+                      - "{sea_ice_concentration} < 15.0"
+                      - "{pulse_peakiness} < 5.0" 
 
                 - radar_mode: sin
                   conditions: 
-                      - parameter: pulse_peakiness
-                        bounds: [0.0, 5.0]
-                      - parameter: sea_ice_concentration
-                        bounds: [0.0, 15.0]
+                      - "{sea_ice_concentration} < 15.0"
+                      - "{pulse_peakiness} < 5.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
@@ -149,26 +145,18 @@ procsteps:
 
                 - radar_mode: sar
                   conditions: 
-                      - parameter: sea_ice_concentration
-                        bounds: [15.0, 110.0]
-                      - paramater: pulse_peakiness
-                        bounds: [66.0, .inf]
-                      - parameter: sigma0
-                        bounds: [23.0, .inf]
-                      - parameter: leading_edge_width
-                        bounds: [0.0, 0.75]
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 66.0"
+                      - "{sigma0} >= 23.0"
+                      - "{leading_edge_width} <= 0.75"
 
                 - radar_mode: sin
-                  conditions: 
-                      - parameter: sea_ice_concentration
-                        bounds: [15.0, 110.0]
-                      - paramater: pulse_peakiness
-                        bounds: [260.0, .inf]
-                      - parameter: sigma0
-                        bounds: [24.0, .inf]
-                      - parameter: leading_edge_width
-                        bounds: [0.0, 1.05]
-
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 260.0"
+                      - "{sigma0} >= 24.0"
+                      - "{leading_edge_width} <= 1.05"
+                    
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
@@ -178,19 +166,14 @@ procsteps:
                 - radar_mode: sar
                   exclude: lead
                   conditions:
-                      - parameter: sea_ice_concentration
-                        bounds: [15.0, 110.0]
-                      - parameter: leading_edge_quality
-                        bounds: [1.0, 1.02]
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
 
                 - radar_mode: sin
                   exclude: lead
                   conditions:
-                      - parameter: sea_ice_concentration
-                        bounds: [15.0, 110.0]
-                      - parameter: leading_edge_quality
-                        bounds: [1.0, 1.02]
-
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
