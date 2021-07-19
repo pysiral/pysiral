@@ -232,25 +232,30 @@ variables:
     coordinates: "time lat lon"
 
   quality_flag:
-    long_name: quality indicator flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
+    long_name: Sea Ice Thickness Quality Flag
+    standard_name: "quality_flag"
+    units: 1
     valid_min: 0
     valid_max: 3
-    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    flag_values: "0, 1, 2, 3"
+    flag_meanings: "nominal_quality intermediate_quality low_quality no_data"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+    comment: "The expert assessment on retrieval quality is only provided for grid cess with valid thickness retrieval"    
 
   status_flag:
-    long_name: status flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
-    unit: 1
+    long_name: Sea Ice Thickness Status Flag
+    standard_name: "status_flag"
+    units: 1
     valid_min: 0
     valid_max: 5
-    flag_values: 0b,1b,2b,3b,4b,5b
-    flag_meaning: "0: nominal sea ice thickness retrieval; 1: no input data; 2: outside sea ice concentration mask; 3: latitude above orbit inclination; 4: land, lake or land ice; 5: sea ice thickness retrieval failed;"
+    flag_values: "0, 1, 2, 3, 4, 5"
+    flag_meanings: "nominal_retrieval no_data open_ocean satellite_pole_hole land_lake_landice retrieval_failed"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
     grid_mapping: "Lambert_Azimuthal_Grid"
+    coverage_content_type: qualityInformation
 
   region_code:
     long_name: "Region code from {source_hemisphere:select;modified NSIDC region mask;Antarctic seas based on their longitude range 
