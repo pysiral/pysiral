@@ -135,14 +135,14 @@ procsteps:
 
                 - radar_mode: sar
                   conditions: 
-                      - parameter: peakiness
+                      - parameter: pulse_peakiness
                         bounds: [0.0, 5.0]
                       - parameter: sea_ice_concentration
                         bounds: [0.0, 15.0]
 
                 - radar_mode: sin
                   conditions: 
-                      - parameter: peakiness
+                      - parameter: pulse_peakiness
                         bounds: [0.0, 5.0]
                       - parameter: sea_ice_concentration
                         bounds: [0.0, 15.0]
@@ -156,7 +156,7 @@ procsteps:
                   conditions: 
                       - parameter: sea_ice_concentration
                         bounds: [15.0, 110.0]
-                      - paramater: peakiness
+                      - paramater: pulse_peakiness
                         bounds: [66.0, .inf]
                       - parameter: sigma0
                         bounds: [23.0, .inf]
@@ -167,7 +167,7 @@ procsteps:
                   conditions: 
                       - parameter: sea_ice_concentration
                         bounds: [15.0, 110.0]
-                      - paramater: peakiness
+                      - paramater: pulse_peakiness
                         bounds: [260.0, .inf]
                       - parameter: sigma0
                         bounds: [24.0, .inf]
