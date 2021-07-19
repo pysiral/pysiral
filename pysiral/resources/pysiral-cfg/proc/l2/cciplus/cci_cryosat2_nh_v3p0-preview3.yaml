@@ -91,6 +91,7 @@ procsteps:
                 antenna_yaw: [toantyaw, antenna_yaw]
                 orbit_flag: [tofl, orbit_flag]
             waveform:
+                radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
     # --- Surface type classification algorithm ---
