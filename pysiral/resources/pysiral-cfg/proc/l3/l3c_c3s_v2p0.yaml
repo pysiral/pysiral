@@ -207,9 +207,6 @@ processing_items:
         targets:
             - sea_ice_freeboard_uncertainty
             - radar_freeboard_uncertainty
-            - sea_level_anomaly
-            - sea_level_anomaly_uncertainty
-            - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
             - sea_ice_type
@@ -236,8 +233,6 @@ processing_items:
             - snow_density
             - snow_density_uncertainty
             - sea_ice_concentration
-            - region_code
-            - radar_mode
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
