@@ -147,3 +147,14 @@ level1_preprocessor:
               module_name: pysiral.waveform
               class_name: L1PSigma0
               options: {}
+
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3              
