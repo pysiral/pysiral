@@ -276,6 +276,7 @@ class L1PSigma0(DefaultLoggingClass):
 
         # Compute sigma_0
         sigma0 = get_sar_sigma0(peak_power, tx_power, altitude, velocity)
+        sigma0[np.isinf(sigma0)] = np.nan
 
         # Add the classifier
         l1.classifier.add(peak_power, "peak_power")
