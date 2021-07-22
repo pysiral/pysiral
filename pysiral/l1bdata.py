@@ -89,6 +89,7 @@ Surface Type
 
 """
 
+from typing import Union
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
 from collections import OrderedDict
@@ -919,8 +920,11 @@ class L1bClassifiers(object):
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
 
-    def get_parameter(self, parameter_name):
-        return getattr(self, parameter_name)
+    def get_parameter(self, parameter_name: str, raise_on_error: bool = False) -> Union[np.ndarray, None]:
+        if raise_on_error:
+            return getattr(self, parameter_name, None)
+        else:
+            return getattr(self, parameter_name)
 
     def append(self, annex):
         for parameter in self.parameter_list:
