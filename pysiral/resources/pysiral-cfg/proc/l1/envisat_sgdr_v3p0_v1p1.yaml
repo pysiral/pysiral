@@ -86,7 +86,7 @@ output_handler:
         local_machine_def_tag: sgdr_v3p0
         version:
             source_file_tag: esa_sgdr_v3p0
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -131,5 +131,37 @@ level1_preprocessor:
               options:
                   skip_first_range_bins: 5
         
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed 
+                first_maximum_normalized_power_threshold:
+                    lrm: 0.5
+                # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    lrm: 20
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3
+
         # Only export unconnected segments with a minimum size
         export_minimum_n_records: 20
