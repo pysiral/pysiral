@@ -4,10 +4,13 @@ Created on Fri Jul 01 13:07:10 2016
 
 @author: shendric
 """
-
+import matplotlib
 
 import numpy as np
+import bottleneck as bn
 from loguru import logger
+
+from pysiral.l1bdata import Level1bData
 from pysiral.retracker import cTFMRA
 from pysiral.logging import DefaultLoggingClass
 
@@ -449,3 +452,77 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
     def required_options(self):
         return ["leading_edge_lookup_window", "first_maximum_normalized_power_threshold",
                 "minimum_valid_first_maximum_index"]
+
+
+class L1PLeadingEdgePeakiness(DefaultLoggingClass):
+
+    def __init__(self, **cfg):
+        super(L1PLeadingEdgePeakiness, self).__init__(self.__class__.__name__)
+        self.cfg = cfg
+        for option_name in self.required_options:
+            if option_name not in self.cfg.keys():
+                logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
+
+    def apply(self, l1: Level1bData):
+        """
+        Mandatory class of a L1 preproceessor item. Computes the leading edge peakiness
+        :param l1:
+        :return:
+        """
+
+        # Init the classifier (leading edge peakiness
+        lep = np.full(l1.info.n_records, np.nan)
+
+        # Get the waveform power
+        wfm = l1.waveform.power
+
+        # Get the first maximum index
+        fmi = l1.classifier.get_parameter("first_maximum_index", raise_on_error=False)
+        if fmi is None:
+            logger.error("Classifier `first_maximum_index` not available -> skipping leading edge peakiness")
+            l1.classifier.add(lep, "leading_edge_peakiness")
+            return
+
+        # Get the window for the pulse peakiness computation
+        window_size = self.cfg.get("window_size", None)
+        if window_size is None:
+            logger.error("Option `window size` not available -> skipping leading edge peakiness")
+            l1.classifier.add(lep, "leading_edge_peakiness")
+            return
+
+        # Loop over all waveforms
+        for i in np.arange(wfm.shape[0]):
+            if fmi[i] < 0:
+                continue
+            lep[i] = self.leading_edge_peakiness(wfm[i, :], fmi[i], window_size)
+
+        # Convert inf to nan
+        lep[np.isinf(lep)] = np.nan
+
+        # Add to classifier
+        l1.classifier.add(lep, "leading_edge_peakiness")
+
+    @staticmethod
+    def leading_edge_peakiness(wfm: np.ndarray, fmi: int, window: int) -> float:
+        """
+        Compute the leading edge peakiness
+        :param wfm: Waveform power
+        :param fmi: first maximum index
+        :param window: the number or leading range bins to the first maximum for the
+            peakiness computation
+        :return:
+        """
+
+        # Get the waveform subset prior to first maximum
+        i0 = fmi - window
+        i0 = i0 if i0 > 0 else 0
+        i1 = fmi
+
+        # Compute the peakiness
+        lep = wfm[fmi] / bn.nanmean(wfm[i0:i1]) * (i1 - i0)
+
+        return lep
+
+    @property
+    def required_options(self):
+        return ["window_size"]
