@@ -175,16 +175,11 @@ grid_settings:
 processing_items:
 
     # Compute surface type statistics based on surface type classification
-    - label: "Load CCI land mask"
+    - label: "Load masks"
       module_name: pysiral.l3proc
-      class_name: Level3LoadCCILandMask
+      class_name: Level3LoadMasks
       options:
-        local_machine_def_mask_tag: cci_landoceanlake
-        mask_name_dict:
-            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
-        mask_variable_name: landsea
-        density_variable_name: ocean_fraction
-
+        mask_names: ["warren99_is_valid", "landsea"]
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
@@ -207,6 +202,9 @@ processing_items:
         targets:
             - sea_ice_freeboard_uncertainty
             - radar_freeboard_uncertainty
+            - sea_level_anomaly
+            - sea_level_anomaly_uncertainty
+            - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
             - sea_ice_type
@@ -233,6 +231,8 @@ processing_items:
             - snow_density
             - snow_density_uncertainty
             - sea_ice_concentration
+            - region_code
+            - radar_mode
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"

@@ -2,18 +2,22 @@
 """
 Created on Mon Jul 27 11:25:04 2015
 
-@author: Stefan
 """
 
 
-from copy import deepcopy
+import re
 import numpy as np
+from typing import Union, List, Tuple
+from copy import deepcopy
+from loguru import logger
 from attrdict import AttrDict
 
-from pysiral.core.flags import SurfaceType
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+
 from pysiral.config import RadarModes
-from pysiral.core.flags import ANDCondition
+from pysiral.core.flags import SurfaceType, ANDCondition
+from pysiral.l1bdata import L1bdataNCFile
+from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2data import Level2Data
 
 
 class ClassifierContainer(object):
@@ -21,11 +25,17 @@ class ClassifierContainer(object):
     def __init__(self):
         self._parameters = {}
 
-    def add_parameter(self, parameter, parameter_name):
+    def add_parameter(self, parameter: np.ndarray, parameter_name: str) -> None:
         if self.n_parameters != 0:
             if parameter.shape != self.shape:
                 raise ValueError(f"Invalid dimension: {parameter.shape} for {parameter_name} [{self.shape}]")
         self._parameters[parameter_name] = parameter
+
+    def get(self, parameter_name: str, raise_on_error: bool = False) -> Union[np.ndarray, None]:
+        parameter = getattr(self, parameter_name, None)
+        if parameter is None and raise_on_error:
+            raise ValueError(f"No such parameter: {parameter_name}")
+        return parameter
 
     def __getattr__(self, item):
         """
@@ -39,15 +49,15 @@ class ClassifierContainer(object):
             raise AttributeError()
 
     @property
-    def n_parameters(self):
+    def n_parameters(self) -> int:
         return len(self.parameter_list)
 
     @property
-    def parameter_list(self):
+    def parameter_list(self) -> List[str]:
         return list(self._parameters.keys())
 
     @property
-    def shape(self):
+    def shape(self) -> Union[int, Tuple]:
         if self.n_parameters == 0:
             return ()
         shape = list(set([p.shape for p in self._parameters.values()]))
@@ -82,7 +92,7 @@ class SurfaceTypeClassifier(object):
         # (see SurfaceType.SURFACE_TYPE_DICT for the names)
         self._classes = []
 
-    def set_initial_classification(self, surface_type):
+    def set_initial_classification(self, surface_type: SurfaceType) -> None:
         """
         This method sets an initial surface type classification
         :param surface_type:
@@ -90,38 +100,50 @@ class SurfaceTypeClassifier(object):
         """
         self.surface_type = surface_type
 
-    def transfer_l1b_classifier(self, l1b):
+    def transfer_l1b_classifier(self, l1: L1bdataNCFile) -> None:
         """
         A standard functionality to transfer all l1b classifier
-        :param l1b:
+        :param l1:
         :return:
         """
-        for classifier_name in l1b.classifier.parameter_list:
-            classifier = deepcopy(getattr(l1b.classifier, classifier_name))
+        for classifier_name in l1.classifier.parameter_list:
+            classifier = deepcopy(getattr(l1.classifier, classifier_name))
             self.classifier.add_parameter(classifier, classifier_name)
 
-    def set_unknown_default(self):
+    def add_classifier_parameter(self, l2: Level2Data, parameter_list: List[str]) -> None:
+        """
+        Retrieve a list of parameters from the l2 and add to the classifier
+        parameter container
+        :param l2:
+        :param parameter_list:
+        :return:
+        """
+        for parameter_name in parameter_list:
+            parameter = l2.get_parameter_by_name(parameter_name)
+            self.classifier.add_parameter(parameter, parameter_name)
+
+    def set_unknown_default(self, n_records: int) -> None:
         """
         This method can be used to initialize the surface type with unknown values
         :return:
         """
-        flag = np.ones(shape=self.classifier.n_records, dtype=np.bool)
+        flag = np.ones(shape=n_records, dtype=np.bool)
         self.surface_type.add_flag(flag, "unknown")
 
-    def set_l1b_land_mask(self, l1b):
+    def set_l1b_land_mask(self, l1: L1bdataNCFile) -> None:
         """
-        Use this method to transfer the l1b land mask to the l2 surface type classification.
+        Use this method to transfer the l1 land mask to the l2 surface type classification.
 
         NOTE: Highly recommended to do this at the end of the surface type classication
               in order to overwrite potential mis-classifications.
 
-        :param l1b:
+        :param l1:
         :return:
         """
-        l1b_land_mask = l1b.surface_type.get_by_name("land")
-        self.surface_type.add_flag(l1b_land_mask.flag, "land")
+        l1_land_mask = l1.surface_type.get_by_name("land")
+        self.surface_type.add_flag(l1_land_mask.flag, "land")
 
-    def has_class(self, name):
+    def has_class(self, name: str) -> bool:
         return name in self._classes
 
 
@@ -409,6 +431,186 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["surface_type"]
+
+
+class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
+    """
+    Simplified surface type classification based on the positive
+    classification of leads and lazy sea ice classifcation
+    (everything that is not a lead, has a decent leading edge
+    and is within the ice mask)
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class. All *args and **kwargs will be directed to Level2ProcessorStep as
+        SurfaceTypeClassifier does not take any input at __init__
+        :param args:
+        :param kwargs:
+        """
+
+        # Init the parent classes
+        Level2ProcessorStep.__init__(self, *args, **kwargs)
+        SurfaceTypeClassifier.__init__(self)
+
+    def execute_procstep(self, l1: L1bdataNCFile, l2: Level2Data) -> np.ndarray:
+        """
+        The mandatory class for a Level2ProcessorStep.
+        :param l1:
+        :param l2:
+        :return:
+        """
+
+        # Step 1: Transfer classifier / sea ice concentration radar mode
+        self.add_classifier_parameter(l2, self.l2_input_vars)
+
+        # Step 2: Initialize the surface type with default value "unknown"
+        self.set_unknown_default(l2.n_records)
+
+        # Step 3: Classify the surface types
+        # The classification procedure directly follows the definition in the
+        # config file
+        self._classifiy_surface_types()
+
+        # Step 4: Add the l1b land flag
+        # This step is done at the end to exclude the land flag being overwritten by mis-classification
+        self.set_l1b_land_mask(l1)
+
+        # Step 5: Update the l2 data object with the classification result
+        l2.surface_type = self.surface_type
+
+        # Step 6: Generate and return error flag
+        # -> all surfaces that are marked as unknown have their error bit raised
+        error_flag = l2.surface_type.get_by_name("unknown")
+        return error_flag.flag
+
+    def _classifiy_surface_types(self) -> None:
+        """
+        Classifiy surface types using the options in the l2 configuration file.
+
+        :return:
+        """
+        surface_types = self.cfg.options.get("surface_types", [])
+        for surface_type in surface_types:
+            logger.debug(f"- Classify surface type: {surface_type}")
+            radar_mode_opts = self.cfg.options.get(surface_type, None)
+            for radar_mode_opt in radar_mode_opts:
+                surface_type_flag = self._classify_surface_type(radar_mode_opt)
+                self.surface_type.add_flag(surface_type_flag.flag, surface_type)
+                logger.debug("- -> {}: {} waveforms".format(radar_mode_opt["radar_mode"], surface_type_flag.num))
+
+    def _classify_surface_type(self, opt_dict: dict) -> 'ANDCondition':
+        """
+        Compute the surface type flag from the conditions in the config file
+        for a specific radar mode. The expected structure of `opt_dict` is:
+
+            [exclude: surface_type_name] (Optional)
+            radar_mode: <radar mode id>
+            conditions:
+                - logical expression with parameter name in brackets {}
+
+        The expression will be evaluated with `eval()` at run time and merged
+        via AND:
+
+            flag = condition1 AND condition2 AND condition3 ....
+
+        If the `exclude` option is set, a condition will be added that the
+        the current surface type cannot be any waveform that was previously
+        (see order in `cfg.options.surface_types`) attributed to another
+        surface type.
+
+        :param opt_dict:
+        :return:
+        """
+
+        # Init the flag
+        surface_type_flag = ANDCondition()
+
+        # A per radar mode classification is mandatory
+        radar_mode_flag = RadarModes.get_flag(opt_dict["radar_mode"])
+        surface_type_flag.add(self.classifier.radar_mode == radar_mode_flag)
+
+        # Break if no data for current radar mode
+        if surface_type_flag.num == 0:
+            return surface_type_flag
+
+        # Add the conditions from the config file
+        for expression in opt_dict["conditions"]:
+
+            # Construct and evaluate the expression
+            # NOTE: `eval()` uses the run time parameter space. Thus, the
+            #       expression is copied and changed to the variable name
+            #       `parameter´
+
+            # Get the parameter value from the classifier container
+            parameter_name = self._get_expr_param(expression)
+            parameter = self.classifier.get(parameter_name)
+
+            # Update the expression to local namespace
+            expression = str(expression).replace(f"{{{parameter_name}}}", "parameter")
+
+            # Evaluate the (updated) expression
+            flag = eval(expression)
+
+            # Update the surface type flag
+            surface_type_flag.add(flag)
+
+        # The exclude option can be used as a conditions "is not this surface type"
+        # For this to work the to target surface type needs to be classified before
+        # this one (see order in option.surface_types)
+        if "exclude" in opt_dict.keys():
+            exclude_surface_type_flag = self.surface_type.get_by_name(opt_dict["exclude"])
+            surface_type_flag.add(np.logical_not(exclude_surface_type_flag.flag))
+
+        # All done, return the flag
+        return surface_type_flag
+
+    def _get_parameter_list(self) -> List[str]:
+        """
+        Construct a list of required parameters from the configuration file. This method
+        checks all conditions for parameter name in curly brackets.
+        :return: list of parameters that can be retrieved with `l2.get_parameter_by_name()`
+        """
+        parameter_list = []
+        surface_types = self.cfg.options.surface_types
+        for surface_type_name in surface_types:
+            radar_mode_list = self.cfg.options.get(surface_type_name)
+            for opt in radar_mode_list:
+                parameter_names = [self._get_expr_param(expr) for expr in opt["conditions"]]
+                parameter_list.extend(parameter_names)
+        parameter_list = [p for p in parameter_list if p is not None]
+        parameter_list = list(set(parameter_list))
+        return parameter_list
+
+    @staticmethod
+    def _get_expr_param(expression: str) -> Union[str, None]:
+        """
+        Get the parameter from an expression in the config file. E.g.
+        for the expression:
+
+            `{sea_ice_concentration} >= 15.0`
+
+        the return value will be `sea_ice_concentration`
+        :param expression: The expression from the config file
+        :return:
+        """
+        parameter_name = re.search(r"{(.*?)}", expression).group(1)
+        return parameter_name
+
+    @property
+    def l2_input_vars(self) -> List[str]:
+        parameter_list = self._get_parameter_list()
+        parameter_list.append("radar_mode")
+        return parameter_list
+
+    @property
+    def l2_output_vars(self) -> List[str]:
+        return ["surface_type"]
+
+    @property
+    def error_bit(self) -> np.ndarray:
+        return self.error_flag_bit_dict["surface_type"]
+
 
 # class SICCI1Envisat(Level2SurfaceTypeClassifier):
 #     """

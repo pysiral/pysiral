@@ -2,17 +2,17 @@
 
 # Metadata
 metadata: 
-  output_id: l3c_cci_v3p0-preview2
+  output_id: l3c_cci_v3p0-preview3
   data_level: 3
   data_level_description: Level-3 colated (gridded geophysical parameters)
 
 # Output Definition (for each period definition)
 filenaming: 
-  month: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview2.nc"
-  isoweek: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
-  day: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview2.nc"
-  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
-  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview2.nc"
+  month: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0-preview3.nc"
+  isoweek: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview3.nc"
+  day: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview3.nc"
+  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview3.nc"
+  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0-preview3.nc"
 
 product_level_subfolder: l3c_grid
 
@@ -23,7 +23,7 @@ grid_options:
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (preview version 2)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (preview version 3)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-D;envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly 
   climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP 
@@ -34,13 +34,13 @@ global_attributes:
   - references: "TBD"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "3.0-preview2"
+  - product_version: "3.0-preview3"
   - format_version: "CCI Data Standards v2.1"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2020.}"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview2"
+  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0-preview3"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
@@ -232,25 +232,30 @@ variables:
     coordinates: "time lat lon"
 
   quality_flag:
-    long_name: quality indicator flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
+    long_name: Sea Ice Thickness Quality Flag
+    standard_name: "quality_flag"
+    units: 1
     valid_min: 0
     valid_max: 3
-    flag_meaning: "(flag 0): no thickness data, (flag 1): nominal retrieval quality, no biases expected (flag 2): intermediate retrieval quality, bias likely (flag 3): low retrieval quality, bias expected"
+    flag_values: "0, 1, 2, 3"
+    flag_meanings: "nominal_quality intermediate_quality low_quality no_data"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+    comment: "The expert assessment on retrieval quality is only provided for grid cess with valid thickness retrieval"    
 
   status_flag:
-    long_name: status flag for the sea ice thickness retrieval
-    standard_name: "sea_ice_thickness status_flag"
-    unit: 1
+    long_name: Sea Ice Thickness Status Flag
+    standard_name: "status_flag"
+    units: 1
     valid_min: 0
     valid_max: 5
-    flag_values: 0b,1b,2b,3b,4b,5b
-    flag_meaning: "0: nominal sea ice thickness retrieval; 1: no input data; 2: outside sea ice concentration mask; 3: latitude above orbit inclination; 4: land, lake or land ice; 5: sea ice thickness retrieval failed;"
+    flag_values: "0, 1, 2, 3, 4, 5"
+    flag_meanings: "nominal_retrieval no_data open_ocean satellite_pole_hole land_lake_landice retrieval_failed"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
     grid_mapping: "Lambert_Azimuthal_Grid"
+    coverage_content_type: qualityInformation
 
   region_code:
     long_name: "Region code from {source_hemisphere:select;modified NSIDC region mask;Antarctic seas based on their longitude range 

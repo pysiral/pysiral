@@ -5,18 +5,21 @@ Created on Fri May 19 18:16:09 2017
 @author: Stefan
 """
 
-from pysiral import get_cls, psrlcfg
+import re
+from typing import List, Union
+from pathlib import Path
 from loguru import logger
-from pysiral.auxdata import AuxClassConfig
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.iotools import get_local_l1bdata_files
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from pathlib import Path
-import re
+from dateperiods import DatePeriod
+
+from pysiral import get_cls, psrlcfg
+from pysiral.auxdata import AuxClassConfig
+from pysiral._class_template import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):
@@ -127,6 +130,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         try:
             local_repo_auxclass = aux_repo_defs[auxdata_class]
         except KeyError:
+            local_repo_auxclass = {}
             msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.%s" % auxdata_class
             self.error.add_error("missing-localmachinedef-tag", msg)
             self.error.raise_on_error()
@@ -144,25 +148,112 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         return auxdata_def.attrdict
 
 
-class DefaultL1bDataHandler(DefaultLoggingClass):
-    """ Class for retrieving default l1b directories and filenames """
+class L1PDataHandler(DefaultLoggingClass):
+    """ Class for querying L1P data files """
 
-    def __init__(self, mission_id, hemisphere, version="default"):
-        super(DefaultL1bDataHandler, self).__init__(self.__class__.__name__)
-        self._mission_id = mission_id
+    def __init__(self,
+                 platform: str,
+                 hemisphere: str,
+                 source_version: str = None,
+                 file_version: str = None,
+                 ):
+        """
+        Init the class
+        :param platform: pysiral compliant platform id (cryosat2, envisat, ...)
+        :param hemisphere: hemishphere code (north, nh, ...)
+        :param source_version: Input version, e.g. CryoSat-2 baseline-d, ...
+        :param: file_version: The file version of the l1p data (e.g. v1p1).
+            NOTE: Only newer l1p files use the version subfolder. Thus, this is optional.
+        """
+        super(L1PDataHandler, self).__init__(self.__class__.__name__)
+
+        # Save args
+        self._platform = platform
         self._hemisphere = hemisphere
-        self._version = version
+        self._source_version = source_version
+        self._file_version = file_version if file_version is not None else self._autodetect_file_version()
         self._last_directory = None
 
-    def get_files_from_time_range(self, time_range):
-        files, search_directory = get_local_l1bdata_files(
-                self._mission_id, time_range, self._hemisphere,
-                version=self._version)
-        self._last_directory = search_directory
-        return files
+    def get_files_from_time_range(self, time_range: DatePeriod) -> List[str]:
+        """
+        Query l1p files for a a given time range.
+        :param time_range: a dateperiods.DatePeriod instance
+        :return:
+        """
+
+        # Validate time_range (needs to be of type DatePeriod)
+        if not isinstance(time_range, DatePeriod):
+            error = ErrorStatus()
+            msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
+            error.add_error("invalid-timerange-type", msg)
+            error.raise_on_error()
+
+        # 1) get list of all files for monthly folders
+        yyyy, mm = "%04g" % time_range.tcs.year, "%02g" % time_range.tcs.month
+        directory = Path(self.l1p_base_dir)
+        if self._file_version is not None:
+            directory = directory / self._file_version
+        directory = directory / self._hemisphere / yyyy / mm
+        all_l1p_files = sorted(list(directory.rglob("*.nc")))
+
+        # 3) Check if files are in requested time range
+        # This serves two purposes: a) filter out files with timestamps that do
+        # not belong in the directory. b) get a subset if required
+        l1p_filepaths = [l1p_file for l1p_file in all_l1p_files if self.l1p_in_trange(l1p_file, time_range)]
+
+        # Save last search directory
+        self._last_directory = directory
+
+        # Done
+        return l1p_filepaths
+
+    def _autodetect_file_version(self) -> Union[str, None]:
+        """
+        Autodetect l1p file version from the directory structure
+        :return:
+        """
+
+        # Get all sub-folders of the l1p directory
+        all_subfolders = [d.name for d in Path(self.l1p_base_dir).iterdir() if d.is_dir()]
+
+        # Filter hemisphere codes from the sub-folder names. These will be present as sub-folders
+        # if the file version is not part of the directory structure
+        invalid_versions = ["north", "south", "global", "nh", "sh"]
+        file_versions = [d for d in all_subfolders if d not in invalid_versions]
+
+        if len(file_versions) == 0:
+            logger.info("l1p file version autodetect: No file version subfolder")
+            return None
+        elif len(file_versions) == 1:
+            logger.info(f"l1p file version autodetect: {file_versions[0]}")
+            return file_versions[0]
+        else:
+            msg = f"l1p file version autodetect failure: Multiple versions found [{file_versions}]"
+            msg = msg + " -> specify file_version"
+            self.error.add_error("l1p-input-error", msg)
+            self.error.raise_on_error()
+        return None
+
+    @staticmethod
+    def l1p_in_trange(fn: str, tr: DatePeriod) -> bool:
+        """ Returns flag if filename is within time range """
+        # Parse infos from l1bdata filename
+        fnattr = PysiralOutputFilenaming()
+        fnattr.parse_filename(fn)
+        # Compute overlap between two start/stop pairs
+        is_overlap = fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
+        return is_overlap
 
     @property
-    def last_directory(self):
+    def l1p_base_dir(self) -> str:
+        try:
+            l1p_base_dir = psrlcfg.local_machine.l1b_repository[self._platform][self._source_version]["l1p"]
+        except (AttributeError, KeyError):
+            l1p_base_dir = None
+        return l1p_base_dir
+
+    @property
+    def last_directory(self) -> str:
         return str(self._last_directory)
 
 

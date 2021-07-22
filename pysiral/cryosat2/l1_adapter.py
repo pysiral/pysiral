@@ -89,7 +89,6 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         #
         exclude_predicted_orbits = self.cfg.get("exclude_predicted_orbits", False)
         is_predicted_orbit = self.nc.vector_source.lower().strip() == "fos predicted"
-        logger.debug(self.nc.vector_source.lower().strip())
         if is_predicted_orbit and exclude_predicted_orbits:
             logger.warning("Predicted orbit solution detected -> skip file")
             return self.empty
