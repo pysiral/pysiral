@@ -758,8 +758,11 @@ class L1bTimeOrbit(object):
 
         # Compute orbit flag (0: ascending, 1: descending)
         latitude_rate = latitude[1:] - latitude[:-1]
-        latitude_rate = np.insert(latitude_rate, 0, latitude_rate[0])
-        self._orbit_flag = (latitude_rate < 0).astype(int)
+        try:
+            latitude_rate = np.insert(latitude_rate, 0, latitude_rate[0])
+            self._orbit_flag = (latitude_rate < 0).astype(int)
+        except IndexError:
+            self._orbit_flag = np.full(latitude.shape, -1)
 
     def set_antenna_attitude(self, pitch, roll, yaw):
         # Check dimensions
