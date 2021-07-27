@@ -408,9 +408,8 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
         for i in np.arange(l1.info.n_records):
 
             # Prepare the waveform data
-            wfm = wfm_power[i, :]    # Get the subset
-            wfm /= np.nanmax(wfm)    # Normalize
-            wfm = wfm.astype(float)  # Specific data type needed for the cythonized code
+            wfm = wfm_power[i, :].astype(float)    # Get the subset and ensure data type float
+            wfm /= np.nanmax(wfm)                  # Normalize (requires float)
 
             # Get the first maximum index
             fmi_idx = cTFMRA.get_first_maximum_index(wfm, power_threshold)
