@@ -321,8 +321,8 @@ class L1PWaveformPeakiness(DefaultLoggingClass):
         n_records, n_range_bins = wfm.shape
 
         # Init output parameters
-        self.peakiness = np.full((n_records), np.nan)
-        self.peakiness_old = np.full((n_records), np.nan)
+        self.peakiness = np.full(n_records, np.nan)
+        self.peakiness_old = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
