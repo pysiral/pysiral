@@ -430,19 +430,6 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
             # Leading edge quality indicator
             leq[i] = total_power_raise / fmp[i]
 
-            # import matplotlib.pyplot as plt
-            # if leq[i] < 1:
-            #     x = np.arange(wfm.shape[0])
-            #     plt.figure(dpi=150)
-            #     plt.plot(x, wfm)
-            #     plt.plot(x[i0:i1], wfm[i0:i1], color="red")
-            #     plt.scatter(x[fmi[i]], fmp[i])
-            #     plt.annotate(f"radar_mode = {l1.radar_modes}", (5, 0.9))
-            #     plt.annotate(f"leq[{i}] = {leq[i]:.3f}", (5, 0.8))
-            #     plt.annotate(f"fmi power = {fmp[i]:.3f}", (5, 0.7))
-            #     plt.annotate(f"power raise = {total_power_raise:.3f}", (5, 0.6))
-            #     plt.show()
-
         # Add the classifier to the l1 object
         l1.classifier.add(leq, "leading_edge_quality")
         l1.classifier.add(fmi, "first_maximum_index")
