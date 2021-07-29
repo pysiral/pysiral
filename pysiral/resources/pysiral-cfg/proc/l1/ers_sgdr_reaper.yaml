@@ -67,7 +67,6 @@ input_adapter:
             sigma0: sitrack_sig0_20hz
             sigma0_ice1: ice1_sig0_20hz
             sigma0_ice2: ice2_sig0_20hz
-            noise_power: noise_floor
             slope: slope
             leading_edge_width_ice2: ice2_le_width_20hz
             ice1_range: ice1_range_20hz
