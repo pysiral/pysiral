@@ -43,79 +43,54 @@ def get_sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s, **sigma0_par_dict):
     return sigma0
 
 
-def sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s,
-               wf_thermal_noise_watt=0.0, ptr_width=2.819e-09, tau_b=0.00352,
-               lambda_0=0.022084, wf=1., g_0=19054.607179632483,
-               bias_sigma0=0.0, l_atm=1.0, l_rx=1.0,
-               c_0=299792458.0, r_mean=6371000.0):
+def sar_sigma0(wf_peak_power_watt: float,
+               tx_pwr: float,
+               r: float,
+               v_s: float,
+               wf_thermal_noise_watt: float = 0.0,
+               ptr_width: float = 2.819e-09,
+               tau_b: float = 0.00352,
+               lambda_0: float = 0.022084,
+               wf: float = 1.0,
+               g_0: float = 19054.607179632483,
+               bias_sigma0: float = 0.0,
+               l_atm: float = 1.0,
+               l_rx: float = 1.0,
+               c_0: float = 299792458.0,
+               r_mean: float = 6371000.0
+               ) -> float:
     """
-    returns sigma nought (sigma0) for sar waveforms.
+    Compute the radar backscatter coefficient sigma nought (sigma0) for sar waveforms.
 
-    Applicable Documents
-    --------------------
+    Applicable Documents:
 
-    Guidelines for reverting Waveform Power to Sigma Nought for
-    CryoSat-2 in SAR mode (v2.2), Salvatore Dinardo, 23/06/2016
+        Guidelines for reverting Waveform Power to Sigma Nought for
+        CryoSat-2 in SAR mode (v2.2), Salvatore Dinardo, 23/06/2016
+        XCRY-GSEG-EOPS-TN-14-0012
 
-    XCRY-GSEG-EOPS-TN-14-0012
+    :param wf_peak_power_watt:  waveform peak power in watt
+    :param tx_pwr: transmitted peak power in watt
+    :param r: range from satellite center of mass to surface reflection point
+        (to be appoximated by satellite altitude if no retracker range available)
+    :param v_s:  satellite along track velocity in meter/sec
+    :param wf_thermal_noise_watt: estimate of thermal noise power in watt (default: 0.0)
+        will be used to estimate waveform amplitude (Pu)
+    :param ptr_width: 3dB range point target response temporal width in seconds
+        (default: 2.819e-09 sec for CryoSat-2 SAR)
+    :param tau_b: burst length in seconds (default: 0.00352 sec for CryoSat-2 SAR)
+    :param lambda_0: radar wavelength in meter (default: 0.022084 m for CryoSat-2 Ku Band altimeter)
+    :param wf: footprint widening factor (1.486 * rv in case of Hamming window application on burst data;
+        rv: unspecified empirical factor) (default: 1 no weighting window application)
+    :param g_0: antenna gain at boresight (default: 10^(4.28) from document)
+    :param bias_sigma0: sigma nought bias (default: 0.0)
+    :param l_atm: two ways atmosphere losses (to be modelled) (default: 1.0 (no loss))
+    :param l_rx: receiving chain (RX) waveguide losses (to be characterized) (default: 1.0 (no loss))
+    :param c_0: vacuum light speed in meter/sec
+    :param r_mean: mean earth radius in meter
 
-
-    Arguments
-    ---------
-        wf_peak_power_watt (float)
-            waveform peak power in watt
-        tx_pwr (float)
-            transmitted peak power in watt
-        r (float)
-            range from satellite center of mass to surface reflection point
-            (to be appoximated by satellite altitude if no retracker range
-            available)
-        v_s (float)
-            satellite along track velocity in meter/sec
-
-    Keywords
-    --------
-        wf_thermal_noise_watt (float)
-            estimate of thermal noise power in watt (default: 0.0)
-            will be used to estimate waveform amplitude (Pu)
-        ptr_width (float)
-            3dB range point target response temporal width in seconds
-            (default: 2.819e-09 sec for CryoSat-2 SAR)
-        tau_b (float)
-            burst length in seconds
-            (default: 0.00352 sec for CryoSat-2 SAR)
-        lambda_0 (float)
-            radar wavelength in meter
-            (default: 0.022084 m for CryoSat-2 Ku Band altimeter)
-        wf (float)
-            footprint widening factor (1.486 * rv in case of Hamming window
-            application on burst data; rv: unspecified empirical factor)
-            (default: 1 no weighting window application)
-        g_0 (float)
-            antenna gain at boresight
-            (default: 10^(4.28) from document)
-        bias_sigma0 (float)
-            sigma nought bias
-            (default: 0.0)
-        l_atm (float)
-            two ways atmosphere losses (to be modelled)
-            (default: 1.0 (no loss))
-        l_rx (float)
-            receiving chain (RX) waveguide losses (to be characterized)
-            (default: 1.0 (no loss))
-        c_0 (float)
-            vacuum light speed in meter/sec
-        r_mean (float)
-            mean earth radius in meter
-
-    Returns
-    -------
-        sigma_0 (float)
-        :param wf_peak_power_watt:
-
+    :return sigma_0: Radar backscatter coefficient
     """
 
-    # XXX: The definition of the variable Pu is not quite clear to me (Stefan)
     # In the document it is referred to as "waveform power value in output
     # of the re-tracking stage", however generally it is referred to as
     # "waveform amplitude" that is obtained by a waveform function fit
