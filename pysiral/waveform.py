@@ -99,13 +99,18 @@ def sar_sigma0(wf_peak_power_watt: float,
     # and the thermal noise_power in watt
     pu = wf_peak_power_watt + wf_thermal_noise_watt
 
-    # Intermediate steps & variables
+    # Compute footprint area
     pi = np.pi
     alpha_earth = 1. + (r/r_mean)
     lx = (lambda_0 * r)/(2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width)/alpha_earth)
     a_sar = (2. * ly) * (wf * lx)
+
+    # Final computation of sigma_0 (radar equation)
     k = ((4.*pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a_sar)
+    sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
+
+    return sigma0
 
     # Final computation of sigma nought
     sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
