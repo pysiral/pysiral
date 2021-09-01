@@ -126,6 +126,7 @@ def get_sigma0(rx_pwr: float,
 
     return sigma0
 
+
 def lrm_sigma0(wf_peak_power_watt: float,
                tx_pwr: float,
                r: float,
@@ -302,8 +303,13 @@ class L1PSigma0(DefaultLoggingClass):
         :return: None, Level-1 object is change in place
         """
 
-        # Compute sigma nought
+        # Get input power
+
+        radar_mode = l1.get_parameter_by_name("waveform", "radar_mode")
         rx_power = get_waveforms_peak_power(l1.waveform.power)
+        ocog_amplitude = l1.get_parameter_by_name("classifier", "ocog_amplitude")
+        is_lrm = radar_mode == 0
+        rx_power[is_lrm] = ocog_amplitude[is_lrm]
 
         # Get Input parameter from l1 object
         tx_power = l1.get_parameter_by_name("classifier", "transmit_power")
@@ -327,8 +333,6 @@ class L1PSigma0(DefaultLoggingClass):
             logger.warning(msg)
             return
         velocity = np.sqrt(sat_vel_x**2. + sat_vel_y**2. + sat_vel_z**2.)
-
-        radar_mode = l1.get_parameter_by_name("waveform", "radar_mode")
 
         # Compute sigma_0
         sigma0 = self.get_sigma0(rx_power, tx_power, altitude, velocity, radar_mode)
