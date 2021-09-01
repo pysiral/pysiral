@@ -142,11 +142,31 @@ level1_preprocessor:
                     sar: 10
                     sin: 10
 
-            # Compute the sigma_0
+            # Compute waveform backscatter coeficient (sigma0)
             - label: "Compute Sigma0"
               module_name: pysiral.waveform
               class_name: L1PSigma0
-              options: {}
+              options:
+
+                  # CryoSat-2 altimeter constants to compute the LRM footprint
+                  footprint_pl_kwargs:
+                      band_width: 320000000.
+
+                  # CryoSat-2 altimeter constants to compute the SAR footprint
+                  footprint_sar_kwargs: 
+                      ptr_width: 2.819e-09
+                      tau_b: 0.00352
+                      lambda_0: 0.022084
+                      wf: 1.0
+                 
+                  # CryoSat-2 altimeter constants to compute sigma0
+                  sigma0_kwargs:
+                      lambda_0: 0.022084
+                      g_0: 19054.607179632483
+
+                  # CryoSat-2 radar mode sigma0 biases
+                  sigma0_bias: [0.0, 0.0, 0.0]
+
 
             # Compute the leading edge peakiness
             # This class will add three parameters to the l1p classifier data group: 
