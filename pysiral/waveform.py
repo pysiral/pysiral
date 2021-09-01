@@ -171,6 +171,37 @@ def lrm_sigma0(wf_peak_power_watt: float,
     return sigma0
 
 
+def sigma0(rx_pwr: float,
+           tx_pwr: float,
+           r: float,
+           a: float,
+           lambda_0: float,
+           g_0: float,
+           l_atm: float = 1.0,
+           l_rx: float = 1.0,
+           bias_sigma0: float = 0.0,
+           ) -> float:
+    """
+    Compute the sigma0 backscatter coefficient according the radar equation.
+
+    :param rx_pwr: received power (waveform maximumn)
+    :param tx_pwr: transmitted power
+    :param r: range to surface in ms
+    :param a: area illuminated by the altimeter
+    :param lambda_0: radar wavelength in meter
+    :param g_0: antenna gain factor
+    :param l_atm: atmospheric loss factor (1.0 -> no loss)
+    :param l_rx: receiving chain losses
+    :param bias_sigma0: sigma0 bias in dB
+    :return: sigma0 in dB
+    """
+
+    k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a)
+    s0 = 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
+
+    return s0
+
+
 class TFMRALeadingEdgeWidth(object):
     """
     Container for computation of leading edge width by taking differences
