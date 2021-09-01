@@ -47,6 +47,7 @@ from pathlib import Path
 
 
 class OsiSafSIC(AuxdataBaseClass):
+    """ A class for Sea Ice Concentration data from OSI-SAF """
 
     def __init__(self, *args, **kwargs):
         super(OsiSafSIC, self).__init__(*args, **kwargs)
@@ -54,7 +55,7 @@ class OsiSafSIC(AuxdataBaseClass):
         self.start_time = None
         self.hemisphere_code = None
 
-    def get_l2_track_vars(self, l2):
+    def get_l2_track_vars(self, l2) -> None:
         """ Main entry point of the class """
 
         # These properties are needed to construct the product path
