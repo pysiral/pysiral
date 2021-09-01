@@ -303,8 +303,7 @@ class L1PSigma0(DefaultLoggingClass):
         """
 
         # Compute sigma nought
-        peak_power = get_waveforms_peak_power(l1.waveform.power)
-
+        rx_power = get_waveforms_peak_power(l1.waveform.power)
 
         # Get Input parameter from l1 object
         tx_power = l1.get_parameter_by_name("classifier", "transmit_power")
@@ -329,11 +328,13 @@ class L1PSigma0(DefaultLoggingClass):
             return
         velocity = np.sqrt(sat_vel_x**2. + sat_vel_y**2. + sat_vel_z**2.)
 
+        radar_mode = l1.get_parameter_by_name("waveform", "radar_mode")
+
         # Compute sigma_0
-        sigma0 = self.get_sigma0(peak_power, tx_power, altitude, velocity)
+        sigma0 = self.get_sigma0(rx_power, tx_power, altitude, velocity, radar_mode)
 
         # Add the classifier
-        l1.classifier.add(peak_power, "peak_power")
+        l1.classifier.add(rx_power, "peak_power")
         l1.classifier.add(sigma0, "sigma0")
 
     def get_sigma0(self,
@@ -371,13 +372,13 @@ class L1PSigma0(DefaultLoggingClass):
         sigma0 = np.full(rx_power.shape, np.nan)
 
         # Compute sigma0 per waveform
-        for i in np.arange(rx_power.shape[1]):
+        for i in np.arange(rx_power.shape[0]):
 
             # Compute the footprint area
             if radar_mode[i] == 0:
                 args = (altitude[i],)
             else:
-                args = (altitude, velocity[i])
+                args = (altitude[i], velocity[i])
             func = footprint_func_dict[radar_mode[i]]
             footprint_area = func(*args, **footprint_func_kwargs[radar_mode[i]])
 
@@ -395,7 +396,7 @@ class L1PSigma0(DefaultLoggingClass):
 
     @property
     def required_options(self):
-        return ["tfmra_leading_edge_start", "tfmra_leading_edge_center", "tfmra_leading_edge_end"]
+        return ["footprint_pl_kwargs", "footprint_sar_kwargs", "sigma0_kwargs", "sigma0_bias"]
 
 
 class L1PWaveformPeakiness(DefaultLoggingClass):
