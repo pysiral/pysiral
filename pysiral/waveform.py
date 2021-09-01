@@ -112,6 +112,59 @@ def sar_sigma0(wf_peak_power_watt: float,
 
     return sigma0
 
+
+def lrm_sigma0(wf_peak_power_watt: float,
+               tx_pwr: float,
+               r: float,
+               wf_thermal_noise_watt: float = 0.0,
+               lambda_0: float = 0.022084,
+               band_width: float = 320000000.0,
+               g_0: float = 19054.607179632483,
+               bias_sigma0: float = 0.0,
+               l_atm: float = 1.0,
+               l_rx: float = 1.0,
+               c_0: float = 299792458.0,
+               ) -> float:
+    """
+    Compute the radar backscatter coefficient sigma nought (sigma0) for lrm waveforms. Uses the radar
+    equation and the computation of the pulse limited footprint
+
+    Applicable Documents:
+
+        Guidelines for reverting Waveform Power to Sigma Nought for
+        CryoSat-2 in SAR mode (v2.2), Salvatore Dinardo, 23/06/2016
+        XCRY-GSEG-EOPS-TN-14-0012
+
+    :param wf_peak_power_watt:  waveform peak power in watt
+    :param tx_pwr: transmitted peak power in watt
+    :param r: range from satellite center of mass to surface reflection point
+        (to be appoximated by satellite altitude if no retracker range available)
+    :param wf_thermal_noise_watt: estimate of thermal noise power in watt (default: 0.0)
+        will be used to estimate waveform amplitude (Pu)
+    :param band_width: CryoSat-2 pulse bandwidth in Hz
+    :param lambda_0: radar wavelength in meter (default: 0.022084 m for CryoSat-2 Ku Band altimeter)
+    :param g_0: antenna gain at boresight (default: 10^(4.28) from document)
+    :param bias_sigma0: sigma nought bias (default: 0.0)
+    :param l_atm: two ways atmosphere losses (to be modelled) (default: 1.0 (no loss))
+    :param l_rx: receiving chain (RX) waveguide losses (to be characterized) (default: 1.0 (no loss))
+    :param c_0: vacuum light speed in meter/sec
+
+    :return sigma_0: Radar backscatter coefficient
+    """
+
+    # In the document it is referred to as "waveform power value in output
+    # of the re-tracking stage", however generally it is referred to as
+    # "waveform amplitude" that is obtained by a waveform function fit
+    # It is the scope of this function to provide a sigma0 estimate without
+    # proper retracking, therefore Pu is simply defined by the peak power
+    # and the thermal noise_power in watt
+    pu = wf_peak_power_watt + wf_thermal_noise_watt
+
+    # Intermediate steps & variables
+    footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
+    a_lrm = np.pi * footprint_radius ** 2.
+    k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a_lrm)
+
     # Final computation of sigma nought
     sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
