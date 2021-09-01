@@ -395,7 +395,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         wfm_counts = self.nc.pwr_waveform_20_ku.values
 
         # Calculate the OCOG Parameter (CryoSat-2 notation)
-        ocog = CS2OCOGParameter(wfm_counts)
+        ocog = CS2OCOGParameter(self.l1.waveform.power)
         self.l1.classifier.add(ocog.width, "ocog_width")
         self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
 
