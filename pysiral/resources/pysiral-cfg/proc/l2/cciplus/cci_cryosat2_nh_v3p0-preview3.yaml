@@ -112,13 +112,20 @@ procsteps:
     #   - radar_mode: <radar_mode>
     #     exclude: <surface type> 
     #     conditions:
-    #         - logical expression including the parameter name in {}, e.g.
-    #           "{sea_ice_concentration} < 15.0"
+    #         - logical expression of the type 
+    #              "{<parameter_name>} <operator> <value>"
+    #           including the parameter name in {}, e.g.
+    #              "{sea_ice_concentration} < 15.0"
+    #           Fixed values as in example above are possible, but also monthly values, e.g.:
+    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
+    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
+    #           "{sigma0} >= 12.0" for December.
+    #           
     #         - ...
     #   - ...
 
     -   module: surface
-        pyclass: CCIPlusSurfaceType
+        pyclass: ClassifierThresholdSurfaceType
         options:
 
             # This option defines the surface type order. It is important that
