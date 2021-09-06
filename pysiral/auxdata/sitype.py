@@ -376,7 +376,6 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         path = path / filename
         return path
 
-
     @property
     def cdr_icdr_record_types(self) -> List[str]:
         return ["cdr", "icdr"]
