@@ -566,7 +566,7 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
             expression = str(expression).replace(f"{{{parameter_name}}}", "parameter")
 
             # Evaluate the (updated) expression
-            flag = eval(expression)
+            flag = eval(expression, {"__builtins__": {"parameter": parameter}}, {})
 
             # Update the surface type flag
             surface_type_flag.add(flag)
