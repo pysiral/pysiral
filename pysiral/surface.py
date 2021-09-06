@@ -565,7 +565,9 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
             # Update the expression to local namespace
             expression = str(expression).replace(f"{{{parameter_name}}}", "parameter")
 
-            # Evaluate the (updated) expression
+            # Evaluate the (updated) expression with the level of safety that
+            # is possible with eval()
+            # TODO: Add expression validation
             flag = eval(expression, {"__builtins__": {"parameter": parameter}}, {})
 
             # Update the surface type flag
