@@ -589,9 +589,6 @@ sic:
                         n_lines: 432
                         dx: 25000
                         dy: 25000
-                subfolders:
-                    - year
-                    - month
 
             # Specific parameters for v1p0
             v1p0:
@@ -600,6 +597,10 @@ sic:
             # Specific parameters for v2p0
             v2p0:
                 cdr_time_coverage_end: 2016-01-01T00:00:00
+
+        subfolders:
+            - year
+            - month
 
         source:
             transfer: thredds
@@ -698,9 +699,6 @@ sitype:
                         n_lines: 432
                         dx: 25000
                         dy: 25000
-            subfolders:
-                - year
-                - month
 
                         # Specific parameters for v1p0
             v1p0:
