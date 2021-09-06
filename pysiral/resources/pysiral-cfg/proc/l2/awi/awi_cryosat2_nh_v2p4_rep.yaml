@@ -108,6 +108,31 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+
+    # --- Surface type classification algorithm ---
+    #
+    # Surface type classification algorithm can be fully constructed from the
+    # config file. Only the land flag will always overwrite all classification after
+    # the surface type classification.
+    #
+    # The conventions for the options are: 
+    #
+    # <surface_type_code>:  -> [ocean, lead, sea_ice]
+    #   - radar_mode: <radar_mode>
+    #     exclude: <surface type> 
+    #     conditions:
+    #         - logical expression of the type 
+    #              "{<parameter_name>} <operator> <value>"
+    #           including the parameter name in {}, e.g.
+    #              "{sea_ice_concentration} < 15.0"
+    #           Fixed values as in example above are possible, but also monthly values, e.g.:
+    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
+    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
+    #           "{sigma0} >= 12.0" for December.
+    #           
+    #         - ...
+    #   - ...
+
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
         options:
@@ -176,41 +201,6 @@ procsteps:
                       - "{sigma0} <= [16.77, 15.56, 14.44, 14.00, .NAN, .NAN, .NAN, .NAN, .NAN, 20.05, 18.10, 16.76]"
                       - "{leading_edge_width} >= [1.62, 1.69, 1.77, 1.81, .NAN, .NAN, .NAN, .NAN, .NAN, 1.51, 1.47,1.58]"
 
-
-    # Surface type classification algorithm
-    -   module: surface
-        pyclass: SICCI2SurfaceType
-        options:
-            sar:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [67.30, 66.30, 66.60, 69.90, 69.90, 69.90, 69.90, 69.90, 69.90, 76.00, 73.80, 55.38]
-                    sea_ice_backscatter_min: [23.80, 23.20, 23.30, 23.40, 23.40, 23.40, 23.40, 23.40, 23.40, 28.00, 25.80, 21.0]
-                    leading_edge_width_max: [0.77, 0.78, 0.78, 0.76, 0.76, 0.76, 0.76, 0.76, 0.76, 0.72, 0.73, 0.83]
-                    ice_concentration_min: 15.0
-                sea_ice:
-                    peakiness_max: [30.50, 28.70, 28.10, 28.50, 28.50, 28.50, 28.50, 28.50, 28.50, 35.40, 34.90, 31.90]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [20.80, 19.90, 19.60, 19.00, 19.00, 19.00, 19.00, 19.00, 19.00, 25.70, 23.20, 21.10]
-                    leading_edge_width_min: [1.02, 1.08, 1.10, 1.11, 1.11, 1.11, 1.11, 1.11, 1.11, 0.91, 0.90, 0.97]
-                    ice_concentration_min: 15.0
-            sin:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [264.30, 257.90, 253.60, 264.60, 264.60, 264.60, 264.60, 264.60, 264.60, 291.80, 288.80, 229.0]
-                    sea_ice_backscatter_min: [24.90, 25.00, 24.10, 24.50, 24.50, 24.50, 24.50, 24.50, 24.50, 29.00, 27.40, 20.6]
-                    leading_edge_width_max: [1.10, 1.11, 1.13, 1.09, 1.09, 1.09, 1.09, 1.09, 1.09, 1.02, 1.03, 1.20]
-                    ice_concentration_min: 15.0
-                sea_ice:
-                    peakiness_max: [99.40, 94.20, 89.90, 90.00, 90.00, 90.00, 90.00, 90.00, 90.00, 114.40, 113.90, 103.80]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 19.10, 19.10, 19.10, 19.10, 19.10, 24.30, 23.70, 22.00]
-                    leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 1.64, 1.64, 1.64, 1.64, 1.64, 1.44, 1.44, 1.51]
-                    ice_concentration_min: 15.0
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
