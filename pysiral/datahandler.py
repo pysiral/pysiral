@@ -136,13 +136,18 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             self.error.raise_on_error()
         return local_repo_auxclass.get(auxdata_id, None)
 
-    def get_auxdata_def(self, auxdata_class, auxdata_id):
-        """ Returns the definition in `config/auxdata_def.yaml` for
-        specified auxdata class and id """
+    def get_auxdata_def(self, auxdata_class: str, auxdata_id: str) -> dict:
+        """
+        Returns the definition in `config/auxdata_def.yaml` for specified auxdata class and id.
+        Raises an error if the entry is not found.
+        :param auxdata_class: The code for auxiliary data type (sic, mss, sitype, snow, ...)
+        :param auxdata_id: The id of a specific data set for the auxiliary data class (e.g. sic:osisaf-operational)
+        :return: The configuration dictionary
+        """
 
         auxdata_def = psrlcfg.auxdef.get_definition(auxdata_class, auxdata_id)
         if auxdata_def is None:
-            msg = "Invalid auxdata class [%s] in auxdata_def.yaml" % auxdata_class
+            msg = f"Cannot find entry for auxiliary data set {auxdata_class}:{auxdata_id} in auxdata_def.yaml"
             self.error.add_error("invalid-auxdata-class", msg)
             self.error.raise_on_error()
         return auxdata_def.attrdict
