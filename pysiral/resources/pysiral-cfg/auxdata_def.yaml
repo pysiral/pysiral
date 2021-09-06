@@ -247,6 +247,7 @@ sic:
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
         local_repository: osisaf_operational
         options:
+            is_cdr_icdr: False
             north:
                 projection:
                     proj: stere
@@ -291,6 +292,7 @@ sic:
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_reproc_{year}{month}{day}1200.nc4"
         local_repository: osisaf409
         options:
+            is_cdr_icdr: False
             north:
                 projection:
                     proj: stere
@@ -334,6 +336,7 @@ sic:
         filenaming: "ice_conc_{hemisphere_code}_polstere-100_cont-reproc_{year}{month}{day}1200.nc"
         local_repository: osisaf430
         options:
+            is_cdr_icdr: False
             north:
                 projection:
                     proj: stere
@@ -377,6 +380,7 @@ sic:
         filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v2p0_{year}{month}{day}1200.nc"
         local_repository: osisaf430b
         options:
+            is_cdr_icdr: False
             north:
                 projection:
                     proj: laea
@@ -417,6 +421,7 @@ sic:
         filenaming: "ice_conc_{hemisphere_code}_ease2-250_cdr-v2p0_{year}{month}{day}1200.nc"
         local_repository: osisaf450
         options:
+            is_cdr_icdr: False
             north:
                 projection:
                     proj: laea
@@ -458,6 +463,7 @@ sic:
         local_repository: osisafcdr
         long_name: "Merged OSI-SAF product"
         options:
+            is_cdr_icdr: True
             auto_product_change:
                 # The date defines the time, when the second product will be used
                 date_product_change: 2015-04-16T00:00:00
@@ -553,13 +559,13 @@ sic:
     c3s:
 
         pyclass: OsiSafSIC
-        long_name: "C3S Sea Ice Concentration {record_type_name} Climate Data Record - {version}"
+        long_name: "C3S Sea Ice Concentration {record_type_prefix} Climate Data Record - {version}"
         local_repository: c3s
         filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
         options:
 
-            # Parameters for all files independent
-            # (Can be overwritten by version tags
+            # Parameters for all files independent (can be overwritten by version tags)
+            is_cdr_icdr: True
             global:
                 variable_name: ice_conc
                 uncertainty_variable_name: total_standard_error
@@ -657,6 +663,57 @@ sitype:
             pwdfile: null
             type: daily
             link: "/archive/ice/type/{year}/{month}/ice_type*polstere*.nc"
+
+    # C3S sea-ice type CDR/ICDR
+    c3s:
+        pyclass: OsiSafSITypeCDR
+        long_name: C3S Sea Ice Type {record_type_prefix} Climate Data Record - {version}"
+        local_repository: c3s
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
+        options:
+            
+            is_cdr_icdr: True
+            global: 
+                fill_value: -127
+                uncertainty_unit_is_percent: False
+                variable_name: ice_type
+                uncertainty_variable_name: uncertainty
+                north:
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: 90.0
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
+                south:
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: -90
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
+            subfolders:
+                - year
+                - month
+
+                        # Specific parameters for v1p0
+            v1p0:
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v2p0
+            v2p0:
+                cdr_time_coverage_end: 2020-05-01T00:00:00
+
+        source:
+            transfer: thredds
+            server_url: http://thredds.met.no/thredds/fileServer/c3s/contreproc_ice_type_files
+            type: daily
 
     # C3S sea-ice type CDR/ICDR
     c3s_v1p0:
