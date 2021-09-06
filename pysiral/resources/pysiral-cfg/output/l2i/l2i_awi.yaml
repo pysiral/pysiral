@@ -66,6 +66,15 @@ variables:
     units: degrees north
     coordinates: time
 
+  orbit_flag:
+    long_name: Flag indicated descending/ascending orbit
+    units: 1
+    flag_values: 0, 1
+    flag_meanings: ascending, descending/ascending
+    valid_min: 0
+    valid_max: 1
+    coordinates: time
+
   surface_type:
     long_name: "surface type classification flag"
     units: "1"
@@ -126,13 +135,13 @@ variables:
     units: m
     coordinates: time
 
-  freeboard:
+  sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: time
 
-  freeboard_uncertainty:
+  sea_ice_freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -251,8 +260,8 @@ variables:
     units: "1"
     coordinates: time
   
-  late_tail_to_peak_power:
-    long_name: "ratio of late tail to peak power"
+  leading_edge_quality:
+    long_name: "leading edge width"
     units: "1"
     coordinates: time
   
