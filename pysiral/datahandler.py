@@ -9,6 +9,7 @@ import re
 from typing import List, Union
 from pathlib import Path
 from loguru import logger
+from attrdict import AttrDict
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -136,7 +137,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             self.error.raise_on_error()
         return local_repo_auxclass.get(auxdata_id, None)
 
-    def get_auxdata_def(self, auxdata_class: str, auxdata_id: str) -> dict:
+    def get_auxdata_def(self, auxdata_class: str, auxdata_id: str) -> "AttrDict":
         """
         Returns the definition in `config/auxdata_def.yaml` for specified auxdata class and id.
         Raises an error if the entry is not found.
@@ -358,15 +359,23 @@ class L2iDataHandler(DefaultLoggingClass):
             subdirectory_list.extend([[year, m] for m in months])
         return subdirectory_list
 
-    def get_l2i_search_str(self, year=None, month=None, day=None):
-        """ Returns a search pattern for l2i files with optional refined
-        search for year, month, day. Note: month & day can only be set,
-        if the year & year + month respectively is set
+    @staticmethod
+    def get_l2i_search_str(year: int = None,
+                           month: int = None,
+                           day: int = None) -> str:
+        """
+        Returns a search pattern for l2i files with optional refined search for year, month, day.
+        NOTE: month & day can only be set, if the year & year + month respectively is set
+
         Examples:
             *l2i*.nc
             *l2i*2017*.nc
             *l2i*201704*.nc
             *l2i*20170401*.nc
+        :param year:
+        :param month:
+        :param day:
+        :return:
         """
         date_str = "*"
         if year is not None:
