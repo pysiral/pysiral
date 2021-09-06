@@ -453,6 +453,9 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
         Level2ProcessorStep.__init__(self, *args, **kwargs)
         SurfaceTypeClassifier.__init__(self)
 
+        # Properties of this class
+        self.reference_date = None
+
     def execute_procstep(self, l1: L1bdataNCFile, l2: Level2Data) -> np.ndarray:
         """
         The mandatory class for a Level2ProcessorStep.
@@ -463,6 +466,7 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
 
         # Step 1: Transfer classifier / sea ice concentration radar mode
         self.add_classifier_parameter(l2, self.l2_input_vars)
+        self.reference_date = l2.time[0]
 
         # Step 2: Initialize the surface type with default value "unknown"
         self.set_unknown_default(l2.n_records)
@@ -530,6 +534,9 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
         radar_mode_flag = RadarModes.get_flag(opt_dict["radar_mode"])
         surface_type_flag.add(self.classifier.radar_mode == radar_mode_flag)
 
+        # Some classifiers may use the month_num for choosing thresholds values
+        month_num = self.reference_date.month
+
         # Break if no data for current radar mode
         if surface_type_flag.num == 0:
             return surface_type_flag
@@ -537,12 +544,21 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
         # Add the conditions from the config file
         for expression in opt_dict["conditions"]:
 
-            # Construct and evaluate the expression
+            # --- Construct and evaluate the expression ---
             # NOTE: `eval()` uses the run time parameter space. Thus, the
             #       expression is copied and changed to the variable name
             #       `parameter´
 
-            # Get the parameter value from the classifier container
+            # Update the expression if the threshold value is a monthly list. Example:
+            # `{sigma0} <= [16.77, 15.56, 14.44, 14.00, nan, nan, nan, nan, nan, 20.05, 18.10, 16.76]`
+            # -> `{sigma0} <= 16.76` for December (12th item of value list)
+            value_list = re.search(r"\[(.*?)]", expression)
+            if value_list:
+                values = value_list.group(0)[1:-1].split(",")
+                value = values[month_num-1]
+                expression = expression.replace(value_list.group(0), value)
+
+            # Get the parameter from the classifier container
             parameter_name = self._get_expr_param(expression)
             parameter = self.classifier.get(parameter_name)
 
