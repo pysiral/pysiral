@@ -424,7 +424,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
 
         # Check if the file exists, add an error if not
         # (error is not raised at this point)
-        if not path.isfile():
+        if not path.is_file():
             msg = "ICDCNasaTeam: File not found: %s " % path
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
