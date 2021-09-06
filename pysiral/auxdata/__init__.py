@@ -5,8 +5,17 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["AuxdataBaseClass", "GridTrackInterpol", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
-           "sitype", "snow", "region"]
+__all__ = ["AuxdataBaseClass",
+           "AuxClassConfig",
+           "GridTrackInterpol",
+           "get_all_auxdata_classes",
+           "mss",
+           "icechart",
+           "rio",
+           "sic",
+           "sitype",
+           "snow",
+           "region"]
 
 
 import re
@@ -198,7 +207,7 @@ class AuxdataBaseClass(object):
             l2.set_auxiliary_parameter(auxvar["id"], auxvar["name"], auxvar["value"], uncertainty)
 
     @property
-    def pyclass(self):
+    def pyclass(self) -> str:
         return self.__class__.__name__
 
     @property
@@ -206,22 +215,22 @@ class AuxdataBaseClass(object):
         return self._cfg
 
     @property
-    def has_data_loaded(self):
+    def has_data_loaded(self) -> bool:
         if not hasattr(self, "_data"):
             return False
         return self._data is not None
 
     @property
-    def exception_on_error(self):
-        if "exception_on_error" in self.cfg.options:
-            exception_on_error = self.cfg.options.exception_on_error
-        else:
-            exception_on_error = False
+    def exception_on_error(self) -> bool:
+        exception_on_error = self.cfg.options.get("exception_on_error", False)
         return exception_on_error
 
     @property
-    def requested_filepath(self):
-        """ Returns the local file path for the requested date"""
+    def requested_filepath(self) -> "Path":
+        """
+        Returns the local file path for the requested date
+        :return:
+        """
 
         # Main directory
         path = Path(self.cfg.local_repository)
