@@ -43,6 +43,7 @@ from pysiral.sla import SLABaseFunctionality
 import scipy.ndimage as ndimage
 from scipy import interpolate
 from pyproj import Proj
+from typing import List
 import numpy as np
 from pathlib import Path
 
@@ -156,7 +157,28 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
     - C3S sea ice tyoe climate data record v2.0
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
+        """
+        Init the class.
+        NOTE: The options template can be different for continuous data sets (is_cdr_icdr: False)
+              and those with a dedicated split into a climate data record (cdr) and an interim
+              climate data record (icdr). A pre-processing of the options dictionary is therefore necessary
+              to follow the mechanics of the auxiliary data class.
+        :param args:
+        :param kwargs:
+        """
+
+        # Pre-process the options for cdr/icdr data sets
+        cfg = args[0]
+        is_cdr_icdr = cfg.options.get("is_cdr_icdr", False)
+        target_version = cfg.options.get("version", None)
+        if is_cdr_icdr:
+            global_options = cfg.options.get("global", {})
+            version_options = cfg.options.get(target_version, {})
+            cfg.options.update(global_options)
+            cfg.options.update(version_options)
+            cfg.options.update({"long_name_template": cfg.long_name})
+
         super(OsiSafSITypeCDR, self).__init__(*args, **kwargs)
         self._data = None
         self.start_time = None
@@ -204,8 +226,11 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         # Register the sea ice type data to the L2 data object
         self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
 
-    def load_requested_auxdata(self):
-        """ Loads file from local repository only if needed """
+    def load_requested_auxdata(self) -> None:
+        """
+        Loads file from local repository only if needed
+        :return:
+        """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
         path = Path(self.requested_filepath)
@@ -304,36 +329,61 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         return translator_list[flag]
 
     @property
-    def requested_filepath(self):
-        """ Note: this overwrites the property in the super class due to some
-        peculiarities with the filenaming (auto product changes etc) """
+    def requested_filepath(self) -> "Path":
+        """
+        Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (auto product changes etc)
+        :return: The filepath to the target file
+        """
 
         # The path needs to be completed if two products shall be used
-        opt = self.cfg.options.auto_product_change
-        product_index = int(self.start_time > opt.date_product_change)
-        product_def = opt.osisaf_product_def[product_index]
-        aux_repo_defs = psrlcfg.local_machine.auxdata_repository
-        try:
-            path = aux_repo_defs["sitype"][product_def["subfolder"]]
-        except KeyError:
-            path = None
-            msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.sitype.%"
-            msg = msg % product_def["subfolder"]
-            self.error.add_error("missing-localmachinedef-tag", msg)
-            self.error.raise_on_error()
-        path = Path(path)
-        self.cfg.filenaming = product_def["filenaming"]
-        self.cfg.long_name = product_def["long_name"]
+        opt = self.cfg.options
 
+        # For data records that consists of cdr/icdr only: Check if in cdr or icdr period
+        # This also affects the long_name of the data set which is updated here
+        is_cdr_icdr = opt.get("is_cdr_icdr", False)
+        version = opt.get("version", None)
+        record_type = None
+        if is_cdr_icdr:
+            product_index = int(self.start_time > opt[opt.version]["cdr_time_coverage_end"])
+            record_type = self.cdr_icdr_record_types[product_index]
+            record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
+            long_name_template = opt.get("long_name_template", {})
+            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
+            self.cfg.set_long_name(long_name)
+
+        # Get the file path
+        # Paths for climate data records should contain record type and version
+        path = Path(self.cfg.local_repository)
+        if is_cdr_icdr:
+            path = path / record_type / version
+
+        # Add period sub-folders as indicated
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = path / subfolder
 
+        # Construct the filename
         filename = self.cfg.filenaming.format(
-            year=self.year, month=self.month, day=self.day,
+            record_type=record_type,
+            version=version,
+            year=self.year,
+            month=self.month,
+            day=self.day,
             hemisphere_code=self.hemisphere_code)
+
+        # Final Path
         path = path / filename
         return path
+
+
+    @property
+    def cdr_icdr_record_types(self) -> List[str]:
+        return ["cdr", "icdr"]
+
+    @property
+    def cdr_icdr_record_type_prefix(self) -> List[str]:
+        return ["", "interim"]
 
 
 class ICDCNasaTeam(AuxdataBaseClass):
