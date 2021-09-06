@@ -433,7 +433,7 @@ class SICCI2SurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
         return self.error_flag_bit_dict["surface_type"]
 
 
-class CCIPlusSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
+class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
     """
     Simplified surface type classification based on the positive
     classification of leads and lazy sea ice classifcation
