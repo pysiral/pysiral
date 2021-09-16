@@ -33,13 +33,15 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-         name: c3s_v2p0
-         options:
+        name: c3s
+        options:
+            version: v2p0
             exception_on_error: False
 
     - sitype:
-         name: c3s_v1p0
-         options:
+        name: c3s
+        options:
+            version: v2p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 
