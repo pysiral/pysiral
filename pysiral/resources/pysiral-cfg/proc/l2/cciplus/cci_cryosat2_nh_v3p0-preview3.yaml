@@ -4,8 +4,8 @@ metadata:
     product_line: cci
     record_type: cdr
     platform: cryosat2
-    version: v3p0-preview3b
-    file_version_tag: v3p0-preview3b
+    version: v3p0-preview3-beta1
+    file_version_tag: v3p0-preview3-beta1
     hemisphere: north
 
 
