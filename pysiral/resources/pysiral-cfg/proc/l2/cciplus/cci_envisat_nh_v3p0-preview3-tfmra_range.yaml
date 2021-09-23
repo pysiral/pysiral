@@ -3,7 +3,7 @@ metadata:
     label: "ESA CCI+ Envisat reprocessed northern hemisphere sea-ice thickness climate data record - Multi-threshold version"
     product_line: cci
     record_type: tds
-    platform: ers2
+    platform: envisat
     version: v3p0-preview3-mt
     file_version_tag: v3p0-preview3-mt
     hemisphere: north
@@ -70,7 +70,6 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
-                epsilon_sec: [epss, epsilon_sec]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -158,18 +157,7 @@ procsteps:
             predefined_retrackers: [ocean, ice1, ice2, sitrack]
             classifier_name_fmt: "{}_range"
             output_name_fmt: "elevation_{}"
-
-    # Apply ERS pulse deblurring correction
-    -   module: retracker
-        pyclass: ERSPulseDeblurring
-        options: 
-            target_variables:
-                - elevation
-                - elevation_ocean
-                - elevation_ice1
-                - elevation_ice2
-                - elevation_sitrack
-
+            
     # Apply the range corrections 
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
@@ -209,11 +197,6 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: false
-
-    # Estimation of Radar Freeboard
-    -   module: frb
-        pyclass: RadarFreeboardDefault
-        options: null
 
     # Estimation of Radar Freeboard
     -   module: frb
