@@ -68,7 +68,8 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             local_repo = self.get_local_repository(auxdata_class, local_repository_id)
             if local_repo is None and local_repository_id is not None:
                 error_id = "auxdata_missing_localrepo_def"
-                error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
+                error_message = f"Missing entry `auxdata_repository.{auxdata_class}.{auxdata_id}` in " + \
+                    f"local_machine_def ({psrlcfg.local_machine_def_filepath})"
                 self.error.add_error(error_id, error_message)
                 self.error.raise_on_error()
             empty_str = len(local_repo) == 0 if local_repo is not None else False
@@ -252,10 +253,20 @@ class L1PDataHandler(DefaultLoggingClass):
 
     @property
     def l1p_base_dir(self) -> str:
+        """
+        Returns the the l1p base base
+        # TODO: Evaluate use of function (properties shouldn't raise errors?)
+        :return:
+        """
+        l1p_base_dir = None
         try:
             l1p_base_dir = psrlcfg.local_machine.l1b_repository[self._platform][self._source_version]["l1p"]
         except (AttributeError, KeyError):
-            l1p_base_dir = None
+            msg = f"missing entry `l1bdata.{self._platform}.{self._source_version}.l1p` in local_machine_def.yaml"
+            msg = msg + f" ({psrlcfg.local_machine_def_filepath})"
+            error_id = "l1bdata_missing_localrepo_def"
+            self.error.add_error(error_id, msg)
+            self.error.raise_on_error()
         return l1p_base_dir
 
     @property

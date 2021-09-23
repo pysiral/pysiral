@@ -61,6 +61,9 @@ def pysiral_l2proc_time_range_job(args):
 
     # Clip the time range to the valid time range of the target platform
     period = period.intersect(psrlcfg.get_platform_period(mission_id))
+    if period is None:
+        msg = f"Invalid period definition ({args.start}-{args.stop}) for platform {mission_id}"
+        raise ValueError(msg)
 
     # The Level-2 processor operates in monthly iterations
     # -> Break down the full period into monthly segments and
