@@ -1,8 +1,8 @@
 # Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 metadata:
-    label: "C3S CryoSat-2 Arctic sea-ice thickness climate data record v2.0"
+    label: "C3S CryoSat-2 Arctic sea-ice thickness interim climate data record v2.0"
     product_line: c3s
-    record_type: cdr
+    record_type: icdr
     platform: cryosat2
     version: v2p0
     file_version_tag: v2p0
@@ -126,6 +126,7 @@ procsteps:
                     sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 19.10, 19.10, 19.10, 19.10, 19.10, 24.30, 23.70, 22.00]
                     leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 1.64, 1.64, 1.64, 1.64, 1.64, 1.44, 1.44, 1.51]
                     ice_concentration_min: 70.0
+
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
@@ -221,6 +222,13 @@ procsteps:
             target_variables: [frb]
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
+
+    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
+    -   module: retracker
+        pyclass: TFMRAMultiThresholdFreeboards
+        options: 
+            threshold_range: [0.2, 0.9]
+            threshold_res: 0.05
 
     # Add sea ice density to the Level-2 object
     # Base values for pure ice type uncertainties from Alexandrov et al., 2010, The Cryosphere
