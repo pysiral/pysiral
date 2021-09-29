@@ -137,7 +137,7 @@ procsteps:
                     # type can be fixed, sigma_func and sitype_sigma_func
                     threshold:
                         type: fixed
-                        value: 0.95
+                        value: 0.50
                     offset: 0.0
                     noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
