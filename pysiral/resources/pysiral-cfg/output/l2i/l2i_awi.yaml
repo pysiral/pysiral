@@ -31,7 +31,7 @@ global_attributes:
   - references: "pysiral version: {pysiral_version:default}"
   - cdm_data_type: Trajectory
   - date_created: "{utcnow}"
-  - creator_name: "Stefan Hendricks"
+  - creator_name: "Stefan Hendricks, Robert Ricker, Stephan Paul"
   - creator_url: "www.awi.de"
   - creator_email: "stefan.hendricks@awi.de"
   - institution: "Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research"
@@ -77,13 +77,16 @@ variables:
 
   surface_type:
     long_name: "surface type classification flag"
-    units: "1"
-    flag_meaning: "0: unknown, 1: ocean, 2: lead, 3: polynya, 4: sea ice, 5: closed sea, 6: land ice, 7: land, 8: invalid"
+    units: 1
+    flag_values: "0, 1, 2, 4, 5, 6, 7, 8"
+    valid_min: 0
+    valid_max: 8
+    flag_meanings: "unknown ocean lead polynya sea_ice closed_sea land_ice land invalid"
     coordinates: time
 
   radar_mode:
     long_name: "radar mode flag (0: pulse limited, 1: doppler delay (SAR), 2: doppler delay interferometric (SARin))"
-    units: "1"
+    units: 1
     coordinates: time
 
   region_code:
@@ -93,7 +96,7 @@ variables:
     valid_max: 21
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
     flag_meaning: "0: Inland sea and lakes, 1: Ice-free Oceans, 2: Sea of Okhotsk, 3: Bering, 4: Hudson Bay, 5: St John, 6: Baffin Bay, 7: East Greeland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline"
-    units: "1"
+    units: 1
     coordinates: time
 
   elevation:
@@ -150,7 +153,7 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
     standard_name: sea_ice_classification
-    units: "1"
+    units: 1
     valid_min: 0.0
     valid_max: 1.0
     coordinates: time
@@ -158,7 +161,7 @@ variables:
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standar_error
-    units: "1"
+    units: 1
     coordinates: time
 
   sea_ice_concentration:
@@ -247,27 +250,27 @@ variables:
 
   sigma0:
     long_name: "radar backscatter (sigma0)"
-    units: "1"
+    units: 1
     coordinates: time
 
   pulse_peakiness:
     long_name: "pulse peakiness"
-    units: "1"
+    units: 1
     coordinates: time
 
   leading_edge_width:
     long_name: "leading edge width"
-    units: "1"
+    units: 1
     coordinates: time
   
   leading_edge_quality:
     long_name: "leading edge width"
-    units: "1"
+    units: 1
     coordinates: time
   
   stack_standard_deviation:
     long_name: "standard deviation of power over the stack"
-    units: "1"
+    units: 1
     coordinates: time
 
   dry_troposphere:
@@ -321,7 +324,7 @@ variables:
     valid_max: 1
     flag_values: "0, 1"
     flag_meaning: "0: waveform is valid, 1: waveform is invalid"
-    units: "1"
+    units: 1
     coordinates: time
 
   flag:
