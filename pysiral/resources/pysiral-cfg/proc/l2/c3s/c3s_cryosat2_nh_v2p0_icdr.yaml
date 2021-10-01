@@ -70,7 +70,6 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
-                late_tail_to_peak_power: [ltpp, late_tail_to_peak_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
                 stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
@@ -138,7 +137,7 @@ procsteps:
                     # type can be fixed, sigma_func and sitype_sigma_func
                     threshold:
                         type: fixed
-                        value: 0.95
+                        value: 0.50
                     offset: 0.0
                     noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
@@ -222,13 +221,6 @@ procsteps:
             target_variables: [frb]
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
-
-    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
-        pyclass: TFMRAMultiThresholdFreeboards
-        options: 
-            threshold_range: [0.2, 0.9]
-            threshold_res: 0.05
 
     # Add sea ice density to the Level-2 object
     # Base values for pure ice type uncertainties from Alexandrov et al., 2010, The Cryosphere
