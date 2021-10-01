@@ -1,7 +1,7 @@
 metadata:
-    label: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.4 reprocessed)"
+    label: "AWI CryoSat-2 operational sea-ice thickness product (cs2awi v2.4 operational)"
     product_line: awi
-    record_type: rep
+    record_type: nrt
     platform: cryosat2
     version: v2p4
     file_version_tag: "v2p4"
@@ -44,17 +44,18 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v2p0
-            exception_on_error: False
+            exception_on_error: True
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v2p0
             fill_valid_sic_gaps: True
-            exception_on_error: False
+            exception_on_error: True
 
     - snow:
         name: clim_w99amsr2
