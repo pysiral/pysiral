@@ -25,13 +25,14 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-e), Snow depth: Monthly
+  - source: "Altimetry: CryoSat-2 Level 1b baseline E (ipf1-e), Snow depth: Monthly
   climatology based on regional merging of Warren Climatology with 50% reduction for
   first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
   Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea
-  surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S
-  Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF
-  (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: Adapted from NSIDC region mask"
+  surface, Mean Dynamic Topography: DTU17, Sea ice Concentration: 
+  {source_timeliness:select;OSI-SAF (OSI-401-b);C3S, Sea Ice Concentration CDR/ICDR}, 
+  Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
+  Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
@@ -60,7 +61,7 @@ global_attributes:
   - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
   - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - publisher_url: "www.awi.de"
-  - publisher_email: "info@meereisportal.de"
+  - publisher_email: "cs2smos-support@awi.de"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: 90.0
   - geospatial_lon_min: -180.0
@@ -305,7 +306,7 @@ variables:
     valid_min: 0
     valid_max: 2
     flag_values: "0, 1, 2"
-    flag_meanings: "pulse_limited_lrm sar sar_interferometric"
+    flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
     comment: "median of radar mode flags within grid cells"
     units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"

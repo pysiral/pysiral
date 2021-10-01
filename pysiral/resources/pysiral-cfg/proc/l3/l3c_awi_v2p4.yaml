@@ -175,11 +175,15 @@ grid_settings:
 processing_items:
 
     # Compute surface type statistics based on surface type classification
-    - label: "Load masks"
+    - label: "Load CCI land mask"
       module_name: pysiral.l3proc
-      class_name: Level3LoadMasks
+      class_name: Level3LoadCCILandMask
       options:
-        mask_names: ["warren99_is_valid", "landsea"]
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_fraction
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
@@ -202,9 +206,6 @@ processing_items:
         targets:
             - sea_ice_freeboard_uncertainty
             - radar_freeboard_uncertainty
-            - sea_level_anomaly
-            - sea_level_anomaly_uncertainty
-            - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
             - sea_ice_type
@@ -231,8 +232,6 @@ processing_items:
             - snow_density
             - snow_density_uncertainty
             - sea_ice_concentration
-            - region_code
-            - radar_mode
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
@@ -249,14 +248,14 @@ processing_items:
       class_name: Level3StatusFlag
       options: 
         retrieval_status_target: sea_ice_thickness
-        sic_thrs: 70.
+        sic_thrs: 15.
         flag_values:
-            no_data: 0 
-            is_below_sic_thrs: 1
-            is_pole_hole: 2
-            is_land: 3
-            retrieval_failed: 4
-            has_retrieval: 5
+            no_data: 1 
+            is_below_sic_thrs: 2
+            is_pole_hole: 3
+            is_land: 4
+            retrieval_failed: 5
+            has_retrieval: 0
 
     # Compute the quality flag
     - label: "Get quality flag"
@@ -267,29 +266,28 @@ processing_items:
         add_rule_flags: maximum_value
         # A list of rules that will be checked
         rules: 
-            # Mark everything outside of the Warren99 Climatology as biased
-            # Note: This method requires loading the external mask with id `warren99_is_valid`
-            qif_warren99_valid_flag:
-                type: method
-                target_flag: 3
+
             # Check for lead fractions not only in the grid cell but also in the adjacent 
             # grid cells. Idea is that grid cell with low lead fractions have still high 
             # confidence if enough leads in the neighbourhood
             qif_lead_availability:
                 search_radius_m: 75000.
                 area_lead_fraction_minimum: 0.1
-                target_flag: 2
+                target_flag: 1
+            
             # Check radar mode for SARin mode (only applicable for CryoSat-2)
             qif_cs2_radar_mode_is_sin:
-                target_flag: 2
+                target_flag: 1
+            
             # Check number of waveforms and raise flag if low
             qif_n_waveforms:
                 thresholds: [50, 10]
-                target_flags: [2, 3]
+                target_flags: [1, 2]
+            
             # Check the negative thickness fraction and raise flag if high
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
-                target_flags: [2, 3]
+                target_flags: [1, 2]
 
     # Compute the status flag
     - label: "grid surface type classifiers"
