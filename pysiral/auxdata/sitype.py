@@ -116,7 +116,6 @@ class OsiSafSIType(AuxdataBaseClass):
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
-        confidence_level = grid2track.get_from_grid_variable(self._data.confidence_level[0, :, :], flipud=True)
 
         # set fill values to flag 0 -> nan
         fillvalues = np.where(sitype == -1)[0]
@@ -127,10 +126,18 @@ class OsiSafSIType(AuxdataBaseClass):
         translator = np.array([np.nan, np.nan, 0.0, 1.0, 0.5])
         sitype = np.array([translator[value] for value in sitype])
 
-        # Translate confidence level into myi fraction uncertainty
-        # flag_meaning: 0: unprocessed, 1: erroneous, 2: unreliable, 3: acceptable, 4: good, 5: excellent
-        translator = np.array([np.nan, 1., 0.5, 0.2, 0.1, 0.0])
-        sitype_uncertainty = np.array([translator[value] for value in confidence_level])
+        # --- Get Uncertainty ---
+
+        # NOTE: There has been a change in OSI-403-d, when the `confidence_level`
+        #       variable was replaced by uncertainty.
+        try:
+            # Translate confidence level into myi fraction uncertainty
+            # flag_meaning: 0: unprocessed, 1: erroneous, 2: unreliable, 3: acceptable, 4: good, 5: excellent
+            confidence_level = grid2track.get_from_grid_variable(self._data.confidence_level[0, :, :], flipud=True)
+            translator = np.array([np.nan, 1., 0.5, 0.2, 0.1, 0.0])
+            sitype_uncertainty = np.array([translator[value] for value in confidence_level])
+        except AttributeError:
+            sitype_uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty[0, :, :], flipud=True)
 
         return sitype, sitype_uncertainty
 
