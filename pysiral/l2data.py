@@ -796,7 +796,7 @@ class Level2PContainer(DefaultLoggingClass):
         """ Returns a Level2Data object with data from all l2i objects """
 
         # Merge the parameter
-        data = self._get_merged_data(valid_mask="freeboard")
+        data = self._get_merged_data(valid_mask="sea_ice_freeboard")
 
         # There are rare occasion, where no valid freeboard data is found for an entire day
         if len(data["longitude"]) == 0:
