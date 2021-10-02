@@ -107,9 +107,55 @@ level1_preprocessor:
                   tfmra_options: 
                     noise_level_range_bin_idx: [0, 5]
                     first_maximum_ignore_leading_bins: 0
-            
+
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group:
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                first_maximum_normalized_power_threshold:
+                    lrm: 0.5
+                    sar: 0.25
+                    sin: 0.25
+                # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    lrm: 20
+                    sar: 30
+                    sin: 60
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+                    sar: 10
+                    sin: 10
+
             # Compute the sigma_0
             - label: "Compute Sigma0"
               module_name: pysiral.waveform
               class_name: L1PSigma0
-              options: {}
+              options:
+
+                  # CryoSat-2 altimeter constants to compute the LRM footprint
+                  footprint_pl_kwargs:
+                      band_width: 320000000.
+
+                  # CryoSat-2 altimeter constants to compute the SAR footprint
+                  footprint_sar_kwargs:
+                      ptr_width: 2.819e-09
+                      tau_b: 0.00352
+                      lambda_0: 0.022084
+                      wf: 1.0
+
+                  # CryoSat-2 altimeter constants to compute sigma0
+                  sigma0_kwargs:
+                      lambda_0: 0.022084
+                      g_0: 19054.607179632483
+
+                  # CryoSat-2 radar mode sigma0 biases
+                  sigma0_bias: [0.0, 0.0, 0.0]
