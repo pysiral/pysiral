@@ -122,14 +122,12 @@ variables:
     coordinates: time
 
   sea_ice_freeboard:
-    var_source_name: freeboard
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: time
 
   sea_ice_freeboard_uncertainty:
-    var_source_name: freeboard_uncertainty
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard standard_error
     units: m
