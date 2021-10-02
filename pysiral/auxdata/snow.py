@@ -45,6 +45,7 @@ from pyproj import Proj
 from pathlib import Path
 from datetime import datetime
 from xarray import open_dataset
+from loguru import logger
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.filter import idl_smooth
@@ -532,9 +533,11 @@ class Warren99AMSR2ClimDataContainer(object):
 
         # Check solution
         if month_left_index < 0:
-            msg = "Month not found, check input or bug in code"
-            self.error.add_error("unspecified-error", msg)
-            self.error.raise_on_error()
+            logger.warning("Target month is outside data coverage, snow depth -> NaN")
+            return 10, 11, np.nan
+            # msg = "Month not found, check input or bug in code"
+            # self.error.add_error("unspecified-error", msg)
+            # self.error.raise_on_error()
 
         # Compute the weighting factor
         period_n_days = (ref_datetimes[month_right_index] - ref_datetimes[month_left_index]).days
