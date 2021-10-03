@@ -152,10 +152,6 @@ procsteps:
             # and the sea-ice concentration based ice mask
             ocean:
 
-                - radar_mode: lrm
-                  conditions: 
-                      - "{sea_ice_concentration} < 15.0"
-
                 - radar_mode: sar
                   conditions: 
                       - "{sea_ice_concentration} < 15.0"
