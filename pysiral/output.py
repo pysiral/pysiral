@@ -26,7 +26,10 @@ class OutputHandlerBase(DefaultLoggingClass):
 
     subfolder_format = {"month": "%02g", "year": "%04g", "day": "%02g"}
 
-    def __init__(self, output_def, applicable_data_level=None, subfolder_tags=None,
+    def __init__(self,
+                 output_def,
+                 applicable_data_level=None,
+                 subfolder_tags=None,
                  default_file_location=None):
         """
         Init the output handler with the content of the output definition file and

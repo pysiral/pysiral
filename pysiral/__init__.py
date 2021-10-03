@@ -25,6 +25,7 @@ from pathlib import Path
 from attrdict import AttrDict
 from distutils import dir_util
 from loguru import logger
+from typing import Union
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -93,6 +94,30 @@ class _MissionDefinitionCatalogue(object):
             return platform_info
         else:
             return AttrDict(**platform_info)
+
+    def get_platform_id(self, platform_name: str) -> Union[str, None]:
+        """
+        Return the name of a platform.
+        :param platform_name:
+        :return:
+        """
+
+        # Query the source dictionary
+        platforms = [entry for entry in self._content.platforms.items() if entry[1]["long_name"] == platform_name]
+
+        # No valid entry found -> Warning and returning None
+        if len(platforms) == 0:
+            logger.warning(f"Did not find entry for {platform_name} in {self._filepath}")
+            return None
+
+        # Multiple Entries -> Error in configuration: Raise Exception
+        elif len(platforms) > 1:
+            msg = f"Multitple entries found for {platform_name} in {self._filepath}"
+            logger.error(msg)
+            raise ValueError(msg)
+
+        platform_id, _ = platforms[0]
+        return platform_id
 
     def get_name(self, platform_id):
         """

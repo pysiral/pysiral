@@ -15,6 +15,7 @@ import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
+from loguru import logger
 import uuid
 import re
 
@@ -827,22 +828,30 @@ class Level2PContainer(DefaultLoggingClass):
 
         # Old notation (for backward compatibility)
         # TODO: This will soon be obsolete
-        try:
+        mission_id = None
+        if hasattr(info, "mission_id"):
             mission_id = info.mission_id
-            # Transfer auxdata information
             metadata.source_auxdata_sic = l2i.info.source_sic
             metadata.source_auxdata_snow = l2i.info.source_snow
             metadata.source_auxdata_sitype = l2i.info.source_sitype
             metadata.source_auxdata_mss = l2i.info.source_mss
 
         # New (fall 2017) pysiral product notation
-        except AttributeError:
+        if hasattr(info, "source_mission_id"):
             mission_id = info.source_mission_id
             # Transfer auxdata information
             metadata.source_auxdata_sic = l2i.info.source_auxdata_sic
             metadata.source_auxdata_snow = l2i.info.source_auxdata_snow
             metadata.source_auxdata_sitype = l2i.info.source_auxdata_sitype
             metadata.source_auxdata_mss = l2i.info.source_auxdata_mss
+
+        # Conversion of l2i to CF/ACDD conventions (Fall 2021)
+        if hasattr(info, "platform"):
+            mission_id = psrlcfg.platforms.get_platform_id(info.platform)
+
+        if mission_id is None:
+            self.error.add_error("unknown-platform", "Cannot determine platform name from source l2i stack")
+            self.error.raise_on_error()
 
         try:
             metadata.timeliness = l2i.info.source_timeliness
