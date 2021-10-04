@@ -225,6 +225,11 @@ class Level2Processor(DefaultLoggingClass):
             # Init the Level-2 data object
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
+            # Overwrite the timeliness value of the l1p input data
+            # (requires settings of --force-l2def-record-type option in pysiral-l2proc)
+            if self._l2def.force_l2def_record_type:
+                l2.info.timeliness = self._l2def.record_type
+
             # Get auxiliary data from all registered auxdata handlers
             error_status, error_codes = self.get_auxiliary_data(l2)
             if True in error_status:
@@ -342,7 +347,10 @@ class Level2Processor(DefaultLoggingClass):
 class Level2ProductDefinition(DefaultLoggingClass):
     """ Main configuration class for the Level-2 Processor """
 
-    def __init__(self, run_tag, l2_settings_file):
+    def __init__(self,
+                 run_tag: str,
+                 l2_settings_file: str,
+                 force_l2def_record_type: bool = False) -> None:
 
         super(Level2ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(self.__class__.__name__)
@@ -351,6 +359,7 @@ class Level2ProductDefinition(DefaultLoggingClass):
         self._l2_settings_file = l2_settings_file
         self._parse_l2_settings()
         self._run_tag = None
+        self.force_l2def_record_type = force_l2def_record_type
         self._set_run_tag(run_tag)
 
         # Optional parameters (may be set to default values if not specified)

@@ -48,7 +48,9 @@ def pysiral_l2proc_time_range_job(args):
     t0 = time.process_time()
 
     # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
+    product_def = Level2ProductDefinition(args.run_tag,
+                                          args.l2_settings_file,
+                                          force_l2def_record_type=args.force_l2def_record_type)
     mission_id = product_def.l2def.metadata.platform
     hemisphere = product_def.l2def.metadata.hemisphere
 
@@ -110,7 +112,9 @@ def pysiral_l2proc_l1b_predef_job(args):
     t0 = time.process_time()
 
     # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
+    product_def = Level2ProductDefinition(args.run_tag,
+                                          args.l2_settings_file,
+                                          force_l2def_record_type=args.force_l2def_record_type)
 
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
@@ -188,6 +192,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
+            ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
             ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
             ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
@@ -196,8 +201,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         parser = argparse.ArgumentParser()
         for option in options:
             argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(
-                argtype, destination, required)
+            argparse_dict = clargs.get_argparse_dict(argtype, destination, required)
             parser.add_argument(argname, **argparse_dict)
         parser.set_defaults(overwrite_protection=False)
 
@@ -289,6 +293,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
             self.error.raise_on_error()
         else:
             return filename
+
+    @property
+    def force_l2def_record_type(self):
+        return self._args.force_l2def_record_type
 
     @property
     def is_time_range_request(self):

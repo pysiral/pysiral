@@ -259,6 +259,13 @@ class DefaultCommandLineArguments(object):
                 "required": False,
                 "type": str,
                 "help": "type of data record [cdr, icdr]"},
+
+            "force-l2def-record-type": {
+                "action": "store_true",
+                "dest": "force_l2def_record_type",
+                "default": False,
+                "required": False,
+                "help": "overwrite l1p record type [cdr, icdr, nrt, ..] with metadata.record_type tag in l2def"},
         }
 
     def get_argparse_dict(self, name, destination, required):
