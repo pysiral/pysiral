@@ -74,8 +74,8 @@ class OsiSafSIType(AuxdataBaseClass):
         if self.error.status or self._data is None:
             sitype = self.get_empty_array(l2)
             uncertainty = self.get_empty_array(l2)
-            exception_on_error = self.cfg.options.get("execption_on_error", None)
-            if not exception_on_error:
+            exception_on_error = self.cfg.options.get("execption_on_error", True)
+            if exception_on_error:
                 self.error.raise_on_error()
         else:
             # Get and return the track
