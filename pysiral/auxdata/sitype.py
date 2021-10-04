@@ -71,11 +71,15 @@ class OsiSafSIType(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if data is available
-        if self.error.status:
-            self.error.raise_on_error()
-
-        # Get the data
-        sitype, uncertainty = self._get_sitype_track(l2)
+        if self.error.status or self._data is None:
+            sitype = self.get_empty_array(l2)
+            uncertainty = self.get_empty_array(l2)
+            exception_on_error = self.cfg.options.get("execption_on_error", None)
+            if not exception_on_error:
+                self.error.raise_on_error()
+        else:
+            # Get and return the track
+            sitype, uncertainty = self._get_sitype_track(l2)
 
         # (Optional) Fill gaps in the sea ice type product
         # where the sea-ice concentration data indicates the
