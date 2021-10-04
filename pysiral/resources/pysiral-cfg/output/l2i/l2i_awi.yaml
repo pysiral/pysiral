@@ -42,6 +42,7 @@ global_attributes:
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
   - cdm_data_type: Trajectory
+  - data_record_type: "{source_timeliness}"
   - date_created: "{utcnow}"
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - creator_type: "institution"

@@ -1043,9 +1043,14 @@ class L2iNCFileImport(object):
 
     @property
     def timeliness(self):
+
         if not hasattr(self, "info"):
-            return None
-        try:
-            return self.info.source_timeliness
-        except AttributeError:
-            return "NTC"
+            return "unknown"
+
+        if hasattr(self.info, "source_mission_id"):
+            return self.info.source_mission_id
+
+        if hasattr(self.info, "data_record_type"):
+            return self.info.data_record_type
+
+        return "unknown"
