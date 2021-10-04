@@ -135,7 +135,6 @@ variables:
     coverage_content_type: qualityInformation
 
   sea_ice_freeboard:
-    var_source_name: freeboard
     long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
     standard_name: sea_ice_freeboard
     units: m
