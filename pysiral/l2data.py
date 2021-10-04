@@ -1024,20 +1024,21 @@ class L2iNCFileImport(object):
 
     @property
     def mission(self):
+
         if not hasattr(self, "info"):
             return None
-        try:
+
+        if hasattr(self.info, "mission_id"):
             return self.info.mission_id
-        except AttributeError:
-            pass
-        try:
+
+        if hasattr(self.info, "source_mission_id"):
             return self.info.source_mission_id
-        except AttributeError:
-            pass
-        try:
-            return self.info.platform
-        except AttributeError:
-            pass
+
+        if hasattr(self.info, "platform"):
+            platform_name = self.info.platform
+            mission = psrlcfg.platforms.get_platform_id(platform_name)
+            return mission
+
         return None
 
     @property
