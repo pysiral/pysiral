@@ -853,10 +853,11 @@ class Level2PContainer(DefaultLoggingClass):
             self.error.add_error("unknown-platform", "Cannot determine platform name from source l2i stack")
             self.error.raise_on_error()
 
-        try:
+        if hasattr(l2i.info, "source_timeliness"):
             metadata.timeliness = l2i.info.source_timeliness
-        except AttributeError:
-            pass
+
+        if hasattr(l2i.info, "data_record_type"):
+            metadata.timeliness = l2i.info.data_record_type
 
         metadata.set_attribute("mission", mission_id)
         mission_sensor = psrlcfg.platforms.get_sensor(mission_id)
