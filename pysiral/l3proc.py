@@ -717,6 +717,7 @@ class L3MetaData(object):
             self.set_attribute("mission_sensor", ",".join(mission_sensor))
         except TypeError:
             self.set_attribute("mission_ids", "unkown")
+
         source_timeliness = np.unique(stack.timeliness)[0]
         if len(source_timeliness) != 1:
             # XXX: Different timeliness should not be mixed
@@ -830,10 +831,10 @@ class Level3OutputHandler(OutputHandlerBase):
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
 
-            # Add a translation for the current dissonace between dateperiod
+            # Add a translation for the current dissonance between dateperiod
             # period id's and the pysiral convention
-            period_id_dict = dict(month="monthly", isoweek="weekly")
-            period_id = period_id_dict.get(period_id, period_id)
+            # period_id_dict = dict(month="monthly", isoweek="weekly")
+            # period_id = period_id_dict.get(period_id, period_id)
             # Fall back to default if no filenaming convention for given
             # data period
             if period_id not in template_ids:
@@ -885,8 +886,8 @@ class Level3OutputHandler(OutputHandlerBase):
         else:
             basedir = Path(self.pysiral_config.local_machine.product_repository) / base_directory_or_id
         # add product level subfolder
-        period_id = dict(month="monthly", isoweek="weekly")
-        basedir = basedir / self.product_level_subfolder / period_id.get(self._period, self._period)
+        # period_id = dict(month="monthly", isoweek="weekly")
+        basedir = basedir / self.product_level_subfolder / self._period
         # optional (subfolder with current time)
         if self.overwrite_protection:
             basedir = basedir / self.now_directory
