@@ -904,11 +904,11 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Get the value
         expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
+        branch = None
         try:
             branch = AttrDict(primary_input_def[platform][tag])
         except KeyError:
-            msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
-            msg = msg % expected_branch_name
+            msg = f"Missing definition {expected_branch_name} in {psrlcfg.local_machine_def_filepath}"
             self.error.add_error("local-machine-def-missing-tag", msg)
             self.error.raise_on_error()
 
@@ -941,10 +941,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
             for directory in directories:
                 if not Path(directory).is_dir():
-                    msg = "Invalid directory in `local_machine_def.yaml`: %s is not a valid directory"
-                    msg = msg % directory
-                    self.error.add_error("local-machine-def-invalid-dir", msg)
-                    self.error.raise_on_error()
+                    logger.warning(f"l1p directory does not exist -> creating: {directory}")
+                    Path(directory).mkdir(parents=True)
 
         # Update the lookup dir parameter
         self.l1pprocdef.input_handler["options"]["lookup_dir"] = branch.source
