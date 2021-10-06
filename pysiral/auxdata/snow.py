@@ -293,8 +293,20 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # NOTE: This will only be done once as the climatology has the same period as the Level-2 processor
         self.update_external_data()
 
-        # Check if error with file I/O
+        # Check if data has not been loaded
         if not self.has_data_loaded:
+            logger.error(f"- Source data cannot be loaded {self.requested_filepath}")
+
+        # Check if requested date is within validity period of the
+        # climatology (winter month of October -> April only)
+        valid_month = True
+        if int(self.month) not in [10, 11, 12, 1, 2, 3, 4]:
+            valid_month = False
+            logger.warning("- Target month is outside snow climatology coverage (October - April)")
+
+        # Ensure that snow depth and uncertainty variables are added (even if just NaN)
+        if not valid_month or not self.has_data_loaded:
+            logger.warning("- Previous errors and/or warnings, snow depth -> NaN")
             snow = SnowParameterContainer()
             snow.set_dummy(l2.n_records)
         else:
@@ -533,7 +545,7 @@ class Warren99AMSR2ClimDataContainer(object):
 
         # Check solution
         if month_left_index < 0:
-            logger.warning("Target month is outside data coverage, snow depth -> NaN")
+            logger.warning("Target month is outside data coverage, weighting factor -> NaN")
             return 10, 11, np.nan
             # msg = "Month not found, check input or bug in code"
             # self.error.add_error("unspecified-error", msg)
