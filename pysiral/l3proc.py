@@ -1323,7 +1323,7 @@ class Level3StatusFlag(Level3ProcessorItem):
     required_options = ["retrieval_status_target", "sic_thrs", "flag_values"]
     l2_variable_dependencies = []
     l3_variable_dependencies = ["sea_ice_concentration", "n_valid_waveforms", "landsea"]
-    l3_output_variables = dict(status_flag=dict(dtype="i1", fill_value=0))
+    l3_output_variables = dict(status_flag=dict(dtype="i1", fill_value=1))
 
     def __init__(self, *args, **kwargs):
         """
@@ -1406,7 +1406,7 @@ class Level3QualityFlag(Level3ProcessorItem):
     l2_variable_dependencies = []
     l3_variable_dependencies = ["sea_ice_thickness", "n_valid_waveforms", "negative_thickness_fraction",
                                 "lead_fraction"]
-    l3_output_variables = dict(quality_flag=dict(dtype="i1", fill_value=0))
+    l3_output_variables = dict(quality_flag=dict(dtype="i1", fill_value=3))
 
     def __init__(self, *args, **kwargs):
         """
