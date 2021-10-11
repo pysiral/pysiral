@@ -56,7 +56,7 @@ global_attributes:
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - creator_type: "institution"
-  - creator_url: "http://www.awi.de"
+  - creator_url: "https://spaces.awi.de/display/SIRAL/"
   - contributor_name: "Stefan Hendricks, Robert Ricker, Stephan Paul"
   - contributor_role: "PrincipalInvestigator, Author, Author"
   - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
