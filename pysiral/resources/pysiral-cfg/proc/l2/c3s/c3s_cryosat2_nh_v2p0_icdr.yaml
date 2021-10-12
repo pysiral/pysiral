@@ -244,6 +244,6 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
