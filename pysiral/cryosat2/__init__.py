@@ -9,7 +9,7 @@ from loguru import logger
 __all__ = ["functions", "iotools", "cs2_procstage2timeliness"]
 
 
-def cs2_procstage2timeliness(processing_stage_str):
+def cs2_procstage2timeliness(processing_stage_str: str) -> str:
     """
     A small helper function that translates the various processing stage definition into
     a pysiral conformal timeliness definition

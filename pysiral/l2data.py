@@ -15,13 +15,13 @@ import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
+from loguru import logger
 import uuid
 import re
 
 
 class Level2Data(object):
-
-    _L2_DATA_ITEMS = ["range", "sla", "elev", "afrb", "frb", "sit", "radar_mode"]
+    _L2_DATA_ITEMS = ["range", "sla", "sla_raw", "dot", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
 
@@ -36,8 +36,10 @@ class Level2Data(object):
         "flag": "flag",
         "elevation": "elev",
         "sea_level_anomaly": "sla",
+        "sea_level_anomaly_raw": "sla_raw",
+        "dynamic_ocean_topography": "dot",
         "radar_freeboard": "afrb",
-        "freeboard": "frb",
+        "sea_ice_freeboard": "frb",
         "sea_ice_thickness": "sit"}
 
     _PROPERTY_CATALOG = {"sea_surface_height": "ssh"}
@@ -57,12 +59,17 @@ class Level2Data(object):
         # To be filled during the set auxdata method
         self._auxiliary_catalog = {}
 
+        # A dictionary containing information for auxiliary data with
+        # more then one dimension
+        self._multidim_auxiliary_catalog = {}
+
         # Metadata
         self._auxdata_source_dict = {}
         self._source_primary_filename = "unkown"
         self._l2_algorithm_id = "unkown"
         self._l2_version_tag = "unkown"
         self._doi = ""
+        self._data_record_type = None
 
         # Define time of dataset creation as the time of object initialization
         # to avoid slightly different timestamps for repated calls of datetime.now()
@@ -139,6 +146,24 @@ class Level2Data(object):
         # by its long name
         self._auxiliary_catalog[var_name] = var_id
 
+    def set_multidim_auxiliary_parameter(self, var_id, var_name, value, dim_dict):
+        """
+        Adds an auxiliary parameter to the data object different dimensions than
+        the standard (l2.n_records) default data array.
+        :param var_id: (str) The target id for the variable
+        :param var_name: (str) The long name of the variable
+        :param value: (np.ndarray) The auxiliary parameter
+        :param dim_dict: (dictionary) The dimenstion dictionary
+        :return:
+        """
+        setattr(self, var_id, value)
+        # Register auxiliary parameter (this allows to find the parameter by its long name
+        self._auxiliary_catalog[var_name] = var_id
+        self._multidim_auxiliary_catalog[var_name] = dim_dict
+
+    def get_multidim_auxdata_dimdict(self, var_name):
+        return self._multidim_auxiliary_catalog.get(var_name, None)
+
     def set_data_record_type(self, data_record_type):
         self._data_record_type = data_record_type
 
@@ -214,7 +239,7 @@ class Level2Data(object):
         required for the output data handler """
 
         try:
-            attr_getter = getattr(self, "_get_attr_"+attribute_name)
+            attr_getter = getattr(self, "_get_attr_" + attribute_name)
             attribute = attr_getter(*args)
             return attribute
         except AttributeError:
@@ -416,7 +441,8 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_start(self, *args):
-        dt = self.period.tcs.dt
+        # Cryo-TEMPO change from start of invocation timeperiod to start of L2 object coverage
+        dt = self.info.start_time
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -424,7 +450,8 @@ class Level2Data(object):
         return time_string
 
     def _get_attr_time_coverage_end(self, *args):
-        dt = self.period.tce.dt
+        # Cryo-TEMPO change from end of invocation timeperiod to end of L2 object coverage
+        dt = self.info.stop_time
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -435,9 +462,9 @@ class Level2Data(object):
         return self.period.duration.isoformat
 
     def _get_attr_time_resolution(self, *args):
-        tdelta = self.time[-1]-self.time[0]
+        tdelta = self.time[-1] - self.time[0]
         seconds = tdelta.total_seconds() + 1e-6 * tdelta.microseconds
-        resolution = seconds/self.n_records
+        resolution = seconds / self.n_records
         return "%.2f seconds" % resolution
 
     def _get_attr_source_timeliness(self, *args):
@@ -452,6 +479,100 @@ class Level2Data(object):
         if args[0] == "lowercase":
             timeliness = timeliness.lower()
         return timeliness
+
+    def _get_attr_cycle(self, *args):
+        """ Return the cycle number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = str(self.info.cycle)
+        except AttributeError:
+            cycle = "-1"
+        if cycle is None:
+            cycle = "-1"
+        return cycle
+
+    def _get_attr_fncycle(self, *args):
+        """ Return the cycle number of the l1b source data. Set default to
+        -1 """
+        try:
+            fncycle = '{:0>2}'.format(str(self.info.cycle))
+        except AttributeError:
+            fncycle = "-1"
+        if fncycle is None:
+            fncycle = "-1"
+        return fncycle
+
+    def _get_attr_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            orbit = str(self.info.orbit)
+        except AttributeError:
+            orbit = "-1"
+        if orbit is None:
+            orbit = "-1"
+        return orbit
+
+    def _get_attr_rel_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            rel_orbit = str(self.info.rel_orbit)
+        except AttributeError:
+            rel_orbit = "-1"
+        if rel_orbit is None:
+            rel_orbit = "-1"
+        return rel_orbit
+
+    def _get_attr_fnrel_orbit(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            fnrel_orbit = '{:0>5}'.format(str(self.info.rel_orbit))
+        except AttributeError:
+            fnrel_orbit = "000-1"
+        if fnrel_orbit is None:
+            fnrel_orbit = "000-1"
+        return fnrel_orbit
+
+    @staticmethod
+    def cycle_to_subcycle(cy, tr):
+        NB_TRACKS = 10688  # cycle of 368.24 days
+        NB_SUB_TRACKS = 840  # sub-cycle of 28.94 days
+
+        absolute_tr = (cy - 1) * NB_TRACKS + tr
+        sub_cy = ((absolute_tr - 1) // NB_SUB_TRACKS) + 1
+        sub_tr = ((absolute_tr - 1) % NB_SUB_TRACKS) + 1
+        return sub_cy, sub_tr
+
+    # Add CNES sub-cycle. Need to check what to do after orbit change in Jul 2020
+    def _get_attr_cnes_subcycle(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = int(self.info.cycle)
+            rel_orbit = int(self.info.rel_orbit)
+            cnes_subcycle, cnes_track = self.cycle_to_subcycle(cycle, rel_orbit)
+            cnes_subcycle = str(cnes_subcycle)
+        except AttributeError:
+            cnes_subcycle = "-1"
+        if cnes_subcycle is None:
+            cnes_subcycle = "-1"
+        return cnes_subcycle
+
+    def _get_attr_cnes_track(self, *args):
+        """ Return the orbit number of the l1b source data. Set default to
+        -1 """
+        try:
+            cycle = int(self.info.cycle)
+            rel_orbit = int(self.info.rel_orbit)
+            cnes_subcycle, cnes_track = self.cycle_to_subcycle(cycle, rel_orbit)
+            cnes_track = str(cnes_track)
+        except AttributeError:
+            cnes_track = "-1"
+        if cnes_track is None:
+            cnes_track = "-1"
+        return cnes_track
 
     @staticmethod
     def _get_attr_uuid(*args):
@@ -625,7 +746,7 @@ class L2DataArray(np.ndarray):
     """
 
     def __new__(cls, shape, dtype=float, buffer=None, offset=0, strides=None, order=None, info=None):
-        obj = np.ndarray.__new__(cls, shape, dtype, buffer, offset, strides, order)*np.nan
+        obj = np.ndarray.__new__(cls, shape, dtype, buffer, offset, strides, order) * np.nan
         obj.uncertainty = np.zeros(shape=shape, dtype=float)
         obj.source_class = ""
         obj.source_files = ""
@@ -676,7 +797,7 @@ class Level2PContainer(DefaultLoggingClass):
         """ Returns a Level2Data object with data from all l2i objects """
 
         # Merge the parameter
-        data = self._get_merged_data(valid_mask="freeboard")
+        data = self._get_merged_data(valid_mask="sea_ice_freeboard")
 
         # There are rare occasion, where no valid freeboard data is found for an entire day
         if len(data["longitude"]) == 0:
@@ -707,16 +828,16 @@ class Level2PContainer(DefaultLoggingClass):
 
         # Old notation (for backward compatibility)
         # TODO: This will soon be obsolete
-        try:
+        mission_id = None
+        if hasattr(info, "mission_id"):
             mission_id = info.mission_id
-            # Transfer auxdata information
             metadata.source_auxdata_sic = l2i.info.source_sic
             metadata.source_auxdata_snow = l2i.info.source_snow
             metadata.source_auxdata_sitype = l2i.info.source_sitype
             metadata.source_auxdata_mss = l2i.info.source_mss
 
         # New (fall 2017) pysiral product notation
-        except AttributeError:
+        if hasattr(info, "source_mission_id"):
             mission_id = info.source_mission_id
             # Transfer auxdata information
             metadata.source_auxdata_sic = l2i.info.source_auxdata_sic
@@ -724,10 +845,19 @@ class Level2PContainer(DefaultLoggingClass):
             metadata.source_auxdata_sitype = l2i.info.source_auxdata_sitype
             metadata.source_auxdata_mss = l2i.info.source_auxdata_mss
 
-        try:
+        # Conversion of l2i to CF/ACDD conventions (Fall 2021)
+        if hasattr(info, "platform"):
+            mission_id = psrlcfg.platforms.get_platform_id(info.platform)
+
+        if mission_id is None:
+            self.error.add_error("unknown-platform", "Cannot determine platform name from source l2i stack")
+            self.error.raise_on_error()
+
+        if hasattr(l2i.info, "source_timeliness"):
             metadata.timeliness = l2i.info.source_timeliness
-        except AttributeError:
-            pass
+
+        if hasattr(l2i.info, "data_record_type"):
+            metadata.timeliness = l2i.info.data_record_type
 
         metadata.set_attribute("mission", mission_id)
         mission_sensor = psrlcfg.platforms.get_sensor(mission_id)
@@ -762,7 +892,7 @@ class Level2PContainer(DefaultLoggingClass):
             value = data[parameter_name]
 
             # Test if uncertainty exists
-            uncertainty_name = parameter_name+"_uncertainty"
+            uncertainty_name = parameter_name + "_uncertainty"
             if uncertainty_name in parameter_list_all:
                 uncertainty = data[uncertainty_name]
             else:
@@ -853,11 +983,12 @@ class L2iNCFileImport(object):
         if hasattr(self, "time"):
             time = self.time
             time_parameter_name = "time"
+        # FIXME: The use of `timestamp is deprecated, compliance with CF style can be assumed
         else:
             time = self.time
             time_parameter_name = "timestamp"
         self._time_parameter_name = time_parameter_name
-        dt = num2pydate(time, self.time_def.units, self.time_def.calendar)
+        dt = num2pydate(time, content.time_def.units, content.time_def.calendar)
         setattr(self, "time", dt)
         self.time = self.time
 
@@ -885,8 +1016,8 @@ class L2iNCFileImport(object):
         self.projx, self.projy = p(self.longitude, self.latitude)
         # Convert projection coordinates to grid indices
         extent = griddef.extent
-        self.xi = np.floor((self.projx + extent.xsize/2.0)/extent.dx)
-        self.yj = np.floor((self.projy + extent.ysize/2.0)/extent.dy)
+        self.xi = np.floor((self.projx + extent.xsize / 2.0) / extent.dx)
+        self.yj = np.floor((self.projy + extent.ysize / 2.0) / extent.dy)
 
     @property
     def n_records(self):
@@ -894,27 +1025,33 @@ class L2iNCFileImport(object):
 
     @property
     def mission(self):
+
         if not hasattr(self, "info"):
             return None
-        try:
+
+        if hasattr(self.info, "mission_id"):
             return self.info.mission_id
-        except AttributeError:
-            pass
-        try:
+
+        if hasattr(self.info, "source_mission_id"):
             return self.info.source_mission_id
-        except AttributeError:
-            pass
-        try:
-            return self.info.platform
-        except AttributeError:
-            pass
+
+        if hasattr(self.info, "platform"):
+            platform_name = self.info.platform
+            mission = psrlcfg.platforms.get_platform_id(platform_name)
+            return mission
+
         return None
 
     @property
     def timeliness(self):
+
         if not hasattr(self, "info"):
-            return None
-        try:
-            return self.info.source_timeliness
-        except AttributeError:
-            return "NTC"
+            return "unknown"
+
+        if hasattr(self.info, "source_mission_id"):
+            return self.info.source_mission_id
+
+        if hasattr(self.info, "data_record_type"):
+            return self.info.data_record_type
+
+        return "unknown"

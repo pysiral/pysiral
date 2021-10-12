@@ -44,6 +44,33 @@ class L1PWaveformResampleSIN(DefaultLoggingClass):
             l1.reduce_waveform_bin_count(self.sin_target_bins)
 
 
+class L1PWaveformPadLRM(DefaultLoggingClass):
+    """
+    A post-processing class for CryoSat-2 l1p data that resamples the SIN waveform group
+    to the same size as SAR waveform group
+    """
+
+    def __init__(self, **cfg):
+        cls_name = self.__class__.__name__
+        super(L1PWaveformPadLRM, self).__init__(cls_name)
+        self.lrm_target_bins = cfg.get("lrm_target_bins", None)
+        if self.lrm_target_bins is None:
+            msg = "Missing option `lrm_target_bins` -> LRM waveform will not be padded!"
+            logger.warning(msg)
+
+    def apply(self, l1):
+        """
+        API class for the Level-1 pre-processor. Functionality is reduce the size of the waveform power and
+        range arrays for SIN data to the one for SAR data.
+        :param l1: A Level-1 data instance
+        :return: None, Level-1 object is change in place
+        """
+
+        # The functionality to reduce the waveform bins is built-in in the Level-1 data object
+        if l1.radar_modes == "lrm" and self.lrm_target_bins is not None:
+            l1.increase_waveform_bin_count(self.lrm_target_bins)
+
+
 def get_cryosat2_wfm_power(counts, linear_scale, power_scale):
     """
     Converts the Cryosat-2 waveform counts into a physical unit (Watts)
@@ -194,3 +221,75 @@ def parse_cryosat_l1b_xml_header(filename):
     with open(str(filename)) as fd:
         content_odereddict = xmltodict.parse(fd.read())
     return content_odereddict[u'Earth_Explorer_Header']
+
+
+# def get_sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s, **sigma0_par_dict):
+#     """ Wrapper function to compute sigma nought for all waveforms """
+#     n_records = wf_peak_power_watt.shape[0]
+#     sigma0 = np.ndarray(shape=(n_records))
+#     for i in np.arange(n_records):
+#         sigma0[i] = sar_sigma0(wf_peak_power_watt[i], tx_pwr[i], r[i], v_s[i], **sigma0_par_dict)
+#     return sigma0
+
+
+def get_footprint_lrm(r: float, band_width: float = 320000000.0) -> float:
+    """
+    Compute the CryoSat-2 LRM footprint for variable range to the surface.
+
+    Applicable Documents:
+
+        Michele Scagliola, CryoSat Footprints ESA/Aresys, v1.2
+        ESA document ref: XCRY-GSEG-EOPG-TN-13-0013
+
+    :param r: range from satellite center of mass to surface reflection point
+    (to be appoximated by satellite altitude if no retracker range available)
+    :param band_width: CryoSat-2 pulse bandwidth in Hz
+
+    :return sigma_0: Radar backscatter coefficient
+    """
+
+    c_0 = 299792458.0
+    footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
+    area_lrm = np.pi * footprint_radius ** 2.
+
+    return area_lrm
+
+
+def get_footprint_sar(r: float,
+                      v_s: float,
+                      ptr_width: float = 2.819e-09,
+                      tau_b: float = 0.00352,
+                      lambda_0: float = 0.022084,
+                      wf: float = 1.0,
+                      r_mean: float = 6371000.0
+                      ) -> float:
+    """
+    Compute the CryoSat-2 SAR footprint for variable range to the surface.
+
+    Applicable Documents:
+
+        Michele Scagliola, CryoSat Footprints ESA/Aresys, v1.2
+        ESA document ref: XCRY-GSEG-EOPG-TN-13-0013
+
+    :param r: range from satellite center of mass to surface reflection point
+    (to be appoximated by satellite altitude if no retracker range available)
+    :param r: range from satellite center of mass to surface reflection point
+        (to be appoximated by satellite altitude if no retracker range available)
+    :param v_s: satellite along track velocity in meter/sec
+    :param ptr_width: 3dB range point target response temporal width in seconds
+        (default: 2.819e-09 sec for CryoSat-2 SAR)
+    :param tau_b: burst length in seconds (default: 0.00352 sec for CryoSat-2 SAR)
+    :param lambda_0: radar wavelength in meter (default: 0.022084 m for CryoSat-2 Ku Band altimeter)
+    :param wf: footprint widening factor (1.486 * rv in case of Hamming window application on burst data;
+        rv: unspecified empirical factor) (default: 1 no weighting window application)
+    :param r_mean: mean earth radius in meter
+
+    :return area_sar: The SAR footprint in square meters
+    """
+    c_0 = 299792458.0
+    alpha_earth = 1. + (r / r_mean)
+    lx = (lambda_0 * r) / (2. * v_s * tau_b)
+    ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
+    area_sar = (2. * ly) * (wf * lx)
+
+    return area_sar

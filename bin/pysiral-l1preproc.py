@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # NOTE: pysiral-l1preproc is a complete re-design of pysiral-l1bpreproc.py and will successively replace the
 #       older version
 

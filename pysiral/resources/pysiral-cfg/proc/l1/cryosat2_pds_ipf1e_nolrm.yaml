@@ -1,0 +1,161 @@
+platform: cryosat2
+
+# Information of getting an input file list
+input_handler:
+    
+    module_name: pysiral.cryosat2.iotools
+    class_name: BaselineDFileDiscovery
+    
+    options:
+        local_machine_def_tag: baseline_e  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+        lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
+        lookup_modes: [sar, sin]
+        filename_search: CS_*_SIR_*1B_{year:04d}{month:02d}{day:02d}*_E*.nc
+        filename_sep: _   # character to split the filename
+        tcs_str_index: 5  # index of time_coverage_start string in file (when splitting filename with filename_sep)
+
+# Class that will generate the initial l1p data object from
+# the input data
+input_adapter:
+    
+    module_name: pysiral.cryosat2.l1_adapter
+    class_name: ESACryoSat2PDSBaselineD
+    
+    options:
+        
+        name: "CryoSat-2 Level-1b data of the ESA PDS Instrument Processing Facility (algorithm baseline E)"
+        
+        range_correction_targets:
+            dry_troposphere: mod_dry_tropo_cor_01
+            wet_troposphere: mod_wet_tropo_cor_01
+            inverse_barometric: inv_bar_cor_01
+            dynamic_atmosphere: hf_fluct_total_cor_01
+            ionosphere: iono_cor_01
+            ionosphere_gim: iono_cor_gim_01
+            ocean_tide_elastic: ocean_tide_01
+            ocean_tide_long_period: ocean_tide_eq_01
+            ocean_loading_tide: load_tide_01
+            solid_earth_tide: solid_earth_tide_01
+            geocentric_polar_tide: pole_tide_01
+        
+        classifier_targets:
+            stack_peakiness: stack_peakiness_20_ku
+            stack_skewness: stack_skewness_20_ku
+            stack_scaled_amplitude: stack_scaled_amplitude_20_ku
+            stack_standard_deviation: stack_std_20_ku
+            stack_kurtosis: stack_kurtosis_20_ku
+            stack_centre: stack_centre_20_ku
+            stack_centre_angle: stack_centre_angle_20_ku
+            stack_centre_look_angle: stack_centre_look_angle_20_ku
+            transmit_power: transmit_pwr_20_ku
+            noise_power: noise_power_20_ku
+
+        # This is a flag that prevents L1b files with a predicted orbits with
+        # potentially erroneous platform altitude to be processed towards l1p
+        # This is in reaction to an issue identified in Nov 2020 with CryoSat-2
+        # NRT data. Setting this option to true will automatically reject all
+        # l1b input files with the `vector_source: "fos predicted"` global
+        # attribute
+        exclude_predicted_orbits: True
+
+
+# Output handler (will always be default handler -> only options)
+output_handler:
+   
+    options:
+        local_machine_def_tag: baseline_e
+        version:
+            source_file_tag: esa_pds_ipf1e
+            version_file_tag: v1p0
+
+
+# Settings for the pre-processor
+level1_preprocessor:
+    
+    type: custom_orbit_segment
+    
+    options:
+        
+        polar_ocean:
+            target_hemisphere: [north, south]
+            polar_latitude_threshold: 45.0
+            input_file_is_single_hemisphere: True
+            allow_nonocean_segment_nrecords: 1000
+    
+        orbit_segment_connectivity:
+            max_connected_segment_timedelta_seconds: 10
+        
+        # NOTE: if no options are required use an empty mapping {} instead of null!
+        pre_processing_items:
+            
+            # Resample SIN waveforms to the same size as SAR waveforms
+            # NOTE: This will only have an effect of SIN segments
+            - label: "Resample SIN waveforms"
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PWaveformResampleSIN
+              options:
+                  sin_target_bins: 256
+
+            # Compute the leading edge width parameters (full, first half & second half)
+            - label: "Compute Leading Edge Width"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeWidth
+              options:
+                  tfmra_leading_edge_start: 0.05
+                  tfmra_leading_edge_center: 0.5
+                  tfmra_leading_edge_end: 0.95
+                  tfmra_options: 
+                    noise_level_range_bin_idx: [0, 5]
+                    first_maximum_ignore_leading_bins: 0
+
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group:
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                first_maximum_normalized_power_threshold:
+                    lrm: 0.5
+                    sar: 0.25
+                    sin: 0.25
+                # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    lrm: 20
+                    sar: 30
+                    sin: 60
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+                    sar: 10
+                    sin: 10
+
+            # Compute the sigma_0
+            - label: "Compute Sigma0"
+              module_name: pysiral.waveform
+              class_name: L1PSigma0
+              options:
+
+                  # CryoSat-2 altimeter constants to compute the LRM footprint
+                  footprint_pl_kwargs:
+                      band_width: 320000000.
+
+                  # CryoSat-2 altimeter constants to compute the SAR footprint
+                  footprint_sar_kwargs:
+                      ptr_width: 2.819e-09
+                      tau_b: 0.00352
+                      lambda_0: 0.022084
+                      wf: 1.0
+
+                  # CryoSat-2 altimeter constants to compute sigma0
+                  sigma0_kwargs:
+                      lambda_0: 0.022084
+                      g_0: 19054.607179632483
+
+                  # CryoSat-2 radar mode sigma0 biases
+                  sigma0_bias: [0.0, 0.0, 0.0]

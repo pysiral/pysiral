@@ -23,6 +23,7 @@ from collections import OrderedDict
 from loguru import logger
 from datetime import datetime, date
 from pathlib import Path
+from xarray import open_dataset
 import itertools
 import uuid
 import numpy as np
@@ -39,6 +40,8 @@ class Level3Processor(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._job = product_def
         self._l3_progress_percent = 0.0
+        self._l2i_files = None
+        self._period = None
 
     def process_l2i_files(self, l2i_files, period):
         """
@@ -356,8 +359,9 @@ class L3DataGrid(DefaultLoggingClass):
         except AttributeError:
             return "attr_unavailable"
         except Exception as ex:
-            print("L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name)
-            sys.exit(1)
+            msg = "L3DataGrid.get_attribute Exception: " + str(ex) + " for attribute: %s" % attribute_name
+            logger.error(msg)
+            return "unknown"
 
     def add_grid_variable(self, parameter_name, fill_value, dtype):
         """
@@ -469,7 +473,10 @@ class L3DataGrid(DefaultLoggingClass):
         self._metadata.get_data_period_from_stack(self.l2)
         # Requested time coverage (might not be the actual coverage)
         self._metadata.get_time_coverage_from_period(self._period)
-        self._metadata.get_auxdata_infos(self.l2.l2i_info)
+        try:
+            self._metadata.get_auxdata_infos(self.l2.l2i_info)
+        except AttributeError:
+            pass
         self._metadata.get_projection_parameter(self._griddef)
 
     def _init_parameter_fields(self, pardefs):
@@ -489,7 +496,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([psrlcfg.platforms.get_sensor(m) for m in ids.split(",")])
+        names = ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
         return names
 
     def _get_attr_source_timeliness(self, *args):
@@ -701,8 +708,16 @@ class L3MetaData(object):
         """
         missions = np.unique(stack.mission)
         mission_sensor = [psrlcfg.platforms.get_sensor(mission.lower()) for mission in missions]
-        self.set_attribute("mission_ids", ",".join(missions))
-        self.set_attribute("mission_sensor", ",".join(mission_sensor))
+
+        try:
+            self.set_attribute("mission_ids", ",".join(missions))
+        except TypeError:
+            self.set_attribute("mission_ids", "unkown")
+        try:
+            self.set_attribute("mission_sensor", ",".join(mission_sensor))
+        except TypeError:
+            self.set_attribute("mission_ids", "unkown")
+
         source_timeliness = np.unique(stack.timeliness)[0]
         if len(source_timeliness) != 1:
             # XXX: Different timeliness should not be mixed
@@ -724,23 +739,25 @@ class L3MetaData(object):
         self.set_attribute("time_coverage_duration", period.duration.isoformat)
 
     def get_auxdata_infos(self, l2i_info):
-        """ Get information on auxiliary data sources from l2i global
-        attributes """
+        """
+        Get information on auxiliary data sources from l2i global
+        attributes
+        TODO: This part is deprecated
+        :param l2i_info:
+        :return:
+        """
         try:
             self.set_attribute("source_auxdata_sic", l2i_info.source_sic)
         except AttributeError:
-            self.set_attribute("source_auxdata_sic",
-                               l2i_info.source_auxdata_sic)
+            self.set_attribute("source_auxdata_sic", l2i_info.source_auxdata_sic)
         try:
             self.set_attribute("source_auxdata_sitype", l2i_info.source_sitype)
         except AttributeError:
-            self.set_attribute("source_auxdata_sitype",
-                               l2i_info.source_auxdata_sitype)
+            self.set_attribute("source_auxdata_sitype", l2i_info.source_auxdata_sitype)
         try:
             self.set_attribute("source_auxdata_snow", l2i_info.source_snow)
         except AttributeError:
-            self.set_attribute("source_auxdata_snow",
-                               l2i_info.source_auxdata_snow)
+            self.set_attribute("source_auxdata_snow", l2i_info.source_auxdata_snow)
 
     def get_projection_parameter(self, griddef):
         self.set_attribute("grid_tag", griddef.grid_tag)
@@ -790,7 +807,10 @@ class Level3OutputHandler(OutputHandlerBase):
         if output_def == "default":
             output_def = self.default_output_def_filename
 
-        super(Level3OutputHandler, self).__init__(output_def)
+        super(Level3OutputHandler, self).__init__(
+            output_def, applicable_data_level=3, subfolder_tags=["year"],
+            default_file_location=["settings", "outputdef", "l3_default.yaml"])
+
         self.error.caller_id = self.__class__.__name__
         logger.name = self.__class__.__name__
 
@@ -806,9 +826,15 @@ class Level3OutputHandler(OutputHandlerBase):
         based on tag filenaming in output definition file """
 
         # Get the filenaming definition (depending on period definition)
+        filename_template = ""
         try:
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
+
+            # Add a translation for the current dissonance between dateperiod
+            # period id's and the pysiral convention
+            # period_id_dict = dict(month="monthly", isoweek="weekly")
+            # period_id = period_id_dict.get(period_id, period_id)
             # Fall back to default if no filenaming convention for given
             # data period
             if period_id not in template_ids:
@@ -860,19 +886,13 @@ class Level3OutputHandler(OutputHandlerBase):
         else:
             basedir = Path(self.pysiral_config.local_machine.product_repository) / base_directory_or_id
         # add product level subfolder
-        period_id = dict(month="monthly", isoweek="weekly")
-        basedir = basedir / self.product_level_subfolder / period_id.get(self._period, self._period)
+        # period_id = dict(month="monthly", isoweek="weekly")
+        basedir = basedir / self.product_level_subfolder / self._period
         # optional (subfolder with current time)
         if self.overwrite_protection:
             basedir = basedir / self.now_directory
         # set the directory
         self._set_basedir(basedir)
-
-    @property
-    def default_output_def_filename(self):
-        pysiral_config = psrlcfg
-        local_settings_path = pysiral_config.pysiral_local_path
-        return Path(local_settings_path) / Path(*self.default_file_location)
 
     @property
     def flip_yc(self):
@@ -894,7 +914,7 @@ class Level3OutputHandler(OutputHandlerBase):
 
         # This property has been added. Older L3 output definitions may not have it,
         # -> Catch attribute error and return false if attribute does not exist
-        if not "time_dim_is_unlimited" in self.output_def.grid_options:
+        if "time_dim_is_unlimited" not in self.output_def.grid_options:
             msg = "`grid_options.time_dim_is_unlimited` is missing in l3 settings file: %s (Using default: False)"
             logger.warning(msg % self.output_def_filename)
             time_dim_is_unlimited = False
@@ -903,7 +923,8 @@ class Level3OutputHandler(OutputHandlerBase):
 
         # Verification: Value must be bool
         if not isinstance(time_dim_is_unlimited, bool):
-            msg = "Invalid value type for `grid_options.time_dim_is_unlimited` in %s. Must be bool, value was %s. (Using default: False)"
+            msg = 'Invalid value type for `grid_options.time_dim_is_unlimited` in %s. ' + \
+                  'Must be bool, value was %s. (Using default: False)'
             msg = msg % (self.output_def_filename, str(time_dim_is_unlimited))
             logger.error(msg)
             time_dim_is_unlimited = False
@@ -1064,7 +1085,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-2 stack parameter
         for l2_var_name in self.l2_variable_dependencies:
-            if not l2_var_name in self.l3grid.l2.stack:
+            if l2_var_name not in self.l3grid.l2.stack:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l2_var_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
@@ -1072,7 +1093,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Check Level-3 grid parameter
         for l3_var_name in self.l3_variable_dependencies:
-            if not l3_var_name in self.l3grid.vars:
+            if l3_var_name not in self.l3grid.vars:
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)
@@ -1302,7 +1323,7 @@ class Level3StatusFlag(Level3ProcessorItem):
     required_options = ["retrieval_status_target", "sic_thrs", "flag_values"]
     l2_variable_dependencies = []
     l3_variable_dependencies = ["sea_ice_concentration", "n_valid_waveforms", "landsea"]
-    l3_output_variables = dict(status_flag=dict(dtype="i1", fill_value=0))
+    l3_output_variables = dict(status_flag=dict(dtype="i1", fill_value=1))
 
     def __init__(self, *args, **kwargs):
         """
@@ -1333,11 +1354,22 @@ class Level3StatusFlag(Level3ProcessorItem):
         nvw = self.l3grid.vars["n_valid_waveforms"]
         lnd = self.l3grid.vars["landsea"]
 
-        # Compute conditions for flags
+        # --- Compute conditions for flags ---
+
+        # Get sea ice mask
         is_below_sic_thrs = np.logical_and(sic >= 0., sic < self.sic_thrs)
+
+        # Get the pole hole information
         mission_ids = self.l3grid.metadata.mission_ids.split(",")
         orbit_inclinations = [psrlcfg.platforms.get_orbit_inclination(mission_id) for mission_id in mission_ids]
-        is_pole_hole = np.abs(self.l3grid.vars["latitude"]) > np.amin(orbit_inclinations)
+
+        # NOTE: due to varying grid cell size, it is no sufficient to just check which grid cell coordinate
+        #       is outside the orbit coverage
+        is_pole_hole = np.logical_and(
+            np.abs(self.l3grid.vars["latitude"]) > (np.amin(orbit_inclinations)-1.0),
+            flag_values["no_data"])
+
+        # Check where the retrieval has failed
         is_land = lnd > 0
         has_data = nvw > 0
         has_retrieval = np.isfinite(par)
@@ -1374,7 +1406,7 @@ class Level3QualityFlag(Level3ProcessorItem):
     l2_variable_dependencies = []
     l3_variable_dependencies = ["sea_ice_thickness", "n_valid_waveforms", "negative_thickness_fraction",
                                 "lead_fraction"]
-    l3_output_variables = dict(quality_flag=dict(dtype="i1", fill_value=0))
+    l3_output_variables = dict(quality_flag=dict(dtype="i1", fill_value=3))
 
     def __init__(self, *args, **kwargs):
         """
@@ -1396,7 +1428,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         lfr = np.copy(self.l3grid.vars["lead_fraction"])
 
         # As first step set qif to 1 where data is availabe
-        qif[np.where(np.isfinite(sit))] = 1
+        qif[np.where(np.isfinite(sit))] = 0
 
         # Get a list of all the rules
         quality_flag_rules = self.rules.keys()
@@ -1452,8 +1484,8 @@ class Level3QualityFlag(Level3ProcessorItem):
                 flag[np.where(ntf > threshold)] = target_flag
             qif = np.maximum(qif, flag)
 
-        # Set all flags with no data to zero again
-        qif[np.where(np.isnan(sit))] = 0
+        # Set all flags with no data to last flag value again
+        qif[np.where(np.isnan(sit))] = 3
 
         # Set flag again
         self.l3grid.vars["quality_flag"] = qif
@@ -1506,6 +1538,79 @@ class Level3LoadMasks(Level3ProcessorItem):
                     logger.error(error_msg)
 
 
+class Level3LoadCCILandMask(Level3ProcessorItem):
+    """
+    A Level-3 processor item to load the CCI land mask
+    """
+
+    # Mandatory properties
+    required_options = ["local_machine_def_mask_tag", "mask_name_dict"]
+    l2_variable_dependencies = []
+    l3_variable_dependencies = []
+    # Note: the output names depend on mask name, thus these will be
+    #       created in apply (works as well)
+    l3_output_variables = dict()
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initiate the class
+        :param args:
+        :param kwargs:
+        """
+        super(Level3LoadCCILandMask, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Load masks and add them as grid variable (variable name -> mask name)
+        :return:
+        """
+
+        # Short cut
+        grid_id = self.l3grid.griddef.grid_id
+
+        # Get mask target path:
+        mask_tag = self.cfg["local_machine_def_mask_tag"]
+        lookup_directory = psrlcfg.local_machine.auxdata_repository.mask.get(mask_tag, None)
+        if lookup_directory is None:
+            msg = "Missing local machine def tag: auxdata_repository.mask.{}".format(mask_tag)
+            self.error.add_error("invalid-local-machine-def", msg)
+            logger.error(msg)
+            return
+        lookup_directory = Path(lookup_directory)
+
+        # Get the mask target filename
+        filename = self.cfg["mask_name_dict"][grid_id.replace("_", "")]
+        mask_filepath = lookup_directory / filename
+        if not mask_filepath.is_file():
+            msg = "Missing input file: {}".format(mask_filepath)
+            self.error.add_error("invalid-local-machine-def", msg)
+            logger.error(msg)
+            return
+
+        # Load the data and extract the flag
+        nc = open_dataset(str(mask_filepath), decode_times=False)
+
+        # The target land sea flag should be 1 for land and 0 for sea,
+        # but the CCI landsea mask provides also fractional values for
+        # mixed surfaces types. Thus, we add two arrays to the
+        # L3grid object
+        #   1. a classical land/sea mask with land:1 and sea: 0. In
+        #      this notation the mixed pixels are attributed to sea
+        #      because there might be some valid retrieval there
+        #   2. the ocean density value as is
+        density_of_ocean = np.flipud(nc.density_of_ocean.values)
+        landsea_mask = density_of_ocean < 1e-5
+
+        # Add mask to l3 grid
+        mask_variable_name = self.cfg["mask_variable_name"]
+        self.l3grid.add_grid_variable(mask_variable_name, np.nan, landsea_mask.dtype)
+        self.l3grid.vars[mask_variable_name] = landsea_mask.astype(int)
+
+        density_variable_name = self.cfg["density_variable_name"]
+        self.l3grid.add_grid_variable(density_variable_name, np.nan, nc.density_of_ocean.values.dtype)
+        self.l3grid.vars[density_variable_name] = density_of_ocean
+
+
 class Level3GridUncertainties(Level3ProcessorItem):
     """
     A Level-3 processor item to compute uncertainties of key geophysical variables on a grid.
@@ -1516,7 +1621,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
     # Mandatory properties
     required_options = ["water_density", "snow_depth_correction_factor", "max_l3_uncertainty"]
     l2_variable_dependencies = ["radar_freeboard_uncertainty", "sea_ice_thickness"]
-    l3_variable_dependencies = ["sea_ice_thickness", "freeboard", "snow_depth", "sea_ice_density",
+    l3_variable_dependencies = ["sea_ice_thickness", "sea_ice_freeboard", "snow_depth", "sea_ice_density",
                                 "snow_density", "snow_depth_uncertainty", "sea_ice_density_uncertainty",
                                 "snow_density_uncertainty"]
     l3_output_variables = dict(radar_freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
@@ -1549,7 +1654,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
                 continue
 
             # Get parameters
-            frb = self.l3grid.vars["freeboard"][yj, xi]
+            frb = self.l3grid.vars["sea_ice_freeboard"][yj, xi]
             sd = self.l3grid.vars["snow_depth"][yj, xi]
             rho_i = self.l3grid.vars["sea_ice_density"][yj, xi]
             rho_s = self.l3grid.vars["snow_density"][yj, xi]
@@ -1592,7 +1697,7 @@ class Level3GridUncertainties(Level3ProcessorItem):
             self.l3grid.vars["sea_ice_thickness_l3_uncertainty"][yj, xi] = sit_l3_unc
 
             # Compute sea ice draft uncertainty
-            if not "sea_ice_draft" in self.l3grid.vars:
+            if "sea_ice_draft" not in self.l3grid.vars:
                 continue
 
             sid_l3_unc = np.sqrt(sit_l3_unc ** 2. + frb_unc ** 2.)
@@ -1724,7 +1829,7 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
         for parameter_name in self.parameters:
             # Get the stack
             try:
-             classifier_stack = self.l3grid.l2.stack[parameter_name]
+                classifier_stack = self.l3grid.l2.stack[parameter_name]
             except KeyError:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
                 msg = msg % (self.__class__.__name__, parameter_name)

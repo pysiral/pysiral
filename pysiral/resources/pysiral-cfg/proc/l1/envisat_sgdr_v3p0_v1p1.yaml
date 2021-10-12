@@ -42,14 +42,14 @@ input_adapter:
         # expression to identify 1Hz parameters (re.search(variable_identifier_1Hz, variable_name))
         # -> will be used to automatically interpolate range corrections from 1Hz to 20Hz, as these
         #    are mixed in the Envisat SGDR
-        variable_identifier_1Hz: "01$"
+        variable_identifier_1Hz: "01"
         
         range_correction_targets:
             dry_troposphere: mod_dry_tropo_cor_reanalysis_20
             wet_troposphere: mod_wet_tropo_cor_reanalysis_20
             inverse_barometric: inv_bar_cor_01
             dynamic_atmosphere: Null
-            ionosphere: iono_cor_alt_20_ku
+            ionosphere: iono_cor_gim_01_ku
             ocean_tide_elastic: ocean_tide_sol1_01
             ocean_tide_long_period: ocean_tide_eq_01
             ocean_loading_tide: load_tide_sol1_01
@@ -86,7 +86,7 @@ output_handler:
         local_machine_def_tag: sgdr_v3p0
         version:
             source_file_tag: esa_sgdr_v3p0
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -119,8 +119,10 @@ level1_preprocessor:
               class_name: L1PLeadingEdgeWidth
               options:
                   tfmra_leading_edge_start: 0.05
-                  tfmra_leading_edge_center: 0.5
                   tfmra_leading_edge_end: 0.95
+                  tfmra_options:
+                      noise_level_range_bin_idx: [ 10, 20 ]
+                      first_maximum_ignore_leading_bins: 10
 
             # Compute waveform peakiness CCI style
             - label: "Compute Waveform Peakiness"
@@ -129,5 +131,37 @@ level1_preprocessor:
               options:
                   skip_first_range_bins: 5
         
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed 
+                first_maximum_normalized_power_threshold:
+                    lrm: 0.5
+                # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    lrm: 20
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3
+
         # Only export unconnected segments with a minimum size
         export_minimum_n_records: 20

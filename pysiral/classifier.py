@@ -34,8 +34,8 @@ class CS2OCOGParameter(BaseClassifier):
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
-            y = wfm_counts[i, :].flatten().astype(np.float32)
-            y -= bn.nanmean(y[0:11])  # Remove Noise
+            y = wfm_counts[i, :].flatten().astype(np.float64)
+            y -= bn.nanmean(y[0:11])       # Remove Noise
             y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             y2 = y**2.0
             self._amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())

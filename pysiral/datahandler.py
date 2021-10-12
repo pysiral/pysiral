@@ -5,18 +5,22 @@ Created on Fri May 19 18:16:09 2017
 @author: Stefan
 """
 
-from pysiral import get_cls, psrlcfg
+import re
+from typing import List, Union
+from pathlib import Path
 from loguru import logger
-from pysiral.auxdata import AuxClassConfig
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.iotools import get_local_l1bdata_files
+from attrdict import AttrDict
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from pathlib import Path
-import re
+from dateperiods import DatePeriod
+
+from pysiral import get_cls, psrlcfg
+from pysiral.auxdata import AuxClassConfig
+from pysiral._class_template import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):
@@ -64,7 +68,8 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             local_repo = self.get_local_repository(auxdata_class, local_repository_id)
             if local_repo is None and local_repository_id is not None:
                 error_id = "auxdata_missing_localrepo_def"
-                error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
+                error_message = f"Missing entry `auxdata_repository.{auxdata_class}.{auxdata_id}` in " + \
+                    f"local_machine_def ({psrlcfg.local_machine_def_filepath})"
                 self.error.add_error(error_id, error_message)
                 self.error.raise_on_error()
             empty_str = len(local_repo) == 0 if local_repo is not None else False
@@ -104,7 +109,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             cfg.set_options(**l2_procdef_opt)
 
         # Get the auxiliary data class
-        module_name, class_name = "pysiral.auxdata.%s" % (auxdata_class), auxdata_def["pyclass"]
+        module_name, class_name = f"pysiral.auxdata.{auxdata_class}", auxdata_def["pyclass"]
         auxclass = get_cls(module_name, class_name)
         if auxclass is None:
             error_id = "auxdata_invalid_class_name"
@@ -127,54 +132,158 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         try:
             local_repo_auxclass = aux_repo_defs[auxdata_class]
         except KeyError:
+            local_repo_auxclass = {}
             msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.%s" % auxdata_class
             self.error.add_error("missing-localmachinedef-tag", msg)
             self.error.raise_on_error()
         return local_repo_auxclass.get(auxdata_id, None)
 
-    def get_auxdata_def(self, auxdata_class, auxdata_id):
-        """ Returns the definition in `config/auxdata_def.yaml` for
-        specified auxdata class and id """
+    def get_auxdata_def(self, auxdata_class: str, auxdata_id: str) -> "AttrDict":
+        """
+        Returns the definition in `config/auxdata_def.yaml` for specified auxdata class and id.
+        Raises an error if the entry is not found.
+        :param auxdata_class: The code for auxiliary data type (sic, mss, sitype, snow, ...)
+        :param auxdata_id: The id of a specific data set for the auxiliary data class (e.g. sic:osisaf-operational)
+        :return: The configuration dictionary
+        """
 
         auxdata_def = psrlcfg.auxdef.get_definition(auxdata_class, auxdata_id)
         if auxdata_def is None:
-            msg = "Invalid auxdata class [%s] in auxdata_def.yaml" % auxdata_class
+            msg = f"Cannot find entry for auxiliary data set {auxdata_class}:{auxdata_id} in auxdata_def.yaml"
             self.error.add_error("invalid-auxdata-class", msg)
             self.error.raise_on_error()
         return auxdata_def.attrdict
 
 
-class DefaultL1bDataHandler(DefaultLoggingClass):
-    """ Class for retrieving default l1b directories and filenames """
+class L1PDataHandler(DefaultLoggingClass):
+    """ Class for querying L1P data files """
 
-    def __init__(self, mission_id, hemisphere, version="default"):
-        super(DefaultL1bDataHandler, self).__init__(self.__class__.__name__)
-        self._mission_id = mission_id
+    def __init__(self,
+                 platform: str,
+                 hemisphere: str,
+                 source_version: str = None,
+                 file_version: str = None,
+                 ):
+        """
+        Init the class
+        :param platform: pysiral compliant platform id (cryosat2, envisat, ...)
+        :param hemisphere: hemishphere code (north, nh, ...)
+        :param source_version: Input version, e.g. CryoSat-2 baseline-d, ...
+        :param: file_version: The file version of the l1p data (e.g. v1p1).
+            NOTE: Only newer l1p files use the version subfolder. Thus, this is optional.
+        """
+        super(L1PDataHandler, self).__init__(self.__class__.__name__)
+
+        # Save args
+        self._platform = platform
         self._hemisphere = hemisphere
-        self._version = version
+        self._source_version = source_version
+        self._file_version = file_version if file_version is not None else self._autodetect_file_version()
         self._last_directory = None
 
-    def get_files_from_time_range(self, time_range):
-        files, search_directory = get_local_l1bdata_files(
-                self._mission_id, time_range, self._hemisphere,
-                version=self._version)
-        self._last_directory = search_directory
-        return files
+    def get_files_from_time_range(self, time_range: DatePeriod) -> List[str]:
+        """
+        Query l1p files for a a given time range.
+        :param time_range: a dateperiods.DatePeriod instance
+        :return:
+        """
+
+        # Validate time_range (needs to be of type DatePeriod)
+        if not isinstance(time_range, DatePeriod):
+            error = ErrorStatus()
+            msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
+            error.add_error("invalid-timerange-type", msg)
+            error.raise_on_error()
+
+        # 1) get list of all files for monthly folders
+        yyyy, mm = "%04g" % time_range.tcs.year, "%02g" % time_range.tcs.month
+        directory = Path(self.l1p_base_dir)
+        if self._file_version is not None:
+            directory = directory / self._file_version
+        directory = directory / self._hemisphere / yyyy / mm
+        all_l1p_files = sorted(list(directory.rglob("*.nc")))
+
+        # 3) Check if files are in requested time range
+        # This serves two purposes: a) filter out files with timestamps that do
+        # not belong in the directory. b) get a subset if required
+        l1p_filepaths = [l1p_file for l1p_file in all_l1p_files if self.l1p_in_trange(l1p_file, time_range)]
+
+        # Save last search directory
+        self._last_directory = directory
+
+        # Done
+        return l1p_filepaths
+
+    def _autodetect_file_version(self) -> Union[str, None]:
+        """
+        Autodetect l1p file version from the directory structure
+        :return:
+        """
+
+        # Get all sub-folders of the l1p directory
+        all_subfolders = [d.name for d in Path(self.l1p_base_dir).iterdir() if d.is_dir()]
+
+        # Filter hemisphere codes from the sub-folder names. These will be present as sub-folders
+        # if the file version is not part of the directory structure
+        invalid_versions = ["north", "south", "global", "nh", "sh"]
+        file_versions = [d for d in all_subfolders if d not in invalid_versions]
+
+        if len(file_versions) == 0:
+            logger.info("l1p file version autodetect: No file version subfolder")
+            return None
+        elif len(file_versions) == 1:
+            logger.info(f"l1p file version autodetect: {file_versions[0]}")
+            return file_versions[0]
+        else:
+            msg = f"l1p file version autodetect failure: Multiple versions found [{file_versions}]"
+            msg = msg + " -> specify file_version"
+            self.error.add_error("l1p-input-error", msg)
+            self.error.raise_on_error()
+        return None
+
+    @staticmethod
+    def l1p_in_trange(fn: str, tr: DatePeriod) -> bool:
+        """ Returns flag if filename is within time range """
+        # Parse infos from l1bdata filename
+        fnattr = PysiralOutputFilenaming()
+        fnattr.parse_filename(fn)
+        # Compute overlap between two start/stop pairs
+        is_overlap = fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
+        return is_overlap
 
     @property
-    def last_directory(self):
+    def l1p_base_dir(self) -> str:
+        """
+        Returns the the l1p base base
+        # TODO: Evaluate use of function (properties shouldn't raise errors?)
+        :return:
+        """
+        l1p_base_dir = None
+        try:
+            l1p_base_dir = psrlcfg.local_machine.l1b_repository[self._platform][self._source_version]["l1p"]
+        except (AttributeError, KeyError):
+            msg = f"missing entry `l1bdata.{self._platform}.{self._source_version}.l1p` in local_machine_def.yaml"
+            msg = msg + f" ({psrlcfg.local_machine_def_filepath})"
+            error_id = "l1bdata_missing_localrepo_def"
+            self.error.add_error(error_id, msg)
+            self.error.raise_on_error()
+        return l1p_base_dir
+
+    @property
+    def last_directory(self) -> str:
         return str(self._last_directory)
 
 
 class L2iDataHandler(DefaultLoggingClass):
     """ Class for retrieving default l1b directories and filenames """
 
-    def __init__(self, base_directory, force_l2i_subfolder=True):
+    def __init__(self, base_directory, force_l2i_subfolder=True, search_str="l2i"):
         super(L2iDataHandler, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
         self._base_directory = base_directory
         self._force_l2i_subfolder = force_l2i_subfolder
         self._subdirectory_list = self.get_subdirectory_list()
+        self._search_str = search_str
         self._validate_base_directory()
 
     def get_files_from_time_range(self, time_range):
@@ -188,7 +297,7 @@ class L2iDataHandler(DefaultLoggingClass):
             if not Path(lookup_directory).is_dir():
                 continue
             l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
-            result = Path(lookup_directory).glob(l2i_pattern)
+            result = list(Path(lookup_directory).glob(l2i_pattern))
             l2i_files.extend(sorted(result))
         return l2i_files
 
@@ -225,8 +334,8 @@ class L2iDataHandler(DefaultLoggingClass):
         """ Performs sanity checks and enforces the l2i subfolder """
         # 1. Path must exist
         if not Path(self._base_directory).is_dir():
-            msg = "Invalid l2i product directory: %s"
-            msg = msg % str(self._base_directory)
+            msg = "Invalid %s product directory: %s"
+            msg = msg % (self._search_str, str(self._base_directory))
             self.error.add_error("invalid-l2i-productdir", msg)
             self.error.raise_on_error()
 
@@ -261,15 +370,23 @@ class L2iDataHandler(DefaultLoggingClass):
             subdirectory_list.extend([[year, m] for m in months])
         return subdirectory_list
 
-    def get_l2i_search_str(self, year=None, month=None, day=None):
-        """ Returns a search pattern for l2i files with optional refined
-        search for year, month, day. Note: month & day can only be set,
-        if the year & year + month respectively is set
+    @staticmethod
+    def get_l2i_search_str(year: int = None,
+                           month: int = None,
+                           day: int = None) -> str:
+        """
+        Returns a search pattern for l2i files with optional refined search for year, month, day.
+        NOTE: month & day can only be set, if the year & year + month respectively is set
+
         Examples:
             *l2i*.nc
             *l2i*2017*.nc
             *l2i*201704*.nc
             *l2i*20170401*.nc
+        :param year:
+        :param month:
+        :param day:
+        :return:
         """
         date_str = "*"
         if year is not None:
@@ -284,7 +401,7 @@ class L2iDataHandler(DefaultLoggingClass):
             raise ValueError("year & month must be set if day is set")
         if len(date_str) > 1:
             date_str += "*"
-        l2i_file_pattern = "*l2i%s.nc" % date_str
+        l2i_file_pattern = "%s.nc" % date_str
         return l2i_file_pattern
 
     @property

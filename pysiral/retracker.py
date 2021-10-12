@@ -2,7 +2,7 @@
 """
 Created on Fri Jul 31 15:48:58 2015
 
-@author: Stefan
+@author: Stefan Hendrics
 """
 
 # Utility methods for retracker:
@@ -100,18 +100,26 @@ class BaseRetracker(object):
                         l1b.waveform.radar_mode, l1b.waveform.is_valid)
         return True
 
+    def l2_retrack(self, rng, pwr, indices, radar_mode, is_valid):
+        """
+        Abstract method, not to be called directly but expected to be overwritten
+        by the child class
+        :return:
+        """
+        raise NotImplementedError("BaseRetracker.l2_retrack should not be called directly")
+
     def get_l1b_parameter(self, data_group, parameter_name):
         """ Get any valid level-2 paremeter name """
         try:
             return self._l1b.get_parameter_by_name(data_group, parameter_name)
-        except:
+        except (KeyError, AttributeError):
             return None
 
     def get_l2_parameter(self, parameter_name):
         """ Get any valid level-2 paremeter name """
         try:
             return self._l2.get_parameter_by_name(parameter_name)
-        except:
+        except (KeyError, AttributeError):
             return None
 
     def _create_default_properties(self, n_records):
@@ -430,11 +438,13 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
         return range_os, wfm_os
 
-    def normalize_wfm(self, y):
+    @staticmethod
+    def normalize_wfm(y):
         norm = np.nanmax(y)
         return y/norm, norm
 
-    def get_first_maximum_index(self, wfm, peak_minimum_power):
+    @staticmethod
+    def get_first_maximum_index(wfm, peak_minimum_power):
         """
         Return the index of the first peak (first maximum) on
         the leading edge before the absolute power maximum.
@@ -461,7 +471,8 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
         return first_maximum_index
 
-    def get_threshold_range(self, rng, wfm, first_maximum_index, threshold):
+    @staticmethod
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -494,7 +505,10 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
 
 class TFMRA(BaseRetracker):
-    """ Default Retracker from AWI CryoSat-2 production system """
+    """
+    Default Retracker from AWI CryoSat-2 production system (pure python implementation)
+    FIXME: This implementation is deprecated and should be removed in favor of cTFMRA
+    """
 
     DOCSTR = r"Threshold first maximum retracker (TFMRA)"
 
@@ -700,50 +714,148 @@ class TFMRA(BaseRetracker):
 
 
 class cTFMRA(BaseRetracker):
-    """ Default Retracker from AWI CryoSat-2 production system """
+    """
+    The default TFMRA retracker implementation using cythonized
+    functions for numerical perfomrance
+    """
 
     DOCSTR = r"Threshold first maximum retracker (TFMRA)"
 
     def __init__(self):
         super(cTFMRA, self).__init__()
 
-    def set_default_options(self):
-        self.set_options(**self.default_options_dict)
+    def set_default_options(self, specified_options=None):
+        """
+        Set the default options for the cTFMRA retracker. This can be modified
+        by the specified_options keyword that will overwrite the values in the
+        default options dictionary
+        :param specified_options: (dict or dict-like) specific options
+        :return:
+        """
+
+        # Create a copy of the default options
+        options = dict(**self.default_options_dict)
+
+        # Update options (if applicable)
+        specified_options = specified_options if specified_options is not None else {}
+        options.update(specified_options)
+
+        # Set class options
+        self.set_options(**options)
 
     @property
     def default_options_dict(self):
         default_options_dict = {
+            # The power threshold for retracking point (normalized first maximum power)
             "threshold": 0.5,
+            # Offset applied to the retracked range
             "offset": 0.0,
+            # Indices of ranges bins for the noise power computation
+            "noise_level_range_bin_idx": [0, 5],
+            # Filter setting: Waveform oversampling factor
             "wfm_oversampling_factor": 10,
+            # Filter setting: Waveform oversampling method
             "wfm_oversampling_method": "linear",
+            # Filter setting: Oversampled waveform boxfilter size [lrm, sar, sarin]
             "wfm_smoothing_window_size": [11, 11, 51],
+            # First maximum detection: Minimum power of first maximum (normalized maximum power)
             "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
-            "first_maximum_local_order": 1}
+            # First maximum detection: Peak detection setting
+            "first_maximum_local_order": 1,
+            # First maximum detection: First valid range bin index for first maximum
+            "first_maximum_ignore_leading_bins": 0}
         return default_options_dict
 
     def create_retracker_properties(self, n_records):
-        # None so far
+        """
+        Mandatory method, but unused
+        :param n_records:
+        :return:
+        """
         pass
 
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
-        """ API Calling method for retrackers """
+        """
+         API Calling method for retrackers.
+        :param rng: (np.array, dim:(n_records, n_bins)
+        :param wfm:
+        :param indices:
+        :param radar_mode:
+        :param is_valid:
+        :return:
+        """
 
-        # Get the threshold for each waveform and store the data as
-        # auxiliary parameter
+        # --- Additional input/output arrays ---
+
+        # Get the threshold for each waveform and store the data
         tfmra_threshold = self.get_tfmra_threshold(indices)
-        self.register_auxdata_output("tfmrathr", "tfmra_threshold", tfmra_threshold)
 
-        # Loop over all waveforms
+        # Auxiliary output: The noise power determined by the TFMRA
+        tfmra_noise_power = np.full(tfmra_threshold.shape, np.nan)
+
+        # Auxiliary output: The index of the first maximum
+        tfmra_first_maximum_index = np.full(tfmra_threshold.shape, -1, dtype=int)
+
+        # --- TFMRA configuration options ---
+
+        # Apply a fixed range offset, e.g. in the case of a known and constant retracker bias
+        fixed_range_offset = self._options.offset
+
+        # A factor by how much points the waveform should be oversampled
+        # before smoothing
+        oversampling_factor = self._options.wfm_oversampling_factor
+
+        # The bin range of the waveform where the noise level should be detected
+        # NOTE: In the config file the bins values refer to the actual range bins
+        #       and not to the oversampled waveforms. This settings depends on
+        #       the specific sensor and a default value should not be used.
+        #       Thus a ValueError is raised if the option is missing
+        noise_level_range_idx = self._options.get("noise_level_range_bin_idx", None)
+        if noise_level_range_idx is None:
+            raise ValueError("Missing ctfmra option: noise_level_range_bin_idx")
+
+        # Waveforms from some altimeter have artefacts at the beginning of the
+        # waveform that may be misclassified as a first maximum.
+        # NOTE: This setting also depends on the sensor, but a default can be used.
+        fmi_first_valid_idx = self._options.get("first_maximum_ignore_leading_bins", 0)
+        # The value above with the oversampling factor
+        fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
+
+        # The window size for the box filter (radar mode dependant list)
+        wfm_smoothing_window_size = self._options.wfm_smoothing_window_size
+
+        # The power threshold for the first maximum (radar mode dependant list)
+        first_maximum_normalized_threshold = self._options.first_maximum_normalized_threshold
+
+        # --- Waveform Retracking ---
+        # NOTE: This is a loop over all waveforms in the trajectory data but only those
+        #       listed in the list of indices will be processed. The reason for this
+        #       approach is that different retracker settings are needed for different
+        #       surface types and radar modes and the initial thought was to avoid
+        #       a copying of data.
         # TODO: This is a candidate for multi-processing
+
         for i in indices:
 
             # Do not retrack waveforms that are marked as invalid
             if not is_valid[i]:
                 continue
 
-            # Get the filtered waveform, index of first maximum & norm
-            filt_rng, filt_wfm, fmi, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], radar_mode[i])
+            # Get the filtered waveform
+            window_size = wfm_smoothing_window_size[radar_mode[i]]
+            filt_rng, filt_wfm, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], oversampling_factor, window_size)
+
+            # Get noise level in normalized units
+            i0, i1 = [idx * oversampling_factor for idx in noise_level_range_idx]
+            noise_level_normed = cytfmra_wfm_noise_level(filt_wfm, i0, i1)
+            tfmra_noise_power[i] = noise_level_normed * norm
+
+            # Find first maxima
+            # (needs to be above radar mode dependent noise threshold)
+            fmnt = first_maximum_normalized_threshold[radar_mode[i]]
+            peak_minimum_power = fmnt + noise_level_normed
+            fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx_filt)
+            tfmra_first_maximum_index[i] = fmi
 
             # first maximum finder might have failed
             if fmi == -1:
@@ -752,18 +864,22 @@ class cTFMRA(BaseRetracker):
                 continue
 
             # Get track point and its power
-            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i])
+            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i],
+                                                                fmi_first_valid_idx_filt)
 
             # waveform_index = "{:06g}".format(i)
             # treshold_str = "{:03g}".format(tfmra_threshold[i]*100)
             # surface_type = {"095": "Lead", "050": "Ice"}
             # title = "{} Waveform (index: {})".format(surface_type[treshold_str], waveform_index)
+            #
             # import matplotlib.pyplot as plt
             # from pathlib import Path
             # from matplotlib.ticker import MultipleLocator
             # plt.figure(figsize=(10, 10))
             # plt.title(title)
             # ax = plt.gca()
+            # plt.scatter(filt_rng[fmi]-filt_rng[0], filt_wfm[fmi], marker="s", color="red", s="80",
+            #             label="first maximum")
             # plt.scatter(rng[i, :]-rng[i, 0], wfm[i, :]/np.nanmax(wfm[i, :]), marker="s", color="0.0",
             #             label="raw waveform")
             # plt.plot(filt_rng-filt_rng[0], filt_wfm, lw=2, label="filtered waveform")
@@ -771,20 +887,25 @@ class cTFMRA(BaseRetracker):
             # retracked_range = tfmra_range - rng[i, 0]
             # plt.axvline(retracked_range, color="red", lw=2, label=label)
             # plt.legend()
-            # plt.xlim(retracked_range-2, retracked_range+10)
+            # # plt.xlim(retracked_range-2, retracked_range+10)
             # ax.xaxis.set_major_locator(MultipleLocator(1))
             # ax.xaxis.set_minor_locator(MultipleLocator(0.2))
             # plt.grid(which="major", axis="x", color="0.75", lw=0.2)
             # plt.grid(which="minor", axis="x", color="0.25", lw=0.1)
             # plt.xlabel("Range Window (meter)")
             # plt.ylabel("Normalized Waveform Power")
-            # output_path = Path(r"D:\temp\ers_tfmra_test\filter_width_11")
+            # output_path = Path(r"D:\temp\ers_tfmra_test\valid_idx")
             # output_filename = "tfmra_waveform_{}_{}.png".format(treshold_str, waveform_index)
             # plt.savefig(output_path / output_filename)
 
             # Set the values
-            self._range[i] = tfmra_range + self._options.offset
+            self._range[i] = tfmra_range + fixed_range_offset
             self._power[i] = tfmra_power * norm
+
+        # Add auxiliary variables to the l2 data
+        self.register_auxdata_output("tfmrathr", "tfmra_threshold", tfmra_threshold)
+        self.register_auxdata_output("tfmrafmi", "tfmra_first_maximum_index", tfmra_first_maximum_index)
+        self.register_auxdata_output("tfmranp", "tfmra_noise_power", tfmra_noise_power)
 
         # Apply a radar mode dependent range bias if option is in
         # level-2 settings file
@@ -874,22 +995,66 @@ class cTFMRA(BaseRetracker):
         and peak power norm for custom applications
         """
 
-        oversample_factor = self._options.wfm_oversampling_factor
-        wfm_shape = (wfm.shape[0], wfm.shape[1]*oversample_factor)
+        # ---  Get TFMRA options ---
+        # The bin range of the waveform where the noise level should be detected
+        # NOTE: In the config file the bins values refer to the actual range bins
+        #       and not to the oversampled waveforms. This settings depends on
+        #       the specific sensor and a default value should not be used.
+        #       Thus a ValueError is raised if the option is missing
+        noise_level_range_idx = self._options.get("noise_level_range_bin_idx", None)
+        if noise_level_range_idx is None:
+            raise ValueError("Missing ctfmra option: noise_level_range_bin_idx")
 
+        # Waveforms from some altimeter have artefacts at the beginning of the
+        # waveform that may be misclassified as a first maximum.
+        # NOTE: This setting also depends on the sensor, but a default can be used.
+        fmi_first_valid_idx = self._options.get("first_maximum_ignore_leading_bins", 0)
+
+        # A factor by how much points the waveform should be oversampled
+        # before smoothing
+        oversampling_factor = self._options.wfm_oversampling_factor
+
+        # The window size for the box filter (radar mode dependant list)
+        wfm_smoothing_window_size = self._options.wfm_smoothing_window_size
+
+        # The power threshold for the first maximum (radar mode dependant list)
+        first_maximum_normalized_threshold = self._options.first_maximum_normalized_threshold
+
+        # ---  Prepare Output ---
+
+        # Dimensions of the waveforms
+        wfm_shape = (wfm.shape[0], wfm.shape[1]*oversampling_factor)
+
+        # Window delay (range)
         filt_rng = np.full(wfm_shape, np.nan)
+        # Waveform Power
         filt_wfm = np.full(wfm_shape, np.nan)
+        # First Maximum Index
         fmi = np.full(wfm_shape[0], -1, dtype=np.int32)
+        # Waveform norm (max power)
         norm = np.full(wfm_shape[0], np.nan)
 
+        # --- Loop over all Waveforms ---
         for i in np.arange(wfm.shape[0]):
+
             if not is_valid[i]:
                 continue
-            result = self.get_filtered_wfm(rng[i, :], wfm[i, :], radar_mode[i])
-            filt_rng[i, :] = result[0]
-            filt_wfm[i, :] = result[1]
-            fmi[i] = result[2]
-            norm[i] = result[3]
+
+            # Get the filtered waveform
+            window_size = wfm_smoothing_window_size[radar_mode[i]]
+            result = self.get_filtered_wfm(rng[i, :], wfm[i, :], oversampling_factor, window_size)
+            filt_rng[i, :], filt_wfm[i, :], norm[i] = result
+
+            # Get noise level in normalized units
+            i0, i1 = [idx * oversampling_factor for idx in noise_level_range_idx]
+            noise_level_normed = cytfmra_wfm_noise_level(filt_wfm[i, :], i0, i1)
+
+            # Find first maxima
+            # (needs to be above radar mode dependent noise threshold)
+            fmnt = first_maximum_normalized_threshold[radar_mode[i]]
+            peak_minimum_power = fmnt + noise_level_normed
+            fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
+            fmi[i] = self.get_first_maximum_index(filt_wfm[i, :], peak_minimum_power, fmi_first_valid_idx_filt)
 
         return filt_rng, filt_wfm, fmi, norm
 
@@ -897,6 +1062,7 @@ class cTFMRA(BaseRetracker):
         """
         Return the distance between two thresholds t0 < t1
         """
+
         width = np.full(rng.shape[0], np.nan, dtype=np.float32)
         for i in np.arange(rng.shape[0]):
             if fmi[i] is None:
@@ -910,51 +1076,42 @@ class cTFMRA(BaseRetracker):
         width[is_negative] = np.nan
         return width
 
-    def get_filtered_wfm(self, rng, wfm, radar_mode):
+    @staticmethod
+    def get_filtered_wfm(rng, wfm, oversampling_factor, window_size):
+        """
+        Return a filtered version of the the waveform. This process inclused
+        oversampling, smoothing and normalization to the first maximum power.
+        :param rng: (np.array, dim:n_records) window delay for each range bin
+        :param wfm: (np.array, dim:n_records) the power for each range bin with
+            sensor dependent units
+        :param oversampling_factor: (int) The waveform oversamling factor
+        :param window_size: (int) The filter size of the box filter
+        :return:
+        """
 
-        filt_rng, filt_wfm = self.filter_waveform(rng, wfm, radar_mode)
+        # Use cython implementation of waveform oversampling
+        filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float32), wfm.astype(np.float32), oversampling_factor)
+
+        # Smooth the waveform using a box smoother
+        filt_wfm = bnsmooth(wfm_os, window_size)
 
         # Normalize filtered waveform
         filt_wfm, norm = cytfmra_normalize_wfm(filt_wfm)
 
-        # Get noise level in normalized units
-        oversampling = self._options.wfm_oversampling_factor
-        noise_level = cytfmra_wfm_noise_level(filt_wfm, oversampling)
-
-        # Find first maxima
-        # (needs to be above radar mode dependent noise threshold)
-        fmnt = self._options.first_maximum_normalized_threshold[radar_mode]
-        peak_minimum_power = fmnt + noise_level
-        fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power)
-
-        return filt_rng, filt_wfm, fmi, norm
-
-    def filter_waveform(self, rng, wfm, radar_mode):
-        """
-        Return a filtered waveform: block filter smoothing of
-        oversampled original waveform
-        """
-
-        # Parameter from options dictionary if omitted
-        opt = self._options
-        oversampling = opt.wfm_oversampling_factor
-        # interp_type = opt.wfm_oversampling_method
-        window_size = opt.wfm_smoothing_window_size[radar_mode]
-
-        # Use cython implementation of waveform oversampling
-        range_os, wfm_os = cytfmra_interpolate(rng.astype(np.float32), wfm.astype(np.float32), oversampling)
-
-        # Smoothing
-        wfm_os = bnsmooth(wfm_os, window_size)
-
-        return range_os, wfm_os
+        # All done, return
+        return filt_rng, filt_wfm, norm
 
     @staticmethod
-    def get_first_maximum_index(wfm, peak_minimum_power):
+    def get_first_maximum_index(wfm, peak_minimum_power, first_valid_idx=0):
         """
-        Return the index of the first peak (first maximum) on
-        the leading edge before the absolute power maximum.
-        The first peak is only valid if its power exceeds a certain threshold
+        Return the index of the first peak (first maximum) on the leading edge
+        before the absolute power maximum. The first peak is only valid if
+        its power exceeds a certain threshold
+        :param wfm: (np.array, dim=(n_range_bins)): Normalied waveform power
+        :param peak_minimum_power: (float) threshold for normalized power that
+            a peak must be surpass to be regarded as a first maximum candidate
+        :param first_valid_idx: (int):
+        :return:
         """
 
         # Get the main maximum first
@@ -964,11 +1121,12 @@ class cTFMRA(BaseRetracker):
             return -1
 
         # Find relative maxima before the absolute maximum
-
-        try:
-            peaks = cytfmra_findpeaks(wfm[0:absolute_maximum_index+1])
-        except:
-            return -1
+        # NOTE: The search function uses a subset before the absolute maximum
+        #       with an option to ignore the first range bins, which contain
+        #       FFT artefacts for some platforms (e.g. ERS-1/2 & Envisat)
+        #       The first valid index for the first maximum needs to be
+        #       specified in the config file and defaults to 0.
+        peaks = cytfmra_findpeaks(wfm[first_valid_idx:absolute_maximum_index+1])+first_valid_idx
 
         # Check if relative maximum are above the required threshold
         leading_maxima = np.where(wfm[peaks] >= peak_minimum_power)[0]
@@ -981,15 +1139,16 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def normalize_wfm(y):
-        norm = bn.nanmax(y)
-        return y/norm, norm
-
-    @staticmethod
-    def get_threshold_range(rng, wfm, first_maximum_index, threshold):
+    def get_threshold_range(rng, wfm, first_maximum_index, threshold, first_valid_idx=0):
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
+        :param rng: (np.array, dim=(n_range_bins) Window delay in meters
+        :param wfm: (np.array, dim=(n_range_bins) Waveform power in normalized units
+        :param first_maximum_index: (int) Index of first maximum
+        :param threshold: (float) Power threshold
+        :param first_valid_idx: (int) First valid index for first maximum / leading edge
+        :return: tfmra range (float), tfmra power (float)
         """
 
         # get first index greater as threshold power
@@ -999,8 +1158,9 @@ class cTFMRA(BaseRetracker):
         tfmra_power = threshold*first_maximum_power
 
         # Use linear interpolation to get exact range value
-        points = np.where(wfm[:first_maximum_index] > tfmra_power)[0]
+        points = np.where(wfm[first_valid_idx:first_maximum_index] > tfmra_power)[0]+first_valid_idx
 
+        # Check if something went wrong with the first maximum
         if len(points) == 0:
             return np.nan, np.nan
 
@@ -1022,9 +1182,9 @@ class SICCILead(BaseRetracker):
         for parameter_name in parameter:
             setattr(self, parameter_name, np.ndarray(shape=n_records, dtype=np.float32) * np.nan)
 
-    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
+    def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid):
         # Run the retracker
-        self._sicci_lead_retracker(range, wfm, indices)
+        self._sicci_lead_retracker(rng, wfm, indices)
         # Filter the results
         if self._options.filter.use_filter:
             self._filter_results()
@@ -1159,6 +1319,9 @@ class SICCIOcog(BaseRetracker):
 
     def __init__(self):
         super(SICCIOcog, self).__init__()
+        self.retracked_bin = None
+        self.leading_edge_width = None
+        self.tail_shape = None
 
     def create_retracker_properties(self, n_records):
         parameter = ["retracked_bin", "leading_edge_width", "tail_shape"]
@@ -1273,9 +1436,6 @@ class ICESatGLAH13Elevation(BaseRetracker):
 
     def __init__(self):
         super(ICESatGLAH13Elevation, self).__init__()
-
-    def set_default_options(self):
-        self.set_options(**self.default_options_dict)
 
     def create_retracker_properties(self, n_records):
         pass
@@ -1431,7 +1591,81 @@ class SGDRMultipleElevations(Level2ProcessorStep):
         return self.error_flag_bit_dict["other"]
 
 
+class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
+    """
+    Level-2 processor step to compute elevations from a range of TFMRA thresholds.
+    NOTE: Computational expensive, should be handled with care
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(TFMRAMultiThresholdFreeboards, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Computes the elevation of a range of defined of TFMRA retrackers thresholds to all
+        lead or ice elevations.
+        :param l1b:
+        :param l2:
+        :return: error_status_flag
+        """
+
+        # Get a clean error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Get the retracker and retrack only sea-ice surfaces
+        tfmra = cTFMRA()
+        tfmra.set_default_options()
+        filt_rng, filt_wfm, fmi, norm = tfmra.get_preprocessed_wfm(l1b.waveform.range,
+                                                                   l1b.waveform.power,
+                                                                   l1b.waveform.radar_mode,
+                                                                   l2.surface_type.sea_ice.flag)
+
+        # Get the target thresholds
+        threshold_min, threshold_max = self.cfg.options.threshold_range
+        threshold_res = self.cfg.options.threshold_res
+        thresholds = np.arange(threshold_min, threshold_max+0.1*threshold_res, threshold_res)
+
+        # Construct the output array
+        ranges = np.full((l2.n_records, thresholds.size), np.nan)
+
+        for i in np.where(l2.surface_type.sea_ice.flag)[0]:
+            for j, threshold in enumerate(thresholds):
+                retracked_range, _ = tfmra.get_threshold_range(filt_rng[i, :], filt_wfm[i, :], fmi[i], threshold)
+                ranges[i, j] = retracked_range
+
+        # Convert ranges to freeboards using the already pre-computed steps.
+        # NOTE: This specifically assumes that the sea surface height is constant
+        freeboards = np.full(ranges.shape, np.nan)
+        for j in np.arange(thresholds.size):
+            freeboards[:, j] = l2.altitude - ranges[:, j] - l2.rctotal - l2.mss - l2.sla + l2.sgcor
+
+        # Register results as auxiliary data variable
+        dim_dict = {"new_dims": (("tfmra_thresholds", thresholds.size), ),
+                    "dimensions": ("time", "tfmra_thresholds"),
+                    "add_dims": (("tfmra_thresholds", thresholds), )}
+        l2.set_multidim_auxiliary_parameter("thfrbs", "threshold_freeboards", freeboards, dim_dict)
+
+        # Return clean error status (for now)
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["range"]
+
+    @property
+    def l2_output_vars(self):
+        return ["tfmra_elevation_range"]
+
+    @property
+    def auxid_fmt(self):
+        return "elev{}"
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
+
 # %% Function for CryoSat-2 based retracker
+
 
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
@@ -1578,8 +1812,7 @@ def P_lead(t, t_0, k, sigma, a):
     # F is piecewise. These are (Truth where applicable) * (Function)
     F_1 = (t <= t_0) * (t_diff/sigma)
     F_2 = (t >= (t_b+t_0)) * (np.sqrt(np.abs(t_diff)*k))
-    F_L = np.logical_and(
-        t > t_0, t < (t_b+t_0)) * (aaa*t_diff**3 + aa*t_diff**2+t_diff/sigma)
+    F_L = np.logical_and(t > t_0, t < (t_b+t_0)) * (aaa*t_diff**3 + aa*t_diff**2+t_diff/sigma)
     # Compile F
     F = F_1 + F_L + F_2
     return a*np.exp(-F*F)  # Return e^-f^2(t)

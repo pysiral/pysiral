@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A short script that should be used to set the location of the pysiral config file for the
 """
@@ -61,7 +62,7 @@ def main(args):
 
         # b2: from template
         else:
-            template_filename = psrlcfg.package_config_path / "templates" / "local_machine_def.yaml.template"
+            template_filename = psrlcfg.package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = Path(args.target_create) / "local_machine_def.yaml"
             shutil.copy(template_filename, target_filename)
 

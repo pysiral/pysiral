@@ -20,23 +20,30 @@ auxdata:
         name: nsidc_mod
         options: null
 
-    # Load the
+    # MSS: Mean Sea Surface
     - mss:
         name: dtu15
         options:
             latitude_range: [45.0, 90.0]
 
+    # MSS: Mean Dynamic Topography
+    - mdt:
+        name: dtu17
+        options:
+            latitude_range: [45.0, 90.0]
+
     - sic:
-         name: c3s_v2p0
-         options:
+        name: c3s
+        options:
+            version: v2p0
             exception_on_error: False
 
     - sitype:
-         name: c3s_v1p0
-         options:
+        name: c3s
+        options:
+            version: v2p0
             fill_valid_sic_gaps: True
             exception_on_error: False
-
     - snow:
             name: clim_w99amsr2
             options:
@@ -136,11 +143,13 @@ procsteps:
                     # if arrays than [lrm, sar, sin]
                     threshold: 0.5
                     offset: 0.0
+                    noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 0
                     range_bias: [-0.022, 0.047, 0.017]
                     uncertainty:
                         type: fixed
@@ -156,6 +165,7 @@ procsteps:
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 0
                     range_bias: [-0.022, 0.047, 0.017]
                     uncertainty:
                         type: fixed
@@ -193,6 +203,19 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: false
+
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    -   module: sla
+        pyclass: SLARaw
+        options:
+            # True here so we can gauge the ocean retracking/SSB problem.
+            use_ocean_wfm: False
+            filter_max_mss_offset_m: 3.0 # in meter
+
+    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
+    -   module: dot
+        pyclass: DynamicOceanTopography
+        options: null
 
     # Estimation of Radar Freeboard
     -   module: frb

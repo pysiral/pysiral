@@ -89,6 +89,7 @@ Surface Type
 
 """
 
+from typing import Union
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
 from collections import OrderedDict
@@ -124,7 +125,7 @@ class Level1bData(DefaultLoggingClass):
     def append(self, l1b_annex):
         """ Appends another l1b object to this one """
 
-        # Append data in each datagroup
+        # Append data in each data group
         for data_group in self.data_groups:
             this_data_group = getattr(self, data_group)
             annex_data_group = getattr(l1b_annex, data_group)
@@ -141,7 +142,7 @@ class Level1bData(DefaultLoggingClass):
     def trim_to_subset(self, subset_list):
         """ Create a subset from an indix list """
 
-        # Trim all datagroups
+        # Trim all data groups
         for data_group in self.data_groups:
             content = getattr(self, data_group)
             content.set_subset(subset_list)
@@ -323,21 +324,28 @@ class Level1bData(DefaultLoggingClass):
         --------
         maxloc (float, default=0.4)
             preferred location of the maximum of the waveform in the subset
+        #TODO: Move to waveform class
         """
+
         # Extract original waveform
         orig_power, orig_range = self.waveform.power, self.waveform.range
         n_records, n_bins = orig_power.shape
+
         # Get the bin with the waveform maximum
         max_index = np.argmax(orig_power, axis=1)
+
         # Compute number of leading and trailing bins
         lead_bins = int(maxloc*target_count)
         trail_bins = target_count-lead_bins
+
         # Get the start/stop indices for each waveform
         start, stop = max_index - lead_bins, max_index + trail_bins
+
         # Create new arrays
         rebin_shape = (n_records, target_count)
         power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
         range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+
         # Validity check
         overflow = np.where(stop > n_bins)[0]
         if len(overflow) > 0:
@@ -350,12 +358,50 @@ class Level1bData(DefaultLoggingClass):
             offset = start[underflow]
             stop[underflow] -= offset
             start[underflow] -= offset
+
         # Extract the waveform with reduced bin count
         for i in np.arange(n_records):
             power[i, :] = orig_power[i, start[i]:stop[i]]
             range[i, :] = orig_range[i, start[i]:stop[i]]
+
         # Push to waveform container
         self.waveform.set_waveform_data(power, range, self.radar_modes)
+
+    def increase_waveform_bin_count(self, target_count):
+        """
+        Increase the bin count of waveform power and range arrays.
+        (e.g. for merging CryoSat-2 LRM [128 bins] and SAR [256 bins])
+
+        Creates a subset and updates the l1b.waveform container
+
+        Arguments
+        ---------
+        target_count (int)
+            target number of waveform bins
+            (needs to be bigger than full waveform bin count)
+
+        #TODO: Move to waveform class
+        """
+        # Extract original waveform
+        orig_power, orig_range = self.waveform.power, self.waveform.range
+        n_records, n_bins = orig_power.shape
+
+        # Add the zero bins at the beginning of the range window
+        pwr = np.full((n_records, target_count), 0.0)
+        pwr[:, 0:n_bins] = orig_power
+
+        # Extend the range
+        rng = np.full((n_records, target_count), 0.0)
+        rng[:, 0:n_bins] = orig_range
+
+        n_new_bins = target_count-n_bins
+        approx_bins_size = rng[0, 1] - rng[0, 0]
+        artificial_range = np.arange(1, n_new_bins+1)*approx_bins_size
+        rng[:, n_bins:] = np.tile(artificial_range, (n_records, 1))
+        rng[:, n_bins:] += np.tile(rng[:, n_bins-1], (n_new_bins, 1)).transpose()
+
+        # Push to waveform container
+        self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
 
     def get_parameter_by_name(self, data_group, parameter_name):
         """ API method to retrieve any parameter from any data group """
@@ -464,7 +510,7 @@ class L1bdataNCFile(Level1bData):
             try:
                 value = datagroup.variables["antenna_%s" % angle][:]
             except KeyError:
-                value = np.full((self.time_orbit.longitude.shape), 0.0)
+                value = np.full(self.time_orbit.longitude.shape, 0.0)
             antenna_angles[angle] = value
 
         # Set satellite position data (measurement is nadir)
@@ -538,7 +584,7 @@ class L1bMetaData(object):
 
     _attribute_list = [
         "pysiral_version", "mission", "mission_data_version",
-        "mission_sensor", "mission_data_source", "n_records", "orbit",
+        "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
         "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
         "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
         "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
@@ -620,6 +666,7 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = None
         self._antenna_roll = None
         self._antenna_yaw = None
+        self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
 
     @property
@@ -651,6 +698,10 @@ class L1bTimeOrbit(object):
         return np.array(self._antenna_yaw)
 
     @property
+    def orbit_flag(self):
+        return np.array(self._orbit_flag)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -663,7 +714,7 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
 
     @property
     def geolocation_parameter_list(self):
@@ -704,6 +755,14 @@ class L1bTimeOrbit(object):
         # Set a dummy value for pitch, roll & yaw for backward compability
         if self.antenna_pitch is None:
             self.set_antenna_attitude(dummy_val, dummy_val, dummy_val)
+
+        # Compute orbit flag (0: ascending, 1: descending)
+        latitude_rate = latitude[1:] - latitude[:-1]
+        try:
+            latitude_rate = np.insert(latitude_rate, 0, latitude_rate[0])
+            self._orbit_flag = (latitude_rate < 0).astype(int)
+        except IndexError:
+            self._orbit_flag = np.full(latitude.shape, -1)
 
     def set_antenna_attitude(self, pitch, roll, yaw):
         # Check dimensions
@@ -864,8 +923,11 @@ class L1bClassifiers(object):
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
 
-    def get_parameter(self, parameter_name):
-        return getattr(self, parameter_name)
+    def get_parameter(self, parameter_name: str, raise_on_error: bool = False) -> Union[np.ndarray, None]:
+        if raise_on_error:
+            return getattr(self, parameter_name, None)
+        else:
+            return getattr(self, parameter_name)
 
     def append(self, annex):
         for parameter in self.parameter_list:
@@ -895,7 +957,7 @@ class L1bWaveforms(object):
     """ Container for Echo Power Waveforms """
 
     _valid_radar_modes = ["lrm", "sar", "sin"]
-    _parameter_list = ["power", "range", "radar_mode", "is_valid"]
+    _parameter_list = ["power", "range", "radar_mode", "is_valid", "classification_flag"]
     _attribute_list = ["echo_power_unit"]
 
     def __init__(self, info):
@@ -908,10 +970,17 @@ class L1bWaveforms(object):
         self._range = None
         self._radar_mode = None
         self._is_valid = None
+        self._classification_flag = None
 
     @property
     def power(self):
         return np.copy(self._power)
+
+    @property
+    def classification_flag(self):
+        if self._classification_flag is None:
+            return np.full(self.n_records, -1, dtype=int)
+        return np.copy(self._classification_flag)
 
     @property
     def range(self):
@@ -919,15 +988,15 @@ class L1bWaveforms(object):
 
     @property
     def radar_mode(self):
-        return self._radar_mode
+        return np.copy(self._radar_mode)
 
     @property
     def is_valid(self):
-        return self._is_valid
+        return np.copy(self._is_valid)
 
     @property
     def parameter_list(self):
-        return self._parameter_list
+        return list(self._parameter_list)
 
     @property
     def n_range_bins(self):
@@ -951,7 +1020,15 @@ class L1bWaveforms(object):
         dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
         return dimdict
 
-    def set_waveform_data(self, power, range, radar_mode):
+    def set_waveform_data(self, power, range, radar_mode, classification_flag=None):
+        """
+        Set the waveform data
+        :param power:
+        :param range:
+        :param radar_mode:
+        :param classification_flag:
+        :return:
+        """
         # Validate input
         if power.shape != range.shape:
             raise ValueError("power and range must be of same shape", power.shape, range.shape)
@@ -983,6 +1060,17 @@ class L1bWaveforms(object):
         # Validate number of records
         self._info.check_n_records(len(valid_flag))
         self._is_valid = valid_flag
+
+    def set_classification_flag(self, classification_flag):
+        """
+        Add or update the waveform classification flag
+        :param classification_flag: intarray with shape (n_records, n_range_bins)
+        :return:
+        """
+        # Validate number of records
+        if classification_flag.shape != self.power.shape:
+            raise ValueError(f"Invalid dimensions: {classification_flag.shape} [{self.power.shape}]")
+        self._classification_flag = classification_flag
 
     def append(self, annex):
         self._power = np.concatenate((self._power, annex.power), axis=0)

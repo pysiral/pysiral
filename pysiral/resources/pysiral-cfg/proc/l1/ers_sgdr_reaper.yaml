@@ -67,6 +67,7 @@ input_adapter:
             sigma0: sitrack_sig0_20hz
             sigma0_ice1: ice1_sig0_20hz
             sigma0_ice2: ice2_sig0_20hz
+            slope: slope
             leading_edge_width_ice2: ice2_le_width_20hz
             ice1_range: ice1_range_20hz
             ice2_range: ice2_range_20hz
@@ -84,7 +85,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -118,8 +119,10 @@ level1_preprocessor:
               class_name: L1PLeadingEdgeWidth
               options:
                   tfmra_leading_edge_start: 0.05
-                  tfmra_leading_edge_center: 0.5
                   tfmra_leading_edge_end: 0.95
+                  tfmra_options:
+                      noise_level_range_bin_idx: [ 10, 20 ]
+                      first_maximum_ignore_leading_bins: 10
             
             # Compute waveform peakiness CCI style
             - label: "Compute Waveform Peakiness"
@@ -127,3 +130,35 @@ level1_preprocessor:
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 5
+
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed 
+                first_maximum_normalized_power_threshold:
+                    lrm: 0.5
+                # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    lrm: 20
+                # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    lrm: 10
+
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3

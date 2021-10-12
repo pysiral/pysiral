@@ -1,0 +1,194 @@
+# This is the default output definition for the Level2Processor
+
+# Metadata
+metadata:
+  output_id: l2p_default
+  data_level: 2
+  data_level_description: Level-2 pre-processed (daily summary of geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming:
+  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
+  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
+
+product_level_subfolder: l2p_trajectory
+
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
+  - title: "Collection of daily geophysical & auxiliary sea ice parameters from satellite radar altimetry at footprint resolution"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
+  - source: "Altimetry: CryoSat-2 Level-1B baseline D before October 2021 and baseline E from October 2021 and later,
+  Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for
+  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining
+  ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface,
+  Sea ice concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF Sea Ice Concentration CDR/ICDR},
+  Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
+  Region code: Adapted from NSIDC region mask"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: "Hendricks, S., Ricker, R. and Paul, S. (2021): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.4), https://epic.awi.de/id/eprint/54733/"
+  - tracking_id: "{uuid}"
+  # - conventions: "CF-1.6"
+  - product_version: "2.4"
+  - processing_level: "Level-2 Pre-processed (l2p)"
+  - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
+  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
+    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
+    Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - cdm_data_type: "Trajectory"
+  - comment: "Data points only for valid freeboard retrievals"
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
+  - creator_url: "https://spaces.awi.de/display/SIRAL/"
+  - contributor_name: "Stefan Hendricks, Robert Ricker"
+  - contributor_role: "PrincipalInvestigator, Author"
+  - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
+  - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - publisher_url: "www.awi.de"
+  - publisher_email: "info@meereisportal.de"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+
+  time:
+    var_source_name: time
+    long_name: utc timestamp
+    units: seconds since 1970-01-01
+
+  longitude:
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees east
+    coordinates: time
+
+  latitude:
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees north
+    coordinates: time
+
+  radar_mode:
+    long_name: "radar mode flag"
+    valid_min: 0
+    valid_max: 2
+    flag_values: "0, 1, 2"
+    flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
+    units: "1"
+    coordinates: time
+
+  region_code:
+    long_name: "Region code (adapted from NSIDC region mask)"
+    comment: "Added flag for Baltic Sea (flag value 16)"
+    valid_min: 0
+    valid_max: 21
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
+    flag_meaning:"inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic baltic_sea land land_outline"
+    units: "1"
+    coordinates: time
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height"
+    units: m
+    coordinates: time
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum
+      light speed without a snow propagation or range penetration correction"
+
+  radar_freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    units: m
+    coordinates: time
+
+  sea_ice_freeboard:
+    long_name: "freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: time
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "freeboard uncertainty"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    coordinates: time
+
+  sea_ice_type:
+    long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
+    standard_name: sea_ice_classification
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    coordinates: time
+
+  sea_ice_type_uncertainty:
+    long_name: "uncertainty of sea ice classification"
+    standard_name: sea_ice_classification standard_error
+    units: "1"
+    coordinates: time
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: snow_depth
+    units: m
+    coordinates: time
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: snow_depth standard_error
+    units: m
+    coordinates: time
+
+  snow_density:
+    long_name: "density of the snow layer"
+    units: kg m-3
+    coordinates: time
+
+  snow_density_uncertainty:
+    long_name: "uncertainty of the snow layer density"
+    units: kg m-3
+    coordinates: time
+
+  sea_ice_density:
+    long_name: "density of the sea ice layer"
+    standard_name: sea_ice_density
+    units: kg m-3
+    coordinates: time
+
+  sea_ice_density_uncertainty:
+    long_name: "uncertainty of the sea ice layer density"
+    standard_name: sea_ice_density standard_error
+    units: kg m-3
+    coordinates: time
+
+  sea_ice_thickness:
+    long_name: "thickness of the sea ice layer"
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: time
+
+  sea_ice_thickness_uncertainty:
+    long_name: "uncertainty of the sea ice layer thickness"
+    standard_name: sea_ice_thickness_uncertainty
+    units: m
+    coordinates: time
+

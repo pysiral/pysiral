@@ -15,6 +15,7 @@ import sys
 import yaml
 import socket
 import shutil
+import subprocess
 
 import importlib
 import pkgutil
@@ -24,6 +25,7 @@ from pathlib import Path
 from attrdict import AttrDict
 from distutils import dir_util
 from loguru import logger
+from typing import Union
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -52,6 +54,14 @@ except IOError:
 __version__ = version
 __author__ = "Stefan Hendricks"
 __author_email__ = "stefan.hendricks@awi.de"
+
+# Get git version (allows tracing of the exact commit)
+# TODO: This only works when the code is in a git repository (and not as installed python package)
+try:
+    __software_version__ = subprocess.check_output(["git", "log", "--pretty=format:%H", "-n", "1"])
+    __software_version__ = __software_version__.strip().decode("utf-8")
+except (FileNotFoundError, subprocess.CalledProcessError):
+    __software_version__ = None
 
 
 class _MissionDefinitionCatalogue(object):
@@ -84,6 +94,30 @@ class _MissionDefinitionCatalogue(object):
             return platform_info
         else:
             return AttrDict(**platform_info)
+
+    def get_platform_id(self, platform_name: str) -> Union[str, None]:
+        """
+        Return the name of a platform.
+        :param platform_name:
+        :return:
+        """
+
+        # Query the source dictionary
+        platforms = [entry for entry in self._content.platforms.items() if entry[1]["long_name"] == platform_name]
+
+        # No valid entry found -> Warning and returning None
+        if len(platforms) == 0:
+            logger.warning(f"Did not find entry for {platform_name} in {self._filepath}")
+            return None
+
+        # Multiple Entries -> Error in configuration: Raise Exception
+        elif len(platforms) > 1:
+            msg = f"Multitple entries found for {platform_name} in {self._filepath}"
+            logger.error(msg)
+            raise ValueError(msg)
+
+        platform_id, _ = platforms[0]
+        return platform_id
 
     def get_name(self, platform_id):
         """
@@ -321,6 +355,7 @@ class _PysiralPackageConfiguration(object):
         self._check_pysiral_config_path()
 
         # --- Read the configuration files ---
+        self.local_machine = None
         self._read_config_files()
 
     def _get_pysiral_path_information(self):
@@ -381,7 +416,7 @@ class _PysiralPackageConfiguration(object):
             print("Creating pysiral config directory: %s" % config_path)
             dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
             print("Init local machine def")
-            template_filename = package_config_path / "templates" / "local_machine_def.yaml.template"
+            template_filename = package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = config_path / "local_machine_def.yaml"
             shutil.copy(str(template_filename), str(target_filename))
 
@@ -570,7 +605,7 @@ class _PysiralPackageConfiguration(object):
             msg = "local_machine_def.yaml not found (expected: %s)" % filename
             print("local-machine-def-missing: %s" % msg)
             local_machine_def = None
-        setattr(self, "local_machine", local_machine_def)
+        self.local_machine = local_machine_def
 
     @property
     def platform_ids(self):

@@ -27,9 +27,10 @@ auxdata:
             latitude_range: [-90.0, -45.]
 
     - sic:
-         name: c3s_v2p0
-         options:
-            exception_on_error: True
+        name: c3s
+        options:
+            version: v2p0
+            exception_on_error: False
 
     - sitype:
          name: fyi_default
@@ -128,11 +129,13 @@ procsteps:
                     # if arrays than [lrm, sar, sin]
                     threshold: 0.5
                     offset: 0.0
+                    noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 0
                     range_bias: [-0.022, 0.047, 0.017]
                     uncertainty:
                         type: fixed
@@ -143,11 +146,13 @@ procsteps:
                     # if arrays than [lrm, sar, sin]
                     threshold: 0.5
                     offset: 0.0
+                    noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 0
                     range_bias: [-0.022, 0.047, 0.017]
                     uncertainty:
                         type: fixed

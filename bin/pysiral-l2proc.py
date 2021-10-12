@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from pysiral import psrlcfg
 from pysiral.config import (DefaultCommandLineArguments)
 from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import DefaultL1bDataHandler
+from pysiral.datahandler import L1PDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 from pysiral.logging import DefaultLoggingClass
 
@@ -44,10 +45,12 @@ def pysiral_l2proc_time_range_job(args):
     """ This is a Level-2 Processor job for a given time range """
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
+    product_def = Level2ProductDefinition(args.run_tag,
+                                          args.l2_settings_file,
+                                          force_l2def_record_type=args.force_l2def_record_type)
     mission_id = product_def.l2def.metadata.platform
     hemisphere = product_def.l2def.metadata.hemisphere
 
@@ -60,6 +63,9 @@ def pysiral_l2proc_time_range_job(args):
 
     # Clip the time range to the valid time range of the target platform
     period = period.intersect(psrlcfg.get_platform_period(mission_id))
+    if period is None:
+        msg = f"Invalid period definition ({args.start}-{args.stop}) for platform {mission_id}"
+        raise ValueError(msg)
 
     # The Level-2 processor operates in monthly iterations
     # -> Break down the full period into monthly segments and
@@ -69,7 +75,8 @@ def pysiral_l2proc_time_range_job(args):
         period_segments.filter_month(args.exclude_month)
 
     # Prepare DataHandler
-    l1b_data_handler = DefaultL1bDataHandler(mission_id, hemisphere, version=args.l1b_version)
+    l1b_data_handler = L1PDataHandler(mission_id, hemisphere, source_version=args.source_version,
+                                      file_version=args.file_version)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)
@@ -93,7 +100,7 @@ def pysiral_l2proc_time_range_job(args):
         l2proc.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1-t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
@@ -102,10 +109,12 @@ def pysiral_l2proc_l1b_predef_job(args):
     """ A more simple Level-2 job with a predefined list of l1b data files """
 
     # Get start time of processor run
-    t0 = time.clock()
+    t0 = time.process_time()
 
     # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag, args.l2_settings_file)
+    product_def = Level2ProductDefinition(args.run_tag,
+                                          args.l2_settings_file,
+                                          force_l2def_record_type=args.force_l2def_record_type)
 
     # Specifically add an output handler
     product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
@@ -115,7 +124,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     l2proc.process_l1b_files(args.l1b_predef_files)
 
     # All done
-    t1 = time.clock()
+    t1 = time.process_time()
     seconds = int(t1-t0)
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
@@ -180,8 +189,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-l1b-files", "l1b_files", "l1b_files_preset", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
+            ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("--remove-old", "remove-old", "remove_old", False),
+            ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
             ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
             ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
@@ -190,8 +201,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         parser = argparse.ArgumentParser()
         for option in options:
             argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(
-                argtype, destination, required)
+            argparse_dict = clargs.get_argparse_dict(argtype, destination, required)
             parser.add_argument(argname, **argparse_dict)
         parser.set_defaults(overwrite_protection=False)
 
@@ -257,8 +267,12 @@ class Level2ProcArgParser(DefaultLoggingClass):
             return filename
 
     @property
-    def l1b_version(self):
+    def source_version(self):
         return self._args.input_version
+
+    @property
+    def file_version(self):
+        return self._args.l1p_version
 
     @property
     def l1b_predef_files(self):
@@ -279,6 +293,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
             self.error.raise_on_error()
         else:
             return filename
+
+    @property
+    def force_l2def_record_type(self):
+        return self._args.force_l2def_record_type
 
     @property
     def is_time_range_request(self):

@@ -75,7 +75,8 @@ class Level2PreProcProductDefinition(DefaultLoggingClass):
     def add_output_definition(self, l2i_product_dir, output_def_file,
                               period="default", overwrite_protection=True,
                               doi=None):
-                # Set given or default output handler
+
+        # Set given or default output handler
         self._output_handler = Level2POutputHandler(
             l2i_product_dir,
             output_def=output_def_file,
@@ -104,7 +105,8 @@ class Level2POutputHandler(OutputHandlerBase):
         # (allows default initialization for the Level2 processor)
         if output_def == "default":
             output_def = self.default_output_def_filename
-        super(Level2POutputHandler, self).__init__(output_def)
+        super(Level2POutputHandler, self).__init__(output_def, applicable_data_level=2,
+                                                   subfolder_tags=["year", "month"])
         self.error.caller_id = self.__class__.__name__
         logger.name = self.__class__.__name__
         self.l2i_product_dir = l2i_product_dir

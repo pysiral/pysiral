@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A short script that updates the settings files in the user home
 """

@@ -37,15 +37,17 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-         name: c3s_v2p0
-         options:
+        name: c3s
+        options:
+            version: v2p0
             exception_on_error: False
 
     - sitype:
-         name: c3s_v1p0
-         options:
-             fill_valid_sic_gaps: True
-             exception_on_error: False
+        name: c3s
+        options:
+            version: v2p0
+            fill_valid_sic_gaps: True
+            exception_on_error: False
 
     - snow:
             name: clim_w99amsr2
@@ -138,11 +140,13 @@ procsteps:
                         type: fixed
                         value: 0.95
                     offset: 0.0
+                    noise_level_range_bin_idx: [ 10, 20 ]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
                     uncertainty:
                         type: fixed
                         value: 0.15
@@ -155,11 +159,13 @@ procsteps:
                         type: fixed
                         value: 0.50
                     offset: 0.0
+                    noise_level_range_bin_idx: [ 10, 20 ]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
                     first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
                     uncertainty:
                         type: fixed
                         value: 0.15

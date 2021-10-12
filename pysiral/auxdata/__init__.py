@@ -5,13 +5,23 @@ Created on Fri May 19 14:42:35 2017
 @author: Stefan
 """
 
-__all__ = ["AuxdataBaseClass", "GridTrackInterpol", "get_all_auxdata_classes", "mss", "icechart", "rio", "sic",
-           "sitype", "snow", "region"]
+__all__ = ["AuxdataBaseClass",
+           "AuxClassConfig",
+           "GridTrackInterpol",
+           "get_all_auxdata_classes",
+           "mss",
+           "icechart",
+           "rio",
+           "sic",
+           "sitype",
+           "snow",
+           "region"]
 
 
 import re
 
 import numpy as np
+from typing import List
 from attrdict import AttrDict
 
 import scipy.ndimage as ndimage
@@ -197,7 +207,7 @@ class AuxdataBaseClass(object):
             l2.set_auxiliary_parameter(auxvar["id"], auxvar["name"], auxvar["value"], uncertainty)
 
     @property
-    def pyclass(self):
+    def pyclass(self) -> str:
         return self.__class__.__name__
 
     @property
@@ -205,22 +215,22 @@ class AuxdataBaseClass(object):
         return self._cfg
 
     @property
-    def has_data_loaded(self):
+    def has_data_loaded(self) -> bool:
         if not hasattr(self, "_data"):
             return False
         return self._data is not None
 
     @property
-    def exception_on_error(self):
-        if "exception_on_error" in self.cfg.options:
-            exception_on_error = self.cfg.options.exception_on_error
-        else:
-            exception_on_error = False
+    def exception_on_error(self) -> bool:
+        exception_on_error = self.cfg.options.get("exception_on_error", False)
         return exception_on_error
 
     @property
-    def requested_filepath(self):
-        """ Returns the local file path for the requested date"""
+    def requested_filepath(self) -> "Path":
+        """
+        Returns the local file path for the requested date
+        :return:
+        """
 
         # Main directory
         path = Path(self.cfg.local_repository)
@@ -268,44 +278,87 @@ class AuxdataBaseClass(object):
 
 
 class AuxClassConfig(object):
-    """ A container for configuration data for any auxilary data handler class"""
+    """
+    A container for configuration data for any auxilary data handler class
+    #TODO: Quite outdated structure
+    """
 
-    def __init__(self):
+    def __init__(self,
+                 options: dict = None,
+                 local_repository: str = None,
+                 filename: str = None,
+                 filenaming: str = None,
+                 subfolders: List[str] = None,
+                 long_name: str = ""
+                 ) -> None:
+        """
+        Data class for an auxilary class configuration data
+        :param options: Dictionary holding the class configuration data as dictionary
+            (merged keys from auxdata_def.yaml and Level-2 processor definition)
+        :param local_repository: Key poin
+        :param filename: static filename (if applicable)
+        :param filenaming: Template for a filename with custom keys (if applicable)
+        :param subfolders: List of subfolders
+        :param long_name: Documentation string.
+        """
 
         # General options
-        self.options = None
-        self.local_repository = None
-        self.filename = None
-        self.filenaming = None
-        self.subfolders = []
-        self.long_name = ""
+        self.options = options
+        self.local_repository = local_repository
+        self.filename = filename
+        self.filenaming = filenaming
+        self.subfolders = subfolders if subfolders is not None else []
+        self.long_name = long_name
 
-    def set_long_name(self, docstr):
-        """ Set a description of the auxdata source """
+    def set_long_name(self, docstr: str) -> None:
+        """
+        Set a description of the auxdata source
+        :param docstr:
+        :return:
+        """
         self.long_name = docstr
 
-    def set_options(self, **opt_dict):
-        """  Pass a dictionary with options """
+    def set_options(self, **opt_dict: dict) -> None:
+        """
+        Pass a dictionary with options
+        :param opt_dict:
+        :return:
+        """
         if self.options is None:
             self.options = AttrDict(**opt_dict)
         else:
             self.options.update(AttrDict(**opt_dict))
 
-    def set_local_repository(self, path):
-        """ Set the path the local auxdata repository """
+    def set_local_repository(self, path: str) -> None:
+        """
+        Set the path the local auxdata repository
+        :param path:
+        :return:
+        """
         self.local_repository = path
 
-    def set_filename(self, filename):
-        """ Set a constant filename (e.g. for mss) """
+    def set_filename(self, filename: str) -> None:
+        """
+        Set a constant filename (e.g. for mss)
+        :param filename:
+        :return:
+        """
         self.filename = filename
 
-    def set_filenaming(self, filenaming):
-        """ Set the filenaming of the auxdata files """
+    def set_filenaming(self, filenaming: str) -> None:
+        """
+        Set the filenaming of the auxdata files
+        :param filenaming:
+        :return:
+        """
         self.filenaming = filenaming
 
-    def set_subfolder(self, subfolder_list):
-        """ Set a list of folders (year, [month, [day]]) where auxdata files
-        can be found """
+    def set_subfolder(self, subfolder_list: List[str]) -> None:
+        """
+        Set a list of folders (year, [month, [day]]) where auxdata files  can be found
+        :param subfolder_list:
+        :return:
+        """
         self.subfolders = subfolder_list
 
 

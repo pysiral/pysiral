@@ -16,6 +16,7 @@ Created on Mon Jul 06 10:38:41 2015
 """
 
 import yaml
+from typing import Union
 from attrdict import AttrDict
 from pysiral import psrlcfg
 
@@ -28,24 +29,26 @@ class RadarModes(object):
     def __init__(self):
         pass
 
-    def get_flag(self, mode_name):
+    @classmethod
+    def get_flag(cls, mode_name: str) -> Union[int, None]:
         try:
-            return self.flag_dict[mode_name]
-        except:
+            return cls.flag_dict[mode_name]
+        except KeyError:
             return None
 
-    def get_name(self, flag):
-        for mode_name, mode_flag in self.flag_dict.items():
+    @classmethod
+    def get_name(cls, flag: int) -> Union[str, None]:
+        for mode_name, mode_flag in cls.flag_dict.items():
             if flag == mode_flag:
                 return mode_name
         return None
 
-    def name(self, index):
+    def name(self, index: int) -> str:
         i = list(self.flag_dict.values()).index(index)
         return list(self.flag_dict.keys())[i]
 
     @property
-    def num(self):
+    def num(self) -> int:
         return len(self.flag_dict.keys())
 
 
@@ -140,6 +143,14 @@ class DefaultCommandLineArguments(object):
                 "default": None,
                 "required": False,
                 "help": 'Path to one or many l1bdata files (e.g.: path/*.nc)'},
+
+            # fetch the level-1p file version
+            "l1p-version": {
+                "action": "store",
+                "dest": "l1p-version",
+                "default": None,
+                "required": False,
+                "help": 'file version of the l1p file'},
 
             # fetch the level-2 settings file
             "l1p-settings": {
@@ -248,6 +259,13 @@ class DefaultCommandLineArguments(object):
                 "required": False,
                 "type": str,
                 "help": "type of data record [cdr, icdr]"},
+
+            "force-l2def-record-type": {
+                "action": "store_true",
+                "dest": "force_l2def_record_type",
+                "default": False,
+                "required": False,
+                "help": "overwrite l1p record type [cdr, icdr, nrt, ..] with metadata.record_type tag in l2def"},
         }
 
     def get_argparse_dict(self, name, destination, required):

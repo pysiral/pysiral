@@ -293,6 +293,9 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
         # Get the error mandatory
         error_status = self.get_clean_error_status(l2.n_records)
 
+        # Keep the total range correction
+        total_range_correction = np.full(l2.n_records, 0.0)
+
         # Apply the range corrections (content of l1b data package)
         # to the l2 elevation (output of retracker) data
         for correction_name in self.cfg.options.corrections:
@@ -336,6 +339,12 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
                 var[:] = var[:] - range_delta
                 l2.set_parameter(target_variable, var[:], var.uncertainty[:])
 
+            # store the range correction in the total range correction array
+            total_range_correction += range_delta
+
+        # Add the total range correction to the l2 auxiliary variables
+        l2.set_auxiliary_parameter("rctotal", "total_range_correction", total_range_correction)
+
         return error_status
 
     @property
@@ -352,9 +361,56 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
 
     @property
     def l2_output_vars(self):
-        output_vars = []
+        output_vars = ["rctotal"]
         return output_vars
 
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["range_correction"]
+
+
+class CS2InstrumentModeflag(Level2ProcessorStep):
+    """
+    A class creating an instrument_mode flag from radar_mode:
+
+        instrument_mode = radar_mode + 1
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class
+        :param args:
+        :param kwargs:
+        """
+        super(CS2InstrumentModeflag, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Mandatory method of Level-2 processor
+        :param l1b:
+        :param l2:
+        :return: error_status
+        """
+
+        # Get the error mandatory
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Instrument mode is a variant of radar mode where the flag starts at 1 and not 0
+        instrument_mode = l2.radar_mode + 1
+
+        # Add the total range correction to the l2 auxiliary variables
+        l2.set_auxiliary_parameter("imode", "instrument_mode", instrument_mode)
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["radar_mode"]
+
+    @property
+    def l2_output_vars(self):
+        return ["instrument_mode"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]

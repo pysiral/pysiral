@@ -158,6 +158,13 @@ variables:
     units: m
     coordinates: time
 
+  sea_level_anomaly_raw:
+    long_name: "sea level anomaly (unsmoothed)"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+    comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. No smoothing or interpolation applied."
+
   sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
     sstandard_name: sea_surface_height_above_mean_sea_level
@@ -170,6 +177,20 @@ variables:
     units: m
     coordinates: time
 
+  dynamic_ocean_topography:
+    long_name: "dynamic ocean topography"
+    standard_name: sea_surface_height_above_geoid
+    units: m
+    coordinates: time
+    ancillary_variables: dynamic_ocean_topography_uncertainty
+    comment: "Dynamic ocean topography: the height of the sea surface above the geoid at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
+    
+  dynamic_ocean_topography_uncertainty:
+    long_name: "dynamic ocean topography uncertainty"
+    units: m
+    coordinates: time
+    comment: "Algorithm uncertainty (error propagation) of the dynamic ocean topography"
+
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height"
     units: m
@@ -181,13 +202,18 @@ variables:
     units: m
     coordinates: time
 
-  freeboard:
+  snow_geometric_correction:
+    long_name: "Correction accounting for the signal delay caused by the wave propagation speed in snow"
+    units: m
+    coordinates: time
+
+  sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: time
 
-  freeboard_uncertainty:
+  sea_ice_freeboard_uncertainty:
     long_name: "freeboard uncertainty"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -279,6 +305,12 @@ variables:
     valid_max: 1
     units: 1
     coordinates: time
+
+  threshold_freeboards:
+    long_name: "freeboards computed with a range of retracker thresholds"
+    units: m
+    coordinates: time
+    comment: "This parameter is only intended for use with a test data set"
 
   pulse_deblurring_correction:
     long_name: "Pulse deblurring correction (ERS only)"

@@ -36,25 +36,55 @@ Important Note:
 """
 
 
+from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
+
 
 import scipy.ndimage as ndimage
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
+from typing import List
 
 
 class OsiSafSIC(AuxdataBaseClass):
+    """ A class for Sea Ice Concentration data from OSI-SAF """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
+        """
+        Init the class.
+        NOTE: The options template can be different for continuous data sets (is_cdr_icdr: False)
+              and those with a dedicated split into a climate data record (cdr) and an interim
+              climate data record (icdr). A pre-processing of the options dictionary is therefore necessary
+              to follow the mechanics of the auxiliary data class.
+        :param args:
+        :param kwargs:
+        """
+
+        # Pre-process the options for cdr/icdr data sets
+        cfg = args[0]
+        is_cdr_icdr = cfg.options.get("is_cdr_icdr", False)
+        target_version = cfg.options.get("version", None)
+        if is_cdr_icdr:
+            global_options = cfg.options.get("global", {})
+            version_options = cfg.options.get(target_version, {})
+            cfg.options.update(global_options)
+            cfg.options.update(version_options)
+            cfg.options.update({"long_name_template": cfg.long_name})
         super(OsiSafSIC, self).__init__(*args, **kwargs)
+
+        # Class properties
         self._data = None
         self.start_time = None
         self.hemisphere_code = None
 
-    def get_l2_track_vars(self, l2):
-        """ Main entry point of the class """
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
+        """
+        Main entry point of the class, add sea ice concentration to the l2 data object (in-place)
+        :param l2: Level-2 data object<
+        :return: None
+        """
 
         # These properties are needed to construct the product path
         self.start_time = l2.info.start_time
@@ -83,8 +113,11 @@ class OsiSafSIC(AuxdataBaseClass):
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
 
-    def load_requested_auxdata(self):
-        """ Required subclass method: Load the data file necessary to satisfy condition for requested date"""
+    def load_requested_auxdata(self) -> None:
+        """
+        Required subclass method: Load the data file necessary to satisfy condition for requested date
+        :return:
+        """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
         path = Path(self.requested_filepath)
@@ -107,8 +140,12 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
-    def _get_sic_track(self, l2):
-        """ Simple extraction along trajectory"""
+    def _get_sic_track(self, l2: "Level2Data") -> np.ndarray:
+        """
+        Simple extraction along trajectory
+        :param l2:
+        :return: sea ice concentration array
+        """
 
         # Extract from grid
         griddef = self.cfg.options[l2.hemisphere]
@@ -119,32 +156,60 @@ class OsiSafSIC(AuxdataBaseClass):
         return sic
 
     @property
-    def requested_filepath(self):
-        """ Note: this overwrites the property in the super class due to some
-        peculiarities with the filenaming (auto product changes etc) """
-
-        # Unique to this class is the possibility to auto merge
-        # products. The current implementation supports only two products
-        path = Path(self.cfg.local_repository)
+    def requested_filepath(self) -> "Path":
+        """
+        Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (auto product changes etc)
+        :return: The filepath to the target file
+        """
 
         # The path needs to be completed if two products shall be used
-        if "auto_product_change" in self.cfg.options:
-            opt = self.cfg.options.auto_product_change
-            product_index = int(self.start_time > opt.date_product_change)
-            product_def = opt.osisaf_product_def[product_index]
-            path = path / product_def["subfolder"]
-            self.cfg.filenaming = product_def["filenaming"]
-            self.cfg.long_name = product_def["long_name"]
+        opt = self.cfg.options
 
+        # For data records that consists of cdr/icdr only: Check if in cdr or icdr period
+        # This also affects the long_name of the data set which is updated here
+        is_cdr_icdr = opt.get("is_cdr_icdr", False)
+        version = opt.get("version", None)
+        record_type = None
+        if is_cdr_icdr:
+            product_index = int(self.start_time > opt[opt.version]["cdr_time_coverage_end"])
+            record_type = self.cdr_icdr_record_types[product_index]
+            record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
+            long_name_template = opt.get("long_name_template", {})
+            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
+            self.cfg.set_long_name(long_name)
+
+        # Get the file path
+        # Paths for climate data records should contain record type and version
+        path = Path(self.cfg.local_repository)
+        if is_cdr_icdr:
+            path = path / record_type / version
+
+        # Add period sub-folders as indicated
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = path / subfolder
 
+        # Construct the filename
         filename = self.cfg.filenaming.format(
-            year=self.year, month=self.month, day=self.day,
+            record_type=record_type,
+            version=version,
+            year=self.year,
+            month=self.month,
+            day=self.day,
             hemisphere_code=self.hemisphere_code)
+
+        # Final Path
         path = path / filename
         return path
+
+    @property
+    def cdr_icdr_record_types(self) -> List[str]:
+        return ["cdr", "icdr"]
+
+    @property
+    def cdr_icdr_record_type_prefix(self) -> List[str]:
+        return ["", "interim"]
 
 
 class IfremerSIC(AuxdataBaseClass):
