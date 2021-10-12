@@ -1,16 +1,67 @@
 # History of changes
 
-## [0.9-6] - unreleased
+## [0.9.6] - 2021-10-12
 
 ### Added
+- Added L1 prep-rocessor class for CryoSat-2 baseline-E L1b files 
+- Including support for CryoSat-2 baseline D and E LRM data (requires waveform padding)
+- Added modified L1 pre-processor class that patches the data with FES2014b after reading (@djbwork).
+- ESA CryoTEMPO A001 processor and output definitions for both sea ice and polar ocean themes (@djbwork)
+- AWI CryoSat-2 v2.4 processor and output definitions
+- C3S SIThick CDR/ICDR processor and output definitions
+- ESA CCI ERS TDS processor settings
+- Auxiliary class for mean dynamic topography
+- Parameter smoother class for the Level-2 processor pipeline
+- Unfiltered sea level anomaly estimation  class for the Level-2 processor pipeline (@djbwork)
+- Flag `instrument_mode` defined as `radar_mode` flag value + 1 (@djbwork)
+- Support for relative and absolute orbit numbers in Level-2 output (@djbwork)
+- Global package variable `__software_version__` intendend to contain the git hash value of the last commit as a unique identifier of software version (currently only meaningful when code is executed from a git repository)
+- Added support for multi-dimensional data sets in the Level-2 output
+- Level-2 processor item that generates multi-threshold freeboards
+- Expanded set out output variables in CCI l2i output
+- Dedicated TMFRA settings for Envisat and ERS-1/2
+- Computation of leading edge quality indicator in the Level-1 pre-processor defined as fraction of cummulative power raise on leading edge to peak power (leq = 1 -> no artefacts on leading edge)
+- Orbit flag (ascending/descending) to l1p and l2i output files
+- Support for handling multiple l1p versions. (No action needed if only one version exists, for multiple the new `-l1p-version` option must be set when starting the Level-2 processor)
+- Surface type classification class `pysiral.surface.ClassifierThresholdSurfaceType` for the Level-2 processor that allows to fully parametrize the list of variables and corresponding thresholds from the Level-2 processor configuration file. 
+- Support for DTU21 mean sea surface
+- CodeQL github action
+
 
 ### Changed
+- C3S auxiliary data has been simplified to a single data handler. The version of the CDR/ICDR is to be specified in the options dictionary (See https://github.com/shendric/pysiral/discussions/57).
+- Ensure that output flag attributes are always the correct data type (@djbwork)
+- Allow different epochs to be used for the `time` variable in pysiral Level-2 output (@djbwork)
+- Used the term `sea_ice_freeboard` instead of `freeboard` throughout output and code.
+- Radar freeboard to sea ice freeboard conversion class now also stores the geometric correction as a Level-2 variable (`sgcorr:snow_geometric_correction`)
+- Geophysical range correction class now outputs the total range correction to the Level-2 data container
+- Convention for Level-3 status flag is now that value 0 means nominal acquision
+- Convention for Level-3 quality flag is now that value 0 means nominal acquision
+- Refactoring of the cTFMRA code (requires new set of options)
+- Started to use python 3 type hints when adding/changing code.
+- Computation of sigma0 takes now options for different radar mode types (and is no longer hard-coded to CryoSat-2 sensor specifications)
+- OCOG power computation in Level-1 pre-processor is now based on physical units and no longer scaled waveform counts. 
+- Changed behaviour of `pysiral.auxdata.sitype.OsiSafSIType` class to allow for a change between OSI-403-c and OSI-403-d (`confidence` variable replaced by `uncertainty`)
+- L3 variable attributes of C3S CDR/ICDR v2.0 and AWI v2.4 now contain `coverage_content_type` attribute (ACDD convention)
+- AWI l2i output is now using the CF compliant `platform` and `sensor` global attributes. Changes to l2p and l3 processor needed to be made as they rely on the previously used `source_mission_id` attribute. 
+- Added `data_record_type` global attribute to AWI l2i output as replacement for the deprecated `source_timeliness` attribute. 
+- various code style, documentation and logging improvements.
 
 ### Fixed
+- An issue with newer python versions that used datetime of the `cftime` package (instead of `datetime`) was fixed
+- A method to measure execution time (`time.clock()`) is deprecated and had to be replaced with `time.process_time()` in pysiral scripts. 
+- Level-3 processor now checks data availability near the pole hole and does not rely on the grid cell center coordinate being beyond orbit coverage
+- Computation of waveform noise level by the TFMRA is now longer done at a fixed set of range bins at the start of the waveform but has to be configured for each radar altimeter platform (@sp-awi)
+- FFT artefacts in waveforms for older radar altimeter platforms were mistaken as the start of the leading edge by the TFMRA. The options now include a mandatory first valid index that specifies the earliest valid range bin for the leading edge (@sp-awi)
+- Wrong Envisat ionospheric correction in CCI/C3S SGDR v3.0 Level-1 pre-processor leading to significant range noise. 
+- Merged Warren99/AMSR2 snow climatology no longer causes an exception outside the October - April period
+
 
 ### Deprecated
+- Class `pysiral.surface.SICCI2SurfaceType`. To be used in future: `pysiral.surface.ClassifierThresholdSurfaceType`
 
 ### Removed
+- Deprecated output and processor settings files
 
 
 ## [0.9.5] - 2020-11-05
