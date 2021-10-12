@@ -25,18 +25,17 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level 1b baseline E (ipf1-e), Snow depth: Monthly
-  climatology based on regional merging of Warren Climatology with 50% reduction for
-  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP
-  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea
-  surface, Mean Dynamic Topography: DTU17, Sea ice Concentration: 
-  {source_timeliness:select;OSI-SAF (OSI-401-b);C3S, Sea Ice Concentration CDR/ICDR}, 
+  - source: "Altimetry: CryoSat-2 Level-1B baseline D before October 2021 and baseline E from October 2021 and later,
+  Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for
+  first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining
+  ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface,
+  Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S, Sea Ice Concentration CDR/ICDR},
   Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
   Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: ""
+  - references: "Hendricks, S., Ricker, R. and Paul, S. (2021): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.4), https://epic.awi.de/id/eprint/54733/"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
   - product_version: "2.4"
@@ -49,7 +48,6 @@ global_attributes:
   - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p4"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: "None"
   - cdm_data_type: "Grid"
   - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
