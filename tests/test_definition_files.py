@@ -49,19 +49,8 @@ class TestDefinitionfiles(unittest.TestCase):
         since they might be different)
         :return:
         """
-        current_config_target = psrlcfg.current_config_target
-        for config_target in psrlcfg.VALID_CONFIG_TARGETS:
-            if config_target == "USER_HOME" and not Path(psrlcfg.userhome_config_path).is_dir():
-                continue
-            psrlcfg.set_config_target(config_target)
-            psrlcfg.reload()
-            self._testAuxdataDefinitionContent(config_target)
-        psrlcfg.set_config_target(current_config_target)
-        psrlcfg.reload()
-
-    def _testAuxdataDefinitionContent(self, target):
         for category, id, item in psrlcfg.auxdef.items:
-            aux_id = "{}:{}:{}".format(target, category, id)
+            aux_id = "{}:{}".format(category, id)
             config_dict_keys = item.keys
             for required_key in ["options", "long_name", "pyclass", "local_repository"]:
                 self.assertTrue(required_key in config_dict_keys, msg="{} has {}".format(aux_id, required_key))

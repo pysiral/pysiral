@@ -25,7 +25,7 @@ from pathlib import Path
 from attrdict import AttrDict
 from distutils import dir_util
 from loguru import logger
-from typing import Union
+from typing import Union, Iterable
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -495,6 +495,28 @@ class _PysiralPackageConfiguration(object):
         lookup_directory = self.get_local_setting_path("proc", processor_level)
         ids = self.get_yaml_setting_filelist(lookup_directory, return_value="ids")
         return ids
+
+    def get_settings_files(self, settings_type: str, data_level: str) -> Iterable[Path]:
+        """
+        Returns all processor settings or output definitions files for a given data level.
+        :param settings_type:
+        :param data_level:
+        :return:
+        """
+
+        if settings_type not in self.VALID_SETTING_TYPES:
+            return []
+
+        if data_level not in self.VALID_DATA_LEVEL_IDS:
+            return []
+
+        # Get all settings files in settings/{data_level} and its
+        # subdirectories
+        lookup_directory = self.get_local_setting_path(settings_type, data_level)
+        _, files = self.get_yaml_setting_filelist(lookup_directory)
+
+        # Test if ids are unique and return error for the moment
+        return files
 
     def get_settings_file(self, settings_type, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.

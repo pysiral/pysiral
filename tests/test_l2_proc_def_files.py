@@ -11,6 +11,7 @@ import unittest
 from attrdict import AttrDict
 
 from pysiral import psrlcfg
+from pysiral.config import get_yaml_config
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 from loguru import logger
 logger.disable("pysiral")
@@ -23,6 +24,11 @@ class TestL2ProcDef(unittest.TestCase):
         # Get a list of processor definition files in the code repository
         l2proc_ids = psrlcfg.get_setting_ids("proc", "l2")
         self.l2procdef_files = [psrlcfg.get_settings_file("proc", "l2", l2proc_id) for l2proc_id in l2proc_ids]
+
+    def testYamlSyntaxOfDefinitionFiles(self):
+        for filename in self.l2procdef_files:
+            content = get_yaml_config(filename)
+            self.assertIsInstance(content, AttrDict, msg=filename)
 
     def testConfigFileRootTags(self):
         required_tags = ["metadata", "auxdata", "procsteps"]
