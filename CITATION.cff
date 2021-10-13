@@ -1,0 +1,10 @@
+
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Joe
+    given-names: Johnson
+    orcid: https://orcid.org/0000-0002-1412-3146
+title: "shendric/pysiral: Product update (C3S, AWI, CCI, CryoTEMPO)" 
+version: v0.9.6
+date-released: 2017-12-18
