@@ -120,6 +120,9 @@ class SurfaceTypeClassifier(object):
         """
         for parameter_name in parameter_list:
             parameter = l2.get_parameter_by_name(parameter_name)
+            if not np.isfinite(parameter).any():
+                msg = f"- Classifier {parameter_name} is all NaN/Inf -> surface type classification may fail"
+                logger.warning(msg)
             self.classifier.add_parameter(parameter, parameter_name)
 
     def set_unknown_default(self, n_records: int) -> None:
