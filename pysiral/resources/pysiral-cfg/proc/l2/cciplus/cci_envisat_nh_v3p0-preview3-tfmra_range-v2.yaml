@@ -70,6 +70,7 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
+                leading_edge_quality: [leq, leading_edge_quality]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -85,6 +86,7 @@ procsteps:
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
             waveform:
+                radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
     # Surface type classification algorithm
