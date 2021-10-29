@@ -1,11 +1,11 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 metadata:
-    label: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2020 preview 2"
+    label: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - Multi-threshold version"
     product_line: cci
     record_type: tds
     platform: ers2
-    version: v3p0-preview2
-    file_version_tag: v3p0-preview2    
+    version: v3p0-preview3-mt-v2
+    file_version_tag: v3p0-preview3-mt-v2
     hemisphere: north
 
 
@@ -22,24 +22,20 @@ auxdata:
 
     # MSS: Mean Sea Surface
     - mss:
-        name: dtu15
-        options:
-            latitude_range: [45.0, 90.0]
-
-    # MSS: Mean Dynamic Topography
-    - mdt:
-        name: dtu17
+        name: dtu21
         options:
             latitude_range: [45.0, 90.0]
 
     - sic:
-         name: c3s_v2p0
+         name: c3s
          options:
+            version: v2p0
             exception_on_error: True
 
     - sitype:
-         name: c3s_v1p0
+         name: c3s
          options:
+             version : v2p0
              fill_valid_sic_gaps: True
              exception_on_error: True
 
@@ -74,6 +70,7 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
+                leading_edge_quality: [leq, leading_edge_quality]
                 epsilon_sec: [epss, epsilon_sec]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
@@ -90,27 +87,45 @@ procsteps:
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
             waveform:
+                radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
     # Surface type classification algorithm
     -   module: surface
-        pyclass: SICCI2SurfaceType
+        pyclass: ClassifierThresholdSurfaceType
         options:
-            lrm:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [20.96, 20.51, 20.55, 20.73, 0.00, 0.00, 0.00, 0.00, 0.00, 23.25, 22.32, 21.45]
-                    sea_ice_backscatter_min: [27.45, 26.93, 27.10, 27.92, 0.00, 0.00, 0.00, 0.00, 0.00, 32.75, 29.68, 27.99]
-                    leading_edge_width_max: [0.97, 0.98, 0.98, 0.99, 0.00, 0.00, 0.00, 0.00, 0.00, 0.94, 0.95, 0.96]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [12.34, 11.69, 11.75, 12.38, 0.00, 0.00, 0.00, 0.00, 0.00, 15.04, 13.62, 12.89]
-                    sea_ice_backscatter_min: [14.68, 13.98, 14.19, 14.09, 0.00, 0.00, 0.00, 0.00, 0.00, 17.94, 15.82, 15.22]
-                    sea_ice_backscatter_max: [22.87, 22.23, 22.13, 22.52, 0.00, 0.00, 0.00, 0.00, 0.00, 27.09, 24.65, 23.57]
-                    leading_edge_width_min: [0.85, 0.85, 0.85, 0.85, 0.00, 0.00, 0.00, 0.00, 0.00, 0.83, 0.83, 0.84]
-                    ice_concentration_min: 70.0
+
+            surface_types: [ocean, lead, sea_ice]
+
+            ocean:
+
+                - radar_mode: lrm
+                  conditions: 
+                      - "{sea_ice_concentration} < 15.0"
+
+            # Lead waveforms are classified based on sigma0, leading edge width
+            # and pulse peakiness within the sea-ice mask.
+            # NOTE: No LRM data over sea ice
+            lead:
+
+                - radar_mode: lrm
+                  conditions: 
+                    - "{sea_ice_concentration} >= 15.0"
+                    - "{pulse_peakiness} >= 20.5"
+                    - "{sigma0} >= 24.0"
+                    - "{leading_edge_width} <= 1.00"
+                    
+            # The sea ice classification uses as many waveforms as possible
+            # and reduces the classification to all waveforms within the
+            # sea ice mask which are not classified as leads and have a
+            # valid leading edge. 
+            sea_ice:
+
+                - radar_mode: lrm
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
@@ -214,24 +229,6 @@ procsteps:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: false
 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    -   module: sla
-        pyclass: SLARaw
-        options:
-            # True here so we can gauge the ocean retracking/SSB problem.
-            use_ocean_wfm: False
-            filter_max_mss_offset_m: 3.0 # in meter
-
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
-
-    # Estimation of Radar Freeboard
-    -   module: frb
-        pyclass: RadarFreeboardDefault
-        options: null
-
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
@@ -256,7 +253,7 @@ procsteps:
     -   module: retracker
         pyclass: TFMRAMultiThresholdFreeboards
         options: 
-            threshold_range: [0.2, 0.9]
+            threshold_range: [0.1, 0.9]
             threshold_res: 0.05
 
     # Add sea ice density to the Level-2 object
@@ -281,7 +278,7 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 

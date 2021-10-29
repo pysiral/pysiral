@@ -126,7 +126,6 @@ procsteps:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
 
-
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
