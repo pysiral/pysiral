@@ -9,6 +9,7 @@ __all__ = ["AuxdataBaseClass",
            "AuxClassConfig",
            "GridTrackInterpol",
            "get_all_auxdata_classes",
+           "ml",
            "mss",
            "icechart",
            "rio",
@@ -29,6 +30,7 @@ from pathlib import Path
 from pyproj import Proj
 
 from pysiral import import_submodules
+from pysiral.l1bdata import L1bdataNCFile
 from pysiral.errorhandler import ErrorStatus
 
 
@@ -70,6 +72,7 @@ class AuxdataBaseClass(object):
         # requested date and if a new product is loaded upon mismatch of current & requested data
         # NOTE: This will be bypassed by static auxiliary data classes
         # TODO: Load all auxiliary products for processing period in memory (allow parallel processing)
+        # TODO: Add actual periods, e.g. for trajectory based auxiliary data
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
 
@@ -106,6 +109,15 @@ class AuxdataBaseClass(object):
         """ Empties the message list. To be executed during class initialization and
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
         self.msgs = []
+
+    def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
+        """
+        An optional method to pass l1p information to the auxiliary data class prior
+        to execution. For this method to work it needs to be overwritten to by the child class.
+        :param l1p:
+        :return:
+        """
+        pass
 
     def add_variables_to_l2(self, l2):
         """ Main Access points for the Level-2 Processor """
