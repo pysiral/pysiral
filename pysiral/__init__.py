@@ -710,7 +710,7 @@ def get_cls(module_name, class_name, relaxed=True):
         if relaxed:
             return None
         else:
-            raise ImportError("Cannot load module: %s" % module_name)
+            raise ImportError(f"Cannot load module: {module_name}")
     try:
         return getattr(module, class_name)
     except AttributeError:
