@@ -104,6 +104,7 @@ procsteps:
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
             waveform:
+                radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
     # Envisat specific backscatter correction of degrading RA-2 antenna
@@ -115,25 +116,43 @@ procsteps:
             backscatter_drift_factor: -0.003269253
             backscatter_base_period: [2011, 6]
 
+
     # Surface type classification algorithm
     -   module: surface
-        pyclass: SICCI2SurfaceType
+        pyclass: ClassifierThresholdSurfaceType
         options:
-            lrm:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [46.90, 46.40, 46.20, 48.40, 0.00, 0.00, 0.00, 0.00, 0.00, 52.90, 51.00, 47.70]
-                    sea_ice_backscatter_min: [28.80, 28.60, 28.50, 28.40, 0.00, 0.00, 0.00, 0.00, 0.00, 32.80, 30.80, 29.30]
-                    leading_edge_width_max: [0.82, 0.82, 0.82, 0.82, 0.00, 0.00, 0.00, 0.00, 0.00, 0.82, 0.82, 0.82]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [16.00, 14.80, 14.10, 14.20, 0.00, 0.00, 0.00, 0.00, 0.00, 19.40, 19.30, 16.90]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [22.50, 21.80, 21.30, 20.40, 0.00, 0.00, 0.00, 0.00, 0.00, 25.90, 24.60, 22.80]
-                    leading_edge_width_min: [0.81, 0.83, 0.83, 0.83, 0.00, 0.00, 0.00, 0.00, 0.00, 0.78, 0.78, 0.80]
-                    ice_concentration_min: 70.0
+
+            surface_types: [ocean, lead, sea_ice]
+
+            ocean:
+
+                - radar_mode: lrm
+                  conditions: 
+                      - "{sea_ice_concentration} < 15.0"
+
+            # Lead waveforms are classified based on sigma0, leading edge width
+            # and pulse peakiness within the sea-ice mask.
+            # NOTE: No LRM data over sea ice
+            lead:
+
+                - radar_mode: lrm
+                  conditions: 
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 26.0"
+                      - "{sigma0} >= 25.0"
+                      - "{leading_edge_width} <= 0.82"
+                    
+            # The sea ice classification uses as many waveforms as possible
+            # and reduces the classification to all waveforms within the
+            # sea ice mask which are not classified as leads and have a
+            # valid leading edge. 
+            sea_ice:
+
+                - radar_mode: lrm
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
 
     # Add elevations from other retrackers in SGDR (ERS/Envisat only)
     -   module: retracker
@@ -200,6 +219,12 @@ procsteps:
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
+            target_variables:
+                - elevation
+                - elevation_ocean
+                - elevation_ice1
+                - elevation_ice2
+                - elevation_sitrack
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
@@ -261,7 +286,7 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 
