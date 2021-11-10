@@ -1846,12 +1846,13 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
 
         # Get surface type flag
         surface_type = self.l3grid.l2.stack["surface_type"]
-        target_surface_types = self.surface_types
+        target_surface_types = list(self.surface_types)
         target_surface_types.append("all")
 
         # Loop over all parameters
         for parameter_name in self.parameters:
             # Get the stack
+            classifier_stack = None
             try:
                 classifier_stack = self.l3grid.l2.stack[parameter_name]
             except KeyError:
@@ -1864,7 +1865,10 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
             for statistic in self.statistics:
                 # Loop over target surface types
                 for target_surface_type in target_surface_types:
-                    self._compute_grid_variable(parameter_name, classifier_stack, surface_type, target_surface_type,
+                    self._compute_grid_variable(parameter_name,
+                                                classifier_stack,
+                                                surface_type,
+                                                target_surface_type,
                                                 statistic)
 
     def _compute_grid_variable(self, parameter_name, classifier_stack, surface_type, target_surface_type, statistic):
