@@ -324,6 +324,10 @@ class L3DataGrid(DefaultLoggingClass):
             raise ValueError(msg)
         self.l2 = stack
 
+        # Get a list of non-empty
+        self._non_empty_grid_indices = None
+        self._init_grid_indices_mask()
+
         # container for gridded parameters
         self.vars = {}
 
@@ -458,6 +462,20 @@ class L3DataGrid(DefaultLoggingClass):
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
+
+    def _init_grid_indices_mask(self) -> None:
+        """
+        Compute a mask of non-empty grid indices
+        :return:
+        """
+
+        # Get number of items per stack
+        n_records = np.ndarray(shape=self.grid_shape)
+        for xi, yj in self.all_grid_indices:
+            n_records[yj][xi] = len(self.l2.stack["time"][yj][xi])
+
+        # Get indices
+        self._non_empty_grid_indices = np.flip(np.array(np.where(n_records > 0))).T
 
     def _init_metadata_from_l2(self):
         """
@@ -638,9 +656,15 @@ class L3DataGrid(DefaultLoggingClass):
         return np.arange(self.griddef.extent.numy)
 
     @property
-    def grid_indices(self):
-        # TODO: Only use grid cells that are not empty
+    def all_grid_indices(self):
         return itertools.product(self.grid_xi_range, self.grid_yj_range)
+
+    @property
+    def grid_indices(self):
+        if self._non_empty_grid_indices is None:
+            return itertools.product(self.grid_xi_range, self.grid_yj_range)
+        else:
+            return self._non_empty_grid_indices
 
     # @property
     # def parameter_list(self):
