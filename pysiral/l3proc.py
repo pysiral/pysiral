@@ -141,8 +141,7 @@ class Level3Processor(DefaultLoggingClass):
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            logger.info(
-                "Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
+            logger.info(f"Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
         self._l3_progress_percent = progress_percent
 
     def _apply_processing_items(self, l3grid):
@@ -640,6 +639,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     @property
     def grid_indices(self):
+        # TODO: Only use grid cells that are not empty
         return itertools.product(self.grid_xi_range, self.grid_yj_range)
 
     # @property
