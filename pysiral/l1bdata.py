@@ -403,23 +403,24 @@ class Level1bData(DefaultLoggingClass):
         # Push to waveform container
         self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
 
-    def get_parameter_by_name(self, data_group, parameter_name):
-        """ API method to retrieve any parameter from any data group """
+    def get_parameter_by_name(self, data_group: str, parameter_name: str) -> Union[None, np.ndarray]:
+        """
+        API method to retrieve any parameter from any data group
+        :param data_group:
+        :param parameter_name:
+        :return:
+        """
         try:
             data_group = getattr(self, data_group)
             return getattr(data_group, parameter_name)
         except AttributeError:
             return None
 
-    def set_parameter_by_name(self, data_group_name, parameter_name, value):
+    def set_parameter_by_name(self, data_group_name: str, parameter_name: str, value: np.ndarray) -> None:
         """ API method to set any parameter in any data group """
         # Sanity check
         if len(value) != self.n_records:
-            raise ValueError(
-                    "value for %s.%s has wrong shape: %s" % (
-                            data_group_name,
-                            parameter_name,
-                            str(value.shape)))
+            raise ValueError(f"value for {data_group_name}.{parameter_name} has wrong shape: {str(value.shape)}")
         try:
             # Get data group
             data_group = getattr(self, data_group_name)

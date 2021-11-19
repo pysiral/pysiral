@@ -92,3 +92,6 @@ auxdata_repository:
         # TODO: Enter directory with monthly merged snow climatology netCDF files
         #       (expects all files in this directory)
         clim_w99amsr2: ''
+
+    # Models from machine learning.
+    ml:

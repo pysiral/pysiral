@@ -980,6 +980,15 @@ class cTFMRA(BaseRetracker):
                 value += coef * sigma0**(i+1)
             threshold[indices] = value[indices]
 
+        # TODO: remove dependency of TFMRA threshold to l2 object
+        elif option.type == "l2_variable":
+            variable_name = option.get("variable_name", None)
+            if variable_name is None:
+                msg = "Missing option `variable_name` (options.threshold.variable_name) for threshold type `variable`"
+                raise ValueError(msg)
+            preset_threshold = self._l2.get_parameter_by_name(variable_name)
+            threshold[indices] = preset_threshold[indices]
+
         # Catching invalid processor settings
         else:
             msg = "treshold type not recognized: %s" % str(option.type)
