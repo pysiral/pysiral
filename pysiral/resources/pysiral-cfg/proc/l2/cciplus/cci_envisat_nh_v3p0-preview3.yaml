@@ -61,7 +61,7 @@ auxdata:
                 # The id and name of the parameter added to the level-2 object
                 output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
                 # File basename of the trained model data
-                model_id: xgboost_test
+                model_id: envisat_cci_v1
                 # Input parameter for the models. These will be pulled from the
                 # l1p data object and thus need two identifiers: 
                 # [data_group, parameter_name]
@@ -89,6 +89,7 @@ procsteps:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
+                leading_edge_quality: [leq, leading_edge_quality]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
