@@ -167,3 +167,9 @@ variables:
     units: m
     coordinates: longitude latitude
     comment: "Filtered with a 450km lowess filter"
+
+  inverse_barometric:
+    long_name: "inverse barometric range correction"
+    units: "m"
+    coordinates: longitude latitude
+    comment: "Provided for the user to remove if necessary for their use case."
