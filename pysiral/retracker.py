@@ -1073,12 +1073,16 @@ class cTFMRA(BaseRetracker):
         """
 
         width = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        noise_level_range_bin_idx = self._options.noise_level_range_bin_idx
+        oversampling_factor = self._options.wfm_oversampling_factor
+        first_valid_idx = noise_level_range_bin_idx[1] * oversampling_factor
         for i in np.arange(rng.shape[0]):
             if fmi[i] is None:
                 continue
-            r0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0)
-            r1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1)
-            width[i] = r1[0] - r0[0]
+
+            r0, p0, i0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0, first_valid_idx=first_valid_idx)
+            r1, p1, i1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1, first_valid_idx=first_valid_idx)
+            width[i] = r1 - r0
 
         # some irregular waveforms might produce negative width values
         is_negative = np.where(width < 0.)[0]
@@ -1171,13 +1175,13 @@ class cTFMRA(BaseRetracker):
 
         # Check if something went wrong with the first maximum
         if len(points) == 0:
-            return np.nan, np.nan
+            return np.nan, np.nan, np.nan
 
         i0, i1 = points[0]-1, points[0]
         gradient = (wfm[i1]-wfm[i0])/(rng[i1]-rng[i0])
         tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
 
-        return tfmra_range, tfmra_power
+        return tfmra_range, tfmra_power, i0
 
 
 class SICCILead(BaseRetracker):

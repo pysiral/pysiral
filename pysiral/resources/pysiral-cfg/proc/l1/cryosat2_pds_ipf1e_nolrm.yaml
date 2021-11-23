@@ -106,6 +106,7 @@ level1_preprocessor:
                   tfmra_leading_edge_end: 0.95
                   tfmra_options: 
                     noise_level_range_bin_idx: [0, 5]
+                    wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_ignore_leading_bins: 0
 
             # Compute the leading edge quality indicator
