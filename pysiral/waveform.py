@@ -257,7 +257,7 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
                 logger.warning(msg)
             setattr(self, option_name, option_value)
 
-    def apply(self, l1):
+    def apply(self, l1: "Level1bData") -> None:
         """
         API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
         second half) and adding the result to the classifier data group
@@ -267,12 +267,17 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
 
         # Prepare input
         radar_mode = l1.waveform.radar_mode
-        is_ocean = l1.surface_type.get_by_name("ocean").flag
+        is_valid = l1.surface_type.get_by_name("ocean").flag
 
-        # Compute the leading edge width (requires TFMRA retracking)
-        width = TFMRALeadingEdgeWidth(l1.waveform.range, l1.waveform.power, radar_mode, is_ocean,
+        # Compute the leading edge width (requires TFMRA retracking) using
+        # -> Use a wrapper for cTFMRA
+        width = TFMRALeadingEdgeWidth(l1.waveform.range,
+                                      l1.waveform.power,
+                                      radar_mode,
+                                      is_valid,
                                       tfmra_options=self.tfmra_options)
-        lew = width.get_width_from_thresholds(self.tfmra_leading_edge_start, self.tfmra_leading_edge_end)
+        lew = width.get_width_from_thresholds(self.tfmra_leading_edge_start,
+                                              self.tfmra_leading_edge_end)
 
         # Add result to classifier group
         l1.classifier.add(lew, "leading_edge_width")
