@@ -471,3 +471,35 @@ variables:
     long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+
+  stat_tfmra_threshold_mean:
+    var_source_name: stat_tfmra_threshold_all_mean
+    long_name: "average pulse peakiness coefficient (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sdev:
+    var_source_name: stat_tfmra_threshold_all_sdev
+    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sea_ice_mean:
+    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sea_ice_sdev:
+    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_lead_mean:
+    long_name: "average pulse peakiness coefficient (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_lead_sdev:
+    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"

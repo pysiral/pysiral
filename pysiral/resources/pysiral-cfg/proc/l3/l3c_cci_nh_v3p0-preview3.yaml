@@ -28,6 +28,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    tfmra_threhold:
+        grid_method: none
+        dtype: f4
+        fillvalue: .NAN
+
     surface_type:
         grid_method: none
         dtype: i4
@@ -295,6 +300,6 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3GriddedClassifiers
       options: 
-        parameters: ["sigma0", "leading_edge_width", "pulse_peakiness"]
+        parameters: ["sigma0", "leading_edge_width", "pulse_peakiness", "tfmra_threshold"]
         surface_types: ["sea_ice", "lead"]
         statistics: ["mean", "sdev"]
