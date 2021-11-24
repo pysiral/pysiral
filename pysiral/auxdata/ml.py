@@ -68,9 +68,9 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             msg = f"Missing option `model_id` in auxiliary data configuration {self.cfg.options}"
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
-        model_filepath = [model_file for model_file in model_files if re.search(model_id, str(model_files))]
+        model_filepath = [model_file for model_file in model_files if re.search(model_id, str(model_file))]
 
-        # Verify input
+        # At this point there should only be one file
         if len(model_filepath) != 1:
             msg = f"No or multiple model files found for model_id = {model_id}: {self.cfg.local_repository}"
             self.error.add_error("ambigous-input", msg)
