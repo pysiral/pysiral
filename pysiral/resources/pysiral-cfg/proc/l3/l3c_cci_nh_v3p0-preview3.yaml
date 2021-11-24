@@ -28,7 +28,7 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    tfmra_threhold:
+    tfmra_threshold:
         grid_method: none
         dtype: f4
         fillvalue: .NAN
