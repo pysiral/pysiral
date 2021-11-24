@@ -114,7 +114,9 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         # Retrieve data from l1p data object
         model_input_list = []
         for data_group, parameter_name in parameter_list:
-            model_input_list.append(l1p.get_parameter_by_name(data_group, parameter_name))
+            variable = l1p.get_parameter_by_name(data_group, parameter_name)
+            variable[np.isinf(variable)] = np.nan
+            model_input_list.append(variable)
 
         # Reform the input data for the model prediction
         self.model_input = np.array(model_input_list).T
@@ -130,7 +132,8 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         """
 
         # Evaluate the model for this case
-        prediction = self.model.predict(xgb.DMatrix(self.model_input))
+        model_data = xgb.DMatrix(self.model_input, missing=np.nan)
+        prediction = self.model.predict(model_data)
 
         # Add prediction to the Level-2 data object
         var_id, var_name = self.cfg.options.get("output_parameter", ["tfmrathrs_ml", "tfmra_threshold_ml"])
