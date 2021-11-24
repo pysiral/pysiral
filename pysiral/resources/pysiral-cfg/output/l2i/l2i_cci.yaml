@@ -306,6 +306,14 @@ variables:
     units: 1
     coordinates: time
 
+  tfmra_threshold_iceml:
+    long_name: "threshold of the tfmra retracker from trained model for sea ice waveforms"
+    valid_min: 0
+    valid_max: 1
+    units: 1
+    coordinates: time
+
+
   threshold_freeboards:
     long_name: "freeboards computed with a range of retracker thresholds"
     units: m

@@ -23,5 +23,7 @@ pyyaml
 scipy
 scikit-learn
 statsmodels
-xmltodict
 xarray
+xgboost
+xmltodict
+

@@ -121,7 +121,7 @@ level1_preprocessor:
                   tfmra_leading_edge_start: 0.05
                   tfmra_leading_edge_end: 0.95
                   tfmra_options:
-                      noise_level_range_bin_idx: [ 10, 20 ]
+                      noise_level_range_bin_idx: [10, 20]
                       first_maximum_ignore_leading_bins: 10
 
             # Compute waveform peakiness CCI style
@@ -129,7 +129,7 @@ level1_preprocessor:
               module_name: pysiral.waveform
               class_name: L1PWaveformPeakiness
               options:
-                  skip_first_range_bins: 5
+                  skip_first_range_bins: 10
         
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group: 

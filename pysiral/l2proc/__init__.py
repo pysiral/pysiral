@@ -231,7 +231,7 @@ class Level2Processor(DefaultLoggingClass):
                 l2.info.timeliness = self._l2def.record_type
 
             # Get auxiliary data from all registered auxdata handlers
-            error_status, error_codes = self.get_auxiliary_data(l2)
+            error_status, error_codes = self.get_auxiliary_data(l1b, l2)
             if True in error_status:
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
@@ -264,7 +264,7 @@ class Level2Processor(DefaultLoggingClass):
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
 
-    def get_auxiliary_data(self, l2):
+    def get_auxiliary_data(self, l1p: 'L1bdataNCFile', l2: 'Level2Data'):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
 
         # Loop over all auxilary data types. Each type must have:
@@ -279,6 +279,9 @@ class Level2Processor(DefaultLoggingClass):
 
             # Get the class
             auxclass = self._auxhandlers[auxdata_id]
+
+            # Pass optional l1p data container
+            auxclass.receive_l1p_input(l1p)
 
             # Transfer variables (or at least attempt to)
             auxclass.add_variables_to_l2(l2)

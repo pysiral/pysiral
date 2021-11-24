@@ -25,6 +25,8 @@ except ImportError:
     logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
+from typing import Tuple
+
 from pysiral.core.flags import ANDCondition, FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
@@ -864,39 +866,11 @@ class cTFMRA(BaseRetracker):
                 continue
 
             # Get track point and its power
-            tfmra_range, tfmra_power = self.get_threshold_range(filt_rng, filt_wfm, fmi, tfmra_threshold[i],
-                                                                fmi_first_valid_idx_filt)
-
-            # waveform_index = "{:06g}".format(i)
-            # treshold_str = "{:03g}".format(tfmra_threshold[i]*100)
-            # surface_type = {"095": "Lead", "050": "Ice"}
-            # title = "{} Waveform (index: {})".format(surface_type[treshold_str], waveform_index)
-            #
-            # import matplotlib.pyplot as plt
-            # from pathlib import Path
-            # from matplotlib.ticker import MultipleLocator
-            # plt.figure(figsize=(10, 10))
-            # plt.title(title)
-            # ax = plt.gca()
-            # plt.scatter(filt_rng[fmi]-filt_rng[0], filt_wfm[fmi], marker="s", color="red", s="80",
-            #             label="first maximum")
-            # plt.scatter(rng[i, :]-rng[i, 0], wfm[i, :]/np.nanmax(wfm[i, :]), marker="s", color="0.0",
-            #             label="raw waveform")
-            # plt.plot(filt_rng-filt_rng[0], filt_wfm, lw=2, label="filtered waveform")
-            # label = "tracking point (threshold: {})".format(tfmra_threshold[i])
-            # retracked_range = tfmra_range - rng[i, 0]
-            # plt.axvline(retracked_range, color="red", lw=2, label=label)
-            # plt.legend()
-            # # plt.xlim(retracked_range-2, retracked_range+10)
-            # ax.xaxis.set_major_locator(MultipleLocator(1))
-            # ax.xaxis.set_minor_locator(MultipleLocator(0.2))
-            # plt.grid(which="major", axis="x", color="0.75", lw=0.2)
-            # plt.grid(which="minor", axis="x", color="0.25", lw=0.1)
-            # plt.xlabel("Range Window (meter)")
-            # plt.ylabel("Normalized Waveform Power")
-            # output_path = Path(r"D:\temp\ers_tfmra_test\valid_idx")
-            # output_filename = "tfmra_waveform_{}_{}.png".format(treshold_str, waveform_index)
-            # plt.savefig(output_path / output_filename)
+            tfmra_range, tfmra_power, _ = self.get_threshold_range(filt_rng,
+                                                                   filt_wfm,
+                                                                   fmi,
+                                                                   tfmra_threshold[i],
+                                                                   fmi_first_valid_idx_filt)
 
             # Set the values
             self._range[i] = tfmra_range + fixed_range_offset
@@ -979,6 +953,15 @@ class cTFMRA(BaseRetracker):
             for i, coef in enumerate(option.coef_sig0):
                 value += coef * sigma0**(i+1)
             threshold[indices] = value[indices]
+
+        # TODO: remove dependency of TFMRA threshold to l2 object
+        elif option.type == "l2_variable":
+            variable_name = option.get("variable_name", None)
+            if variable_name is None:
+                msg = "Missing option `variable_name` (options.threshold.variable_name) for threshold type `variable`"
+                raise ValueError(msg)
+            preset_threshold = self._l2.get_parameter_by_name(variable_name)
+            threshold[indices] = preset_threshold[indices]
 
         # Catching invalid processor settings
         else:
@@ -1064,12 +1047,16 @@ class cTFMRA(BaseRetracker):
         """
 
         width = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        noise_level_range_bin_idx = self._options.noise_level_range_bin_idx
+        oversampling_factor = self._options.wfm_oversampling_factor
+        first_valid_idx = noise_level_range_bin_idx[1] * oversampling_factor
         for i in np.arange(rng.shape[0]):
             if fmi[i] is None:
                 continue
-            r0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0)
-            r1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1)
-            width[i] = r1[0] - r0[0]
+
+            r0, p0, i0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0, first_valid_idx=first_valid_idx)
+            r1, p1, i1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1, first_valid_idx=first_valid_idx)
+            width[i] = r1 - r0
 
         # some irregular waveforms might produce negative width values
         is_negative = np.where(width < 0.)[0]
@@ -1139,7 +1126,11 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def get_threshold_range(rng, wfm, first_maximum_index, threshold, first_valid_idx=0):
+    def get_threshold_range(rng: np.ndarray,
+                            wfm: np.ndarray,
+                            first_maximum_index: int,
+                            threshold: float,
+                            first_valid_idx: int = 0) -> Tuple[float, float, int]:
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
@@ -1162,13 +1153,13 @@ class cTFMRA(BaseRetracker):
 
         # Check if something went wrong with the first maximum
         if len(points) == 0:
-            return np.nan, np.nan
+            return np.nan, np.nan, np.nan
 
         i0, i1 = points[0]-1, points[0]
         gradient = (wfm[i1]-wfm[i0])/(rng[i1]-rng[i0])
         tfmra_range = (tfmra_power - wfm[i0]) / gradient + rng[i0]
 
-        return tfmra_range, tfmra_power
+        return tfmra_range, tfmra_power, i0
 
 
 class SICCILead(BaseRetracker):

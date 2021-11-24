@@ -152,8 +152,6 @@ mdt:
         options: null
         source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
 
-
-
 # List of snow depth (density products)
 snow:
 
@@ -235,7 +233,6 @@ snow:
                     dx: 12500
                     dy: 12500
             subfolders: null
-
 
 # List of sea ice concentration products
 sic:
@@ -749,7 +746,7 @@ sitype:
             type: daily
             link: "outgoing/icdc/esasicci/"
 
-
+# Region codes
 region:
 
     blank_region:
@@ -800,6 +797,7 @@ region:
                     dx: 25000
                     dy: 25000
 
+# risk index outcome
 rio:
 
     rio_fmi:
@@ -808,3 +806,12 @@ rio:
         local_repository: null
         options: null
 
+# Machine learned models
+ml:
+    tfmra_threshold_model:
+        pyclass: RetrackerThresholdModel
+        long_name: Learned model (xgboost) for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model
+        options:
+            suffixes:
+                - ".model"
