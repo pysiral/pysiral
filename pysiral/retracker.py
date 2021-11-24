@@ -25,6 +25,8 @@ except ImportError:
     logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
+from typing import Tuple
+
 from pysiral.core.flags import ANDCondition, FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
@@ -1152,7 +1154,11 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def get_threshold_range(rng, wfm, first_maximum_index, threshold, first_valid_idx=0):
+    def get_threshold_range(rng: np.ndarray,
+                            wfm: np.ndarray,
+                            first_maximum_index: int,
+                            threshold: float,
+                            first_valid_idx: int = 0) -> Tuple[float, float, int]:
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
