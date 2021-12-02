@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming: 
-  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0-preview2plus.nc"
-  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{time_coverage_start:%Y%m%dT%H%M%S}-{time_coverage_end:%Y%m%dT%H%M%S}-fv3p0-preview2plus.nc"
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-fv3p0-preview2plus.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-fv3p0-preview2plus.nc"
 
 product_level_subfolder: l2p_plus
 
