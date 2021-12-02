@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming:
-  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
-  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
+  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{period_coverage_start:%Y%m%d}-fv2p4.nc"
+  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{period_coverage_start:%Y%m%d}-fv2p4.nc"
 
 product_level_subfolder: l2p_trajectory
 

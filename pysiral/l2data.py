@@ -458,6 +458,22 @@ class Level2Data(object):
             time_string = dt.isoformat()
         return time_string
 
+    def _get_attr_period_coverage_start(self, *args):
+        dt = self.period.tcs.dt
+        if re.match("%", args[0]):
+            time_string = dt.strftime(args[0])
+        else:
+            time_string = dt.isoformat()
+        return time_string
+
+    def _get_attr_period_coverage_end(self, *args):
+        dt = self.period.tce.dt
+        if re.match("%", args[0]):
+            time_string = dt.strftime(args[0])
+        else:
+            time_string = dt.isoformat()
+        return time_string
+
     def _get_attr_time_coverage_duration(self, *args):
         return self.period.duration.isoformat
 
