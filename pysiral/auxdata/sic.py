@@ -46,7 +46,7 @@ from scipy.spatial.distance import cdist
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 
 class OsiSafSIC(AuxdataBaseClass):
@@ -153,7 +153,7 @@ class OsiSafSIC(AuxdataBaseClass):
         """
         Simple extraction along trajectory
         :param l2:
-        :return: sea ice concentration array
+        :return: sea ice concentration, distance to ocean arrays
         """
 
         # Extract from grid
@@ -165,6 +165,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Remove ocean proximity for trajectory points outside the sea ice mask
         ocean_proximity[sic < 15.] = np.nan
+
         return sic, ocean_proximity
 
     def _compute_ice_ocean_proximity(self) -> None:
