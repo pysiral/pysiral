@@ -40,8 +40,9 @@ from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.iotools import ReadNC
 
-
 import scipy.ndimage as ndimage
+from scipy.spatial.distance import cdist
+
 from pyproj import Proj
 import numpy as np
 from pathlib import Path
@@ -76,8 +77,10 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Class properties
         self._data = None
+        self._ice_ocean_promity = None
         self.start_time = None
         self.hemisphere_code = None
+        self.hemisphere = None
 
     def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
@@ -88,6 +91,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # These properties are needed to construct the product path
         self.start_time = l2.info.start_time
+        self.hemisphere = l2.hemisphere
         self.hemisphere_code = l2.hemisphere_code
 
         # Set the requested date
@@ -140,6 +144,9 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
+        # Compute ice/ocean proximity variable
+        self._compute_ice_ocean_proximity()
+
     def _get_sic_track(self, l2: "Level2Data") -> np.ndarray:
         """
         Simple extraction along trajectory
@@ -154,6 +161,51 @@ class OsiSafSIC(AuxdataBaseClass):
         sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
 
         return sic
+
+    def _compute_ice_ocean_proximity(self) -> None:
+        """
+        Computes the distance of each sea ice grid cell (SIC >= 15%) to the
+        next ocean (SIC <= 15% and not land) grid cell. The result will be
+        stored to this instance and the data can be extracted along the
+        track similar to sea ice concentration
+        :return:
+        """
+
+        # Create pixel-based masks for ice and ocean pixels
+        ice_conc = self._data.ice_conc
+        ice_pixels = ice_conc >= 15.
+        ocean_pixels = ice_conc < 15.
+        ice_pixels_extended = ndimage.maximum_filter(ice_pixels, 3)
+
+        # Detect the ocean side of the ice/ocean transition
+        flag = np.full(ice_conc.shape, -1, dtype=int)
+        flag[np.where(ice_pixels)] = 1
+        flag[np.where(ocean_pixels)] = 0
+        gx, gy = np.gradient(flag)
+        total_gradient = np.sqrt(gx ** 2. + gy ** 2.)
+
+        # The ocean side of the ice/ocean edge must have a flag gradient and be of type ocean ...
+        ice_edge_ocean_pixel = np.logical_and(total_gradient > 0, flag == 0)
+        # ... and there needs to be a sea ice pixel next to it
+        ice_edge_ocean_pixel = np.logical_and(ice_edge_ocean_pixel, ice_pixels_extended)
+
+        # Convert the grid cell indices in coordinates
+        ice_points_idx = np.where(ice_pixels)
+        ice_edge_ocean_points_idx = np.where(ice_edge_ocean_pixel)
+        ice_points = np.array([ice_points_idx[0], ice_points_idx[1]]).T
+        ice_edge_ocean_points = np.array([ice_edge_ocean_points_idx[0], ice_edge_ocean_points_idx[1]]).T
+
+        # Compute the minimal distance between each sea ice pixel and all
+        # ice/ocean edge pixel and convert result to physical units
+        griddef = self.cfg.options[self.hemisphere]
+        pixel_spacing = float(griddef["dimension"]["dx"])
+        dist = cdist(ice_points, ice_edge_ocean_points)
+        min_dist = np.nanmin(dist, axis=1) * pixel_spacing
+
+        # Convert back to grid shape and save
+        ice_ocean_proximity = np.full(ice_conc.shape, 0.0)
+        ice_ocean_proximity[ice_points_idx] = min_dist
+        self._ice_ocean_promity = ice_ocean_proximity
 
     @property
     def requested_filepath(self) -> "Path":
