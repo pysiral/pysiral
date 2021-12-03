@@ -77,7 +77,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Class properties
         self._data = None
-        self._ice_ocean_promity = None
+        self._ocean_proximity = None
         self.start_time = None
         self.hemisphere_code = None
         self.hemisphere = None
@@ -103,9 +103,10 @@ class OsiSafSIC(AuxdataBaseClass):
         # Check if error with file I/O
         if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
+            ocean_proximity = self.get_empty_array(l2)
         else:
             # Get and return the track
-            sic = self._get_sic_track(l2)
+            sic, ocean_proximity = self._get_sic_track(l2)
 
             # Fill pole hole
             if "fill_pole_hole" in self.cfg.options:
@@ -116,6 +117,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
+        self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)
 
     def load_requested_auxdata(self) -> None:
         """
@@ -147,7 +149,7 @@ class OsiSafSIC(AuxdataBaseClass):
         # Compute ice/ocean proximity variable
         self._compute_ice_ocean_proximity()
 
-    def _get_sic_track(self, l2: "Level2Data") -> np.ndarray:
+    def _get_sic_track(self, l2: "Level2Data") -> Tuple[np.ndarray, np.ndarray]:
         """
         Simple extraction along trajectory
         :param l2:
@@ -159,8 +161,11 @@ class OsiSafSIC(AuxdataBaseClass):
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
+        ocean_proximity = grid2track.get_from_grid_variable(self._ocean_proximity, flipud=True, order=1)
 
-        return sic
+        # Remove ocean proximity for trajectory points outside the sea ice mask
+        ocean_proximity[sic < 15.] = np.nan
+        return sic, ocean_proximity
 
     def _compute_ice_ocean_proximity(self) -> None:
         """
@@ -203,9 +208,9 @@ class OsiSafSIC(AuxdataBaseClass):
         min_dist = np.nanmin(dist, axis=1) * pixel_spacing
 
         # Convert back to grid shape and save
-        ice_ocean_proximity = np.full(ice_conc.shape, 0.0)
-        ice_ocean_proximity[ice_points_idx] = min_dist
-        self._ice_ocean_promity = ice_ocean_proximity
+        ocean_proximity = np.full(ice_conc.shape, 0.0)
+        ocean_proximity[ice_points_idx] = min_dist
+        self._ocean_proximity = ocean_proximity
 
     @property
     def requested_filepath(self) -> "Path":
