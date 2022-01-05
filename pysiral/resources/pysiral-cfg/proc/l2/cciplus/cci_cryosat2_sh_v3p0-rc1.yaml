@@ -89,7 +89,7 @@ procsteps:
         options:
 
             # This option defines the surface type order. It is important that
-            # leads are classified before sea ice to fullfill the condition
+            # leads are classified before sea ice to fulfill the condition
             # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 
