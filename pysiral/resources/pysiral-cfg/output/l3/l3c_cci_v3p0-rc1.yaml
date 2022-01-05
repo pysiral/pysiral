@@ -89,7 +89,7 @@ variables:
     coordinates: "time lat lon"
 
   distance_to_ocean:
-    long_name: "instantenous distance to ocean (ice edge)"
+    long_name: "instantaneous distance to ocean (ice edge)"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
