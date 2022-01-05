@@ -135,7 +135,7 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
     standard_name: sea_ice_classification
-    units: "1"
+    units: 1
     valid_min: 0.0
     valid_max: 1.0
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -144,7 +144,7 @@ variables:
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standard_error
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -269,7 +269,7 @@ variables:
     6: Baffin Bay, 7: East Greenland Sea, 8 Barents Sea, 9: Kara Sea, 10: Laptev Sea, 11: East Siberian Sea, 12: Chukchi Sea, 
     13: Beaufort Sea, 14: Canadian Islands, 15: Central Arctic, 16: Baltic Sea, 20: land, 21 :land outline;0: Land Ice, 1: Ice-free Oceans, 
     2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land}"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -281,21 +281,21 @@ variables:
     flag_values: "0, 1, 2"
     flag_meaning: "0: pulse limited (lrm), 1: sar, 2: sar interferometric"
     comment: "median of radar mode flags within grid cells"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_n_total_waveforms:
     var_source_name: n_total_waveforms
     long_name: "number of total measurements per grid cell"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_n_valid_waveforms:
     var_source_name: n_valid_waveforms
     long_name: "number of valid measurements per grid cell"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "definition of valid: either lead or ice"
@@ -303,7 +303,7 @@ variables:
   stat_valid_fraction:
     var_source_name: valid_fraction
     long_name: "fraction of valid to total waveforms"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "definition of valid: either lead or ice"
@@ -311,14 +311,21 @@ variables:
   stat_lead_fraction:
     var_source_name: lead_fraction
     long_name: "lead waveform detections per valid waveforms in grid cell"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_ice_fraction:
     var_source_name: ice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
-    units: "1"
+    units: 1
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_distance_to_ocean:
+    var_source_name: distance_to_ocean
+    long_name: "average distance to ocean from daily trajectory data"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -332,7 +339,7 @@ variables:
     uniform distribution (1-D with D being the result of KS test)"
     valid_min: 0.0
     valid_max: 1.0
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -340,7 +347,7 @@ variables:
     var_source_name: temporal_coverage_day_fraction
     long_name: "fraction of days with sea-ice thickness data coverage in full grid period"
     comment: "This parameter is defined as len(days_with_observations)/number_of_days_in_grid_period"
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -351,7 +358,7 @@ variables:
     (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
     valid_min: 0.0
     valid_max: 1.0
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -363,7 +370,7 @@ variables:
     or larger than 0.5 indicates a possible phase bias."
     valid_min: 0.0
     valid_max: 1.0
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -372,7 +379,7 @@ variables:
     long_name: "fraction of negative sea-ice thickness values"
     valid_min: 0.0
     valid_max: 1.0
-    units: "1"
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -474,32 +481,32 @@ variables:
 
   stat_tfmra_threshold_mean:
     var_source_name: stat_tfmra_threshold_all_mean
-    long_name: "average pulse peakiness coefficient (all waveforms)"
+    long_name: "average tfmra threshold (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_tfmra_threshold_sdev:
     var_source_name: stat_tfmra_threshold_all_sdev
-    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
+    long_name: "tfmra threshold standard_deviation (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_tfmra_threshold_sea_ice_mean:
-    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
+    long_name: "average tfmra threshold (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_tfmra_threshold_sea_ice_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
+    long_name: "tfmra threshold standard_deviation (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_tfmra_threshold_lead_mean:
-    long_name: "average pulse peakiness coefficient (lead waveforms)"
+    long_name: "average tfmra threshold (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   stat_tfmra_threshold_lead_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    long_name: "tfmra threshold standard_deviation (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
