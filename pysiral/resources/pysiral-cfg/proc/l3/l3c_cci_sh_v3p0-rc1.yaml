@@ -29,7 +29,7 @@ l2_parameter:
         fillvalue: .NAN
 
     distance_to_ocean:
-        grid_method: none
+        grid_method: average
         dtype: f4
         fillvalue: .NAN
 
@@ -189,7 +189,7 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3LoadMasks
       options:
-        mask_names: ["warren99_is_valid", "landsea"]
+        mask_names: ["landsea"]
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
