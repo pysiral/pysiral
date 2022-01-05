@@ -158,6 +158,12 @@ variables:
     units: m
     coordinates: time
 
+  distance_to_ocean:
+    long_name: "distance to open ocean"
+    units: m
+    comment: "computed from gridded sea ice concentration mask"
+    coordinates: time
+
   sea_level_anomaly_raw:
     long_name: "sea level anomaly (unsmoothed)"
     standard_name: sea_surface_height_above_mean_sea_level

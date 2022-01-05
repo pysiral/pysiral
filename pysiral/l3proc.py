@@ -141,8 +141,7 @@ class Level3Processor(DefaultLoggingClass):
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            logger.info(
-                "Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
+            logger.info(f"Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
         self._l3_progress_percent = progress_percent
 
     def _apply_processing_items(self, l3grid):
@@ -325,6 +324,10 @@ class L3DataGrid(DefaultLoggingClass):
             raise ValueError(msg)
         self.l2 = stack
 
+        # Get a list of non-empty
+        self._non_empty_grid_indices = None
+        self._init_grid_indices_mask()
+
         # container for gridded parameters
         self.vars = {}
 
@@ -459,6 +462,20 @@ class L3DataGrid(DefaultLoggingClass):
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
+
+    def _init_grid_indices_mask(self) -> None:
+        """
+        Compute a mask of non-empty grid indices
+        :return:
+        """
+
+        # Get number of items per stack
+        n_records = np.ndarray(shape=self.grid_shape)
+        for xi, yj in self.all_grid_indices:
+            n_records[yj][xi] = len(self.l2.stack["time"][yj][xi])
+
+        # Get indices
+        self._non_empty_grid_indices = np.flip(np.array(np.where(n_records > 0))).T
 
     def _init_metadata_from_l2(self):
         """
@@ -639,8 +656,15 @@ class L3DataGrid(DefaultLoggingClass):
         return np.arange(self.griddef.extent.numy)
 
     @property
-    def grid_indices(self):
+    def all_grid_indices(self):
         return itertools.product(self.grid_xi_range, self.grid_yj_range)
+
+    @property
+    def grid_indices(self):
+        if self._non_empty_grid_indices is None:
+            return itertools.product(self.grid_xi_range, self.grid_yj_range)
+        else:
+            return self._non_empty_grid_indices
 
     # @property
     # def parameter_list(self):
@@ -1822,12 +1846,13 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
 
         # Get surface type flag
         surface_type = self.l3grid.l2.stack["surface_type"]
-        target_surface_types = self.surface_types
+        target_surface_types = list(self.surface_types)
         target_surface_types.append("all")
 
         # Loop over all parameters
         for parameter_name in self.parameters:
             # Get the stack
+            classifier_stack = None
             try:
                 classifier_stack = self.l3grid.l2.stack[parameter_name]
             except KeyError:
@@ -1840,7 +1865,10 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
             for statistic in self.statistics:
                 # Loop over target surface types
                 for target_surface_type in target_surface_types:
-                    self._compute_grid_variable(parameter_name, classifier_stack, surface_type, target_surface_type,
+                    self._compute_grid_variable(parameter_name,
+                                                classifier_stack,
+                                                surface_type,
+                                                target_surface_type,
                                                 statistic)
 
     def _compute_grid_variable(self, parameter_name, classifier_stack, surface_type, target_surface_type, statistic):
