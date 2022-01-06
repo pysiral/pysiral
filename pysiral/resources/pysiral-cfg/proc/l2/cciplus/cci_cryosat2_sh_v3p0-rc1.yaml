@@ -3,8 +3,8 @@ metadata:
     product_line: cci
     record_type: tds
     platform: cryosat2
-    version: v3p0-rc2
-    file_version_tag: v3p0-rc2
+    version: v3p0-rc1
+    file_version_tag: v3p0-rc1
     hemisphere: south
 
 
@@ -104,11 +104,13 @@ procsteps:
                 - radar_mode: sar
                   conditions:
                       - "{sea_ice_concentration} < 15.0"
+                      # TODO: Incorrect, replace with pulse_peakiness_rolling_std
                       - "{pulse_peakiness} < 5.0"
 
                 - radar_mode: sin
                   conditions:
                       - "{sea_ice_concentration} < 15.0"
+                      # TODO: Incorrect, replace with pulse_peakiness_rolling_std
                       - "{pulse_peakiness} < 5.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
