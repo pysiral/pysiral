@@ -178,8 +178,8 @@ grid_settings:
 # ==================================================
 
 # Mask grid cells
-# Note: The masking is exectuted in the alphabetical order of the mask names.
-#       If there is a dependance between following mask procedures this needs
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
 
 processing_items:
@@ -216,10 +216,6 @@ processing_items:
         condition: "is_nan"
         targets:
             - sea_ice_freeboard_uncertainty
-            - radar_freeboard_uncertainty
-            - sea_level_anomaly
-            - sea_level_anomaly_uncertainty
-            - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
             - sea_ice_type
@@ -234,6 +230,7 @@ processing_items:
         is_smaller_threshold: 15.0
         connect_conditions: "or"
         targets:
+            - distance_to_ocean
             - n_total_waveforms
             - n_valid_waveforms
             - valid_fraction
@@ -245,9 +242,6 @@ processing_items:
             - snow_depth_uncertainty
             - snow_density
             - snow_density_uncertainty
-            - sea_ice_concentration
-            - region_code
-            - radar_mode
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
