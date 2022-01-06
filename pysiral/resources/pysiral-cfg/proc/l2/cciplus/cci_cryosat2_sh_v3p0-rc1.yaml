@@ -270,3 +270,12 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
+
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            distance_to_ocean_maximum: 300000.
+            sea_ice_freeboard_threshold: [0.4, 0.8]
+            leading_edge_width_miz_gradient: [1.0, 2.0]
+            leading_edge_width_ocean_value: [2.5, 3.5]

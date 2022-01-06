@@ -7,11 +7,14 @@ Created on Sat Apr 23 15:30:53 2016
 
 import numpy as np
 import bottleneck as bn
+from typing import List, Union
 from scipy.interpolate import interp1d, UnivariateSpline
 from astropy.convolution import convolve, Box1DKernel
 
 import statsmodels.api as sm
 
+from pysiral.l2data import Level2Data
+from pysiral.l1bdata import Level1bData
 from pysiral.core.flags import FlagContainer, ORCondition
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
@@ -208,10 +211,8 @@ class ParameterSmoother(Level2ProcessorStep):
         x = np.arange(y.shape[0])
 
         # Compute the data fraction to use at each y-value
-        #
-        #
-        data_fraction = 1501./float(y.shape[0])
-        data_fraction = data_fraction if data_fraction <= 1. else 1.
+        # TODO: Value of 1501 is hard coded -> move to the settings
+        data_fraction = min(1501./float(y.shape[0]), 1.)
 
         # Compute the lowess filter with potential keywords from the config file
         filter_props = smoother_args.get("filter_props", {})
@@ -226,6 +227,118 @@ class ParameterSmoother(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return [self.cfg.options.target_variable_id]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
+
+
+class MarginalIceZoneFilterFlag(Level2ProcessorStep):
+    """
+    Create a flag value that can be used to filter freeboard/thickness values
+    that are affected by surface waves penetrating the marginal ice zone.
+    The filter flag is not applied to any geophysical variables, but added
+    to the l2 data container.
+
+    The flag can take the following values:
+
+        0: not in marginal ice zone
+        1: in marginal ice zone: light to none wave influence detected
+        2: in marginal ice zone: medium wave influence detected
+        3: in marginal ice zone: severe wave influence detected
+
+    The flag values depend on:
+
+        - leading edge with of ocean waveforms at the ice edge
+        - sea ice freeboard gradient as a function of distance to the ice edge
+        - sea ice freeboard value
+
+    Thresholds to determine the flag values need to be specified in the
+    options of the Level2 processor definition file:
+
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            distance_to_ocean_maximum: <maximum size of the marginal ice zone>
+            leading_edge_width_miz_gradient: [<medium_threshold>, <severe_threshold>]
+            leading_edge_width_ocean_value [<medium_threshold>, <severe_threshold>]
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(MarginalIceZoneFilterFlag, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self,
+                         l1b: "Level1bData",
+                         l2: "Level2Data"
+                         ) -> np.ndarray:
+        """
+        API method for Level2ProcessorStep subclasses. Computes and add the filter flag to the l2 data object
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        filter_flag_miz = np.full(l2.n_records, 0, dtype=int)
+        filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
+
+        # Step 1: Detect ice edge(s) in the trajectory data.
+        ice_edge_idx = self._get_ice_edge_idxs(l2)
+        if ice_edge_idx is None:
+            l2.set_auxiliary_parameter("fmiz", "filter_flag_miz", filter_flag_miz, None)
+            return filter_flag_miz_error
+
+        breakpoint()
+
+    def _get_ice_edge_idxs(self, l2: "Level2Data") -> Union[List, None]:
+        """
+        Find any transitions between sea ice / open water areas
+        :param l2:
+        :return: List of indices marking the ice edge (e.g. first ice waveform).
+        """
+
+        # Initial sanity check
+        if l2.surface_type.ocean.num == 0:
+            return None
+
+        import pandas as pd
+        # some sample data
+        ts = pd.Series(l2.pp)
+
+        # add the 20 day rolling standard deviation:
+        # pd.Series(l2.pp).rolling(window=51).skew().plot(style='r')
+        ts.plot()
+        ts.rolling(window=51, center=True, min_periods=1).std().plot(style='r')
+        # ts.rolling(window=51, center=True).min().plot(style='b')
+        # ts.rolling(window=51, center=True).max().plot(style='b')
+
+        import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(l2.sic)
+        # plt.plot(l2.surface_type.ocean.flag*50)
+        #
+        # plt.figure("Pulse Peakiness")
+        # plt.plot(l2.pp)
+        #
+        # plt.figure("ssd")
+        # plt.plot(l2.ssd)
+        #
+        # plt.figure("lew")
+        # plt.plot(l2.lew)
+
+        plt.show()
+        breakpoint()
+
+    @property
+    def l2_input_vars(self):
+        return ["surface_type",
+                "leading_edge_width",
+                "sea_ice_freeboard",
+                "distance_to_ocean"]
+
+    @property
+    def l2_output_vars(self):
+        return ["filter_flag_miz"]
 
     @property
     def error_bit(self):
