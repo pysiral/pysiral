@@ -185,11 +185,16 @@ grid_settings:
 processing_items:
 
     # Compute surface type statistics based on surface type classification
-    - label: "Load masks"
+    - label: "Load CCI land mask"
       module_name: pysiral.l3proc
-      class_name: Level3LoadMasks
+      class_name: Level3LoadCCILandMask
       options:
-        mask_names: ["landsea"]
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
+            sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_fraction
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"

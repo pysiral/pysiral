@@ -3,8 +3,8 @@ metadata:
     product_line: cci
     record_type: tds
     platform: cryosat2
-    version: v3p0-rc1
-    file_version_tag: v3p0-rc1
+    version: v3p0-rc2
+    file_version_tag: v3p0-rc2
     hemisphere: south
 
 
@@ -156,7 +156,7 @@ procsteps:
                 pyclass: cTFMRA
                 options:
                     # if arrays than [lrm, sar, sin]
-                    threshold: 0.5
+                    threshold: 0.95
                     offset: 0.0
                     noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
@@ -173,7 +173,7 @@ procsteps:
                 pyclass: cTFMRA
                 options:
                     # if arrays than [lrm, sar, sin]
-                    threshold: 0.5
+                    threshold: 0.7
                     offset: 0.0
                     noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
