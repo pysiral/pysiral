@@ -194,7 +194,7 @@ processing_items:
             sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
             sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
         mask_variable_name: landsea
-        density_variable_name: ocean_fraction
+        density_variable_name: ocean_area_fraction
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
@@ -231,17 +231,26 @@ processing_items:
         connect_conditions: "or"
         targets:
             - distance_to_ocean
-            - n_total_waveforms
-            - n_valid_waveforms
-            - valid_fraction
-            - lead_fraction
-            - ice_fraction
             - negative_thickness_fraction
             - sea_ice_type
             - snow_depth
             - snow_depth_uncertainty
             - snow_density
             - snow_density_uncertainty
+
+    - label: "Mask parameters (Num of total waveforms)"
+      module_name: pysiral.l3proc
+      class_name: Level3ParameterMask
+      options:
+        source: n_total_waveforms
+        condition: "is_smaller"
+        is_smaller_threshold: 1
+        connect_conditions: "or"
+        targets:
+          - valid_fraction
+          - ocean_fraction
+          - ice_fraction
+          - lead_fraction
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
@@ -305,5 +314,5 @@ processing_items:
       class_name: Level3GriddedClassifiers
       options:
         parameters: ["sigma0", "leading_edge_width", "pulse_peakiness", "tfmra_threshold"]
-        surface_types: ["sea_ice", "lead"]
+        surface_types: ["sea_ice", "lead", "ocean"]
         statistics: ["mean", "sdev"]

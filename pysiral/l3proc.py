@@ -1158,12 +1158,13 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
     required_options = []
     l2_variable_dependencies = ["surface_type", "sea_ice_thickness"]
     l3_variable_dependencies = []
-    l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=np.nan),
-                               n_valid_waveforms=dict(dtype="f4", fill_value=np.nan),
-                               valid_fraction=dict(dtype="f4", fill_value=np.nan),
-                               lead_fraction=dict(dtype="f4", fill_value=np.nan),
-                               ice_fraction=dict(dtype="f4", fill_value=np.nan),
-                               negative_thickness_fraction=dict(dtype="f4", fill_value=np.nan),
+    l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=0.0),
+                               n_valid_waveforms=dict(dtype="f4", fill_value=0.0),
+                               valid_fraction=dict(dtype="f4", fill_value=0.0),
+                               lead_fraction=dict(dtype="f4", fill_value=0.0),
+                               ice_fraction=dict(dtype="f4", fill_value=0.0),
+                               ocean_fraction=dict(dtype="f4", fill_value=0.0),
+                               negative_thickness_fraction=dict(dtype="f4", fill_value=0.0),
                                is_land=dict(dtype="i2", fill_value=-1))
 
     def __init__(self, *args, **kwargs):
@@ -1184,10 +1185,11 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
         The current list
           - is_land (land flag exists in l2i stack)
           - n_total_waveforms (size of l2i stack)
-          - n_valid_waveforms (tagged as either lead or sea ice )
+          - n_valid_waveforms (tagged as either lead, sea ice or ocean )
           - valid_fraction (n_valid/n_total)
           - lead_fraction (n_leads/n_valid)
           - ice_fraction (n_ice/n_valid)
+          - ocean_fraction (n_ocean/n_valid)
           - negative thickness fraction (n_sit<0 / n_sit)
         """
 
@@ -1215,6 +1217,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             valid_waveform = ORCondition()
             valid_waveform.add(surface_type == stflags["lead"])
             valid_waveform.add(surface_type == stflags["sea_ice"])
+            valid_waveform.add(surface_type == stflags["ocean"])
             n_valid_waveforms = valid_waveform.num
             self.l3grid.vars["n_valid_waveforms"][yj, xi] = n_valid_waveforms
 
@@ -1222,7 +1225,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             try:
                 valid_fraction = float(n_valid_waveforms) / float(n_total_waveforms)
             except ZeroDivisionError:
-                valid_fraction = np.nan
+                valid_fraction = 0
             self.l3grid.vars["valid_fraction"][yj, xi] = valid_fraction
 
             # Fractions of leads on valid_waveforms
@@ -1230,7 +1233,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             try:
                 lead_fraction = float(n_leads) / float(n_valid_waveforms)
             except ZeroDivisionError:
-                lead_fraction = np.nan
+                lead_fraction = 0
             self.l3grid.vars["lead_fraction"][yj, xi] = lead_fraction
 
             # Fractions of leads on valid_waveforms
@@ -1238,8 +1241,16 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             try:
                 ice_fraction = float(n_ice) / float(n_valid_waveforms)
             except ZeroDivisionError:
-                ice_fraction = np.nan
+                ice_fraction = 0
             self.l3grid.vars["ice_fraction"][yj, xi] = ice_fraction
+
+            # Fractions of leads on valid_waveforms
+            n_ice = len(np.where(surface_type == stflags["ocean"])[0])
+            try:
+                ocean_fraction = float(n_ice) / float(n_valid_waveforms)
+            except ZeroDivisionError:
+                ocean_fraction = 0
+            self.l3grid.vars["ocean_fraction"][yj, xi] = ocean_fraction
 
             # Fractions of negative thickness values
             sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])

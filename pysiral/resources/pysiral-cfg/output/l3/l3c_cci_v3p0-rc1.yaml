@@ -272,6 +272,14 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  ocean_area_fraction:
+    long_name: "Fraction of grid cell area covered by ocean"
+    comment: "Derived from higher resolution land masks by Thomas Lavergne (MET.NO)"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   stat_radar_mode:
     var_source_name: radar_mode
     long_name: "radar mode flag"
@@ -322,6 +330,14 @@ variables:
   stat_ice_fraction:
     var_source_name: ice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: 1
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_ocean_fraction:
+    var_source_name: ocean_fraction
+    long_name: "ocean waveform detections per valid waveforms in grid cell"
     units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -417,6 +433,18 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
+  stat_sigma0_ocean_mean:
+    long_name: "average radar backscatter coefficient (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_sigma0_ocean_sdev:
+    long_name: "radar backscatter coefficient standard_deviation (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
   stat_leading_edge_width_mean:
     var_source_name: stat_leading_edge_width_all_mean
     long_name: "average leading edge width coefficient (all waveforms)"
@@ -455,6 +483,18 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
+  stat_leading_edge_width_ocean_mean:
+    long_name: "average leading edge width coefficient (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_leading_edge_width_ocean_sdev:
+    long_name: "leading edge width coefficient standard_deviation (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
   stat_pulse_peakiness_mean:
     var_source_name: stat_pulse_peakiness_all_mean
     long_name: "average pulse peakiness coefficient (all waveforms)"
@@ -489,6 +529,18 @@ variables:
 
   stat_pulse_peakiness_lead_sdev:
     long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_pulse_peakiness_ocean_mean:
+    long_name: "average pulse peakiness coefficient (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_pulse_peakiness_ocean_sdev:
+    long_name: "pulse peakiness coefficient standard_deviation (ocean waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
