@@ -83,6 +83,15 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev"]
+            input_parameters:
+                - pulse_peakiness
+
     # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
@@ -104,14 +113,12 @@ procsteps:
                 - radar_mode: sar
                   conditions:
                       - "{sea_ice_concentration} < 15.0"
-                      # TODO: Incorrect, replace with pulse_peakiness_rolling_std
-                      - "{pulse_peakiness} < 5.0"
+                      - "{pulse_peakiness_rolling_sdev} < 1.0"
 
                 - radar_mode: sin
                   conditions:
                       - "{sea_ice_concentration} < 15.0"
-                      # TODO: Incorrect, replace with pulse_peakiness_rolling_std
-                      - "{pulse_peakiness} < 5.0"
+                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.

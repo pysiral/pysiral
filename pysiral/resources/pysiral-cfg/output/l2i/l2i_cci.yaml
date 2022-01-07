@@ -359,6 +359,11 @@ variables:
     units: "1"
     coordinates: time
 
+  pulse_peakiness_rolling_sdev:
+    long_name: "pulse peakiness rolling standard deviation"
+    units: "1"
+    coordinates: time
+
   leading_edge_width:
     long_name: "leading edge width"
     units: "1"
