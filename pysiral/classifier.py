@@ -6,6 +6,9 @@ Created on Mon Jul 27 18:09:30 2015
 
 Modified by FMI in August 2018:
 LTPP added
+
+:TODO: Merge into a waveform module
+
 """
 
 import numpy as np

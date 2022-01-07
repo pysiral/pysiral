@@ -21,6 +21,8 @@ import re
 
 
 class Level2Data(object):
+
+    # TODO: Using class variables may break things during multi-processing
     _L2_DATA_ITEMS = ["range", "sla", "sla_raw", "dot", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}

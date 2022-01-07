@@ -3,6 +3,7 @@
 Created on Tue Jul 21 18:04:43 2015
 
 @author: Stefan
+TODO: Is this still being used?
 """
 
 from dateutil import parser as dtparser

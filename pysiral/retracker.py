@@ -2,7 +2,9 @@
 """
 Created on Fri Jul 31 15:48:58 2015
 
-@author: Stefan Hendrics
+@author: Stefan Hendricks
+
+TODO: move this to it own module and separate retrackers into different files
 """
 
 # Utility methods for retracker:

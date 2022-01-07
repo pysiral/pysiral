@@ -1,4 +1,6 @@
 
+# TODO: Evaluate use and move to core module
+
 from pysiral.errorhandler import ErrorStatus
 
 
