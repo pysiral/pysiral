@@ -282,7 +282,9 @@ procsteps:
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:
-            distance_to_ocean_maximum: 300000.
+            sea_ice_filter_size_m: 300000.
+            ocean_filter_size_m: 25000.
+            freeboard_smoother_filter_size_m: 150000.
             sea_ice_freeboard_threshold: [0.4, 0.8]
-            leading_edge_width_miz_gradient: [1.0, 2.0]
-            leading_edge_width_ocean_value: [2.5, 3.5]
+            leading_edge_width_miz_gradient: [0.02, 0.02]
+            leading_edge_width_ocean_value: [3.0, 3.8]
