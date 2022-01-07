@@ -327,8 +327,8 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
 
-  stat_ice_fraction:
-    var_source_name: ice_fraction
+  stat_seaice_fraction:
+    var_source_name: seaice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
     units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"

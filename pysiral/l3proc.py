@@ -1162,7 +1162,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                                n_valid_waveforms=dict(dtype="f4", fill_value=0.0),
                                valid_fraction=dict(dtype="f4", fill_value=0.0),
                                lead_fraction=dict(dtype="f4", fill_value=0.0),
-                               ice_fraction=dict(dtype="f4", fill_value=0.0),
+                               seaice_fraction=dict(dtype="f4", fill_value=0.0),
                                ocean_fraction=dict(dtype="f4", fill_value=0.0),
                                negative_thickness_fraction=dict(dtype="f4", fill_value=0.0),
                                is_land=dict(dtype="i2", fill_value=-1))
@@ -1228,34 +1228,21 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 valid_fraction = 0
             self.l3grid.vars["valid_fraction"][yj, xi] = valid_fraction
 
-            # Fractions of leads on valid_waveforms
-            n_leads = len(np.where(surface_type == stflags["lead"])[0])
-            try:
-                lead_fraction = float(n_leads) / float(n_valid_waveforms)
-            except ZeroDivisionError:
-                lead_fraction = 0
-            self.l3grid.vars["lead_fraction"][yj, xi] = lead_fraction
-
-            # Fractions of leads on valid_waveforms
-            n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
-            try:
-                ice_fraction = float(n_ice) / float(n_valid_waveforms)
-            except ZeroDivisionError:
-                ice_fraction = 0
-            self.l3grid.vars["ice_fraction"][yj, xi] = ice_fraction
-
-            # Fractions of leads on valid_waveforms
-            n_ice = len(np.where(surface_type == stflags["ocean"])[0])
-            try:
-                ocean_fraction = float(n_ice) / float(n_valid_waveforms)
-            except ZeroDivisionError:
-                ocean_fraction = 0
-            self.l3grid.vars["ocean_fraction"][yj, xi] = ocean_fraction
+            # Fractions of surface types with respect to valid_waveforms
+            for surface_type_name in ["ocean", "lead", "sea_ice"]:
+                n_wfm = len(np.where(surface_type == stflags[surface_type_name])[0])
+                try:
+                    detection_fraction = float(n_wfm) / float(n_valid_waveforms)
+                except ZeroDivisionError:
+                    detection_fraction = 0
+                surface_type_id = surface_type_name.replace("_", "")
+                self.l3grid.vars[f"{surface_type_id}_fraction"][yj, xi] = detection_fraction
 
             # Fractions of negative thickness values
             sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
+                n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
                 negative_thickness_fraction = float(n_negative_thicknesses) / float(n_ice)
             except ZeroDivisionError:
                 negative_thickness_fraction = np.nan

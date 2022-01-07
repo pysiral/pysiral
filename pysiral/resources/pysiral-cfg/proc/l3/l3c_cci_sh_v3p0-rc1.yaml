@@ -249,7 +249,7 @@ processing_items:
         targets:
           - valid_fraction
           - ocean_fraction
-          - ice_fraction
+          - seaice_fraction
           - lead_fraction
 
     # Compute the uncertainties of gridded parameter
