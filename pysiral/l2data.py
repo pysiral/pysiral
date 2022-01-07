@@ -619,6 +619,10 @@ class Level2Data(object):
         return name
 
     @property
+    def auxiliary_catalog(self):
+        return dict(self._auxiliary_catalog)
+
+    @property
     def arrshape(self):
         return self.n_records
 
