@@ -79,35 +79,18 @@ class Level3Processor(DefaultLoggingClass):
             # Apply the orbit filter (for masking descending or ascending orbit segments)
             # NOTE: This tag may not be present in all level-3 settings files, as it has
             #       been added as a test case
-            try:
-                orbitfilter = self._job.l3def.orbit_filter
-                orbitfilter_is_active = orbitfilter.active
-            except AttributeError:
-                orbitfilter_is_active = False
+            # TODO: Create a configurable processor item
+            orbit_filter = self._job.l3def.get("orbit_filter")
+            if orbit_filter is not None:
+                self.apply_orbit_filter(l2i, orbit_filter)
 
-            if orbitfilter_is_active:
-
-                # Display warning if filter is active
-                logger.warning("Orbit filter is active [%s]" % str(orbitfilter.mask_orbits))
-
-                # Get indices to filter
-                if orbitfilter.mask_orbits == "ascending":
-                    indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
-                elif orbitfilter.mask_orbits == "descending":
-                    indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
-                else:
-                    logger.error(
-                        "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
-                    indices = []
-
-                # Filter geophysical parameters only
-                targets = l2i.parameter_list
-                for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-                    try:
-                        targets.remove(non_target)
-                    except ValueError:
-                        pass
-                l2i.mask_variables(indices, targets)
+            # Apply the orbit filter (for masking descending or ascending orbit segments)
+            # NOTE: This tag may not be present in all level-3 settings files, as it has
+            #       been added as a test case
+            # TODO: Create a configurable processor item
+            miz_filter = self._job.l3def.get("miz_filter")
+            if miz_filter is not None:
+                self.apply_miz_filter(l2i, miz_filter)
 
             # Prefilter l2i product
             # Note: In the l2i product only the minimum set of nan are used
@@ -116,6 +99,7 @@ class Level3Processor(DefaultLoggingClass):
             #       inconsistent results during gridding and therefore it is
             #       highly recommended to harmonize the mask for thickness
             #       and the different freeboard levels
+            # TODO: Create a configurable processor item
             prefilter = self._job.l3def.l2i_prefilter
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source, prefilter.nan_targets)
@@ -147,6 +131,53 @@ class Level3Processor(DefaultLoggingClass):
             )
 
         self._l3_progress_percent = progress_percent
+
+    @staticmethod
+    def apply_orbit_filter(l2i, orbit_filter):
+        """
+        Apply a
+        :param l2i:
+        :param orbit_filter:
+        :return:
+        """
+
+        # Display warning if filter is active
+        logger.warning("Orbit filter is active [%s]" % str(orbit_filter.mask_orbits))
+
+        # Get indices to filter
+        if orbit_filter.mask_orbits == "ascending":
+            indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
+        elif orbit_filter.mask_orbits == "descending":
+            indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
+        else:
+            logger.error(
+                "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
+            indices = []
+
+        # Filter geophysical parameters only
+        targets = l2i.parameter_list
+        for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
+            try:
+                targets.remove(non_target)
+            except ValueError:
+                pass
+        l2i.mask_variables(indices, targets)
+
+    @staticmethod
+    def apply_miz_filter(l2i, miz_filter):
+        """
+        Flag values based on the miz filter value
+        :param l2i:
+        :param miz_filter:
+        :return:
+        """
+
+        flag_miz = getattr(l2i, "flag_miz", None)
+        if miz_filter is None:
+            return
+
+        idx = np.where(flag_miz >= miz_filter["mask_min_value"])[0]
+        l2i.mask_variables(idx, miz_filter["mask_targets"])
 
     def _apply_processing_items(self, l3grid):
         """
@@ -264,11 +295,11 @@ class L2iDataStack(DefaultLoggingClass):
 
     @property
     def n_total_records(self):
-        return self._n_records
+        return int(self._n_records)
 
     @property
     def l2i_count(self):
-        return self._l2i_count
+        return int(self._l2i_count)
 
     @property
     def parameter_stack(self):

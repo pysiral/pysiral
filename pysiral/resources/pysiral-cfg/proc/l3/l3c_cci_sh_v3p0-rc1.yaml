@@ -43,6 +43,11 @@ l2_parameter:
         dtype: i4
         fillvalue: -1
 
+    flag_miz:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
     radar_freeboard:
         grid_method: average
         dtype: f4
@@ -158,6 +163,12 @@ l2_parameter:
 # ==================================================
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
+
+miz_filter: 
+    mask_min_value: 2
+    mask_targets: 
+        - sea_ice_freeboard
+        - sea_ice_thickness
 
 l2i_prefilter:
     active: True

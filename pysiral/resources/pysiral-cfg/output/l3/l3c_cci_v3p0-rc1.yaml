@@ -235,6 +235,19 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  miz_flag:
+    var_source_name: flag_miz
+    long_name: Marginal Ice Zone Flag
+    standard_name: "quality_flag"
+    units: 1
+    valid_min: -1
+    valid_max: 3
+    flag_values: "-1, 0, 1, 2, 3"
+    flag_meanings: "no_data not_in_miz miz_low_bias miz_potential_bias miz_bias"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag
     standard_name: "quality_flag"

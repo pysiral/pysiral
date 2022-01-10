@@ -191,7 +191,7 @@ processing_items:
       options:
         local_machine_def_mask_tag: cci_landoceanlake
         mask_name_dict:
-            nh25kmEASE2: LandOceanLakeMask_nh_ease2-250.nc
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
         mask_variable_name: landsea
         density_variable_name: ocean_fraction
 
