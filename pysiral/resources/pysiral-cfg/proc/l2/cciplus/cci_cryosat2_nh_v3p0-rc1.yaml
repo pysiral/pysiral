@@ -1,28 +1,29 @@
 metadata:
-    label: "ESA CCI+ CryoSat-2 reprocessed southern hemisphere sea-ice thickness climate data record - release candidate 1"
+    label: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - release candidate 1"
     product_line: cci
     record_type: tds
     platform: cryosat2
     version: v3p0-rc1
     file_version_tag: v3p0-rc1
-    hemisphere: south
+    hemisphere: north
 
 
-# A list auxiliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
-# NOTE: The order of the auxdata definition is important as there might be dependencies of auxiliary datasets
+# A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+# NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 auxdata:
 
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: antarctic_seas
+        name: nsidc_mod
         options: null
 
+    # MSS: Mean Sea Surface
     - mss:
         name: dtu21
         options:
-            latitude_range: [-90.0, -45.]
+            latitude_range: [45.0, 90.0]
 
     - sic:
         name: c3s
@@ -31,18 +32,23 @@ auxdata:
             exception_on_error: False
 
     - sitype:
-         name: fyi_default
-         options: 
-             uncertainty_default: 0.1
+         name: c3s
+         options:
+            version: v2p0
+            exception_on_error: False
 
     - snow:
-         name: icdc_climatology_south
-         options:
-             snow_density: 300.
-             snow_density_uncertainty: 50.
-             smooth_snow_depth: true
-             smooth_filter_width_m: 25000.0
-             exception_on_error: True
+            name: clim_w99amsr2
+            options:
+                daily_scaling: True
+                fyi_correction_factor: 0.5
+
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
 
 
 # --- Level-2 processor steps ---
@@ -104,7 +110,7 @@ procsteps:
 
             # This option defines the surface type order. It is important that
             # leads are classified before sea ice to fullfill the condition
-            # that sea-ice waveforms are not lead waveforms.
+            # that sea-ice waveforms are not lead waveforms. 
             surface_types: [ocean, lead, sea_ice]
 
             # Ocean classification is based on a low pulse peakiness
@@ -112,16 +118,16 @@ procsteps:
             ocean:
 
                 - radar_mode: lrm
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
 
                 - radar_mode: sar
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 1.0"
+                      - "{pulse_peakiness_rolling_sdev} < 1.0" 
 
                 - radar_mode: sin
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
                       - "{pulse_peakiness_rolling_sdev} < 4.0"
 
@@ -131,7 +137,7 @@ procsteps:
             lead:
 
                 - radar_mode: sar
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} >= 15.0"
                       - "{pulse_peakiness} >= 66.0"
                       - "{sigma0} >= 23.0"
@@ -143,11 +149,11 @@ procsteps:
                       - "{pulse_peakiness} >= 260.0"
                       - "{sigma0} >= 24.0"
                       - "{leading_edge_width} <= 1.05"
-
+                    
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
-            # valid leading edge.
+            # valid leading edge. 
             sea_ice:
 
                 - radar_mode: sar
@@ -206,7 +212,9 @@ procsteps:
         pyclass: L2ApplyRangeCorrections
         options:
             corrections: 
+                - dry_troposphere
                 - wet_troposphere
+                - inverse_barometric
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
