@@ -233,8 +233,8 @@ class FlagContainer(object):
 
 class ANDCondition(FlagContainer):
 
-    def __init__(self):
-        super(ANDCondition, self).__init__()
+    def __init__(self, **kwargs):
+        super(ANDCondition, self).__init__(**kwargs)
 
     def add(self, flag: np.ndarray) -> None:
         if self._flag is None:
@@ -245,8 +245,8 @@ class ANDCondition(FlagContainer):
 
 class ORCondition(FlagContainer):
 
-    def __init__(self):
-        super(ORCondition, self).__init__()
+    def __init__(self, **kwargs):
+        super(ORCondition, self).__init__(**kwargs)
 
     def add(self, flag: np.ndarray) -> None:
         if self._flag is None:

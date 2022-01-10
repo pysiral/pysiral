@@ -488,7 +488,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
                 ts_rolled = pd.Series(np.full(l2.n_records, np.nan))
 
             # Output is added as an auxiliary parameter
-            aux_id = f"{l2.auxiliary_catalog[parameter_name]}rl"
+            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl"
             aux_name = f"{parameter_name}_rolling_{statistics_id}"
             l2.set_auxiliary_parameter(aux_id, aux_name, ts_rolled.values, None)
 

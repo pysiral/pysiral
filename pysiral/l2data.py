@@ -15,7 +15,6 @@ import numpy as np
 from datetime import datetime
 from geopy.distance import great_circle
 from collections import OrderedDict
-from loguru import logger
 import uuid
 import re
 
@@ -242,8 +241,7 @@ class Level2Data(object):
 
         try:
             attr_getter = getattr(self, "_get_attr_" + attribute_name)
-            attribute = attr_getter(*args)
-            return attribute
+            return attr_getter(*args)
         except AttributeError:
             return "unkown"
 
@@ -255,10 +253,7 @@ class Level2Data(object):
         """ Performs a test if parameter name is a valid level-2 parameter
         name. Adds error if result negative and returns flag (valid: True,
         invalid: False) """
-        if parameter_name not in self._L2_DATA_ITEMS:
-            return False
-        else:
-            return True
+        return parameter_name in self._L2_DATA_ITEMS
 
     def _check_valid_size(self, array, **kwargs):
         """ Test if array has the correct size shape=(n_records). Adds error
@@ -266,9 +261,8 @@ class Level2Data(object):
         condition = array.ndim == 1 and len(array) == self._n_records
         if condition:
             return True
-        else:
-            self.error.add_error("Invalid array added to level-2 class")
-            return False
+        self.error.add_error("Invalid array added to level-2 class")
+        return False
 
     def _get_as_array(self, value, dtype=np.float32):
         """ Create an output array from values that is of length n_records.
@@ -605,6 +599,12 @@ class Level2Data(object):
         return dict(self._PARAMETER_CATALOG)
 
     @property
+    def full_variable_catalog(self):
+        full_variable_catalog = self.parameter_catalog
+        full_variable_catalog.update(self.auxiliary_catalog)
+        return full_variable_catalog
+
+    @property
     def property_catalog(self):
         return dict(self._PROPERTY_CATALOG)
 
@@ -654,8 +654,7 @@ class Level2Data(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("time", self.n_records)])
-        return dimdict
+        return OrderedDict([("time", self.n_records)])
 
     @property
     def time(self):
@@ -1002,13 +1001,8 @@ class L2iNCFileImport(object):
         self._n_records = len(self.longitude)
 
         # Get timestamp (can be either time or timestamp in l2i files)
-        if hasattr(self, "time"):
-            time = self.time
-            time_parameter_name = "time"
-        # FIXME: The use of `timestamp is deprecated, compliance with CF style can be assumed
-        else:
-            time = self.time
-            time_parameter_name = "timestamp"
+        time_parameter_name = "time" if hasattr(self, "time") else "timestamp"
+        time = self.time
         self._time_parameter_name = time_parameter_name
         dt = num2pydate(time, content.time_def.units, content.time_def.calendar)
         setattr(self, "time", dt)
@@ -1059,8 +1053,7 @@ class L2iNCFileImport(object):
 
         if hasattr(self.info, "platform"):
             platform_name = self.info.platform
-            mission = psrlcfg.platforms.get_platform_id(platform_name)
-            return mission
+            return psrlcfg.platforms.get_platform_id(platform_name)
 
         return None
 

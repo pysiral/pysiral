@@ -278,6 +278,16 @@ procsteps:
         pyclass: L2SeaIceDraft
         options: {}
 
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev"]
+            input_parameters:
+                - sea_ice_freeboard
+
+
     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
@@ -285,6 +295,8 @@ procsteps:
             sea_ice_filter_size_m: 300000.
             ocean_filter_size_m: 25000.
             freeboard_smoother_filter_size_m: 150000.
-            sea_ice_freeboard_threshold: [0.4, 0.8]
-            leading_edge_width_miz_gradient: [0.02, 0.02]
-            leading_edge_width_ocean_value: [3.0, 3.8]
+            sea_ice_freeboard_rolling_sdev_threshold: 0.02
+            sea_ice_freeboard_threshold: 0.5
+            sea_ice_freeboard_filtered_threshold: 0.3
+            sea_ice_freeboard_miz_gradient: 0.002
+            leading_edge_width_ocean_value: 3.2
