@@ -193,7 +193,7 @@ processing_items:
         mask_name_dict:
             nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
         mask_variable_name: landsea
-        density_variable_name: ocean_fraction
+        density_variable_name: ocean_area_fraction
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
