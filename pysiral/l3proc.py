@@ -141,7 +141,11 @@ class Level3Processor(DefaultLoggingClass):
         current_reminder = np.mod(progress_percent, 10)
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
-            logger.info(f"Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
+            logger.info(
+                'Creating l2i orbit stack: %3g%% (%g of %g)'
+                % (progress_percent - current_reminder, i + 1, n)
+            )
+
         self._l3_progress_percent = progress_percent
 
     def _apply_processing_items(self, l3grid):
@@ -231,10 +235,7 @@ class L2iDataStack(DefaultLoggingClass):
         """
 
         # Save the metadata from the orbit data
-        if hasattr(l2i, "time"):
-            time = l2i.time
-        else:
-            time = l2i.timestamp
+        time = l2i.time if hasattr(l2i, "time") else l2i.timestamp
         self.start_time.append(time[0])
         self.stop_time.append(time[-1])
         self.mission.append(l2i.mission)
@@ -320,7 +321,7 @@ class L3DataGrid(DefaultLoggingClass):
         # list of stacked l2 parameters for each grid cell
         if not isinstance(stack, L2iDataStack):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
-            msg = msg % type(stack)
+            msg %= type(stack)
             raise ValueError(msg)
         self.l2 = stack
 
@@ -357,8 +358,7 @@ class L3DataGrid(DefaultLoggingClass):
         required for the output data handler """
         try:
             attr_getter = getattr(self, "_get_attr_" + attribute_name)
-            attribute = attr_getter(*args)
-            return attribute
+            return attr_getter(*args)
         except AttributeError:
             return "attr_unavailable"
         except Exception as ex:
@@ -433,7 +433,7 @@ class L3DataGrid(DefaultLoggingClass):
                     self.vars[name][yj, xi] = np.nanmedian(data)
                 else:
                     msg = "Invalid grid method (%s) for %s"
-                    msg = msg % (str(grid_method), name)
+                    msg %= (str(grid_method), name)
                     self.error.add_error("invalid-l3def", msg)
                     self.error.raise_on_error()
 
@@ -513,8 +513,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
-        return names
+        return ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
 
     def _get_attr_source_timeliness(self, *args):
         timeliness = self.metadata.source_timeliness
@@ -553,11 +552,10 @@ class L3DataGrid(DefaultLoggingClass):
         return mission_sensor
 
     def _get_attr_source_hemisphere(self, *args):
-        if args[0] == "select":
-            choices = {"north": args[1], "south": args[2]}
-            return choices.get(self.hemisphere, "n/a")
-        else:
+        if args[0] != "select":
             return self.hemisphere
+        choices = {"north": args[1], "south": args[2]}
+        return choices.get(self.hemisphere, "n/a")
 
     @staticmethod
     def _get_attr_uuid(*args):
@@ -600,27 +598,15 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_utcnow(self, *args):
         dt = self._creation_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         dt = self.metadata.time_coverage_start
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_end(self, *args):
         dt = self.metadata.time_coverage_end
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_duration(self, *args):
         return self.metadata.time_coverage_duration
@@ -629,11 +615,10 @@ class L3DataGrid(DefaultLoggingClass):
         return self._doi
 
     def _get_attr_data_record_type(self, *args):
-        if args[0] == "select":
-            choices = {"cdr": args[1], "icdr": args[2]}
-            return choices.get(self._data_record_type, "n/a")
-        else:
+        if args[0] != "select":
             return self._data_record_type
+        choices = {"cdr": args[1], "icdr": args[2]}
+        return choices.get(self._data_record_type, "n/a")
 
     @staticmethod
     def _get_attr_pysiral_version(*args):
@@ -677,13 +662,10 @@ class L3DataGrid(DefaultLoggingClass):
 
     @property
     def dimdict(self):
-        time_dim = 1
-        if True in self._time_dim_is_unlimited:
-            time_dim = 0
-        dimdict = OrderedDict([("time", time_dim),
-                               ("yc", self.griddef.extent.numx),
-                               ("xc", self.griddef.extent.numy)])
-        return dimdict
+        time_dim = 0 if True in self._time_dim_is_unlimited else 1
+        return OrderedDict([("time", time_dim),
+                            ("yc", self.griddef.extent.numx),
+                            ("xc", self.griddef.extent.numy)])
 
     @property
     def grid_shape(self):
@@ -743,9 +725,6 @@ class L3MetaData(object):
             self.set_attribute("mission_ids", "unkown")
 
         source_timeliness = np.unique(stack.timeliness)[0]
-        if len(source_timeliness) != 1:
-            # XXX: Different timeliness should not be mixed
-            pass
         self.set_attribute("source_timeliness", source_timeliness)
 
     def get_data_period_from_stack(self, stack):
@@ -802,10 +781,7 @@ class L3MetaData(object):
     @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
-        attdict = {}
-        for field in self.attribute_list:
-            attdict[field] = getattr(self, field)
-        return attdict
+        return {field: getattr(self, field) for field in self.attribute_list}
 
     @property
     def mission(self):
@@ -868,12 +844,11 @@ class Level3OutputHandler(OutputHandlerBase):
             filename_template = self.output_def.filenaming
         except KeyError:
             msg = "Missing filenaming convention for period [%s] in [%s]"
-            msg = msg % (str(self._period), self.output_def_filename)
+            msg %= (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
 
-        filename = self.fill_template_string(filename_template, l3)
-        return filename
+        return self.fill_template_string(filename_template, l3)
 
     def get_directory_from_data(self, l3, create=True):
         """ Return the output directory based on information provided
@@ -987,7 +962,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         logger.info("Output grid id: %s" % str(self._grid.grid_id))
         for output in self._output:
             msg = "L3 product directory (%s): %s"
-            msg = msg % (str(output.id), str(output.basedir))
+            msg %= (str(output.id), str(output.basedir))
             logger.info(msg)
 
     def _parse_l3_settings(self):
@@ -1059,8 +1034,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         """ Extract a list of paramter names to be computed by the
         Level-3 processor """
         l3_parameter = sorted(self.l3def.l3_parameter.keys(branch_mode="only"))
-        l3_param_def = [self.l3def.l3_parameter[n] for n in l3_parameter]
-        return l3_param_def
+        return [self.l3def.l3_parameter[n] for n in l3_parameter]
 
 
 class Level3ProcessorItem(DefaultLoggingClass):
@@ -1084,7 +1058,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         # Store the arguments with type validation
         if not isinstance(l3grid, L3DataGrid):
             msg = "Invalid data type [%s] for l3grid parameter. Must be l3proc.L3DataGrid"
-            msg = msg % type(l3grid)
+            msg %= type(l3grid)
             self.error.add_error("invalid-argument", msg)
             self.error.raise_on_error()
         self.l3grid = l3grid
@@ -1111,7 +1085,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for l2_var_name in self.l2_variable_dependencies:
             if l2_var_name not in self.l3grid.l2.stack:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, l2_var_name)
+                msg %= (self.__class__.__name__, l2_var_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
                 self.error.raise_on_error()
 
@@ -1119,7 +1093,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for l3_var_name in self.l3_variable_dependencies:
             if l3_var_name not in self.l3grid.vars:
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, l3_var_name)
+                msg %= (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)
                 self.error.raise_on_error()
 
@@ -1778,7 +1752,7 @@ class Level3ParameterMask(Level3ProcessorItem):
                     filter_mask = np.logical_and(filter_mask, new_filter)
                 else:
                     msg = "Invalid l3 mask operation: %s"
-                    msg = msg % self.cfg["connect_conditions"]
+                    msg %= self.cfg["connect_conditions"]
                     self.error.add_error("invalid-l3mask-def", msg)
                     self.error.raise_on_error()
 
@@ -1855,7 +1829,7 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
                 classifier_stack = self.l3grid.l2.stack[parameter_name]
             except KeyError:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, parameter_name)
+                msg %= (self.__class__.__name__, parameter_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
                 self.error.raise_on_error()
 
