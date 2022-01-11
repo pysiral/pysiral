@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dataclasses import dataclass
 import bottleneck as bn
-from typing import List, Union
+from typing import List, Union, Tuple
 from loguru import logger
 from scipy.interpolate import interp1d, UnivariateSpline
 from astropy.convolution import convolve, Box1DKernel
@@ -430,7 +430,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         :return:
         """
 
-        # distance_to_ocean = l2.get_parameter_by_name("distance_to_ocean")
+        distance_to_ocean = l2.get_parameter_by_name("distance_to_ocean")
         # sea_ice_concentration = l2.get_parameter_by_name("sea_ice_concentration")
         sea_ice_freeboard = l2.get_parameter_by_name("sea_ice_freeboard")
         sea_ice_freeboard_rolling_sdev = l2.get_parameter_by_name("sea_ice_freeboard_rolling_sdev")
@@ -453,29 +453,20 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             logger.error(f"{self.__class__.__name__}: Missing option `freeboard_smoother_filter_size_m")
             return None
 
-        # Use a lowess filter for reliable smoother
+        # Compute a smoothed & gap-less freeboard time series and its gradient
         freeboard_smoother_filter_size_float = freeboard_smoother_filter_size_m / l2.footprint_spacing
         freeboard_smoother_filter_size = int(int(freeboard_smoother_filter_size_float) // 2 * 2 + 1)
-        data_fraction = freeboard_smoother_filter_size / float(l2.n_records)
-        sea_ice_freeboard_filtered = sm.nonparametric.lowess(sea_ice_freeboard,
-                                                             x_all,
-                                                             frac=data_fraction,
-                                                             return_sorted=False)
+        frb_flt, frb_flt_gradient = self.get_filtered_value_and_gradient(
+            x_all,
+            sea_ice_freeboard,
+            freeboard_smoother_filter_size,
+            gradient_scale_factor=1000./l2.footprint_spacing
+        )
 
-        # Convert gradient to m / km
-        sea_ice_freeboard_gradient = np.abs(np.ediff1d(sea_ice_freeboard_filtered))
-        sea_ice_freeboard_gradient = np.insert(sea_ice_freeboard_gradient, 0, np.nan)
-        sea_ice_freeboard_gradient *= 1000. / l2.footprint_spacing
-
-        # Fill NaN Gaps in gradient with linear interpolation
-        valid_frb_idx = np.where(np.isfinite(sea_ice_freeboard_gradient))[0]
-        from scipy.interpolate import interp1d
-        f = interp1d(x_all[valid_frb_idx], sea_ice_freeboard_gradient[valid_frb_idx],
-                     bounds_error=False,
-                     fill_value=(sea_ice_freeboard_gradient[valid_frb_idx[0]],
-                                 sea_ice_freeboard_gradient[valid_frb_idx[-1]])
-                     )
-        sea_ice_freeboard_gradient[miz_prop.seaice_idxs] = f(miz_prop.seaice_idxs)
+        # Find the gradient value next to the ice edge
+        valid_frb_idx = np.where(np.isfinite(frb_flt))[0]
+        next_to_ice_edge_idx = valid_frb_idx[-1] if miz_prop.sea_ice_is_left else valid_frb_idx[0]
+        frb_gradient_at_ice_edge = frb_flt_gradient[next_to_ice_edge_idx]
 
         # Compute the filter flag
         filter_flag = np.full(l2.n_records, 0).astype(int)
@@ -485,34 +476,67 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # NOTE: From SIC based distance_to_ocean, not the along-track distance
         filter_flag[miz_prop.seaice_idxs] = 1
 
-        frb_gradient_treshold = self.cfg.options.get("sea_ice_freeboard_miz_gradient")
+        frb_gradient_threshold = self.cfg.options.get("sea_ice_freeboard_miz_gradient")
         frb_rsdev_treshold = self.cfg.options.get("sea_ice_freeboard_rolling_sdev_threshold")
         frb_flt_threshold = self.cfg.options.get("sea_ice_freeboard_filtered_threshold")
         frb_threshold = self.cfg.options.get("sea_ice_freeboard_threshold")
         lew_ocean_threshold = self.cfg.options.get("leading_edge_width_ocean_value")
 
-        # Filter flag == 2: Potentially biased
-        miz_flag_2 = ANDCondition()
-        miz_flag_2.add(np.greater_equal(filter_flag, 1))
-        miz_flag_2.add(np.full(l2.n_records, ocean_lew_at_ice_edge) >= lew_ocean_threshold)
-        miz_flag_2.add(np.greater_equal(sea_ice_freeboard_rolling_sdev, frb_rsdev_treshold))
+        # Find first zero passing of freeboard gradient next to ice edge
+        filter_flag_idx = np.array([])
+        if np.abs(frb_gradient_at_ice_edge) >= frb_gradient_threshold:
+            filter_idx = self.get_impacted_range(frb_flt_gradient, miz_prop.sea_ice_is_left)
 
-        # Filter flag == 3: Very likely biased
 
-        frb_flag = ORCondition()
-        frb_flag.add(np.greater_equal(sea_ice_freeboard_filtered, frb_flt_threshold))
-        frb_flag.add(np.greater_equal(sea_ice_freeboard, frb_threshold))
-
-        miz_flag_3 = ANDCondition()
-        miz_flag_3.add(np.greater_equal(filter_flag, 1))
-        miz_flag_3.add(np.greater_equal(sea_ice_freeboard_gradient, frb_gradient_treshold))
-        miz_flag_3.add(frb_flag.flag)
-
-        filter_flag[miz_flag_2.indices] = 2
-        filter_flag[miz_flag_3.indices] = 3
-
-        miz_prop.flag_value = filter_flag
-        return miz_prop
+        # valid_frb_filt_idx = np.where(np.isfinite(sea_ice_freeboard_gradient))
+        # f = interp1d(x_all[valid_frb_filt_idx], sea_ice_freeboard_gradient[valid_frb_filt_idx],
+        #              bounds_error=False)
+        # sea_ice_freeboard_gradient = f(x_all)
+        #
+            zero_crossings = np.where(np.diff(np.sign(frb_gradient_at_ice_edge)))[0]
+            # zero_crossings = zero_crossings[:-1]
+        #
+        # if miz_prop.sea_ice_is_left:
+        #     filter_flag_idx = np.arange(next_to_ice_edge_idx, zero_crossings[-1])
+        # else:
+        #     filter_flag_idx = np.arange(zero_crossings[0], next_to_ice_edge_idx)
+        #
+        # plt.figure(dpi=150)
+        # plt.title("Sea Ice Freeboard - Gradient")
+        # plt.plot(x_all, sea_ice_freeboard_gradient, lw=0.5)
+        # plt.scatter(x_all[miz_prop.seaice_idxs], sea_ice_freeboard_gradient[miz_prop.seaice_idxs],
+        #             s=8, linewidths=0)
+        # plt.scatter(x_all[filter_flag_idx], sea_ice_freeboard_gradient[filter_flag_idx],
+        #             s=12, linewidths=1)
+        # plt.scatter(x_all[zero_crossings], sea_ice_freeboard_gradient[zero_crossings],
+        #             s=24, linewidths=1)
+        # plt.axhline(sea_ice_freeboard_gradient_at_ice_edge, lw=0.5, c="0.0", ls=":")
+        # plt.axhline(frb_gradient_threshold, lw=0.5, c="0.0", ls="--")
+        # plt.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
+        # plt.xlim(0, l2.n_records)
+        # plt.show()
+        #     # breakpoint()
+        #
+        # # Filter flag == 2: Potentially biased
+        # miz_flag_2 = ANDCondition()
+        # miz_flag_2.add(np.greater_equal(filter_flag, 1))
+        # miz_flag_2.add(np.full(l2.n_records, ocean_lew_at_ice_edge) >= lew_ocean_threshold)
+        # miz_flag_2.add(np.greater_equal(sea_ice_freeboard_rolling_sdev, frb_rsdev_treshold))
+        #
+        # # Filter flag == 3: Very likely biased
+        # frb_flag = ORCondition()
+        # frb_flag.add(np.greater_equal(sea_ice_freeboard_filtered, frb_flt_threshold))
+        # frb_flag.add(np.greater_equal(sea_ice_freeboard, frb_threshold))
+        #
+        # miz_flag_3 = ANDCondition()
+        # miz_flag_3.add(np.greater_equal(filter_flag, 1))
+        # miz_flag_3.add(np.greater_equal(sea_ice_freeboard_gradient, frb_gradient_threshold))
+        # miz_flag_3.add(frb_flag.flag)
+        #
+        # filter_flag[miz_flag_2.indices] = 2
+        # filter_flag[miz_flag_3.indices] = 3
+        #
+        # miz_prop.flag_value = filter_flag
 
         # for i in range(2):
         #     miz_flag = ANDCondition()
@@ -532,6 +556,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # # data_fraction = 501. / float(x.shape[0])
         #
         # ax1 = fig.add_subplot(2, 3, 1)
+        # ax1.set_title("Sea Ice Freeboard")
         # ax1.scatter(x_all, sea_ice_freeboard, s=1, linewidths=0)
         # ax1.plot(x_all, sea_ice_freeboard_filtered)
         #
@@ -540,6 +565,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         #     ax1.scatter(x_all[idx], sea_ice_freeboard[idx], s=8, color=color, linewidths=0)
         # ax1.set_xlim(0, l2.n_records)
         # ax1.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
+        # ax1.axhline(frb_flt_threshold, lw=0.5, c="red", ls="--")
+        # ax1.axhline(frb_threshold, lw=0.5, c="orange", ls="--")
         # ax1.set_ylim(-0.2, 1.0)
         #
         # ax2 = fig.add_subplot(2, 3, 2)
@@ -548,32 +575,40 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # ax2.scatter(x_all[miz_prop.ocean_idxs], leading_edge_width[miz_prop.ocean_idxs], s=8, linewidths=0)
         # ax2.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
         # ax2.axhline(ocean_lew_at_ice_edge)
+        # ax2.axhline(lew_ocean_threshold, lw=0.5, c="0.0", ls="--")
         # ax2.set_xlim(0, l2.n_records)
         # ax2.set_ylim(0, 10)
         #
         # ax3 = fig.add_subplot(2, 3, 3)
+        # ax3.set_title("Sea Ice Freeboard - Rolling Sdev")
         # ax3.scatter(x_all, sea_ice_freeboard_rolling_sdev, s=1, linewidths=0)
         # ax3.scatter(x_all[miz_prop.seaice_idxs], sea_ice_freeboard_rolling_sdev[miz_prop.seaice_idxs],
         #             s=8, linewidths=0, label="sea ice")
+        # ax3.axhline(frb_rsdev_treshold, lw=0.5, c="0.0", ls="--")
         # ax3.legend()
         # ax3.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
         # ax3.set_xlim(0, l2.n_records)
         #
         # ax4 = fig.add_subplot(2, 3, 4)
-        # ax4.scatter(x_all, distance_to_ocean, s=1, linewidths=0)
-        # ax4.scatter(x_all[miz_prop.seaice_idxs], distance_to_ocean[miz_prop.seaice_idxs], s=8, linewidths=0)
-        # ax4.scatter(x_all[miz_prop.ocean_idxs], distance_to_ocean[miz_prop.ocean_idxs], s=8, linewidths=0)
-        # ax4.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
-        # ax4.set_xlim(0, l2.n_records)
+        # # ax4.set_title("Freeboard Gradient vs. Distance to Ocean")
+        # # ax4.scatter(distance_to_ocean[valid_frb_idx], sea_ice_freeboard_gradient[valid_frb_idx], s=1, linewidths=0)
+        # # # ax4.scatter(x_all[miz_prop.seaice_idxs], distance_to_ocean[miz_prop.seaice_idxs], s=8, linewidths=0)
+        # # # ax4.scatter(x_all[miz_prop.ocean_idxs], distance_to_ocean[miz_prop.ocean_idxs], s=8, linewidths=0)
+        # # ax4.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
+        # # ax4.set_xlim(0, 500000)
         #
         # ax5 = fig.add_subplot(2, 3, 5)
+        # ax5.set_title("Sea Ice Freeboard - Gradient")
         # ax5.scatter(x_all, sea_ice_freeboard_gradient, s=1, linewidths=0)
         # ax5.scatter(x_all[miz_prop.seaice_idxs], sea_ice_freeboard_gradient[miz_prop.seaice_idxs],
         #             s=8, linewidths=0)
+        # ax5.axhline(sea_ice_freeboard_gradient_at_ice_edge, lw=0.5, c="0.0", ls=":")
+        # ax5.axhline(frb_gradient_threshold, lw=0.5, c="0.0", ls="--")
         # ax5.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
         # ax5.set_xlim(0, l2.n_records)
         #
         # ax6 = fig.add_subplot(2, 3, 6)
+        # ax6.set_title("MIZ Filter Flag")
         # ax6.scatter(x_all, filter_flag, s=1, linewidths=0)
         # ax6.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
         # ax6.set_xlim(0, l2.n_records)
@@ -584,6 +619,69 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # #     ax5.axhline(frb_gradient, linestyle="dashed", lw=0.5)
         #
         # plt.show()
+        return miz_prop
+
+    @staticmethod
+    def get_filtered_value_and_gradient(x: np.ndarray,
+                                        y: np.ndarray,
+                                        filter_size: int,
+                                        gradient_scale_factor: float = 1.0,
+                                        ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute a filtered version and its gradient of a noisy and gappy variable
+        (In this case likely freeboard)
+        :param x:
+        :param y:
+        :param filter_size:
+        :param gradient_scale_factor:
+        :return:
+        """
+
+        # Step 1: Use a lowess filter to create
+        y_filtered = lowess_smooth(x, y, filter_size)
+
+        # Step 2: Fill NaN Gaps in gradient with linear interpolation
+        y_filtered_gapless = interp1d_gap_filling(y_filtered)
+
+        # Step 3: Remove minor wiggles which may happen in the
+        #         lowess filtering
+        y_filtered2 = astropy_smooth(y_filtered_gapless, 11)
+
+        # Use scaling for gradient (meant to convert to m/m; m/km, etc).
+        y_gradient = np.ediff1d(y_filtered2) * gradient_scale_factor
+        y_gradient = np.insert(y_gradient, 0, np.nan)
+
+        return y_filtered, y_gradient
+
+    @staticmethod
+    def get_impacted_range(frb_gradient: np.ndarray, sea_ice_is_left: bool) -> np.ndarray:
+        """
+        Compute the impacted area which is defined as the range between the nearest point
+        to the ice edge to the point where the sea ice freeboard gradient show the first
+        zero crossing (-> reversal of freeboard trend). This method should only be called,
+        when it is quite certain that the freeboard is impacted by wave.
+        :param frb_gradient:
+        :param sea_ice_is_left:
+        :return:
+        """
+
+        # Compute zero crossings (and discard the last incorrect one)
+        # NOTE: without the isfinite check there will be a lot false zero crossings.
+        zero_crossing_idx = np.where(
+            np.logical_and(
+                np.diff(np.sign(frb_gradient)).astype(bool),
+                np.isfinite(frb_gradient[:-1]),
+            )
+        )[0]
+
+        # zero_crossing_idx = zero_crossing_idx[:-1]
+
+        x = np.arange(frb_gradient.shape[0])
+        plt.figure(dpi=150)
+        plt.plot(x, frb_gradient)
+        plt.scatter(x[zero_crossing_idx], frb_gradient[zero_crossing_idx])
+        plt.show()
+        breakpoint()
 
     @property
     def l2_input_vars(self):
@@ -613,8 +711,39 @@ def scipy_smooth(x, window):
 
 def astropy_smooth(x, window, boundary="extend", normalize_kernel=True):
     kernel = Box1DKernel(window)
-    smoothed = convolve(x, kernel, boundary=boundary, normalize_kernel=normalize_kernel)
-    return smoothed
+    return convolve(
+        x, kernel, boundary=boundary, normalize_kernel=normalize_kernel
+    )
+
+
+def interp1d_gap_filling(y: np.ndarray, **interp_kwargs) -> np.ndarray:
+    """
+    Fill not-finite gaps by linear interpolation using `scipy.interp1d`with bounds_error
+    turned off by default. Keywords to this function are passed to interp1d.
+    :param y:
+    :return:
+    """
+    x = np.arange(y.shape[0])
+    valid_idx = np.where(np.isfinite(y))[0]
+    f = interp1d(x[valid_idx], y[valid_idx],
+                 bounds_error=False,
+                 **interp_kwargs
+                 )
+    return f(x)
+
+
+def lowess_smooth(x: np.ndarray,
+                  y: np.ndarray,
+                  window: int) -> np.ndarray:
+    """
+    Simple lowess smoother
+    :param x:
+    :param y:
+    :param window:
+    :return:
+    """
+    data_fraction = min(float(window) / float(x.shape[0]), 1.0)
+    return sm.nonparametric.lowess(y, x, frac=data_fraction, return_sorted=False)
 
 
 def idl_smooth(x, window):

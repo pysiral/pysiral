@@ -29,7 +29,7 @@ l2_parameter:
         fillvalue: .NAN
 
     distance_to_ocean:
-        grid_method: none
+        grid_method: average
         dtype: f4
         fillvalue: .NAN
 
@@ -40,6 +40,11 @@ l2_parameter:
 
     surface_type:
         grid_method: none
+        dtype: i4
+        fillvalue: -1
+
+    flag_miz:
+        grid_method: median
         dtype: i4
         fillvalue: -1
 
@@ -159,6 +164,12 @@ l2_parameter:
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
+# miz_filter: 
+#     mask_min_value: 2
+#     mask_targets: 
+#         - sea_ice_freeboard
+#         - sea_ice_thickness
+
 l2i_prefilter:
     active: True
     nan_source: sea_ice_thickness
@@ -178,8 +189,8 @@ grid_settings:
 # ==================================================
 
 # Mask grid cells
-# Note: The masking is exectuted in the alphabetical order of the mask names.
-#       If there is a dependance between following mask procedures this needs
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
 
 processing_items:
@@ -215,10 +226,6 @@ processing_items:
         condition: "is_nan"
         targets:
             - sea_ice_freeboard_uncertainty
-            - radar_freeboard_uncertainty
-            - sea_level_anomaly
-            - sea_level_anomaly_uncertainty
-            - mean_sea_surface
             - sea_ice_density
             - sea_ice_density_uncertainty
             - sea_ice_type
@@ -233,20 +240,27 @@ processing_items:
         is_smaller_threshold: 15.0
         connect_conditions: "or"
         targets:
-            - n_total_waveforms
-            - n_valid_waveforms
-            - valid_fraction
-            - lead_fraction
-            - ice_fraction
+            - distance_to_ocean
             - negative_thickness_fraction
             - sea_ice_type
             - snow_depth
             - snow_depth_uncertainty
             - snow_density
             - snow_density_uncertainty
-            - sea_ice_concentration
-            - region_code
-            - radar_mode
+
+    - label: "Mask parameters (Num of total waveforms)"
+      module_name: pysiral.l3proc
+      class_name: Level3ParameterMask
+      options:
+        source: n_total_waveforms
+        condition: "is_smaller"
+        is_smaller_threshold: 1
+        connect_conditions: "or"
+        targets:
+          - valid_fraction
+          - ocean_fraction
+          - seaice_fraction
+          - lead_fraction
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
@@ -310,5 +324,5 @@ processing_items:
       class_name: Level3GriddedClassifiers
       options:
         parameters: ["sigma0", "leading_edge_width", "pulse_peakiness", "tfmra_threshold"]
-        surface_types: ["sea_ice", "lead"]
+        surface_types: ["sea_ice", "lead", "ocean"]
         statistics: ["mean", "sdev"]
