@@ -448,6 +448,6 @@ variables:
     units: 1
     valid_min: 0
     valid_max: 3
-    flag_values: "0, 1, 2, 3"
-    flag_meanings: "not_in_miz, negligible_wave_influence, medium_wave_influence, severe_wave_influence"
+    flag_values: "0, 1, 2"
+    flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
     coordinates: time

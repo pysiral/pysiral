@@ -291,15 +291,6 @@ procsteps:
         pyclass: L2SeaIceDraft
         options: {}
 
-    # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
-        pyclass: ParameterRollingStatistics
-        options:
-            window_size_m: 25000.
-            statistics: ["sdev"]
-            input_parameters:
-                - sea_ice_freeboard
-
     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag

@@ -164,11 +164,11 @@ l2_parameter:
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
-# miz_filter: 
-#     mask_min_value: 2
-#     mask_targets: 
-#         - sea_ice_freeboard
-#         - sea_ice_thickness
+miz_filter: 
+    mask_min_value: 2
+    mask_targets: 
+        - sea_ice_freeboard
+        - sea_ice_thickness
 
 l2i_prefilter:
     active: True
