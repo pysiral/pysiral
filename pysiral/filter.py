@@ -238,16 +238,46 @@ class ParameterSmoother(Level2ProcessorStep):
 
 @dataclass
 class MarginalIceZoneProperties:
-    """ A lean data class for MarginalIceZoneFilterFlag """
+    """
+    Data class for MarginalIceZoneFilterFlag
+    NOTE: There will be several instances of this class per trajectory
+          if the ice edge is crossed multiple times
+    """
+
+    # Filter configuration
+    options: dict
+
+    # The index of the ice edge
     ice_edge_idx: int
+
+    # Flag indicating on which side of the ice edge index the
+    # sea ice zone is located
     sea_ice_is_left: bool
+
+    # Indices of the ocean waveforms for the computations
+    # of the ice ocean leading edge widths at the ice edge
     ocean_idxs: np.ndarray
+
+    # Indices of sea ice waveforms applicable for the
+    # filter (important when there are several ice edges
+    # in the trajectory)
     seaice_idxs: np.ndarray
+
+    # Flag if the filter produces a valid result
     is_valid: bool = False
-    ocean_leading_edge_width: float = None
-    sea_ice_freeboard_values: np.ndarray = None
+
+    # Leading edge value of ocean waveforms at ice edge
+    ocean_leading_edge_width_at_ice_edge: float = None
+
+    # Filtered sea ice freeboard (for gradient computation)
+    sea_ice_freeboard_filtered: np.ndarray = None
+
+    # Sea ice freeboard gradient
     sea_ice_freeboard_gradient: np.ndarray = None
-    flag_value: np.ndarray = None
+
+    # Filter flag value
+    filter_flag: np.ndarray = None
+
 
 
 class MarginalIceZoneFilterFlag(Level2ProcessorStep):
@@ -261,14 +291,12 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         0: not in marginal ice zone
         1: in marginal ice zone: light to none wave influence detected
-        2: in marginal ice zone: medium wave influence detected
-        3: in marginal ice zone: severe wave influence detected
+        2: in marginal ice zone: wave influence detected
 
     The flag values depend on:
 
         - leading edge with of ocean waveforms at the ice edge
         - sea ice freeboard gradient as a function of distance to the ice edge
-        - sea ice freeboard value
 
     Thresholds to determine the flag values need to be specified in the
     options of the Level2 processor definition file:
@@ -276,9 +304,11 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:
-            distance_to_ocean_maximum: <maximum size of the marginal ice zone>
-            leading_edge_width_miz_gradient: [<medium_threshold>, <severe_threshold>]
-            leading_edge_width_ocean_value [<medium_threshold>, <severe_threshold>]
+            sea_ice_filter_size_m: <freeboard smoothing filter size>.
+            ocean_filter_size_m: <ocean>.
+            freeboard_smoother_filter_size_m: 150000.
+            sea_ice_freeboard_miz_gradient: 0.002
+            leading_edge_width_ocean_value: <threshold for ocean leading width>
 
     """
 
@@ -308,12 +338,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag_miz, None)
             return filter_flag_miz_error
 
-        # Step 1: Detect ice edge(s) in the trajectory data.
-        miz_prop_list = self.get_ice_edge_idxs(l2)
-        if miz_prop_list is None:
-            l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag_miz, None)
-            return filter_flag_miz_error
-
         # Step 2: Determine the waveform properties on both sides of the ice edge.
         # NOTE: There might be multiple transitions per trajectory
         for miz_prop in miz_prop_list:
@@ -324,15 +348,49 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             l2.set_auxiliary_parameter("fmiz", "flag_miz", properties.flag_value, None)
         return filter_flag_miz_error
 
-    def get_ice_edge_idxs(self, l2: "Level2Data") -> Union[List["MarginalIceZoneProperties"], None]:
+    def get_miz_filter_flag(self,
+                            leading_edge_width: np.ndarray,
+                            sea_ice_freeboard: np.ndarray,
+                            sea_ice_concentration: np.ndarray,
+                            distance_to_ocean: np.ndarray,
+                            ) -> np.ndarray:
+        """
+        Compute the filter flag
+        :param leading_edge_width:
+        :param sea_ice_freeboard:
+        :param sea_ice_concentration:
+        :return:
+        """
+
+        # Get the initial filter_flag
+        filter_flag = np.full(sea_ice_freeboard.shape[0], -1, dtype=int)
+
+        # Step 1: Detect ice edge(s) in the trajectory data.
+        miz_prop_list = self.get_ice_edge_idxs(
+            sea_ice_concentration,
+            distance_to_ocean
+        )
+        if miz_prop_list is None:
+            return filter_flag
+
+        # Step 2: Loop over the ice edge(s) and detect any impacted area
+        for miz_prop in miz_prop_list:
+            properties = self.get_miz_data_properties(l2, miz_prop)
+
+        return filter_flag
+
+    def get_ice_edge_idxs(self,
+                          sea_ice_concentration: np.ndarray,
+                          distance_to_ocean: np.ndarray
+                          ) -> Union[List["MarginalIceZoneProperties"], None]:
         """
         Find any transitions between sea ice / open water areas determined
         by sea ice concentration crossing the 15% threshold.
-        :param l2: Level2Data
+        :param sea_ice_concentration:
+        :param distance_to_ocean:
         :return: List of indices marking the ice edge (e.g. first ice waveform).
         """
 
-        # Initial sanity check
 
         # Get properties
         sea_ice_filter_size_m = self.cfg.options.get("sea_ice_filter_size_m", None)
@@ -346,8 +404,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             return None
 
         # Detect change ice edge by sea ice concentration jumps over the 15% threshold
-        sea_ice_concentration = l2.sic[:]
-        distance_to_ocean = l2.get_parameter_by_name("distance_to_ocean")
         sic_flag = np.array(sea_ice_concentration > 15.0).astype(float)
         sic_flag_change = np.abs(np.ediff1d(sic_flag))
         ice_edge_candidate_idxs = np.where(sic_flag_change > 0.)[0]
@@ -369,7 +425,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             sea_ice_is_left = sea_ice_concentration[ice_edge_idx+1] < 15.
 
             # sea ice indices are determined by the distance to the ice edge
-            # TODO: Add a track distance cut-off
             sea_ice_idxs = np.where(
                 np.logical_and(
                     distance_to_ocean <= sea_ice_filter_size_m,
@@ -395,34 +450,12 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                                                     sea_ice_idxs)
                           )
 
-            # plt.figure()
-            # plt.plot(sea_ice_concentration)
-            # plt.xlim(0, l2.n_records-1)
-            #
-            # plt.figure()
-            # plt.plot(distance_to_ocean)
-            # plt.xlim(0, l2.n_records-1)
-            #
-            # plt.figure()
-            # plt.scatter(sea_ice_idxs, sea_ice_concentration[sea_ice_idxs], label="sea ice")
-            # plt.scatter(ocean_idxs, sea_ice_concentration[ocean_idxs], label="ocean")
-            # plt.legend()
-            # plt.xlim(0, l2.n_records - 1)
-            #
-            # plt.figure()
-            # plt.scatter(sea_ice_idxs, distance_to_ocean[sea_ice_idxs], label="sea ice")
-            # plt.scatter(ocean_idxs, distance_to_ocean[ocean_idxs], label="ocean")
-            # plt.legend()
-            # plt.xlim(0, l2.n_records - 1)
-            #
-            # plt.show()
-
         return output
 
     def get_miz_data_properties(self,
-                                 l2: "Level2Data",
-                                 miz_prop: "MarginalIceZoneProperties"
-                                 ) -> Union["MarginalIceZoneProperties", None]:
+                                l2: "Level2Data",
+                                miz_prop: "MarginalIceZoneProperties"
+                                ) -> Union["MarginalIceZoneProperties", None]:
         """
         Compute the data properties in the marginal ice zone for the filter classification
         :param l2:
@@ -480,7 +513,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         lew_ocean_threshold = self.cfg.options.get("leading_edge_width_ocean_value")
 
         # Find first zero passing of freeboard gradient next to ice edge
-        filter_flag_idx = np.array([])
         condition = (
                 np.abs(frb_gradient_at_ice_edge) >= frb_gradient_threshold
                 or
@@ -494,52 +526,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             filter_flag[filter_flag_idx] = 2
         miz_prop.flag_value = filter_flag
 
-        # fig = plt.figure()
-        # figManager = plt.get_current_fig_manager()
-        # figManager.window.showMaximized()
-        #
-        # ax1 = fig.add_subplot(2, 2, 1)
-        # ax1.set_title(f"Sea Ice Freeboard [is_left: {miz_prop.sea_ice_is_left}]")
-        # ax1.scatter(x_all, sea_ice_freeboard, s=1, linewidths=0)
-        # if filter_flag_idx.size != 0:
-        #     ax1.scatter(x_all[filter_flag_idx], sea_ice_freeboard[filter_flag_idx], s=8, linewidths=0)
-        # ax1.plot(x_all, frb_flt)
-        #
-        # ax1.set_xlim(0, l2.n_records)
-        # ax1.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
-        # ax1.set_ylim(-0.2, 1.0)
-        #
-        # ax2 = fig.add_subplot(2, 2, 2)
-        # ax2.set_title(f"ocean_lew_at_ice_edge={ocean_lew_at_ice_edge}")
-        # ax2.scatter(x_all, leading_edge_width, s=1, linewidths=0)
-        # ax2.scatter(x_all[miz_prop.ocean_idxs], leading_edge_width[miz_prop.ocean_idxs], s=8, linewidths=0)
-        # ax2.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
-        # ax2.axhline(ocean_lew_at_ice_edge)
-        # ax2.axhline(lew_ocean_threshold, lw=0.5, c="0.0", ls="--")
-        # ax2.set_xlim(0, l2.n_records)
-        # ax2.set_ylim(0, 10)
-        #
-        # ax5 = fig.add_subplot(2, 2, 3)
-        # ax5.set_title(f"Sea Ice Freeboard Gradient [{frb_gradient_at_ice_edge}]")
-        # ax5.scatter(x_all, frb_flt_gradient, s=1, linewidths=0)
-        # # ax5.scatter(x_all[miz_prop.seaice_idxs], frb_flt_gradient[miz_prop.seaice_idxs],
-        # #             s=8, linewidths=0)
-        # ax5.axhline(frb_gradient_at_ice_edge, lw=1)
-        # ax5.axhline(frb_gradient_threshold, lw=0.5, c="0.0", ls="--")
-        # ax5.axhline(-1*frb_gradient_threshold, lw=0.5, c="0.0", ls="--")
-        # ax5.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
-        # ax5.axvline(valid_frb_idx[0])
-        # ax5.axvline(valid_frb_idx[-1])
-        # ax5.set_xlim(0, l2.n_records)
-        #
-        # ax6 = fig.add_subplot(2, 2, 4)
-        # ax6.set_title("MIZ Filter Flag")
-        # ax6.scatter(x_all, filter_flag, s=1, linewidths=0)
-        # ax6.axvline(miz_prop.ice_edge_idx, lw=0.5, c="0.0", ls="--")
-        # ax6.set_xlim(0, l2.n_records)
-        # ax6.set_ylim(-1, 4)
-        #
-        # plt.show()
         return miz_prop
 
     @staticmethod
@@ -577,18 +563,6 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         y_gradient = np.ediff1d(y_filtered2) * gradient_scale_factor
         y_gradient = np.insert(y_gradient, 0, np.nan)
 
-        # plt.figure(dpi=150)
-        # # plt.scatter(x, y, linewidths=0)
-        # plt.plot(x, y_filtered, lw=3, label="y_filtered")
-        # plt.plot(x, y_filtered_gapless, lw=2, label="y_filtered_gapless")
-        # plt.plot(x, y_filtered2, lw=1, label="y_filtered2")
-        # plt.scatter(x, y_filtered2, s=1, label="y_filtered2 points")
-        # plt.legend()
-        #
-        # plt.figure(dpi=150)
-        # plt.plot(x, y_gradient)
-        # plt.show()
-
         return y_filtered2, y_gradient
 
     @staticmethod
@@ -625,14 +599,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             np.arange(next_to_ice_edge_idx, zero_crossing_idx[0])
         )
 
-        # x = np.arange(frb_gradient.shape[0])
-        # plt.figure(dpi=150)
-        # plt.scatter(x, frb_gradient)
-        # plt.scatter(x[a], frb_gradient[a])
-        # plt.axhline(0)
-        # plt.show()
-        #
-        # return a
+    @staticmethod
+    def get_default_filter_flag(n_records: int):
+        return np.full(n_records, -1)
 
     @property
     def l2_input_vars(self):

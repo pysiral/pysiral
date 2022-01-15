@@ -298,8 +298,5 @@ procsteps:
             sea_ice_filter_size_m: 300000.
             ocean_filter_size_m: 25000.
             freeboard_smoother_filter_size_m: 150000.
-            sea_ice_freeboard_rolling_sdev_threshold: 0.02
-            sea_ice_freeboard_threshold: 0.5
-            sea_ice_freeboard_filtered_threshold: 0.3
             sea_ice_freeboard_miz_gradient: 0.002
-            leading_edge_width_ocean_value: 3.2
+            leading_edge_width_ocean_value: 2.8
