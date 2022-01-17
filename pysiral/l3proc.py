@@ -284,7 +284,6 @@ class L2iDataStack(DefaultLoggingClass):
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
-
             for parameter_name in self.l2_parameter.keys():
                 try:
                     data = getattr(l2i, parameter_name)
@@ -1500,6 +1499,13 @@ class Level3QualityFlag(Level3ProcessorItem):
             area_lfr = maximum_filter(lfr, size=window_size)
             thrs = rule_options["area_lead_fraction_minimum"]
             flag[np.where(area_lfr <= thrs)] = rule_options["target_flag"]
+            qif = np.maximum(qif, flag)
+
+        if "qif_miz_flag" in quality_flag_rules:
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            rule_options = self.rules["qif_miz_flag"]
+            for source_flag, target_flag in zip(rule_options["source_flags"], rule_options["source_flags"]):
+                flag[np.where(self.l3grid.vars["miz_filter"] == source_flag)] = target_flag
             qif = np.maximum(qif, flag)
 
         # Check the negative thickness fraction (higher value -> higher warnung flag)
