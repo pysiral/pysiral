@@ -399,7 +399,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         # Only compute the filter flag, if all basic conditions are met
         filter_execute_condictions = [
-            l2.surface_type.ocean.num == 0,     # There needs to be ocean waveforms data
+            l2.surface_type.ocean.num >= 0,     # There needs to be ocean waveforms data
             np.isfinite(l2.frb[:]).any(),       # There needs to be freeboard data
             np.any(l2.sic[:] <= 15)             # There needs to be sea ice concentration
         ]
@@ -419,6 +419,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                 l2.footprint_spacing]
         filter_flag, _ = self.get_miz_filter_flag(*args)
         l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag, None)
+        return filter_flag_miz_error
 
     def get_miz_filter_flag(self,
                             leading_edge_width: np.ndarray,
@@ -626,7 +627,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             filter_flag_idx = self.get_impacted_range(frb_flt_gradient,
                                                       next_to_ice_edge_idx,
                                                       data.sea_ice_is_left)
-            filter_flag[filter_flag_idx] = 2
+            if filter_flag_idx.shape[0] > 0:
+                filter_flag[filter_flag_idx] = 2
         data.filter_flag = filter_flag
 
     @staticmethod
