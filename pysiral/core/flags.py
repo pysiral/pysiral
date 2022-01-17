@@ -114,12 +114,11 @@ class SurfaceType(DefaultLoggingClass):
         return type_str in self._surface_type_flags
 
     def get_by_name(self, name: str) -> 'FlagContainer':
-        if name in self.surface_type_dict.keys():
-            type_id = self._get_type_id(name)
-            flag = np.array(self._surface_type == type_id)
-            return FlagContainer(flag)
-        else:
+        if name not in self.surface_type_dict.keys():
             return FlagContainer(np.zeros(shape=self.n_records, dtype=np.bool))
+        type_id = self._get_type_id(name)
+        flag = np.array(self._surface_type == type_id)
+        return FlagContainer(flag)
 
     def append(self, annex: 'SurfaceType') -> None:
         self._surface_type = np.append(self._surface_type, annex.flag)
@@ -137,12 +136,7 @@ class SurfaceType(DefaultLoggingClass):
 
     def invalid_n_records(self, n: int) -> bool:
         """ Check if flag array has the correct length """
-        if self.n_records is None:  # New flag, ok
-            return False
-        elif self.n_records == n:   # New flag has correct length
-            return False
-        else:                       # New flag has wrong length
-            return True
+        return self.n_records is not None and self.n_records != n
 
     def _get_type_id(self, name: str) -> int:
         return self.surface_type_dict[name]
@@ -153,17 +147,12 @@ class SurfaceType(DefaultLoggingClass):
 
     @property
     def n_records(self) -> int:
-        if self._surface_type is None:
-            n_records = None
-        else:
-            n_records = len(self._surface_type)
-        return n_records
+        return None if self._surface_type is None else len(self._surface_type)
 
     @property
     def dimdict(self) -> 'OrderedDict':
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     @property
     def parameter_list(self) -> List[str]:
@@ -194,7 +183,7 @@ class IceType(object):
     Possible classifications
         - young thin ice
         - first year ice
-        - multi year ice
+        - multi-year ice
         - wet ice
     """
     _ICE_TYPE_DICT = {
