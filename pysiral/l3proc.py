@@ -249,11 +249,10 @@ class L2iDataStack(DefaultLoggingClass):
         with `add` method """
 
         # Stack dictionary that will hold the data
-        self.stack = {}
-
-        # create a stack for each l2 parameter
-        for parameter_name in self.l2_parameter.keys():
-            self.stack[parameter_name] = self.parameter_stack
+        self.stack = {
+            parameter_name: self.parameter_stack
+            for parameter_name in self.l2_parameter.keys()
+        }
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
