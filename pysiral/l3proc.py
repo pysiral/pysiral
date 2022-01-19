@@ -1505,7 +1505,7 @@ class Level3QualityFlag(Level3ProcessorItem):
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             rule_options = self.rules["qif_miz_flag"]
             for source_flag, target_flag in zip(rule_options["source_flags"], rule_options["source_flags"]):
-                flag[np.where(self.l3grid.vars["miz_filter"] == source_flag)] = target_flag
+                flag[np.where(self.l3grid.vars["flag_miz"] == source_flag)] = target_flag
             qif = np.maximum(qif, flag)
 
         # Check the negative thickness fraction (higher value -> higher warnung flag)
