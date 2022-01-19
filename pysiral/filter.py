@@ -602,6 +602,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         # Find the gradient value next to the ice edge
         valid_frb_idx = np.where(np.isfinite(frb_flt_gradient))[0]
+        if len(valid_frb_idx) < 2:
+            return
+
         next_to_ice_edge_idx = valid_frb_idx[-1] if data.sea_ice_is_left else valid_frb_idx[1]
         frb_gradient_at_ice_edge = frb_flt_gradient[next_to_ice_edge_idx]
 
@@ -746,6 +749,8 @@ def interp1d_gap_filling(y: np.ndarray, **interp_kwargs) -> np.ndarray:
     """
     x = np.arange(y.shape[0])
     valid_idx = np.where(np.isfinite(y))[0]
+    if len(valid_idx) < 2:
+        return y
     f = interp1d(x[valid_idx], y[valid_idx],
                  bounds_error=False,
                  **interp_kwargs
