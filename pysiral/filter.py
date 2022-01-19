@@ -345,7 +345,7 @@ class MarginalIceZoneFilterData:
 
     @property
     def has_flag(self) -> bool:
-        return np.any(self.filter_flag >= 1)
+        return False if self.filter_flag is None else np.any(self.filter_flag >= 1)
 
 
 class MarginalIceZoneFilterFlag(Level2ProcessorStep):
