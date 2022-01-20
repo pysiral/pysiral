@@ -398,12 +398,13 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
 
         # Only compute the filter flag, if all basic conditions are met
-        filter_execute_condictions = [
-            l2.surface_type.ocean.num >= 0,     # There needs to be ocean waveforms data
-            np.isfinite(l2.frb[:]).any(),       # There needs to be freeboard data
-            np.any(l2.sic[:] <= 15)             # There needs to be sea ice concentration
+        filter_execute_conditions = [
+            l2.surface_type.ocean.num >= 0,      # There needs to be ocean waveforms data
+            np.isfinite(l2.frb[:]).any(),        # There needs to be freeboard data
+            np.any(l2.sic[:] <= 15),              # There needs to be sea ice concentration
+            np.isfinite(l2.footprint_spacing)   # There have been instances where footprint was NaN
         ]
-        if not all(filter_execute_condictions):
+        if not all(filter_execute_conditions):
             l2.set_auxiliary_parameter(
                 "fmiz",
                 "flag_miz",
