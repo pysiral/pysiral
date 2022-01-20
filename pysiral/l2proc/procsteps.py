@@ -471,10 +471,18 @@ class ParameterRollingStatistics(Level2ProcessorStep):
 
         # The filter windows size needs to be an odd integer
         window_size_float = self.cfg.options.get("window_size_m") / l2.footprint_spacing
-        window_size = int(int(window_size_float) // 2 * 2 + 1)
+        window_size = None if np.isnan(window_size_float) else int(int(window_size_float) // 2 * 2 + 1)
 
         rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
         for parameter_name, statistics_id in self.statistics_combinations:
+
+            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl"
+            aux_name = f"{parameter_name}_rolling_{statistics_id}"
+
+            if window_size is None:
+                error_status[:] = True
+                l2.set_auxiliary_parameter(aux_id, aux_name, np.full(l2.n_records, np.nan), None)
+                continue
 
             # The rolling statistics are computed using the pandas rolling framework
             ts = pd.Series(l2.get_parameter_by_name(parameter_name)[:])
@@ -488,8 +496,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
                 ts_rolled = pd.Series(np.full(l2.n_records, np.nan))
 
             # Output is added as an auxiliary parameter
-            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl"
-            aux_name = f"{parameter_name}_rolling_{statistics_id}"
+
             l2.set_auxiliary_parameter(aux_id, aux_name, ts_rolled.values, None)
 
         return error_status

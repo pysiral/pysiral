@@ -640,6 +640,9 @@ class Level2Data(object):
 
     @property
     def footprint_spacing(self):
+        if self.n_records < 2:
+            return np.nan
+
         spacing = great_circle(
             (self.latitude[1], self.longitude[1]),
             (self.latitude[0], self.longitude[0])).meters
