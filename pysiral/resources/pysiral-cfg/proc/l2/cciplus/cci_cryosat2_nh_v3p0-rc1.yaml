@@ -299,4 +299,4 @@ procsteps:
             ocean_filter_size_m: 25000.
             freeboard_smoother_filter_size_m: 150000.
             sea_ice_freeboard_miz_gradient: 0.002
-            leading_edge_width_ocean_value: 2.8
+            leading_edge_width_ocean_value: 2.5
