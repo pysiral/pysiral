@@ -628,8 +628,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         )
 
         if condition:
-            filter_flag_idx = self.get_impacted_range(frb_flt_gradient,
-                                                      next_to_ice_edge_idx,
+            filter_flag_idx = self.get_impacted_range(frb_flt,
+                                                      frb_flt_gradient,
+                                                      data.ice_edge_idx,
                                                       data.sea_ice_is_left)
             if filter_flag_idx.shape[0] > 0:
                 filter_flag[filter_flag_idx] = 2
@@ -673,8 +674,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         return y_filtered2, y_gradient
 
     @staticmethod
-    def get_impacted_range(frb_gradient: np.ndarray,
-                           next_to_ice_edge_idx: int,
+    def get_impacted_range(sea_ice_freeboard_filtered: np.ndarray,
+                           sea_ice_freeboard_gradient: np.ndarray,
+                           ice_edge_idx: int,
                            sea_ice_is_left: bool) -> np.ndarray:
         # sourcery skip: inline-immediately-returned-variable
         """
@@ -682,8 +684,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         to the ice edge to the point where the sea ice freeboard gradient show the first
         zero crossing (-> reversal of freeboard trend). This method should only be called,
         when it is quite certain that the freeboard is impacted by wave.
-        :param frb_gradient:
-        :param next_to_ice_edge_idx:
+        :param sea_ice_freeboard_gradient:
+        :param ice_edge_idx:
         :param sea_ice_is_left:
         :return: Indices Array (potentially empty)
         """
@@ -692,18 +694,38 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # NOTE: without the `np.isfinite` check there will be a lot false zero crossings.
         zero_crossing_idx = np.where(
             np.logical_and(
-                np.diff(np.sign(frb_gradient)).astype(bool),
-                np.isfinite(frb_gradient[:-1]),
+                np.diff(np.sign(sea_ice_freeboard_gradient)).astype(bool),
+                np.isfinite(sea_ice_freeboard_gradient[:-1]),
             )
         )[0]
         if zero_crossing_idx.size <= 1:
             return np.array([])
+
+        # Remove the last values (artefact of zero crossing estimation)
         zero_crossing_idx = zero_crossing_idx[:-1]
 
+        # Try to estimate if the zero crossing of the freeboard gradient
+        # is just "intermediary wiggle". The conditions for this is that
+        # the magnitude of freeboard is generally still lower for the
+        # next local minimum
+        if sea_ice_is_left:
+            max_impacted_range_idx = zero_crossing_idx[-1]
+            candidate_idxs = np.arange(zero_crossing_idx.size-2, 0, -2)
+        else:
+            max_impacted_range_idx = zero_crossing_idx[0]
+            candidate_idxs = np.arange(2, zero_crossing_idx.size, 2)
+        for candidate_idx in candidate_idxs:
+            new_candidate_idx = zero_crossing_idx[candidate_idx]
+            if sea_ice_freeboard_filtered[max_impacted_range_idx] > sea_ice_freeboard_filtered[new_candidate_idx]:
+                max_impacted_range_idx = new_candidate_idx
+            else:
+                break
+
+        # Return a list of indices
         return (
-            np.arange(zero_crossing_idx[-1], next_to_ice_edge_idx+1)
+            np.arange(max_impacted_range_idx, ice_edge_idx+1)
             if sea_ice_is_left else
-            np.arange(next_to_ice_edge_idx, zero_crossing_idx[0])
+            np.arange(ice_edge_idx, max_impacted_range_idx)
         )
 
     @staticmethod
