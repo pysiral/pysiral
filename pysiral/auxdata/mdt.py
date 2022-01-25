@@ -72,7 +72,9 @@ class DTUMDTGrid(AuxdataBaseClass):
 
         # Crop data to subset
         self.mean_dynamic_topography = dtu_grid.MDT.values[latitude_indices, :]
+        self.mean_dynamic_topography[np.isnan(self.mean_dynamic_topography)] = 0.0
         self.mean_dynamic_topography_uncertainty = dtu_grid.err.values[latitude_indices, :]
+        self.mean_dynamic_topography_uncertainty[np.isnan(self.mean_dynamic_topography_uncertainty)] = 0.0
         self.longitude = dtu_grid.lon.values
         self.latitude = dtu_grid.lat.values[latitude_indices]
 
