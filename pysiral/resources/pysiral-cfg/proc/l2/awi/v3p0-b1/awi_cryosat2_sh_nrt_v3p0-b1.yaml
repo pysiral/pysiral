@@ -24,15 +24,24 @@ auxdata:
         options:
             latitude_range: [-90.0, -45.]
 
+    - mdt:
+        name: dtu17
+        options:
+            latitude_range: [-90.0, -45.]
+
     - sic:
-        name: osisaf_operational
+        name: osisaf-operational
         options:
             exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
-         name: fyi_default
-         options: 
-             uncertainty_default: 0.1
+        name: osisaf-operational
+        options:
+            fill_valid_sic_gaps: True
+            exception_on_error: False
 
     - snow:
          name: icdc_climatology_south
@@ -230,6 +239,12 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: false
+
+    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
+    -   module: dot
+        pyclass: DynamicOceanTopography
+        options: null
+
 
     # Estimation of Radar Freeboard
     -   module: frb

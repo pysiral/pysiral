@@ -22,7 +22,6 @@ global_attributes:
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
   - references: "TBD"
   - tracking_id: "{uuid}"
-  - conventions: "CF-1.6"
   - product_version: "3.0-b1"
   - processing_level: "Level-2 intermediate (l2i)"
   - summary: "This dataset contains Level-2 sea ice thickness and intermediate parameters from satellite observations at full resolution of the radar altimeter sensor"
@@ -32,7 +31,7 @@ global_attributes:
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
-  - cdm_data_type: Trajectory
+  - cdm_data_type: "Trajectory"
   - data_record_type: "{source_timeliness}"
   - date_created: "{utcnow}"
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
@@ -48,9 +47,13 @@ global_attributes:
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
   - geospatial_lon_max: "{geospatial_lon_max}"
-  - time_coverage_start: "{time_coverage_start}"
-  - time_coverage_end: "{time_coverage_end}"
+  - geospatial_vertical_min: "0.0"
+  - geospatial_vertical_max: "0.0"
+  - time_coverage_start: "{time_coverage_start:%Y%m%dT%H%M%SZ}"
+  - time_coverage_end: "{time_coverage_end:%Y%m%dT%H%M%SZ}"
   - time_coverage_duration: "{time_coverage_duration:period}"
+  - time_coverage_resolution: "satellite_orbit_frequency"
+  - standard_name_vocabulary: "CF"
   - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
 
 
@@ -60,7 +63,6 @@ variables:
   
   time:
     long_name: utc timestamp
-    standard_name: time
     units: seconds since 1970-01-01
 
   longitude:
@@ -308,7 +310,6 @@ variables:
     units: 1
     coordinates: time
 
-
   sigma0:
     long_name: "radar backscatter (sigma0)"
     units: 1
@@ -401,12 +402,12 @@ variables:
     flag_meaning: "Errors (bit 0): l1p source data, (bit 1): Level-2 processor (bit 2): auxiliary data (bit 3): surface type classification (bit 4): retracker (bit 5): range_correction (bit 6) sea level anomaly (bit 7): freeboard retrieval  (bit 8) freeboard to thickness conversion (bit 9) parameter filter (bit 15) other"
     coordinates: time 
      
-    flag_miz:
-      long_name: "marginal ice zone flag"
-      comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
-      units: 1
-      valid_min: 0
-      valid_max: 3
-      flag_values: "0, 1, 2"
-      flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
-      coordinates: time
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
+    units: 1
+    valid_min: 0
+    valid_max: 3
+    flag_values: "0, 1, 2"
+    flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
+    coordinates: time
