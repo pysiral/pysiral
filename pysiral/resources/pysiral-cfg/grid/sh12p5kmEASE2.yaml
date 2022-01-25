@@ -4,7 +4,7 @@ hemisphere: south
 grid_tag: ease2nh
 resolution_tag: 12.5km
 grid_id: sh_12p5km_ease2
-name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
+name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 12.5km
 
 netcdf_grid_description: 
     Lambert_Azimuthal_Grid:
@@ -30,10 +30,10 @@ extent:
     yoff: 0
     xsize: 10800000
     ysize: 10800000
-    dx: 25000
-    dy: 25000
-    numx: 432
-    numy: 432
+    dx: 12500
+    dy: 12500
+    numx: 864
+    numy: 864
 
 area_def: 
     ease2nh:
@@ -46,8 +46,8 @@ area_def:
             datum: WGS84
             units: m
         shape:
-            height: 432
-            width: 432
+            height: 864
+            width: 864
         area_extent:
             lower_left_xy: [-5400000.0, -5400000.0]
             upper_right_xy: [5400000.0, 5400000.0]
