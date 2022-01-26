@@ -1,7 +1,7 @@
 metadata:
     label: "AWI CryoSat-2 sea-ice thickness test product (cs2awi v3.0-tds)"
     product_line: awi
-    record_type: tds
+    record_type: rep
     platform: cryosat2
     version: v3p0-beta1
     file_version_tag: v3p0-beta1

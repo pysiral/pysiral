@@ -1,7 +1,7 @@
 metadata:
     label: "AWI CryoSat-2 operational southern hemisphere sea-ice thickness data record - version 3.0-beta1"
     product_line: awi_tds
-    record_type: nrt
+    record_type: rep
     platform: cryosat2
     version: v3p0-b1
     file_version_tag: v3p0-b1
