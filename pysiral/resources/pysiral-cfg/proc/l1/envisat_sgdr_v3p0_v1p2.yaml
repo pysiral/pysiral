@@ -28,7 +28,6 @@ input_adapter:
         name: "Envisat RA2/MWR Level 2 sensor geophysical data record (v3.0)"
 
         # Radar parameters
-        nominal_tracking_bin: 45
         bin_width_meter: 0.4686
         radar_mode: lrm
 
@@ -86,7 +85,7 @@ output_handler:
         local_machine_def_tag: sgdr_v3p0
         version:
             source_file_tag: esa_sgdr_v3p0
-            version_file_tag: v1p1
+            version_file_tag: v1p2
 
 
 # Settings for the pre-processor
