@@ -40,6 +40,11 @@ from typing import Iterable, Any, Union
 import numpy as np
 import xgboost as xgb
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as torch_nn_functional
+import bottleneck as bn
+
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.l2data import Level2Data
 from pysiral.l1bdata import L1bdataNCFile
@@ -48,6 +53,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 
 class RetrackerThresholdModel(AuxdataBaseClass):
+    """ NOTE: This class is very likely obsolete due to switch to pytorch """
 
     def __init__(self, *args: Iterable[Any], **kwargs: Iterable[Any]) -> None:
         """
@@ -163,9 +169,116 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             model_file_list = list(lookup_dir.rglob(f"*{suffix}"))
             model_files.extend(model_file_list)
 
-        if len(model_files) == 0:
+        if not model_files:
             msg = f"Did not find any machine learned files: {lookup_dir}/*{suffixes}"
             self.error.add_error("files-missing", msg)
             self.error.raise_on_error()
 
         return model_files
+
+
+class RetrackerThresholdModelTorch(AuxdataBaseClass):
+
+    def __init__(self, *args: Iterable[Any], **kwargs: Iterable[Any]) -> None:
+        """
+        Initialiaze the class. This step includes establishing the model by parsing the
+        model parameter file as specified in the Level-2 processor definition file.
+        :param args:
+        :param kwargs:
+        """
+        super(RetrackerThresholdModelTorch, self).__init__(*args, **kwargs)
+
+        # Retrieve requested model files
+        self.model_file = self.cfg.options.get("model_file", None)
+        if self.model_file is None:
+            msg = f"Missing option `model_file` in auxiliary data configuration {self.cfg.options}"
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+
+        self.model_filepath = Path(self.cfg.local_repository) / self.model_file
+        if self.model_file is None:
+            msg = f"Model file {self.model_filepath} not found"
+            self.error.add_error("missing-file", msg)
+            self.error.raise_on_error()
+
+        # The model uses waveform power as input
+        self.waveform_for_prediction = None
+
+        # Initialize the model
+        self.model = TorchFunctionalWaveformModel()
+        self.model.load_state_dict(torch.load(self.model_filepath, map_location='cpu'))
+        self.model.eval()
+
+    def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
+        """
+        Optional method to add l1p variables to this class before `get_l2_track_vars()` is
+        called. This method here store the waveform power arrays, which are input to the
+        model, normalizes the waveforms and converts to the necessary data type.
+
+        :param l1p:
+
+        :return:
+        """
+        waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
+        normed_waveform_power = l1p.waveform.power[:]/waveform_norms[:, np.newaxis]
+        self.waveform_for_prediction = torch.from_numpy(normed_waveform_power.astype('float32'))
+
+    def get_l2_track_vars(self, l2: 'Level2Data') -> None:
+        """
+        [Mandatory class method] Add the model prediction for the tfmra retracker threshold to the
+        Level-2 data object. The model evaluation depends solely on waveform power.
+
+        :param l2: `Level2Data` container
+
+        :return: None
+
+        :raises: None
+        """
+
+        # Predict the waveform range
+        with torch.no_grad():
+            opt = self.model(self.waveform_for_prediction)
+        tfmra_threshold_predicted = opt.numpy().flatten()
+
+        # Limit threshold range to pre-defined range (or at least [0-1])
+        valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
+        tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
+        tfmra_threshold_predicted[tfmra_threshold_predicted > valid_max] = valid_max
+
+        # Add prediction to the Level-2 data object
+        var_id, var_name = self.cfg.options.get("output_parameter", ["tfmrathrs_ml", "tfmra_threshold_ml"])
+        l2.set_auxiliary_parameter(var_id, var_name, tfmra_threshold_predicted)
+
+
+class TorchFunctionalWaveformModel(nn.Module):
+    """
+    Create Feed-Forward Neural Network architecture
+    REQ: Required for RetrackerThresholdModelTorch
+    """
+    def __init__(self):
+        super(TorchFunctionalWaveformModel, self).__init__()
+        self.fc1 = nn.Linear(128, 256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.fc2 = nn.Linear(256, 512)
+        self.bn2 = nn.BatchNorm1d(512)
+        self.fc3 = nn.Linear(512, 256)
+        self.bn3 = nn.BatchNorm1d(256)
+        self.fc4 = nn.Linear(256, 128)
+        self.bn4 = nn.BatchNorm1d(128)
+        self.fc5 = nn.Linear(128, 1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc3(x)
+        x = self.bn3(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc4(x)
+        x = self.bn4(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc5(x)
+        return x

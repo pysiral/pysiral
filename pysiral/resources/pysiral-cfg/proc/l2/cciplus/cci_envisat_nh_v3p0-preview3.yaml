@@ -56,20 +56,22 @@ auxdata:
     - ml:
             # category.name (ml.tfmra_threshold_model) points to the corresponding 
             # entry in `auxdata_def.yaml`
-            name: tfmra_threshold_model
+            name: tfmra_threshold_model_torch
             options:
                 # The id and name of the parameter added to the level-2 object
                 output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
                 # File basename of the trained model data
-                model_id: envisat_cci_v1
+                model_file: fnn_init_ep25_lre6_4h_leakyrelu_20220406.pth
                 # Input parameter for the models. These will be pulled from the
                 # l1p data object and thus need two identifiers: 
                 # [data_group, parameter_name]
                 # Order of the parameter list below needs to follow order
                 # in the feature vector.
                 parameter:
-                    - ["classifier", "leading_edge_width"]
-                    - ["classifier", "sigma0"]
+                    - ["waveform", "power"]
+                # The model may predict non-sense threshold values. Limit
+                # to a normal range
+                valid_range: [0.0, 1.0]
 
 # --- Level-2 processor steps ---
 # 
