@@ -191,7 +191,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
-                logger.info("- no waveforms of type %s" % surface_type)
+                logger.info(f"- no waveforms of type {surface_type}")
                 continue
 
             # Benchmark retracker performance
@@ -254,15 +254,15 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
     @property
     def default_options_dict(self):
-        default_options_dict = {
+        return {
             "threshold": dict(type="fixed", value=0.5),
             "offset": 0.0,
             "wfm_oversampling_factor": 10,
             "wfm_oversampling_method": "linear",
             "wfm_smoothing_window_size": [11, 11, 51],
             "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
-            "first_maximum_local_order": 1}
-        return default_options_dict
+            "first_maximum_local_order": 1
+        }
 
     def create_retracker_properties(self, n_records):
         # None so far
@@ -301,9 +301,8 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
-        if "uncertainty" in self._options:
-            if self._options.uncertainty.type == "fixed":
-                self._uncertainty[:] = self._options.uncertainty.value
+        if "uncertainty" in self._options and self._options.uncertainty.type == "fixed":
+            self._uncertainty[:] = self._options.uncertainty.value
 
     def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
 
