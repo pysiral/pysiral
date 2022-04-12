@@ -2,7 +2,7 @@
 metadata:
     label: "ESA CCI+ Envisat reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2021 preview 3"
     product_line: cci
-    record_type: cdr
+    record_type: tds
     platform: envisat
     version: v3p0-preview3
     file_version_tag: v3p0-preview3
