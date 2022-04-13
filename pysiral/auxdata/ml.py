@@ -45,6 +45,7 @@ import torch.nn as nn
 import torch.nn.functional as torch_nn_functional
 import bottleneck as bn
 
+from pysiral import get_cls
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.l2data import Level2Data
 from pysiral.l1bdata import L1bdataNCFile
@@ -204,8 +205,19 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         # The model uses waveform power as input
         self.waveform_for_prediction = None
 
-        # Initialize the model
-        self.model = TorchFunctionalWaveformModel()
+        # Get and initialize the required torch model class
+        # REQ: Needs to be part of this file
+        torch_model_class = self.cfg.options.get("torch_class", None)
+        if torch_model_class is None:
+            msg = "PyTorch model class not specified (options.torch_class missing)"
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+        model_class = get_cls("pysiral.auxdata.ml", torch_model_class)
+        if model_class is None:
+            msg = f"PyTorch model class not found: pysiral.auxdata.ml.{torch_model_class}"
+            self.error.add_error("class-not-found", msg)
+            self.error.raise_on_error()
+        self.model = model_class()
         self.model.load_state_dict(torch.load(self.model_filepath, map_location='cpu'))
         self.model.eval()
 
@@ -250,13 +262,46 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         l2.set_auxiliary_parameter(var_id, var_name, tfmra_threshold_predicted)
 
 
-class TorchFunctionalWaveformModel(nn.Module):
+# class TorchFunctionalWaveformModel(nn.Module):
+#     """
+#     Create Feed-Forward Neural Network architecture
+#     REQ: Required for RetrackerThresholdModelTorch
+#     """
+#     def __init__(self):
+#         super(TorchFunctionalWaveformModel, self).__init__()
+#         self.fc1 = nn.Linear(128, 256)
+#         self.bn1 = nn.BatchNorm1d(256)
+#         self.fc2 = nn.Linear(256, 512)
+#         self.bn2 = nn.BatchNorm1d(512)
+#         self.fc3 = nn.Linear(512, 256)
+#         self.bn3 = nn.BatchNorm1d(256)
+#         self.fc4 = nn.Linear(256, 128)
+#         self.bn4 = nn.BatchNorm1d(128)
+#         self.fc5 = nn.Linear(128, 1)
+#
+#     def forward(self, x):
+#         x = self.fc1(x)
+#         x = self.bn1(x)
+#         x = torch_nn_functional.leaky_relu(x)
+#         x = self.fc2(x)
+#         x = self.bn2(x)
+#         x = torch_nn_functional.leaky_relu(x)
+#         x = self.fc3(x)
+#         x = self.bn3(x)
+#         x = torch_nn_functional.leaky_relu(x)
+#         x = self.fc4(x)
+#         x = self.bn4(x)
+#         x = torch_nn_functional.leaky_relu(x)
+#         x = self.fc5(x)
+#         return x
+
+class TorchFunctionalWaveformModelFNN(nn.Module):
     """
     Create Feed-Forward Neural Network architecture
     REQ: Required for RetrackerThresholdModelTorch
     """
     def __init__(self):
-        super(TorchFunctionalWaveformModel, self).__init__()
+        super(TorchFunctionalWaveformModelFNN, self).__init__()
         self.fc1 = nn.Linear(128, 256)
         self.bn1 = nn.BatchNorm1d(256)
         self.fc2 = nn.Linear(256, 512)
@@ -280,5 +325,31 @@ class TorchFunctionalWaveformModel(nn.Module):
         x = self.fc4(x)
         x = self.bn4(x)
         x = torch_nn_functional.leaky_relu(x)
+        x = self.fc5(x)
+        return x
+
+
+class TorchFunctionalWaveformModelSNN(nn.Module):
+    """
+    Create Self-Normalizing Neural Network architecture
+    REQ: Required for RetrackerThresholdModelTorch
+    """
+    def __init__(self):
+        super(TorchFunctionalWaveformModelSNN, self).__init__()
+        self.fc1 = nn.Linear(128, 256)
+        self.fc2 = nn.Linear(256, 512)
+        self.fc3 = nn.Linear(512, 256)
+        self.fc4 = nn.Linear(256, 256)
+        self.fc5 = nn.Linear(256, 1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = torch_nn_functional.selu(x)
+        x = self.fc2(x)
+        x = torch_nn_functional.selu(x)
+        x = self.fc3(x)
+        x = torch_nn_functional.selu(x)
+        x = self.fc4(x)
+        x = torch_nn_functional.selu(x)
         x = self.fc5(x)
         return x
