@@ -20,7 +20,7 @@ from pysiral.envisat.functions import (get_envisat_window_delay, get_envisat_wfm
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 

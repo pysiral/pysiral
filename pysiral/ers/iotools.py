@@ -13,7 +13,7 @@ from parse import compile
 
 from collections import deque
 from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 class ERSFileList(DefaultLoggingClass):

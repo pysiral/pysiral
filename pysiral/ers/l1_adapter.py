@@ -14,7 +14,7 @@ from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.errorhandler import ErrorStatus
 from pysiral.ers.sgdrfile import ERSSGDR
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
 
 

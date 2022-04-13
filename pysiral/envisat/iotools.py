@@ -9,7 +9,7 @@ from collections import deque
 
 from dateperiods import DatePeriod
 from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):

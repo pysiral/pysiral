@@ -14,7 +14,7 @@ from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 import re
 

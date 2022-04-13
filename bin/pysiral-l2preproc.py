@@ -15,7 +15,7 @@ from pysiral.config import DefaultCommandLineArguments
 from pysiral.errorhandler import ErrorStatus
 from pysiral.datahandler import L2iDataHandler
 from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 def pysiral_l2preproc():
@@ -54,7 +54,7 @@ def pysiral_l2preproc():
     l2i_handler = L2iDataHandler(args.l2i_product_dir)
 
     # Get list of days for processing
-    # start and/or stop can be ommitted. In this case fall back to the
+    # start and/or stop can be omitted. In this case fall back to the
     # start and/or stop of l2i product availability
     start = args.start if args.start is not None else l2i_handler.start_month
     stop = args.stop if args.stop is not None else l2i_handler.stop_month
@@ -192,25 +192,23 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         l2i_product_dir = self._args.l2i_product_dir
         if Path(l2i_product_dir).is_dir():
             return Path(l2i_product_dir).resolve(strict=False)
-        else:
-            msg = "Invalid l2i product dir: %s" % str(l2i_product_dir)
-            self.error.add_error("invalid-l2i-product-dir", msg)
-            self.error.raise_on_error()
+        msg = f"Invalid l2i product dir: {str(l2i_product_dir)}"
+        self.error.add_error("invalid-l2i-product-dir", msg)
+        self.error.raise_on_error()
 
     @property
     def l2p_output(self):
         l2p_output = self._args.l2p_output
         filename = psrlcfg.get_settings_file("output", "l2p", l2p_output)
-        if filename is None:
-            msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
-            msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2p_output_ids = psrlcfg.get_setting_ids("output", "l2p")
-            for l2p_output_id in l2p_output_ids:
-                msg = msg + "    - " + l2p_output_id+"\n"
-            self.error.add_error("invalid-l2p-outputdef", msg)
-            self.error.raise_on_error()
-        else:
+        if filename is not None:
             return filename
+        msg = "Invalid l2p outputdef filename or id: %s\n" % l2p_output
+        msg = msg + " \nRecognized Level-2 output definitions ids:\n"
+        l2p_output_ids = psrlcfg.get_setting_ids("output", "l2p")
+        for l2p_output_id in l2p_output_ids:
+            msg = f'{msg}    - {l2p_output_id}' + "\n"
+        self.error.add_error("invalid-l2p-outputdef", msg)
+        self.error.raise_on_error()
 
     @property
     def remove_old(self):

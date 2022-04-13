@@ -9,7 +9,7 @@ Created on Fri Aug 11 17:07:02 2017
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l2data import Level2PContainer, L2iNCFileImport
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.output import Level2Output, OutputHandlerBase
 
 from collections import OrderedDict
