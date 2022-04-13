@@ -4,8 +4,8 @@ metadata:
     product_line: cci
     record_type: tds
     platform: envisat
-    version: v3p0-preview3
-    file_version_tag: v3p0-preview3
+    version: v3p0-preview4
+    file_version_tag: v3p0-preview4
     hemisphere: north
 
 
