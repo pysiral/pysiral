@@ -2,7 +2,6 @@
 
 import os
 import re
-import glob
 from pathlib import Path
 from collections import deque
 
@@ -57,8 +56,7 @@ class Sentinel3FileList(DefaultLoggingClass):
                 self._sorted_list.extend(sorted(match))
 
     def _get_toplevel_search_folder(self, year, month):
-        folder = Path(self.folder) / "%4g" % year / "%02g" % month
-        return folder
+        return Path(self.folder) / "%4g" % year / "%02g" % month
 
 
 class CodaL2SralFileDiscovery(DefaultLoggingClass):
@@ -116,8 +114,7 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
 
     def _get_toplevel_search_folder(self, year, month):
         """ Get the folder for the file search """
-        folder = Path(self.cfg.lookup_dir) / "%4g" % year / "%02g" % month
-        return folder
+        return Path(self.cfg.lookup_dir) / "%4g" % year / "%02g" % month
 
     def _reset_file_list(self):
         """ Resets the result of previous file searches """
