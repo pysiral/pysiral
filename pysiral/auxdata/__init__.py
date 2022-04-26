@@ -192,7 +192,7 @@ class AuxdataBaseClass(object):
 
     def load_requested_auxdata(self):
         """
-        This methods raises a NotImplementedError if it is not overwritten by child class
+        This method raises a NotImplementedError if it is not overwritten by child class
         :return:
         """
         msg = """
@@ -203,7 +203,7 @@ class AuxdataBaseClass(object):
 
     def get_l2_track_vars(self, *args):
         """
-        This methods raises a NotImplementedError if it is not overwritten by child class
+        This method raises a NotImplementedError if it is not overwritten by child class
         :return:
         """
         msg = """
@@ -247,7 +247,7 @@ class AuxdataBaseClass(object):
         # Main directory
         path = Path(self.cfg.local_repository)
 
-        # Add the subfolders
+        # Add the sub-folders
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = path / subfolder
