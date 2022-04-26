@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+"""
+
+"""
+
 import sys
 import numpy as np
 from loguru import logger
@@ -74,7 +80,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self._filename = None
 
     @staticmethod
-    def remove_old_if_applicable() -> None:
+    def remove_old_if_applicable(perid: DatePeriod) -> None:
         logger.warning("Not implemented: self.remove_old_if_applicable")
         return
 
@@ -207,7 +213,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # region to assess whether it is necessary to parse and transform the file content
             # for the sake of computational efficiency.
             logger.info(f"+ Process input file {prgs.get_status_report(i)}")
-            l1 = self.input_adapter.get_l1(input_file, polar_ocean_check)
+            l1 = self.input_adapter.get_l1(input_file, polar_ocean_check=polar_ocean_check)
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
                 continue
@@ -616,15 +622,6 @@ class L1PreProcBase(DefaultLoggingClass):
                 l1_segments.append(l1_segment)
 
         return l1_segments
-
-    @property
-    # FIXME: This is an obvious error (is this being used?)
-    def target_region_def(self) -> Union[Dict, AttrDict]:
-        if "polar_ocean" not in self.cfg:
-            msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
-            self.error.add_error("l1preproc-missing-option", msg)
-            self.error.raise_on_error()
-        return self.cfg.polar_ocean
 
     @property
     def polar_ocean_props(self) -> Union[Dict, AttrDict]:
