@@ -5,9 +5,12 @@ from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
-from dateperiods import DatePeriod
+from typing import Type, Union, List, TypeVar, Dict
+
+from dateperiods import DatePeriod, PeriodIterator
 
 from pysiral import get_cls, psrlcfg
+from pysiral.l1bdata import Level1bData, L1bMetaData
 from pysiral.clocks import StopWatch
 from pysiral.config import get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
@@ -16,42 +19,108 @@ from pysiral.core import DefaultLoggingClass
 from pysiral.output import L1bDataNC
 
 
-def get_preproc(preproc_type, input_adapter, output_handler, cfg):
+class Level1POutputHandler(DefaultLoggingClass):
     """
-    A function returning the pre-processor class corresponding the type definition
-
-    :param preproc_type: type of the pre-processor (`orbit_segment`)
-    :param input_adapter: A class that return a L1bData object for a given input product file
-    :param output_handler: A class that creates a pysiral l1p product from the merged L1bData object
-    :param cfg: a treedict of options for the pre-processor
-    :return: Initialized pre-processor class
+    The output handler for l1p product files
+    NOTE: This is not a subclass of OutputHandlerbase due to the special nature of pysiral l1p products
     """
 
-    # A lookup dictionary for the appropriate class
-    preproc_class_lookup_dict = {"custom_orbit_segment": L1PreProcCustomOrbitSegment,
-                                 "half_orbit": L1PreProcHalfOrbit,
-                                 "full_orbit": L1PreProcFullOrbit, }
+    def __init__(self, cfg: AttrDict) -> None:
+        cls_name = self.__class__.__name__
+        super(Level1POutputHandler, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+        self.cfg = cfg
 
-    # Try the get the class
-    cls = preproc_class_lookup_dict.get(preproc_type)
+        self.pysiral_cfg = psrlcfg
 
-    # Error handling
-    if cls is None:
-        msg = f"Unrecognized Level-1 Pre-Processor class type: {preproc_type}"
-        msg += "\nKnown types:"
-        for key in preproc_class_lookup_dict:
-            msg += "\n - %s" % key
-        error = ErrorStatus(caller_id="Level1PreProcessor")
-        error.add_error("invalid-l1preproc-class", msg)
-        error.raise_on_error()
+        # Init class properties
+        self._path = None
+        self._filename = None
 
-    # Return the initialized class
-    return cls(input_adapter, output_handler, cfg)
+    @staticmethod
+    def remove_old_if_applicable() -> None:
+        logger.warning("Not implemented: self.remove_old_if_applicable")
+        return
+
+    def export_to_netcdf(self, l1: "Level1bData") -> None:
+        """
+        Workflow to export a Level-1 object to l1p netCDF product. The workflow includes the generation of the
+        output path (if applicable).
+
+        :param l1: The Level-1 object to be exported
+
+        :return: None
+        """
+
+        # Get filename and path
+        self.set_output_filepath(l1)
+
+        # Check if path exists
+        Path(self.path).mkdir(exist_ok=True, parents=True)
+
+        # Export the data object
+        ncfile = L1bDataNC()
+        ncfile.l1b = l1
+        ncfile.output_folder = self.path
+        ncfile.filename = self.filename
+        ncfile.export()
+
+    def set_output_filepath(self, l1: "Level1bData") -> None:
+        """
+        Sets the class properties required for the file export
+
+        :param l1: The Level-1 object
+
+        :return: None
+        """
+
+        local_machine_def_tag = self.cfg.get("local_machine_def_tag", None)
+        if local_machine_def_tag is None:
+            msg = "Missing mandatory option %s in l1p processor definition file -> aborting"
+            msg %= "root.output_handler.options.local_machine_def_tag"
+            msg = msg + "\nOptions: \n" + self.cfg.makeReport()
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+
+        # TODO: Move to config file
+        filename_template = "pysiral-l1p-{platform}-{source}-{timeliness}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"
+        time_fmt = "%Y%m%dT%H%M%S"
+        values = {"platform": l1.info.mission,
+                  "source": self.cfg.version.source_file_tag,
+                  "timeliness": l1.info.timeliness,
+                  "hemisphere": l1.info.hemisphere,
+                  "tcs": l1.time_orbit.timestamp[0].strftime(time_fmt),
+                  "tce": l1.time_orbit.timestamp[-1].strftime(time_fmt),
+                  "file_version": self.cfg.version.version_file_tag}
+        self._filename = filename_template.format(**values)
+
+        local_repository = self.pysiral_cfg.local_machine.l1b_repository
+        export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag]["l1p"])
+        yyyy = "%04g" % l1.time_orbit.timestamp[0].year
+        mm = "%02g" % l1.time_orbit.timestamp[0].month
+        self._path = export_folder / self.cfg.version["version_file_tag"] / l1.info.hemisphere / yyyy / mm
+
+    @property
+    def path(self) -> Path:
+        return Path(self._path)
+
+    @property
+    def filename(self) -> str:
+        return self._filename
+
+    @property
+    def last_written_file(self) -> Path:
+        return self.path / self.filename
 
 
 class L1PreProcBase(DefaultLoggingClass):
 
-    def __init__(self, cls_name, input_adapter, output_handler, cfg):
+    def __init__(self,
+                 cls_name: str,
+                 input_adapter: Type,
+                 output_handler: Level1POutputHandler,
+                 cfg: AttrDict
+                 ) -> None:
 
         # Make sure the logger/error handler has the name of the parent class
         super(L1PreProcBase, self).__init__(cls_name)
@@ -69,7 +138,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # The stack of Level-1 objects is a simple list
         self.l1_stack = []
 
-    def process_input_files(self, input_file_list):
+    def process_input_files(self, input_file_list: List[Union[Path, str]]):
         """
         Main entry point for the Level-Preprocessor.
         :param input_file_list: A list full filepath for the pre-processor
@@ -124,17 +193,19 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_merged = self.l1_get_merged_stack()
         self.l1_export_to_netcdf(l1_merged)
 
-    def extract_polar_ocean_segments(self, l1):
+    def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Needs to be implemented by child classes
 
         :param l1:
 
-        :return:
+        :return: None
+
+        :raises: NotImplementedError
         """
         raise NotImplementedError("")
 
-    def l1_post_processing(self, l1_segments):
+    def l1_post_processing(self, l1_segments: List["Level1bData"]) -> None:
         """
         Apply the post-processing procedures defined in the l1p processor definition file.
 
@@ -162,7 +233,7 @@ class L1PreProcBase(DefaultLoggingClass):
             msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
             logger.info(msg)
 
-    def l1_stack_merge_and_export(self, l1_segments):
+    def l1_stack_merge_and_export(self, l1_segments: List["Level1bData"]) -> None:
         """
         Add the input Level-1 segments to the l1 stack and export the unconnected ones as l1p netCDF products
         :param l1_segments:
@@ -191,11 +262,13 @@ class L1PreProcBase(DefaultLoggingClass):
                 self.l1_export_to_netcdf(l1_merged)
                 self.l1_stack = [l1]
 
-    def l1_is_connected_to_stack(self, l1):
+    def l1_is_connected_to_stack(self, l1: "Level1bData") -> bool:
         """
-        Check if the start time of file i and the stop time if file i-1 indicate neighbouring orbit segments
-        (e.g. due to radar mode change, or two half-orbits
+        Check if the start time of file i and the stop time if file i-1 indicate neighbouring orbit segments.
+        (e.g. due to radar mode change, or two half-orbits)
+
         :param l1:
+
         :return: Flag if l1 is connected (True of False)
         """
 
@@ -208,10 +281,11 @@ class L1PreProcBase(DefaultLoggingClass):
         threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
         return tdelta.seconds <= threshold
 
-    def l1_get_merged_stack(self):
+    def l1_get_merged_stack(self) -> "Level1bData":
         """
         Concatenates all items in the l1 stack and returns the merged Level-1 data object.
         Note: This operation leaves the state of the Level-1 stack untouched
+
         :return: Level-1 data object
         """
         l1_merged = self.l1_stack[0]
@@ -219,10 +293,12 @@ class L1PreProcBase(DefaultLoggingClass):
             l1_merged.append(l1)
         return l1_merged
 
-    def l1_export_to_netcdf(self, l1):
+    def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
         """
         Exports the Level-1 object as l1p netCDF
+
         :param l1: The Level-1 object to exported
+
         :return:
         """
 
@@ -237,11 +313,12 @@ class L1PreProcBase(DefaultLoggingClass):
         else:
             logger.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
-    def trim_single_hemisphere_segment_to_polar_region(self, l1):
+    def trim_single_hemisphere_segment_to_polar_region(self, l1: "Level1bData") -> "Level1bData":
         """
         Extract polar region of interest from a segment that is either north or south (not global)
 
         :param l1: Input Level-1 object
+
         :return: Trimmed Input Level-1 object
         """
         polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
@@ -251,7 +328,8 @@ class L1PreProcBase(DefaultLoggingClass):
             l1.trim_to_subset(polar_subset)
         return l1
 
-    def trim_two_hemisphere_segment_to_polar_regions(self, l1):
+    def trim_two_hemisphere_segment_to_polar_regions(self, l1: "Level1bData"
+                                                     ) -> Union[None, List["Level1bData"]]:
         """
         Extract polar regions of interest from a segment that is either north, south or both. The method will
         preserve the order of the hemispheres
@@ -298,7 +376,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
         return l1_list
 
-    def trim_full_orbit_segment_to_polar_regions(self, l1):
+    def trim_full_orbit_segment_to_polar_regions(self, l1: "Level1bData") -> Union[None, List["Level1bData"]]:
         """
         Extract polar regions of interest from a segment that is either north, south or both. The method will
         preserve the order of the hemispheres
@@ -351,10 +429,10 @@ class L1PreProcBase(DefaultLoggingClass):
 
         return l1_list
 
-    def filter_small_ocean_segments(self, l1):
+    def filter_small_ocean_segments(self, l1: "Level1bData") -> "Level1bData":
         """
         This method sets the surface type flag of very small ocean segments to land. This action should prevent
-        large portions of land staying in the l1 segment is a small fjord etc is crossed. It should also filter
+        large portions of land staying in the l1 segment is a small fjord et cetera is crossed. It should also filter
         out smaller ocean segments that do not have a realistic chance of freeboard retrieval.
 
         :param l1: A pysiral.l1bdata.Level1bData instance
@@ -389,10 +467,12 @@ class L1PreProcBase(DefaultLoggingClass):
         return l1
 
     @staticmethod
-    def trim_non_ocean_data(l1):
+    def trim_non_ocean_data(l1: "Level1bData") -> Union[None, "Level1bData"]:
         """
         Remove leading and trailing data that is not if type ocean.
+
         :param l1: The input Level-1 objects
+
         :return: The subsetted Level-1 objects. (Segments with no ocean data are removed from the list)
         """
 
@@ -408,12 +488,14 @@ class L1PreProcBase(DefaultLoggingClass):
             l1.trim_to_subset(ocean_subset)
         return l1
 
-    def split_at_large_non_ocean_segments(self, l1):
+    def split_at_large_non_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Identify larger segments that are not ocean (land, land ice) and split the segments if necessary.
         The return value will always be a list of Level-1 object instances, even if no non-ocean data
         segment is present in the input data file
+
         :param l1: Input Level-1 object
+
         :return: a list of Level-1 objects.
         """
 
@@ -454,7 +536,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # Return a list of segments
         return l1_segments
 
-    def split_at_time_discontinuities(self, l1_list):
+    def split_at_time_discontinuities(self, l1_list: List["Level1bData"]) -> List["Level1bData"]:
         """
         Split l1 object(s) at discontinuities of the timestamp value and return the expanded list with l1 segments.
 
@@ -497,7 +579,8 @@ class L1PreProcBase(DefaultLoggingClass):
         return l1_segments
 
     @property
-    def target_region_def(self):
+    # FIXME: This is an obvious error (is this being used?)
+    def target_region_def(self) -> Union[Dict, AttrDict]:
         if "polar_ocean" not in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
@@ -505,7 +588,7 @@ class L1PreProcBase(DefaultLoggingClass):
         return self.cfg.polar_ocean
 
     @property
-    def polar_ocean_props(self):
+    def polar_ocean_props(self) -> Union[Dict, AttrDict]:
         if "polar_ocean" not in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
@@ -513,7 +596,7 @@ class L1PreProcBase(DefaultLoggingClass):
         return self.cfg.polar_ocean
 
     @property
-    def orbit_segment_connectivity_props(self):
+    def orbit_segment_connectivity_props(self) -> Union[Dict, AttrDict]:
         if "orbit_segment_connectivity" not in self.cfg:
             msg = "Missing configuration key `orbit_segment_connectivity` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
@@ -521,11 +604,11 @@ class L1PreProcBase(DefaultLoggingClass):
         return self.cfg.orbit_segment_connectivity
 
     @property
-    def stack_len(self):
+    def stack_len(self) -> int:
         return len(self.l1_stack)
 
     @property
-    def last_stack_item(self):
+    def last_stack_item(self) -> "Level1bData":
         return self.l1_stack[-1]
 
 
@@ -535,7 +618,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
 
-    def extract_polar_ocean_segments(self, l1):
+    def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Splits the input Level-1 object into the polar ocean segments (e.g. by trimming land at the edges
         or by splitting into several parts if there are land masses with the orbit segment). The returned
@@ -547,6 +630,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
               is controlled by the mode mask changes).
 
         :param l1: A Level-1 data object
+
         :return: A list of Level-1 data objects (subsets of polar ocean segments from input l1)
         """
 
@@ -606,7 +690,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcHalfOrbit, self).__init__(self.__class__.__name__, *args)
 
-    def extract_polar_ocean_segments(self, l1):
+    def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Splits the input Level-1 object into the polar ocean segments (e.g. by trimming land at the edges
         or by splitting into several parts if there are land masses with the orbit segment). The returned
@@ -617,6 +701,7 @@ class L1PreProcHalfOrbit(L1PreProcBase):
               from pole to pole (e.g. Envisat SGDR)
 
         :param l1: A Level-1 data object
+
         :return: A list of Level-1 data objects (subsets of polar ocean segments from input l1)
         """
 
@@ -669,7 +754,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
     def __init__(self, *args):
         super(L1PreProcFullOrbit, self).__init__(self.__class__.__name__, *args)
 
-    def extract_polar_ocean_segments(self, l1):
+    def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Splits the input Level-1 object into the polar ocean segments (e.g. by trimming land at the edges
         or by splitting into several parts if there are land masses with the orbit segment). The returned
@@ -733,7 +818,10 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     wanted or not
     """
 
-    def __init__(self, log_name, cfg):
+    def __init__(self,
+                 log_name: str,
+                 cfg: AttrDict
+                 ) -> None:
         cls_name = self.__class__.__name__
         super(L1PreProcPolarOceanCheck, self).__init__(log_name)
         self.error = ErrorStatus(caller_id=cls_name)
@@ -741,7 +829,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         # Save Parameter
         self.cfg = cfg
 
-    def has_polar_ocean_segments(self, product_metadata):
+    def has_polar_ocean_segments(self, product_metadata: L1bMetaData) -> bool:
         """
         Checks if there are polar oceans segments based on the metadata of a L1 data object
         :param product_metadata: A l1bdata.L1BMetaData object
@@ -775,12 +863,22 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 
 
 class Level1PreProcJobDef(DefaultLoggingClass):
-    """ A class that contains the information for the Level-1 pre-processor JOB (not the pre-processor class!) """
+    """
+    A class that contains the information for the Level-1 pre-processor definition
+    """
 
-    def __init__(self, l1p_settings_id_or_file, tcs, tce, exclude_month=None, hemisphere="global", platform=None,
-                 output_handler_cfg=None, source_repo_id=None):
+    def __init__(self,
+                 l1p_settings_id_or_file: Union[str, Path],
+                 tcs: List[int],
+                 tce: List[int],
+                 exclude_month: List[int] = None,
+                 hemisphere: str = "global",
+                 platform: str = None,
+                 output_handler_cfg: Union[dict, AttrDict] = None,
+                 source_repo_id: str = None):
         """
         The settings for the Level-1 pre-processor job
+
         :param l1p_settings_id_or_file: An id of a proc/l1 processor config file (filename excluding the .yaml
                                         extension) or a full filepath to a yaml config file
         :param tcs: [int list] Time coverage start (YYYY MM [DD])
@@ -809,6 +907,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self._hemisphere = hemisphere
         self._platform = platform
         self._source_repo_id = source_repo_id
+        self._exclude_month = exclude_month
 
         # Parse the l1p settings file
         self.set_l1p_processor_def(l1p_settings_id_or_file)
@@ -826,8 +925,10 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self.stopwatch = StopWatch()
 
     @classmethod
-    def from_args(cls, args):
-        """ Init the Processor Definition from the pysiral-l1preproc command line argument object """
+    def from_args(cls, args: AttrDict) -> "Level1PreProcJobDef":
+        """
+        Init the Processor Definition from the pysiral-l1preproc command line argument object
+        """
 
         # Optional Keywords
         kwargs = {}
@@ -845,7 +946,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Return the initialized class
         return cls(args.l1p_settings, args.start_date, args.stop_date, **kwargs)
 
-    def set_l1p_processor_def(self, l1p_settings_id_or_file):
+    def set_l1p_processor_def(self, l1p_settings_id_or_file: Union[str, Path]) -> None:
         """ Parse the content of the processor definition file """
 
         # 1. Resolve the absolute file path
@@ -862,7 +963,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # 4. update hemisphere for input adapter
         self._l1pprocdef.level1_preprocessor.options.polar_ocean.target_hemisphere = self.target_hemisphere
 
-    def get_l1p_proc_def_filename(self, l1p_settings_id_or_file):
+    def get_l1p_proc_def_filename(self, l1p_settings_id_or_file: Union[str, Path]) -> Union[str, Path]:
         """ Query pysiral config to obtain filename for processor definition file """
 
         # A. Check if already filename
@@ -881,8 +982,10 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             self.error.raise_on_error()
         return filename
 
-    def _get_local_input_directory(self):
-        """ Replace the tag for local machine def with the actual path info """
+    def _get_local_input_directory(self) -> None:
+        """
+        Replace the tag for local machine def with the actual path info
+        """
 
         input_handler_cfg = self.l1pprocdef.input_handler.options
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
@@ -938,7 +1041,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Update the lookup dir parameter
         self.l1pprocdef.input_handler["options"]["lookup_dir"] = branch.source
 
-    def _check_if_unambiguous_platform(self):
+    def _check_if_unambiguous_platform(self) -> None:
         """
         Checks if the platform is unique, since some l1 processor definitions are valid for a series of
         platforms, such as ERS-1/2, Sentinel-3A/B, etc. The indicator is that the platform tag in the
@@ -946,6 +1049,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         For the location of the source data, it is however necessary that the exact platform is known.
         It must therefore be specified explicitly by the -platform argument
+
+        :raises SysExit:
+
         """
 
         settings_is_ambigous = "," in self._l1pprocdef.platform
@@ -969,124 +1075,76 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             logger.info(f"- get platform from l1p settings -> {self.platform}")
 
     @property
-    def hemisphere(self):
+    def hemisphere(self) -> str:
         return self._hemisphere
 
     @property
-    def target_hemisphere(self):
+    def target_hemisphere(self) -> str:
         values = {"north": ["north"], "south": ["south"], "global": ["north", "south"]}
         return values[self.hemisphere]
 
     @property
-    def pysiral_cfg(self):
+    def pysiral_cfg(self) -> AttrDict:
         return self._cfg
 
     @property
-    def l1pprocdef(self):
+    def l1pprocdef(self) -> AttrDict:
         return self._l1pprocdef
 
     @property
-    def time_range(self):
+    def time_range(self) -> DatePeriod:
         return self._time_range
 
     @property
-    def period_segments(self):
+    def period_segments(self) -> PeriodIterator:
+        # TODO: Implement exclude months
         return self._time_range.get_segments("month", crop_to_period=True)
 
     @property
-    def output_handler_cfg(self):
+    def output_handler_cfg(self) -> AttrDict:
         return self._output_handler_cfg
 
     @property
-    def platform(self):
+    def platform(self) -> str:
         return self._platform
 
 
-class Level1POutputHandler(DefaultLoggingClass):
+# Custom type hints
+L1PPROC_CLS_TYPE = TypeVar("L1PPROC_CLS_TYPE", bound=L1PreProcBase)
+
+
+def get_preproc(preproc_type: str,
+                input_adapter: Type,
+                output_handler: Type,
+                cfg: AttrDict
+                ) -> L1PPROC_CLS_TYPE:
     """
-    The output handler for l1p product files
-    NOTE: This is not a subclass of OutputHandlerbase due to the special nature of pysiral l1p products
+    A function returning the pre-processor class corresponding the type definition.
+
+    :param preproc_type: type of the pre-processor
+    :param input_adapter: A class that return a L1bData object for a given input product file
+    :param output_handler: A class that creates a pysiral l1p product from the merged L1bData object
+    :param cfg: options for the pre-processor
+    :return: Initialized pre-processor class
     """
 
-    def __init__(self, cfg):
-        cls_name = self.__class__.__name__
-        super(Level1POutputHandler, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-        self.cfg = cfg
+    # A lookup dictionary for the appropriate class
+    preproc_class_lookup_dict = {"custom_orbit_segment": L1PreProcCustomOrbitSegment,
+                                 "half_orbit": L1PreProcHalfOrbit,
+                                 "full_orbit": L1PreProcFullOrbit, }
 
-        self.pysiral_cfg = psrlcfg
+    # Try the get the class
+    cls = preproc_class_lookup_dict.get(preproc_type)
 
-        # Init class properties
-        self._path = None
-        self._filename = None
+    # Error handling
+    if cls is None:
+        msg = f"Unrecognized Level-1 Pre-Processor class type: {preproc_type}"
+        msg += "\nKnown types:"
+        for key in preproc_class_lookup_dict:
+            msg += "\n - %s" % key
+        error = ErrorStatus(caller_id="Level1PreProcessor")
+        error.add_error("invalid-l1preproc-class", msg)
+        error.raise_on_error()
 
-    @staticmethod
-    def remove_old_if_applicable():
-        logger.warning("Not implemented: self.remove_old_if_applicable")
-        return
-
-    def export_to_netcdf(self, l1):
-        """
-        Workflow to export a Level-1 object to l1p netCDF product. The workflow includes the generation of the
-        output path (if applicable).
-        :param l1: The Level-1 object to be exported
-        :return: None
-        """
-
-        # Get filename and path
-        self.set_output_filepath(l1)
-
-        # Check if path exists
-        Path(self.path).mkdir(exist_ok=True, parents=True)
-
-        # Export the data object
-        ncfile = L1bDataNC()
-        ncfile.l1b = l1
-        ncfile.output_folder = self.path
-        ncfile.filename = self.filename
-        ncfile.export()
-
-    def set_output_filepath(self, l1):
-        """
-        Sets the class properties required for the file export
-        :param l1: The Level-1 object
-        :return: None
-        """
-
-        local_machine_def_tag = self.cfg.get("local_machine_def_tag", None)
-        if local_machine_def_tag is None:
-            msg = "Missing mandatory option %s in l1p processor definition file -> aborting"
-            msg %= "root.output_handler.options.local_machine_def_tag"
-            msg = msg + "\nOptions: \n" + self.cfg.makeReport()
-            self.error.add_error("missing-option", msg)
-            self.error.raise_on_error()
-
-        # TODO: This is work in progress
-        filename_template = "pysiral-l1p-{platform}-{source}-{timeliness}-{hemisphere}-{tcs}-{tce}-{file_version}.nc"
-        time_fmt = "%Y%m%dT%H%M%S"
-        values = {"platform": l1.info.mission,
-                  "source": self.cfg.version.source_file_tag,
-                  "timeliness": l1.info.timeliness,
-                  "hemisphere": l1.info.hemisphere,
-                  "tcs": l1.time_orbit.timestamp[0].strftime(time_fmt),
-                  "tce": l1.time_orbit.timestamp[-1].strftime(time_fmt),
-                  "file_version": self.cfg.version.version_file_tag}
-        self._filename = filename_template.format(**values)
-
-        local_repository = self.pysiral_cfg.local_machine.l1b_repository
-        export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag]["l1p"])
-        yyyy = "%04g" % l1.time_orbit.timestamp[0].year
-        mm = "%02g" % l1.time_orbit.timestamp[0].month
-        self._path = export_folder / self.cfg.version["version_file_tag"] / l1.info.hemisphere / yyyy / mm
-
-    @property
-    def path(self):
-        return Path(self._path)
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @property
-    def last_written_file(self):
-        return self.path / self.filename
+    # Return the initialized class
+    return cls(input_adapter, output_handler, cfg)
