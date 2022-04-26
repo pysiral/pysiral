@@ -19,6 +19,42 @@ from pysiral.core import DefaultLoggingClass
 from pysiral.output import L1bDataNC
 
 
+class Level1PInputHandlerBase(DefaultLoggingClass):
+    """
+    Base class (mostly for type checking).
+    """
+
+    def __init__(self,
+                 cfg: AttrDict,
+                 raise_on_error: bool = False,
+                 cls_name: str = None
+                 ) -> None:
+        """
+        Base class for all input handlers implemented in the `l1_adapter` package
+        of the individual altimeter platform packages. Not to be called directly.
+
+        :param cfg: Config dictionary
+        :param raise_on_error: Flag how to handle errors
+        :param cls_name: children class name (for error status)
+        """
+        super(Level1PInputHandlerBase, self).__init__(cls_name)
+        self.error = ErrorStatus(caller_id=cls_name)
+        self.cfg = cfg
+        self.raise_on_error = raise_on_error
+
+    def get_l1(self,
+               filepath: Path,
+               **kwargs,
+               ) -> Union[None, Level1bData]:
+        """
+        This method needs to be overwritten by inherting class.
+
+        :param filepath:
+        :return:
+        """
+        raise NotImplementedError("Level1PInputHandlerBase is to be inherited only")
+
+
 class Level1POutputHandler(DefaultLoggingClass):
     """
     The output handler for l1p product files
@@ -113,11 +149,14 @@ class Level1POutputHandler(DefaultLoggingClass):
         return self.path / self.filename
 
 
+L1PInputCLS = TypeVar("L1PInputCLS", bound=Level1PInputHandlerBase)
+
+
 class L1PreProcBase(DefaultLoggingClass):
 
     def __init__(self,
                  cls_name: str,
-                 input_adapter: Type,
+                 input_adapter: L1PInputCLS,
                  output_handler: Level1POutputHandler,
                  cfg: AttrDict
                  ) -> None:
@@ -154,7 +193,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # Init helpers
         prgs = ProgressIndicator(n_input_files)
 
-        # A class that is passed to the input adapter to check if the pre-processsor wants the
+        # A class that is passed to the input adapter to check if the pre-processor wants the
         # content of the current file
         polar_ocean_check = L1PreProcPolarOceanCheck(self.__class__.__name__, self.polar_ocean_props)
 
@@ -643,7 +682,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
 
         # Step: Trim the orbit segment to latitude range for the specific hemisphere
         # NOTE: There is currently no case of an input data set that is not of type half-orbit and that
-        #       would have coverage in polar regions of both hemisphere. Therefore `l1_subset` is assumed to
+        #       would have coverage in polar regions of both hemisphere. Therefore, `l1_subset` is assumed to
         #       be a single Level-1 object instance and not a list of instances.  This needs to be changed if
         #      `input_file_is_single_hemisphere=False`
         logger.info("- extracting polar region subset(s)")
@@ -832,7 +871,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     def has_polar_ocean_segments(self, product_metadata: L1bMetaData) -> bool:
         """
         Checks if there are polar oceans segments based on the metadata of a L1 data object
-        :param product_metadata: Metadata container of the l1b data product. 
+        :param product_metadata: Metadata container of the l1b data product.
         :return: Boolean Flag (true: in region of interest, false: not in region of interest)
         """
 
@@ -1025,7 +1064,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                 self.error.add_error("local-machine-def-missing-tag", msg)
                 self.error.raise_on_error()
 
-            # 2. The value of each branch must be a valid directory or a
+            # 2. The value of each branch must be a valid directory or an
             #    attr (e.g. for different radar modes) with a list of directories
             directory_or_attrdict = branch[key]
             try:

@@ -8,28 +8,22 @@ from scipy import interpolate
 from cftime import num2pydate
 
 from pysiral import __version__ as pysiral_version
+from pysiral.l1preproc import Level1PInputHandlerBase
 from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
 from pysiral.clocks import StopWatch, UTCTAIConverter
 from pysiral.cryosat2 import cs2_procstage2timeliness
-from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
-from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 import re
 
 
-class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
+class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
 
     def __init__(self, cfg, raise_on_error=False):
 
         cls_name = self.__class__.__name__
-        super(ESACryoSat2PDSBaselineD, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Store arguments
-        self.raise_on_error = raise_on_error
-        self.cfg = cfg
+        super(ESACryoSat2PDSBaselineD, self).__init__(cfg, raise_on_error, cls_name)
 
         # Init main class variables
         self.nc = None
