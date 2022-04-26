@@ -218,21 +218,32 @@ class L1PreProcBase(DefaultLoggingClass):
                 logger.info("- No polar ocean data for curent job -> skip file")
                 continue
 
-            # Step 2: Extract and subset
-            # The input files may contain unwanted data (low latitude/land segments). It is the job of the
-            # L1PReProc children class to return only the relevant segments over polar ocean as a list of l1 objects.
+            # Step 2: Apply processor items on source data
+            # for the sake of computational efficiency.
+            self.l1_apply_proc_items(l1, "post_source")
+
+            # Step 3: Extract and subset
+            # The input files may contain unwanted data (low latitude/land segments).
+            # It is the job of the L1PReProc children class to return only the relevant
+            # segments over polar ocean as a list of l1 objects.
             l1_segments = self.extract_polar_ocean_segments(l1)
 
-            # Step 3: Post-processing
+            # Step 5: Merge orbit segments
+            # Add the list of orbit segments to the l1 data stack and merge those that
+            # are connected (e.g. two half orbits connected at the pole) into a single l1
+            # object. Orbit segments that  are unconnected from other segments in the stack
+            # will be exported to netCDF files.
+            l1_merged = self.l1_stack_merge(l1_segments)
+            if l1_merged is None:
+                continue
+
+            # Step 4: Processor items post
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
             # executed as the Level-1 segments are cropped to the minimal length.
-            self.l1_post_processing(l1_segments)
+            self.l1_apply_proc_items(l1_merged, "post_merge")
 
-            # Step 4: Merge orbit segments
-            # Add the list of orbit segments to the l1 data stack and merge those that are connected
-            # (e.g. two half orbits connected at the pole) into a single l1 object. Orbit segments that
-            # are unconnected from other segments in the stack will be exported to netCDF files.
-            self.l1_stack_merge_and_export(l1_segments)
+            # Step 5: Export
+            self.l1_export_to_netcdf(l1_merged)
 
         # Step : Export the last item in the stack
         l1_merged = self.l1_get_merged_stack()
@@ -250,39 +261,44 @@ class L1PreProcBase(DefaultLoggingClass):
         """
         raise NotImplementedError("")
 
-    def l1_post_processing(self, l1_segments: List["Level1bData"]) -> None:
+    def l1_apply_proc_items(self, l1: "Level1bData", hook_name: str) -> None:
         """
-        Apply the post-processing procedures defined in the l1p processor definition file.
+        Apply the processor item for  procedures defined in the l1p processor definition file.
 
-        :param l1_segments: A list of Level-1 data objects
+        :param l1: A list of Level-1 data objects
+        :param hook_name: Name of the hook (`post_source` or `post_merge`)
+
         :return: None, the l1_segments are changed in place
         """
 
-        # Get the post-processing options
-        pre_processing_items = self.cfg.get("pre_processing_items", None)
-        if pre_processing_items is None:
-            logger.info("No pre processing items defined")
-            return
+        breakpoint()
+        # # Get the post-processing options
+        # pre_processing_items = self.cfg.get("pre_processing_items", None)
+        # if pre_processing_items is None:
+        #     logger.info("No pre processing items defined")
+        #     return
+        #
+        # # Measure time for the different post processors
+        # timer = StopWatch()
+        #
+        # # Get the list of post-processing items
+        # for pp_item in pre_processing_items:
+        #     timer.start()
+        #     pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
+        #     post_processor = pp_class(**pp_item["options"])
+        #     for l1 in l1_segments:
+        #         post_processor.apply(l1)
+        #     timer.stop()
+        #     msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
+        #     logger.info(msg)
 
-        # Measure time for the different post processors
-        timer = StopWatch()
-
-        # Get the list of post-processing items
-        for pp_item in pre_processing_items:
-            timer.start()
-            pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
-            post_processor = pp_class(**pp_item["options"])
-            for l1 in l1_segments:
-                post_processor.apply(l1)
-            timer.stop()
-            msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
-            logger.info(msg)
-
-    def l1_stack_merge_and_export(self, l1_segments: List["Level1bData"]) -> None:
+    def l1_stack_merge(self, l1_segments: List["Level1bData"]) -> Union[None, Level1bData]:
         """
-        Add the input Level-1 segments to the l1 stack and export the unconnected ones as l1p netCDF products
-        :param l1_segments:
-        :return: None
+        Add the input Level-1 segments to the l1 stack and
+
+        :param l1_segments: List of L1 data sets
+
+        :return: None or merged stack if
         """
 
         # Loop over all input segments
@@ -296,6 +312,7 @@ class L1PreProcBase(DefaultLoggingClass):
             if is_connected:
                 logger.info("- L1 segment connected -> add to stack")
                 self.l1_stack.append(l1)
+                return None
 
             # Case 2: Segment is not connected
             # -> In this case all items in the l1 stack will be merged and the merged l1 object will be
@@ -304,8 +321,8 @@ class L1PreProcBase(DefaultLoggingClass):
             else:
                 logger.info("- L1 segment unconnected -> exporting current stack")
                 l1_merged = self.l1_get_merged_stack()
-                self.l1_export_to_netcdf(l1_merged)
                 self.l1_stack = [l1]
+                return l1_merged
 
     def l1_is_connected_to_stack(self, l1: "Level1bData") -> bool:
         """
@@ -900,7 +917,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
 
 class Level1PreProcJobDef(DefaultLoggingClass):
     """
-    A class that contains the information for the Level-1 pre-processor definition
+    A class that contains all information necessary for the Level-1 pre-processor.
     """
 
     def __init__(self,
@@ -946,7 +963,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self._exclude_month = exclude_month
 
         # Parse the l1p settings file
-        self.set_l1p_processor_def(l1p_settings_id_or_file)
+        self._set_l1p_processor_def(l1p_settings_id_or_file)
 
         # Get full requested time range
         self._time_range = DatePeriod(tcs, tce)
@@ -964,6 +981,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     def from_args(cls, args: AttrDict) -> "Level1PreProcJobDef":
         """
         Init the Processor Definition from the pysiral-l1preproc command line argument object
+
+        :param args:
+        :return:
         """
 
         # Optional Keywords
@@ -982,11 +1002,17 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Return the initialized class
         return cls(args.l1p_settings, args.start_date, args.stop_date, **kwargs)
 
-    def set_l1p_processor_def(self, l1p_settings_id_or_file: Union[str, Path]) -> None:
-        """ Parse the content of the processor definition file """
+    def _set_l1p_processor_def(self, l1p_settings_id_or_file: Union[str, Path]) -> None:
+        """
+        Parse the content of the processor definition file
+
+        :param l1p_settings_id_or_file: A pysiral known id or list
+
+        :return:
+        """
 
         # 1. Resolve the absolute file path
-        procdef_file_path = self.get_l1p_proc_def_filename(l1p_settings_id_or_file)
+        procdef_file_path = self._get_l1p_proc_def_filename(l1p_settings_id_or_file)
 
         # 2. Read the content
         logger.info(f"Parsing L1P processor definition file: {procdef_file_path}")
@@ -999,8 +1025,14 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # 4. update hemisphere for input adapter
         self._l1pprocdef.level1_preprocessor.options.polar_ocean.target_hemisphere = self.target_hemisphere
 
-    def get_l1p_proc_def_filename(self, l1p_settings_id_or_file: Union[str, Path]) -> Union[str, Path]:
-        """ Query pysiral config to obtain filename for processor definition file """
+    def _get_l1p_proc_def_filename(self, l1p_settings_id_or_file: Union[str, Path]) -> Union[str, Path]:
+        """
+        Query pysiral config to obtain filename for processor definition file
+
+        :param l1p_settings_id_or_file:
+
+        :return: The full file path
+        """
 
         # A. Check if already filename
         if Path(l1p_settings_id_or_file).is_file():
@@ -1150,8 +1182,8 @@ L1PPROC_CLS_TYPE = TypeVar("L1PPROC_CLS_TYPE", bound=L1PreProcBase)
 
 
 def get_preproc(preproc_type: str,
-                input_adapter: Type,
-                output_handler: Type,
+                input_adapter: L1PInputCLS,
+                output_handler: Level1POutputHandler,
                 cfg: AttrDict
                 ) -> L1PPROC_CLS_TYPE:
     """
