@@ -23,6 +23,7 @@ pyyaml
 scipy
 scikit-learn
 statsmodels
+torch
 xarray
 xgboost
 xmltodict

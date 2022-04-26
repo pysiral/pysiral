@@ -48,7 +48,8 @@ try:
     with version_file as f:
         version = f.read().strip()
 except IOError:
-    sys.exit("Cannot find VERSION file in package (expected: %s" % (PACKAGE_ROOT_DIR / "VERSION"))
+    sys.exit(f'Cannot find VERSION file in package (expected: {PACKAGE_ROOT_DIR / "VERSION"}')
+
 
 # Package Metadata
 __version__ = version
@@ -90,10 +91,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self._content.platforms.get(platform_id, None)
-        if platform_info is None:
-            return platform_info
-        else:
-            return AttrDict(**platform_info)
+        return platform_info if platform_info is None else AttrDict(**platform_info)
 
     def get_platform_id(self, platform_name: str) -> Union[str, None]:
         """
@@ -106,7 +104,7 @@ class _MissionDefinitionCatalogue(object):
         platforms = [entry for entry in self._content.platforms.items() if entry[1]["long_name"] == platform_name]
 
         # No valid entry found -> Warning and returning None
-        if len(platforms) == 0:
+        if not platforms:
             logger.warning(f"Did not find entry for {platform_name} in {self._filepath}")
             return None
 
@@ -258,7 +256,7 @@ class _AuxdataCatalogue(object):
 
         # Sanity check
         if category not in self.categories:
-            raise ValueError("Invalid category: {} [{}]".format(str(category), ", ".join(self.categories)))
+            raise ValueError(f'Invalid category: {str(category)} [{", ".join(self.categories)}]')
 
         # Return a sorted str list
         return sorted(self.ctlg[category].keys())
@@ -288,11 +286,10 @@ class _AuxdataCatalogue(object):
         List with two items per entry: (category, id)
         :return:
         """
-        keys = list()
+        keys = []
         for category in self.categories:
             ids = self.get_category_items(category)
-            for auxid in ids:
-                keys.append((category, auxid))
+            keys.extend((category, auxid) for auxid in ids)
         return keys
 
     @property
@@ -302,11 +299,7 @@ class _AuxdataCatalogue(object):
         :return:
         """
         keys = self.iter_keys
-        items = list()
-        for category, auxid in keys:
-            item = self.ctlg[category][auxid]
-            items.append((category, auxid, item))
-        return items
+        return [(category, auxid, self.ctlg[category][auxid]) for category, auxid in keys]
 
 
 class _PysiralPackageConfiguration(object):
@@ -392,7 +385,7 @@ class _PysiralPackageConfiguration(object):
             with open(str(cfg_loc_file)) as fh:
                 self._path["config_target"] = fh.read().strip()
         except IOError:
-            sys.exit("Cannot find PYSIRAL-CFG-LOC file in package (expected: %s)" % cfg_loc_file)
+            sys.exit(f"Cannot find PYSIRAL-CFG-LOC file in package (expected: {cfg_loc_file})")
 
     def _check_pysiral_config_path(self):
         """
@@ -410,10 +403,10 @@ class _PysiralPackageConfiguration(object):
         if config_path == package_config_path:
             return
 
-        # current current config dir is not package dir and does not exist
+        # current config dir is not package dir and does not exist
         # -> must be populated with content from the package config dir
         if not config_path.is_dir():
-            print("Creating pysiral config directory: %s" % config_path)
+            print(f"Creating pysiral config directory: {config_path}")
             dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml"
@@ -449,7 +442,7 @@ class _PysiralPackageConfiguration(object):
         # The auxdata_def.yaml config file contains the central definition of the properties
         # of supported auxiliary data sets. Each auxiliary data set is uniquely defined by
         # the type of auxiliary data set and a name id.
-        # The central definition allows to access auxiliary data by its id in processor definition files
+        # The central definition allows accessing auxiliary data by its id in processor definition files
         self.auxdata_def_filepath = self.config_path / self._DEFINITION_FILES["auxdata"]
         if not self.auxdata_def_filepath.is_file():
             error_msg = "Cannot load pysiral package files: \n %s" % self.auxdata_def_filepath
@@ -493,8 +486,7 @@ class _PysiralPackageConfiguration(object):
         :return:
         """
         lookup_directory = self.get_local_setting_path("proc", processor_level)
-        ids = self.get_yaml_setting_filelist(lookup_directory, return_value="ids")
-        return ids
+        return self.get_yaml_setting_filelist(lookup_directory, return_value="ids")
 
     def get_settings_files(self, settings_type: str, data_level: str) -> Iterable[Path]:
         """
@@ -542,8 +534,8 @@ class _PysiralPackageConfiguration(object):
 
         # Test if ids are unique and return error for the moment
         if len(set(ids)) != len(ids):
-            msg = "Non-unique %s-%s setting filename" % (settings_type, str(data_level))
-            print("ambiguous-setting-files: %s" % msg)
+            msg = f"Non-unique {settings_type}-{str(data_level)} setting filename"
+            print(f"ambiguous-setting-files: {msg}")
             sys.exit(1)
 
         # Find filename to setting_id
@@ -570,7 +562,7 @@ class _PysiralPackageConfiguration(object):
         elif return_value == "files":
             return setting_files
         else:
-            raise ValueError("Unknown return value {} [`both`, `ids`, `files`]".format(str(return_value)))
+            raise ValueError(f"Unknown return value {str(return_value)} [`both`, `ids`, `files`]")
 
     def get_local_setting_path(self, settings_type, data_level=None):
         """
@@ -624,8 +616,8 @@ class _PysiralPackageConfiguration(object):
         try:
             local_machine_def = self.get_yaml_config(filename)
         except IOError:
-            msg = "local_machine_def.yaml not found (expected: %s)" % filename
-            print("local-machine-def-missing: %s" % msg)
+            msg = f"local_machine_def.yaml not found (expected: {filename})"
+            print(f"local-machine-def-missing: {msg}")
             local_machine_def = None
         self.local_machine = local_machine_def
 
@@ -680,10 +672,9 @@ class _PysiralPackageConfiguration(object):
     def local_machine_def_filepath(self):
         if self.current_config_target != "PACKAGE":
             return self.config_path / self._LOCAL_MACHINE_DEF_FILE
-        else:
-            msg = "Current config path is `PACKAGE`, lookup directory for local_machine_def.yaml changed to `USERHOME`"
-            logger.warning(msg)
-            return self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
+        msg = "Current config path is `PACKAGE`, lookup directory for local_machine_def.yaml changed to `USERHOME`"
+        logger.warning(msg)
+        return self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
 
     @property
     def processor_levels(self):
@@ -706,18 +697,18 @@ def get_cls(module_name, class_name, relaxed=True):
     """ Small helper function to dynamically load classes"""
     try:
         module = importlib.import_module(module_name)
-    except ImportError:
+    except ImportError as e:
         if relaxed:
             return None
         else:
-            raise ImportError(f"Cannot load module: {module_name}")
+            raise ImportError(f"Cannot load module: {module_name}") from e
     try:
         return getattr(module, class_name)
-    except AttributeError:
+    except AttributeError as exc:
         if relaxed:
             return None
         else:
-            raise NotImplementedError("Cannot load class: %s.%s" % (module_name, class_name))
+            raise NotImplementedError(f"Cannot load class: {module_name}.{class_name}") from exc
 
 
 def import_submodules(package, recursive=True):
@@ -732,7 +723,7 @@ def import_submodules(package, recursive=True):
         package = importlib.import_module(package)
     results = {}
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
+        full_name = f'{package.__name__}.{name}'
         results[full_name] = importlib.import_module(full_name)
         if recursive and is_pkg:
             results.update(import_submodules(full_name))

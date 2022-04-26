@@ -4,8 +4,8 @@ metadata:
     product_line: cci
     record_type: tds
     platform: envisat
-    version: v3p0-preview3
-    file_version_tag: v3p0-preview3
+    version: v3p0-preview4
+    file_version_tag: v3p0-preview4
     hemisphere: north
 
 
@@ -61,8 +61,8 @@ auxdata:
                 # The id and name of the parameter added to the level-2 object
                 output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
                 # File basename of the trained model data
-                model_file: fnn_init_ep25_lre6_4h_leakyrelu_20220406.pth
-                torch_class: TorchFunctionalWaveformModelFNN
+                model_file: snn_init_ep100_lre6_5h_selu_noad_20220411.pth
+                torch_class: TorchFunctionalWaveformModelSNN
                 # The model may predict non-sense threshold values. Limit
                 # to a normal range
                 valid_range: [0.0, 1.0]

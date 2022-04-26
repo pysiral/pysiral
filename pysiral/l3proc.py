@@ -9,7 +9,7 @@ from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output

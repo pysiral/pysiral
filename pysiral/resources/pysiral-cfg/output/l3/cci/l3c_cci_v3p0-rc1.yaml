@@ -557,3 +557,45 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
+
+  stat_tfmra_threshold_mean:
+    var_source_name: stat_tfmra_threshold_all_mean
+    long_name: "average tfmra threshold (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sdev:
+    var_source_name: stat_tfmra_threshold_all_sdev
+    long_name: "tfmra threshold standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sea_ice_mean:
+    long_name: "average tfmra threshold (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_sea_ice_sdev:
+    long_name: "tfmra threshold standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_lead_mean:
+    long_name: "average tfmra threshold (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_lead_sdev:
+    long_name: "tfmra threshold standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_ocean_mean:
+    long_name: "average tfmra threshold (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_tfmra_threshold_ocean_sdev:
+    long_name: "tfmra threshold standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"

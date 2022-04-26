@@ -12,7 +12,7 @@ from loguru import logger
 
 from pysiral.l1bdata import Level1bData
 from pysiral.retracker import cTFMRA
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 def get_waveforms_peak_power(wfm, dB=False):

@@ -14,7 +14,7 @@ from pathlib import Path
 from dateutil import parser as dtparser
 from datetime import datetime, timedelta
 
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 class L1PWaveformResampleSIN(DefaultLoggingClass):

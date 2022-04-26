@@ -191,7 +191,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             # surface type
             surface_type_flag = l2.surface_type.get_by_name(surface_type)
             if surface_type_flag.num == 0:
-                logger.info("- no waveforms of type %s" % surface_type)
+                logger.info(f"- no waveforms of type {surface_type}")
                 continue
 
             # Benchmark retracker performance
@@ -254,15 +254,15 @@ class SICCI2TfmraEnvisat(BaseRetracker):
 
     @property
     def default_options_dict(self):
-        default_options_dict = {
+        return {
             "threshold": dict(type="fixed", value=0.5),
             "offset": 0.0,
             "wfm_oversampling_factor": 10,
             "wfm_oversampling_method": "linear",
             "wfm_smoothing_window_size": [11, 11, 51],
             "first_maximum_normalized_threshold": [0.15, 0.15, 0.45],
-            "first_maximum_local_order": 1}
-        return default_options_dict
+            "first_maximum_local_order": 1
+        }
 
     def create_retracker_properties(self, n_records):
         # None so far
@@ -301,9 +301,8 @@ class SICCI2TfmraEnvisat(BaseRetracker):
             self._range[i] = tfmra_range + self._options.offset
             self._power[i] = tfmra_power * norm
 
-        if "uncertainty" in self._options:
-            if self._options.uncertainty.type == "fixed":
-                self._uncertainty[:] = self._options.uncertainty.value
+        if "uncertainty" in self._options and self._options.uncertainty.type == "fixed":
+            self._uncertainty[:] = self._options.uncertainty.value
 
     def get_tfmra_threshold(self, sigma0, lew, sitype, indices):
 
@@ -1170,8 +1169,14 @@ class SICCILead(BaseRetracker):
         super(SICCILead, self).__init__()
 
     def create_retracker_properties(self, n_records):
-        parameter = ["retracked_bin", "maximum_power_bin", "sigma", "k",
-                     "alpha", "power_in_echo_tail", "rms_echo_and_model"]
+        parameter = [
+            "retracked_bin",
+            "maximum_power_bin",
+            "sigma",
+            "k",
+            "alpha",
+            "power_in_echo_tail",
+            "rms_echo_and_model"]
         for parameter_name in parameter:
             setattr(self, parameter_name, np.ndarray(shape=n_records, dtype=np.float32) * np.nan)
 
@@ -1186,7 +1191,7 @@ class SICCILead(BaseRetracker):
 
         # retracker options (see l2 settings file)
         skip = self._options.skip_first_bins
-        initial_guess = self._options.initial_guess
+        initial_guess = list(self._options.initial_guess)
         maxfev = self._options.maxfev
         time = np.arange(wfm.shape[1]-skip).astype(float)
         x = np.arange(wfm.shape[1])
@@ -1194,15 +1199,30 @@ class SICCILead(BaseRetracker):
         # Loop over lead indices
         for index in indices:
             wave = wfm[index, skip:]
+            initial_guess[0] = np.argmax(wave)
             initial_guess[3] = np.max(wave)
-            try:
-                popt, cov = curve_fit(P_lead, time, wave.astype(float),
-                                      p0=initial_guess, maxfev=maxfev)
-            except:
-                continue
+            popt, cov = curve_fit(P_lead, time, wave.astype(float),
+                                  p0=initial_guess, maxfev=maxfev)
+
+            # import matplotlib.pyplot as plt
+            #
+            # plt.figure(dpi=150)
+            # plt.scatter(time, wave, s=1, color="black")
+            # time_oversampled = np.linspace(time[0], time[-1], 1000)
+            # plt.plot(time_oversampled, P_lead(time_oversampled, *popt), color="red", alpha=0.5)
+            # plt.xlim(popt[0]-20, popt[0]+30)
+            # plt.show()
+
+
+            # try:
+            #     popt, cov = curve_fit(P_lead, time, wave.astype(float),
+            #                           p0=initial_guess, maxfev=maxfev)
+            # except:
+            #     continue
                 # popt = [np.nan, np.nan, np.nan, np.nan]
 
             # Store retracker parameter for filtering
+            # tracking point in units of range bins
             # tracking point in units of range bins
             self.retracked_bin[index] = skip + popt[0]
             self.k[index] = popt[1]
@@ -1223,6 +1243,7 @@ class SICCILead(BaseRetracker):
                     x, range[index, :], kind='linear', copy=False)(
                         self.retracked_bin[index])
             except ValueError:
+                self._range[index] = np.nan
                 self._range[index] = np.nan
 
     def _filter_results(self):
@@ -1253,52 +1274,51 @@ class SICCILead(BaseRetracker):
         error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
         self._flag = error_flag
 
-#        import matplotlib.pyplot as plt
-#
-#        f, ax = plt.subplots(6, sharex=True, facecolor="white",
-#                             figsize=(10, 16))
-#        ax[0].plot(self.retracked_bin[self.indices], lw=0.5, color="#00ace5")
-#        ax[0].set_title("retracked_bin")
-#        ax[0].axhline(thrs.sensible_lead_retracked_bin[0], color="green")
-#        ax[0].axhline(thrs.sensible_lead_retracked_bin[1], color="red")
-#
-#        ax[1].plot(self.maximum_power_bin[self.indices],
-#                   lw=0.5, color="#00ace5")
-#        ax[1].set_title("maximum_power_bin")
-#        ax[1].axhline(thrs.minimum_bin_count_maxpower, color="green")
-#
-#        ax[2].plot(self.sigma[self.indices], lw=0.5, color="#00ace5")
-#        ax[2].set_title("sigma")
-#        ax[2].axhline(thrs.maximum_std_of_gaussion_rise, color="red")
-#
-#        ax[3].plot(np.abs(self.retracked_bin[self.indices]- self.maximum_power_bin[self.indices]),
-#                   lw=0.5, color="#00ace5")
-#        ax[3].set_title("retracked bin - max power bin")
-#        ax[3].axhline(thrs.minimum_echo_backscatter, color="green")
-#
-#        ax[4].plot(self.power_in_echo_tail[self.indices],
-#                   lw=0.5, color="#00ace5")
-#        ax[4].set_title("power_in_echo_tail")
-#        ax[4].axhline(thrs.maximum_power_in_echo_tail, color="red")
-#        ax[4].set_ylim(0, 1)
-#
-#        ax[5].plot(self.rms_echo_and_model[self.indices],
-#                   lw=0.5, color="#00ace5")
-#        ax[5].set_title("rms_echo_and_model")
-#        ax[5].axhline(thrs.maximum_rms_echo_model_diff, color="red")
-#        # ax[5].set_ylim(0, 30)
-#
-#        for i in np.arange(6):
-#            ax[i].yaxis.grid(True, which='minor')
-#            ax[i].yaxis.set_tick_params(direction='out')
-#            ax[i].yaxis.set_ticks_position('left')
-#            ax[i].xaxis.set_ticks([])
-#            spines_to_remove = ["top", "right", "bottom"]
-#            for spine in spines_to_remove:
-#                ax[i].spines[spine].set_visible(False)
-#
-#        plt.tight_layout()
-#
+        # import matplotlib.pyplot as plt
+        #
+        # f, ax = plt.subplots(6, sharex=True, facecolor="white",  figsize=(10, 16))
+        # ax[0].plot(self.retracked_bin[self.indices], lw=0.5, color="#00ace5")
+        # ax[0].set_title("retracked_bin")
+        # ax[0].axhline(thrs.sensible_lead_retracked_bin[0], color="green")
+        # ax[0].axhline(thrs.sensible_lead_retracked_bin[1], color="red")
+        #
+        # ax[1].plot(self.maximum_power_bin[self.indices],
+        #           lw=0.5, color="#00ace5")
+        # ax[1].set_title("maximum_power_bin")
+        # ax[1].axhline(thrs.minimum_bin_count_maxpower, color="green")
+        #
+        # ax[2].plot(self.sigma[self.indices], lw=0.5, color="#00ace5")
+        # ax[2].set_title("sigma")
+        # ax[2].axhline(thrs.maximum_std_of_gaussion_rise, color="red")
+        #
+        # ax[3].plot(np.abs(self.retracked_bin[self.indices]- self.maximum_power_bin[self.indices]),
+        #           lw=0.5, color="#00ace5")
+        # ax[3].set_title("retracked bin - max power bin")
+        # ax[3].axhline(thrs.minimum_echo_backscatter, color="green")
+        #
+        # ax[4].plot(self.power_in_echo_tail[self.indices],
+        #           lw=0.5, color="#00ace5")
+        # ax[4].set_title("power_in_echo_tail")
+        # ax[4].axhline(thrs.maximum_power_in_echo_tail, color="red")
+        # ax[4].set_ylim(0, 1)
+        #
+        # ax[5].plot(self.rms_echo_and_model[self.indices],
+        #           lw=0.5, color="#00ace5")
+        # ax[5].set_title("rms_echo_and_model")
+        # ax[5].axhline(thrs.maximum_rms_echo_model_diff, color="red")
+        # # ax[5].set_ylim(0, 30)
+        #
+        # for i in np.arange(6):
+        #    ax[i].yaxis.grid(True, which='minor')
+        #    ax[i].yaxis.set_tick_params(direction='out')
+        #    ax[i].yaxis.set_ticks_position('left')
+        #    ax[i].xaxis.set_ticks([])
+        #    spines_to_remove = ["top", "right", "bottom"]
+        #    for spine in spines_to_remove:
+        #        ax[i].spines[spine].set_visible(False)
+        #
+        # plt.tight_layout()
+
 #
 #        plt.figure()
 #        plt.plot(valid.flag[self.indices])
@@ -1363,9 +1383,7 @@ class SICCIOcog(BaseRetracker):
             try:
                 self.tail_shape[index] = ocog_tail_shape(
                     wfm[index, :], range_bin)
-            except ValueError:
-                self.tail_shape[index] = np.nan
-            except TypeError:
+            except (ValueError, TypeError):
                 self.tail_shape[index] = np.nan
 
     def _filter_results(self):
@@ -1608,10 +1626,11 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
         # Get the retracker and retrack only sea-ice surfaces
         tfmra = cTFMRA()
         tfmra.set_default_options()
-        filt_rng, filt_wfm, fmi, norm = tfmra.get_preprocessed_wfm(l1b.waveform.range,
-                                                                   l1b.waveform.power,
-                                                                   l1b.waveform.radar_mode,
-                                                                   l2.surface_type.sea_ice.flag)
+        filt_rng, filt_wfm, fmi, norm = tfmra.get_preprocessed_wfm(
+            l1b.waveform.range,
+            l1b.waveform.power,
+            l1b.waveform.radar_mode,
+            l2.surface_type.sea_ice.flag)
 
         # Get the target thresholds
         threshold_min, threshold_max = self.cfg.options.threshold_range
@@ -1623,7 +1642,11 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
 
         for i in np.where(l2.surface_type.sea_ice.flag)[0]:
             for j, threshold in enumerate(thresholds):
-                retracked_range, _ = tfmra.get_threshold_range(filt_rng[i, :], filt_wfm[i, :], fmi[i], threshold)
+                retracked_range, _, _ = tfmra.get_threshold_range(
+                    filt_rng[i, :],
+                    filt_wfm[i, :],
+                    fmi[i],
+                    threshold)
                 ranges[i, j] = retracked_range
 
         # Convert ranges to freeboards using the already pre-computed steps.
@@ -1662,7 +1685,7 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
 
 def wfm_get_noise_level(wfm, oversample_factor):
     """ According to CS2AWI TFMRA implementation """
-    return bn.nanmean(wfm[0:5*oversample_factor])
+    return bn.nanmean(wfm[:5*oversample_factor])
 
 
 def smooth(x, window):

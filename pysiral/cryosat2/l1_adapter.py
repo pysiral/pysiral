@@ -14,7 +14,7 @@ from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 import re
 
@@ -61,7 +61,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Input Validation
         if not Path(filepath).is_file():
-            msg = "Not a valid file: %s" % filepath
+            msg = f"Not a valid file: {filepath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
@@ -120,7 +120,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
         lightspeed = 299792458.0
         bandwidth = 320000000.0
-        # The two way delay time give the distance to the central bin
+        # The two-way delay time give the distance to the central bin
         central_window_range = window_delay * lightspeed / 2.0
         # Calculate the offset from the center to the first range bin
         window_size = (n_range_bins * lightspeed) / (4.0 * bandwidth)
@@ -132,9 +132,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         range_offset = np.tile(range_increment, (window_delay.shape[0], 1)) - first_bin_offset
         window_range = np.tile(central_window_range, (n_range_bins, 1)).transpose()
 
-        # Compute the range for each bin and return
-        wfm_range = window_range + range_offset
-        return wfm_range
+        return window_range + range_offset
 
     @staticmethod
     def interp_1hz_to_20hz(variable_1hz, time_1hz, time_20hz, **kwargs):
@@ -201,7 +199,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             percent_value = 0.0
             if metadata["sir_op_mode"].strip().lower() == mode:
                 percent_value = 100.
-            info.set_attribute("{}_mode_percent".format(mode), percent_value)
+            info.set_attribute(f"{mode}_mode_percent", percent_value)
         info.set_attribute("open_ocean_percent", float(metadata["open_ocean_percent"])*0.01)
 
     def _set_l1_data_groups(self):
@@ -347,7 +345,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             variable_1hz = getattr(self.nc, pds_var_name)
             variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
             if error_status:
-                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
+                msg = f"- Error in 20Hz interpolation for variable `{pds_var_name}` -> set only dummy"
                 logger.warning(msg)
             self.l1.correction.set_parameter(key, variable_20hz)
 
@@ -428,7 +426,7 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
         ESACryoSat2PDSBaselineD._set_l1_data_groups(self)
         fespath = self._get_fes_path(self.filepath)
         if not Path(fespath).is_file():
-            msg = "Not a valid file: %s" % fespath
+            msg = f"Not a valid file: {fespath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             raise FileNotFoundError
@@ -438,7 +436,7 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
             # time_1hz = self.nc.time_cor_01.values
             # time_20hz = self.nc.time_20_ku.values
 
-            msg = "Patching FES2014b tide data from: %s" % fespath
+            msg = f"Patching FES2014b tide data from: {fespath}"
             logger.info(msg)
 
             # ocean_tide_elastic: ocean_tide_01
@@ -468,13 +466,13 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
             #     raise FileNotFoundError
             self.l1.correction.set_parameter('ocean_loading_tide', variable_20hz)
         except:
-            msg = "Error encountered by xarray parsing: %s" % fespath
+            msg = f"Error encountered by xarray parsing: {fespath}"
             self.error.add_error("xarray-parse-error", msg)
             self.nc = None
             logger.warning(msg)
             raise FileNotFoundError
 
-    def _get_fes_path(self,filepath):
+    def _get_fes_path(self, filepath):
         # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
         # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
         newpath = str(filepath)
