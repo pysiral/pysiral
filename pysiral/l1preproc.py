@@ -16,10 +16,11 @@ from pysiral.core import DefaultLoggingClass
 from pysiral.output import L1bDataNC
 
 
-def get_preproc(type, input_adapter, output_handler, cfg):
+def get_preproc(preproc_type, input_adapter, output_handler, cfg):
     """
     A function returning the pre-processor class corresponding the type definition
-    :param type: type of the pre-processor (`orbit_segment`)
+
+    :param preproc_type: type of the pre-processor (`orbit_segment`)
     :param input_adapter: A class that return a L1bData object for a given input product file
     :param output_handler: A class that creates a pysiral l1p product from the merged L1bData object
     :param cfg: a treedict of options for the pre-processor
@@ -32,13 +33,13 @@ def get_preproc(type, input_adapter, output_handler, cfg):
                                  "full_orbit": L1PreProcFullOrbit, }
 
     # Try the get the class
-    cls = preproc_class_lookup_dict.get(type, None)
+    cls = preproc_class_lookup_dict.get(preproc_type)
 
     # Error handling
     if cls is None:
-        msg = "Unrecognized Level-1 Pre-Processor class type: %s" % (str(type))
+        msg = f"Unrecognized Level-1 Pre-Processor class type: {preproc_type}"
         msg += "\nKnown types:"
-        for key in preproc_class_lookup_dict.keys():
+        for key in preproc_class_lookup_dict:
             msg += "\n - %s" % key
         error = ErrorStatus(caller_id="Level1PreProcessor")
         error.add_error("invalid-l1preproc-class", msg)
@@ -123,6 +124,16 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_merged = self.l1_get_merged_stack()
         self.l1_export_to_netcdf(l1_merged)
 
+    def extract_polar_ocean_segments(self, l1):
+        """
+        Needs to be implemented by child classes
+
+        :param l1:
+
+        :return:
+        """
+        raise NotImplementedError("")
+
     def l1_post_processing(self, l1_segments):
         """
         Apply the post-processing procedures defined in the l1p processor definition file.
@@ -193,11 +204,9 @@ class L1PreProcBase(DefaultLoggingClass):
             return True
 
         # Test if segments are adjacent based on time gap between them
-        timedelta = l1.info.start_time - self.last_stack_item.info.stop_time
+        tdelta = l1.info.start_time - self.last_stack_item.info.stop_time
         threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
-        is_connected = timedelta.seconds <= threshold
-
-        return is_connected
+        return tdelta.seconds <= threshold
 
     def l1_get_merged_stack(self):
         """
@@ -212,8 +221,8 @@ class L1PreProcBase(DefaultLoggingClass):
 
     def l1_export_to_netcdf(self, l1):
         """
-        Exports the Level-1 object as as l1p netCDF
-        :param l1_merged: The Level-1 object to exported
+        Exports the Level-1 object as l1p netCDF
+        :param l1: The Level-1 object to exported
         :return:
         """
 
@@ -224,7 +233,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
         if l1.n_records >= minimum_n_records:
             self.output_handler.export_to_netcdf(l1)
-            logger.info("- Written l1p product: %s" % self.output_handler.last_written_file)
+            logger.info(f"- Written l1p product: {self.output_handler.last_written_file}")
         else:
             logger.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
@@ -264,9 +273,10 @@ class L1PreProcBase(DefaultLoggingClass):
                 is_polar = l1.time_orbit.latitude <= (-1.0 * polar_threshold)
 
             else:
-                msg = "Unknown hemisphere: %s [north|south]" % hemisphere
+                msg = f"Unknown hemisphere: {hemisphere} [north|south]"
                 self.error.add_error("invalid-hemisphere", msg)
                 self.error.raise_on_error()
+                return None
 
             # Extract the subset (if applicable)
             polar_subset = np.where(is_polar)[0]
@@ -280,10 +290,6 @@ class L1PreProcBase(DefaultLoggingClass):
             # entire segment in polar region -> add full segment to output list
             elif n_records_subset == l1.n_records:
                 l1_list.append(l1)
-
-            # no coverage in target hemisphere -> remove segment from list
-            else:
-                pass
 
         # Last step: Sort the list to maintain temporal order
         # (only if more than 1 segment)
@@ -315,9 +321,10 @@ class L1PreProcBase(DefaultLoggingClass):
                 is_polar = l1.time_orbit.latitude <= (-1.0 * polar_threshold)
 
             else:
-                msg = "Unknown hemisphere: %s [north|south]" % hemisphere
+                msg = f"Unknown hemisphere: {hemisphere} [north|south]"
                 self.error.add_error("invalid-hemisphere", msg)
                 self.error.raise_on_error()
+                return None
 
             # Step: Extract the polar ocean segment for the given hemisphere
             polar_subset = np.where(is_polar)[0]
@@ -381,23 +388,13 @@ class L1PreProcBase(DefaultLoggingClass):
         # All done
         return l1
 
-        # import matplotlib.pyplot as plt
-        # import sys
-        #
-        # print segments_len
-        #
-        # plt.figure()
-        # plt.plot(ocean_flag, alpha=0.5)
-        # plt.plot(land_flag, alpha=0.5)
-        # plt.show()
-        # sys.exit()
-
-    def trim_non_ocean_data(self, l1):
+    @staticmethod
+    def trim_non_ocean_data(l1):
         """
-        Remove leading and trailing data that is not if type ocean. 
+        Remove leading and trailing data that is not if type ocean.
         :param l1: The input Level-1 objects
         :return: The subsetted Level-1 objects. (Segments with no ocean data are removed from the list)
-        """""" """
+        """
 
         ocean = l1.surface_type.get_by_name("ocean")
         first_ocean_index = get_first_array_index(ocean.flag, True)
@@ -477,7 +474,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # Get timestamp discontinuities (if any)
             time = l1.time_orbit.timestamp
 
-            # Get start start/stop indices pairs
+            # Get start/stop indices pairs
             segments_start = np.array([0])
             segments_start_indices = np.where(np.ediff1d(time) > dt_threshold)[0] + 1
             segments_start = np.append(segments_start, segments_start_indices)
@@ -501,7 +498,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def target_region_def(self):
-        if not "polar_ocean" in self.cfg:
+        if "polar_ocean" not in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -509,7 +506,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def polar_ocean_props(self):
-        if not "polar_ocean" in self.cfg:
+        if "polar_ocean" not in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -517,7 +514,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
     @property
     def orbit_segment_connectivity_props(self):
-        if not "orbit_segment_connectivity" in self.cfg:
+        if "orbit_segment_connectivity" not in self.cfg:
             msg = "Missing configuration key `orbit_segment_connectivity` in Level-1 Pre-Processor Options"
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
@@ -537,8 +534,6 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcCustomOrbitSegment, self).__init__(self.__class__.__name__, *args)
-        # Override the logger name of the input adapter for better logging experience
-        pass
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -610,8 +605,6 @@ class L1PreProcHalfOrbit(L1PreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcHalfOrbit, self).__init__(self.__class__.__name__, *args)
-        # Override the logger name of the input adapter for better logging experience
-        pass
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -675,8 +668,6 @@ class L1PreProcFullOrbit(L1PreProcBase):
 
     def __init__(self, *args):
         super(L1PreProcFullOrbit, self).__init__(self.__class__.__name__, *args)
-        # Override the logger name of the input adapter for better logging experience
-        pass
 
     def extract_polar_ocean_segments(self, l1):
         """
@@ -766,8 +757,8 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         # NOTE: the definition of hemisphere in l1 data is above or below the equator
         hemisphere = product_metadata.hemisphere
         target_hemisphere = self.cfg.get("target_hemisphere", None)
-        if not hemisphere == "global" and not hemisphere in target_hemisphere:
-            logger.info("- No data in target hemishere: %s" % "".join(self.cfg.target_hemispheres))
+        if hemisphere != "global" and hemisphere not in target_hemisphere:
+            logger.info(f'- No data in target hemishere: {"".join(self.cfg.target_hemispheres)}')
             return False
 
         # 3. Must be at higher latitude than the polar latitude threshold
@@ -775,7 +766,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         polar_latitude_threshold = self.cfg.get("polar_latitude_threshold", None)
         if np.amax(lat_range) < polar_latitude_threshold:
             msg = "- No data above polar latitude threshold (min:%.1f, max:%.1f) [req:+/-%.1f]"
-            msg = msg % (product_metadata.lat_min, product_metadata.lat_max, polar_latitude_threshold)
+            msg %= (product_metadata.lat_min, product_metadata.lat_max, polar_latitude_threshold)
             logger.info(msg)
             return False
 
@@ -790,8 +781,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                  output_handler_cfg=None, source_repo_id=None):
         """
         The settings for the Level-1 pre-processor job
-        :param l1p_settings_id_or_file: An id of an proc/l1 processor config file (filename excluding the .yaml
-                                        extension) or an full filepath to a yaml config file
+        :param l1p_settings_id_or_file: An id of a proc/l1 processor config file (filename excluding the .yaml
+                                        extension) or a full filepath to a yaml config file
         :param tcs: [int list] Time coverage start (YYYY MM [DD])
         :param tce: [int list] Time coverage end (YYYY MM [DD]) [int list]
         :param exclude_month: [int list] A list of month that will be ignored
@@ -812,6 +803,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # Get pysiral configuration
         # TODO: Move to global
         self._cfg = psrlcfg
+        self._l1pprocdef = None
 
         # Store command line options
         self._hemisphere = hemisphere
@@ -823,7 +815,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         # Get full requested time range
         self._time_range = DatePeriod(tcs, tce)
-        logger.info("Requested time range is %s" % self.time_range.label)
+        logger.info(f"Requested time range is {self.time_range.label}")
 
         # Store the data handler options
         if output_handler_cfg is None:
@@ -841,9 +833,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         kwargs = {}
         if args.exclude_month is not None:
             kwargs["exclude_month"] = args.exclude_month
-        data_handler_cfg = dict()
-        data_handler_cfg["overwrite_protection"] = args.overwrite_protection
-        data_handler_cfg["remove_old"] = args.remove_old
+        data_handler_cfg = {"overwrite_protection": args.overwrite_protection, "remove_old": args.remove_old}
+
         if args.source_repo_id is not None:
             data_handler_cfg["local_machine_def_tag"] = args.source_repo_id
         kwargs["output_handler_cfg"] = data_handler_cfg
@@ -861,7 +852,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         procdef_file_path = self.get_l1p_proc_def_filename(l1p_settings_id_or_file)
 
         # 2. Read the content
-        logger.info("Parsing L1P processor definition file: %s" % procdef_file_path)
+        logger.info(f"Parsing L1P processor definition file: {procdef_file_path}")
         self._l1pprocdef = get_yaml_config(procdef_file_path)
         self._check_if_unambiguous_platform()
 
@@ -884,8 +875,8 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             msg = "Invalid Level-1 pre-processor definition filename or id: %s\n" % l1p_settings_id_or_file
             msg = msg + " \nRecognized Level-1 pre-processor definitions ids:\n"
             ids = self.pysiral_cfg.get_setting_ids("proc", "l1")
-            for id in ids:
-                msg = msg + "    - " + id + "\n"
+            for output_id in ids:
+                msg = f'{msg}    - {output_id}' + "\n"
             self.error.add_error("invalid-l1p-outputdef", msg)
             self.error.raise_on_error()
         return filename
@@ -903,7 +894,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             tag = self._source_repo_id
 
         # Get the value
-        expected_branch_name = "root.l1b_repository.%s.%s" % (platform, tag)
+        expected_branch_name = f"root.l1b_repository.{platform}.{tag}"
         branch = None
         try:
             branch = AttrDict(primary_input_def[platform][tag])
@@ -916,7 +907,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         # TODO: Obsolete?
         if branch is None:
             msg = "Missing definition in `local_machine_def.yaml`. Expected branch: %s"
-            msg = msg % expected_branch_name
+            msg %= expected_branch_name
             self.error.add_error("local-machine-def-missing-tag", msg)
             self.error.raise_on_error()
 
@@ -925,9 +916,9 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         for key in ["source", "l1p"]:
 
             # 1. Branch must have specific keys for input and output
-            if not key in branch:
+            if key not in branch:
                 msg = "Missing definition in `local_machine_def.yaml`. Expected value: %s.%s"
-                msg = msg % (expected_branch_name, key)
+                msg %= (expected_branch_name, key)
                 self.error.add_error("local-machine-def-missing-tag", msg)
                 self.error.raise_on_error()
 
@@ -948,33 +939,34 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self.l1pprocdef.input_handler["options"]["lookup_dir"] = branch.source
 
     def _check_if_unambiguous_platform(self):
-        """ Checks if the platform is unique, since some l1 processor definitions are valid for a series of
+        """
+        Checks if the platform is unique, since some l1 processor definitions are valid for a series of
         platforms, such as ERS-1/2, Sentinel-3A/B, etc. The indicator is that the platform tag in the
         l1 preprocessor settings is comma separated list.
 
-        For the location of the source data, it is however necessary that the exact platform is known. It must
-        therefore be specified explicitly by the -platform argument """
+        For the location of the source data, it is however necessary that the exact platform is known.
+        It must therefore be specified explicitly by the -platform argument
+        """
 
         settings_is_ambigous = "," in self._l1pprocdef.platform
         platform_is_known = self.platform is not None
 
-        # Test if platform is given if the settings file is valid for more than 1 platform
-        if settings_is_ambigous and not platform_is_known:
-            msg = "Error: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
-            msg = msg % self._l1pprocdef.platform
-            sys.exit(msg)
+        if settings_is_ambigous:
 
-        # Test if platform provided matches the platform list in the settings file
-        if settings_is_ambigous and platform_is_known:
-            if not self.platform in str(self._l1pprocdef.platform):
-                msg = "Error: platform in l1p settings (%s) and given platform (%s) do not match"
-                msg = msg % (self._l1pprocdef.platform, self.platform)
+            if not platform_is_known:
+                msg = "Error: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
+                msg %= self._l1pprocdef.platform
                 sys.exit(msg)
 
-        # If platform in settings is unambigous, but not provided -> get platform from settings
+            if platform_is_known and self.platform not in str(self._l1pprocdef.platform):
+                msg = "Error: platform in l1p settings (%s) and given platform (%s) do not match"
+                msg %= (self._l1pprocdef.platform, self.platform)
+                sys.exit(msg)
+
+        # If platform in settings is unambiguous, but not provided -> get platform from settings
         if not settings_is_ambigous and not platform_is_known:
             self._platform = self._l1pprocdef.platform
-            logger.info("- get platform from l1p settings -> %s" % self.platform)
+            logger.info(f"- get platform from l1p settings -> {self.platform}")
 
     @property
     def hemisphere(self):
@@ -999,8 +991,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
     @property
     def period_segments(self):
-        segments = self._time_range.get_segments("month", crop_to_period=True)
-        return segments
+        return self._time_range.get_segments("month", crop_to_period=True)
 
     @property
     def output_handler_cfg(self):
@@ -1029,7 +1020,8 @@ class Level1POutputHandler(DefaultLoggingClass):
         self._path = None
         self._filename = None
 
-    def remove_old_if_applicable(self, period):
+    @staticmethod
+    def remove_old_if_applicable():
         logger.warning("Not implemented: self.remove_old_if_applicable")
         return
 
@@ -1064,7 +1056,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         local_machine_def_tag = self.cfg.get("local_machine_def_tag", None)
         if local_machine_def_tag is None:
             msg = "Missing mandatory option %s in l1p processor definition file -> aborting"
-            msg = msg % "root.output_handler.options.local_machine_def_tag"
+            msg %= "root.output_handler.options.local_machine_def_tag"
             msg = msg + "\nOptions: \n" + self.cfg.makeReport()
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
