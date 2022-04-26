@@ -97,7 +97,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # of the input adaptor. The input handler gets only the filename and the target
             # region to assess whether it is necessary to parse and transform the file content
             # for the sake of computational efficiency.
-            logger.info("+ Process input file %s" % prgs.get_status_report(i))
+            logger.info(f"+ Process input file {prgs.get_status_report(i)}")
             l1 = self.input_adapter.get_l1(input_file, polar_ocean_check)
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
@@ -110,7 +110,7 @@ class L1PreProcBase(DefaultLoggingClass):
 
             # Step 3: Post-processing
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
-            # executed as the the Level-1 segments are cropped to the minimal length.
+            # executed as the Level-1 segments are cropped to the minimal length.
             self.l1_post_processing(l1_segments)
 
             # Step 4: Merge orbit segments
@@ -131,7 +131,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :return: None, the l1_segments are changed in place
         """
 
-        # Get the post processing options
+        # Get the post-processing options
         pre_processing_items = self.cfg.get("pre_processing_items", None)
         if pre_processing_items is None:
             logger.info("No pre processing items defined")
