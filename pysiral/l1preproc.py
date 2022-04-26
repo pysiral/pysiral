@@ -832,7 +832,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
     def has_polar_ocean_segments(self, product_metadata: L1bMetaData) -> bool:
         """
         Checks if there are polar oceans segments based on the metadata of a L1 data object
-        :param product_metadata: A l1bdata.L1BMetaData object
+        :param product_metadata: Metadata container of the l1b data product. 
         :return: Boolean Flag (true: in region of interest, false: not in region of interest)
         """
 
