@@ -11,12 +11,13 @@ from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
 from datetime import timedelta
-from typing import Type, Union, List, TypeVar, Dict
+from typing import Union, List, TypeVar, Dict, overload
 
 from dateperiods import DatePeriod, PeriodIterator
 
-from pysiral import get_cls, psrlcfg
+from pysiral import psrlcfg
 from pysiral.l1bdata import Level1bData, L1bMetaData
+from pysiral.l1preproc.procitems import L1PProcItemDef
 from pysiral.clocks import StopWatch
 from pysiral.config import get_yaml_config
 from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
@@ -180,8 +181,29 @@ class L1PreProcBase(DefaultLoggingClass):
         # The configuration for the pre-processor
         self.cfg = cfg
 
+        # Initialize the L1 processor items
+        self.processer_item_dict = {}
+        self._init_processor_items()
+
         # The stack of Level-1 objects is a simple list
         self.l1_stack = []
+
+    def _init_processor_items(self) -> None:
+        """
+        Popuplate the processor item dictionary with initialized processor item classes
+        for the different stages of the Level-1 pre-processor.
+
+        This method will evaluate the configuration dictionary passed to this class,
+        retrieve the corresponding classes, initialize them and store in a dictionary.
+
+        :return:
+        """
+
+        for processing_item_definition_dict in self.cfg.processing_items:
+            def_ = L1PProcItemDef.from_attrdict(processing_item_definition_dict)
+
+
+
 
     def process_input_files(self, input_file_list: List[Union[Path, str]]):
         """
@@ -220,13 +242,15 @@ class L1PreProcBase(DefaultLoggingClass):
 
             # Step 2: Apply processor items on source data
             # for the sake of computational efficiency.
-            self.l1_apply_proc_items(l1, "post_source")
+            self.l1_apply_processor_items(l1, "post_source_file")
 
             # Step 3: Extract and subset
             # The input files may contain unwanted data (low latitude/land segments).
             # It is the job of the L1PReProc children class to return only the relevant
             # segments over polar ocean as a list of l1 objects.
             l1_segments = self.extract_polar_ocean_segments(l1)
+
+            self.l1_apply_processor_items(l1_segments, "post_ocean_segments_extraction")
 
             # Step 5: Merge orbit segments
             # Add the list of orbit segments to the l1 data stack and merge those that
@@ -240,7 +264,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # Step 4: Processor items post
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
             # executed as the Level-1 segments are cropped to the minimal length.
-            self.l1_apply_proc_items(l1_merged, "post_merge")
+            self.l1_apply_processor_items(l1_merged, "post_merge")
 
             # Step 5: Export
             self.l1_export_to_netcdf(l1_merged)
@@ -261,16 +285,46 @@ class L1PreProcBase(DefaultLoggingClass):
         """
         raise NotImplementedError("")
 
-    def l1_apply_proc_items(self, l1: "Level1bData", hook_name: str) -> None:
+    def l1_apply_processor_items(self,
+                                 l1: Union["Level1bData", List["Level1bData"]],
+                                 stage_name: str
+                                 ) -> None:
         """
-        Apply the processor item for  procedures defined in the l1p processor definition file.
+        Apply the processor items defined in the l1 processor configuration file
+        to either a l1 data object or a list of l2 data objects at a defined
+        stage of the procesor.
 
-        :param l1: A list of Level-1 data objects
-        :param hook_name: Name of the hook (`post_source` or `post_merge`)
+        This method is a wrapper that deals with multiple input types.
+        The functionality is implemented in `_l1_apply_proc_item`
+
+        :param l1: Level-1 data object or list of Level-1 data objects
+        :param stage_name: Name of the processing stage. Valid options are
+            (`post_source_file`, `post_ocean_segment_extraction`, `post_merge`)
 
         :return: None, the l1_segments are changed in place
         """
 
+        # Check if there is anything to do first
+        if stage_name not in self.processor_item_dict:
+            return
+
+        (
+            [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if l1 is list
+            else self._l1_apply_proc_item(l1, stage_name)
+        )
+
+    def _l1_apply_proc_item(self,
+                            l1_item: "Level1bData",
+                            stage_name: str
+                            ) -> None:
+        """
+        Apply a list of
+
+        :param l1_item:
+        :param stage_name:
+
+        :return:
+        """
         breakpoint()
         # # Get the post-processing options
         # pre_processing_items = self.cfg.get("pre_processing_items", None)
@@ -353,6 +407,7 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_merged = self.l1_stack[0]
         for l1 in self.l1_stack[1:]:
             l1_merged.append(l1)
+        breakpoint()
         return l1_merged
 
     def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
@@ -364,11 +419,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :return:
         """
 
-        if "export_minimum_n_records" in self.cfg:
-            minimum_n_records = self.cfg.export_minimum_n_records
-        else:
-            minimum_n_records = 0
-
+        minimum_n_records = self.cfg.get("export_minimum_n_records", 0)
         if l1.n_records >= minimum_n_records:
             self.output_handler.export_to_netcdf(l1)
             logger.info(f"- Written l1p product: {self.output_handler.last_written_file}")
