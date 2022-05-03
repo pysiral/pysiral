@@ -154,6 +154,7 @@ class Level1bData(DefaultLoggingClass):
 
     def apply_range_correction(self, correction):
         """  Apply range correction """
+        # TODO: This method has no place here
         range_delta = self.correction.get_parameter_by_name(correction)
         if range_delta is None:
             # TODO: raise warning
@@ -169,12 +170,10 @@ class Level1bData(DefaultLoggingClass):
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-
-        test = copy.deepcopy(self.surface_type)
-
         if len(subset_list) > 0:
             l1b = copy.deepcopy(self)
             l1b.trim_to_subset(subset_list)
+        # TODO: Should not return an empty subset
         else:
             return None
         return l1b

@@ -5,6 +5,7 @@
 """
 
 import sys
+import copy
 import numpy as np
 from loguru import logger
 from attrdict import AttrDict
@@ -182,7 +183,7 @@ class L1PreProcBase(DefaultLoggingClass):
         self.cfg = cfg
 
         # Initialize the L1 processor items
-        self.processer_item_dict = {}
+        self.processor_item_dict = {}
         self._init_processor_items()
 
         # The stack of Level-1 objects is a simple list
@@ -196,14 +197,19 @@ class L1PreProcBase(DefaultLoggingClass):
         This method will evaluate the configuration dictionary passed to this class,
         retrieve the corresponding classes, initialize them and store in a dictionary.
 
+        Dictionary entries are the names of the processing stages and the content
+        is a list of classes (cls, label) per processing stage.
+
         :return:
         """
 
         for processing_item_definition_dict in self.cfg.processing_items:
-            def_ = L1PProcItemDef.from_attrdict(processing_item_definition_dict)
-
-
-
+            def_ = L1PProcItemDef.from_l1procdef_dict(processing_item_definition_dict)
+            cls = def_.get_initialized_processing_item_instance()
+            if def_.stage in self.processor_item_dict:
+                self.processor_item_dict[def_.stage].append((cls, def_.label,))
+            else:
+                self.processor_item_dict[def_.stage] = [(cls, def_.label)]
 
     def process_input_files(self, input_file_list: List[Union[Path, str]]):
         """
@@ -250,7 +256,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # segments over polar ocean as a list of l1 objects.
             l1_segments = self.extract_polar_ocean_segments(l1)
 
-            self.l1_apply_processor_items(l1_segments, "post_ocean_segments_extraction")
+            self.l1_apply_processor_items(l1_segments, "post_ocean_segment_extraction")
 
             # Step 5: Merge orbit segments
             # Add the list of orbit segments to the l1 data stack and merge those that
@@ -307,9 +313,8 @@ class L1PreProcBase(DefaultLoggingClass):
         # Check if there is anything to do first
         if stage_name not in self.processor_item_dict:
             return
-
         (
-            [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if l1 is list
+            [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if isinstance(l1, list)
             else self._l1_apply_proc_item(l1, stage_name)
         )
 
@@ -325,6 +330,13 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return:
         """
+        for procitem, label in self.processor_item_dict.get(stage_name, []):
+            timer = StopWatch()
+            timer.start()
+            procitem.apply(l1_item)
+            timer.stop()
+            msg = f"- L1 processing item {stage_name}:{label} applied in {timer.get_seconds():.3f} seconds"
+            logger.info(msg)
         breakpoint()
         # # Get the post-processing options
         # pre_processing_items = self.cfg.get("pre_processing_items", None)
@@ -404,10 +416,9 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return: Level-1 data object
         """
-        l1_merged = self.l1_stack[0]
+        l1_merged = copy.deepcopy(self.l1_stack[0])
         for l1 in self.l1_stack[1:]:
             l1_merged.append(l1)
-        breakpoint()
         return l1_merged
 
     def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
