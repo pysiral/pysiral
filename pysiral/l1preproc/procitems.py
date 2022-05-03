@@ -4,8 +4,9 @@
 
 """
 
-from schema import Schema, And, Or, Use
-from typing import Any, Dict, TypeVar
+from attrdict import AttrDict
+from schema import Schema, And
+from typing import Any, Dict, TypeVar, Union
 
 from pysiral import get_cls
 from pysiral.l1bdata import Level1bData
@@ -72,10 +73,33 @@ class L1PProcItemDef(object):
         self.label = Schema(str).validate(label)
         self.stage = Schema(And(str, lambda x: x in self.valid_stages)).validate(stage)
         self.module_name = Schema(str).validate(module_name)
-        self.class_name = Schema(str).class_name
+        self.class_name = Schema(str).validate(class_name)
         option_dict = options_dict if options_dict is not None else {}
         self.option_dict = Schema(dict).validate(option_dict)
-        breakpoint()
+
+    @classmethod
+    def from_l1procdef_dict(cls, procdef_dict: Union[dict, AttrDict]) -> "L1PProcItemDef":
+        """
+        Initialize the class from the corresponding excerpt of the Level-1 processor
+        configuration file.
+        :param procdef_dict:
+        :return:
+        """
+        options = procdef_dict.get("options", {})
+        return cls(procdef_dict.get("label"),
+                   procdef_dict.get("stage"),
+                   procdef_dict.get("module_name"),
+                   procdef_dict.get("class_name"),
+                   options)
+
+    def get_initialized_processing_item_instance(self) -> L1PPROCITEM_CLS_TYPE:
+        """
+        Return an inialized instance of the processor item described by this
+        configuration class
+
+        :return: descendent of L1PProcItem
+        """
+        return get_l1_proc_item(self.module_name, self.class_name, **self.option_dict)
 
     @property
     def valid_stages(self):
