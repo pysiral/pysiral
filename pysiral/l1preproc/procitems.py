@@ -1,6 +1,52 @@
 # -*- coding: utf-8 -*-
 
 """
+This module contains the basic functionality of Level-1 (pre-)processor items.
+
+A processor item is a class that is allowed to modify the Level-1 data object
+and can be called at different stages of the Level-1 pre-processor loop.
+The classes are initialized when the Level-1 processor is started and
+thus are allowed to map larger data sets to memory which are then applied
+for each Level-1 data set. 
+
+Processing items can be anywhere in the pysiral namespace, but must
+inherit `pysiral.l1preproc.procitems.L1PProcItem` and overwrite the
+`apply(l1)` method, which receives the Level-1 data object as input.
+
+Level-1 processor items are instanced from the Level-1 pre-processor
+definition file (located in `pysiral/resources/pysiral-cfg/proc/l1`)
+and require an entry according to this format:
+
+```yaml
+level1_preprocessor:
+
+    ...
+
+    options:
+
+        ...
+
+        processing_items:
+
+            - label: <Label displayed in the log file>
+              stage: <stage name (see below)>
+              module_name: <the module where the class is located>
+              class_name: <class name>
+              options:
+                  <custom option dictionary (can be nested)>
+```
+
+The value (stage name) supplied to `stage` defined whne the processing item
+is run in the main loop of the Level-1 pre-processor. Following options
+are currently implemented:
+
+1. The processing item will be applied to the Level-1 data object, which
+   is has the same extent as the source file (stage=`post_source_file`).
+2. The processing item will be applied to a list of all polar ocean segments
+   of a source file (stage=`post_ocean_segment_extraction`). This option is
+   recommended for computation intensive processing items.
+3. The processing item will be applied to the merged polar ocean segment
+   (stage=`post_merge`)
 
 """
 
