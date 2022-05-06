@@ -617,6 +617,8 @@ class L1bMetaData(object):
         :param item: Name of the parameter
         :return:
         """
+        if item == "__setstate__":
+            raise AttributeError(item)
         if item in self._attrs:
             return self._attrs[item]
         else:
