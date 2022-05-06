@@ -23,9 +23,14 @@ pyyaml
 schema
 scipy
 scikit-learn
+Sphinx
+sphinx-automodapi
+sphinx_rtd_theme
+sphinxcontrib-mermaid
 statsmodels
 torch
 xarray
 xgboost
 xmltodict
+
 
