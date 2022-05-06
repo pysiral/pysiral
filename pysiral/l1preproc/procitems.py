@@ -7,7 +7,7 @@ A processor item is a class that is allowed to modify the Level-1 data object
 and can be called at different stages of the Level-1 pre-processor loop.
 The classes are initialized when the Level-1 processor is started and
 thus are allowed to map larger data sets to memory which are then applied
-for each Level-1 data set. 
+for each Level-1 data set.
 
 Processing items can be anywhere in the pysiral namespace, but must
 inherit `pysiral.l1preproc.procitems.L1PProcItem` and overwrite the
@@ -62,7 +62,8 @@ class L1PProcItem(object):
 
     def __init__(self, **cfg: Dict) -> None:
         """
-        Base class for Level 1 Pre-Processor items. Not to be called direclty
+        Base class for Level 1 Pre-Processor items. Not to be called directly, but
+        needs to be inherited by all Level-1 processor item classes.
 
         :param cfg: Configuration dictionary
         """
@@ -70,7 +71,8 @@ class L1PProcItem(object):
 
     def apply(self, l1: Level1bData):
         """
-        This class
+        Mandatory class for Level-1 processing item. Needs to be overwritten
+        by the inheriting class.
         :param l1:
         :return:
         """
@@ -78,7 +80,8 @@ class L1PProcItem(object):
 
     def __getattr__(self, item: str) -> Any:
         """
-        Direct attribute access to the cfg dictionary
+        Direct attribute access to the cfg dictionary. Required for historical reasons
+        and readable code.
 
         :param item:
         :return:

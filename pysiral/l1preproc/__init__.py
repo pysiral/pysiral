@@ -211,10 +211,26 @@ class L1PreProcBase(DefaultLoggingClass):
             else:
                 self.processor_item_dict[def_.stage] = [(cls, def_.label)]
 
-    def process_input_files(self, input_file_list: List[Union[Path, str]]):
+    def process_input_files(self, input_file_list: List[Union[Path, str]]) -> None:
         """
-        Main entry point for the Level-Preprocessor.
+        Main entry point for the Level-1 pre-processor and start of the main
+        loop of this class:
+
+        1. Sequentially reads source file from input list of source files
+        2. Applies processing items (stage: `post_source_file`)
+        3. Extract polar ocean segments (can be multiple per source file)
+        4. Applies processing items (stage: `post_polar_ocean_segment_extraction`)
+        5. Creates a stack of spatially connecting segments
+           a. if this includes all segments of the source file the loop
+              progresses to the next source file
+           b. if the stack contains a spatially unconnected segments
+                1. merge all connected segments to a single l1 object
+                2. Applies processing items (stage: `post_merge`)
+                3. Export to l1p netCDF
+        6. Export the last l1p segment at the end of the loop.
+
         :param input_file_list: A list full filepath for the pre-processor
+
         :return: None
         """
 
@@ -281,7 +297,8 @@ class L1PreProcBase(DefaultLoggingClass):
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
-        Needs to be implemented by child classes
+        Needs to be implemented by child classes, because the exact algorithm
+        depends on th source data.
 
         :param l1:
 
@@ -337,7 +354,7 @@ class L1PreProcBase(DefaultLoggingClass):
             timer.stop()
             msg = f"- L1 processing item {stage_name}:{label} applied in {timer.get_seconds():.3f} seconds"
             logger.info(msg)
-        breakpoint()
+        # breakpoint()
         # # Get the post-processing options
         # pre_processing_items = self.cfg.get("pre_processing_items", None)
         # if pre_processing_items is None:
