@@ -6,9 +6,8 @@ import sys
 import argparse
 from loguru import logger
 
-from pysiral import get_cls, psrlcfg
+from pysiral import get_cls
 from pysiral.config import DefaultCommandLineArguments
-from pysiral._class_template import DefaultLoggingClass
 from pysiral.l1preproc import get_preproc, Level1PreProcJobDef, Level1POutputHandler
 
 
@@ -62,11 +61,12 @@ def pysiral_l1preproc(job):
     logger.info("Level-1 PreProcessor finished in %s" % job.stopwatch.get_duration())
 
 
-class Level1PreProcArgParser(DefaultLoggingClass):
+class Level1PreProcArgParser(object):
 
     def __init__(self):
-        super(Level1PreProcArgParser, self).__init__(self.__class__.__name__)
-        self.pysiral_config = psrlcfg
+        """
+        Command line parser class for the pysiral Level-1 Pre-Processor
+        """
         self._args = None
 
     def parse_command_line_arguments(self):

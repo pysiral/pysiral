@@ -111,10 +111,11 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
 
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
@@ -126,6 +127,7 @@ level1_preprocessor:
             
             # Compute waveform peakiness CCI style
             - label: "Compute Waveform Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PWaveformPeakiness
               options:
@@ -137,6 +139,7 @@ level1_preprocessor:
             #  2. first maximum index
             #  3. first maximum power (in units of peak power)
             - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
               options:
@@ -156,6 +159,7 @@ level1_preprocessor:
             # This class will add three parameters to the l1p classifier data group: 
             #  1. Leading edge peakiness
             - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgePeakiness
               options:

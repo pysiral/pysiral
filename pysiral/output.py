@@ -384,6 +384,7 @@ class NCDataFile(DefaultLoggingClass):
         self.base_export_path = None
         self.parameter_attributes = None
 
+        # TODO: Get time units/calendar from output definition
         self.time_def = NCDateNumDef()
 
         # TODO: Make this an option?
@@ -578,8 +579,6 @@ class NCDataFile(DefaultLoggingClass):
             return dict(self.parameter_attributes[parameter])
 
     def _write_processor_settings(self):
-        if self._proc_settings is None:
-            pass
         settings = self._proc_settings
         for item in settings.iterkeys():
             self._rootgrp.setncattr(item, str(settings[item]))
@@ -588,7 +587,7 @@ class NCDataFile(DefaultLoggingClass):
         try:
             self._rootgrp = Dataset(self.full_path, "w")
         except RuntimeError:
-            msg = "Unable to create netCDF file: %s" % self.full_path
+            msg = f"Unable to create netCDF file: {self.full_path}"
             self.error.add_error("nc-runtime-error", msg)
             self.error.raise_on_error()
 
@@ -597,8 +596,10 @@ class NCDataFile(DefaultLoggingClass):
 
     @property
     def export_path(self):
-        """ Evoking this property will also create the directory if it
-        does not already exists """
+        """
+        Evoking this property will also create the directory if it
+        does not already exist
+        """
         return self.output_handler.get_directory_from_data(self.data, create=True)
 
     @property
@@ -651,7 +652,7 @@ class L1bDataNC(DefaultLoggingClass):
         self.path = Path(self.output_folder) / self.filename
 
     def _create_filename(self):
-        self.filename = Path(self.l1b.filename.stem+".nc")
+        self.filename = Path(f'{self.l1b.filename.stem}.nc')
 
     def _set_global_attributes(self, attdict, prefix=""):
         """ Save l1b.info dictionary as global attributes """
@@ -766,6 +767,7 @@ class L1bDataNC(DefaultLoggingClass):
         self._rootgrp.close()
 
 
+# FIXME: Is this one used?
 class Level1POutput(NCDataFile):
     """ Class to export a l2data object into a netcdf file """
 
@@ -844,7 +846,7 @@ class Level3Output(NCDataFile):
         rgrp = self._rootgrp
 
         # Set Time Variable
-        var = rgrp.createVariable("time", "f8", tuple(['time']), zlib=self.zlib)
+        var = rgrp.createVariable("time", "f8", ('time', ), zlib=self.zlib)
         var.standard_name = "time"
         var.units = self.time_def.units
         var.long_name = "Time"
@@ -890,7 +892,7 @@ class Level3Output(NCDataFile):
         rgrp = self._rootgrp
 
         # Set x coordinate
-        var = rgrp.createVariable("xc", "f8", tuple(['xc']), zlib=self.zlib)
+        var = rgrp.createVariable("xc", "f8", ('xc', ), zlib=self.zlib)
         var.standard_name = "projection_x_coordinate"
         var.units = "km"
         var.long_name = "x coordinate of projection (eastings)"
@@ -901,7 +903,7 @@ class Level3Output(NCDataFile):
         yc_km = self.data.griddef.yc_km
         if self.output_handler.flip_yc:
             yc_km = np.flip(yc_km, 0)
-        var = rgrp.createVariable("yc", "f8", tuple(['yc']), zlib=self.zlib)
+        var = rgrp.createVariable("yc", "f8", ('yc', ), zlib=self.zlib)
         var.standard_name = "projection_y_coordinate"
         var.units = "km"
         var.long_name = "y coordinate of projection (northing)"
@@ -962,7 +964,7 @@ class PysiralOutputFilenaming(object):
                 break
 
         if not match_found:
-            print("Unrecognized filename: %s" % filename)
+            print(f"Unrecognized filename: {filename}")
 
     @staticmethod
     def _datetime_format(dt):

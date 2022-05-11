@@ -154,6 +154,7 @@ class Level1bData(DefaultLoggingClass):
 
     def apply_range_correction(self, correction):
         """  Apply range correction """
+        # TODO: This method has no place here
         range_delta = self.correction.get_parameter_by_name(correction)
         if range_delta is None:
             # TODO: raise warning
@@ -169,12 +170,10 @@ class Level1bData(DefaultLoggingClass):
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-
-        test = copy.deepcopy(self.surface_type)
-
         if len(subset_list) > 0:
             l1b = copy.deepcopy(self)
             l1b.trim_to_subset(subset_list)
+        # TODO: Should not return an empty subset
         else:
             return None
         return l1b
@@ -569,7 +568,7 @@ class L1bdataNCFile(Level1bData):
         transfers l1b corrections group
         (waveform corrections in l1bdata netCDF files)
         """
-        # Get the datagroup
+        # Get the data group
         datagroup = self.nc.groups["classifier"]
         # Loop over parameters
         for key in datagroup.variables.keys():
@@ -583,23 +582,27 @@ class L1bMetaData(object):
     (see property attribute_list for a list of attributes)
     """
 
-    _attribute_list = [
-        "pysiral_version", "mission", "mission_data_version",
-        "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
-        "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
-        "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
-        "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
-        "open_ocean_percent", "timeliness"]
-
     def __init__(self):
+        """
+        Class containing a specific set of metadata attributes for l1b/l1p data
+        """
+
         # Init all fields
-        for field in self.attribute_list:
-            setattr(self, field, None)
+        self._attribute_list = [
+            "pysiral_version", "mission", "mission_data_version",
+            "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
+            "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
+            "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
+            "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
+            "open_ocean_percent", "timeliness"]
+
+        self._attrs = {attr_name: None for attr_name in self._attribute_list}
+
         # Set some fields to False (instead of none)
-        self.orbit = 999999
-        self.is_orbit_subset = False
-        self.is_merged_orbit = False
-        self.n_records = -1
+        self._attrs["orbit"] = 999999
+        self._attrs["is_orbit_subset"] = False
+        self._attrs["is_merged_orbit"] = False
+        self._attrs["n_records"] = -1
 
     def __repr__(self):
         output = "pysiral.L1bdata object:\n"
@@ -608,6 +611,19 @@ class L1bMetaData(object):
             output += "\n"
         return output
 
+    def __getattr__(self, item):
+        """
+        Modify the attribute getter to provide a shortcut to the data content
+        :param item: Name of the parameter
+        :return:
+        """
+        if item == "__setstate__":
+            raise AttributeError(item)
+        if item in self._attrs:
+            return self._attrs[item]
+        else:
+            raise AttributeError(f"L1BMetadata does not have the attribute {item}")
+
     @property
     def attribute_list(self):
         return self._attribute_list
@@ -615,10 +631,7 @@ class L1bMetaData(object):
     @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
-        attdict = {}
-        for field in self.attribute_list:
-            attdict[field] = getattr(self, field)
-        return attdict
+        return {field: getattr(self, field) for field in self.attribute_list}
 
     @property
     def hemisphere(self):
@@ -640,18 +653,25 @@ class L1bMetaData(object):
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
-        setattr(self, tag, value)
+        self._attrs[tag] = value
 
-    def check_n_records(self, n_records):
-        # First time a data set is set: Store number of records as reference
-        if self.n_records == -1:
-            self.n_records = n_records
-        else:  # n_records exists: verify consistency
-            if n_records == self.n_records:  # all good
-                pass
-            else:  # raise Error
-                msg = "n_records mismatch, len must be: %s (was %s)" % (str(self.n_records), str(n_records))
-                raise ValueError(msg)
+    def check_n_records(self, n_records: int) -> None:
+        """
+        First time a data set is set: Store number of records as reference
+
+        :param n_records: Number of records
+
+        :return: None
+
+        :raises: ValueError
+        """
+        
+        if self._attrs["n_records"] == -1:
+            self._attrs["n_records"] = n_records
+
+        elif n_records != self.n_records:
+            msg = f"n_records mismatch, len must be: {self.n_records} (was {n_records})"
+            raise ValueError(msg)
 
 
 class L1bTimeOrbit(object):

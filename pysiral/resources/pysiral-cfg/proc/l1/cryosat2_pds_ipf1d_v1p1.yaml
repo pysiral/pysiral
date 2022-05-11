@@ -91,6 +91,7 @@ level1_preprocessor:
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
               class_name: L1PWaveformResampleSIN
               options:
@@ -99,6 +100,7 @@ level1_preprocessor:
             # Pad LRM waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of LRM segments
             - label: "Pad LRM waveforms"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
               class_name: L1PWaveformPadLRM
               options:
@@ -106,6 +108,7 @@ level1_preprocessor:
             
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
@@ -122,6 +125,7 @@ level1_preprocessor:
             #  2. first maximum index
             #  3. first maximum power (in units of peak power)
             - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
               options:
@@ -145,6 +149,7 @@ level1_preprocessor:
 
             # Compute waveform backscatter coeficient (sigma0)
             - label: "Compute Sigma0"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PSigma0
               options:
@@ -173,6 +178,7 @@ level1_preprocessor:
             # This class will add three parameters to the l1p classifier data group: 
             #  1. Leading edge peakiness
             - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgePeakiness
               options:
