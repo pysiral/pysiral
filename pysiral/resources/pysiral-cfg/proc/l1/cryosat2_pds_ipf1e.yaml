@@ -87,7 +87,31 @@ level1_preprocessor:
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
-            
+
+            # Resample SIN waveforms to the same size as SAR waveforms
+            # NOTE: This will only have an effect of SIN segments
+            - label: "High Resolution Land Mask"
+              stage: post_source_file
+              module_name: pysiral.mask
+              class_name: L1PHighResolutionLandMask
+              options:
+                  local_machine_def_auxclass: mask
+                  local_machine_def_tag: landmask_highres
+                  hemispheres: 
+                    north: 
+                        filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
+                        valid_latitude_range: [45.0, 88.0]
+                        grid_def:
+                            projection:
+                                proj: laea
+                                lon_0: 0.0
+                                lat_0: 90
+                            dimension:
+                                n_cols: 40000
+                                n_lines: 40000
+                                dx: 250
+                                dy: 250
+                  
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"

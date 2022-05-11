@@ -6,12 +6,15 @@ Created on Thu Sep 28 14:00:52 2017
 
 @author: shendric
 """
+import pyproj
 
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral._class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
+from pysiral.l1bdata import Level1bData
+from pysiral.l1preproc.procitems import L1PProcItem
 
 from collections import OrderedDict
 from netCDF4 import Dataset
@@ -20,6 +23,8 @@ from loguru import logger
 from pyresample import image, geometry, kd_tree
 import numpy as np
 import struct
+import xarray as xr
+from pyproj import Proj
 from pathlib import Path
 
 
@@ -391,3 +396,69 @@ class L3Mask(DefaultLoggingClass):
             return None
 
         return filepath
+
+
+class L1PHighResolutionLandMask(L1PProcItem):
+    """
+    Level-1 processor item providing access to a high resolution
+    land mask and distance to land fields
+    """
+
+    def __init__(self, **cfg):
+        """
+        Initialize the class. This step includes parsing the static mask
+        and keeping it in memory
+        :param cfg:
+        """
+        super(L1PHighResolutionLandMask, self).__init__(**cfg)
+
+        self.masks = {}
+        self._init_masks()
+
+    def _init_masks(self) -> None:
+        """
+        Store the masks in memory
+        :return:
+        """
+
+        # Get the local file path
+        type_ = self.cfg.get("local_machine_def_auxclass")
+        tag = self.cfg.get("local_machine_def_tag")
+        lookup_directory = psrlcfg.local_machine.auxdata_repository[type_][tag]
+
+        # Set the file for each hemisphere type
+        hemispheres = self.cfg.get("hemispheres", {})
+        for hemisphere in hemispheres:
+            hemisphere_cfg = self.cfg["hemispheres"][hemisphere]
+            mask_filepath = Path(lookup_directory) / hemisphere_cfg["filename"]
+            nc = xr.open_dataset(mask_filepath)
+            self.masks[hemisphere] = {
+                "projection": pyproj.Proj(nc.geospatial_bounds_crs),
+                "grid_def": hemisphere_cfg["grid_def"],
+                "land_ocean_flag": nc.land_ocean_flag.values,
+                "distance_to_coast": nc.distance_to_coast.values
+            }
+            nc = None
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Extract land/ocean flag and distance to coast along the
+        l1p trajectory if a mask exists for the corresponding
+        hemisphere of the l1p data object.
+
+        :param l1: 
+        :return: 
+        """
+
+        # Determine the hemisphere
+        if l1.info.hemisphere not in self.masks:
+            logger.info(f"{self.__class__.__name__}: No mask for hemisphere {l1.info.hemisphere}")
+            return
+
+        # Get the mask val
+        mask = self.masks[l1.info.hemisphere]
+
+        # Compute the track position in image coordinates
+        prj_x, prj_y = mask["projection"](l1.time_orbit.longitude, l1.time_orbit.latitude)
+
+        breakpoint()
