@@ -213,11 +213,13 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
         model_class = get_cls("pysiral.auxdata.ml", torch_model_class)
+        #retrieve number of input layer neurons, defaults to 45 (the Envisat standard)
+        input_neurons = self.cfg.options.get("input_neurons", 45)
         if model_class is None:
             msg = f"PyTorch model class not found: pysiral.auxdata.ml.{torch_model_class}"
             self.error.add_error("class-not-found", msg)
             self.error.raise_on_error()
-        self.model = model_class()
+        self.model = model_class(input_neurons)
         self.model.load_state_dict(torch.load(self.model_filepath, map_location='cpu'))
         self.model.eval()
 
@@ -231,9 +233,67 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
 
         :return:
         """
+        
+        #function to identify the first maximum index (fmi)
+        def id_fmi(wfm, start=0, bins=128, spacing=2):
+            xshape = bins+2*spacing
+            x = np.ndarray(shape=(xshape))
+
+            x[:spacing] = wfm[0]-1.e-6
+            x[-spacing:] = wfm[-1]-1.e-6
+            x[spacing:spacing+bins] = wfm
+            
+            h_b = x[start:start + bins]  # before
+            start = spacing
+            h_c = x[start:start + bins]  # central
+            start = spacing + 1
+            h_a = x[start:start + bins]  # after
+            
+            peak_candidate = np.logical_and(h_c >= h_b, h_c >= h_a)
+            peak_candidate = np.logical_and(peak_candidate, np.where(range(bins+1))[0] > 20)
+            return np.where(peak_candidate)[0][0]
+
+        #function to retrieve the sub waveform to be used
+        def get_sub_wf(wfm, fmi, i0=10, i1=35):
+            #zero-pad waveforms
+            wfm = np.concatenate((wfm,np.zeros(50)))
+            return wfm[(fmi-i0):(fmi+i1)]
+        
+        #get normalized waveform power
         waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
         normed_waveform_power = l1p.waveform.power[:]/waveform_norms[:, np.newaxis]
-        self.waveform_for_prediction = torch.from_numpy(normed_waveform_power.astype('float32'))
+        ##get surface-type flag
+        ##surface_type = l1p.surface_type.flag
+        
+        #get waveform/sensor meta
+        n_bins = normed_waveform_power.shape[1]
+        n_wf = normed_waveform_power.shape[0]
+        if n_bins>=128:
+            i0 = 10
+            i1 = 35
+        else:
+            i0 = 10
+            i1 = 25
+        #i0 = 10
+        #i1 = 35
+
+        #subset waveform
+        sub_waveform_power = np.zeros((n_wf,i0+i1))
+        c = 0
+        for x in normed_waveform_power:
+            try:
+                wf_fmi = id_fmi(x, bins=n_bins)
+            except IndexError:
+                #import pdb; pdb.set_trace()
+                c += 1
+                continue
+            if wf_fmi >= 10:
+                sub_waveform_power[c] = get_sub_wf(x,wf_fmi,i0,i1)
+            c += 1
+        #import pdb; pdb.set_trace()
+        #sub_waveform_power = np.array([get_sub_wf(x,id_fmi(x)) for x,s in zip(normed_waveform_power, surface_type) if s == 4],dtype=np.float32)
+        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32'))
+        #self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
         """
@@ -334,15 +394,17 @@ class TorchFunctionalWaveformModelSNN(nn.Module):
     Create Self-Normalizing Neural Network architecture
     REQ: Required for RetrackerThresholdModelTorch
     """
-    def __init__(self):
+    def __init__(self, fc1_input=45):
         super(TorchFunctionalWaveformModelSNN, self).__init__()
-        self.fc1 = nn.Linear(128, 256)
-        self.fc2 = nn.Linear(256, 512)
-        self.fc3 = nn.Linear(512, 256)
-        self.fc4 = nn.Linear(256, 256)
-        self.fc5 = nn.Linear(256, 1)
-
-    def forward(self, x):
+        #self.fc1 = nn.Linear(128, 512)
+        self.fc1 = nn.Linear(fc1_input, 512)
+        #self.fc1 = nn.Linear(35, 512)
+        self.fc2 = nn.Linear(512, 1024)
+        self.fc3 = nn.Linear(1024, 1024)
+        self.fc4 = nn.Linear(1024, 1024)
+        self.fc5 = nn.Linear(1024, 512)
+        self.fc6 = nn.Linear(512, 1)
+    def forward(self, x): 
         x = self.fc1(x)
         x = torch_nn_functional.selu(x)
         x = self.fc2(x)
@@ -352,4 +414,6 @@ class TorchFunctionalWaveformModelSNN(nn.Module):
         x = self.fc4(x)
         x = torch_nn_functional.selu(x)
         x = self.fc5(x)
+        x = torch_nn_functional.selu(x)
+        x = self.fc6(x)
         return x
