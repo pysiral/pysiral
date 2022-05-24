@@ -21,7 +21,7 @@ ctypedef np.float32_t DTYPE_tf
 
 
 @cython.boundscheck(False)
-@cython.wraparound(False)
+@cython.wraparound(True)
 @cython.nonecheck(False)
 def cytfmra_findpeaks(np.ndarray[DTYPE_t, ndim=1] data):
     """
