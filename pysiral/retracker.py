@@ -27,6 +27,15 @@ except ImportError:
     logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
+try:
+    from samosa.sampy import SAMOSA as initialize_SAMOSAlib
+    from samosa.sampy import initialize_epoch, compute_ThNEcho
+    logger.info("SAMOSA retracker loaded from the environment")
+    SAMOSA_OK = True
+except ImportError:
+    logger.error("Unable to import the SAMOSA retracker. Has it been installed?")
+    SAMOSA_OK = False
+
 from typing import Tuple
 
 from pysiral.core.flags import ANDCondition, FlagContainer
@@ -1874,6 +1883,177 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
     except:
         return np.nan
 
+class SAMOSAPlus(BaseRetracker):
+
+    def __init__(self):
+        super(SAMOSAPlus, self).__init__()
+
+    def create_retracker_properties(self, n_records):
+        parameter = ["misfit", "swh"]
+        for parameter_name in parameter:
+            setattr(self, parameter_name,
+                    np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
+
+    def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
+        # Run the retracker
+        self._samosa_plus_retracker(range, wfm, indices)
+        # Filter the results
+        # Needs a filter option in the config file
+        #if self._options.filter.use_filter:
+        #    self._filter_results()
+
+    def _samosa_plus_retracker(self, range, wfm, indices):
+        # Range contains the range to each bin in each waveform
+
+        # All retracker options need to be defined in the l2 settings file
+        # How to get an option
+        # opt_val = self._options.name_in_file
+        ### CST is a structure collecting universal constants
+
+        CST = type('', (), {})()
+
+        CST.c0 = 299792458.  ## speed of light in m/sec
+        CST.R_e = 6378137.  ## Reference Ellipsoid Earh Radius in m
+        CST.f_e = 1 / 298.257223563  ## Reference Ellipsoid Earth Flatness
+        CST.gamma_3_4 = 1.2254167024651779  ## Gamma Function Value at 3/4
+
+        ### OPT is a structure collecting parameters relative to the minimization scheme settings
+
+        OPT = type('', (), {})()
+
+        OPT.method = 'trf'  ## acronym of the minimization solver, see scipy.optimize.least_squares for details
+        OPT.ftol = 1e-2  ## exit tolerance on f
+        OPT.gtol = 1e-2  ## exit tolerance on gradient norm of f
+        OPT.xtol = 2 * 1e-3  ## exit tolerance on x
+        OPT.diff_step = None  ## relative step size for the finite difference approximation of the Jacobian
+        OPT.max_nfev = None  ## maximum number of function evaluations
+        OPT.loss = 'linear'  ## loss function , see scipy.optimize.least_squares for details
+
+        ### RDB is a structure collecting parameters relative to the sensor radar database
+
+        RDB = type('', (), {})()
+
+        RDB.Np_burst = 64  # number of pulses per burst
+        RDB.Npulse = 128  # number of the range gates per pulse (without zero-padding)
+        RDB.PRF_SAR = 18181.8181818181  # Pulse Repetition Frequency in SAR mode , given in Hz
+        RDB.BRI = 0.0117929625  # Burst Repetition Interval, given in sec
+        RDB.f_0 = 13.575e9  # Carrier Frequency in Hz
+        RDB.Bs = 320e6  # Sampled Bandwidth in Hz
+        RDB.theta_3x = np.deg2rad(1.10)  # (rad) Antenna 3 dB beamwidth (along-track)
+        RDB.theta_3y = np.deg2rad(1.22)  # (rad) Antenna 3 dB beamwidth (cross-track)
+
+        ### LUT is a structure collecting filenames of the all SAMOSA LUT
+        ### All the LUT files must be in a folder named auxi and located in the same folder as sampy.py
+
+        # FIXME: Need to add a configuration parameter that gives a path to these files. Per surface type. Possibly
+        # per mode as well?
+        LUT = type('', (), {})()
+
+        LUT.F0 = 'LUT_F0.txt'  ## filename of the F0 LUT
+        LUT.F1 = 'LUT_F1.txt'  ## filename of the F1 LUT
+        LUT.alphap_noweight = 'alphap_table_DX3000_ZP20_SWH20_10_Sept_2019(CS2_NOHAMMING).txt'  ## filename of the alphap LUT ( case no weighting)
+        LUT.alphap_weight = 'alphap_table_DX3000_ZP20_SWH20_10_Sept_2019(CS2_HAMMING).txt'  ## filename of the alphap LUT ( case weighting)
+        LUT.alphapower_noweight = 'alphaPower_table_CONSTANT_SWH20_10_Feb_2020(CS2_NOHAMMING).txt'  ## filename of the alpha power LUT ( case no weighting)
+        LUT.alphapower_weight = 'alphaPower_table_CONSTANT_SWH20_10_Feb_2020(CS2_NOHAMMING).txt'  ## filename of the alpha power LUT ( case weighting)
+
+        ### time array tau : it gives the relative time of each range gate of the radar waveform with respect a time zero
+        ### time zero corresponds at the time of the reference gate
+
+        wf_zp = np.shape(wfm)[1] / RDB.Npulse  #### zero-padding factor of the waveform
+        Nstart = RDB.Npulse * wf_zp
+        Nend = RDB.Npulse * wf_zp
+        dt = 1. / (RDB.Bs * wf_zp)  #### time sampling step for the array tau, it includes the zero-padding factor
+        tau = np.arange(-(Nstart / 2) * dt, ((Nend - 1) / 2) * dt, dt)
+
+        NstartNoise = 2  ## noise range gate counting from 1, no oversampling
+        NendNoise = 6  ## noise range gate counting from 1, no oversampling
+
+        #window_del_20_hr_ku_deuso = window_del_20_hr_ku * (uso_cor_20_hr_ku + 1)
+        #Raw_Elevation = alt_20_hr_ku - CST.c0 / 2 * window_del_20_hr_ku_deuso
+        Raw_Elevation = self._l1b.time_orbit.altitude - range[:,np.shape(wfm)[1]//2]
+
+        ThNEcho = compute_ThNEcho(wfm, NstartNoise * wf_zp,
+                                  NendNoise * wf_zp, swap=True)  ### computing Thermal Noise from the waveform matric
+        epoch0 = initialize_epoch(wfm, tau, Raw_Elevation, CST,
+                                  size_half_block=10, swap=True)  ### initializing the epoch (first-guess epoch) from the waveform matrix
+
+        samlib = initialize_SAMOSAlib(CST, RDB, OPT,
+                                      LUT)  #### initializing the SAMOSA library sampy, it's a mandatory step
+
+        GEO = type('', (), {})()
+
+        CONF = type('', (), {})()
+
+        CONF.flag_slope = False                    ### flag True commands to include in the model the slope of orbit and surface (this effect usually is included in LookAngles Array)
+        CONF.beamsamp_factor = 1                   ### 1 means only one beam per resolution cell is generated in the DDM, the other ones are decimated
+        CONF.wf_weighted = False                   ### flag True if the waveform under iteration is weighted
+        CONF.N_Look_min = -90                      ### number of the first Look to generate in the DDM (only used if LookAngles array is not passed in input: i.e. set to  None)
+        CONF.N_Look_max = 90                       ### number of the last Look to generate in the DDM (only used if LookAngles array is not passed in input: i.e. set to  None)
+        CONF.guess_swh = 2                         ### first-guess SWH in meter
+        CONF.guess_pu = 1                          ### first-guess Pu
+        CONF.guess_nu = 2                          ### first-guess nu (only used in second step of SAMOSA+)
+        CONF.lb_epoch = None                       ### lower bound on epoch in sec. If set to None, lower bound will be set to the first time in input array tau
+        CONF.lb_swh = -0.5                         ### lower bound on SWH in m
+        CONF.lb_pu = 0.2                           ### lower bound on Pu
+        CONF.lb_nu = 0                             ### lower bound on nu (only used in second step of SAMOSA+)
+        CONF.ub_epoch = None                       ### upper bound on epoch in sec. If set to None, upper bound will be set to the last time in input array tau
+        CONF.ub_swh = 30                           ### upper bound on SWH in m
+        CONF.ub_pu = 1.5                           ### upper bound on Pu
+        CONF.ub_nu = 1e9                           ### upper bound on nu (only used in second step of SAMOSA+)
+        CONF.rtk_type = 'samosa+'                  ### choose between 'samosa' or 'samosa+'
+        CONF.wght_factor= 1.4705                   ### widening factor of PTR main lobe after Weighting Window Application
+
+        # dummy array for interpolation of actual retracker range window
+        x = np.arange(wfm.shape[1])
+
+        # Make an altitude rate
+        hrate = self._l1b.time_orbit.altitude_rate
+        vel = np.sqrt(self.get_l1b_parameter("classifier", "satellite_velocity_x")**2
+                      + self.get_l1b_parameter("classifier", "satellite_velocity_y")**2
+                      + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
+        # Loop over waveform indices marked as leads
+        for index in indices:
+            print('Processing index',index)
+            LookAngles = None
+            MaskRanges = None
+            GEO.LAT=self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
+            GEO.LON=self._l1b.time_orbit.longitude[index]                              ### longitude in degree between -180, 180 for the waveform under iteration
+            GEO.Height=self._l1b.time_orbit.altitude[index]                            ### Orbit Height in meter for the waveform under iteration
+            GEO.Vs=np.squeeze(vel)[index]                       ### Satellite Velocity in m/s for the waveform under iteration
+            GEO.Hrate=hrate[index]                   ### Orbit Height rate in m/s for the waveform under iteration
+            GEO.Pitch=np.radians(self._l1b.time_orbit.antenna_pitch[index])     ### Altimeter Reference Frame Pitch in radiant
+            GEO.Roll=np.radians(self._l1b.time_orbit.antenna_roll[index])       ### Altimeter Reference Frame Roll in radiant
+            GEO.nu=0                                                         ### Inverse of the mean square slope
+            GEO.track_sign=0                                                 ### if Track Ascending => -1, if Track Descending => +1, set it to zero if flag_slope=False in CONF
+            GEO.ThN=np.squeeze(ThNEcho)[index]                                   ### Thermal Noise
+
+            wf = np.array(wfm[index, :]).astype("float64")
+
+            CONF.guess_epoch = epoch0[index]
+
+            epoch_sec,swh,Pu,misfit,oceanlike_flag=samlib.Retrack_Samosa(tau,wf,LookAngles,MaskRanges,GEO,CONF)
+
+            self._range[index] = epoch_sec * CST.c0 * 0.5
+            self._power[index] = Pu
+
+            # Store additional retracker parameter
+            self.swh[index] = swh
+            self.misfit[index] = misfit
+
+    def _filter_results(self):
+        """ These threshold are based on the SICCI code"""
+        thrs = self._options.filter
+
+        valid = ANDCondition()
+        #valid.add(self.leading_edge_width < thrs.maximum_leading_edge_width)
+
+        # Error flag is also computed for other surface types, do not
+        # overide those
+        error_flag = self._flag
+        error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
+        self._flag = error_flag
+
+
 # %% Retracker getter funtion
 
 
@@ -1883,6 +2063,12 @@ def get_retracker_class(name):
         msg = "pysiral error: cTFMRA selected but pysiral.bnfunc.cytfmra " + \
               "not available locally\n"
         msg += "(See documentation on compilation with cython)"
+        sys.exit(msg)
+
+    if name == "SAMOSAPlus" and not SAMOSA_OK:
+        msg = "pysiral error: SAMOSAPlus selected but" + \
+              "not available locally\n"
+        msg += "(Obtain SAMOSA and install via pip first)"
         sys.exit(msg)
 
     return globals()[name]()
