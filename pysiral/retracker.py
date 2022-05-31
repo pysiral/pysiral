@@ -17,6 +17,8 @@ import time
 import numpy as np
 from loguru import logger
 from attrdict import AttrDict
+import logging
+from pysiral import InterceptHandler
 
 # cythonized bottleneck functions for cTFMRA
 try:
@@ -31,6 +33,8 @@ try:
     from samosa.sampy import SAMOSA as initialize_SAMOSAlib
     from samosa.sampy import initialize_epoch, compute_ThNEcho
     logger.info("SAMOSA retracker loaded from the environment")
+    logging.getLogger('samosa.sampy').addHandler(InterceptHandler())
+    logging.getLogger('samosa.sampy').setLevel('INFO')
     SAMOSA_OK = True
 except ImportError:
     logger.error("Unable to import the SAMOSA retracker. Has it been installed?")
