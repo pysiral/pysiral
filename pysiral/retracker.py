@@ -1884,6 +1884,11 @@ def rms_echo_and_model(wfm, retracked_bin, k, sigma, alpha):
         return np.nan
 
 class SAMOSAPlus(BaseRetracker):
+    """
+    Interface to the SAMOSA+ retracker by CLS.
+    Retracker must be installed as a package into the environment for this class to be used.
+
+    """
 
     def __init__(self):
         super(SAMOSAPlus, self).__init__()
@@ -1963,6 +1968,10 @@ class SAMOSAPlus(BaseRetracker):
         Nstart = RDB.Npulse * wf_zp
         Nend = RDB.Npulse * wf_zp
         dt = 1. / (RDB.Bs * wf_zp)  #### time sampling step for the array tau, it includes the zero-padding factor
+
+        # print(np.arange(-(4 / 2), ((4 - 1) / 2)))
+        # [-2. -1.  0.  1.]
+        # Zero bin as at len()//2
         tau = np.arange(-(Nstart / 2) * dt, ((Nend - 1) / 2) * dt, dt)
 
         NstartNoise = 2  ## noise range gate counting from 1, no oversampling
@@ -2006,14 +2015,14 @@ class SAMOSAPlus(BaseRetracker):
         # dummy array for interpolation of actual retracker range window
         x = np.arange(wfm.shape[1])
 
-        # Make an altitude rate
-        hrate = self._l1b.time_orbit.altitude_rate
+        # Make an altitude rate. Currently zero as L1b rate is nan. Not used anyway with flag_slope false.
+        hrate = np.zeros_like(self._l1b.time_orbit.altitude_rate)
+
         vel = np.sqrt(self.get_l1b_parameter("classifier", "satellite_velocity_x")**2
                       + self.get_l1b_parameter("classifier", "satellite_velocity_y")**2
                       + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
         # Loop over waveform indices marked as leads
         for index in indices:
-            print('Processing index',index)
             LookAngles = None
             MaskRanges = None
             GEO.LAT=self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
@@ -2033,25 +2042,27 @@ class SAMOSAPlus(BaseRetracker):
 
             epoch_sec,swh,Pu,misfit,oceanlike_flag=samlib.Retrack_Samosa(tau,wf,LookAngles,MaskRanges,GEO,CONF)
 
-            self._range[index] = epoch_sec * CST.c0 * 0.5
+            # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
+            self._range[index] = range[index,np.shape(wfm)[1]//2] + epoch_sec * CST.c0 * 0.5
             self._power[index] = Pu
 
-            # Store additional retracker parameter
+            # Store additional retracker parameters
             self.swh[index] = swh
             self.misfit[index] = misfit
 
     def _filter_results(self):
+        pass
         """ These threshold are based on the SICCI code"""
-        thrs = self._options.filter
+        #thrs = self._options.filter
 
-        valid = ANDCondition()
+        #valid = ANDCondition()
         #valid.add(self.leading_edge_width < thrs.maximum_leading_edge_width)
 
         # Error flag is also computed for other surface types, do not
         # overide those
-        error_flag = self._flag
-        error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
-        self._flag = error_flag
+        #error_flag = self._flag
+        #error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
+        #self._flag = error_flag
 
 
 # %% Retracker getter funtion
