@@ -930,16 +930,12 @@ class L1bClassifiers(object):
     @property
     def n_records(self):
         parameter_list = self.parameter_list
-        if len(parameter_list) == 0:
-            return 0
-        else:
-            return len(getattr(self, parameter_list[0]))
+        return 0 if len(parameter_list) == 0 else len(getattr(self, parameter_list[0]))
 
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
