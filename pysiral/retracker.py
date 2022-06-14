@@ -1911,13 +1911,13 @@ class SAMOSAPlus(BaseRetracker):
 
     def l2_retrack(self, range, wfm, indices, radar_mode, is_valid):
         # Run the retracker
-        self._samosa_plus_retracker(range, wfm, indices)
+        self._samosa_plus_retracker(range, wfm, indices, radar_mode)
         # Filter the results
         # Needs a filter option in the config file
         #if self._options.filter.use_filter:
         #    self._filter_results()
 
-    def _samosa_plus_retracker(self, range, wfm, indices):
+    def _samosa_plus_retracker(self, range, wfm, indices, radar_mode):
         # Range contains the range to each bin in each waveform
 
         # All retracker options need to be defined in the l2 settings file
@@ -2083,6 +2083,21 @@ class SAMOSAPlus(BaseRetracker):
             self.misfit[index] = misfit
             self.wind_speed[index] = wind_speed
             self.oceanlike_flag[index] = oceanlike_flag
+
+        self.register_auxdata_output("samswh", "samosa_swh", self.swh)
+        self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
+
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
+
+        if "uncertainty" in self._options:
+            if self._options.uncertainty.type == "fixed":
+                self._uncertainty[:] = self._options.uncertainty.value
 
         if False:
             import xarray as xr
