@@ -32,6 +32,8 @@ except ImportError:
 try:
     from samosa.sampy import SAMOSA as initialize_SAMOSAlib
     from samosa.sampy import initialize_epoch, compute_ThNEcho
+    from samosa.help_functions import calc_sigma0, func_wind_speed
+
     logger.info("SAMOSA retracker loaded from the environment")
     logging.getLogger('samosa.sampy').addHandler(InterceptHandler())
     logging.getLogger('samosa.sampy').setLevel('INFO')
@@ -1898,7 +1900,11 @@ class SAMOSAPlus(BaseRetracker):
         super(SAMOSAPlus, self).__init__()
 
     def create_retracker_properties(self, n_records):
-        parameter = ["misfit", "swh"]
+        # False branches here and below were used for debugging
+        if False:
+            parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag", "epoch", "guess", "Pu"]
+        else:
+            parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag"]
         for parameter_name in parameter:
             setattr(self, parameter_name,
                     np.ndarray(shape=(n_records), dtype=np.float32) * np.nan)
@@ -1950,6 +1956,8 @@ class SAMOSAPlus(BaseRetracker):
         RDB.Bs = 320e6  # Sampled Bandwidth in Hz
         RDB.theta_3x = np.deg2rad(1.10)  # (rad) Antenna 3 dB beamwidth (along-track)
         RDB.theta_3y = np.deg2rad(1.22)  # (rad) Antenna 3 dB beamwidth (cross-track)
+        RDB.G_0 = 10. ** (42.6 / 10)  # Boresight One-Way Antenna Power Radiation Gain (natural units)
+        RDB.bias_sigma0 = -3.04  # static bias in sigma0 (dB)
 
         ### LUT is a structure collecting filenames of the all SAMOSA LUT
         ### All the LUT files must be in a folder named auxi and located in the same folder as sampy.py
@@ -1969,13 +1977,14 @@ class SAMOSAPlus(BaseRetracker):
         ### time zero corresponds at the time of the reference gate
 
         wf_zp = np.shape(wfm)[1] / RDB.Npulse  #### zero-padding factor of the waveform
+        logger.info('Waveform zero padding factor is {:f}'.format(wf_zp))
         Nstart = RDB.Npulse * wf_zp
         Nend = RDB.Npulse * wf_zp
         dt = 1. / (RDB.Bs * wf_zp)  #### time sampling step for the array tau, it includes the zero-padding factor
 
         # print(np.arange(-(4 / 2), ((4 - 1) / 2)))
         # [-2. -1.  0.  1.]
-        # Zero bin as at len()//2
+        # Zero bin as at len()//2. So use the range at this location as the base to adjust from
         tau = np.arange(-(Nstart / 2) * dt, ((Nend - 1) / 2) * dt, dt)
 
         NstartNoise = 2  ## noise range gate counting from 1, no oversampling
@@ -1985,13 +1994,20 @@ class SAMOSAPlus(BaseRetracker):
         #Raw_Elevation = alt_20_hr_ku - CST.c0 / 2 * window_del_20_hr_ku_deuso
         Raw_Elevation = self._l1b.time_orbit.altitude - range[:,np.shape(wfm)[1]//2]
 
-        ThNEcho = compute_ThNEcho(wfm, NstartNoise * wf_zp,
-                                  NendNoise * wf_zp, swap=True)  ### computing Thermal Noise from the waveform matric
-        epoch0 = initialize_epoch(wfm, tau, Raw_Elevation, CST,
-                                  size_half_block=10, swap=True)  ### initializing the epoch (first-guess epoch) from the waveform matrix
+        ThNEcho = compute_ThNEcho(wfm.T, NstartNoise * wf_zp,
+                                  NendNoise * wf_zp)  ### computing Thermal Noise from the waveform matric
+
+        # initialize_epoch relies on the waveform being in counts, not watts, so revert
+        wf_norm = np.zeros_like(wfm)
+        for rec in np.arange(np.shape(wfm)[0]):
+            wf_norm[rec,:] = 65536.0 * wfm[rec,:] / np.max(wfm[rec,:])
+        epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST,
+                                  size_half_block=10)  ### initializing the epoch (first-guess epoch) from the waveform matrix
 
         samlib = initialize_SAMOSAlib(CST, RDB, OPT,
                                       LUT)  #### initializing the SAMOSA library sampy, it's a mandatory step
+
+        n = np.shape(wfm)[0]
 
         GEO = type('', (), {})()
 
@@ -1999,7 +2015,7 @@ class SAMOSAPlus(BaseRetracker):
 
         CONF.flag_slope = False                    ### flag True commands to include in the model the slope of orbit and surface (this effect usually is included in LookAngles Array)
         CONF.beamsamp_factor = 1                   ### 1 means only one beam per resolution cell is generated in the DDM, the other ones are decimated
-        CONF.wf_weighted = False                   ### flag True if the waveform under iteration is weighted
+        CONF.wf_weighted = True                   ### flag True if the waveform under iteration is weighted
         CONF.N_Look_min = -90                      ### number of the first Look to generate in the DDM (only used if LookAngles array is not passed in input: i.e. set to  None)
         CONF.N_Look_max = 90                       ### number of the last Look to generate in the DDM (only used if LookAngles array is not passed in input: i.e. set to  None)
         CONF.guess_swh = 2                         ### first-guess SWH in meter
@@ -2015,6 +2031,7 @@ class SAMOSAPlus(BaseRetracker):
         CONF.ub_nu = 1e9                           ### upper bound on nu (only used in second step of SAMOSA+)
         CONF.rtk_type = 'samosa+'                  ### choose between 'samosa' or 'samosa+'
         CONF.wght_factor= 1.4705                   ### widening factor of PTR main lobe after Weighting Window Application
+        CONF.Lz = CST.c0 / (2. * RDB.Bs)
 
         # dummy array for interpolation of actual retracker range window
         x = np.arange(wfm.shape[1])
@@ -2025,9 +2042,14 @@ class SAMOSAPlus(BaseRetracker):
         vel = np.sqrt(self.get_l1b_parameter("classifier", "satellite_velocity_x")**2
                       + self.get_l1b_parameter("classifier", "satellite_velocity_y")**2
                       + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
+
         # Loop over waveform indices marked as leads
         for index in indices:
             LookAngles = None
+            # We don't have these parameters in the pysiral L1 yet
+            # LookAngles = 90 - np.linspace(np.rad2deg(look_angle_start_20_hr_ku[k]),
+            #                               np.rad2deg(look_angle_stop_20_hr_ku[k]),
+            #                               num=int(stack_number_after_weighting_20_hr_ku[k]), endpoint=True)
             MaskRanges = None
             GEO.LAT=self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
             GEO.LON=self._l1b.time_orbit.longitude[index]                              ### longitude in degree between -180, 180 for the waveform under iteration
@@ -2044,15 +2066,48 @@ class SAMOSAPlus(BaseRetracker):
 
             CONF.guess_epoch = epoch0[index]
 
+            # Do retrack in units of Watts as we don't have the scaling factors available for calc_sigma0
             epoch_sec,swh,Pu,misfit,oceanlike_flag=samlib.Retrack_Samosa(tau,wf,LookAngles,MaskRanges,GEO,CONF)
 
             # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
             self._range[index] = range[index,np.shape(wfm)[1]//2] + epoch_sec * CST.c0 * 0.5
-            self._power[index] = Pu
+            sigma0 = calc_sigma0(None, Pu, CST, RDB, GEO, epoch_sec, range[index,np.shape(wfm)[1]//2]*2.0/CST.c0,
+                                 GEO.LAT, GEO.Height, GEO.Vs,
+                                 self._l1b.classifier.transmit_power[index])
+            wind_speed = func_wind_speed([sigma0])
+
+            self._power[index] = sigma0
 
             # Store additional retracker parameters
             self.swh[index] = swh
             self.misfit[index] = misfit
+            self.wind_speed[index] = wind_speed
+            self.oceanlike_flag[index] = oceanlike_flag
+
+        if False:
+            import xarray as xr
+            self.epoch[index] = epoch_sec
+            self.guess[index] = epoch0[index]
+            self.Pu[index] = Pu
+            outds = xr.Dataset({'SSHunc': (['time_20_ku'], self._l1b.time_orbit.altitude-self._range),
+                                'raw_elev' : (['time_20_ku'], Raw_Elevation),
+                                'range': (['time_20_ku'], self._range),
+                                'epoch': (['time_20_ku'], self.epoch),
+                                'guess': (['time_20_ku'], self.guess),
+                                'Pu': (['time_20_ku'], self.Pu),
+                                'misfit': (['time_20_ku'], self.misfit),
+                                'oceanlike_flag': (['time_20_ku'], self.oceanlike_flag),
+                                'SWH': (['time_20_ku'], self.swh),
+                                'sigma0': (['Sigma0_20Hz'], self._power),
+                                'wind_speed': (['U10_20Hz'], self.wind_speed)},
+                               coords={'time_20_ku': self._l1b.time_orbit.timestamp,
+                                       'lon_20_ku': (['time_20_ku'], self._l1b.time_orbit.longitude),
+                                       'lat_20_ku': (['time_20_ku'], self._l1b.time_orbit.latitude)},
+                               attrs={'description': "Parameters from SAMOSA+ retracker"})
+            outds.time_20_ku.encoding = {'calendar': 'gregorian',
+                                         'units': 'seconds since 2000-01-01 0:0:0'}
+            outds.to_netcdf('samosa_debug.nc')
+
 
     def _filter_results(self):
         pass
