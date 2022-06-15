@@ -236,6 +236,11 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
             self.nc.off_nadir_roll_angle_str_20_ku.values,
             self.nc.off_nadir_yaw_angle_str_20_ku.values)
 
+        self.l1.time_orbit.set_beam_parameters(
+            self.nc.look_angle_start_20_ku.values,
+            self.nc.look_angle_stop_20_ku.values,
+            self.nc.stack_number_after_weighting_20_ku.values)
+
     def _set_waveform_data_group(self):
         """
         Transfer of the waveform group to the Level-1 object. This includes

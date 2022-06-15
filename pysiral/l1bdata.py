@@ -525,6 +525,17 @@ class L1bdataNCFile(Level1bData):
              self.time_def.units,
              calendar=self.time_def.calendar)
 
+        # Set beam data
+        try:
+            self.time_orbit.set_beam_parameters(
+                datagroup.variables["look_angle_start"][:],
+                datagroup.variables["look_angle_stop"][:],
+                datagroup.variables["stack_beams"][:])
+        except KeyError:
+            dat = np.full(self.time_orbit.longitude.shape, np.nan)
+            self.time_orbit.set_beam_parameters(dat, dat, dat)
+
+
     def _import_waveforms(self):
         """
         transfers l1b waveform group
@@ -689,6 +700,9 @@ class L1bTimeOrbit(object):
         self._antenna_yaw = None
         self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
+        self._look_angle_start = None
+        self._look_angle_stop = None
+        self._stack_beams = None
 
     @property
     def longitude(self):
@@ -723,6 +737,18 @@ class L1bTimeOrbit(object):
         return np.array(self._orbit_flag)
 
     @property
+    def look_angle_start(self):
+        return np.array(self._look_angle_start)
+
+    @property
+    def look_angle_stop(self):
+        return np.array(self._look_angle_stop)
+
+    @property
+    def stack_beams(self):
+        return np.array(self._stack_beams)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -735,7 +761,9 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
+                "look_angle_start", "look_angle_stop", "stack_beams"
+        ]
 
     @property
     def geolocation_parameter_list(self):
@@ -795,6 +823,17 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = pitch
         self._antenna_roll = roll
         self._antenna_yaw = yaw
+
+    def set_beam_parameters(self, start, stop, beams):
+        # Check dimensions
+        if self._info is not None:
+            self._info.check_n_records(len(start))
+            self._info.check_n_records(len(stop))
+            self._info.check_n_records(len(beams))
+        # All fine => set values
+        self._look_angle_start = start
+        self._look_angle_stop = stop
+        self._stack_beams = beams
 
     def append(self, annex):
         for parameter in self.parameter_list:
