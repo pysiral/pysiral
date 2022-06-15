@@ -2043,13 +2043,12 @@ class SAMOSAPlus(BaseRetracker):
                       + self.get_l1b_parameter("classifier", "satellite_velocity_y")**2
                       + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
 
-        # Loop over waveform indices marked as leads
+        # Loop over waveform indices marked as surface type
         for index in indices:
-            LookAngles = None
-            # We don't have these parameters in the pysiral L1 yet
-            # LookAngles = 90 - np.linspace(np.rad2deg(look_angle_start_20_hr_ku[k]),
-            #                               np.rad2deg(look_angle_stop_20_hr_ku[k]),
-            #                               num=int(stack_number_after_weighting_20_hr_ku[k]), endpoint=True)
+
+            LookAngles = 90 - np.linspace(np.rad2deg(self._l1b.time_orbit.look_angle_start[index]),
+                                          np.rad2deg(self._l1b.time_orbit.look_angle_stop[index]),
+                                          num=int(self._l1b.time_orbit.stack_beams[index]), endpoint=True)
             MaskRanges = None
             GEO.LAT=self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
             GEO.LON=self._l1b.time_orbit.longitude[index]                              ### longitude in degree between -180, 180 for the waveform under iteration
