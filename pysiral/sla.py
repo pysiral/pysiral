@@ -117,7 +117,7 @@ class SLABaseFunctionality(object):
         invalid_indices = np.where(tiepoint_distance > distance_threshold)[0]
 
         # Only remove sla values at the edges (if edges_only:True)
-        if edges_only:
+        if edges_only and len(l2.surface_type.lead.indices) > 0:
             lead_indices = l2.surface_type.lead.indices
             before_first_lead = invalid_indices < lead_indices[0]
             after_last_lead = invalid_indices > lead_indices[-1]
