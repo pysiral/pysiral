@@ -8,6 +8,8 @@ TODO: move this to it own module and separate retrackers into different files
 """
 
 # Utility methods for retracker:
+import os.path
+
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 import bottleneck as bn
@@ -1991,8 +1993,11 @@ class SAMOSAPlus(BaseRetracker):
         NendNoise = 6  ## noise range gate counting from 1, no oversampling
 
         #window_del_20_hr_ku_deuso = window_del_20_hr_ku * (uso_cor_20_hr_ku + 1)
+        window_del_20_hr_ku_deuso = self._l1b.time_orbit.window_delay
         #Raw_Elevation = alt_20_hr_ku - CST.c0 / 2 * window_del_20_hr_ku_deuso
-        Raw_Elevation = self._l1b.time_orbit.altitude - range[:,np.shape(wfm)[1]//2]
+        raw_range = CST.c0 * window_del_20_hr_ku_deuso * 0.5
+        Raw_Elevation = self._l1b.time_orbit.altitude - raw_range
+        #Raw_Elevation = self._l1b.time_orbit.altitude - range[:,np.shape(wfm)[1]//2]
 
         ThNEcho = compute_ThNEcho(wfm.T, NstartNoise * wf_zp,
                                   NendNoise * wf_zp)  ### computing Thermal Noise from the waveform matric
@@ -2000,7 +2005,7 @@ class SAMOSAPlus(BaseRetracker):
         # initialize_epoch relies on the waveform being in counts, not watts, so revert
         wf_norm = np.zeros_like(wfm)
         for rec in np.arange(np.shape(wfm)[0]):
-            wf_norm[rec,:] = 65536.0 * wfm[rec,:] / np.max(wfm[rec,:])
+            wf_norm[rec,:] = 65535.0 * wfm[rec,:] / np.max(wfm[rec,:])
         epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST,
                                   size_half_block=10)  ### initializing the epoch (first-guess epoch) from the waveform matrix
 
@@ -2069,8 +2074,8 @@ class SAMOSAPlus(BaseRetracker):
             epoch_sec,swh,Pu,misfit,oceanlike_flag=samlib.Retrack_Samosa(tau,wf,LookAngles,MaskRanges,GEO,CONF)
 
             # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
-            self._range[index] = range[index,np.shape(wfm)[1]//2] + epoch_sec * CST.c0 * 0.5
-            sigma0 = calc_sigma0(None, Pu, CST, RDB, GEO, epoch_sec, range[index,np.shape(wfm)[1]//2]*2.0/CST.c0,
+            self._range[index] = raw_range[index] + epoch_sec * CST.c0 * 0.5
+            sigma0 = calc_sigma0(None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
                                  GEO.LAT, GEO.Height, GEO.Vs,
                                  self._l1b.classifier.transmit_power[index])
             wind_speed = func_wind_speed([sigma0])
@@ -2082,6 +2087,10 @@ class SAMOSAPlus(BaseRetracker):
             self.misfit[index] = misfit
             self.wind_speed[index] = wind_speed
             self.oceanlike_flag[index] = oceanlike_flag
+            if False:
+                self.epoch[index] = epoch_sec
+                self.guess[index] = epoch0[index]
+                self.Pu[index] = 65535.0 * Pu/np.max(wf)
 
         self.register_auxdata_output("samswh", "samosa_swh", self.swh)
         self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
@@ -2100,12 +2109,10 @@ class SAMOSAPlus(BaseRetracker):
 
         if False:
             import xarray as xr
-            self.epoch[index] = epoch_sec
-            self.guess[index] = epoch0[index]
-            self.Pu[index] = Pu
             outds = xr.Dataset({'SSHunc': (['time_20_ku'], self._l1b.time_orbit.altitude-self._range),
                                 'raw_elev' : (['time_20_ku'], Raw_Elevation),
                                 'range': (['time_20_ku'], self._range),
+                                'wd_range': (['time_20_ku'], raw_range),
                                 'epoch': (['time_20_ku'], self.epoch),
                                 'guess': (['time_20_ku'], self.guess),
                                 'Pu': (['time_20_ku'], self.Pu),
@@ -2120,6 +2127,8 @@ class SAMOSAPlus(BaseRetracker):
                                attrs={'description': "Parameters from SAMOSA+ retracker"})
             outds.time_20_ku.encoding = {'calendar': 'gregorian',
                                          'units': 'seconds since 2000-01-01 0:0:0'}
+            if os.path.isfile('samosa_debug.nc'):
+                os.remove('samosa_debug.nc')
             outds.to_netcdf('samosa_debug.nc')
 
 
