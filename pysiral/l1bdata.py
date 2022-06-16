@@ -530,7 +530,8 @@ class L1bdataNCFile(Level1bData):
             self.time_orbit.set_beam_parameters(
                 datagroup.variables["look_angle_start"][:],
                 datagroup.variables["look_angle_stop"][:],
-                datagroup.variables["stack_beams"][:])
+                datagroup.variables["stack_beams"][:],
+                datagroup.variables["uso_cor"][:])
         except KeyError:
             dat = np.full(self.time_orbit.longitude.shape, np.nan)
             self.time_orbit.set_beam_parameters(dat, dat, dat)
@@ -703,6 +704,7 @@ class L1bTimeOrbit(object):
         self._look_angle_start = None
         self._look_angle_stop = None
         self._stack_beams = None
+        self._uso_cor = None
 
     @property
     def longitude(self):
@@ -749,6 +751,10 @@ class L1bTimeOrbit(object):
         return np.array(self._stack_beams)
 
     @property
+    def uso_cor(self):
+        return np.array(self._uso_cor)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -762,7 +768,7 @@ class L1bTimeOrbit(object):
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
                 "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
-                "look_angle_start", "look_angle_stop", "stack_beams"
+                "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor"
         ]
 
     @property
@@ -824,16 +830,18 @@ class L1bTimeOrbit(object):
         self._antenna_roll = roll
         self._antenna_yaw = yaw
 
-    def set_beam_parameters(self, start, stop, beams):
+    def set_beam_parameters(self, start, stop, beams, uso):
         # Check dimensions
         if self._info is not None:
             self._info.check_n_records(len(start))
             self._info.check_n_records(len(stop))
             self._info.check_n_records(len(beams))
+            self._info.check_n_records(len(uso))
         # All fine => set values
         self._look_angle_start = start
         self._look_angle_stop = stop
         self._stack_beams = beams
+        self._uso_cor = uso
 
     def append(self, annex):
         for parameter in self.parameter_list:

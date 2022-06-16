@@ -239,7 +239,8 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         self.l1.time_orbit.set_beam_parameters(
             self.nc.look_angle_start_20_ku.values,
             self.nc.look_angle_stop_20_ku.values,
-            self.nc.stack_number_after_weighting_20_ku.values)
+            self.nc.stack_number_after_weighting_20_ku.values,
+            self.nc.uso_cor_20_ku.values)
 
     def _set_waveform_data_group(self):
         """
