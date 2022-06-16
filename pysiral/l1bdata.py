@@ -531,7 +531,8 @@ class L1bdataNCFile(Level1bData):
                 datagroup.variables["look_angle_start"][:],
                 datagroup.variables["look_angle_stop"][:],
                 datagroup.variables["stack_beams"][:],
-                datagroup.variables["uso_cor"][:])
+                datagroup.variables["uso_cor"][:],
+                datagroup.variables["window_delay"][:])
         except KeyError:
             dat = np.full(self.time_orbit.longitude.shape, np.nan)
             self.time_orbit.set_beam_parameters(dat, dat, dat)
@@ -705,6 +706,7 @@ class L1bTimeOrbit(object):
         self._look_angle_stop = None
         self._stack_beams = None
         self._uso_cor = None
+        self._window_delay = None
 
     @property
     def longitude(self):
@@ -755,6 +757,10 @@ class L1bTimeOrbit(object):
         return np.array(self._uso_cor)
 
     @property
+    def window_delay(self):
+        return np.array(self._window_delay)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -768,7 +774,8 @@ class L1bTimeOrbit(object):
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
                 "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
-                "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor"
+                "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor",
+                "window_delay"
         ]
 
     @property
@@ -830,18 +837,20 @@ class L1bTimeOrbit(object):
         self._antenna_roll = roll
         self._antenna_yaw = yaw
 
-    def set_beam_parameters(self, start, stop, beams, uso):
+    def set_beam_parameters(self, start, stop, beams, uso, wd):
         # Check dimensions
         if self._info is not None:
             self._info.check_n_records(len(start))
             self._info.check_n_records(len(stop))
             self._info.check_n_records(len(beams))
             self._info.check_n_records(len(uso))
+            self._info.check_n_records(len(wd))
         # All fine => set values
         self._look_angle_start = start
         self._look_angle_stop = stop
         self._stack_beams = beams
         self._uso_cor = uso
+        self._window_delay = wd
 
     def append(self, annex):
         for parameter in self.parameter_list:
