@@ -1997,8 +1997,13 @@ class SAMOSAPlus(BaseRetracker):
         #Raw_Elevation = alt_20_hr_ku - CST.c0 / 2 * window_del_20_hr_ku_deuso
         raw_range = CST.c0 * window_del_20_hr_ku_deuso * 0.5
         Raw_Elevation = self._l1b.time_orbit.altitude - raw_range
-        #Raw_Elevation = self._l1b.time_orbit.altitude - range[:,np.shape(wfm)[1]//2]
 
+        sin_index = np.where(radar_mode == 2)[0]
+        if len(sin_index > 0):
+            Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - range[sin_index,np.shape(wfm)[1]//2]
+            raw_range[sin_index] = range[sin_index,np.shape(wfm)[1]//2]
+            logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
+            
         ThNEcho = compute_ThNEcho(wfm.T, NstartNoise * wf_zp,
                                   NendNoise * wf_zp)  ### computing Thermal Noise from the waveform matric
 
