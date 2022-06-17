@@ -2005,7 +2005,8 @@ class SAMOSAPlus(BaseRetracker):
         # initialize_epoch relies on the waveform being in counts, not watts, so revert
         wf_norm = np.zeros_like(wfm)
         for rec in np.arange(np.shape(wfm)[0]):
-            wf_norm[rec,:] = 65535.0 * wfm[rec,:] / np.max(wfm[rec,:])
+            wf_norm[rec,:] = (65535.0 * wfm[rec,:] / np.nanmax(wfm[rec,:])).round().astype(np.uint16)
+
         epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST,
                                   size_half_block=10)  ### initializing the epoch (first-guess epoch) from the waveform matrix
 
