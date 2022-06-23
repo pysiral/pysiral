@@ -491,14 +491,14 @@ class L1PHighResolutionLandMask(L1PProcItem):
         import cartopy.feature as cfeature
 
         esa_ocean_idx = l1.surface_type.ocean.indices
-        plt.figure(dpi=150)
-        plt.imshow(mask["land_ocean_flag"], cmap=plt.get_cmap("bone"), alpha=0.5)
-        plt.scatter(im_x[esa_ocean_idx], im_y[esa_ocean_idx], s=12, c="none", edgecolors="0.25", linewidths=0.5)
-        plt.scatter(im_x, im_y, c=l1.classifier.get_parameter("stack_peakiness"),
-                    s=4, vmin=0, vmax=5, edgecolors="none", cmap=plt.get_cmap("magma"))
-        plt.xticks([])
-        plt.yticks([])
-        plt.show()
+        #plt.figure(dpi=150)
+        #plt.imshow(mask["land_ocean_flag"], cmap=plt.get_cmap("bone"), alpha=0.5)
+        #plt.scatter(im_x[esa_ocean_idx], im_y[esa_ocean_idx], s=12, c="none", edgecolors="0.25", linewidths=0.5)
+        #plt.scatter(im_x, im_y, c=l1.classifier.get_parameter("stack_peakiness"),
+        #            s=4, vmin=0, vmax=5, edgecolors="none", cmap=plt.get_cmap("magma"))
+        #plt.xticks([])
+        #plt.yticks([])
+        #plt.show()
 
         # --- Update the L1 data container ---
 
