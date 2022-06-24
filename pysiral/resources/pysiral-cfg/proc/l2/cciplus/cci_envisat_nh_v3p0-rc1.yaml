@@ -1,6 +1,6 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 metadata:
-    label: "ESA CCI+ Envisat reprocessed northern hemisphere sea-ice thickness climate data record - Spring 2022 RC1 (former preview5-v8)"
+    label: "ESA CCI+ Envisat reprocessed northern hemisphere sea-ice thickness climate data record - Spring 2022 RC1 (former preview5-v9)"
     product_line: cci
     record_type: tds
     platform: envisat
@@ -61,8 +61,8 @@ auxdata:
                 # The id and name of the parameter added to the level-2 object
                 output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
                 # File basename of the trained model data
-                model_file: snn_cci_envisat_nh_v3p0-rc1.pth
-                torch_class: TorchFunctionalWaveformModelSNN
+                model_file: fnn_cci_envisat_nh_v3p0-rc1.pth
+                torch_class: TorchFunctionalWaveformModelFNN
                 input_neurons: 45
                 # The model may predict non-sense threshold values. Limit
                 # to a normal range
