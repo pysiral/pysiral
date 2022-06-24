@@ -220,7 +220,8 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             self.error.add_error("class-not-found", msg)
             self.error.raise_on_error()
         self.model = model_class(input_neurons)
-        self.model.load_state_dict(torch.load(self.model_filepath, map_location='cpu'))
+        self.model.load_state_dict(torch.load(self.model_filepath,
+                                              map_location=torch.device('cpu')))
         self.model.eval()
 
     def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
@@ -249,8 +250,10 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             start = spacing + 1
             h_a = x[start:start + bins]  # after
             
-            peak_candidate = np.logical_and(h_c >= h_b, h_c >= h_a)
-            peak_candidate = np.logical_and(peak_candidate, np.where(range(bins+1))[0] > 20)
+            peak_candidate = np.logical_and(h_c > h_b, h_c > h_a)
+            peak_candidate = np.logical_and(peak_candidate, np.arange(bins) > 10)
+            peak_candidate = np.logical_and(peak_candidate, wfm > 0.5)
+
             return np.where(peak_candidate)[0][0]
 
         #function to retrieve the sub waveform to be used
@@ -262,9 +265,7 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         #get normalized waveform power
         waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
         normed_waveform_power = l1p.waveform.power[:]/waveform_norms[:, np.newaxis]
-        ##get surface-type flag
-        ##surface_type = l1p.surface_type.flag
-        
+                
         #get waveform/sensor meta
         n_bins = normed_waveform_power.shape[1]
         n_wf = normed_waveform_power.shape[0]
@@ -274,9 +275,7 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         else:
             i0 = 10
             i1 = 25
-        #i0 = 10
-        #i1 = 35
-
+        
         #subset waveform
         sub_waveform_power = np.zeros((n_wf,i0+i1))
         c = 0
@@ -284,16 +283,14 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             try:
                 wf_fmi = id_fmi(x, bins=n_bins)
             except IndexError:
-                #import pdb; pdb.set_trace()
                 c += 1
                 continue
             if wf_fmi >= 10:
                 sub_waveform_power[c] = get_sub_wf(x,wf_fmi,i0,i1)
             c += 1
-        #import pdb; pdb.set_trace()
-        #sub_waveform_power = np.array([get_sub_wf(x,id_fmi(x)) for x,s in zip(normed_waveform_power, surface_type) if s == 4],dtype=np.float32)
-        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32'))
-        #self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
+#        self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
         """
@@ -360,32 +357,36 @@ class TorchFunctionalWaveformModelFNN(nn.Module):
     Create Feed-Forward Neural Network architecture
     REQ: Required for RetrackerThresholdModelTorch
     """
-    def __init__(self):
+    def __init__(self, fc1_input=45):
         super(TorchFunctionalWaveformModelFNN, self).__init__()
-        self.fc1 = nn.Linear(128, 256)
-        self.bn1 = nn.BatchNorm1d(256)
-        self.fc2 = nn.Linear(256, 512)
-        self.bn2 = nn.BatchNorm1d(512)
-        self.fc3 = nn.Linear(512, 256)
-        self.bn3 = nn.BatchNorm1d(256)
-        self.fc4 = nn.Linear(256, 128)
-        self.bn4 = nn.BatchNorm1d(128)
-        self.fc5 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(fc1_input, 2048)
+        #self.bn1 = nn.BatchNorm1d(256)
+        self.fc2 = nn.Linear(2048, 2048)
+        #self.bn2 = nn.BatchNorm1d(512)
+        self.fc3 = nn.Linear(2048, 2048)
+        #self.bn3 = nn.BatchNorm1d(256)
+        self.fc4 = nn.Linear(2048, 2048)
+        #self.bn4 = nn.BatchNorm1d(128)
+        self.fc5 = nn.Linear(2048, 2048)
+        self.fc6 = nn.Linear(2048, 1)
 
     def forward(self, x):
         x = self.fc1(x)
-        x = self.bn1(x)
-        x = torch_nn_functional.leaky_relu(x)
+        #x = self.bn1(x)
+        x = torch_nn_functional.relu(x)
         x = self.fc2(x)
-        x = self.bn2(x)
-        x = torch_nn_functional.leaky_relu(x)
+        #x = self.bn2(x)
+        x = torch_nn_functional.relu(x)
         x = self.fc3(x)
-        x = self.bn3(x)
-        x = torch_nn_functional.leaky_relu(x)
+        #x = self.bn3(x)
+        x = torch_nn_functional.relu(x)
         x = self.fc4(x)
-        x = self.bn4(x)
-        x = torch_nn_functional.leaky_relu(x)
+        #x = self.bn4(x)
+        x = torch_nn_functional.relu(x)
         x = self.fc5(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc6(x)
+        x = torch.sigmoid(x)
         return x
 
 
@@ -396,9 +397,7 @@ class TorchFunctionalWaveformModelSNN(nn.Module):
     """
     def __init__(self, fc1_input=45):
         super(TorchFunctionalWaveformModelSNN, self).__init__()
-        #self.fc1 = nn.Linear(128, 512)
         self.fc1 = nn.Linear(fc1_input, 512)
-        #self.fc1 = nn.Linear(35, 512)
         self.fc2 = nn.Linear(512, 1024)
         self.fc3 = nn.Linear(1024, 1024)
         self.fc4 = nn.Linear(1024, 1024)
@@ -417,3 +416,52 @@ class TorchFunctionalWaveformModelSNN(nn.Module):
         x = torch_nn_functional.selu(x)
         x = self.fc6(x)
         return x
+
+
+class TorchFunctionalWaveformModelCNN(nn.Module):
+    '''
+    Create Convolutional Neural Network architecture
+    REQ: Required for RetrackerThresholdModelTorch
+    '''
+    def __init__(self):
+        super(TorchFunctionalWaveformModelCNN, self).__init__()
+        self.cv1_1 = nn.Conv1d( 1, 32, kernel_size=(5,), stride=(1,), padding=True)
+        self.cv1_2 = nn.Conv1d(32, 64, kernel_size=(5,), stride=(1,), padding=True)
+        self.cv1_3 = nn.Conv1d(64, 128, kernel_size=(5,), stride=(1,), padding=True)
+        self.mp1 = nn.MaxPool1d(3, stride=2)
+        self.fc1 = nn.Linear(1792, 4096)
+        self.fc2 = nn.Linear(4096, 1)
+        #self.cv1_1 = nn.Conv1d(1, 64, kernel_size=5, stride=1, padding=True)
+        #self.cv1_2 = nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=True)
+        #self.cv1_3 = nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=True)
+        #self.mp1 = nn.MaxPool1d(3, stride=2)
+        #self.cv2_1 = nn.Conv1d(64, 128, kernel_size=5, stride=1, padding=True)
+        #self.cv2_2 = nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=True)
+        #self.cv2_3 = nn.Conv1d(128, 128, kernel_size=5, stride=1, padding=True)
+        #self.mp2 = nn.MaxPool1d(3, stride=2)
+        #self.fc1 = nn.Linear(384, 2048)
+        #self.fc2 = nn.Linear(2048, 1)
+        
+    def forward(self, x): 
+        x = self.cv1_1(x)
+        x = torch_nn_functional.relu(x)
+        x = self.cv1_2(x)
+        x = torch_nn_functional.relu(x)
+        x = self.cv1_3(x)
+        x = torch_nn_functional.relu(x)
+        x = self.mp1(x)
+        #x = self.cv2_1(x)
+        #x = torch_nn_functional.relu(x)
+        #x = self.cv2_2(x)
+        #x = torch_nn_functional.relu(x)
+        #x = self.cv2_3(x)
+        #x = torch_nn_functional.relu(x)
+        #x = self.mp2(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc2(x)
+        x = torch.sigmoid(x)
+        return x
+
+
