@@ -1095,7 +1095,7 @@ class cTFMRA(BaseRetracker):
         """
 
         # Use cython implementation of waveform oversampling
-        filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float32), wfm.astype(np.float32), oversampling_factor)
+        filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float64), wfm.astype(np.float64), oversampling_factor)
 
         # Smooth the waveform using a box smoother
         filt_wfm = bnsmooth(wfm_os, window_size)
@@ -1903,8 +1903,8 @@ class SAMOSAPlus(BaseRetracker):
 
     def create_retracker_properties(self, n_records):
         # False branches here and below were used for debugging
-        if False:
-            parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag", "epoch", "guess", "Pu"]
+        if True:
+            parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag", "epoch", "guess", "Pu", "rval", "kval", "pval", "cval"]
         else:
             parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag"]
         for parameter_name in parameter:
@@ -2003,7 +2003,7 @@ class SAMOSAPlus(BaseRetracker):
             Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - range[sin_index,np.shape(wfm)[1]//2]
             raw_range[sin_index] = range[sin_index,np.shape(wfm)[1]//2]
             logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
-            
+
         ThNEcho = compute_ThNEcho(wfm.T, NstartNoise * wf_zp,
                                   NendNoise * wf_zp)  ### computing Thermal Noise from the waveform matric
 
@@ -2081,7 +2081,7 @@ class SAMOSAPlus(BaseRetracker):
 
             # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
             self._range[index] = raw_range[index] + epoch_sec * CST.c0 * 0.5
-            sigma0 = calc_sigma0(None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
+            sigma0,pval,cval,rval,kval = calc_sigma0(None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
                                  GEO.LAT, GEO.Height, GEO.Vs,
                                  self._l1b.classifier.transmit_power[index])
             wind_speed = func_wind_speed([sigma0])
@@ -2093,10 +2093,14 @@ class SAMOSAPlus(BaseRetracker):
             self.misfit[index] = misfit
             self.wind_speed[index] = wind_speed
             self.oceanlike_flag[index] = oceanlike_flag
-            if False:
+            if True:
                 self.epoch[index] = epoch_sec
                 self.guess[index] = epoch0[index]
                 self.Pu[index] = 65535.0 * Pu/np.max(wf)
+                self.pval[index] = pval
+                self.cval[index] = cval
+                self.rval[index] = rval
+                self.kval[index] = kval
 
         self.register_auxdata_output("samswh", "samosa_swh", self.swh)
         self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
@@ -2113,7 +2117,7 @@ class SAMOSAPlus(BaseRetracker):
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
 
-        if False:
+        if True:
             import xarray as xr
             outds = xr.Dataset({'SSHunc': (['time_20_ku'], self._l1b.time_orbit.altitude-self._range),
                                 'raw_elev' : (['time_20_ku'], Raw_Elevation),
@@ -2122,12 +2126,21 @@ class SAMOSAPlus(BaseRetracker):
                                 'epoch': (['time_20_ku'], self.epoch),
                                 'guess': (['time_20_ku'], self.guess),
                                 'Pu': (['time_20_ku'], self.Pu),
+                                'lat': (['time_20_ku'], self._l1b.time_orbit.latitude),
+                                'height': (['time_20_ku'], self._l1b.time_orbit.altitude),
+                                'vel': (['time_20_ku'], vel),
+                                'pval': (['time_20_ku'], self.pval),
+                                'cval': (['time_20_ku'], self.cval),
+                                'rval': (['time_20_ku'], self.rval),
+                                'kval': (['time_20_ku'], self.kval),
+                                'wf': (['time_20_ku','bins'], wf_norm),
                                 'misfit': (['time_20_ku'], self.misfit),
                                 'oceanlike_flag': (['time_20_ku'], self.oceanlike_flag),
                                 'SWH': (['time_20_ku'], self.swh),
                                 'sigma0': (['Sigma0_20Hz'], self._power),
                                 'wind_speed': (['U10_20Hz'], self.wind_speed)},
                                coords={'time_20_ku': self._l1b.time_orbit.timestamp,
+                                       'bins': np.arange(256),
                                        'lon_20_ku': (['time_20_ku'], self._l1b.time_orbit.longitude),
                                        'lat_20_ku': (['time_20_ku'], self._l1b.time_orbit.latitude)},
                                attrs={'description': "Parameters from SAMOSA+ retracker"})

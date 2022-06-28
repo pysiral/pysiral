@@ -279,11 +279,6 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         # Convert window delay to range for each waveform range bin
         wfm_range = self.get_wfm_range(window_delay, dim_ns)
 
-        # Make sure that parameter are float and not double
-        # -> Import for cythonized algorithm parts (ctfrma specifically uses floats)
-        wfm_power = wfm_power.astype(np.float32)
-        wfm_range = wfm_range.astype(np.float32)
-
         # Set the waveform
         op_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
         radar_mode = self.translate_opmode2radar_mode(op_mode)
