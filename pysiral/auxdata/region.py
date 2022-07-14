@@ -163,17 +163,3 @@ class AntarcticSeas(AuxdataBaseClass):
         distance = 360. * is_larger_angle + (-1) ** is_larger_angle * phi
 
         return distance
-
-
-class BlankRegionMask(AuxdataBaseClass):
-    """ A dummy region code class """
-
-    def __init__(self, *args, **kwargs):
-        super(BlankRegionMask, self).__init__(*args, **kwargs)
-        pass
-
-    def get_l2_track_vars(self, l2):
-        # Just use a dummy array
-        region_code = np.full(l2.track.longitude.shape, -1)
-        # Register the variable
-        self.register_auxvar("reg_code", "region_code", region_code, None)
