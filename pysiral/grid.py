@@ -223,12 +223,6 @@ class GridTrajectoryExtract(object):
         self.p = Proj(**self.griddef.projection)
         self.ix, self.iy = self._get_track_image_coordinates()
 
-        # Check if any there are image coordinates < 0 or > 1
-        self.outside_idxs = np.logical_or(
-                self.ix < 0.0 | self.ix > 1.0,
-                self.iy < 0.0 | self.iy > 1.0
-        )
-
     def _get_track_image_coordinates(self) -> Tuple[npt.NDArray, npt.NDArray]:
         """
         Computes and returns the image coordinates, by converting the
@@ -263,6 +257,9 @@ class GridTrajectoryExtract(object):
         :return: The grid variable extracted and interpolation for the trajectory location
         """
         grid_var = np.flipud(grid_var) if flipud else grid_var
-        trajectory_extract = ndimage.map_coordinates(grid_var, [self.iy, self.ix], order=order)
-        trajectory_extract[self.outside_idxs] = self.outside_value
-        return trajectory_extract
+        return ndimage.map_coordinates(grid_var,
+                                       [self.iy, self.ix],
+                                       order=order,
+                                       mode="constant",
+                                       cval=self.outside_value
+                                       )
