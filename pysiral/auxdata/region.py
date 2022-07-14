@@ -37,20 +37,21 @@ from loguru import logger
 from typing import Union
 from xarray import open_dataset
 
+from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 
 
 class NSIDCRegionMask(AuxdataBaseClass):
     """ Provides region codes from NSIDC style region grids """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
 
         super(NSIDCRegionMask, self).__init__(*args, **kwargs)
 
         # The region mask is static, parse the file during init
         self.nc = open_dataset(self.cfg.filename)
 
-    def get_l2_track_vars(self, l2):
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
         API method to map gridded region id on the trajectory
         :param l2:
@@ -73,7 +74,7 @@ class AntarcticSeas(AuxdataBaseClass):
     from Antarctic Seas (source: Stefanie Arndt, AWI, pers comm).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """
         Init the class
         :param args:
@@ -81,7 +82,7 @@ class AntarcticSeas(AuxdataBaseClass):
         """
         super(AntarcticSeas, self).__init__(*args, **kwargs)
 
-    def get_l2_track_vars(self, l2):
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
         API method, will return the region cose based on longitude and latitude values.
         The location of the sea, the corresponding code and names are defined in the
