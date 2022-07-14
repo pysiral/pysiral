@@ -796,6 +796,17 @@ region:
                     dx: 25000
                     dy: 25000
 
+    # New version of the NSIDC region mask (v2021)
+    # NOTE: The attributes and projection can be pulled directly from the mask netCDF files
+    nsidc_2021:
+        pyclass: NSIDCRegionMask2021
+        long_name: NSIDC regional mask for Arctic sea ice trends and climatologies (version 2021, J. Scott Stewart and Walter N. Meier, NSIDC)
+        local_repository: nsidc_2021
+        options:
+            filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_str}.nc
+            # This is the default value, can be overwritten in l2 settings (if required)
+            resolution_m: 1000 
+
 # risk index outcome
 rio:
 
