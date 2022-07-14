@@ -274,3 +274,35 @@ class GridTrajectoryExtract(object):
                                        mode="constant",
                                        cval=self.outside_value
                                        )
+
+# TODO: Add automatic debug map
+# import matplotlib.pyplot as plt
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+#
+# fig = plt.figure(dpi=150)
+# cmap_kwargs = {
+#     "cmap": plt.get_cmap("plasma"),
+#     "vmin": 0,
+#     "vmax": 20
+# }
+# proj = ccrs.LambertAzimuthalEqualArea(central_latitude=90)
+# ax = fig.add_subplot(1, 1, 1, projection=proj)
+# ax.add_feature(cfeature.COASTLINE)
+# ax.add_feature(cfeature.OCEAN)
+# ax.add_feature(cfeature.LAND)
+# ax.imshow(self.nc.region_id.values,
+#           transform=proj,
+#           extent=[-5400000, 5400000, -5400000, 5400000],
+#           origin="lower",
+#           **cmap_kwargs)
+# ax.scatter(
+#     l2.longitude,
+#     l2.latitude,
+#     c=region_code,
+#     edgecolors="white",
+#     transform=ccrs.PlateCarree(),
+#     **cmap_kwargs
+# )
+# ax.set_extent([-180, 180, 45, 90], ccrs.PlateCarree())
+# plt.show()
