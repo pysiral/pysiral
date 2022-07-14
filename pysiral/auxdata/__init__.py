@@ -373,6 +373,10 @@ class AuxClassConfig(object):
         """
         self.subfolders = subfolder_list
 
+    @property
+    def option_keys(self):
+        return self.options.keys()
+
 
 class GridTrackInterpol(object):
     """ Implements fast extraction of gridded data along a track using Image Interpolation """
