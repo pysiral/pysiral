@@ -378,6 +378,7 @@ class AuxClassConfig(object):
         return self.options.keys()
 
 
+# TODO: Deprecate this class -> Use pysiral.grid.GridImageExtract
 class GridTrackInterpol(object):
     """ Implements fast extraction of gridded data along a track using Image Interpolation """
 
