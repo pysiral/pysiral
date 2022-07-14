@@ -51,7 +51,7 @@ class AuxdataBaseClass(object):
         # Auxiliary class options
         if not isinstance(auxclass_cfg, AuxClassConfig):
             msg = "Invalid config object: %s (needs to be of type pysiral.auxdata.AuxClassConfig"
-            msg = msg % str(auxclass_cfg)
+            msg %= str(auxclass_cfg)
             self.error.add_error("invalid-auxclasscfg-type", msg)
             self.error.raise_on_error()
         self._cfg = auxclass_cfg
@@ -96,7 +96,7 @@ class AuxdataBaseClass(object):
         data_container = getattr(self, data_container_name, None)
         if data_container is None:
             msg = "%s: Data not loaded [%s]"
-            msg = msg % (self.__class__.__name__, self.year+"-"+self.month+"-"+self.day)
+            msg %= (self.__class__.__name__, f"{self.year}-{self.month}-{self.day}")
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing", msg)
 
@@ -125,7 +125,8 @@ class AuxdataBaseClass(object):
         # Call the API get_track class. This is the mandatory method of all auxiliary subclasses (independent
         # of type. Test if this is indeed the case
         if not self.has_mandatory_track_method:
-            msg = "Mandatory subclass method `get_l2_track_vars` not implemented for %s " % self.pyclass
+            msg = f"Mandatory subclass method `get_l2_track_vars` not implemented for {self.pyclass} "
+
             self.error.add_error("not-implemented", msg)
             self.error.raise_on_error()
 
@@ -146,7 +147,7 @@ class AuxdataBaseClass(object):
         try:
             self.update_l2(l2)
         except KeyError:
-            msg = "Invalid auxiliary parameter return from class %s" % self.pyclass
+            msg = f"Invalid auxiliary parameter return from class {self.pyclass}"
             self.error.add_error("invalid-auxvar-return", msg)
             self.error.raise_on_error()
 
@@ -174,8 +175,13 @@ class AuxdataBaseClass(object):
         return np.full(l2.n_records, empty_val)
 
     def update_external_data(self):
-        """ This method will check if the requested date matches current data
-        and call the subclass data loader method if not """
+        """
+        This method will check if the requested date matches current data
+        and call the subclass data loader method if not
+
+        :return:
+        """
+
         # Check if data for day is already loaded
         if self._requested_date != self._current_date:
             # NOTE: The implementation of this method needs to be in the subclass
@@ -228,14 +234,11 @@ class AuxdataBaseClass(object):
 
     @property
     def has_data_loaded(self) -> bool:
-        if not hasattr(self, "_data"):
-            return False
-        return self._data is not None
+        return self._data is not None if hasattr(self, "_data") else False
 
     @property
     def exception_on_error(self) -> bool:
-        exception_on_error = self.cfg.options.get("exception_on_error", False)
-        return exception_on_error
+        return self.cfg.options.get("exception_on_error", False)
 
     @property
     def requested_filepath(self) -> "Path":
@@ -278,15 +281,12 @@ class AuxdataBaseClass(object):
     def has_mandatory_track_method(self):
         """ Test if this object instance has the mandatory method for extracting track data. This method
         is named get_l2_track_vars() and needs to be present in any auxiliary subclass"""
-        has_method = False
         get_track_children_method = getattr(self, "get_l2_track_vars", None)
-        if callable(get_track_children_method):
-            has_method = True
-        return has_method
+        return callable(get_track_children_method)
 
     @property
     def auxvar_names(self):
-        return list([auxvar["name"] for auxvar in self._auxvars])
+        return [auxvar["name"] for auxvar in self._auxvars]
 
 
 class AuxClassConfig(object):
@@ -429,8 +429,7 @@ class GridTrackInterpol(object):
         """ Returns a along-track data from a grid variable"""
         if flipud:
             gridvar = np.flipud(gridvar)
-        trackvar = ndimage.map_coordinates(gridvar, [self.iy, self.ix], order=order)
-        return trackvar
+        return ndimage.map_coordinates(gridvar, [self.iy, self.ix], order=order)
 
     def debug_map(self, *args, **kwargs):
         raise NotImplementedError()
