@@ -160,6 +160,4 @@ class AntarcticSeas(AuxdataBaseClass):
         #           360. - phi if phi > 180. else phi
         #       but works for numbers and array alike
         is_larger_angle = phi > 180.
-        distance = 360. * is_larger_angle + (-1) ** is_larger_angle * phi
-
-        return distance
+        return 360. * is_larger_angle + (-1) ** is_larger_angle * phi
