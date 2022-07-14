@@ -427,8 +427,8 @@ class Level1bData(DefaultLoggingClass):
             setattr(data_group, parameter_name, value)
             # Update l1b container
             setattr(self, data_group_name, data_group)
-        except AttributeError:
-            raise ValueError("Could not set value for %s.%s" % (data_group_name, parameter_name))
+        except AttributeError as e:
+            raise ValueError(f"Could not set value for {data_group_name}.{parameter_name}") from e
 
     @property
     def n_records(self):
@@ -535,8 +535,7 @@ class L1bdataNCFile(Level1bData):
                 datagroup.variables["window_delay"][:])
         except KeyError:
             dat = np.full(self.time_orbit.longitude.shape, np.nan)
-            self.time_orbit.set_beam_parameters(dat, dat, dat)
-
+            self.time_orbit.set_beam_parameters(dat, dat, dat, dat, dat)
 
     def _import_waveforms(self):
         """

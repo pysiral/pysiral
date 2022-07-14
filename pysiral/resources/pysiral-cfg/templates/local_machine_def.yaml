@@ -95,3 +95,7 @@ auxdata_repository:
 
     # Models from machine learning.
     ml:
+
+    masks:
+
+        nsidc_2021:
