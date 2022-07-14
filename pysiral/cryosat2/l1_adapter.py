@@ -236,6 +236,13 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
             self.nc.off_nadir_roll_angle_str_20_ku.values,
             self.nc.off_nadir_yaw_angle_str_20_ku.values)
 
+        self.l1.time_orbit.set_beam_parameters(
+            self.nc.look_angle_start_20_ku.values,
+            self.nc.look_angle_stop_20_ku.values,
+            self.nc.stack_number_after_weighting_20_ku.values,
+            self.nc.uso_cor_20_ku.values,
+            self.nc.window_del_20_ku.values)
+
     def _set_waveform_data_group(self):
         """
         Transfer of the waveform group to the Level-1 object. This includes
@@ -271,11 +278,6 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
 
         # Convert window delay to range for each waveform range bin
         wfm_range = self.get_wfm_range(window_delay, dim_ns)
-
-        # Make sure that parameter are float and not double
-        # -> Import for cythonized algorithm parts (ctfrma specifically uses floats)
-        wfm_power = wfm_power.astype(np.float32)
-        wfm_range = wfm_range.astype(np.float32)
 
         # Set the waveform
         op_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
@@ -474,6 +476,54 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
         newpath = p.sub('L1B/FES2014', newpath)
         p = re.compile('nc')
         newpath = p.sub('fes2014b.nc', newpath)
+        p = re.compile('TEST')
+        newpath = p.sub('LTA_', newpath)
+        return newpath
+
+
+class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
+    def __init__(self, cfg, raise_on_error=False):
+        ESACryoSat2PDSBaselineDPatchFES.__init__(self, cfg, raise_on_error)
+
+    def _set_l1_data_groups(self):
+        ESACryoSat2PDSBaselineDPatchFES._set_l1_data_groups(self)
+        arcpath = self._get_arctide_path(self.filepath)
+        if not Path(arcpath).is_file():
+            msg = f"Not a valid file: {arcpath}"
+            logger.warning(msg)
+            self.error.add_error("invalid-filepath", msg)
+            # The handling of missing files here is different so that we can still process
+            # south files even though we don't have Arctide for them
+            self.l1.correction.set_parameter('ocean_tide_elastic_2',
+                                             self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
+        else:
+            nc_arc = xarray.open_dataset(arcpath, decode_times=False, mask_and_scale=True)
+
+            # time_1hz = self.nc.time_cor_01.values
+            # time_20hz = self.nc.time_20_ku.values
+
+            msg = f"Patching ARCTIDE tide data from: {arcpath}"
+            logger.info(msg)
+
+            # ocean_tide_elastic: ocean_tide_01
+            variable_20hz = getattr(nc_arc, 'tide_Arctic')
+            # variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            # if error_status:
+            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_01'
+            #    logger.warning(msg)
+            #    raise FileNotFoundError
+            self.l1.correction.set_parameter('ocean_tide_elastic_2', self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
+            self.l1.correction.set_parameter('ocean_tide_elastic', variable_20hz)
+
+
+    def _get_arctide_path(self, filepath):
+        # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
+        # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
+        newpath = str(filepath)
+        p = re.compile('L1B')
+        newpath = p.sub('L1B/ARCTIDE', newpath)
+        p = re.compile('nc')
+        newpath = p.sub('RegAT_Arctic_tides.nc', newpath)
         p = re.compile('TEST')
         newpath = p.sub('LTA_', newpath)
         return newpath

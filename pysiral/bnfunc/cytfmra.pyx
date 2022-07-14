@@ -17,7 +17,6 @@ cimport numpy as np
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
-ctypedef np.float32_t DTYPE_tf
 
 
 @cython.boundscheck(False)
@@ -61,11 +60,11 @@ def cytfmra_findpeaks(np.ndarray[DTYPE_t, ndim=1] data):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def cytfmra_interpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
-                        np.ndarray[DTYPE_tf, ndim=1] wfm,
+def cytfmra_interpolate(np.ndarray[DTYPE_t, ndim=1] rng,
+                        np.ndarray[DTYPE_t, ndim=1] wfm,
                        int oversampling):
     cdef int n, n_os
-    cdef float minval, maxval
+    cdef double minval, maxval
     cdef np.ndarray[DTYPE_t, ndim=1] range_os
     n = len(rng)
     n_os = n*oversampling
@@ -74,7 +73,7 @@ def cytfmra_interpolate(np.ndarray[DTYPE_tf, ndim=1] rng,
     maxval = rng[n-1]
 
     # np.arange is faster than linspace
-    cdef float step = float((maxval-minval))/float(n_os-1)
+    cdef double step = float((maxval-minval))/float(n_os-1)
     range_os = np.arange(n_os)*step+minval
 
     wfm_os = np.interp(range_os, rng, wfm)

@@ -25,6 +25,7 @@ from pathlib import Path
 from attrdict import AttrDict
 from distutils import dir_util
 from loguru import logger
+import logging
 from typing import Union, Iterable
 
 import warnings
@@ -39,6 +40,21 @@ fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | ' + \
       '<level>{message}</level>'
 logger.add(sys.stderr, format=fmt, enqueue=True)
 
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # Get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
