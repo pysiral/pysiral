@@ -803,9 +803,10 @@ region:
         long_name: NSIDC regional mask for Arctic sea ice trends and climatologies (version 2021, J. Scott Stewart and Walter N. Meier, NSIDC)
         local_repository: nsidc_2021
         options:
-            filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_str:05g}.nc
+            filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_m:05g}.nc
             # This is the default value, can be overwritten in l2 settings (if required)
-            resolution_m: 1000 
+            resolution_m: 1000
+            outside_value: 0 
 
 # risk index outcome
 rio:
