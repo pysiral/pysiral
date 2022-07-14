@@ -174,6 +174,17 @@ class GridTrajectoryExtract(object):
 
     Requirements are the longitude, latitude values of the trajectory and the projection
     and extent of the grid.
+
+    Usage
+    -----
+
+    .. code-block:: python
+
+        grid2track = GridTrajectoryExtract(track_longitude, track_latitude, grid_def, outside_value=outside_value)
+        track_var_01 = grid2track.get_from_grid_variable(grid_var_01)
+        track_var_02 = grid2track.get_from_grid_variable(grid_var_02)
+        ...
+
     """
 
     def __init__(self,
