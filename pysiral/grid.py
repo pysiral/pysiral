@@ -235,7 +235,7 @@ class GridTrajectoryExtract(object):
         """
         tr_x, tr_y = self.p(self.trajectory_longitude, self.trajectory_latitude)
         dim = self.griddef.dimension
-        x_min, y_max = -0.5 * dim.dx * dim.n_cols, 0.5 * dim.dy * dim.n_lines
+        x_min, y_max = -0.5 * dim.dx * dim.n_cols + 0.5 * dim.dx, 0.5 * dim.dy * dim.n_lines - 0.5 * dim.dy
         return (tr_x - x_min) / dim.dx, (y_max - tr_y) / dim.dy
 
     def get_from_grid_variable(self,
