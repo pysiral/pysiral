@@ -41,6 +41,7 @@ from pyproj import Proj, CRS
 
 from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.grid import GridTrajectoryExtract
 
 
 class NSIDCRegionMask(AuxdataBaseClass):
@@ -105,17 +106,23 @@ class NSIDCRegionMask2021(AuxdataBaseClass):
         :param l2:
         :return:
         """
-
-        breakpoint()
-
-        # Extract from grid
-        griddef = self.cfg.options[l2.hemisphere]
-        grid_lons, grid_lats = self.nc.longitude.values, self.nc.latitude.values
-        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
-        region_code = grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=False)
-
-        # Register the variable
+        region_code = self.get_trajectory(l2.longitude, l2.latitude)
         self.register_auxvar("reg_code", "region_code", region_code, None)
+
+    def get_trajectory(self, longitude: np.ndarray, latitude: np.ndarray) -> np.ndarray:
+        """
+        Extract the region code along a trajectory defined by longitude & latitude.
+
+        :param longitude: Longitude of the trajectory points
+        :param latitude: Latitude of the trajectory points
+
+        :raises None:
+
+        :return: The region code extracted along the trajectory
+        """
+        outside_value = self.cfg.options.outside_value
+        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def, outside_value=outside_value)
+        return grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=True)
 
     def _get_filepath_from_config(self) -> "Path":
         """
@@ -125,7 +132,7 @@ class NSIDCRegionMask2021(AuxdataBaseClass):
         """
         filename_template: str = self.cfg.options.filename_template
         resolution_m: int = self.cfg.options.resolution_m
-        filename = filename_template.format(resolution_str=resolution_m)
+        filename = filename_template.format(resolution_m=resolution_m)
         return Path(self.cfg.local_repository) / filename
 
     def _extract_grid_information(self) -> Dict:
