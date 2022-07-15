@@ -345,19 +345,8 @@ class NCDateNumDef(object):
     for netCDF operations
     """
 
-    def __init__(self):
-        self.units = "seconds since 1970-01-01"
-        self.calendar = "standard"
-
-
-class NCDateNumDef2000(object):
-    """
-    Holds definition for datetime conversion to numbers and vice versa
-    for netCDF operations
-    """
-
-    def __init__(self):
-        self.units = "seconds since 2000-01-01"
+    def __init__(self, units: str = "seconds since 1970-01-01") -> None:
+        self.units = units
         self.calendar = "standard"
 
 
@@ -790,8 +779,21 @@ class Level2Output(NCDataFile):
 
         # Init the parent
         super(Level2Output, self).__init__(output_handler)
-        # Reset the time epoch
-        self.time_def = NCDateNumDef2000()
+
+        # Get the time epoch.
+        # NOTE: The unit/epoch is taken from the output definition. The time variable
+        #       in the output definition therefore needs the units attribute and
+        #       the value of this attribute needs to be valid units input for
+        #       netcdf4.date2num
+        try:
+            epoch = self.output_handler.output_def.variables["time"]["units"]
+        except (AttributeError, KeyError):
+            logger.warning(
+                "Cannot find `units` attribute of `time` variable in output definition. "
+                "-> Using default (1970-01-01)"
+            )
+            epoch = None
+        self.time_def = NCDateNumDef(epoch)
 
         # Store the data container
         # FIXME: The data container does not need to be stored here, can be piped to _export_content()
