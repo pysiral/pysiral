@@ -12,7 +12,6 @@ from loguru import logger
 
 from pysiral.l1bdata import Level1bData
 from pysiral.retracker import cTFMRA
-from pysiral.core import DefaultLoggingClass
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
@@ -92,16 +91,16 @@ def get_footprint_sar(r: float,
     return area_sar
 
 
-def get_sigma0(rx_pwr: float,
-               tx_pwr: float,
-               r: float,
-               a: float,
-               lambda_0: float,
-               g_0: float,
-               l_atm: float = 1.0,
-               l_rx: float = 1.0,
-               bias_sigma0: float = 0.0,
-               ) -> float:
+def get_sigma0_sar(rx_pwr: float,
+                   tx_pwr: float,
+                   r: float,
+                   a: float,
+                   lambda_0: float,
+                   g_0: float,
+                   l_atm: float = 1.0,
+                   l_rx: float = 1.0,
+                   bias_sigma0: float = 0.0,
+                   ) -> float:
     """
     Compute the sigma0 backscatter coefficient according the radar equation, e.g.
     equation 20 in
@@ -128,7 +127,7 @@ def get_sigma0(rx_pwr: float,
     return sigma0
 
 
-def lrm_sigma0(wf_peak_power_watt: float,
+def get_sigma0(wf_peak_power_watt: float,
                tx_pwr: float,
                r: float,
                wf_thermal_noise_watt: float = 0.0,
@@ -393,11 +392,11 @@ class L1PSigma0(L1PProcItem):
             footprint_area = func(*args, **footprint_func_kwargs[radar_mode[i]])
 
             # Compute the backscatter coefficient
-            sigma0[i] = get_sigma0(rx_power[i],
-                                   tx_power[i],
-                                   altitude[i],
-                                   footprint_area,
-                                   **sigma0_kwargs)
+            sigma0[i] = get_sigma0_sar(rx_power[i],
+                                       tx_power[i],
+                                       altitude[i],
+                                       footprint_area,
+                                       **sigma0_kwargs)
 
         # Eliminate infinite values
         sigma0[np.isinf(sigma0)] = np.nan

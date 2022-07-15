@@ -175,8 +175,8 @@ level1_preprocessor:
             # Compute the sigma_0
             - label: "Compute Sigma0"
               stage: post_ocean_segment_extraction
-              module_name: pysiral.waveform
-              class_name: L1PSigma0
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PCryoSat2Sigma0
               options:
 
                   # CryoSat-2 altimeter constants to compute the LRM footprint
@@ -191,7 +191,7 @@ level1_preprocessor:
                       wf: 1.0
 
                   # CryoSat-2 altimeter constants to compute sigma0
-                  sigma0_kwargs:
+                  sigma0_sar_kwargs:
                       lambda_0: 0.022084
                       g_0: 19054.607179632483
 
