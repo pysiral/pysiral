@@ -128,7 +128,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         when failed """
         Path(directory).mkdir(exist_ok=True, parents=True)
         if not Path(directory).is_dir():
-            msg = "Unable to create directory: %s" % str(directory)
+            msg = f"Unable to create directory: {str(directory)}"
             self.error.add_error("directory-error", msg)
 
     def _get_subdirectories(self, dt):
@@ -269,14 +269,13 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
             filename_template = self.output_def.filenaming
         except KeyError:
             msg = "Missing filenaming convention for period [%s] in [%s]"
-            msg = msg % (str(self._period), self.output_def_filename)
+            msg %= (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
 
         # Fill the tags in the filename template
-        filename = self.fill_template_string(filename_template, l2)
-        return filename
-
+        return self.fill_template_string(filename_template, l2)
+        
     def get_directory_from_data(self, l2, create=True):
         """
         Return the output directory based on information provided in an l2 data object
