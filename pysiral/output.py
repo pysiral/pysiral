@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+import contextlib
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
@@ -799,10 +800,8 @@ class Level2Output(NCDataFile):
         # FIXME: The data container does not need to be stored here, can be piped to _export_content()
         self.data = data
         self._set_doi()
-        try:
+        with contextlib.suppress(AttributeError):
             self._set_data_record_type()
-        except AttributeError:
-            pass
         self._export_content()
 
     def _export_content(self):
