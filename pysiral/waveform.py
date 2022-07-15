@@ -388,10 +388,7 @@ class L1PSigma0(L1PProcItem):
         for i in np.arange(rx_power.shape[0]):
 
             # Compute the footprint area
-            if radar_mode[i] == 0:
-                args = (altitude[i],)
-            else:
-                args = (altitude[i], velocity[i])
+            args = (altitude[i], ) if radar_mode[i] == 0 else (altitude[i], velocity[i])
             func = footprint_func_dict[radar_mode[i]]
             footprint_area = func(*args, **footprint_func_kwargs[radar_mode[i]])
 
