@@ -14,6 +14,7 @@ from pathlib import Path
 from dateutil import parser as dtparser
 from datetime import datetime, timedelta
 
+from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
@@ -23,10 +24,10 @@ class L1PWaveformResampleSIN(L1PProcItem):
     to the same size as SAR waveform group
     """
 
-    def __init__(self, **cfg):
+    def __init__(self, **cfg) -> None:
         super(L1PWaveformResampleSIN, self).__init__(**cfg)
 
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
         API class for the Level-1 pre-processor. Functionality is reduce the size of the waveform power and
         range arrays for SIN data to the one for SAR data.
@@ -45,10 +46,10 @@ class L1PWaveformPadLRM(L1PProcItem):
     to the same size as SAR waveform group
     """
 
-    def __init__(self, **cfg):
+    def __init__(self, **cfg) -> None:
         super(L1PWaveformPadLRM, self).__init__(**cfg)
 
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
         API class for the Level-1 pre-processor. Functionality is to reduce the size
         of the waveform power and range arrays for SIN data to the one for SAR data.
@@ -62,6 +63,157 @@ class L1PWaveformPadLRM(L1PProcItem):
         if l1.radar_modes == "lrm" and self.lrm_target_bins is not None:
             l1.increase_waveform_bin_count(self.lrm_target_bins)
 
+
+class L1PCryoSat2Sigma0(L1PProcItem):
+    """
+    Class to compute radar backscatter coefficient (sigma0) directly
+    from waveform data.
+    """
+
+    def __init__(self, **cfg):
+        super(L1PCryoSat2Sigma0, self).__init__(**cfg)
+
+    def apply(self, l1: Level1bData):
+        """
+        Compute the radar backscatter coefficient across all CryoSat-2 radar modes.
+
+        :param l1: The Level-1 data container
+
+        :return: None, Level-1 data container is changed in place
+        """
+
+        radar_mode = l1.get_parameter_by_name("waveform", "radar_mode")
+        rx_power = get_waveforms_peak_power(l1.waveform.power)
+        ocog_amplitude = l1.get_parameter_by_name("classifier", "ocog_amplitude")
+        is_lrm = radar_mode == 0
+        rx_power[is_lrm] = ocog_amplitude[is_lrm]
+
+        # Get Input parameter from l1 object
+        tx_power = l1.get_parameter_by_name("classifier", "transmit_power")
+        if tx_power is None:
+            msg = "classifier `transmit_power` must exist for this pre-processor item -> aborting"
+            logger.warning(msg)
+            return
+
+        # The computation of sigma0 requires the range to the surface as input
+        # and is a step after the retracker. Here we use the satellite altitude
+        # as an approximation for sea ice and ocean surfaces.
+        altitude = l1.time_orbit.altitude
+
+        # Compute absolute satellite velocity
+        sat_vel_x = l1.get_parameter_by_name("classifier", "satellite_velocity_x")
+        sat_vel_y = l1.get_parameter_by_name("classifier", "satellite_velocity_y")
+        sat_vel_z = l1.get_parameter_by_name("classifier", "satellite_velocity_z")
+        if sat_vel_x is None or sat_vel_y is None or sat_vel_z is None:
+            # TODO: This is only strictly true for SAR waveforms, observe if necessary
+            msg = "classifier `satellite_velocity_[x|y|z]` must exist for this pre-processor item -> aborting"
+            logger.warning(msg)
+            return
+        velocity = np.sqrt(sat_vel_x**2. + sat_vel_y**2. + sat_vel_z**2.)
+
+        # Compute sigma_0
+        sigma0 = self.get_sigma0(rx_power, tx_power, altitude, velocity, radar_mode)
+
+        # Add the classifier
+        l1.classifier.add(rx_power, "peak_power")
+        l1.classifier.add(sigma0, "sigma0")
+        breakpoint()
+
+
+
+def get_sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s, **sigma0_par_dict):
+    """ Wrapper function to compute sigma nought for all waveforms """
+    n_records = wf_peak_power_watt.shape[0]
+    sigma0 = np.ndarray(shape=(n_records))
+    for i in np.arange(n_records):
+        sigma0[i] = sar_sigma0(wf_peak_power_watt[i], tx_pwr[i], r[i], v_s[i], **sigma0_par_dict)
+    return sigma0
+
+
+def sar_sigma0(wf_peak_power_watt, tx_pwr, r, v_s,
+               wf_thermal_noise_watt=0.0, ptr_width=2.819e-09, tau_b=0.00352,
+               lambda_0=0.022084, wf=1., g_0=19054.607179632483,
+               bias_sigma0=0.0, l_atm=1.0, l_rx=1.0,
+               c_0=299792458.0, r_mean=6371000.0):
+    """
+    returns sigma nought (sigma0) for sar waveforms.
+    Applicable Documents
+    --------------------
+    Guidelines for reverting Waveform Power to Sigma Nought for
+    CryoSat-2 in SAR mode (v2.2), Salvatore Dinardo, 23/06/2016
+    XCRY-GSEG-EOPS-TN-14-0012
+    Arguments
+    ---------
+        wf_peak_power_watt (float)
+            waveform peak power in watt
+        tx_pwr (float)
+            transmitted peak power in watt
+        r (float)
+            range from satellite center of mass to surface reflection point
+            (to be appoximated by satellite altitude if no retracker range
+            available)
+        v_s (float)
+            satellite along track velocity in meter/sec
+    Keywords
+    --------
+        wf_thermal_noise_watt (float)
+            estimate of thermal noise power in watt (default: 0.0)
+            will be used to estimate waveform amplitude (Pu)
+        ptr_width (float)
+            3dB range point target response temporal width in seconds
+            (default: 2.819e-09 sec for CryoSat-2 SAR)
+        tau_b (float)
+            burst length in seconds
+            (default: 0.00352 sec for CryoSat-2 SAR)
+        lambda_0 (float)
+            radar wavelength in meter
+            (default: 0.022084 m for CryoSat-2 Ku Band altimeter)
+        wf (float)
+            footprint widening factor (1.486 * rv in case of Hamming window
+            application on burst data; rv: unspecified empirical factor)
+            (default: 1 no weighting window application)
+        g_0 (float)
+            antenna gain at boresight
+            (default: 10^(4.28) from document)
+        bias_sigma0 (float)
+            sigma nought bias
+            (default: 0.0)
+        l_atm (float)
+            two ways atmosphere losses (to be modelled)
+            (default: 1.0 (no loss))
+        l_rx (float)
+            receiving chain (RX) waveguide losses (to be characterized)
+            (default: 1.0 (no loss))
+        c_0 (float)
+            vacuum light speed in meter/sec
+        r_mean (float)
+            mean earth radius in meter
+    Returns
+    -------
+        sigma_0 (float)
+    """
+
+    # XXX: The definition of the variable Pu is not quite clear to me (Stefan)
+    # In the document it is referred to as "waveform power value in output
+    # of the re-tracking stage", however generally it is referred to as
+    # "waveform amplitude" that is obtained by a waveform function fit
+    # It is the scope of this function to provide a sigma0 estimate without
+    # proper retracking, therefore Pu is simply defined by the peak power
+    # and the thermal noise_power in watt
+    pu = wf_peak_power_watt + wf_thermal_noise_watt
+
+    # Intermediate steps & variables
+    pi = np.pi
+    alpha_earth = 1. + (r/r_mean)
+    lx = (lambda_0 * r)/(2. * v_s * tau_b)
+    ly = np.sqrt((c_0 * r * ptr_width)/alpha_earth)
+    a_sar = (2. * ly) * (wf * lx)
+    k = ((4.*pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a_sar)
+
+    # Final computation of sigma nought
+    sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
+
+    return sigma0
 
 def get_cryosat2_wfm_power(counts, linear_scale, power_scale):
     """
@@ -246,7 +398,6 @@ def get_footprint_lrm(r: float, band_width: float = 320000000.0) -> float:
 
     return area_lrm
 
-
 def get_footprint_sar(r: float,
                       v_s: float,
                       ptr_width: float = 2.819e-09,
@@ -282,6 +433,56 @@ def get_footprint_sar(r: float,
     alpha_earth = 1. + (r / r_mean)
     lx = (lambda_0 * r) / (2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
-    area_sar = (2. * ly) * (wf * lx)
+    return (2. * ly) * (wf * lx)
 
-    return area_sar
+
+def cryosat2_sigma0_lrm(
+        rng: float,
+        p_rx: float,
+        roll_deg: float,
+        pitch_deg: float,
+        p_tx: float = 22.4,
+        sigma_bias: float = 0.0
+        ) -> float:
+    """
+    Compute LRM backscatter with optional mispointing and bias correction.
+    The code was supplied by David Brockley <d.brockley@ucl.ac.uk>.
+
+    :param rng: range to the surface
+    :param p_rx: rx power
+    :param roll_deg:
+    :param pitch_deg:
+    :param p_tx: tx power
+    :param sigma_bias: sigma0 bias (default: 0.0)
+
+    :raises None:
+
+    :return:
+    """
+
+    ellipse_semi_major_m = 6378137.0
+    speed_of_light_ms = 2.99792458E+08
+    effective_pulse_len_s = 4.183e-9
+    ant_gain_linear = 18197.008586099826
+    wavelength_m = 2.2084e-2
+    r_nom = 720000.0
+    misp_roll_bias_deg = 0.
+    misp_pitch_bias_deg = 0.
+    beam_angle_az_deg = 1.06
+    beam_angle_el_deg = 1.1992
+
+    gamma = (2.0 / np.log(2.0)) * np.power(np.sin(1.0 /
+                                                  (1.0 / np.radians(beam_angle_az_deg) +
+                                                   1.0 / np.radians(beam_angle_el_deg))), 2.0)
+    power_ratio_db = 10.0 * np.log10(p_rx / p_tx)
+    top = (speed_of_light_ms * np.pi * np.power(wavelength_m, 2.0) *
+           np.power(ant_gain_linear, 2.0) * effective_pulse_len_s)
+    earth_cor = (r_nom+ellipse_semi_major_m)/ellipse_semi_major_m
+    c_const = 10.0 * np.log10(top/(np.power(4.0*np.pi*r_nom,3.0)*earth_cor))
+    mispoint_rad = np.sqrt(
+        np.power(np.radians(roll_deg) + np.radians(misp_roll_bias_deg), 2.0) +
+        np.power(np.radians(pitch_deg) + np.radians(misp_pitch_bias_deg), 2.0)
+    )
+    mispoint_cor_lin = -4.0 * np.power(np.sin(mispoint_rad), 2.0) / gamma
+    misp_db = 10.0 * mispoint_cor_lin / np.log(10.0)
+    return power_ratio_db - c_const + 30.0 * np.log10(rng / r_nom) - misp_db + sigma_bias
