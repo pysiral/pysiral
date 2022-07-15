@@ -275,7 +275,7 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
 
         # Fill the tags in the filename template
         return self.fill_template_string(filename_template, l2)
-        
+
     def get_directory_from_data(self, l2, create=True):
         """
         Return the output directory based on information provided in an l2 data object
