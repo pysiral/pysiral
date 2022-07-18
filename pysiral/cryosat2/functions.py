@@ -164,8 +164,8 @@ class L1PCryoSat2Sigma0(L1PProcItem):
 
         return sigma0
 
-    def _get_sigma0_lrm(self,
-                        l1: Level1bData,
+    @staticmethod
+    def _get_sigma0_lrm(l1: Level1bData,
                         lrm_idxs: npt.NDArray,
                         rx_power: npt.NDArray,
                         tx_power: npt.NDArray,
