@@ -845,8 +845,8 @@ class L1PreProcHalfOrbit(L1PreProcBase):
             l1 = self.filter_small_ocean_segments(l1)
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
-        logger.info("- extracting polar region subset(s)")
         l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
