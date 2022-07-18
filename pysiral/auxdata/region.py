@@ -37,7 +37,7 @@ from pathlib import Path
 from loguru import logger
 from typing import Union, Any, Optional, Dict
 from xarray import open_dataset
-from pyproj import Proj, CRS
+from pyproj import CRS
 
 from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
