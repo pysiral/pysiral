@@ -467,7 +467,7 @@ class L1PHighResolutionLandMask(L1PProcItem):
         flag_update[land_ocean_flag == 1] = SURFACE_TYPE_DICT["land"]
         flag_update[land_ocean_flag == 0] = SURFACE_TYPE_DICT["ocean"]
         updated_surface_type_flag = l1.surface_type.flag.copy()
-        updated_surface_type_flag[valid_mask_indices] = flag_update[updated_surface_type_flag]
+        updated_surface_type_flag[valid_mask_indices] = flag_update[valid_mask_indices]
         l1.surface_type.set_flag(updated_surface_type_flag)
 
     def get_trajectory(self, longitude: npt.NDArray, latitude: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
