@@ -978,7 +978,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         hemisphere = product_metadata.hemisphere
         target_hemisphere = self.cfg.get("target_hemisphere", None)
         if hemisphere != "global" and hemisphere not in target_hemisphere:
-            logger.info(f'- No data in target hemishere: {"".join(self.cfg.target_hemispheres)}')
+            logger.info(f'- No data in target hemishere: {"".join(self.cfg.target_hemisphere)}')
             return False
 
         # 3. Must be at higher latitude than the polar latitude threshold
