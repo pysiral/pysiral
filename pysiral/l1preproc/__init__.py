@@ -1102,7 +1102,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self._get_local_input_directory()
 
         # 4. update hemisphere for input adapter
-        self._l1pprocdef.level1_preprocessor.options.polar_ocean.target_hemisphere = self.target_hemisphere
+        self._l1pprocdef["level1_preprocessor"]["options"]["polar_ocean"]["target_hemisphere"] = self.target_hemisphere
 
     def _get_l1p_proc_def_filename(self, l1p_settings_id_or_file: Union[str, Path]) -> Union[str, Path]:
         """
