@@ -445,7 +445,7 @@ class L1PHighResolutionLandMask(L1PProcItem):
                 "land_ocean_flag": nc.land_ocean_flag.values,
                 "distance_to_coast": nc.distance_to_coast.values
             }
-            nc = None
+            del nc
 
     def apply(self, l1: Level1bData) -> None:
         """
