@@ -97,21 +97,21 @@ level1_preprocessor:
               options:
                   local_machine_def_auxclass: mask
                   local_machine_def_tag: landmask_highres
-                  dummy_val: -1
-                  hemispheres: 
-                    north: 
-                        filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
-                        valid_latitude_range: [45.0, 88.0]
-                        grid_def:
-                            projection:
-                                proj: laea
-                                lon_0: 0.0
-                                lat_0: 90
-                            dimension:
-                                n_cols: 40000
-                                n_lines: 40000
-                                dx: 250
-                                dy: 250
+                  dummy_val: 
+                    land_ocean_flag: -1
+                    distance_to_coast: .nan
+                  filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
+                  valid_latitude_range: [45.0, 88.0]
+                  grid_def:
+                      projection:
+                          proj: laea
+                          lon_0: 0.0
+                          lat_0: 90
+                      dimension:
+                          n_cols: 40000
+                          n_lines: 40000
+                          dx: 250
+                          dy: 250
                   
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments

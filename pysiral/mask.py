@@ -10,6 +10,18 @@ Created on Thu Sep 28 14:00:52 2017
 import contextlib
 import pyproj
 
+from collections import OrderedDict
+from netCDF4 import Dataset
+from loguru import logger
+
+from pyresample import image, geometry, kd_tree
+import numpy as np
+import numpy.typing as npt
+from typing import Tuple
+import struct
+import xarray as xr
+from pathlib import Path
+
 from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.errorhandler import ErrorStatus
@@ -18,17 +30,6 @@ from pysiral._class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
-
-from collections import OrderedDict
-from netCDF4 import Dataset
-from loguru import logger
-
-from pyresample import image, geometry, kd_tree
-import numpy as np
-import struct
-import xarray as xr
-import scipy.ndimage as ndimage
-from pathlib import Path
 
 
 def MaskSourceFile(mask_name, mask_cfg):
@@ -415,42 +416,22 @@ class L1PHighResolutionLandMask(L1PProcItem):
         """
         super(L1PHighResolutionLandMask, self).__init__(**cfg)
 
-        # Read the mask files
-        self.masks = {}
-        self._init_masks()
-
-        # Map interpolation settings
-        # spline order 1, default value outside mask: -1
-        self.map_coordinates_kwargs = {"order": 1, "mode": "constant", "cval": -1}
-
-    def _init_masks(self) -> None:
-        """
-        Store the masks in memory
-        :return:
-        """
-
         # Get the local file path
         type_ = self.cfg.get("local_machine_def_auxclass")
         tag = self.cfg.get("local_machine_def_tag")
+        filename = self.cfg.get("filename")
         lookup_directory = psrlcfg.local_machine.auxdata_repository[type_][tag]
 
         # Set the file for each hemisphere type
-        hemispheres = self.cfg.get("hemispheres", {})
-        for hemisphere in hemispheres:
-            hemisphere_cfg = self.cfg["hemispheres"][hemisphere]
-            mask_filepath = Path(lookup_directory) / hemisphere_cfg["filename"]
-            nc = xr.open_dataset(mask_filepath)
-            self.masks[hemisphere] = {
-                "projection": pyproj.Proj(nc.geospatial_bounds_crs),
-                "grid_def": hemisphere_cfg["grid_def"],
-                "land_ocean_flag": nc.land_ocean_flag.values,
-                "distance_to_coast": nc.distance_to_coast.values
-            }
-            del nc
+        mask_filepath = Path(lookup_directory) / str(filename)
+        with xr.open_dataset(mask_filepath) as nc:
+            self.grid_def = self.cfg.get("grid_def")
+            self.land_ocean_flag_grid = nc.land_ocean_flag.values
+            self.distance_to_coast_grid = nc.distance_to_coast.values
 
     def apply(self, l1: Level1bData) -> None:
         """
-        Extract land/ocean flag and distance to coast along the  l1p trajectory if a mask exists
+        Extract land/ocean flag and distance to coast along the l1p trajectory if a mask exists
         for the corresponding hemisphere of the l1p data object.
 
         The parameters are stored in the classifier data group among the original surface type
@@ -460,54 +441,18 @@ class L1PHighResolutionLandMask(L1PProcItem):
         :return: None
         """
 
-        # Determine the hemisphere
-        # TODO: Replace by actual check if coverage in mask area?
-        if l1.info.hemisphere not in self.masks:
-            logger.info(f"{self.__class__.__name__}: No mask for hemisphere {l1.info.hemisphere}")
-            dummy_val = self.cfg.get("dummy_val", -1)
-            l1.classifier.add(np.full(l1.n_records, dummy_val), "hr_land_ocean_flag")
-            l1.classifier.add(np.full(l1.n_records, dummy_val), "orig_land_ocean_flag")
-            l1.classifier.add(np.full(l1.n_records, np.nan), "distance_to_coast")
-            return
+        # Get the land/ocean flag from the grid
+        land_ocean_flag, distance_to_coast = self.get_trajectory(l1.time_orbit.longitude, l1.time_orbit.latitude)
 
-        # Get the mask array for the given hemisphere
-        mask = self.masks[l1.info.hemisphere]
-
-        # Compute the track position in image coordinates
-        prj_x, prj_y = mask["projection"](l1.time_orbit.longitude, l1.time_orbit.latitude)
-
-        # Convert to image coordinates
-        grid_dim = mask["grid_def"]["dimension"]
-        x_min, y_max = -0.5 * grid_dim["dx"] * grid_dim["n_cols"], 0.5 * grid_dim["dy"] * grid_dim["n_lines"]
-        im_x, im_y = (prj_x - x_min) / grid_dim["dx"], (y_max - prj_y) / grid_dim["dy"]
-
-        # Extract parameters
-        land_ocean_flag = ndimage.map_coordinates(
-            mask["land_ocean_flag"],
-            [im_y, im_x],
-            **self.map_coordinates_kwargs
-        )
-        distance_to_coast = ndimage.map_coordinates(
-            mask["distance_to_coast"],
-            [im_y, im_x],
-            **self.map_coordinates_kwargs)
-
-        import matplotlib.pyplot as plt
-        import cartopy.crs as ccrs
-        import cartopy.feature as cfeature
-
-        esa_ocean_idx = l1.surface_type.ocean.indices
-        #plt.figure(dpi=150)
-        #plt.imshow(mask["land_ocean_flag"], cmap=plt.get_cmap("bone"), alpha=0.5)
-        #plt.scatter(im_x[esa_ocean_idx], im_y[esa_ocean_idx], s=12, c="none", edgecolors="0.25", linewidths=0.5)
-        #plt.scatter(im_x, im_y, c=l1.classifier.get_parameter("stack_peakiness"),
-        #            s=4, vmin=0, vmax=5, edgecolors="none", cmap=plt.get_cmap("magma"))
-        #plt.xticks([])
-        #plt.yticks([])
-        #plt.show()
+        # TODO: Update when global land/ocean flag becomes available
+        # NOTE: Currently only a grid for the northern hemisphere is available, thus
+        #       there will be regions not covered by the gridded land/ocean flag.
+        #       That's why the built/in land/ocean flag will only be updated for
+        #       region with coverage and be left untouched everywhere else.
+        #       The arrays are added to the l1 classifier container regardless
+        #       for consistency.
 
         # --- Update the L1 data container ---
-
         # 1. Save both extracted variables to classifier data groups
         l1.classifier.add(land_ocean_flag, "hr_land_ocean_flag")
         l1.classifier.add(distance_to_coast, "distance_to_coast")
@@ -516,42 +461,38 @@ class L1PHighResolutionLandMask(L1PProcItem):
         #    and update the surface type flag in the surface type data group
         l1.classifier.add(l1.surface_type.flag, "orig_land_ocean_flag")
 
-        valid_mask_indices = land_ocean_flag != self.map_coordinates_kwargs["cval"]
+        # 3. Update the surface type instance
+        valid_mask_indices = land_ocean_flag != self.cfg.get("dummy_val")["land_ocean_flag"]
         flag_update = np.full(l1.n_records, SURFACE_TYPE_DICT["invalid"])
         flag_update[land_ocean_flag == 1] = SURFACE_TYPE_DICT["land"]
         flag_update[land_ocean_flag == 0] = SURFACE_TYPE_DICT["ocean"]
-
         updated_surface_type_flag = l1.surface_type.flag.copy()
-        # updated_surface_type_flag[valid_mask_indices] = flag_update[updated_surface_type_flag]
+        updated_surface_type_flag[valid_mask_indices] = flag_update[updated_surface_type_flag]
+        l1.surface_type.set_flag(updated_surface_type_flag)
 
-        # plt.figure(dpi=150)
-        # plt.plot(updated_surface_type_flag, color="black")
-        # plt.plot(flag_update, color="red", alpha=0.5)
-        # plt.show()
+    def get_trajectory(self, longitude: npt.NDArray, latitude: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
+        """
+        Get extract of the land/ocean flag and the distance to coast value for an
+        array of (longitude, latitude) positions.
 
-        # breakpoint()
+        If longitude, latitude is outside the grid, a pre-defined dummy value will
+        be returned.
 
-        # fig = plt.figure(dpi=150)
-        # ax = fig.add_subplot(1, 1, 1, projection=ccrs.NorthPolarStereo())
-        # ax.add_feature(cfeature.COASTLINE)
-        # ax.add_feature(cfeature.OCEAN)
-        # ax.add_feature(cfeature.LAND)
-        # ax.scatter(l1.time_orbit.longitude, l1.time_orbit.latitude, transform=ccrs.PlateCarree())
-        # ax.set_extent([-180, 180, 45, 90], ccrs.PlateCarree())
-        #
-        # plt.figure(dpi=150)
-        # plt.imshow(mask["land_ocean_flag"], extent=[x_min, -1*x_min, -1.0*y_max, y_max],
-        #            cmap=plt.get_cmap("bone"), alpha=0.5)
-        # plt.scatter(prj_x, prj_y, c=land_ocean_flag, s=2, edgecolors="none")
-        # plt.xlim(x_min, -1.0*x_min)
-        # plt.ylim(-1.0*y_max, y_max)
-        #
-        # plt.figure(dpi=150)
-        # plt.imshow(mask["land_ocean_flag"], extent=[x_min, -1*x_min, -1.0*y_max, y_max],
-        #            cmap=plt.get_cmap("magma"), alpha=0.5)
-        # plt.scatter(prj_x, prj_y, c=distance_to_coast, s=2, edgecolors="none", cmap=plt.get_cmap("magma"))
-        # plt.xlim(x_min, -1.0*x_min)
-        # plt.ylim(-1.0*y_max, y_max)
-        # plt.show()
-        #
-        # breakpoint()
+        :param longitude: Longitude values in degrees
+        :param latitude: latitude values in degrees
+
+        :raises None:
+
+        :return: land ocean flag & distance to coast values for longitude, latitude positions
+        """
+        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def)
+        land_ocean_flag = grid2track.get_from_grid_variable(
+            self.land_ocean_flag_grid,
+            outside_value=self.dummy_val["land_ocean_flag"]
+        )
+
+        distance_to_coast = grid2track.get_from_grid_variable(
+            self.distance_to_coast_grid,
+            outside_value=self.dummy_val["distance_to_coast"]
+        )
+        return land_ocean_flag, distance_to_coast
