@@ -6,12 +6,14 @@ Created on Thu Sep 28 14:00:52 2017
 
 @author: shendric
 """
+
+import contextlib
 import pyproj
 
 from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition
+from pysiral.grid import GridDefinition, GridTrajectoryExtract
 from pysiral._class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
@@ -25,7 +27,6 @@ from pyresample import image, geometry, kd_tree
 import numpy as np
 import struct
 import xarray as xr
-from pyproj import Proj
 import scipy.ndimage as ndimage
 from pathlib import Path
 
@@ -39,7 +40,7 @@ def MaskSourceFile(mask_name, mask_cfg):
         mask_dir = psrlcfg.local_machine.auxdata_repository.mask[mask_name]
     except KeyError:
         mask_dir = None
-        msg = "path to mask %s not in local_machine_def.yaml" % mask_name
+        msg = f"path to mask {mask_name} not in local_machine_def.yaml"
         error.add_error("missing-lmd-def", msg)
         error.raise_on_error()
 
@@ -47,7 +48,7 @@ def MaskSourceFile(mask_name, mask_cfg):
     try:
         return globals()[mask_cfg.pyclass_name](mask_dir, mask_name, mask_cfg)
     except KeyError:
-        msg = "pysiral.mask.%s not implemented" % str(mask_cfg.pyclass_name)
+        msg = f"pysiral.mask.{str(mask_cfg.pyclass_name)} not implemented"
         error.add_error("missing-mask-class", msg)
         error.raise_on_error()
 
@@ -111,17 +112,15 @@ class MaskSourceBase(DefaultLoggingClass):
             target_mask = result
 
         else:
-            msg = "Unrecognized opt pyresample_method: %s need to be %s" % (
-                    str(self.cfg.pyresample_method),
-                    "(ImageContainerNearest, resample_gauss)")
+            msg = f"Unrecognized opt pyresample_method: {str(self.cfg.pyresample_method)} need to be (" \
+                  f"ImageContainerNearest, resample_gauss) "
+
             self.error.add_error("invalid-pr-method", msg)
             self.error.add_error()
 
         # pyresample may use masked arrays -> set nan's to missing data
-        try:
+        with contextlib.suppress(AttributeError):
             target_mask[np.where(target_mask.mask)] = np.nan
-        except AttributeError:
-            pass
 
         if "post_processing" in self.cfg:
             pp_method = getattr(self, self.cfg.post_processing)
@@ -131,9 +130,9 @@ class MaskSourceBase(DefaultLoggingClass):
         # (the filename will be automatically generated if not specifically
         # passed to this method
         if nc_filepath is None:
-            nc_filename = "%s_%s.nc" % (self.mask_name, griddef.grid_id)
+            nc_filename = f"{self.mask_name}_{griddef.grid_id}.nc"
             nc_filepath = Path(self.mask_dir) / nc_filename
-        logger.info("Export mask file: %s" % nc_filepath)
+        logger.info(f"Export mask file: {nc_filepath}")
         self._write_netcdf(nc_filepath, griddef, target_mask)
 
     def _write_netcdf(self, nc_filepath, griddef, mask):
@@ -151,7 +150,8 @@ class MaskSourceBase(DefaultLoggingClass):
         try:
             rootgrp = Dataset(nc_filepath, "w")
         except RuntimeError:
-            msg = "Unable to create netCDF file: %s" % nc_filepath
+            rootgrp = None
+            msg = f"Unable to create netCDF file: {nc_filepath}"
             self.error.add_error("nc-runtime", msg)
             self.error.raise_on_error()
 
@@ -168,7 +168,7 @@ class MaskSourceBase(DefaultLoggingClass):
             rootgrp.createDimension(key, dimdict[key])
 
         # Write Variables
-        dim = tuple(dims[0:len(mask.shape)])
+        dim = tuple(dims[:len(mask.shape)])
         dtype_str = mask.dtype.str
         varmask = rootgrp.createVariable("mask", dtype_str, dim, zlib=True)
         varmask[:] = mask
@@ -259,7 +259,8 @@ class MaskLandSea2Min(MaskSourceBase):
         # Set the mask
         self.set_mask(mask, area_def)
 
-    def pp_classify(self, resampled_mask, griddef):
+    @staticmethod
+    def pp_classify(resampled_mask, *args):
         """ Post-processing method after resampling to target grid
         The resampled mask contains a land fraction (datatype float), which
         needs to be simplified to the flags (0: ocean, 1: mixed, 2: land) """
@@ -295,7 +296,8 @@ class MaskW99Valid(MaskSourceBase):
         # Set the mask (pyresample area definition from config file)
         self.set_mask(mask, self.cfg.area_def)
 
-    def pp_limit_lat(self, resampled_mask, griddef):
+    @staticmethod
+    def pp_limit_lat(resampled_mask, griddef):
         """ There are some artefacts in the source mask that need to be
         filtered out based on a simple latitude threshold filter.
         We also set all NaN values to 0 and fix a small problem at the
@@ -366,7 +368,6 @@ class L3Mask(DefaultLoggingClass):
         if self._flipud:
             lon = np.flipud(lon)
         return lon
-
 
     @property
     def mask_name(self):
@@ -460,8 +461,13 @@ class L1PHighResolutionLandMask(L1PProcItem):
         """
 
         # Determine the hemisphere
+        # TODO: Replace by actual check if coverage in mask area?
         if l1.info.hemisphere not in self.masks:
             logger.info(f"{self.__class__.__name__}: No mask for hemisphere {l1.info.hemisphere}")
+            dummy_val = self.cfg.get("dummy_val", -1)
+            l1.classifier.add(np.full(l1.n_records, dummy_val), "hr_land_ocean_flag")
+            l1.classifier.add(np.full(l1.n_records, dummy_val), "orig_land_ocean_flag")
+            l1.classifier.add(np.full(l1.n_records, np.nan), "distance_to_coast")
             return
 
         # Get the mask array for the given hemisphere
