@@ -182,8 +182,8 @@ class L1PCryoSat2Sigma0(L1PProcItem):
         """
         # sigma0_lrm_kwargs = self.cfg.get("sigma0_lrm_kwargs", {})
         sigma0 = np.full(rx_power.shape, np.nan)
-        roll_deg = l1.get_parameter_by_name("timeorbit", "antenna_roll")
-        pitch_deg = l1.get_parameter_by_name("timeorbit", "antenna_pitch")
+        roll_deg = l1.get_parameter_by_name("time_orbit", "antenna_roll")
+        pitch_deg = l1.get_parameter_by_name("time_orbit", "antenna_pitch")
 
         # TODO: Can this be vectorized?
         for i in lrm_idxs:
