@@ -256,7 +256,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # of the input adaptor. The input handler gets only the filename and the target
             # region to assess whether it is necessary to parse and transform the file content
             # for the sake of computational efficiency.
-            logger.info(f"+ Process input file {prgs.get_status_report(i)}")
+            logger.info(f"+ Process input file {prgs.get_status_report(i)} [{input_file.name}]")
             l1 = self.input_adapter.get_l1(input_file, polar_ocean_check=polar_ocean_check)
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
