@@ -79,7 +79,7 @@ level1_preprocessor:
         polar_ocean:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
-            input_file_is_single_hemisphere: True
+            input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 1000
     
         orbit_segment_connectivity:
