@@ -97,6 +97,7 @@ level1_preprocessor:
               options:
                   local_machine_def_auxclass: mask
                   local_machine_def_tag: landmask_highres
+                  dummy_val: -1
                   hemispheres: 
                     north: 
                         filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
