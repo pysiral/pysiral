@@ -1,21 +1,22 @@
 
 from pathlib import Path
 
+import re
 import xarray
 import numpy as np
 from loguru import logger
 from scipy import interpolate
 from cftime import num2pydate
+from astropy.time import Time
 
 from pysiral import __version__ as pysiral_version
 from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
-from pysiral.clocks import StopWatch, UTCTAIConverter
+from pysiral.classifier import CS2OCOGParameter, CS2PulsePeakiness
+from pysiral.clocks import StopWatch
 from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
-import re
 
 
 class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
@@ -219,9 +220,7 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         #       difficult to work with the numpy datetime64 date format. Better to compute datetimes using
         #       a know num2pydate conversion
         tai_datetime = num2pydate(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
-        converter = UTCTAIConverter()
-        utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
-        self.l1.time_orbit.timestamp = utc_timestamp
+        self.l1.time_orbit.timestamp = Time(tai_datetime, scale="tai").utc.datetime
 
         # Set the geolocation
         self.l1.time_orbit.set_position(
