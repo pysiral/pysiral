@@ -122,13 +122,12 @@ class L1PCryoSat2Sigma0(L1PProcItem):
             sigma0_sar_sin = self._get_sigma0_sar_sin(l1, sar_sin_idxs, rx_power, tx_power, altitude)
             sigma0[sar_sin_idxs] = sigma0_sar_sin[sar_sin_idxs]
 
-        import matplotlib.pyplot as plt
-        plt.figure(dpi=150)
-        plt.plot(sigma0)
-        plt.figure(dpi=150)
-        plt.plot(radar_mode)
-        plt.show()
-
+        # import matplotlib.pyplot as plt
+        # plt.figure(dpi=150)
+        # plt.plot(sigma0)
+        # plt.figure(dpi=150)
+        # plt.plot(radar_mode)
+        # plt.show()
 
         # Add the classifier
         l1.classifier.add(rx_power, "peak_power")
