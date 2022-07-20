@@ -180,9 +180,9 @@ class GridTrajectoryExtract(object):
 
     .. code-block:: python
 
-        grid2track = GridTrajectoryExtract(track_longitude, track_latitude, grid_def, outside_value=outside_value)
-        track_var_01 = grid2track.get_from_grid_variable(grid_var_01)
-        track_var_02 = grid2track.get_from_grid_variable(grid_var_02)
+        grid2track = GridTrajectoryExtract(track_longitude, track_latitude, grid_def)
+        track_var_01 = grid2track.get_from_grid_variable(grid_var_01, outside_value=outside_value_01)
+        track_var_02 = grid2track.get_from_grid_variable(grid_var_02, outside_value=outside_value_02)
         ...
 
     """
@@ -190,8 +190,7 @@ class GridTrajectoryExtract(object):
     def __init__(self,
                  trajectory_longitude: npt.NDArray,
                  trajectory_latitude: npt.NDArray,
-                 griddef: Union[dict, AttrDict],
-                 outside_value: Any = np.nan
+                 griddef: Union[dict, AttrDict]
                  ) -> None:
         """
         Computes image coordinates ([0...1], [0...1]) of a trajectory with respect to a
@@ -216,7 +215,6 @@ class GridTrajectoryExtract(object):
         :param trajectory_longitude: longitude of the trajectory
         :param trajectory_latitude: latitude of the trajectory
         :param griddef: grid definitions (see above)
-        :param outside_value: Value set will be used if the trajectory is outside the grid
 
         :raises None:
 
@@ -228,7 +226,6 @@ class GridTrajectoryExtract(object):
         self.trajectory_longitude = trajectory_longitude
         self.trajectory_latitude = trajectory_latitude
         self.griddef = AttrDict(**griddef)
-        self.outside_value = outside_value
 
         # Compute image coordinates
         self.p = Proj(**self.griddef.projection)
@@ -252,7 +249,8 @@ class GridTrajectoryExtract(object):
     def get_from_grid_variable(self,
                                grid_var: npt.NDArray,
                                order: int = 0,
-                               flipud: bool = False
+                               flipud: bool = False,
+                               outside_value: Any = np.nan
                                ) -> npt.NDArray:
         """
         Returns the grid variable along the trajectory using interpolation
@@ -262,6 +260,7 @@ class GridTrajectoryExtract(object):
         :param grid_var: The gridded variable
         :param order: Order of the image interpolation (see scipy.ndimage.map_coordinates)
         :param flipud: Flag if the grid variable should be flipped before extraction.
+        :param outside_value: Value to be used for part of the trajectory outside the grid
 
         :raises: None
 
@@ -272,7 +271,7 @@ class GridTrajectoryExtract(object):
                                        [self.iy, self.ix],
                                        order=order,
                                        mode="constant",
-                                       cval=self.outside_value
+                                       cval=outside_value
                                        )
 
 # TODO: Add automatic debug map

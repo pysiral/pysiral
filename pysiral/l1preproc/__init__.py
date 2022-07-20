@@ -256,7 +256,7 @@ class L1PreProcBase(DefaultLoggingClass):
             # of the input adaptor. The input handler gets only the filename and the target
             # region to assess whether it is necessary to parse and transform the file content
             # for the sake of computational efficiency.
-            logger.info(f"+ Process input file {prgs.get_status_report(i)}")
+            logger.info(f"+ Process input file {prgs.get_status_report(i)} [{input_file.name}]")
             l1 = self.input_adapter.get_l1(input_file, polar_ocean_check=polar_ocean_check)
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
@@ -845,8 +845,8 @@ class L1PreProcHalfOrbit(L1PreProcBase):
             l1 = self.filter_small_ocean_segments(l1)
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
-        logger.info("- extracting polar region subset(s)")
         l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
@@ -978,7 +978,7 @@ class L1PreProcPolarOceanCheck(DefaultLoggingClass):
         hemisphere = product_metadata.hemisphere
         target_hemisphere = self.cfg.get("target_hemisphere", None)
         if hemisphere != "global" and hemisphere not in target_hemisphere:
-            logger.info(f'- No data in target hemishere: {"".join(self.cfg.target_hemispheres)}')
+            logger.info(f'- No data in target hemishere: {"".join(self.cfg.target_hemisphere)}')
             return False
 
         # 3. Must be at higher latitude than the polar latitude threshold
@@ -1102,7 +1102,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self._get_local_input_directory()
 
         # 4. update hemisphere for input adapter
-        self._l1pprocdef.level1_preprocessor.options.polar_ocean.target_hemisphere = self.target_hemisphere
+        self._l1pprocdef["level1_preprocessor"]["options"]["polar_ocean"]["target_hemisphere"] = self.target_hemisphere
 
     def _get_l1p_proc_def_filename(self, l1p_settings_id_or_file: Union[str, Path]) -> Union[str, Path]:
         """

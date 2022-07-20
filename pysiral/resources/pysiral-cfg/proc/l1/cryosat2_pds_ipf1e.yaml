@@ -79,7 +79,7 @@ level1_preprocessor:
         polar_ocean:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
-            input_file_is_single_hemisphere: True
+            input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 1000
     
         orbit_segment_connectivity:
@@ -97,20 +97,21 @@ level1_preprocessor:
               options:
                   local_machine_def_auxclass: mask
                   local_machine_def_tag: landmask_highres
-                  hemispheres: 
-                    north: 
-                        filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
-                        valid_latitude_range: [45.0, 88.0]
-                        grid_def:
-                            projection:
-                                proj: laea
-                                lon_0: 0.0
-                                lat_0: 90
-                            dimension:
-                                n_cols: 40000
-                                n_lines: 40000
-                                dx: 250
-                                dy: 250
+                  dummy_val: 
+                    land_ocean_flag: -1
+                    distance_to_coast: .nan
+                  filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
+                  valid_latitude_range: [45.0, 88.0]
+                  grid_def:
+                      projection:
+                          proj: laea
+                          lon_0: 0.0
+                          lat_0: 90
+                      dimension:
+                          n_cols: 40000
+                          n_lines: 40000
+                          dx: 250
+                          dy: 250
                   
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
@@ -175,8 +176,8 @@ level1_preprocessor:
             # Compute the sigma_0
             - label: "Compute Sigma0"
               stage: post_ocean_segment_extraction
-              module_name: pysiral.waveform
-              class_name: L1PSigma0
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PCryoSat2Sigma0
               options:
 
                   # CryoSat-2 altimeter constants to compute the LRM footprint
@@ -191,7 +192,7 @@ level1_preprocessor:
                       wf: 1.0
 
                   # CryoSat-2 altimeter constants to compute sigma0
-                  sigma0_kwargs:
+                  sigma0_sar_kwargs:
                       lambda_0: 0.022084
                       g_0: 19054.607179632483
 

@@ -37,7 +37,7 @@ from pathlib import Path
 from loguru import logger
 from typing import Union, Any, Optional, Dict
 from xarray import open_dataset
-from pyproj import Proj, CRS
+from pyproj import CRS
 
 from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
@@ -121,8 +121,8 @@ class NSIDCRegionMask2021(AuxdataBaseClass):
         :return: The region code extracted along the trajectory
         """
         outside_value = self.cfg.options.outside_value
-        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def, outside_value=outside_value)
-        return grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=True)
+        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def)
+        return grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=True, outside_value=outside_value)
 
     def _get_filepath_from_config(self) -> "Path":
         """

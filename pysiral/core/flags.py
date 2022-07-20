@@ -73,7 +73,9 @@ class SurfaceType(DefaultLoggingClass):
     def name(self, flag_value: int) -> List[bool]:
         """
         Return the flag name for a give flag value
+
         :param flag_value:
+
         :return:
         """
         i = list(self.surface_type_dict.values()).index(flag_value)

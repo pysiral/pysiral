@@ -47,7 +47,7 @@ def pysiral_l1preproc(job):
         # 5.1 Get input files
         file_list = input_handler.get_file_for_period(period)
         if len(file_list) == 0:
-            logger.warning("No input files found for period: %s, skipping" % period.date_label)
+            logger.warning(f"No input files found for period: {period.date_label}, skipping")
 
         # 5.2 Output management
         # Note: This is only relevant, if the --remove-old keyword is set
@@ -58,7 +58,7 @@ def pysiral_l1preproc(job):
 
     # Report processing time
     job.stopwatch.stop()
-    logger.info("Level-1 PreProcessor finished in %s" % job.stopwatch.get_duration())
+    logger.info(f"Level-1 PreProcessor finished in {job.stopwatch.get_duration()}")
 
 
 class Level1PreProcArgParser(object):

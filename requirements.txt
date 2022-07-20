@@ -9,8 +9,10 @@ flake8
 geopy
 h5py
 loguru
+lxml
 isodate
 matplotlib
+mypy
 netCDF4
 numpy
 pillow
