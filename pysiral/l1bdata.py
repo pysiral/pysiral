@@ -92,9 +92,11 @@ Surface Type
 from typing import Union, Any
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
+from scipy.spatial.transform import Rotation
 from collections import OrderedDict
 from loguru import logger
 import numpy as np
+import numpy.typing as npt
 import copy
 
 from pysiral._class_template import DefaultLoggingClass
@@ -682,13 +684,9 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = None
         self._antenna_roll = None
         self._antenna_yaw = None
+        self._antenna_mispointing = None
         self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
-        self._look_angle_start = None
-        self._look_angle_stop = None
-        self._stack_beams = None
-        self._uso_cor = None
-        self._window_delay = None
 
     @property
     def longitude(self):
@@ -719,6 +717,10 @@ class L1bTimeOrbit(object):
         return np.array(self._antenna_yaw)
 
     @property
+    def antenna_mispointing(self):
+        return np.array(self._antenna_yaw)
+
+    @property
     def orbit_flag(self):
         return np.array(self._orbit_flag)
 
@@ -735,12 +737,12 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "antenna_mispointing", "orbit_flag"]
 
     @property
     def geolocation_parameter_list(self):
         return ["longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "antenna_mispointing"]
 
     @property
     def dimdict(self):
@@ -781,16 +783,20 @@ class L1bTimeOrbit(object):
         except IndexError:
             self._orbit_flag = np.full(latitude.shape, -1)
 
-    def set_antenna_attitude(self, pitch, roll, yaw):
+    def set_antenna_attitude(self, pitch, roll, yaw, mispointing=None):
         # Check dimensions
         if self._info is not None:
             self._info.check_n_records(len(pitch))
             self._info.check_n_records(len(roll))
             self._info.check_n_records(len(yaw))
+            if self._antenna_mispointing is not None:
+                self._info.check_n_records(len(mispointing))
+
         # All fine => set values
         self._antenna_pitch = pitch
         self._antenna_roll = roll
         self._antenna_yaw = yaw
+        self._antenna_mispointing = mispointing if mispointing is not None else self.mispointing_from_angles(pitch, roll, yaw)
 
     def append(self, annex):
         for parameter in self.parameter_list:
@@ -807,7 +813,7 @@ class L1bTimeOrbit(object):
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
         """ API gap filler method. Note: It is assumed that this method is
-        only evoked for filling small gaps. Therefore we use simple linear
+        only evoked for filling small gaps. Therefore, we use simple linear
         interpolation for the parameters of the time orbit group """
 
         # Set the geolocation parameters first (lon, lat, alt)
@@ -829,6 +835,32 @@ class L1bTimeOrbit(object):
             return getattr(self, name)
         except AttributeError:
             return None
+
+    @staticmethod
+    def mispointing_from_angles(pitch_deg: npt.NDArray,
+                                roll_deg: npt.NDArray,
+                                heading_deg: npt.NDArray
+                                ) -> npt.NDArray:
+        """
+        Compute the mispointing (angle between -z direction in spacecraft frame and true nadir)
+        from pitch/roll/heading, assuming rotation of spacecraft is around antenna.
+
+        :param pitch_deg: pitch angles (rotation around y-axis)
+        :param roll_deg: roll angles (rotation around x-axis)
+        :param heading_deg: true heading (rotation around z-axis)
+
+        :return: mispointing angle in degrees
+        """
+
+        # Array of [0, 0, -1] vector (down in satellite reference frame)
+        x_arr = np.repeat(np.array([[0, 0, -1]]), 10, axis=0)
+
+        # Rotate the down vector with pitch, roll, heading
+        r = Rotation.from_rotvec(np.c_[roll_deg, pitch_deg, heading_deg], degrees=True)
+        y_arr = r.apply(x_arr)
+
+        # Mis-pointing is the angle between spacecraft down and nadir
+        return np.rad2deg(np.arccos([np.dot(x, y) for x, y in zip(x_arr, y_arr)]))
 
     def __getstate__(self):
         return self.__dict__

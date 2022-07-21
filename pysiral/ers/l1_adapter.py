@@ -125,7 +125,8 @@ class ERSReaperSGDR(Level1PInputHandlerBase):
 
         # Mandatory antenna pointing parameter (but not available for ERS)
         dummy_angle = np.full(timestamp.shape, 0.0)
-        self.l1.time_orbit.set_antenna_attitude(dummy_angle, dummy_angle, dummy_angle)
+        mispointing_deg = np.rad2deg(self.sgdr.nc.off_nadir_angle_wf_20hz.flatten())
+        self.l1.time_orbit.set_antenna_attitude(dummy_angle, dummy_angle, dummy_angle, mispointing=mispointing_deg)
 
         # Update meta data container
         self.l1.update_data_limit_attributes()
