@@ -956,7 +956,7 @@ class L1bClassifiers(object):
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
         """ API gap filler method. Note: Gaps will be filled with
-        the nodata=nan value"""
+        the nodata=nan value """
 
         for parameter_name in self.parameter_list:
             data_corr = np.full(corrected_n_records, np.nan)
@@ -974,8 +974,13 @@ class L1bClassifiers(object):
         if self.has_parameter(item):
             return self.get_parameter(item)
         else:
-            raise ValueError(f"attribute {item} not found in classifier container")
+            raise AttributeError(f"attribute {item} not found in classifier container")
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
 
 
 class L1bWaveforms(object):
