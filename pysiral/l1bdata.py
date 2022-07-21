@@ -164,18 +164,16 @@ class Level1bData(DefaultLoggingClass):
         nans_indices = np.where(np.isnan(range_delta))[0]
         if len(nans_indices) > 0:
             range_delta[nans_indices] = 0.0
-            logger.warning("NaNs encountered in range correction parameter: %s" % correction)
+            logger.warning(f"NaNs encountered in range correction parameter: {correction}")
 
         self.waveform.add_range_delta(range_delta)
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-        if len(subset_list) > 0:
-            l1b = copy.deepcopy(self)
-            l1b.trim_to_subset(subset_list)
-        # TODO: Should not return an empty subset
-        else:
+        if len(subset_list) == 0:
             return None
+        l1b = copy.deepcopy(self)
+        l1b.trim_to_subset(subset_list)
         return l1b
 
     def extract_region_of_interest(self, roi):
@@ -201,7 +199,7 @@ class Level1bData(DefaultLoggingClass):
         # Get the time stamp and the time increment in seconds
         time = self.time_orbit.timestamp
         timedelta = np.ediff1d(time)
-        timedelta_secs = [td.seconds+td.microseconds/1e6 for td in timedelta]
+        timedelta_secs = [td.seconds + td.microseconds / 1e6 for td in timedelta]
 
         # Compute thresholds
         median_timedelta_secs = np.nanmedian(timedelta_secs)
@@ -229,14 +227,14 @@ class Level1bData(DefaultLoggingClass):
         indices_map = np.arange(self.n_records)
         gap_indices = []
         for gap_start_index in gap_start_indices:
-            gap_seconds = timedelta_secs[gap_start_index-1]
+            gap_seconds = timedelta_secs[gap_start_index - 1]
             gap_width = int(np.round(gap_seconds / median_timedelta_secs))
             gap_indices.extend(
-                    np.arange(gap_width) + gap_start_index + len(gap_indices))
+                np.arange(gap_width) + gap_start_index + len(gap_indices))
             indices_map[gap_start_index:] += gap_width
 
         # Get corrected n_records
-        corrected_n_records = indices_map[-1]+1
+        corrected_n_records = indices_map[-1] + 1
 
         # Update metadata
         self.info.set_attribute("n_records", corrected_n_records)
@@ -283,14 +281,14 @@ class Level1bData(DefaultLoggingClass):
         nrecs_fl = float(self.n_records)
         for flag in range(radar_modes.num):
             is_this_radar_mode = np.where(radar_mode == flag)[0]
-            radar_mode_percent = 100.*float(len(is_this_radar_mode))/nrecs_fl
-            attribute_name = "%s_mode_percent" % radar_modes.name(flag)
+            radar_mode_percent = 100. * float(len(is_this_radar_mode)) / nrecs_fl
+            attribute_name = f"{radar_modes.name(flag)}_mode_percent"
             self.info.set_attribute(attribute_name, radar_mode_percent)
 
     def update_surface_type_statistics(self):
         """ Re-calculate the open ocean percent """
         n_ocean_records = self.surface_type.get_by_name("ocean").num
-        open_ocean_percent = 100.*float(n_ocean_records)/float(self.n_records)
+        open_ocean_percent = 100. * float(n_ocean_records) / float(self.n_records)
         self.info.set_attribute("open_ocean_percent", open_ocean_percent)
 
     def update_region_name(self):
@@ -306,24 +304,21 @@ class Level1bData(DefaultLoggingClass):
             region_name = "global"
         self.info.set_attribute("region_name", region_name)
 
-    def reduce_waveform_bin_count(self, target_count, maxloc=0.4):
+    # TODO: Move to waveform class
+    def reduce_waveform_bin_count(self, target_count: int, maxloc: float = 0.4) -> None:
         """
         Reduce the bin count of waveform power and range arrays.
         (e.g. for merging CryoSat-2 SAR [256 bins] and SIN [1024 bins])
 
         Creates a subset and updates the l1b.waveform container
 
-        Arguments
-        ---------
-        target_count (int)
-            target number of waveform bins
-            (needs to be smaller than full waveform bin count)
+        :param target_count: target number of waveform bins
+          (needs to be smaller than full waveform bin count)
+        :param maxloc:  preferred location of the maximum of the waveform in the subset
 
-        Keywords
-        --------
-        maxloc (float, default=0.4)
-            preferred location of the maximum of the waveform in the subset
-        #TODO: Move to waveform class
+        :raises None:
+
+        :return: None
         """
 
         # Extract original waveform
@@ -334,8 +329,8 @@ class Level1bData(DefaultLoggingClass):
         max_index = np.argmax(orig_power, axis=1)
 
         # Compute number of leading and trailing bins
-        lead_bins = int(maxloc*target_count)
-        trail_bins = target_count-lead_bins
+        lead_bins = int(maxloc * target_count)
+        trail_bins = target_count - lead_bins
 
         # Get the start/stop indices for each waveform
         start, stop = max_index - lead_bins, max_index + trail_bins
@@ -343,7 +338,7 @@ class Level1bData(DefaultLoggingClass):
         # Create new arrays
         rebin_shape = (n_records, target_count)
         power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
-        range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+        range_ = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
 
         # Validity check
         overflow = np.where(stop > n_bins)[0]
@@ -361,25 +356,25 @@ class Level1bData(DefaultLoggingClass):
         # Extract the waveform with reduced bin count
         for i in np.arange(n_records):
             power[i, :] = orig_power[i, start[i]:stop[i]]
-            range[i, :] = orig_range[i, start[i]:stop[i]]
+            range_[i, :] = orig_range[i, start[i]:stop[i]]
 
         # Push to waveform container
-        self.waveform.set_waveform_data(power, range, self.radar_modes)
+        self.waveform.set_waveform_data(power, range_, self.radar_modes)
 
-    def increase_waveform_bin_count(self, target_count):
+    # TODO: Move to waveform class
+    def increase_waveform_bin_count(self, target_count: int) -> None:
         """
         Increase the bin count of waveform power and range arrays.
         (e.g. for merging CryoSat-2 LRM [128 bins] and SAR [256 bins])
 
         Creates a subset and updates the l1b.waveform container
 
-        Arguments
-        ---------
-        target_count (int)
-            target number of waveform bins
-            (needs to be bigger than full waveform bin count)
+        :param target_count: target number of waveform bins
+                             (needs to be bigger than full waveform bin count)
 
-        #TODO: Move to waveform class
+        :raises None:
+
+        :return: None
         """
         # Extract original waveform
         orig_power, orig_range = self.waveform.power, self.waveform.range
@@ -393,11 +388,11 @@ class Level1bData(DefaultLoggingClass):
         rng = np.full((n_records, target_count), 0.0)
         rng[:, 0:n_bins] = orig_range
 
-        n_new_bins = target_count-n_bins
+        n_new_bins = target_count - n_bins
         approx_bins_size = rng[0, 1] - rng[0, 0]
-        artificial_range = np.arange(1, n_new_bins+1)*approx_bins_size
+        artificial_range = np.arange(1, n_new_bins + 1) * approx_bins_size
         rng[:, n_bins:] = np.tile(artificial_range, (n_records, 1))
-        rng[:, n_bins:] += np.tile(rng[:, n_bins-1], (n_new_bins, 1)).transpose()
+        rng[:, n_bins:] += np.tile(rng[:, n_bins - 1], (n_new_bins, 1)).transpose()
 
         # Push to waveform container
         self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
@@ -405,8 +400,10 @@ class Level1bData(DefaultLoggingClass):
     def get_parameter_by_name(self, data_group: str, parameter_name: str) -> Union[None, np.ndarray]:
         """
         API method to retrieve any parameter from any data group
+
         :param data_group:
         :param parameter_name:
+
         :return:
         """
         try:
@@ -446,9 +443,7 @@ class Level1bData(DefaultLoggingClass):
     def radar_modes(self):
         radar_modes = RadarModes()
         radar_mode_flag_list = np.unique(self.waveform.radar_mode)
-        radar_mode_list = []
-        for radar_mode_flag in radar_mode_flag_list:
-            radar_mode_list.append(radar_modes.name(radar_mode_flag))
+        radar_mode_list = [radar_modes.name(radar_mode_flag) for radar_mode_flag in radar_mode_flag_list]
         return ";".join(radar_mode_list)
 
 
@@ -508,7 +503,7 @@ class L1bdataNCFile(Level1bData):
         antenna_angles = {}
         for angle in ["pitch", "roll", "yaw"]:
             try:
-                value = datagroup.variables["antenna_%s" % angle][:]
+                value = datagroup.variables[f"antenna_{angle}"][:]
             except KeyError:
                 value = np.full(self.time_orbit.longitude.shape, 0.0)
             antenna_angles[angle] = value
@@ -521,9 +516,9 @@ class L1bdataNCFile(Level1bData):
 
         # Convert the timestamp to datetimes
         self.time_orbit.timestamp = cn2pyd(
-             datagroup.variables["timestamp"][:],
-             self.time_def.units,
-             calendar=self.time_def.calendar)
+            datagroup.variables["timestamp"][:],
+            self.time_def.units,
+            calendar=self.time_def.calendar)
 
         # Set beam data
         try:
@@ -677,7 +672,7 @@ class L1bMetaData(object):
 
         :raises: ValueError
         """
-        
+
         if self._attrs["n_records"] == -1:
             self._attrs["n_records"] = n_records
 
@@ -687,8 +682,8 @@ class L1bMetaData(object):
 
 
 class L1bTimeOrbit(object):
-
     """ Container for Time and Orbit Information of L1b Data """
+
     def __init__(self, info, is_evenly_spaced=True):
         self._info = info  # Pointer to metadata container
         self._timestamp = None
@@ -775,7 +770,7 @@ class L1bTimeOrbit(object):
                 "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
                 "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor",
                 "window_delay"
-        ]
+                ]
 
     @property
     def geolocation_parameter_list(self):
@@ -785,8 +780,7 @@ class L1bTimeOrbit(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", len(self._timestamp))])
-        return dimdict
+        return OrderedDict([("n_records", len(self._timestamp))])
 
     @property
     def is_evenly_spaced(self):
@@ -808,10 +802,7 @@ class L1bTimeOrbit(object):
 
         # Parameter that were added later
         dummy_val = np.full(self.longitude.shape, np.nan)
-        if altitude_rate is not None:
-            self._altitude_rate = altitude_rate
-        else:
-            self._altitude_rate = dummy_val
+        self._altitude_rate = altitude_rate if altitude_rate is not None else dummy_val
 
         # Set a dummy value for pitch, roll & yaw for backward compability
         if self.antenna_pitch is None:
@@ -853,16 +844,16 @@ class L1bTimeOrbit(object):
 
     def append(self, annex):
         for parameter in self.parameter_list:
-            this_data = getattr(self, "_"+parameter)
+            this_data = getattr(self, f"_{parameter}")
             annex_data = getattr(annex, parameter)
             this_data = np.append(this_data, annex_data)
-            setattr(self,  "_"+parameter, this_data)
+            setattr(self, f"_{parameter}", this_data)
 
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
-            data = getattr(self, "_"+parameter)
+            data = getattr(self, f"_{parameter}")
             data = data[subset_list]
-            setattr(self,  "_"+parameter, data)
+            setattr(self, f"_{parameter}", data)
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
         """ API gap filler method. Note: It is assumed that this method is
@@ -872,7 +863,7 @@ class L1bTimeOrbit(object):
         # Set the geolocation parameters first (lon, lat, alt)
         geoloc_parameters = []
         corrected_indices = np.arange(corrected_n_records)
-        for i, parameter_name in enumerate(self.geolocation_parameter_list):
+        for parameter_name in self.geolocation_parameter_list:
             data_old = getattr(self, parameter_name)
             data_corr = np.interp(corrected_indices, indices_map, data_old)
             geoloc_parameters.append(data_corr)
@@ -921,8 +912,7 @@ class L1bRangeCorrections(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     def get_parameter_by_index(self, index):
         name = self._parameter_list[index]
@@ -1089,8 +1079,7 @@ class L1bWaveforms(object):
     def dimdict(self):
         """ Returns dictionary with dimensions"""
         shape = np.shape(self._power)
-        dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
-        return dimdict
+        return OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
 
     def set_waveform_data(self, power, range, radar_mode, classification_flag=None):
         """
@@ -1178,16 +1167,15 @@ class L1bWaveforms(object):
         # Power/range: set gaps to nan
         power = np.full((corrected_n_records, self.n_range_bins), np.nan)
         power[indices_map, :] = self.power
-        range = np.full((corrected_n_records, self.n_range_bins), np.nan)
-        range[indices_map, :] = self.range
+        range_ = np.full((corrected_n_records, self.n_range_bins), np.nan)
+        range_[indices_map, :] = self.range
 
         # Radar map: set gaps to lrm
-        radar_mode = np.full((corrected_n_records), 1,
-                             dtype=self.radar_mode.dtype)
+        radar_mode = np.full(corrected_n_records, 1, dtype=self.radar_mode.dtype)
         radar_mode[indices_map] = self.radar_mode
 
         # And set new values
-        self.set_waveform_data(power, range, radar_mode)
+        self.set_waveform_data(power, range_, radar_mode)
 
     def _get_wfm_shape(self, index):
         shape = np.shape(self._power)
