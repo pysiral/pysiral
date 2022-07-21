@@ -328,6 +328,7 @@ class L1PreProcBase(DefaultLoggingClass):
         """
 
         # Check if there is anything to do first
+        logger.info(f"- Apply {stage_name} processing items")
         if stage_name not in self.processor_item_dict:
             return
         (
@@ -353,7 +354,8 @@ class L1PreProcBase(DefaultLoggingClass):
             procitem.apply(l1_item)
             timer.stop()
             msg = f"- L1 processing item {stage_name}:{label} applied in {timer.get_seconds():.3f} seconds"
-            logger.info(msg)
+            logger.debug(msg)
+
         # breakpoint()
         # # Get the post-processing options
         # pre_processing_items = self.cfg.get("pre_processing_items", None)
@@ -783,6 +785,7 @@ class L1PreProcCustomOrbitSegment(L1PreProcBase):
             l1_list = [self.trim_single_hemisphere_segment_to_polar_region(l1)]
         else:
             l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
@@ -911,13 +914,14 @@ class L1PreProcFullOrbit(L1PreProcBase):
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
         logger.info("- extracting polar region subset(s)")
         l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
         # NOTE: This step is optional. It requires the presence of the options branch `timestamp_discontinuities`
         #       in the l1proc config file
         if "timestamp_discontinuities" in self.cfg:
-            logger.info("- split at time discontinuities")
             l1_list = self.split_at_time_discontinuities(l1_list)
+            logger.info(f"- split at time discontinuities -> {len(l1_list)} segments")
 
         # Step: Trim the non-ocean parts of the subset (e.g. land, land-ice, ...)
         # NOTE: Generally it can be assumed that the l1 object passed to this method contains polar ocean data.
