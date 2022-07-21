@@ -89,7 +89,7 @@ Surface Type
 
 """
 
-from typing import Union
+from typing import Union, Any
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
 from collections import OrderedDict
@@ -520,18 +520,6 @@ class L1bdataNCFile(Level1bData):
             self.time_def.units,
             calendar=self.time_def.calendar)
 
-        # Set beam data
-        try:
-            self.time_orbit.set_beam_parameters(
-                datagroup.variables["look_angle_start"][:],
-                datagroup.variables["look_angle_stop"][:],
-                datagroup.variables["stack_beams"][:],
-                datagroup.variables["uso_cor"][:],
-                datagroup.variables["window_delay"][:])
-        except KeyError:
-            dat = np.full(self.time_orbit.longitude.shape, np.nan)
-            self.time_orbit.set_beam_parameters(dat, dat, dat, dat, dat)
-
     def _import_waveforms(self):
         """
         transfers l1b waveform group
@@ -735,26 +723,6 @@ class L1bTimeOrbit(object):
         return np.array(self._orbit_flag)
 
     @property
-    def look_angle_start(self):
-        return np.array(self._look_angle_start)
-
-    @property
-    def look_angle_stop(self):
-        return np.array(self._look_angle_stop)
-
-    @property
-    def stack_beams(self):
-        return np.array(self._stack_beams)
-
-    @property
-    def uso_cor(self):
-        return np.array(self._uso_cor)
-
-    @property
-    def window_delay(self):
-        return np.array(self._window_delay)
-
-    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -767,10 +735,7 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
-                "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor",
-                "window_delay"
-                ]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
 
     @property
     def geolocation_parameter_list(self):
@@ -826,21 +791,6 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = pitch
         self._antenna_roll = roll
         self._antenna_yaw = yaw
-
-    def set_beam_parameters(self, start, stop, beams, uso, wd):
-        # Check dimensions
-        if self._info is not None:
-            self._info.check_n_records(len(start))
-            self._info.check_n_records(len(stop))
-            self._info.check_n_records(len(beams))
-            self._info.check_n_records(len(uso))
-            self._info.check_n_records(len(wd))
-        # All fine => set values
-        self._look_angle_start = start
-        self._look_angle_stop = stop
-        self._stack_beams = beams
-        self._uso_cor = uso
-        self._window_delay = wd
 
     def append(self, annex):
         for parameter in self.parameter_list:
@@ -1013,6 +963,19 @@ class L1bClassifiers(object):
             data_old = self.get_parameter(parameter_name)
             data_corr[indices_map] = data_old
             self.add(data_corr, parameter_name)
+
+    def __getattr__(self, item: str) -> Any:
+        """
+        Direct attribute access to the cfg dictionary
+
+        :param item:
+        :return:
+        """
+        if self.has_parameter(item):
+            return self.get_parameter(item)
+        else:
+            raise ValueError(f"attribute {item} not found in classifier container")
+
 
 
 class L1bWaveforms(object):

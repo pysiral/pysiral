@@ -1993,7 +1993,7 @@ class SAMOSAPlus(BaseRetracker):
         NendNoise = 6  ## noise range gate counting from 1, no oversampling
 
         #window_del_20_hr_ku_deuso = window_del_20_hr_ku * (uso_cor_20_hr_ku + 1)
-        window_del_20_hr_ku_deuso = self._l1b.time_orbit.window_delay
+        window_del_20_hr_ku_deuso = self._l1b.classifier.window_delay
         #Raw_Elevation = alt_20_hr_ku - CST.c0 / 2 * window_del_20_hr_ku_deuso
         raw_range = CST.c0 * window_del_20_hr_ku_deuso * 0.5
         Raw_Elevation = self._l1b.time_orbit.altitude - raw_range
@@ -2057,9 +2057,9 @@ class SAMOSAPlus(BaseRetracker):
         # Loop over waveform indices marked as surface type
         for index in indices:
 
-            LookAngles = 90 - np.linspace(np.rad2deg(self._l1b.time_orbit.look_angle_start[index]),
-                                          np.rad2deg(self._l1b.time_orbit.look_angle_stop[index]),
-                                          num=int(self._l1b.time_orbit.stack_beams[index]), endpoint=True)
+            LookAngles = 90 - np.linspace(np.rad2deg(self._l1b.classifier.look_angle_start[index]),
+                                          np.rad2deg(self._l1b.classifier.look_angle_stop[index]),
+                                          num=int(self._l1b.classifier.stack_beams[index]), endpoint=True)
             MaskRanges = None
             GEO.LAT=self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
             GEO.LON=self._l1b.time_orbit.longitude[index]                              ### longitude in degree between -180, 180 for the waveform under iteration

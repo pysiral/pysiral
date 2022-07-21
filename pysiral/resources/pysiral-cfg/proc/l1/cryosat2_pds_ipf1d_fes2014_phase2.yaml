@@ -49,6 +49,11 @@ input_adapter:
             stack_centre_look_angle: stack_centre_look_angle_20_ku
             transmit_power: transmit_pwr_20_ku
             noise_power: noise_power_20_ku
+            look_angle_start: look_angle_start_20_ku
+            look_angle_stop: look_angle_stop_20_ku
+            stack_beams: stack_number_after_weighting_20_ku
+            uso_cor: uso_cor_20_ku
+            window_delay: window_del_20_ku
 
         # This is a flag that prevents L1b files with a predicted orbits with
         # potentially erroneous platform altitude to be processed towards l1p
