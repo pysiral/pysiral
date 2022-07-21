@@ -412,12 +412,9 @@ class L1PWaveformPeakiness(L1PProcItem):
         for option_name in self.required_options:
             option_value = cfg.get(option_name, None)
             if option_value is None:
-                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                msg = f"Missing option `{option_name}` -> No computation of peakiness!"
                 logger.warning(msg)
             setattr(self, option_name, option_value)
-
-        # Init Parameters
-        self.peakiness = None
 
     def apply(self, l1):
         """
@@ -425,31 +422,32 @@ class L1PWaveformPeakiness(L1PProcItem):
         :param l1: l1bdata.Level1bData instance
         :return: None
         """
-        self._calc(l1)
-        l1.classifier.add(self.peakiness, "peakiness")
+        waveform = l1.waveform.power
+        pulse_peakiness = self.calc(waveform)
+        l1.classifier.add(pulse_peakiness, "peakiness")
 
-    def _calc(self, l1):
+    def calc(self, waveform: npt.NDArray) -> npt.NDArray:
         """ Compute pulse peakiness (from SICCI v1 processor)."""
 
         # Get the waveform
-        wfm = l1.waveform.power
-        n_records, n_range_bins = wfm.shape
+        n_records, n_range_bins = waveform.shape
 
         # Init output parameters
-        self.peakiness = np.full(n_records, np.nan)
-        self.peakiness_old = np.full(n_records, np.nan)
+        pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
 
             # Discard first bins, they are FFT artefacts anyway
-            wave = wfm[i, self.skip_first_range_bins:]
+            wave = waveform[i, self.skip_first_range_bins:]
 
             # new peakiness
             try:
-                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
+                pulse_peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
             except ZeroDivisionError:
-                self.peakiness[i] = np.nan
+                pulse_peakiness[i] = np.nan
+
+        return pulse_peakiness
 
     @property
     def required_options(self):
