@@ -9,6 +9,8 @@ A python module dedicated to freeboard estimation.
 import numbers
 import numpy as np
 
+from pysiral.l2data import Level2Data
+from pysiral.l1bdata import Level1bData
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
@@ -230,3 +232,49 @@ class RadarFreeboardDefault(Level2ProcessorStep):
     def error_bit(self):
         return self.error_flag_bit_dict["frb"]
 
+
+class LaforgeTFMR50PPCorrection(Level2ProcessorStep):
+    """
+    Class implementing the pulse-peakiness based range correction for the
+    TFMRA50 described in
+
+    > Laforge, A., Fleury, S., Dinardo, S., Garnier, F., Remy, F., Benveniste, J., Bouffard, J., & Verley, J. (2021).
+     Toward improved sea ice freeboard observation with SAR altimetry using the physical retracker SAMOSA+.
+     In Advances in Space Research (Vol. 68, Issue 2, pp. 732–745). Elsevier BV.
+     https://doi.org/10.1016/j.asr.2020.02.001
+
+    NOTE: This range correction is not applicable for CryoSat-2 data and the use of a TFMRA50
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(LaforgeTFMR50PPCorrection, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b: Level1bData, l2: Level2Data) -> None:
+        """
+        Correct range values based on pulse peakiness according the Laforge et al. 2010.
+
+        :param l1b:
+        :param l2:
+        :return:
+        """
+
+        pp = l2.pulse_peakiness
+        range_correction = -1390. * pp**3. + 339 * pp**2. - 28.4 * pp + 0.994
+        pp_threshold_idx = np.where(pp > 0.3)[0]
+        range_correction[pp_threshold_idx] = 0.35
+        l2.elev[:] += range_correction
+        l2.set_auxiliary_parameter("pp_rc", "pp_range_correction", range_correction)
+
+        breakpoint()
+
+    @property
+    def l2_input_vars(self):
+        return ["pulse_peakiness", "elev"]
+
+    @property
+    def l2_output_vars(self):
+        return ["pp_range_correction"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["range_correction"]
