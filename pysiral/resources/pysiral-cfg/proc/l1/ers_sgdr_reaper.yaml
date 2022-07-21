@@ -76,6 +76,13 @@ input_adapter:
             significant_wave_height: swh_20hz
             center_of_gravity_corr: cog_corr_20hz
             epsilon_sec: htl_disc_out
+            alt_state_flag: alt_state_flag_20hz
+            alt_state_flag_chirp_type: alt_state_flag_chirp_type_20hz
+            alt_state_flag_tracking_type: alt_state_flag_tracking_type_20hz
+            alt_state_flag_tracking_surface: alt_state_flag_tracking_surface_20hz
+            noise_floor: noise_floor
+            mispointing_angle: offset_attitude_20Hz
+            mispointing_azimuth: offset_azimuth_20hz
 
 
 # Output handler (will always be default handler -> only options)
@@ -85,7 +92,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p1
+            version_file_tag: v1p2
 
 
 # Settings for the pre-processor
