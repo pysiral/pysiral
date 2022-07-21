@@ -4,9 +4,9 @@ Created on Fri Jul 01 13:07:10 2016
 
 @author: shendric
 """
-import matplotlib
 
 import numpy as np
+import numpy.typing as npt
 import bottleneck as bn
 from loguru import logger
 
@@ -51,9 +51,7 @@ def get_footprint_pulse_limited(r: float, band_width: float) -> float:
 
     c_0 = 299792458.0
     footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
-    area_pl = np.pi * footprint_radius ** 2.
-
-    return area_pl
+    return np.pi * footprint_radius ** 2.
 
 
 def get_footprint_sar(r: float,
@@ -86,9 +84,7 @@ def get_footprint_sar(r: float,
     alpha_earth = 1. + (r / r_mean)
     lx = (lambda_0 * r) / (2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
-    area_sar = (2. * ly) * (wf * lx)
-
-    return area_sar
+    return (2. * ly) * (wf * lx)
 
 
 def get_sigma0_sar(rx_pwr: float,
@@ -122,9 +118,7 @@ def get_sigma0_sar(rx_pwr: float,
     """
 
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a)
-    sigma0 = 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
 def get_sigma0(wf_peak_power_watt: float,

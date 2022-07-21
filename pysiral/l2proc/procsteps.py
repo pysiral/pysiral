@@ -52,7 +52,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
             "filter": 9,
             "other": 15}
 
-    def execute(self, l1b, l2):
+    def execute(self, l1b: Level1bData, l2: Level2Data) -> None:
         """
         The main entry point for the
         :param l1b:
@@ -65,7 +65,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
         # Check if the error status is correctly implemented
         if error_status is None:
-            logger.warning("Class {} does not provide error status".format(self.classname))
+            logger.warning(f"Class {self.classname} does not provide error status")
             error_status = self.get_clean_error_status(l2.n_records)
 
         # Update the status flag
