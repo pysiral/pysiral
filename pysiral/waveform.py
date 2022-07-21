@@ -15,7 +15,7 @@ from pysiral.retracker import cTFMRA
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
-def get_waveforms_peak_power(wfm, dB=False):
+def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
     """
     Return the peak power (in input coordinates) of an array of waveforms
 
@@ -29,7 +29,7 @@ def get_waveforms_peak_power(wfm, dB=False):
         float array with maximum for each echo
     """
     peak_power = np.amax(wfm, axis=1)
-    if dB:
+    if use_db:
         peak_power = 10 * np.log10(peak_power)
     return peak_power
 
