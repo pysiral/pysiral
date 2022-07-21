@@ -81,7 +81,7 @@ input_adapter:
             alt_state_flag_tracking_type: alt_state_flag_tracking_type_20hz
             alt_state_flag_tracking_surface: alt_state_flag_tracking_surface_20hz
             noise_floor: noise_floor
-            mispointing_angle: offset_attitude_20Hz
+            mispointing_angle: offset_attitude_20hz
             mispointing_azimuth: offset_azimuth_20hz
 
 
