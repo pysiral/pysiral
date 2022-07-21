@@ -114,10 +114,11 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
             
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:

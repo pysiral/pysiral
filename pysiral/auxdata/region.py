@@ -33,24 +33,28 @@ Important Note:
 """
 
 import numpy as np
+from pathlib import Path
 from loguru import logger
-from typing import Union
+from typing import Union, Any, Optional, Dict
 from xarray import open_dataset
+from pyproj import CRS
 
+from pysiral.l2data import Level2Data
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.grid import GridTrajectoryExtract
 
 
 class NSIDCRegionMask(AuxdataBaseClass):
     """ Provides region codes from NSIDC style region grids """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
 
         super(NSIDCRegionMask, self).__init__(*args, **kwargs)
 
         # The region mask is static, parse the file during init
         self.nc = open_dataset(self.cfg.filename)
 
-    def get_l2_track_vars(self, l2):
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
         API method to map gridded region id on the trajectory
         :param l2:
@@ -67,13 +71,127 @@ class NSIDCRegionMask(AuxdataBaseClass):
         self.register_auxvar("reg_code", "region_code", region_code, None)
 
 
+class NSIDCRegionMask2021(AuxdataBaseClass):
+    """ Provides region codes from NSIDC regions grids in version 2021 """
+
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+
+        super(NSIDCRegionMask2021, self).__init__(*args, **kwargs)
+
+        # Get the filepath of the mask netCDF file
+        # NOTE: There are two options:
+        #    1. The config dictionary contains an entry filename
+        #       that contains the full file path
+        #    2. The config dictionary contains the directory,
+        #       a template of the filename as well as the
+        #       target resolution
+        self.filepath = (
+            Path(self.cfg.filename) if "filename" in self.cfg.option_keys
+            else self._get_filepath_from_config()
+        )
+        if not self.filepath.is_file():
+            msg = f"NSIDC region mask file does not exist: {self.filepath}"
+            self.error.add_error("invalid-auxiliary-file", msg)
+
+        # The region mask is static, parse the file during init
+        self.nc = open_dataset(self.filepath)
+
+        # Extract information from netCDF
+        self.attr_dict: Dict = self._extract_grid_attributes()
+        self.grid_def: Dict = self._extract_grid_information()
+
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
+        """
+        API method to map gridded region id on the trajectory
+        :param l2:
+        :return:
+        """
+        region_code = self.get_trajectory(l2.longitude, l2.latitude)
+        self.register_auxvar("reg_code", "region_code", region_code, None)
+
+    def get_trajectory(self, longitude: np.ndarray, latitude: np.ndarray) -> np.ndarray:
+        """
+        Extract the region code along a trajectory defined by longitude & latitude.
+
+        :param longitude: Longitude of the trajectory points
+        :param latitude: Latitude of the trajectory points
+
+        :raises None:
+
+        :return: The region code extracted along the trajectory
+        """
+        outside_value = self.cfg.options.outside_value
+        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def)
+        return grid2track.get_from_grid_variable(self.nc.region_id.values, flipud=True, outside_value=outside_value)
+
+    def _get_filepath_from_config(self) -> "Path":
+        """
+        Get the full file path from the options dictionary
+
+        :return: Full path to the mask file
+        """
+        filename_template: str = self.cfg.options.filename_template
+        resolution_m: int = self.cfg.options.resolution_m
+        filename = filename_template.format(resolution_m=resolution_m)
+        return Path(self.cfg.local_repository) / filename
+
+    def _extract_grid_information(self) -> Dict:
+        """
+        Extract the grid definition from the netCDF file.
+
+        Example for a grid definition dictionary
+
+            projection:
+                proj: stere
+                lon_0: -45
+                lat_0: 90
+                lat_ts: 70
+                a: 6378273
+                b: 6356889.44891
+            dimension:
+                n_cols: 304
+                n_lines: 448
+                dx: 25000
+                dy: 25000
+
+        :return: grid definition dictionary
+        """
+
+        # Get the projection dictionary
+        grid_mapping_name = self.nc.region_id.attrs["grid_mapping"]
+        grid_mapping = getattr(self.nc, grid_mapping_name)
+        crs = CRS(grid_mapping.attrs["crs_wkt"])
+        projection = crs.to_dict()
+
+        # Get the extent/dimension dictionary
+        resolution_m: int = self.cfg.options.resolution_m
+        dim = self.nc.region_id.values.shape
+        dimension = {
+            "n_cols": dim[0],
+            "n_lines": dim[1],
+            "dx": resolution_m,
+            "dy": resolution_m
+        }
+        return {"projection": projection, "dimension": dimension}
+
+    def _extract_grid_attributes(self) -> Dict:
+        """
+        Extract the attributes for the region id variable from the netCDF file
+
+        :return: grid variable attribute dictionary
+        """
+        attrs = {**self.nc.region_id.attrs}
+        attrs.pop("grid_mapping")
+        return attrs
+
+
 class AntarcticSeas(AuxdataBaseClass):
     """
     Provides region codes for the *southern hemisphere only* based on longitude ranges
     from Antarctic Seas (source: Stefanie Arndt, AWI, pers comm).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         """
         Init the class
         :param args:
@@ -81,7 +199,7 @@ class AntarcticSeas(AuxdataBaseClass):
         """
         super(AntarcticSeas, self).__init__(*args, **kwargs)
 
-    def get_l2_track_vars(self, l2):
+    def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
         API method, will return the region cose based on longitude and latitude values.
         The location of the sea, the corresponding code and names are defined in the
@@ -160,20 +278,4 @@ class AntarcticSeas(AuxdataBaseClass):
         #           360. - phi if phi > 180. else phi
         #       but works for numbers and array alike
         is_larger_angle = phi > 180.
-        distance = 360. * is_larger_angle + (-1) ** is_larger_angle * phi
-
-        return distance
-
-
-class BlankRegionMask(AuxdataBaseClass):
-    """ A dummy region code class """
-
-    def __init__(self, *args, **kwargs):
-        super(BlankRegionMask, self).__init__(*args, **kwargs)
-        pass
-
-    def get_l2_track_vars(self, l2):
-        # Just use a dummy array
-        region_code = np.full(l2.track.longitude.shape, -1)
-        # Register the variable
-        self.register_auxvar("reg_code", "region_code", region_code, None)
+        return 360. * is_larger_angle + (-1) ** is_larger_angle * phi

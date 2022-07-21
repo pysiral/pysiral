@@ -12,7 +12,7 @@ from loguru import logger
 
 from pysiral.l1bdata import Level1bData
 from pysiral.retracker import cTFMRA
-from pysiral.core import DefaultLoggingClass
+from pysiral.l1preproc.procitems import L1PProcItem
 
 
 def get_waveforms_peak_power(wfm, dB=False):
@@ -91,16 +91,16 @@ def get_footprint_sar(r: float,
     return area_sar
 
 
-def get_sigma0(rx_pwr: float,
-               tx_pwr: float,
-               r: float,
-               a: float,
-               lambda_0: float,
-               g_0: float,
-               l_atm: float = 1.0,
-               l_rx: float = 1.0,
-               bias_sigma0: float = 0.0,
-               ) -> float:
+def get_sigma0_sar(rx_pwr: float,
+                   tx_pwr: float,
+                   r: float,
+                   a: float,
+                   lambda_0: float,
+                   g_0: float,
+                   l_atm: float = 1.0,
+                   l_rx: float = 1.0,
+                   bias_sigma0: float = 0.0,
+                   ) -> float:
     """
     Compute the sigma0 backscatter coefficient according the radar equation, e.g.
     equation 20 in
@@ -127,7 +127,7 @@ def get_sigma0(rx_pwr: float,
     return sigma0
 
 
-def lrm_sigma0(wf_peak_power_watt: float,
+def get_sigma0(wf_peak_power_watt: float,
                tx_pwr: float,
                r: float,
                wf_thermal_noise_watt: float = 0.0,
@@ -231,7 +231,7 @@ class TFMRALeadingEdgeWidth(object):
         return width
 
 
-class L1PLeadingEdgeWidth(DefaultLoggingClass):
+class L1PLeadingEdgeWidth(L1PProcItem):
     """
     A L1P pre-processor item class for computing leading edge width of a waveform
     using the TFMRA retracker as the difference between two thresholds. The
@@ -240,9 +240,10 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
     def __init__(self, **cfg):
         """
         Init the class with the mandatory options
-        :param cfg: (dict) Required options (see self.required.options)Ä
+
+        :param cfg: (dict) Required options (see self.required.options)
         """
-        super(L1PLeadingEdgeWidth, self).__init__(self.__class__.__name__)
+        super(L1PLeadingEdgeWidth, self).__init__(**cfg)
 
         # Init Required Options
         self.tfmra_leading_edge_start = None
@@ -289,7 +290,7 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
                 "tfmra_options"]
 
 
-class L1PSigma0(DefaultLoggingClass):
+class L1PSigma0(L1PProcItem):
     """
     A L1P pre-processor item class for computing the backscatter coefficient (sigma0) from
     waveform data
@@ -297,14 +298,16 @@ class L1PSigma0(DefaultLoggingClass):
     """
 
     def __init__(self, **cfg):
-        super(L1PSigma0, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PSigma0, self).__init__(**cfg)
 
     def apply(self, l1):
         """
-        API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
-        second half) and adding the result to the classifier data group
+        API class for the Level-1 pre-processor. Functionality is to compute
+        leading edge width (full, first half & second half) and adding the result to
+        the classifier data group
+
         :param l1: A Level-1 data instance
+
         :return: None, Level-1 object is change in place
         """
 
@@ -384,19 +387,16 @@ class L1PSigma0(DefaultLoggingClass):
         for i in np.arange(rx_power.shape[0]):
 
             # Compute the footprint area
-            if radar_mode[i] == 0:
-                args = (altitude[i],)
-            else:
-                args = (altitude[i], velocity[i])
+            args = (altitude[i], ) if radar_mode[i] == 0 else (altitude[i], velocity[i])
             func = footprint_func_dict[radar_mode[i]]
             footprint_area = func(*args, **footprint_func_kwargs[radar_mode[i]])
 
             # Compute the backscatter coefficient
-            sigma0[i] = get_sigma0(rx_power[i],
-                                   tx_power[i],
-                                   altitude[i],
-                                   footprint_area,
-                                   **sigma0_kwargs)
+            sigma0[i] = get_sigma0_sar(rx_power[i],
+                                       tx_power[i],
+                                       altitude[i],
+                                       footprint_area,
+                                       **sigma0_kwargs)
 
         # Eliminate infinite values
         sigma0[np.isinf(sigma0)] = np.nan
@@ -408,13 +408,13 @@ class L1PSigma0(DefaultLoggingClass):
         return ["footprint_pl_kwargs", "footprint_sar_kwargs", "sigma0_kwargs", "sigma0_bias"]
 
 
-class L1PWaveformPeakiness(DefaultLoggingClass):
+class L1PWaveformPeakiness(L1PProcItem):
     """
     A L1P pre-processor item class for computing leading edge width (full, first half, second half)
     using three TFMRA thresholds """
 
     def __init__(self, **cfg):
-        super(L1PWaveformPeakiness, self).__init__(self.__class__.__name__)
+        super(L1PWaveformPeakiness, self).__init__(**cfg)
         for option_name in self.required_options:
             option_value = cfg.get(option_name, None)
             if option_value is None:
@@ -462,15 +462,14 @@ class L1PWaveformPeakiness(DefaultLoggingClass):
         return ["skip_first_range_bins"]
 
 
-class L1PLeadingEdgeQuality(DefaultLoggingClass):
+class L1PLeadingEdgeQuality(L1PProcItem):
     """
     Class to compute a leading edge width quality indicator
     Requires `first_maximum_index` classifier parameter
     """
 
     def __init__(self, **cfg):
-        super(L1PLeadingEdgeQuality, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PLeadingEdgeQuality, self).__init__(**cfg)
         for option_name in self.required_options:
             if option_name not in self.cfg.keys():
                 logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
@@ -478,7 +477,9 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
     def apply(self, l1):
         """
         Adds a quality indicator for the leading edge
+
         :param l1: l1bdata.Level1bData instance
+
         :return: None
         """
 
@@ -562,11 +563,10 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
                 "minimum_valid_first_maximum_index"]
 
 
-class L1PLeadingEdgePeakiness(DefaultLoggingClass):
+class L1PLeadingEdgePeakiness(L1PProcItem):
 
     def __init__(self, **cfg):
-        super(L1PLeadingEdgePeakiness, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PLeadingEdgePeakiness, self).__init__(**cfg)
         for option_name in self.required_options:
             if option_name not in self.cfg.keys():
                 logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
@@ -574,6 +574,7 @@ class L1PLeadingEdgePeakiness(DefaultLoggingClass):
     def apply(self, l1: Level1bData):
         """
         Mandatory class of a L1 preproceessor item. Computes the leading edge peakiness
+
         :param l1:
         :return:
         """

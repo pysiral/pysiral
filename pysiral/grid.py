@@ -5,14 +5,18 @@ Created on Sun Jun 11 19:24:04 2017
 @author: Stefan
 """
 
-from pysiral.config import get_yaml_config
-from pysiral._class_template import DefaultLoggingClass
-from pyresample import geometry, utils
+
+import numpy as np
+import numpy.typing as npt
 
 from attrdict import AttrDict
 from pyproj import Proj
+from typing import Tuple, Union, Any
+import scipy.ndimage as ndimage
 
-import numpy as np
+from pysiral.config import get_yaml_config
+from pysiral._class_template import DefaultLoggingClass
+from pyresample import geometry
 
 
 class GridDefinition(DefaultLoggingClass):
@@ -160,3 +164,144 @@ class GridDefinition(DefaultLoggingClass):
     @property
     def netcdf_vardef(self):
         return self._metadata["netcdf_grid_description"]
+
+
+class GridTrajectoryExtract(object):
+    """
+    Implements fast extraction of gridded data along a track using Image Interpolation.
+    This class computes the track coordinates in image coordinates upon initialization
+    and then allows to extract the multiple variables.
+
+    Requirements are the longitude, latitude values of the trajectory and the projection
+    and extent of the grid.
+
+    Usage
+    -----
+
+    .. code-block:: python
+
+        grid2track = GridTrajectoryExtract(track_longitude, track_latitude, grid_def)
+        track_var_01 = grid2track.get_from_grid_variable(grid_var_01, outside_value=outside_value_01)
+        track_var_02 = grid2track.get_from_grid_variable(grid_var_02, outside_value=outside_value_02)
+        ...
+
+    """
+
+    def __init__(self,
+                 trajectory_longitude: npt.NDArray,
+                 trajectory_latitude: npt.NDArray,
+                 griddef: Union[dict, AttrDict]
+                 ) -> None:
+        """
+        Computes image coordinates ([0...1], [0...1]) of a trajectory with respect to a
+        grid with known projection and extent. The image coordinates are stored in the
+        instance and can be used for the extraction of several variables on the same
+        grid.
+
+        Grid Definition
+        ---------------
+
+        The grid definition contains the projection info as a dictiopnary that can be passed
+        to pyproj (`pyproj.Proj(**grid_definition.projection)`) and the dimension dictionary
+        that contains information, from which the grid extent can be computed, e.g.:
+
+           projection: {'proj': stere, 'ellps': WGS84, 'lon_0': 0, 'lat_0': -90, 'lat_ts': -70,
+           'a': 6378273, 'b': 6356889.44891}
+
+           dimension: {'n_cols': 632, 'n_lines': 664, 'dx': 12500, 'dy': 12500}
+
+           griddef = {'projection': projection, 'dimension': dimension}
+
+        :param trajectory_longitude: longitude of the trajectory
+        :param trajectory_latitude: latitude of the trajectory
+        :param griddef: grid definitions (see above)
+
+        :raises None:
+
+        :return: None
+
+        """
+
+        # Save the arguments
+        self.trajectory_longitude = trajectory_longitude
+        self.trajectory_latitude = trajectory_latitude
+        self.griddef = AttrDict(**griddef)
+
+        # Compute image coordinates
+        self.p = Proj(**self.griddef.projection)
+        self.ix, self.iy = self._get_track_image_coordinates()
+
+    def _get_track_image_coordinates(self) -> Tuple[npt.NDArray, npt.NDArray]:
+        """
+        Computes and returns the image coordinates, by converting the
+        trajectory lon/lat values to projection coordinates and
+        scaling them tho the grid extent
+
+        :raises: None
+
+        :return: image x coordindate, image y coordinate
+        """
+        tr_x, tr_y = self.p(self.trajectory_longitude, self.trajectory_latitude)
+        dim = self.griddef.dimension
+        x_min, y_max = -0.5 * dim.dx * (dim.n_cols - 1), 0.5 * dim.dy * (dim.n_lines - 1)
+        return (tr_x - x_min) / dim.dx, (y_max - tr_y) / dim.dy
+
+    def get_from_grid_variable(self,
+                               grid_var: npt.NDArray,
+                               order: int = 0,
+                               flipud: bool = False,
+                               outside_value: Any = np.nan
+                               ) -> npt.NDArray:
+        """
+        Returns the grid variable along the trajectory using interpolation
+        with the specified order. If required the grid var can be flipped
+        upside down before extraction (flipud = True).
+
+        :param grid_var: The gridded variable
+        :param order: Order of the image interpolation (see scipy.ndimage.map_coordinates)
+        :param flipud: Flag if the grid variable should be flipped before extraction.
+        :param outside_value: Value to be used for part of the trajectory outside the grid
+
+        :raises: None
+
+        :return: The grid variable extracted and interpolation for the trajectory location
+        """
+        grid_var = np.flipud(grid_var) if flipud else grid_var
+        return ndimage.map_coordinates(grid_var,
+                                       [self.iy, self.ix],
+                                       order=order,
+                                       mode="constant",
+                                       cval=outside_value
+                                       )
+
+# TODO: Add automatic debug map
+# import matplotlib.pyplot as plt
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+#
+# fig = plt.figure(dpi=150)
+# cmap_kwargs = {
+#     "cmap": plt.get_cmap("plasma"),
+#     "vmin": 0,
+#     "vmax": 20
+# }
+# proj = ccrs.LambertAzimuthalEqualArea(central_latitude=90)
+# ax = fig.add_subplot(1, 1, 1, projection=proj)
+# ax.add_feature(cfeature.COASTLINE)
+# ax.add_feature(cfeature.OCEAN)
+# ax.add_feature(cfeature.LAND)
+# ax.imshow(self.nc.region_id.values,
+#           transform=proj,
+#           extent=[-5400000, 5400000, -5400000, 5400000],
+#           origin="lower",
+#           **cmap_kwargs)
+# ax.scatter(
+#     l2.longitude,
+#     l2.latitude,
+#     c=region_code,
+#     edgecolors="white",
+#     transform=ccrs.PlateCarree(),
+#     **cmap_kwargs
+# )
+# ax.set_extent([-180, 180, 45, 90], ccrs.PlateCarree())
+# plt.show()

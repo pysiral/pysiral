@@ -86,11 +86,12 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
             
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
               class_name: L1PWaveformResampleSIN
               options:
@@ -98,6 +99,7 @@ level1_preprocessor:
             
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
@@ -107,6 +109,7 @@ level1_preprocessor:
             
             # Compute the sigma_0
             - label: "Compute Sigma0"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PSigma0
               options: {}

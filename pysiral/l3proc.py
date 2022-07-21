@@ -17,7 +17,7 @@ from pysiral.core.flags import ORCondition
 from pysiral.sit import frb2sit_errprop
 
 from scipy import stats
-from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage import maximum_filter
 
 from collections import OrderedDict
 from loguru import logger

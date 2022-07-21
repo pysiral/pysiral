@@ -154,6 +154,7 @@ class Level1bData(DefaultLoggingClass):
 
     def apply_range_correction(self, correction):
         """  Apply range correction """
+        # TODO: This method has no place here
         range_delta = self.correction.get_parameter_by_name(correction)
         if range_delta is None:
             # TODO: raise warning
@@ -169,12 +170,10 @@ class Level1bData(DefaultLoggingClass):
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-
-        test = copy.deepcopy(self.surface_type)
-
         if len(subset_list) > 0:
             l1b = copy.deepcopy(self)
             l1b.trim_to_subset(subset_list)
+        # TODO: Should not return an empty subset
         else:
             return None
         return l1b
@@ -428,8 +427,8 @@ class Level1bData(DefaultLoggingClass):
             setattr(data_group, parameter_name, value)
             # Update l1b container
             setattr(self, data_group_name, data_group)
-        except AttributeError:
-            raise ValueError("Could not set value for %s.%s" % (data_group_name, parameter_name))
+        except AttributeError as e:
+            raise ValueError(f"Could not set value for {data_group_name}.{parameter_name}") from e
 
     @property
     def n_records(self):
@@ -526,6 +525,18 @@ class L1bdataNCFile(Level1bData):
              self.time_def.units,
              calendar=self.time_def.calendar)
 
+        # Set beam data
+        try:
+            self.time_orbit.set_beam_parameters(
+                datagroup.variables["look_angle_start"][:],
+                datagroup.variables["look_angle_stop"][:],
+                datagroup.variables["stack_beams"][:],
+                datagroup.variables["uso_cor"][:],
+                datagroup.variables["window_delay"][:])
+        except KeyError:
+            dat = np.full(self.time_orbit.longitude.shape, np.nan)
+            self.time_orbit.set_beam_parameters(dat, dat, dat, dat, dat)
+
     def _import_waveforms(self):
         """
         transfers l1b waveform group
@@ -569,7 +580,7 @@ class L1bdataNCFile(Level1bData):
         transfers l1b corrections group
         (waveform corrections in l1bdata netCDF files)
         """
-        # Get the datagroup
+        # Get the data group
         datagroup = self.nc.groups["classifier"]
         # Loop over parameters
         for key in datagroup.variables.keys():
@@ -583,23 +594,27 @@ class L1bMetaData(object):
     (see property attribute_list for a list of attributes)
     """
 
-    _attribute_list = [
-        "pysiral_version", "mission", "mission_data_version",
-        "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
-        "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
-        "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
-        "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
-        "open_ocean_percent", "timeliness"]
-
     def __init__(self):
+        """
+        Class containing a specific set of metadata attributes for l1b/l1p data
+        """
+
         # Init all fields
-        for field in self.attribute_list:
-            setattr(self, field, None)
+        self._attribute_list = [
+            "pysiral_version", "mission", "mission_data_version",
+            "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
+            "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
+            "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
+            "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
+            "open_ocean_percent", "timeliness"]
+
+        self._attrs = {attr_name: None for attr_name in self._attribute_list}
+
         # Set some fields to False (instead of none)
-        self.orbit = 999999
-        self.is_orbit_subset = False
-        self.is_merged_orbit = False
-        self.n_records = -1
+        self._attrs["orbit"] = 999999
+        self._attrs["is_orbit_subset"] = False
+        self._attrs["is_merged_orbit"] = False
+        self._attrs["n_records"] = -1
 
     def __repr__(self):
         output = "pysiral.L1bdata object:\n"
@@ -608,6 +623,19 @@ class L1bMetaData(object):
             output += "\n"
         return output
 
+    def __getattr__(self, item):
+        """
+        Modify the attribute getter to provide a shortcut to the data content
+        :param item: Name of the parameter
+        :return:
+        """
+        if item == "__setstate__":
+            raise AttributeError(item)
+        if item in self._attrs:
+            return self._attrs[item]
+        else:
+            raise AttributeError(f"L1BMetadata does not have the attribute {item}")
+
     @property
     def attribute_list(self):
         return self._attribute_list
@@ -615,10 +643,7 @@ class L1bMetaData(object):
     @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
-        attdict = {}
-        for field in self.attribute_list:
-            attdict[field] = getattr(self, field)
-        return attdict
+        return {field: getattr(self, field) for field in self.attribute_list}
 
     @property
     def hemisphere(self):
@@ -640,18 +665,25 @@ class L1bMetaData(object):
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
-        setattr(self, tag, value)
+        self._attrs[tag] = value
 
-    def check_n_records(self, n_records):
-        # First time a data set is set: Store number of records as reference
-        if self.n_records == -1:
-            self.n_records = n_records
-        else:  # n_records exists: verify consistency
-            if n_records == self.n_records:  # all good
-                pass
-            else:  # raise Error
-                msg = "n_records mismatch, len must be: %s (was %s)" % (str(self.n_records), str(n_records))
-                raise ValueError(msg)
+    def check_n_records(self, n_records: int) -> None:
+        """
+        First time a data set is set: Store number of records as reference
+
+        :param n_records: Number of records
+
+        :return: None
+
+        :raises: ValueError
+        """
+        
+        if self._attrs["n_records"] == -1:
+            self._attrs["n_records"] = n_records
+
+        elif n_records != self.n_records:
+            msg = f"n_records mismatch, len must be: {self.n_records} (was {n_records})"
+            raise ValueError(msg)
 
 
 class L1bTimeOrbit(object):
@@ -669,6 +701,11 @@ class L1bTimeOrbit(object):
         self._antenna_yaw = None
         self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
+        self._look_angle_start = None
+        self._look_angle_stop = None
+        self._stack_beams = None
+        self._uso_cor = None
+        self._window_delay = None
 
     @property
     def longitude(self):
@@ -703,6 +740,26 @@ class L1bTimeOrbit(object):
         return np.array(self._orbit_flag)
 
     @property
+    def look_angle_start(self):
+        return np.array(self._look_angle_start)
+
+    @property
+    def look_angle_stop(self):
+        return np.array(self._look_angle_stop)
+
+    @property
+    def stack_beams(self):
+        return np.array(self._stack_beams)
+
+    @property
+    def uso_cor(self):
+        return np.array(self._uso_cor)
+
+    @property
+    def window_delay(self):
+        return np.array(self._window_delay)
+
+    @property
     def timestamp(self):
         return np.array(self._timestamp)
 
@@ -715,7 +772,10 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag",
+                "look_angle_start", "look_angle_stop", "stack_beams", "uso_cor",
+                "window_delay"
+        ]
 
     @property
     def geolocation_parameter_list(self):
@@ -775,6 +835,21 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = pitch
         self._antenna_roll = roll
         self._antenna_yaw = yaw
+
+    def set_beam_parameters(self, start, stop, beams, uso, wd):
+        # Check dimensions
+        if self._info is not None:
+            self._info.check_n_records(len(start))
+            self._info.check_n_records(len(stop))
+            self._info.check_n_records(len(beams))
+            self._info.check_n_records(len(uso))
+            self._info.check_n_records(len(wd))
+        # All fine => set values
+        self._look_angle_start = start
+        self._look_angle_stop = stop
+        self._stack_beams = beams
+        self._uso_cor = uso
+        self._window_delay = wd
 
     def append(self, annex):
         for parameter in self.parameter_list:
@@ -910,16 +985,12 @@ class L1bClassifiers(object):
     @property
     def n_records(self):
         parameter_list = self.parameter_list
-        if len(parameter_list) == 0:
-            return 0
-        else:
-            return len(getattr(self, parameter_list[0]))
+        return 0 if len(parameter_list) == 0 else len(getattr(self, parameter_list[0]))
 
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list

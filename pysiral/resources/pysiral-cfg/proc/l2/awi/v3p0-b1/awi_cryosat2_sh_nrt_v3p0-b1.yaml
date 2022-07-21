@@ -1,74 +1,56 @@
 metadata:
-    label: "AWI CryoSat-2 sea-ice thickness test product (cs2awi v3.0-tds)"
-    product_line: awi
-    record_type: tds
+    label: "AWI CryoSat-2 operational southern hemisphere sea-ice thickness data record - version 3.0-beta1"
+    product_line: awi_tds
+    record_type: nrt
     platform: cryosat2
-    version: v3p0-beta1
-    file_version_tag: v3p0-beta1
-    hemisphere: north
+    version: v3p0-b1
+    file_version_tag: v3p0-b1
+    hemisphere: south
 
 
-# --- Ingest auxiliary data ---
-# 
-# A list auxilliary datasets to be ingested before the execution of the processing steps. 
-# 
-# Usage:
-#
-#  - <auxdata_category>:       <- links to corresponding category in auxdata_def.yaml
-#       name: <auxdata_name>   <- links auxdata_category.auxdata_name auxdata_def.yaml
-#       options: {dict}        <- Options that may overwrite the ones already provided in auxdata_def.yaml
-# 
-# Notes: 
-#
-#   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
-#   
+# A list auxiliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+# NOTE: The order of the auxdata definition is important as there might be dependencies of auxiliary datasets
 auxdata:
 
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_mod
+        name: antarctic_seas
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
-    # Load the
     - mdt:
         name: dtu17
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v2p0
             exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v2p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
@@ -114,38 +96,23 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev"]
+            input_parameters:
+                - pulse_peakiness
 
-    # --- Surface type classification algorithm ---
-    #
-    # Surface type classification algorithm can be fully constructed from the
-    # config file. Only the land flag will always overwrite all classification after
-    # the surface type classification.
-    #
-    # The conventions for the options are: 
-    #
-    # <surface_type_code>:  -> [ocean, lead, sea_ice]
-    #   - radar_mode: <radar_mode>
-    #     exclude: <surface type> 
-    #     conditions:
-    #         - logical expression of the type 
-    #              "{<parameter_name>} <operator> <value>"
-    #           including the parameter name in {}, e.g.
-    #              "{sea_ice_concentration} < 15.0"
-    #           Fixed values as in example above are possible, but also monthly values, e.g.:
-    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
-    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
-    #           "{sigma0} >= 12.0" for December.
-    #           
-    #         - ...
-    #   - ...
-
+    # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
         options:
 
             # This option defines the surface type order. It is important that
             # leads are classified before sea ice to fullfill the condition
-            # that sea-ice waveforms are not lead waveforms. 
+            # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 
             # Ocean classification is based on a low pulse peakiness
@@ -153,18 +120,18 @@ procsteps:
             ocean:
 
                 - radar_mode: lrm
-                  conditions: 
+                  conditions:
                       - "{sea_ice_concentration} < 15.0"
 
                 - radar_mode: sar
-                  conditions: 
+                  conditions:
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness} < 5.0" 
+                      - "{pulse_peakiness_rolling_sdev} < 1.0"
 
                 - radar_mode: sin
-                  conditions: 
+                  conditions:
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness} < 5.0"
+                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
@@ -172,40 +139,36 @@ procsteps:
             lead:
 
                 - radar_mode: sar
-                  conditions: 
+                  conditions:
                       - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= [58.12, 57.16, 59.50, 63.02, nan, nan, nan, nan, 70.0, 65.94, 56.96, 55.91]"
-                      - "{sigma0} >= [21.83, 20.73, 21.20, 21.81, nan, nan, nan, nan, 28.0, 26.21, 22.69, 21.28]"
-                      - "{leading_edge_width} <= [0.81, 0.83, 0.81, 0.79, 99.9, 99.9, 99.9, 99.9, 0.75, 0.75, 0.78, 0.82]"
+                      - "{pulse_peakiness} >= 66.0"
+                      - "{sigma0} >= 23.0"
+                      - "{leading_edge_width} <= 0.75"
 
                 - radar_mode: sin
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= [214.14, 192.17, 201.10, 187.61, nan, nan, nan, nan, 275.0, 273.44, 261.86, 230.36]"
-                      - "{sigma0} >= [19.67, 18.49, 17.34, 17.94, nan, nan, nan, nan, 24.0, 23.77, 21.90, 20.47]"
-                      - "{leading_edge_width} <= [1.24, 1.32, 1.35, 1.37, nan, nan, nan, nan, 1.06, 1.08, 1.09, 1.19]"
-                    
+                      - "{pulse_peakiness} >= 260.0"
+                      - "{sigma0} >= 24.0"
+                      - "{leading_edge_width} <= 1.05"
+
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
-            # valid leading edge. 
+            # valid leading edge.
             sea_ice:
 
                 - radar_mode: sar
                   exclude: lead
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} <= [33.25, 29.73, 29.05, 29.16, nan, nan, nan, nan, 27.0, 28.88, 37.30, 33.26]"
-                      - "{sigma0} <= [20.58, 19.14, 18.66, 18.71, nan, nan, nan, nan, 24.0, 24.87, 22.51, 20.42]"
-                      - "{leading_edge_width} >= [1.03, 1.12, 1.13, 1.15, nan, nan, nan, nan, 1.1, 1.11, 0.92, 1.00]"
+                      - "{leading_edge_quality} <= 1.02"
 
                 - radar_mode: sin
                   exclude: lead
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} <= [91.99, 83.50, 79.20, 71.84, nan, nan, nan, nan, 105.0, 109.01, 116.59, 97.81]"
-                      - "{sigma0} <= [16.77, 15.56, 14.44, 14.00, nan, nan, nan, nan, 20.0, 20.05, 18.10, 16.76]"
-                      - "{leading_edge_width} >= [1.62, 1.69, 1.77, 1.81, nan, nan, nan, nan, 1.5, 1.51, 1.47, 1.58]"
+                      - "{leading_edge_quality} <= 1.02"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
@@ -251,9 +214,7 @@ procsteps:
         pyclass: L2ApplyRangeCorrections
         options:
             corrections: 
-                - dry_troposphere
                 - wet_troposphere
-                - inverse_barometric
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
@@ -269,7 +230,7 @@ procsteps:
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
             pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            pre_filter_maximum_mss_median_offset: 5.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
@@ -277,12 +238,13 @@ procsteps:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
-                edges_only: False
+                edges_only: false
 
     # Algorithm for adding the DOT = SLA + MDT to the L2 data object
     -   module: dot
         pyclass: DynamicOceanTopography
         options: null
+
 
     # Estimation of Radar Freeboard
     -   module: frb
@@ -326,7 +288,7 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 
@@ -334,3 +296,13 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
+
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            sea_ice_filter_size_m: 300000.
+            ocean_filter_size_m: 25000.
+            freeboard_smoother_filter_size_m: 150000.
+            sea_ice_freeboard_miz_gradient: 0.002
+            leading_edge_width_ocean_value: 2.5

@@ -10,15 +10,14 @@ from cftime import num2pydate
 from pathlib import Path
 
 from pysiral import __version__ as pysiral_version
+from pysiral.l1preproc import Level1PInputHandlerBase
 from pysiral.clocks import StopWatch
-from pysiral.errorhandler import ErrorStatus
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
-from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
-class Sentinel3CODAL2Wat(DefaultLoggingClass):
+class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
 
     def __init__(self, cfg, raise_on_error=False):
         """
@@ -29,12 +28,7 @@ class Sentinel3CODAL2Wat(DefaultLoggingClass):
         """
 
         cls_name = self.__class__.__name__
-        super(Sentinel3CODAL2Wat, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Store arguments
-        self.raise_on_error = raise_on_error
-        self.cfg = cfg
+        super(Sentinel3CODAL2Wat, self).__init__(cfg, raise_on_error, cls_name)
 
         # Init main class variables
         self.nc = None

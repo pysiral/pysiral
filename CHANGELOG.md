@@ -1,5 +1,46 @@
 # History of changes
 
+## [0.10] - TBD
+
+### Added
+- high resolution land/ocean masks in the Level-1 pre-processor
+- Support for 2021 version of the NSIDC sea ice region mask
+- Support for SAMOSA+ retracker (external package) has been added (@djbwork)
+- mypy type hint check have been added
+- Support for ERS-1/ERS-2/Envisat ML based TFMRA thresholds (@sp-awi)
+- southern hemisphere grids (12.5 & 25 km)
+- filter class to detect and flag wave-based freeboard biases in the marginal ice zone
+- release candidate 1 of the CryoSat-2 CCI v3.0 CDR
+- distance to ice edge computed from ice concentration data
+- support for Cryo-TEMPO phase 2.1 sea ice and polar ocean products (@djbwork)
+- `ml` sub-module to `auxdata` for accessing trained models in the Level-2 processor
+- type hints throughout the project 
+- citation file (CITATION.cff)
+
+### Changed
+- Level-1 pre-processor workflow has been changed to allow processor items at different stages
+- Data type for waveforms has been changed from float32 to float64 (@djbwork)
+- Level-3 processor now only iterates over grid cells with data to increase execution speed
+- Allow flexible epoch/units for Level-2 output
+- Numerous changes to configuration files 
+- TFMRA retracker may now exclude certain range bins for leading edge detection
+
+### Fixed
+- Fixed a SEGV when running cythonized TFMRA under macOS (@djbwork)
+- Fixed an issue with a hard-coded nominal tracking bin for Envisat data
+- Fixed incorrect date in L2P output filename when L2 data object contained a few data points of the previous day
+- Fixed an issue of noise/FFT artefacts confusing the computation of leading edge width for pulse-limited waveforms
+- 
+
+### Deprecated
+- class `pysiral.auxdata.GridTrackInterpol`. To be replaced by `pysiral.grid.GridImageExtract`
+- class `pysiral.core.DefaultLoggingClass` 
+
+### Removed
+- TAI2UTC converter class has been removed in favor of the astropy.tyme module
+- module `pysiral.logging` (replaced by use of loguru)
+- Deprecated processor and output definition files
+
 ## [0.9.6] - 2021-10-12
 
 ### Added

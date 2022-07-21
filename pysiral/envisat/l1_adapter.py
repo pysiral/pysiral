@@ -16,6 +16,7 @@ from pathlib import Path
 
 from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
+from pysiral.l1preproc import Level1PInputHandlerBase
 from pysiral.envisat.functions import (get_envisat_window_delay, get_envisat_wfm_range)
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
@@ -24,7 +25,7 @@ from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
-class EnvisatSGDRNC(DefaultLoggingClass):
+class EnvisatSGDRNC(Level1PInputHandlerBase):
     """ Converts a Envisat SGDR object into a L1bData object """
 
     def __init__(self,
@@ -33,17 +34,13 @@ class EnvisatSGDRNC(DefaultLoggingClass):
                  ) -> None:
         """
         Input handler for Sentinel-3 L2WAT netCDF files from the CODA.
+
         :param cfg: Options from the corresponding Level-1 pre-processor config file
         :param raise_on_error: Boolean value if the class should raise an exception upon an error (default: False)
         """
 
         cls_name = self.__class__.__name__
-        super(EnvisatSGDRNC, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Store arguments
-        self.raise_on_error = raise_on_error
-        self.cfg = cfg
+        super(EnvisatSGDRNC, self).__init__(cfg, raise_on_error, cls_name)
 
         # Debug variables
         self.timer = None
