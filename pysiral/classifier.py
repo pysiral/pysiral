@@ -61,25 +61,28 @@ class CS2PulsePeakiness(object):
         self._peakiness = np.full(self._n, np.nan).astype(np.float32)
         self._peakiness_r = np.full(self._n, np.nan).astype(np.float32)
         self._peakiness_l = np.full(self._n, np.nan).astype(np.float32)
-        self.noise_floor = np.full(self._n, np.nan).astype(np.float32)
-        self.peakiness_no_noise_removal = np.full(self._n, np.nan).astype(np.float32)
+        self._noise_floor = np.full(self._n, np.nan).astype(np.float32)
+        # self.peakiness_no_noise_removal = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_normed = np.full(self._n, np.nan).astype(np.float32)
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
-                self.noise_floor[i] = bn.nanmean(y[:11])
+                self._noise_floor[i] = bn.nanmean(y[:11])
                 y_no_noise_removal = y.copy()
-                y -= self.noise_floor[i]  # Remove Noise
+                y -= self._noise_floor[i]  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
                 ypi = np.nanargmax(y)  # Waveform peak index
                 if 3*self._pad < ypi < self._n_range_bins-4*self._pad:
                     self._peakiness_l[i] = yp/bn.nanmean(y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
                     self._peakiness_r[i] = yp/bn.nanmean(y[ypi+1*self._pad:ypi+3*self._pad+1])*3.0
-                    self._peakiness[i] = yp/y.sum()*self._n_range_bins
-                    self.peakiness_no_noise_removal[i] = np.nanmax(y_no_noise_removal) / y_no_noise_removal.sum() * self._n_range_bins
+                    self._peakiness_normed[i] = yp / y.sum()
+                    self._peakiness[i] = self.peakiness_normed[i] * self._n_range_bins
+
+                    # self.peakiness_no_noise_removal[i] = np.nanmax(y_no_noise_removal) / y_no_noise_removal.sum() * self._n_range_bins
             except ValueError:
                 self._peakiness_l[i] = np.nan
                 self._peakiness_r[i] = np.nan
@@ -88,6 +91,15 @@ class CS2PulsePeakiness(object):
     @property
     def peakiness(self):
         return self._peakiness
+
+    @property
+    def peakiness_normed(self):
+        return self._peakiness_normed
+
+    @property
+    def noise_floor(self):
+        return self._noise_floor
+
 
     @property
     def peakiness_r(self):

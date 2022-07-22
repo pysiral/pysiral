@@ -388,12 +388,10 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         # Calculate the Peakiness (CryoSat-2 notation)
         pulse = CS2PulsePeakiness(wfm_counts)
         self.l1.classifier.add(pulse.peakiness, "peakiness")
+        self.l1.classifier.add(pulse.peakiness_normed, "peakiness_normed")
+        self.l1.classifier.add(pulse.noise_floor, "peakiness_noise_floor")
         self.l1.classifier.add(pulse.peakiness_r, "peakiness_r")
         self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
-
-        # fmi version: Calculate the LTPP
-        # ltpp = CS2LTPP(wfm_counts)
-        # self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
 
         # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
         satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
