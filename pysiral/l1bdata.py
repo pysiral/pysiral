@@ -853,7 +853,7 @@ class L1bTimeOrbit(object):
         """
 
         # Array of [0, 0, -1] vector (down in satellite reference frame)
-        x_arr = np.repeat(np.array([[0, 0, -1]]), 10, axis=0)
+        x_arr = np.repeat(np.array([[0, 0, -1]]), pitch_deg.shape[0], axis=0)
 
         # Rotate the down vector with pitch, roll, heading
         r = Rotation.from_rotvec(np.c_[roll_deg, pitch_deg, heading_deg], degrees=True)
