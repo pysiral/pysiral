@@ -36,7 +36,7 @@ auxdata:
             exception_on_error: True
 
     - sitype:
-        name: c3s_v1p0
+        name: c3s_v2p0
         options:
             fill_valid_sic_gaps: True
             exception_on_error: True
