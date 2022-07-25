@@ -244,7 +244,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 #       -> this will be noted in the error status flag
                 var = l1b.get_parameter_by_name(data_group, var_name)
                 if var is None:
-                    logger.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
+                    logger.warning(f"Cannot find variable {data_group}.{var_name} in l1p")
                     var = np.full(l2.n_records, np.nan)
                     error_status = np.logical_not(error_status)
 
