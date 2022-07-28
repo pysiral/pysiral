@@ -365,9 +365,11 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         """
         Transfer the classifiers defined in the l1p config file to the Level-1 object.
         NOTE: It is assumed that all classifiers are 20Hz
+
         In addition, a few legacy parameter are computed based on the waveform counts that is only available at
         this stage. Computation of other parameter such as sigma_0, leading_edge_width, ... are moved to the
         post-processing
+
         :return: None
         """
         # Loop over all classifier variables defined in the processor definition file
@@ -375,23 +377,10 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
             variable_20hz = getattr(self.nc, self.cfg.classifier_targets[key])
             self.l1.classifier.add(variable_20hz, key)
 
-        # Calculate Parameters from waveform counts
-        # XXX: This is a legacy of the CS2AWI IDL processor
-        #      Threshold defined for waveform counts not power in dB
-        wfm_counts = self.nc.pwr_waveform_20_ku.values
-
         # Calculate the OCOG Parameter (CryoSat-2 notation)
         ocog = CS2OCOGParameter(self.l1.waveform.power)
         self.l1.classifier.add(ocog.width, "ocog_width")
         self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
-
-        # Calculate the Peakiness (CryoSat-2 notation)
-        pulse = CS2PulsePeakiness(wfm_counts)
-        self.l1.classifier.add(pulse.peakiness, "peakiness")
-        self.l1.classifier.add(pulse.peakiness_normed, "peakiness_normed")
-        self.l1.classifier.add(pulse.noise_floor, "peakiness_noise_floor")
-        self.l1.classifier.add(pulse.peakiness_r, "peakiness_r")
-        self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
 
         # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
         satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
