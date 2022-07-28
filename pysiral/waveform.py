@@ -434,6 +434,8 @@ class L1PWaveformPeakiness(L1PProcItem):
 
         # Get the waveform
         n_records, n_range_bins = waveform.shape
+        if waveform.dtype.kind != "f":
+            waveform = waveform.astype(np.float)
 
         # Init output parameters
         pulse_peakiness = np.full(n_records, np.nan)
@@ -442,7 +444,7 @@ class L1PWaveformPeakiness(L1PProcItem):
         for i in np.arange(n_records):
 
             # Discard first bins, they are FFT artefacts anyway
-            wave = waveform[i, self.skip_first_range_bins:].astype(np.float)
+            wave = waveform[i, self.skip_first_range_bins:]
 
             # new peakiness
             try:
