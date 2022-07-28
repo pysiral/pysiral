@@ -427,7 +427,8 @@ class L1PWaveformPeakiness(L1PProcItem):
         """
         waveforms = l1.waveform.power
         pulse_peakiness = self.compute_for_waveforms(waveforms)
-        l1.classifier.add(pulse_peakiness, "peakiness")
+        parameter_target_name = "peakiness" if self.norm_is_range_bin else "peakiness_normed"
+        l1.classifier.add(pulse_peakiness, parameter_target_name)
 
     def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
         """
