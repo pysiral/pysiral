@@ -425,38 +425,56 @@ class L1PWaveformPeakiness(L1PProcItem):
 
         :return: None
         """
-        waveform = l1.waveform.power
-        pulse_peakiness = self.calc(waveform)
+        waveforms = l1.waveform.power
+        pulse_peakiness = self.compute_for_waveforms(waveforms)
         l1.classifier.add(pulse_peakiness, "peakiness")
 
-    def calc(self, waveform: npt.NDArray) -> npt.NDArray:
-        """ Compute pulse peakiness (from SICCI v1 processor)."""
+    def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
+        """
+        Compute pulse peakiness for a number of waveforms
+
+        :param waveforms:
+
+        :return: pulse peakiness array
+        """
 
         # Get the waveform
-        n_records, n_range_bins = waveform.shape
-        if waveform.dtype.kind != "f":
-            waveform = waveform.astype(np.float)
+        n_records, n_range_bins = waveforms.shape
+        if waveforms.dtype.kind != "f":
+            waveforms = waveforms.astype(np.float)
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bins else 1.0
 
         # Init output parameters
         pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
+            waveform = waveforms[i, self.skip_first_range_bins:]
+            pulse_peakiness[i] = self.compute(waveform, norm)
 
-            # Discard first bins, they are FFT artefacts anyway
-            wave = waveform[i, self.skip_first_range_bins:]
+        return pulse_peakiness
 
-            # new peakiness
-            try:
-                pulse_peakiness[i] = bn.nanmax(wave)/(bn.nansum(wave))*n_range_bins
-            except ZeroDivisionError:
-                pulse_peakiness[i] = np.nan
+    @staticmethod
+    def compute(waveform: npt.NDArray, norm: int) -> float:
+        """
+        Compute pulse peakiness for a single waveform
 
+        :param waveform: The waveform
+        :param norm
+
+        :return: pulse peakiness
+        """
+        try:
+            pulse_peakiness = bn.nanmax(waveform) / (bn.nansum(waveform)) * norm
+        except ZeroDivisionError:
+            pulse_peakiness = np.nan
         return pulse_peakiness
 
     @property
     def required_options(self):
-        return ["skip_first_range_bins"]
+        return ["skip_first_range_bins", "norm_is_range_bin"]
 
 
 class L1PLeadingEdgeQuality(L1PProcItem):
