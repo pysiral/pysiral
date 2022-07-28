@@ -406,18 +406,24 @@ class L1PWaveformPeakiness(L1PProcItem):
     """
     A L1P pre-processor item class for computing pulse peakiness """
 
-    def __init__(self, **cfg):
+    def __init__(self,
+                 skip_first_range_bins: int = 0,
+                 norm_is_range_bin: bool = True
+                 ):
+
+        cfg = {"skip_first_range_bins": skip_first_range_bins,
+               "norm_is_range_bin": norm_is_range_bin
+               }
         super(L1PWaveformPeakiness, self).__init__(**cfg)
-        for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
-            if option_value is None:
-                msg = f"Missing option `{option_name}` -> No computation of peakiness!"
-                logger.warning(msg)
-            setattr(self, option_name, option_value)
 
     def apply(self, l1: Level1bData) -> None:
         """
-        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        Computes pulse peakiness and adds parameter to classifier data group.
+
+        NOTE: The classifier parameter name depends on the `norm_is_range_bin keyword:
+
+            norm_is_range_bin = True -> parameter name: 'peakiness'
+            norm_is_range_bin = False -> parameter name: 'peakiness_normed'
 
         :param l1: l1bdata.Level1bData instance
 
