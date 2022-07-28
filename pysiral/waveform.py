@@ -4,9 +4,9 @@ Created on Fri Jul 01 13:07:10 2016
 
 @author: shendric
 """
-import matplotlib
 
 import numpy as np
+import numpy.typing as npt
 import bottleneck as bn
 from loguru import logger
 
@@ -15,7 +15,7 @@ from pysiral.retracker import cTFMRA
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
-def get_waveforms_peak_power(wfm, dB=False):
+def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
     """
     Return the peak power (in input coordinates) of an array of waveforms
 
@@ -29,7 +29,7 @@ def get_waveforms_peak_power(wfm, dB=False):
         float array with maximum for each echo
     """
     peak_power = np.amax(wfm, axis=1)
-    if dB:
+    if use_db:
         peak_power = 10 * np.log10(peak_power)
     return peak_power
 
@@ -51,9 +51,7 @@ def get_footprint_pulse_limited(r: float, band_width: float) -> float:
 
     c_0 = 299792458.0
     footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
-    area_pl = np.pi * footprint_radius ** 2.
-
-    return area_pl
+    return np.pi * footprint_radius ** 2.
 
 
 def get_footprint_sar(r: float,
@@ -86,9 +84,7 @@ def get_footprint_sar(r: float,
     alpha_earth = 1. + (r / r_mean)
     lx = (lambda_0 * r) / (2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
-    area_sar = (2. * ly) * (wf * lx)
-
-    return area_sar
+    return (2. * ly) * (wf * lx)
 
 
 def get_sigma0_sar(rx_pwr: float,
@@ -122,9 +118,7 @@ def get_sigma0_sar(rx_pwr: float,
     """
 
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a)
-    sigma0 = 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
 def get_sigma0(wf_peak_power_watt: float,
@@ -418,12 +412,9 @@ class L1PWaveformPeakiness(L1PProcItem):
         for option_name in self.required_options:
             option_value = cfg.get(option_name, None)
             if option_value is None:
-                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
+                msg = f"Missing option `{option_name}` -> No computation of peakiness!"
                 logger.warning(msg)
             setattr(self, option_name, option_value)
-
-        # Init Parameters
-        self.peakiness = None
 
     def apply(self, l1):
         """
@@ -431,31 +422,32 @@ class L1PWaveformPeakiness(L1PProcItem):
         :param l1: l1bdata.Level1bData instance
         :return: None
         """
-        self._calc(l1)
-        l1.classifier.add(self.peakiness, "peakiness")
+        waveform = l1.waveform.power
+        pulse_peakiness = self.calc(waveform)
+        l1.classifier.add(pulse_peakiness, "peakiness")
 
-    def _calc(self, l1):
+    def calc(self, waveform: npt.NDArray) -> npt.NDArray:
         """ Compute pulse peakiness (from SICCI v1 processor)."""
 
         # Get the waveform
-        wfm = l1.waveform.power
-        n_records, n_range_bins = wfm.shape
+        n_records, n_range_bins = waveform.shape
 
         # Init output parameters
-        self.peakiness = np.full(n_records, np.nan)
-        self.peakiness_old = np.full(n_records, np.nan)
+        pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
 
             # Discard first bins, they are FFT artefacts anyway
-            wave = wfm[i, self.skip_first_range_bins:]
+            wave = waveform[i, self.skip_first_range_bins:]
 
             # new peakiness
             try:
-                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
+                pulse_peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
             except ZeroDivisionError:
-                self.peakiness[i] = np.nan
+                pulse_peakiness[i] = np.nan
+
+        return pulse_peakiness
 
     @property
     def required_options(self):

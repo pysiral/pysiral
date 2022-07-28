@@ -15,13 +15,7 @@ import numpy as np
 import bottleneck as bn
 
 
-class BaseClassifier(object):
-
-    def __init__(self):
-        pass
-
-
-class CS2OCOGParameter(BaseClassifier):
+class CS2OCOGParameter(object):
     """
     Calculate OCOG Parameters (Amplitude, Width) for CryoSat-2 waveform
     counts.
@@ -29,7 +23,6 @@ class CS2OCOGParameter(BaseClassifier):
     """
 
     def __init__(self, wfm_counts):
-        super(CS2OCOGParameter, self).__init__()
         self._n = np.shape(wfm_counts)[0]
         self._amplitude = np.ndarray(shape=[self._n], dtype=np.float32)
         self._width = np.ndarray(shape=[self._n], dtype=np.float32)
@@ -38,7 +31,7 @@ class CS2OCOGParameter(BaseClassifier):
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
             y = wfm_counts[i, :].flatten().astype(np.float64)
-            y -= bn.nanmean(y[0:11])       # Remove Noise
+            y -= bn.nanmean(y[:11])  # Remove Noise
             y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             y2 = y**2.0
             self._amplitude[i] = np.sqrt((y2**2.0).sum() / y2.sum())
@@ -53,7 +46,7 @@ class CS2OCOGParameter(BaseClassifier):
         return self._width
 
 
-class CS2PulsePeakiness(BaseClassifier):
+class CS2PulsePeakiness(object):
     """
     Calculates Pulse Peakiness (full, left & right) for CryoSat-2 waveform
     counts
@@ -61,29 +54,35 @@ class CS2PulsePeakiness(BaseClassifier):
          consistent method of L1bData or L2Data is required
     """
     def __init__(self, wfm_counts, pad=2):
-        super(CS2PulsePeakiness, self).__init__()
         shape = np.shape(wfm_counts)
         self._n = shape[0]
         self._n_range_bins = shape[1]
         self._pad = pad
-        dtype = np.float32
-        self._peakiness = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
-        self._peakiness_r = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
-        self._peakiness_l = np.ndarray(shape=[self._n], dtype=dtype)*np.nan
+        self._peakiness = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_r = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_l = np.full(self._n, np.nan).astype(np.float32)
+        self._noise_floor = np.full(self._n, np.nan).astype(np.float32)
+        # self.peakiness_no_noise_removal = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_normed = np.full(self._n, np.nan).astype(np.float32)
         self._calc_parameters(wfm_counts)
 
     def _calc_parameters(self, wfm_counts):
         for i in np.arange(self._n):
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
-                y -= bn.nanmean(y[0:11])  # Remove Noise
+                self._noise_floor[i] = bn.nanmean(y[:11])
+                y_no_noise_removal = y.copy()
+                y -= self._noise_floor[i]  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
                 ypi = np.nanargmax(y)  # Waveform peak index
                 if 3*self._pad < ypi < self._n_range_bins-4*self._pad:
                     self._peakiness_l[i] = yp/bn.nanmean(y[ypi-3*self._pad:ypi-1*self._pad+1])*3.0
                     self._peakiness_r[i] = yp/bn.nanmean(y[ypi+1*self._pad:ypi+3*self._pad+1])*3.0
-                    self._peakiness[i] = yp/y.sum()*self._n_range_bins
+                    self._peakiness_normed[i] = yp / y.sum()
+                    self._peakiness[i] = self.peakiness_normed[i] * self._n_range_bins
+
+                    # self.peakiness_no_noise_removal[i] = np.nanmax(y_no_noise_removal) / y_no_noise_removal.sum() * self._n_range_bins
             except ValueError:
                 self._peakiness_l[i] = np.nan
                 self._peakiness_r[i] = np.nan
@@ -92,6 +91,15 @@ class CS2PulsePeakiness(BaseClassifier):
     @property
     def peakiness(self):
         return self._peakiness
+
+    @property
+    def peakiness_normed(self):
+        return self._peakiness_normed
+
+    @property
+    def noise_floor(self):
+        return self._noise_floor
+
 
     @property
     def peakiness_r(self):
@@ -103,14 +111,13 @@ class CS2PulsePeakiness(BaseClassifier):
 
 
 # Late tail to peak power (LTPP) ratio added for fmi needs
-class S3LTPP(BaseClassifier):
+class S3LTPP(object):
     """
     Calculates Late-Tail-to-Peak-Power ratio.
     source: Rinne 2016
     """
     def __init__(self, wfm_counts, pad=1):
         # Warning: if 0padding is introduced in S3 L1 processing baseline, pad must be set to 2
-        super(S3LTPP, self).__init__()
         shape = np.shape(wfm_counts)
         self._n = shape[0]
         self._n_range_bins = shape[1]
@@ -124,7 +131,7 @@ class S3LTPP(BaseClassifier):
         for i in np.arange(self._n): 
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
-                y -= bn.nanmean(y[0:11])  # Remove Noise
+                y -= bn.nanmean(y[:11])  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
                 
@@ -153,12 +160,11 @@ class S3LTPP(BaseClassifier):
         return self._ltpp        
             
 
-class CS2LTPP(BaseClassifier):
+class CS2LTPP(object):
     """
     Calculates Late-Tail-to-Peak-Power ratio.
     """
     def __init__(self, wfm_counts, pad=2):
-        super(CS2LTPP, self).__init__()
         shape = np.shape(wfm_counts)
         self._n = shape[0]
         self._n_range_bins = shape[1]
@@ -171,7 +177,7 @@ class CS2LTPP(BaseClassifier):
         # loop over the waveforms
         for i in np.arange(self._n): 
             y = wfm_counts[i, :].flatten().astype(np.float32)
-            y -= bn.nanmean(y[0:11])  # Remove Noise
+            y -= bn.nanmean(y[:11])  # Remove Noise
             y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
             yp = np.nanmax(y)  # Waveform peak value
             ypi = bn.nanargmax(y)  # Waveform peak index
@@ -179,7 +185,7 @@ class CS2LTPP(BaseClassifier):
             # AMANDINE: implementation for wf of 256 bins (128 zero-padded)?
             onediv = float(1)/float(41)
 
-            # AMANDINE: here i seems to be understood as gate index but it is wf index!?
+            # AMANDINE: here i seems to be understood as gate index, but it is wf index!?
             if i == 256: 
                 break
             if [i > (ypi + 100)] and [i < (ypi + 140)]:             # AMANDINE: syntax to be checked
@@ -193,7 +199,7 @@ class CS2LTPP(BaseClassifier):
         return self._ltpp
 
 
-class EnvisatWaveformParameter(BaseClassifier):
+class EnvisatWaveformParameter(object):
     """
     Currently only computes pulse peakiness for Envisat waveforms
     from SICCI processor.
@@ -204,7 +210,6 @@ class EnvisatWaveformParameter(BaseClassifier):
     """
 
     def __init__(self, wfm, skip=5, bins_after_nominal_tracking_bin=83):
-        super(EnvisatWaveformParameter, self).__init__()
         self.t_n = bins_after_nominal_tracking_bin
         self.skip = skip
         self._n = wfm.shape[0]
