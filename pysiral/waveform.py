@@ -7,6 +7,7 @@ Created on Fri Jul 01 13:07:10 2016
 
 import numpy as np
 import numpy.typing as npt
+from typing import Union
 import bottleneck as bn
 from loguru import logger
 
@@ -438,7 +439,7 @@ class L1PWaveformPeakiness(L1PProcItem):
 
     def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
         """
-        Compute pulse peakiness for a number of waveforms
+        Compute pulse peakiness for a waveform array
 
         :param waveforms:
 
@@ -459,12 +460,32 @@ class L1PWaveformPeakiness(L1PProcItem):
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
             waveform = waveforms[i, self.skip_first_range_bins:]
-            pulse_peakiness[i] = self.compute(waveform, norm)
+            pulse_peakiness[i] = self._compute(waveform, norm)
 
         return pulse_peakiness
 
+    def compute_for_waveform(self, waveform: npt.NDArray) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform:
+
+        :return: pulse peakiness
+        """
+
+        # Get the waveform
+        n_range_bins = waveform.shape
+        if waveform.dtype.kind != "f":
+            waveform = waveform.astype(np.float)
+        waveform = waveform[self.skip_first_range_bins:]
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bins else 1.0
+
+        return self._compute(waveform, norm)
+
     @staticmethod
-    def compute(waveform: npt.NDArray, norm: int) -> float:
+    def _compute(waveform: npt.NDArray, norm: Union[int, float]) -> float:
         """
         Compute pulse peakiness for a single waveform
 
