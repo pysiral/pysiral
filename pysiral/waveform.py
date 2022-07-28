@@ -442,11 +442,11 @@ class L1PWaveformPeakiness(L1PProcItem):
         for i in np.arange(n_records):
 
             # Discard first bins, they are FFT artefacts anyway
-            wave = waveform[i, self.skip_first_range_bins:]
+            wave = waveform[i, self.skip_first_range_bins:].astype(np.float)
 
             # new peakiness
             try:
-                pulse_peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
+                pulse_peakiness[i] = bn.nanmax(wave)/(bn.nansum(wave))*n_range_bins
             except ZeroDivisionError:
                 pulse_peakiness[i] = np.nan
 
