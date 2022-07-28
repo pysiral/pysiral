@@ -404,8 +404,7 @@ class L1PSigma0(L1PProcItem):
 
 class L1PWaveformPeakiness(L1PProcItem):
     """
-    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
-    using three TFMRA thresholds """
+    A L1P pre-processor item class for computing pulse peakiness """
 
     def __init__(self, **cfg):
         super(L1PWaveformPeakiness, self).__init__(**cfg)
@@ -416,10 +415,14 @@ class L1PWaveformPeakiness(L1PProcItem):
                 logger.warning(msg)
             setattr(self, option_name, option_value)
 
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
         Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+
         :param l1: l1bdata.Level1bData instance
+
+        :raises None:
+
         :return: None
         """
         waveform = l1.waveform.power
