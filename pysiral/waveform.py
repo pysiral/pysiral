@@ -452,7 +452,7 @@ class L1PWaveformPeakiness(L1PProcItem):
             waveforms = waveforms.astype(np.float)
 
         # Get the norm (default is range bins)
-        norm = n_range_bins if self.norm_is_range_bins else 1.0
+        norm = n_range_bins if self.norm_is_range_bin else 1.0
 
         # Init output parameters
         pulse_peakiness = np.full(n_records, np.nan)
