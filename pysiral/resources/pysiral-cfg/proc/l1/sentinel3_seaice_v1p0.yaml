@@ -117,6 +117,29 @@ level1_preprocessor:
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
             
+            # Compute the leading edge quality indicator
+            # This class will add three parameters to the l1p classifier data group:
+            #  1. Leading edge quality
+            #  2. first maximum index
+            #  3. first maximum power (in units of peak power)
+            - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgeQuality
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                first_maximum_normalized_power_threshold:
+                    sar: 0.25
+                    # Number of range bins prior to the first maximum
+                # that are to compute the quality factor
+                leading_edge_lookup_window:
+                    sar: 30
+                    # Minimum valid first maximum index
+                minimum_valid_first_maximum_index:
+                    sar: 10
+
+
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
               stage: post_ocean_segment_extraction
