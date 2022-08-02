@@ -7,6 +7,7 @@ Created on Fri Jul 01 13:07:10 2016
 
 import numpy as np
 import numpy.typing as npt
+from typing import Union
 import bottleneck as bn
 from loguru import logger
 
@@ -404,54 +405,104 @@ class L1PSigma0(L1PProcItem):
 
 class L1PWaveformPeakiness(L1PProcItem):
     """
-    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
-    using three TFMRA thresholds """
+    A L1P pre-processor item class for computing pulse peakiness """
 
-    def __init__(self, **cfg):
+    def __init__(self,
+                 skip_first_range_bins: int = 0,
+                 norm_is_range_bin: bool = True
+                 ):
+
+        cfg = {"skip_first_range_bins": skip_first_range_bins,
+               "norm_is_range_bin": norm_is_range_bin
+               }
         super(L1PWaveformPeakiness, self).__init__(**cfg)
-        for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
-            if option_value is None:
-                msg = f"Missing option `{option_name}` -> No computation of peakiness!"
-                logger.warning(msg)
-            setattr(self, option_name, option_value)
 
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
-        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        Computes pulse peakiness and adds parameter to classifier data group.
+
+        NOTE: The classifier parameter name depends on the `norm_is_range_bin keyword:
+
+            norm_is_range_bin = True -> parameter name: 'peakiness'
+            norm_is_range_bin = False -> parameter name: 'peakiness_normed'
+
         :param l1: l1bdata.Level1bData instance
+
+        :raises None:
+
         :return: None
         """
-        waveform = l1.waveform.power
-        pulse_peakiness = self.calc(waveform)
-        l1.classifier.add(pulse_peakiness, "peakiness")
+        waveforms = l1.waveform.power
+        pulse_peakiness = self.compute_for_waveforms(waveforms)
+        parameter_target_name = "peakiness" if self.norm_is_range_bin else "peakiness_normed"
+        l1.classifier.add(pulse_peakiness, parameter_target_name)
 
-    def calc(self, waveform: npt.NDArray) -> npt.NDArray:
-        """ Compute pulse peakiness (from SICCI v1 processor)."""
+    def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
+        """
+        Compute pulse peakiness for a waveform array
+
+        :param waveforms:
+
+        :return: pulse peakiness array
+        """
 
         # Get the waveform
-        n_records, n_range_bins = waveform.shape
+        n_records, n_range_bins = waveforms.shape
+        if waveforms.dtype.kind != "f":
+            waveforms = waveforms.astype(np.float)
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bin else 1.0
 
         # Init output parameters
         pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
+            waveform = waveforms[i, self.skip_first_range_bins:]
+            pulse_peakiness[i] = self._compute(waveform, norm)
 
-            # Discard first bins, they are FFT artefacts anyway
-            wave = waveform[i, self.skip_first_range_bins:]
+        return pulse_peakiness
 
-            # new peakiness
-            try:
-                pulse_peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
-            except ZeroDivisionError:
-                pulse_peakiness[i] = np.nan
+    def compute_for_waveform(self, waveform: npt.NDArray) -> float:
+        """
+        Compute pulse peakiness for a single waveform
 
+        :param waveform:
+
+        :return: pulse peakiness
+        """
+
+        # Get the waveform
+        n_range_bins = waveform.shape
+        if waveform.dtype.kind != "f":
+            waveform = waveform.astype(np.float)
+        waveform = waveform[self.skip_first_range_bins:]
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bins else 1.0
+
+        return self._compute(waveform, norm)
+
+    @staticmethod
+    def _compute(waveform: npt.NDArray, norm: Union[int, float]) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform: The waveform
+        :param norm
+
+        :return: pulse peakiness
+        """
+        try:
+            pulse_peakiness = bn.nanmax(waveform) / (bn.nansum(waveform)) * norm
+        except ZeroDivisionError:
+            pulse_peakiness = np.nan
         return pulse_peakiness
 
     @property
     def required_options(self):
-        return ["skip_first_range_bins"]
+        return ["skip_first_range_bins", "norm_is_range_bin"]
 
 
 class L1PLeadingEdgeQuality(L1PProcItem):

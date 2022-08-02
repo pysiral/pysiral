@@ -88,31 +88,24 @@ level1_preprocessor:
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
 
-            # Resample SIN waveforms to the same size as SAR waveforms
-            # NOTE: This will only have an effect of SIN segments
-            - label: "High Resolution Land Mask"
-              stage: post_source_file
-              module_name: pysiral.mask
-              class_name: L1PHighResolutionLandMask
+            # Compute pulse peakiness
+            - label: "Compute Pulse Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
               options:
-                  local_machine_def_auxclass: mask
-                  local_machine_def_tag: landmask_highres
-                  dummy_val: 
-                    land_ocean_flag: -1
-                    distance_to_coast: .nan
-                  filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
-                  valid_latitude_range: [45.0, 88.0]
-                  grid_def:
-                      projection:
-                          proj: laea
-                          lon_0: 0.0
-                          lat_0: 90
-                      dimension:
-                          n_cols: 40000
-                          n_lines: 40000
-                          dx: 250
-                          dy: 250
-                  
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: True
+
+            # Compute normed pulse peakiness
+            - label: "Compute Pulse Peakiness (normed)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: False
+
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"
