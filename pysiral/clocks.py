@@ -26,6 +26,7 @@ class StopWatch(object):
 
     def start(self):
         self.t0 = time.time()
+        return self
 
     def stop(self):
         self.t1 = time.time()

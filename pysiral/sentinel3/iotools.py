@@ -3,10 +3,15 @@
 import os
 import re
 from pathlib import Path
+from datetime import datetime
 from collections import deque
+from loguru import logger
 
 from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
+from pysiral.clocks import StopWatch
+
+from dateperiods import DatePeriod
 
 
 class Sentinel3FileList(DefaultLoggingClass):
@@ -126,6 +131,90 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
         """ Return the search result """
         return self._sorted_list
 
+
+class L2SeaIceFileDiscovery(object):
+    """ Class to retrieve Sentinel-3 SRAL files from the Copernicus Online Data Archive """
+
+    def __init__(self, cfg):
+        """
+
+        :param cfg: dict/treedict configuration options (see l1proc config file)
+        """
+
+        # Save config
+        self.cfg = cfg
+
+        # Create inventory
+        logger.info(f"Sentinel-3 source directory: {cfg.lookup_dir}")
+        timer = StopWatch().start()
+        self.catalogue = self._get_dataset_catalogue()
+        logger.info(f"Found {self.n_catalogue_files} files ({self.cfg.filename_search})")
+        timer.stop()
+        logger.debug(f"Created Sentinel-3 file catalogue in {timer.get_seconds():.04f} seconds")
+
+        # Init empty file lists
+        self._reset_file_list()
+
+    def _get_dataset_catalogue(self):
+        """
+        Create a catalogues with the time coverage of the files on the server
+        :return:
+        """
+
+        # A simple catalogue item:
+        # [(datetime, filepath), (datetime, filepath), ...]
+        catalogue = []
+
+        # loop over all subdirectories
+        lookup_dir = Path(self.cfg.lookup_dir)
+        for nc_filepath in lookup_dir.glob(f"**/{self.cfg.filename_search}"):
+            directory_name = nc_filepath.parent.parts[-1]
+            start_time_str = directory_name.split(self.cfg.filename_sep)[self.cfg.tcs_str_index]
+            catalogue.append((nc_filepath, datetime.strptime(start_time_str, self.cfg.tcs_str_format)))
+
+        return catalogue
+
+    def get_file_for_period(self, period):
+        """
+        Query for Sentinel Level-2 files for a specific period.
+
+        :param period: dateperiods.DatePeriod
+
+        :return: sorted list of filenames
+        """
+        # Make sure file list are empty
+        self._reset_file_list()
+        self._query(period)
+        return self.sorted_list
+
+    def _query(self, period: DatePeriod) -> None:
+        """
+        Searches for files in the given period and stores result in property _sorted_list
+        :param period: dateperiods.DatePeriod
+        :return: None
+        """
+
+        # Loop over all months in the period
+        file_list = [filepath for filepath, dt in self.catalogue if period.tcs.dt <= dt <= period.tce.dt]
+        self._sorted_list = sorted(file_list)
+
+    def _reset_file_list(self):
+        """ Resets the result of previous file searches """
+        self._list = deque([])
+        self._sorted_list = []
+
+    @property
+    def sorted_list(self):
+        """ Return the search result """
+        return self._sorted_list
+
+    @property
+    def n_catalogue_files(self) -> int:
+        """
+        Return the number of files in the file catalogue
+        :return:
+        """
+        return len(self.catalogue)
 
 def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     """ Returns a list with measurement.nc files for given month """
