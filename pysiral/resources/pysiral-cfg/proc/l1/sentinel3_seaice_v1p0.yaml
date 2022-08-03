@@ -71,9 +71,9 @@ input_adapter:
         classifier_targets:
             tracking_configuration: cl_gain_20_ku
             distance_coast: dist_coast_20_ku
-            peakiness_laxon: peakiness_2_20_ku
             sigma0_ocean: sig0_ocean_20_ku
             surface_type_classification: surf_type_class_20_ku
+            stack_kurtosis: kurt_stack_20_ku
             swh_ocean: swh_ocean_20_ku
 
 # Output handler (will always be default handler -> only options)
