@@ -2,6 +2,7 @@
 
 import os
 import re
+from parse import parse
 from pathlib import Path
 from datetime import datetime
 from collections import deque
@@ -161,18 +162,12 @@ class L2SeaIceFileDiscovery(object):
         :return:
         """
 
-        # A simple catalogue item:
+        # Simple catalogue format
         # [(datetime, filepath), (datetime, filepath), ...]
-        catalogue = []
-
-        # loop over all subdirectories
-        lookup_dir = Path(self.cfg.lookup_dir)
-        for nc_filepath in lookup_dir.glob(f"**/{self.cfg.filename_search}"):
-            directory_name = nc_filepath.parent.parts[-1]
-            start_time_str = directory_name.split(self.cfg.filename_sep)[self.cfg.tcs_str_index]
-            catalogue.append((nc_filepath, datetime.strptime(start_time_str, self.cfg.tcs_str_format)))
-
-        return catalogue
+        return [
+            (nc_filepath, S3FileNaming(nc_filepath.parent.parts[-1]).tcs_dt)
+            for nc_filepath in Path(self.cfg.lookup_dir).glob(f"**/{self.cfg.filename_search}")
+        ]
 
     def get_file_for_period(self, period):
         """
@@ -215,6 +210,7 @@ class L2SeaIceFileDiscovery(object):
         :return:
         """
         return len(self.catalogue)
+
 
 def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     """ Returns a list with measurement.nc files for given month """
@@ -261,3 +257,59 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc")
     else:
         return None
     return l1nc_filename
+
+
+class S3FileNaming(object):
+    """
+    Deciphering the Sentinel-3 filenaming convention
+    (source: Sentinel 3 PDGS File Naming Convention (EUM/LEO-SEN3/SPE/10/0070, v1D, 24 June 2016)
+    """
+
+    def __init__(self, filename: str) -> None:
+        """
+        Decode the Sentinel-3 filename
+
+        :param filename: The filename to be decoded
+        """
+
+        self.filenaming_convention = "{mission_id:3}_{data_source:2}_{processing_level:1}_" \
+                                     "{data_type_id:6}_{time_coverage_start:15}_{time_coverage_end:15}_" \
+                                     "{creation_time:15}_{instance_id:3}_{product_class_id:8}.{extension}"
+
+        self.date_format = "%Y%m%dT%H%M%S"
+
+        self.elements = parse(self.filenaming_convention, filename)
+        if self.elements is None:
+            raise ValueError(f"{filename} is not a valid sentinel3 filename [{self.filenaming_convention}")
+
+    def _get_dt(self, start_time_str: str) -> datetime:
+        """
+        Convert a string to datetime
+        :param start_time_str:
+        :return:
+        """
+        return datetime.strptime(start_time_str, self.date_format)
+
+    @property
+    def dict(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return dict(**self.elements.named)
+
+    @property
+    def tcs_dt(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return self._get_dt(self.dict["time_coverage_start"])
+
+    @property
+    def tce_dt(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return self._get_dt(self.dict["time_coverage_end"])

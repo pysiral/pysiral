@@ -12,9 +12,6 @@ input_handler:
         local_machine_def_tag: l2_seaice  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
         filename_search: enhanced_measurement.nc
-        filename_sep: _   # character to split the filename
-        tcs_str_index: 8  # index of time_coverage_start string in file (when splitting filename with filename_sep)
-        tcs_str_format: "%Y%m%dT%H%M%S"
 
 # Class that will generate the initial l1p data object from
 # the input data
@@ -83,10 +80,10 @@ input_adapter:
 output_handler:
    
     options:
-        local_machine_def_tag: coda_l2wat
+        local_machine_def_tag: l2_seaice
         version:
-            source_file_tag: coda_l2wat
-            version_file_tag: v1p0b1
+            source_file_tag: l2_seaice
+            version_file_tag: v1p0
 
 
 # Settings for the pre-processor
