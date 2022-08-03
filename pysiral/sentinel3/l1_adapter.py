@@ -604,17 +604,17 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         wfm_counts = self.nc.waveform_20_ku.values
         n_records, n_range_bins = wfm_counts.shape
 
-        # Convert the waveform to power
-        # TODO: This needs to be verified. Currently using the scale factor and documentation in netcdf unclear
-        # From the documentation:
-        # "This scaling factor represents the backscatter coefficient for a waveform amplitude equal to 1.
-        #  It is corrected for AGC instrumental errors (agc_cor_20_ku) and internal calibration (sig0_cal_20_ku)"
-        # NOTE: Make sure type of waveform is float and not double
-        #       (double will cause issues with cythonized retrackers)
-        wfm_power = np.ndarray(shape=wfm_counts.shape, dtype=np.float64)
-        waveform_scale_factor = self.nc.scale_factor_20_ku.values
-        for record in np.arange(n_records):
-            wfm_power[record, :] = waveform_scale_factor[record] * wfm_counts[record, :].astype(np.float64)
+        # -- Waveform to power conversion is not possible --
+        # FAQ-Altimetry-003 - The waveform contained in the enhanced data file is scaled waveform.
+        # How can the scaled waveform be converted to power waveform?
+        # It is not possible to convert power waveform in watts because it requires some instrumental
+        # information from the industry who designed the altimeter and this information is not available
+        # to the users. Nevertheless, the S3A waveforms can be compared to each other, by applying the
+        # agc values provided in the SRAL L1 products.
+        # (https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-3-altimetry/appendices/faq)
+
+        # NOTE: Make sure type of waveform is double (hard requirement for cythonized retrackers)
+        wfm_power = wfm_counts.astype(np.float64)
 
         # Get the window delay
         # "The tracker_range_20hz is the range measured by the onboard tracker
