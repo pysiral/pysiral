@@ -66,7 +66,7 @@ output_handler:
         local_machine_def_tag: baseline_d
         version:
             source_file_tag: esa_pds_ipf1d
-            version_file_tag: v1p1
+            version_file_tag: v1p2
 
 
 # Settings for the pre-processor
@@ -86,7 +86,7 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
 
             # Compute pulse peakiness
             - label: "Compute Pulse Peakiness"
@@ -131,6 +131,7 @@ level1_preprocessor:
               class_name: L1PLeadingEdgeWidth
               options:
                   tfmra_leading_edge_start: 0.05
+                  tfmra_leading_edge_center: 0.5
                   tfmra_leading_edge_end: 0.95
                   tfmra_options: 
                     noise_level_range_bin_idx: [0, 5]
@@ -168,8 +169,8 @@ level1_preprocessor:
             # Compute waveform backscatter coeficient (sigma0)
             - label: "Compute Sigma0"
               stage: post_ocean_segment_extraction
-              module_name: pysiral.waveform
-              class_name: L1PSigma0
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PCryoSat2Sigma0
               options:
 
                   # CryoSat-2 altimeter constants to compute the LRM footprint
@@ -184,13 +185,12 @@ level1_preprocessor:
                       wf: 1.0
                  
                   # CryoSat-2 altimeter constants to compute sigma0
-                  sigma0_kwargs:
+                  sigma0_sar_kwargs:
                       lambda_0: 0.022084
                       g_0: 19054.607179632483
 
                   # CryoSat-2 radar mode sigma0 biases
                   sigma0_bias: [0.0, 0.0, 0.0]
-
 
             # Compute the leading edge peakiness
             # This class will add three parameters to the l1p classifier data group: 

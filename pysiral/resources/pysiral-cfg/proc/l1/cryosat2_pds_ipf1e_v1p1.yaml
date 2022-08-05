@@ -166,7 +166,7 @@ level1_preprocessor:
                     sar: 10
                     sin: 10
 
-            # Compute the sigma_0
+            # Compute waveform backscatter coeficient (sigma0)
             - label: "Compute Sigma0"
               stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
@@ -191,3 +191,15 @@ level1_preprocessor:
 
                   # CryoSat-2 radar mode sigma0 biases
                   sigma0_bias: [0.0, 0.0, 0.0]
+                  
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group: 
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3              
