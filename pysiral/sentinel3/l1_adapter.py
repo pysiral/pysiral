@@ -1,5 +1,4 @@
 
-
 import xmltodict
 
 import xarray
@@ -278,8 +277,8 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         range_bin_index = np.arange(n_range_bins)
         for record in np.arange(n_records):
             wfm_range[record, :] = tracker_range_20hz[record] + \
-                (range_bin_index*self.cfg.range_bin_width) - \
-                (self.cfg.nominal_tracking_bin*self.cfg.range_bin_width)
+                (range_bin_index * self.cfg.range_bin_width) - \
+                (self.cfg.nominal_tracking_bin * self.cfg.range_bin_width)
 
         # Set the operation mode
         op_mode = self.nc.instr_op_mode_20_ku.values
@@ -625,8 +624,8 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         range_bin_index = np.arange(n_range_bins)
         for record in np.arange(n_records):
             wfm_range[record, :] = tracker_range_20hz[record] + \
-                (range_bin_index*self.cfg.range_bin_width) - \
-                (self.cfg.nominal_tracking_bin*self.cfg.range_bin_width)
+                (range_bin_index * self.cfg.range_bin_width) - \
+                (self.cfg.nominal_tracking_bin * self.cfg.range_bin_width)
 
         # Set the operation mode
         op_mode = self.nc.instr_op_mode_20_ku.values
@@ -654,14 +653,27 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         time_20_hz = self.nc.time_20_ku.values
 
         # Loop over all range correction variables defined in the processor definition file
-        for key in self.cfg.range_correction_targets.keys():
+        keys = self.cfg.range_correction_targets.keys()
+        for key in keys:
             var_name = self.cfg.range_correction_targets[key]
-            variable_01_hz = getattr(self.nc, var_name)
-            variable_20_hz, error_status = self.interp_01_hz_to_20_hz(variable_01_hz.values, time_1_hz, time_20_hz)
+            variable = getattr(self.nc, var_name)
+            if variable.values.size == time_1_hz.size:
+                variable_20_hz, error_status = self.interp_01_hz_to_20_hz(variable.values, time_1_hz, time_20_hz)
+            else:
+                error_status = False
+                variable_20_hz = variable.values
             if error_status:
                 msg = f"- Error in 20Hz interpolation for variable `{var_name}` -> set only dummy"
                 logger.warning(msg)
             self.l1.correction.set_parameter(key, variable_20_hz)
+
+        # Sentinel-3 specific item: The dynamic atmosphere correction (`hf_fluct_cor_01`)
+        # is provided as 'Provided as a correction to the inverted barometer correction (inv_bar_cor_01)'
+        # Therefore, the dynamic_atmosphere field needs to update.
+        if "dynamic_atmosphere" in keys and "inverse_barometric" in keys:
+            logger.debug("- Update dac")
+            true_dac = self.l1.correction.dynamic_atmosphere + self.l1.correction.inverse_barometric
+            self.l1.correction.set_parameter("dynamic_atmosphere", true_dac)
 
     def _set_surface_type_group(self):
         """
