@@ -86,14 +86,11 @@ procsteps:
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
-                sigma0: [sig, sigma0]
+                sigma0_ocean: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
                 first_maximum_power: [fmp, first_maximum_power]
-                stack_standard_deviation: [ssd, stack_standard_deviation]
-                stack_peakiness: [spk, stack_peakiness]
-                stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
@@ -114,6 +111,14 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev"]
+            input_parameters:
+                - pulse_peakiness
 
     # --- Surface type classification algorithm ---
     #
@@ -153,19 +158,10 @@ procsteps:
             # and the sea-ice concentration based ice mask
             ocean:
 
-                - radar_mode: lrm
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-
                 - radar_mode: sar
                   conditions:
                       - "{sea_ice_concentration} < 15.0"
                       - "{pulse_peakiness_rolling_sdev} < 1.0"
-
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
@@ -179,13 +175,6 @@ procsteps:
                       - "{sigma0} >= 23.0"
                       - "{leading_edge_width} <= 0.75"
 
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= 260.0"
-                      - "{sigma0} >= 24.0"
-                      - "{leading_edge_width} <= 1.05"
-
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
@@ -193,12 +182,6 @@ procsteps:
             sea_ice:
 
                 - radar_mode: sar
-                  exclude: lead
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.02"
-
-                - radar_mode: sin
                   exclude: lead
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
