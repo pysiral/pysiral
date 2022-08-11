@@ -1,6 +1,7 @@
 astropy
 attrdict
 bottleneck
+cartopy==0.18
 cftime
 cython
 dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
