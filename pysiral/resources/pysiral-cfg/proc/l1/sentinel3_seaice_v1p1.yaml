@@ -9,7 +9,7 @@ input_handler:
     class_name: L2SeaIceFileDiscovery
     
     options:
-        local_machine_def_tag: l2_seaice  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+        local_machine_def_tag: l2_seaice_tds  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
         filename_search: enhanced_measurement.nc
 
@@ -82,7 +82,7 @@ output_handler:
     options:
         local_machine_def_tag: l2_seaice
         version:
-            source_file_tag: l2_seaice
+            source_file_tag: l2_seaice_tds
             version_file_tag: v1p0
 
 
