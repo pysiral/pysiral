@@ -1,4 +1,4 @@
-# Level-3 processor settings for AWI v2.2 output
+# Level-3 processor settings for AWI v2.3 output
 
 # ==================================================
 # Level-2 Parameters
@@ -32,7 +32,6 @@ l2_parameter:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
-
     tfmra_threshold:
         grid_method: none
         dtype: f4
@@ -163,13 +162,11 @@ l2_parameter:
 # ==================================================
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
-
 miz_filter: 
     mask_min_value: 2
     mask_targets: 
         - sea_ice_freeboard
         - sea_ice_thickness
-
 l2i_prefilter:
     active: True
     nan_source: sea_ice_thickness
@@ -188,7 +185,7 @@ grid_settings:
 # Post processing for gridded parameters
 # ==================================================
 
-# Mask grid cells
+# Mask grid cells 
 # Note: The masking is executed in the alphabetical order of the mask names.
 #       If there is a dependence between following mask procedures this needs
 #       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
@@ -269,7 +266,7 @@ processing_items:
     - label: "Compute gridded uncertainties"
       module_name: pysiral.l3proc
       class_name: Level3GridUncertainties
-      options:
+      options: 
         water_density: 1024.0
         snow_depth_correction_factor: 0.22
         max_l3_uncertainty: 10.0
@@ -278,11 +275,11 @@ processing_items:
     - label: "Get status flag"
       module_name: pysiral.l3proc
       class_name: Level3StatusFlag
-      options:
+      options: 
         retrieval_status_target: sea_ice_thickness
-        sic_thrs: 70.
+        sic_thrs: 15.
         flag_values:
-            no_data: 1
+            no_data: 1 
             is_below_sic_thrs: 2
             is_pole_hole: 3
             is_land: 4
@@ -297,10 +294,10 @@ processing_items:
         # This setting is currently without effect
         add_rule_flags: maximum_value
         # A list of rules that will be checked
-        rules:
+        rules: 
 
-            # Check for lead fractions not only in the grid cell but also in the adjacent
-            # grid cells. Idea is that grid cell with low lead fractions have still high
+            # Check for lead fractions not only in the grid cell but also in the adjacent 
+            # grid cells. Idea is that grid cell with low lead fractions have still high 
             # confidence if enough leads in the neighbourhood
             qif_lead_availability:
                 search_radius_m: 75000.
@@ -311,16 +308,16 @@ processing_items:
             qif_miz_flag:
                 source_flags: [1, 2]
                 target_flags: [1, 2]
-
+                
             # Check radar mode for SARin mode (only applicable for CryoSat-2)
             qif_cs2_radar_mode_is_sin:
                 target_flag: 1
-
+            
             # Check number of waveforms and raise flag if low
             qif_n_waveforms:
                 thresholds: [50, 10]
                 target_flags: [1, 2]
-
+            
             # Check the negative thickness fraction and raise flag if high
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
@@ -330,7 +327,7 @@ processing_items:
     - label: "grid surface type classifiers"
       module_name: pysiral.l3proc
       class_name: Level3GriddedClassifiers
-      options:
-        parameters: ["sigma0", "leading_edge_width", "pulse_peakiness", "tfmra_threshold"]
+      options: 
+        parameters: ["sigma0", "leading_edge_width", "pulse_peakiness"]
         surface_types: ["sea_ice", "lead", "ocean"]
         statistics: ["mean", "sdev"]
