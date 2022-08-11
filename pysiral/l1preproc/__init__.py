@@ -310,8 +310,9 @@ class L1PreProcBase(DefaultLoggingClass):
                 self.l1_export_to_netcdf(l1_export)
 
         # Step : Export the last item in the stack
-        l1_merged = self.l1_get_merged_stack()
-        self.l1_export_to_netcdf(l1_merged)
+        if len(l1_connected_stack) != 1:
+            raise ValueError("something went wrong here")
+        self.l1_export_to_netcdf(l1_connected_stack[-1])
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
@@ -366,34 +367,12 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return:
         """
+        timer = StopWatch().start()
         for procitem, label in self.processor_item_dict.get(stage_name, []):
-            timer = StopWatch()
-            timer.start()
             procitem.apply(l1_item)
-            timer.stop()
-            msg = f"- L1 processing item {stage_name}:{label} applied in {timer.get_seconds():.3f} seconds"
-            logger.debug(msg)
-
-        # breakpoint()
-        # # Get the post-processing options
-        # pre_processing_items = self.cfg.get("pre_processing_items", None)
-        # if pre_processing_items is None:
-        #     logger.info("No pre processing items defined")
-        #     return
-        #
-        # # Measure time for the different post processors
-        # timer = StopWatch()
-        #
-        # # Get the list of post-processing items
-        # for pp_item in pre_processing_items:
-        #     timer.start()
-        #     pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
-        #     post_processor = pp_class(**pp_item["options"])
-        #     for l1 in l1_segments:
-        #         post_processor.apply(l1)
-        #     timer.stop()
-        #     msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
-        #     logger.info(msg)
+        timer.stop()
+        msg = f"- L1 processing items applied in {timer.get_seconds():.3f} seconds"
+        logger.debug(msg)
 
     def l1_get_output_segments(self,
                                l1_connected_stack: List["Level1bData"],
@@ -404,14 +383,12 @@ class L1PreProcBase(DefaultLoggingClass):
         of the most recent file and sorts the segments into (connected) output and
         the new stack, defined by the last (connected) item.
 
-
         :param l1_connected_stack: List of connected L1 polar ocean segments (from previous file(s))
         :param l1_po_segments: List of L1 polar ocean segments (from current file)
 
         :return: L1 segments for the ouput, New l1 stack of connected items
         """
 
-        # --- Step 1 ---
         # Create a list of all currently available l1 segments. This includes the
         # elements from the stack and the polar ocean segments
         all_l1_po_segments = [*l1_connected_stack, *l1_po_segments]
@@ -427,7 +404,6 @@ class L1PreProcBase(DefaultLoggingClass):
             self.l1_are_connected(l1_0, l1_1)
             for l1_0, l1_1 in zip(all_l1_po_segments[:-1], all_l1_po_segments[1:])
         ]
-        logger.debug(f"{are_connected=}")
 
         # Create a list of (piece-wise) merged elements.
         # The last element of this list will be the transferred to the
@@ -442,73 +418,6 @@ class L1PreProcBase(DefaultLoggingClass):
 
         # Return (elements marked for export, l1_connected stack)
         return merged_l1_list[:-1], [merged_l1_list[-1]]
-
-
-        # Loop over all input segments
-        # for l1 in l1_segments:
-        #
-        #     # Test if l1 segment is connected to stack
-        #     is_connected = self.l1_is_connected_to_stack(l1)
-        #
-        #     print(is_connected)
-        #
-        #     # Case 1: Segment is connected
-        #     # -> Add the l1 segment to the stack and check the next segment.
-        #     if is_connected:
-        #         logger.info("- L1 segment connected -> add to stack")
-        #         self.l1_stack.append(l1)
-        #         return None
-        #
-        #     # Case 2: Segment is not connected
-        #     # -> In this case all items in the l1 stack will be merged and the merged l1 object will be
-        #     #    exported to a l1p netCDF product. The current l1 segment that was unconnected to the stack
-        #     #    will become the next stack
-        #     else:
-        #         logger.info("- L1 segment unconnected -> exporting current stack")
-        #         l1_merged = self.l1_get_merged_stack()
-        #         self.l1_stack = [l1]
-        #         return [l1_merged]
-
-    # TODO: This function is bugged and to be deprecated
-    def l1_stack_merge(self,
-                       l1_segments: List["Level1bData"]
-                       ) -> Union[None, List["Level1bData"]]:
-        """
-
-        Add the input Level-1 segments to the l1 stack and returns the merged segments
-        than can be exported
-
-
-
-        :param l1_segments: List of L1 data sets
-
-        :return: None or merged stack if
-        """
-
-        # Loop over all input segments
-        for l1 in l1_segments:
-
-            # Test if l1 segment is connected to stack
-            is_connected = self.l1_is_connected_to_stack(l1)
-
-            print(is_connected)
-
-            # Case 1: Segment is connected
-            # -> Add the l1 segment to the stack and check the next segment.
-            if is_connected:
-                logger.info("- L1 segment connected -> add to stack")
-                self.l1_stack.append(l1)
-                return None
-
-            # Case 2: Segment is not connected
-            # -> In this case all items in the l1 stack will be merged and the merged l1 object will be
-            #    exported to a l1p netCDF product. The current l1 segment that was unconnected to the stack
-            #    will become the next stack
-            else:
-                logger.info("- L1 segment unconnected -> exporting current stack")
-                l1_merged = self.l1_get_merged_stack()
-                self.l1_stack = [l1]
-                return [l1_merged]
 
     def l1_are_connected(self, l1_0: "Level1bData", l1_1: "Level1bData") -> bool:
         """
@@ -526,37 +435,6 @@ class L1PreProcBase(DefaultLoggingClass):
         tdelta = l1_1.info.start_time - l1_0.info.stop_time
         threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
         return tdelta.seconds <= threshold
-
-    def l1_is_connected_to_stack(self, l1: "Level1bData") -> bool:
-        """
-        Check if the start time of file i and the stop time if file i-1 indicate neighbouring orbit segments.
-        (e.g. due to radar mode change, or two half-orbits)
-
-        :param l1:
-
-        :return: Flag if l1 is connected (True of False)
-        """
-
-        # Stack is empty (return True -> create a new stack)
-        if self.stack_len == 0:
-            return True
-
-        # Test if segments are adjacent based on time gap between them
-        tdelta = l1.info.start_time - self.last_stack_item.info.stop_time
-        threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
-        return tdelta.seconds <= threshold
-
-    def l1_get_merged_stack(self) -> "Level1bData":
-        """
-        Concatenates all items in the l1 stack and returns the merged Level-1 data object.
-        Note: This operation leaves the state of the Level-1 stack untouched
-
-        :return: Level-1 data object
-        """
-        l1_merged = copy.deepcopy(self.l1_stack[0])
-        for l1 in self.l1_stack[1:]:
-            l1_merged.append(l1)
-        return l1_merged
 
     def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
         """
@@ -854,14 +732,6 @@ class L1PreProcBase(DefaultLoggingClass):
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
         return self.cfg.orbit_segment_connectivity
-
-    # @property
-    # def stack_len(self) -> int:
-    #     return len(self.l1_stack)
-    #
-    # @property
-    # def last_stack_item(self) -> "Level1bData":
-    #     return self.l1_stack[-1]
 
 
 class L1PreProcCustomOrbitSegment(L1PreProcBase):
