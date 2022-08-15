@@ -131,6 +131,7 @@ level1_preprocessor:
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 10
+                  norm_is_range_bin: True
         
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group: 

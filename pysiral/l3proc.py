@@ -173,7 +173,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         flag_miz = getattr(l2i, "flag_miz", None)
-        if miz_filter is None:
+        if flag_miz is None:
             return
 
         idx = np.where(flag_miz >= miz_filter["mask_min_value"])[0]

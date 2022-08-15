@@ -259,6 +259,12 @@ class Level1bData(DefaultLoggingClass):
 
         info = self.info
 
+        # Check if timestamp is monotonically increasing
+        tdelta_dt = self.time_orbit.timestamp[1:]-self.time_orbit.timestamp[:-1]
+        tdelta_secs = np.array([t.total_seconds() for t in tdelta_dt])
+        if np.any(tdelta_secs < 0.0):
+            logger.warning("- Found anomaly (negative time step)")
+
         # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
         info.set_attribute("lat_max", np.nanmax(self.time_orbit.latitude))

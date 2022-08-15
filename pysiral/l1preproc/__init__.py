@@ -11,8 +11,14 @@ from loguru import logger
 from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
+from geopy import distance
 from datetime import timedelta
-from typing import Union, List, TypeVar, Dict, overload
+from typing import Union, List, TypeVar, Dict, Tuple
+
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
 
 from dateperiods import DatePeriod, PeriodIterator
 
@@ -186,8 +192,8 @@ class L1PreProcBase(DefaultLoggingClass):
         self.processor_item_dict = {}
         self._init_processor_items()
 
-        # The stack of Level-1 objects is a simple list
-        self.l1_stack = []
+        # # The stack of Level-1 objects is a simple list
+        # self.l1_stack = []
 
     def _init_processor_items(self) -> None:
         """
@@ -247,6 +253,13 @@ class L1PreProcBase(DefaultLoggingClass):
         # content of the current file
         polar_ocean_check = L1PreProcPolarOceanCheck(self.__class__.__name__, self.polar_ocean_props)
 
+        # The stack of connected l1 segments is a list of l1 objects that together form a
+        # continuous trajectory over polar oceans. This stack will be emptied and its content
+        # exported to a l1p netcdf if the next segment is not connected to the stack.
+        # This stack is necessary, because the polar ocean segments from the next file may
+        # be connected to polar ocean segments from the previous file.
+        l1_connected_stack = []
+
         # orbit segments may or may not be connected, therefore the list of input file
         # needs to be processed sequentially.
         for i, input_file in enumerate(input_file_list):
@@ -261,6 +274,7 @@ class L1PreProcBase(DefaultLoggingClass):
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
                 continue
+            # l1p_debug_map([l1], title="Source File")
 
             # Step 2: Apply processor items on source data
             # for the sake of computational efficiency.
@@ -270,30 +284,36 @@ class L1PreProcBase(DefaultLoggingClass):
             # The input files may contain unwanted data (low latitude/land segments).
             # It is the job of the L1PReProc children class to return only the relevant
             # segments over polar ocean as a list of l1 objects.
-            l1_segments = self.extract_polar_ocean_segments(l1)
+            l1_po_segments = self.extract_polar_ocean_segments(l1)
+            # l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
 
-            self.l1_apply_processor_items(l1_segments, "post_ocean_segment_extraction")
+            self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction")
 
             # Step 5: Merge orbit segments
             # Add the list of orbit segments to the l1 data stack and merge those that
             # are connected (e.g. two half orbits connected at the pole) into a single l1
             # object. Orbit segments that  are unconnected from other segments in the stack
             # will be exported to netCDF files.
-            l1_merged = self.l1_stack_merge(l1_segments)
-            if l1_merged is None:
+            l1_export_list, l1_connected_stack = self.l1_get_output_segments(l1_connected_stack, l1_po_segments)
+
+            # l1p_debug_map(l1_connected_stack, title="Polar Ocean Segments - Stack")
+            if not l1_export_list:
                 continue
+            # l1p_debug_map(l1_export_list, title="Polar Ocean Segments - Export")
 
             # Step 4: Processor items post
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
             # executed as the Level-1 segments are cropped to the minimal length.
-            self.l1_apply_processor_items(l1_merged, "post_merge")
+            self.l1_apply_processor_items(l1_export_list, "post_merge")
 
             # Step 5: Export
-            self.l1_export_to_netcdf(l1_merged)
+            for l1_export in l1_export_list:
+                self.l1_export_to_netcdf(l1_export)
 
         # Step : Export the last item in the stack
-        l1_merged = self.l1_get_merged_stack()
-        self.l1_export_to_netcdf(l1_merged)
+        if len(l1_connected_stack) != 1:
+            raise ValueError("something went wrong here")
+        self.l1_export_to_netcdf(l1_connected_stack[-1])
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
@@ -348,97 +368,89 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return:
         """
+        timer = StopWatch().start()
         for procitem, label in self.processor_item_dict.get(stage_name, []):
-            timer = StopWatch()
-            timer.start()
             procitem.apply(l1_item)
-            timer.stop()
-            msg = f"- L1 processing item {stage_name}:{label} applied in {timer.get_seconds():.3f} seconds"
-            logger.debug(msg)
+        timer.stop()
+        msg = f"- L1 processing items applied in {timer.get_seconds():.3f} seconds"
+        logger.debug(msg)
 
-        # breakpoint()
-        # # Get the post-processing options
-        # pre_processing_items = self.cfg.get("pre_processing_items", None)
-        # if pre_processing_items is None:
-        #     logger.info("No pre processing items defined")
-        #     return
-        #
-        # # Measure time for the different post processors
-        # timer = StopWatch()
-        #
-        # # Get the list of post-processing items
-        # for pp_item in pre_processing_items:
-        #     timer.start()
-        #     pp_class = get_cls(pp_item["module_name"], pp_item["class_name"], relaxed=False)
-        #     post_processor = pp_class(**pp_item["options"])
-        #     for l1 in l1_segments:
-        #         post_processor.apply(l1)
-        #     timer.stop()
-        #     msg = "- L1 pre-processing item `%s` applied in %.3f seconds" % (pp_item["label"], timer.get_seconds())
-        #     logger.info(msg)
-
-    def l1_stack_merge(self, l1_segments: List["Level1bData"]) -> Union[None, Level1bData]:
+    def l1_get_output_segments(self,
+                               l1_connected_stack: List["Level1bData"],
+                               l1_po_segments: List["Level1bData"]
+                               ) -> Tuple[List["Level1bData"], List["Level1bData"]]:
         """
-        Add the input Level-1 segments to the l1 stack and
+        This method sorts the stack of connected l1 segments and the polar ocean segments
+        of the most recent file and sorts the segments into (connected) output and
+        the new stack, defined by the last (connected) item.
 
-        :param l1_segments: List of L1 data sets
+        :param l1_connected_stack: List of connected L1 polar ocean segments (from previous file(s))
+        :param l1_po_segments: List of L1 polar ocean segments (from current file)
 
-        :return: None or merged stack if
+        :return: L1 segments for the ouput, New l1 stack of connected items
         """
 
-        # Loop over all input segments
-        for l1 in l1_segments:
+        # Create a list of all currently available l1 segments. This includes the
+        # elements from the stack and the polar ocean segments
+        all_l1_po_segments = [*l1_connected_stack, *l1_po_segments]
 
-            # Test if l1 segment is connected to stack
-            is_connected = self.l1_is_connected_to_stack(l1)
+        # logger.debug(f"l1_po_segments = {len(l1_po_segments)} elements")
+        # logger.debug(f"l1_connected_stack = {len(l1_connected_stack)} elements")
+        # logger.debug(f"all_l1_po_segments = {len(all_l1_po_segments)} elements")
 
-            # Case 1: Segment is connected
-            # -> Add the l1 segment to the stack and check the next segment.
+        # There is a number of case to be caught her.
+        # Case 1: The list of polar ocean segments might be empty
+        if not l1_po_segments:
+            return l1_connected_stack, l1_po_segments
+
+        # Case 2: If there is only one element, all data goes to the stack
+        # and no data needs to be exported.
+        # (because the next file could be connected to it)
+        if len(all_l1_po_segments) == 1:
+            return [], l1_po_segments
+
+        # Check if segment is connected to the next one
+        are_connected = [
+            self.l1_are_connected(l1_0, l1_1)
+            for l1_0, l1_1 in zip(all_l1_po_segments[:-1], all_l1_po_segments[1:])
+        ]
+
+        # Create a list of (piece-wise) merged elements.
+        # The last element of this list will be the transferred to the
+        # next iteration of the file list
+        merged_l1_list = [copy.deepcopy(all_l1_po_segments[0])]
+        for idx, is_connected in enumerate(are_connected):
+            target_l1 = all_l1_po_segments[idx+1]
             if is_connected:
-                logger.info("- L1 segment connected -> add to stack")
-                self.l1_stack.append(l1)
-                return None
-
-            # Case 2: Segment is not connected
-            # -> In this case all items in the l1 stack will be merged and the merged l1 object will be
-            #    exported to a l1p netCDF product. The current l1 segment that was unconnected to the stack
-            #    will become the next stack
+                merged_l1_list[-1].append(target_l1)
             else:
-                logger.info("- L1 segment unconnected -> exporting current stack")
-                l1_merged = self.l1_get_merged_stack()
-                self.l1_stack = [l1]
-                return l1_merged
+                merged_l1_list.append(copy.deepcopy(target_l1))
 
-    def l1_is_connected_to_stack(self, l1: "Level1bData") -> bool:
+        # Return (elements marked for export, l1_connected stack)
+        return merged_l1_list[:-1], [merged_l1_list[-1]]
+
+    def l1_are_connected(self, l1_0: "Level1bData", l1_1: "Level1bData") -> bool:
         """
-        Check if the start time of file i and the stop time if file i-1 indicate neighbouring orbit segments.
-        (e.g. due to radar mode change, or two half-orbits)
+        Check if the start time of l1 segment 1 and the stop time of l1 segment 0
+        indicate neighbouring orbit segments.
+        -> Assumes explicetly that l1_0 comes before l1_1
 
-        :param l1:
+        :param l1_0:
+        :param l1_1:
 
-        :return: Flag if l1 is connected (True of False)
+        :return: Flag if l1 segments are connected (True of False)
         """
 
-        # Stack is empty (return True -> create a new stack)
-        if self.stack_len == 0:
-            return True
+        # test alternate way of checking connectivity (distance)
+        l1_0_last_latlon = l1_0.time_orbit.latitude[-1], l1_0.time_orbit.longitude[-1]
+        l1_1_first_latlon = l1_1.time_orbit.latitude[0], l1_1.time_orbit.longitude[0]
+        distance_km = distance.distance(l1_0_last_latlon, l1_1_first_latlon).km
+        logger.debug(f"- {distance_km=}")
 
         # Test if segments are adjacent based on time gap between them
-        tdelta = l1.info.start_time - self.last_stack_item.info.stop_time
+        tdelta = l1_1.info.start_time - l1_0.info.stop_time
         threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
-        return tdelta.seconds <= threshold
-
-    def l1_get_merged_stack(self) -> "Level1bData":
-        """
-        Concatenates all items in the l1 stack and returns the merged Level-1 data object.
-        Note: This operation leaves the state of the Level-1 stack untouched
-
-        :return: Level-1 data object
-        """
-        l1_merged = copy.deepcopy(self.l1_stack[0])
-        for l1 in self.l1_stack[1:]:
-            l1_merged.append(l1)
-        return l1_merged
+        return tdelta.total_seconds() <= threshold
 
     def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
         """
@@ -454,7 +466,7 @@ class L1PreProcBase(DefaultLoggingClass):
             self.output_handler.export_to_netcdf(l1)
             logger.info(f"- Written l1p product: {self.output_handler.last_written_file}")
         else:
-            logger.info("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
+            logger.warning("- Orbit segment below minimum size (%g), skipping" % l1.n_records)
 
     def trim_single_hemisphere_segment_to_polar_region(self, l1: "Level1bData") -> "Level1bData":
         """
@@ -736,14 +748,6 @@ class L1PreProcBase(DefaultLoggingClass):
             self.error.add_error("l1preproc-missing-option", msg)
             self.error.raise_on_error()
         return self.cfg.orbit_segment_connectivity
-
-    @property
-    def stack_len(self) -> int:
-        return len(self.l1_stack)
-
-    @property
-    def last_stack_item(self) -> "Level1bData":
-        return self.l1_stack[-1]
 
 
 class L1PreProcCustomOrbitSegment(L1PreProcBase):
@@ -1299,3 +1303,36 @@ def get_preproc(preproc_type: str,
 
     # Return the initialized class
     return cls(input_adapter, output_handler, cfg)
+
+
+def l1p_debug_map(l1p_list: List["Level1bData"],
+                  title: str = None
+                  ) -> None:
+    """
+    Create an interactive map of l1p segment
+
+    :param l1p_list:
+    :param title:
+
+    :return:
+    """
+
+    title = title if title is not None else ""
+    proj = ccrs.PlateCarree(central_longitude=0.0)
+
+    plt.figure(dpi=150)
+    fig_manager = plt.get_current_fig_manager()
+    fig_manager.window.showMaximized()
+    ax = plt.axes(projection=proj)
+    ax.set_global()
+    ax.set_title(title)
+    ax.coastlines(resolution='50m', color="0.25", linewidth=0.25, zorder=201)
+    ax.add_feature(cfeature.OCEAN, color="#D0CFD4", zorder=150)
+    ax.add_feature(cfeature.LAND, color="#EAEAEA", zorder=200)
+
+    for l1p in l1p_list:
+        ax.scatter(l1p.time_orbit.longitude, l1p.time_orbit.latitude,
+                   s=1, zorder=300, linewidths=0.0,
+                   transform=proj
+                   )
+    plt.show()
