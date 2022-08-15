@@ -11,8 +11,9 @@ from loguru import logger
 from attrdict import AttrDict
 from pathlib import Path
 from operator import attrgetter
+from geopy import distance
 from datetime import timedelta
-from typing import Union, List, TypeVar, Dict, Tuple, overload
+from typing import Union, List, TypeVar, Dict, Tuple
 
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -440,10 +441,16 @@ class L1PreProcBase(DefaultLoggingClass):
         :return: Flag if l1 segments are connected (True of False)
         """
 
+        # test alternate way of checking connectivity (distance)
+        l1_0_last_latlon = l1_0.time_orbit.latitude[-1], l1_0.time_orbit.longitude[-1]
+        l1_1_first_latlon = l1_1.time_orbit.latitude[0], l1_1.time_orbit.longitude[0]
+        distance_km = distance.distance(l1_0_last_latlon, l1_1_first_latlon).km
+        logger.debug(f"- {distance_km=}")
+
         # Test if segments are adjacent based on time gap between them
         tdelta = l1_1.info.start_time - l1_0.info.stop_time
         threshold = self.cfg.orbit_segment_connectivity.max_connected_segment_timedelta_seconds
-        return tdelta.seconds <= threshold
+        return tdelta.total_seconds() <= threshold
 
     def l1_export_to_netcdf(self, l1: "Level1bData") -> None:
         """
@@ -1305,6 +1312,7 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
     Create an interactive map of l1p segment
 
     :param l1p_list:
+    :param title:
 
     :return:
     """
@@ -1328,5 +1336,3 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
                    transform=proj
                    )
     plt.show()
-
-
