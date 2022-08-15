@@ -180,10 +180,14 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
         info.set_attribute("timeliness", cs2_procstage2timeliness(metadata["processing_stage"]))
 
         # Time-Orbit Metadata
+        tcs_tai = parse_datetime_str(metadata["first_record_time"][4:])
+        tce_tai = parse_datetime_str(metadata["last_record_time"][4:])
+        tcs_utc, tce_utc = Time([tcs_tai, tce_tai], scale="tai").utc.datetime
+
         lats = [float(metadata["first_record_lat"])*1e-6, float(metadata["last_record_lat"])*1e-6]
         lons = [float(metadata["first_record_lon"])*1e-6, float(metadata["last_record_lon"])*1e-6]
-        info.set_attribute("start_time", parse_datetime_str(metadata["first_record_time"][4:]))   # TAI=....
-        info.set_attribute("stop_time", parse_datetime_str(metadata["last_record_time"][4:]))     # TAI=....
+        info.set_attribute("start_time", tcs_utc)
+        info.set_attribute("stop_time", tce_utc)
         info.set_attribute("lat_min", np.amin(lats))
         info.set_attribute("lat_max", np.amax(lats))
         info.set_attribute("lon_min", np.amin(lons))
