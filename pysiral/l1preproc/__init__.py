@@ -393,7 +393,16 @@ class L1PreProcBase(DefaultLoggingClass):
         # elements from the stack and the polar ocean segments
         all_l1_po_segments = [*l1_connected_stack, *l1_po_segments]
 
-        # If there is only one element, all data goes to the stack
+        # logger.debug(f"l1_po_segments = {len(l1_po_segments)} elements")
+        # logger.debug(f"l1_connected_stack = {len(l1_connected_stack)} elements")
+        # logger.debug(f"all_l1_po_segments = {len(all_l1_po_segments)} elements")
+
+        # There is a number of case to be caught her.
+        # Case 1: The list of polar ocean segments might be empty
+        if not l1_po_segments:
+            return l1_connected_stack, l1_po_segments
+
+        # Case 2: If there is only one element, all data goes to the stack
         # and no data needs to be exported.
         # (because the next file could be connected to it)
         if len(all_l1_po_segments) == 1:
