@@ -456,14 +456,18 @@ class ParameterRollingStatistics(Level2ProcessorStep):
         super(ParameterRollingStatistics, self).__init__(*args, **kwargs)
 
     def execute_procstep(self,
-                         l1b: "Level1bData",
+                         l1: "Level1bData",
                          l2: "Level2Data"
                          ) -> np.ndarray:
         """
         API method for Level2ProcessorStep subclasses. Computes and add rolling statistics
         based on the processor item options in the Level-2 processor definition file.
-        :param l1b:
-        :param l2:
+
+        :param l1: Level-1 data object
+        :param l2: Level-2 data object
+        
+        :raises None:
+
         :return: error_status
         """
 
@@ -496,7 +500,6 @@ class ParameterRollingStatistics(Level2ProcessorStep):
                 ts_rolled = pd.Series(np.full(l2.n_records, np.nan))
 
             # Output is added as an auxiliary parameter
-
             l2.set_auxiliary_parameter(aux_id, aux_name, ts_rolled.values, None)
 
         return error_status

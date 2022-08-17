@@ -16,6 +16,8 @@
 - `ml` sub-module to `auxdata` for accessing trained models in the Level-2 processor
 - type hints throughout the project 
 - citation file (CITATION.cff)
+- Support for Sentinel-3A thematic sea ice product
+- AWI CryoSat-2 v2.5 processor and output definition files
 
 ### Changed
 - Level-1 pre-processor workflow has been changed to allow processor items at different stages
@@ -30,6 +32,9 @@
 - Fixed an issue with a hard-coded nominal tracking bin for Envisat data
 - Fixed incorrect date in L2P output filename when L2 data object contained a few data points of the previous day
 - Fixed an issue of noise/FFT artefacts confusing the computation of leading edge width for pulse-limited waveforms
+- Fixed an issue in the Level-1 pre-processor, where Level-1 polar ocean segements were not properly merged (https://github.com/shendric/pysiral/issues/91)
+- Fixed an issue for CryoSat-2 metadata, where the initial time bounds of the l1p data object was in TAI and not in UTC
+- Fixed an issue for CryoSat-2 pulse peakiness, where the noise or signal in the first range bins resuluted in biased high pulse peakiniess value
 - 
 
 ### Deprecated
