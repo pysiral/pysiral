@@ -76,6 +76,11 @@ input_adapter:
             significant_wave_height: swh_20hz
             center_of_gravity_corr: cog_corr_20hz
             epsilon_sec: htl_disc_out
+            alt_state_flag: alt_state_flag_20hz
+            alt_state_flag_chirp_type: alt_state_flag_chirp_type_20hz
+            alt_state_flag_tracking_type: alt_state_flag_tracking_type_20hz
+            alt_state_flag_tracking_surface: alt_state_flag_tracking_surface_20hz
+            noise_floor: noise_floor
 
 
 # Output handler (will always be default handler -> only options)
@@ -85,7 +90,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p1
+            version_file_tag: v1p2
 
 
 # Settings for the pre-processor
@@ -111,10 +116,11 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
 
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
@@ -124,12 +130,14 @@ level1_preprocessor:
                       noise_level_range_bin_idx: [10, 20]
                       first_maximum_ignore_leading_bins: 10
             
-            # Compute waveform peakiness CCI style
+            # Compute waveform peakiness
             - label: "Compute Waveform Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 5
+                  norm_is_range_bin: True
 
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group: 
@@ -137,6 +145,7 @@ level1_preprocessor:
             #  2. first maximum index
             #  3. first maximum power (in units of peak power)
             - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
               options:
@@ -156,6 +165,7 @@ level1_preprocessor:
             # This class will add three parameters to the l1p classifier data group: 
             #  1. Leading edge peakiness
             - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgePeakiness
               options:

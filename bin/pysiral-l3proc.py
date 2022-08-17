@@ -16,7 +16,7 @@ from pysiral.datahandler import L2iDataHandler
 from pysiral.errorhandler import ErrorStatus
 from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
                             Level3GridDefinition, Level3OutputHandler)
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 
 
 def pysiral_l3proc():

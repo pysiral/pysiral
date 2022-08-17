@@ -7,11 +7,8 @@ Created on Thu Sep 28 14:00:52 2017
 @author: shendric
 """
 
-from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.iotools import ReadNC
+import contextlib
+import pyproj
 
 from collections import OrderedDict
 from netCDF4 import Dataset
@@ -19,8 +16,20 @@ from loguru import logger
 
 from pyresample import image, geometry, kd_tree
 import numpy as np
+import numpy.typing as npt
+from typing import Tuple
 import struct
+import xarray as xr
 from pathlib import Path
+
+from pysiral import psrlcfg
+from pysiral.core.flags import SURFACE_TYPE_DICT
+from pysiral.errorhandler import ErrorStatus
+from pysiral.grid import GridDefinition, GridTrajectoryExtract
+from pysiral._class_template import DefaultLoggingClass
+from pysiral.iotools import ReadNC
+from pysiral.l1bdata import Level1bData
+from pysiral.l1preproc.procitems import L1PProcItem
 
 
 def MaskSourceFile(mask_name, mask_cfg):
@@ -32,7 +41,7 @@ def MaskSourceFile(mask_name, mask_cfg):
         mask_dir = psrlcfg.local_machine.auxdata_repository.mask[mask_name]
     except KeyError:
         mask_dir = None
-        msg = "path to mask %s not in local_machine_def.yaml" % mask_name
+        msg = f"path to mask {mask_name} not in local_machine_def.yaml"
         error.add_error("missing-lmd-def", msg)
         error.raise_on_error()
 
@@ -40,7 +49,7 @@ def MaskSourceFile(mask_name, mask_cfg):
     try:
         return globals()[mask_cfg.pyclass_name](mask_dir, mask_name, mask_cfg)
     except KeyError:
-        msg = "pysiral.mask.%s not implemented" % str(mask_cfg.pyclass_name)
+        msg = f"pysiral.mask.{str(mask_cfg.pyclass_name)} not implemented"
         error.add_error("missing-mask-class", msg)
         error.raise_on_error()
 
@@ -104,17 +113,15 @@ class MaskSourceBase(DefaultLoggingClass):
             target_mask = result
 
         else:
-            msg = "Unrecognized opt pyresample_method: %s need to be %s" % (
-                    str(self.cfg.pyresample_method),
-                    "(ImageContainerNearest, resample_gauss)")
+            msg = f"Unrecognized opt pyresample_method: {str(self.cfg.pyresample_method)} need to be (" \
+                  f"ImageContainerNearest, resample_gauss) "
+
             self.error.add_error("invalid-pr-method", msg)
             self.error.add_error()
 
         # pyresample may use masked arrays -> set nan's to missing data
-        try:
+        with contextlib.suppress(AttributeError):
             target_mask[np.where(target_mask.mask)] = np.nan
-        except AttributeError:
-            pass
 
         if "post_processing" in self.cfg:
             pp_method = getattr(self, self.cfg.post_processing)
@@ -124,9 +131,9 @@ class MaskSourceBase(DefaultLoggingClass):
         # (the filename will be automatically generated if not specifically
         # passed to this method
         if nc_filepath is None:
-            nc_filename = "%s_%s.nc" % (self.mask_name, griddef.grid_id)
+            nc_filename = f"{self.mask_name}_{griddef.grid_id}.nc"
             nc_filepath = Path(self.mask_dir) / nc_filename
-        logger.info("Export mask file: %s" % nc_filepath)
+        logger.info(f"Export mask file: {nc_filepath}")
         self._write_netcdf(nc_filepath, griddef, target_mask)
 
     def _write_netcdf(self, nc_filepath, griddef, mask):
@@ -144,7 +151,8 @@ class MaskSourceBase(DefaultLoggingClass):
         try:
             rootgrp = Dataset(nc_filepath, "w")
         except RuntimeError:
-            msg = "Unable to create netCDF file: %s" % nc_filepath
+            rootgrp = None
+            msg = f"Unable to create netCDF file: {nc_filepath}"
             self.error.add_error("nc-runtime", msg)
             self.error.raise_on_error()
 
@@ -161,7 +169,7 @@ class MaskSourceBase(DefaultLoggingClass):
             rootgrp.createDimension(key, dimdict[key])
 
         # Write Variables
-        dim = tuple(dims[0:len(mask.shape)])
+        dim = tuple(dims[:len(mask.shape)])
         dtype_str = mask.dtype.str
         varmask = rootgrp.createVariable("mask", dtype_str, dim, zlib=True)
         varmask[:] = mask
@@ -252,7 +260,8 @@ class MaskLandSea2Min(MaskSourceBase):
         # Set the mask
         self.set_mask(mask, area_def)
 
-    def pp_classify(self, resampled_mask, griddef):
+    @staticmethod
+    def pp_classify(resampled_mask, *args):
         """ Post-processing method after resampling to target grid
         The resampled mask contains a land fraction (datatype float), which
         needs to be simplified to the flags (0: ocean, 1: mixed, 2: land) """
@@ -288,7 +297,8 @@ class MaskW99Valid(MaskSourceBase):
         # Set the mask (pyresample area definition from config file)
         self.set_mask(mask, self.cfg.area_def)
 
-    def pp_limit_lat(self, resampled_mask, griddef):
+    @staticmethod
+    def pp_limit_lat(resampled_mask, griddef):
         """ There are some artefacts in the source mask that need to be
         filtered out based on a simple latitude threshold filter.
         We also set all NaN values to 0 and fix a small problem at the
@@ -360,7 +370,6 @@ class L3Mask(DefaultLoggingClass):
             lon = np.flipud(lon)
         return lon
 
-
     @property
     def mask_name(self):
         return str(self._mask_name)
@@ -382,12 +391,108 @@ class L3Mask(DefaultLoggingClass):
             self.error.add_error("lmd-error", msg % self.mask_name)
             return None
 
-        mask_filename = "%s_%s.nc" % (self.mask_name, self.grid_id)
+        mask_filename = f"{self.mask_name}_{self.grid_id}.nc"
         filepath = Path(mask_dir) / mask_filename
 
         if not filepath.is_file():
-            msg = "cannot find mask file: %s" % filepath
+            msg = f"cannot find mask file: {filepath}"
             self.error.add_error("io-error", msg)
             return None
 
         return filepath
+
+
+class L1PHighResolutionLandMask(L1PProcItem):
+    """
+    Level-1 processor item providing access to a high resolution
+    land mask and distance to land fields
+    """
+
+    def __init__(self, **cfg):
+        """
+        Initialize the class. This step includes parsing the static mask
+        and keeping it in memory
+        :param cfg:
+        """
+        super(L1PHighResolutionLandMask, self).__init__(**cfg)
+
+        # Get the local file path
+        type_ = self.cfg.get("local_machine_def_auxclass")
+        tag = self.cfg.get("local_machine_def_tag")
+        filename = self.cfg.get("filename")
+        lookup_directory = psrlcfg.local_machine.auxdata_repository[type_][tag]
+
+        # Set the file for each hemisphere type
+        mask_filepath = Path(lookup_directory) / str(filename)
+        with xr.open_dataset(mask_filepath) as nc:
+            self.grid_def = self.cfg.get("grid_def")
+            self.land_ocean_flag_grid = nc.land_ocean_flag.values
+            self.distance_to_coast_grid = nc.distance_to_coast.values
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Extract land/ocean flag and distance to coast along the l1p trajectory if a mask exists
+        for the corresponding hemisphere of the l1p data object.
+
+        The parameters are stored in the classifier data group among the original surface type
+        value, which is then update for the mask coverage
+
+        :param l1: 
+        :return: None
+        """
+
+        # Get the land/ocean flag from the grid
+        land_ocean_flag, distance_to_coast = self.get_trajectory(l1.time_orbit.longitude, l1.time_orbit.latitude)
+
+        # TODO: Update when global land/ocean flag becomes available
+        # NOTE: Currently only a grid for the northern hemisphere is available, thus
+        #       there will be regions not covered by the gridded land/ocean flag.
+        #       That's why the built/in land/ocean flag will only be updated for
+        #       region with coverage and be left untouched everywhere else.
+        #       The arrays are added to the l1 classifier container regardless
+        #       for consistency.
+
+        # --- Update the L1 data container ---
+        # 1. Save both extracted variables to classifier data groups
+        l1.classifier.add(land_ocean_flag, "hr_land_ocean_flag")
+        l1.classifier.add(distance_to_coast, "distance_to_coast")
+
+        # 2. Save original ESA surface type variable to classifier data group
+        #    and update the surface type flag in the surface type data group
+        l1.classifier.add(l1.surface_type.flag, "orig_land_ocean_flag")
+
+        # 3. Update the surface type instance
+        valid_mask_indices = land_ocean_flag != self.cfg.get("dummy_val")["land_ocean_flag"]
+        flag_update = np.full(l1.n_records, SURFACE_TYPE_DICT["invalid"])
+        flag_update[land_ocean_flag == 1] = SURFACE_TYPE_DICT["land"]
+        flag_update[land_ocean_flag == 0] = SURFACE_TYPE_DICT["ocean"]
+        updated_surface_type_flag = l1.surface_type.flag.copy()
+        updated_surface_type_flag[valid_mask_indices] = flag_update[valid_mask_indices]
+        l1.surface_type.set_flag(updated_surface_type_flag)
+
+    def get_trajectory(self, longitude: npt.NDArray, latitude: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
+        """
+        Get extract of the land/ocean flag and the distance to coast value for an
+        array of (longitude, latitude) positions.
+
+        If longitude, latitude is outside the grid, a pre-defined dummy value will
+        be returned.
+
+        :param longitude: Longitude values in degrees
+        :param latitude: latitude values in degrees
+
+        :raises None:
+
+        :return: land ocean flag & distance to coast values for longitude, latitude positions
+        """
+        grid2track = GridTrajectoryExtract(longitude, latitude, self.grid_def)
+        land_ocean_flag = grid2track.get_from_grid_variable(
+            self.land_ocean_flag_grid,
+            outside_value=self.dummy_val["land_ocean_flag"]
+        )
+
+        distance_to_coast = grid2track.get_from_grid_variable(
+            self.distance_to_coast_grid,
+            outside_value=self.dummy_val["distance_to_coast"]
+        )
+        return land_ocean_flag, distance_to_coast

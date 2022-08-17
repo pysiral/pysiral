@@ -11,7 +11,7 @@ authors:
     given-names: David
   - family-names: Paul
     given-names: Stephan
-title: "pysiral: Product update (C3S, AWI, CCI, CryoTEMPO)"
+title: "python sea ice radar altimetry library (version 0.10)"
 version: v0.9.6
 doi: 10.5281/zenodo.5566347
-date-released: 2017-12-18
+date-released: tbd

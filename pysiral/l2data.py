@@ -8,7 +8,7 @@ Created on Fri Jul 24 16:30:24 2015
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 
 import numpy as np

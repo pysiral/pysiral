@@ -130,7 +130,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         #  --- Validation ---
         if not path.is_file():
-            msg = self.pyclass+": File not found: %s " % path
+            msg = f"{self.pyclass}: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
             return
@@ -306,7 +306,7 @@ class IfremerSIC(AuxdataBaseClass):
 
         # Validation
         if not path.is_file():
-            msg ="IfremerSIC: File not found: %s " % path
+            msg = f"IfremerSIC: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
             return
@@ -318,7 +318,7 @@ class IfremerSIC(AuxdataBaseClass):
 
         # This step is important for calculation of image coordinates
         self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self.add_handler_message("IfremerSIC: Loaded SIC file: %s" % path)
+        self.add_handler_message(f"IfremerSIC: Loaded SIC file: {path}")
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -345,6 +345,4 @@ class IfremerSIC(AuxdataBaseClass):
         x_min = x[dim.n_lines-1, 0]
         y_min = y[dim.n_lines-1, 0]
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
-        # Extract along track data from grid
-        sic = ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)
-        return sic
+        return ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)

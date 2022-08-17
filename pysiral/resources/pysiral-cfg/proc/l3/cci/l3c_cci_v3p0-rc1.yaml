@@ -164,11 +164,11 @@ l2_parameter:
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
-# miz_filter: 
-#     mask_min_value: 2
-#     mask_targets: 
-#         - sea_ice_freeboard
-#         - sea_ice_thickness
+miz_filter: 
+    mask_min_value: 2
+    mask_targets: 
+        - sea_ice_freeboard
+        - sea_ice_thickness
 
 l2i_prefilter:
     active: True
@@ -204,6 +204,7 @@ processing_items:
         mask_name_dict:
             sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
             sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
+            nh12p5kmease2: LandOceanLakeMask_nh_ease2-125.nc
             nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
         mask_variable_name: landsea
         density_variable_name: ocean_area_fraction

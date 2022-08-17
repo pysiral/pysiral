@@ -89,12 +89,14 @@ Surface Type
 
 """
 
-from typing import Union
+from typing import Union, Any
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
+from scipy.spatial.transform import Rotation
 from collections import OrderedDict
 from loguru import logger
 import numpy as np
+import numpy.typing as npt
 import copy
 
 from pysiral._class_template import DefaultLoggingClass
@@ -154,6 +156,7 @@ class Level1bData(DefaultLoggingClass):
 
     def apply_range_correction(self, correction):
         """  Apply range correction """
+        # TODO: This method has no place here
         range_delta = self.correction.get_parameter_by_name(correction)
         if range_delta is None:
             # TODO: raise warning
@@ -163,20 +166,16 @@ class Level1bData(DefaultLoggingClass):
         nans_indices = np.where(np.isnan(range_delta))[0]
         if len(nans_indices) > 0:
             range_delta[nans_indices] = 0.0
-            logger.warning("NaNs encountered in range correction parameter: %s" % correction)
+            logger.warning(f"NaNs encountered in range correction parameter: {correction}")
 
         self.waveform.add_range_delta(range_delta)
 
     def extract_subset(self, subset_list):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
-
-        test = copy.deepcopy(self.surface_type)
-
-        if len(subset_list) > 0:
-            l1b = copy.deepcopy(self)
-            l1b.trim_to_subset(subset_list)
-        else:
+        if len(subset_list) == 0:
             return None
+        l1b = copy.deepcopy(self)
+        l1b.trim_to_subset(subset_list)
         return l1b
 
     def extract_region_of_interest(self, roi):
@@ -202,7 +201,7 @@ class Level1bData(DefaultLoggingClass):
         # Get the time stamp and the time increment in seconds
         time = self.time_orbit.timestamp
         timedelta = np.ediff1d(time)
-        timedelta_secs = [td.seconds+td.microseconds/1e6 for td in timedelta]
+        timedelta_secs = [td.seconds + td.microseconds / 1e6 for td in timedelta]
 
         # Compute thresholds
         median_timedelta_secs = np.nanmedian(timedelta_secs)
@@ -230,14 +229,14 @@ class Level1bData(DefaultLoggingClass):
         indices_map = np.arange(self.n_records)
         gap_indices = []
         for gap_start_index in gap_start_indices:
-            gap_seconds = timedelta_secs[gap_start_index-1]
+            gap_seconds = timedelta_secs[gap_start_index - 1]
             gap_width = int(np.round(gap_seconds / median_timedelta_secs))
             gap_indices.extend(
-                    np.arange(gap_width) + gap_start_index + len(gap_indices))
+                np.arange(gap_width) + gap_start_index + len(gap_indices))
             indices_map[gap_start_index:] += gap_width
 
         # Get corrected n_records
-        corrected_n_records = indices_map[-1]+1
+        corrected_n_records = indices_map[-1] + 1
 
         # Update metadata
         self.info.set_attribute("n_records", corrected_n_records)
@@ -259,6 +258,12 @@ class Level1bData(DefaultLoggingClass):
         """
 
         info = self.info
+
+        # Check if timestamp is monotonically increasing
+        tdelta_dt = self.time_orbit.timestamp[1:]-self.time_orbit.timestamp[:-1]
+        tdelta_secs = np.array([t.total_seconds() for t in tdelta_dt])
+        if np.any(tdelta_secs < 0.0):
+            logger.warning("- Found anomaly (negative time step)")
 
         # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
@@ -284,14 +289,14 @@ class Level1bData(DefaultLoggingClass):
         nrecs_fl = float(self.n_records)
         for flag in range(radar_modes.num):
             is_this_radar_mode = np.where(radar_mode == flag)[0]
-            radar_mode_percent = 100.*float(len(is_this_radar_mode))/nrecs_fl
-            attribute_name = "%s_mode_percent" % radar_modes.name(flag)
+            radar_mode_percent = 100. * float(len(is_this_radar_mode)) / nrecs_fl
+            attribute_name = f"{radar_modes.name(flag)}_mode_percent"
             self.info.set_attribute(attribute_name, radar_mode_percent)
 
     def update_surface_type_statistics(self):
         """ Re-calculate the open ocean percent """
         n_ocean_records = self.surface_type.get_by_name("ocean").num
-        open_ocean_percent = 100.*float(n_ocean_records)/float(self.n_records)
+        open_ocean_percent = 100. * float(n_ocean_records) / float(self.n_records)
         self.info.set_attribute("open_ocean_percent", open_ocean_percent)
 
     def update_region_name(self):
@@ -307,24 +312,21 @@ class Level1bData(DefaultLoggingClass):
             region_name = "global"
         self.info.set_attribute("region_name", region_name)
 
-    def reduce_waveform_bin_count(self, target_count, maxloc=0.4):
+    # TODO: Move to waveform class
+    def reduce_waveform_bin_count(self, target_count: int, maxloc: float = 0.4) -> None:
         """
         Reduce the bin count of waveform power and range arrays.
         (e.g. for merging CryoSat-2 SAR [256 bins] and SIN [1024 bins])
 
         Creates a subset and updates the l1b.waveform container
 
-        Arguments
-        ---------
-        target_count (int)
-            target number of waveform bins
-            (needs to be smaller than full waveform bin count)
+        :param target_count: target number of waveform bins
+          (needs to be smaller than full waveform bin count)
+        :param maxloc:  preferred location of the maximum of the waveform in the subset
 
-        Keywords
-        --------
-        maxloc (float, default=0.4)
-            preferred location of the maximum of the waveform in the subset
-        #TODO: Move to waveform class
+        :raises None:
+
+        :return: None
         """
 
         # Extract original waveform
@@ -335,8 +337,8 @@ class Level1bData(DefaultLoggingClass):
         max_index = np.argmax(orig_power, axis=1)
 
         # Compute number of leading and trailing bins
-        lead_bins = int(maxloc*target_count)
-        trail_bins = target_count-lead_bins
+        lead_bins = int(maxloc * target_count)
+        trail_bins = target_count - lead_bins
 
         # Get the start/stop indices for each waveform
         start, stop = max_index - lead_bins, max_index + trail_bins
@@ -344,7 +346,7 @@ class Level1bData(DefaultLoggingClass):
         # Create new arrays
         rebin_shape = (n_records, target_count)
         power = np.ndarray(shape=rebin_shape, dtype=orig_power.dtype)
-        range = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
+        range_ = np.ndarray(shape=rebin_shape, dtype=orig_range.dtype)
 
         # Validity check
         overflow = np.where(stop > n_bins)[0]
@@ -362,25 +364,25 @@ class Level1bData(DefaultLoggingClass):
         # Extract the waveform with reduced bin count
         for i in np.arange(n_records):
             power[i, :] = orig_power[i, start[i]:stop[i]]
-            range[i, :] = orig_range[i, start[i]:stop[i]]
+            range_[i, :] = orig_range[i, start[i]:stop[i]]
 
         # Push to waveform container
-        self.waveform.set_waveform_data(power, range, self.radar_modes)
+        self.waveform.set_waveform_data(power, range_, self.radar_modes)
 
-    def increase_waveform_bin_count(self, target_count):
+    # TODO: Move to waveform class
+    def increase_waveform_bin_count(self, target_count: int) -> None:
         """
         Increase the bin count of waveform power and range arrays.
         (e.g. for merging CryoSat-2 LRM [128 bins] and SAR [256 bins])
 
         Creates a subset and updates the l1b.waveform container
 
-        Arguments
-        ---------
-        target_count (int)
-            target number of waveform bins
-            (needs to be bigger than full waveform bin count)
+        :param target_count: target number of waveform bins
+                             (needs to be bigger than full waveform bin count)
 
-        #TODO: Move to waveform class
+        :raises None:
+
+        :return: None
         """
         # Extract original waveform
         orig_power, orig_range = self.waveform.power, self.waveform.range
@@ -394,11 +396,11 @@ class Level1bData(DefaultLoggingClass):
         rng = np.full((n_records, target_count), 0.0)
         rng[:, 0:n_bins] = orig_range
 
-        n_new_bins = target_count-n_bins
+        n_new_bins = target_count - n_bins
         approx_bins_size = rng[0, 1] - rng[0, 0]
-        artificial_range = np.arange(1, n_new_bins+1)*approx_bins_size
+        artificial_range = np.arange(1, n_new_bins + 1) * approx_bins_size
         rng[:, n_bins:] = np.tile(artificial_range, (n_records, 1))
-        rng[:, n_bins:] += np.tile(rng[:, n_bins-1], (n_new_bins, 1)).transpose()
+        rng[:, n_bins:] += np.tile(rng[:, n_bins - 1], (n_new_bins, 1)).transpose()
 
         # Push to waveform container
         self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
@@ -406,8 +408,10 @@ class Level1bData(DefaultLoggingClass):
     def get_parameter_by_name(self, data_group: str, parameter_name: str) -> Union[None, np.ndarray]:
         """
         API method to retrieve any parameter from any data group
+
         :param data_group:
         :param parameter_name:
+
         :return:
         """
         try:
@@ -428,8 +432,8 @@ class Level1bData(DefaultLoggingClass):
             setattr(data_group, parameter_name, value)
             # Update l1b container
             setattr(self, data_group_name, data_group)
-        except AttributeError:
-            raise ValueError("Could not set value for %s.%s" % (data_group_name, parameter_name))
+        except AttributeError as e:
+            raise ValueError(f"Could not set value for {data_group_name}.{parameter_name}") from e
 
     @property
     def n_records(self):
@@ -447,9 +451,7 @@ class Level1bData(DefaultLoggingClass):
     def radar_modes(self):
         radar_modes = RadarModes()
         radar_mode_flag_list = np.unique(self.waveform.radar_mode)
-        radar_mode_list = []
-        for radar_mode_flag in radar_mode_flag_list:
-            radar_mode_list.append(radar_modes.name(radar_mode_flag))
+        radar_mode_list = [radar_modes.name(radar_mode_flag) for radar_mode_flag in radar_mode_flag_list]
         return ";".join(radar_mode_list)
 
 
@@ -509,7 +511,7 @@ class L1bdataNCFile(Level1bData):
         antenna_angles = {}
         for angle in ["pitch", "roll", "yaw"]:
             try:
-                value = datagroup.variables["antenna_%s" % angle][:]
+                value = datagroup.variables[f"antenna_{angle}"][:]
             except KeyError:
                 value = np.full(self.time_orbit.longitude.shape, 0.0)
             antenna_angles[angle] = value
@@ -522,9 +524,9 @@ class L1bdataNCFile(Level1bData):
 
         # Convert the timestamp to datetimes
         self.time_orbit.timestamp = cn2pyd(
-             datagroup.variables["timestamp"][:],
-             self.time_def.units,
-             calendar=self.time_def.calendar)
+            datagroup.variables["timestamp"][:],
+            self.time_def.units,
+            calendar=self.time_def.calendar)
 
     def _import_waveforms(self):
         """
@@ -569,7 +571,7 @@ class L1bdataNCFile(Level1bData):
         transfers l1b corrections group
         (waveform corrections in l1bdata netCDF files)
         """
-        # Get the datagroup
+        # Get the data group
         datagroup = self.nc.groups["classifier"]
         # Loop over parameters
         for key in datagroup.variables.keys():
@@ -583,23 +585,27 @@ class L1bMetaData(object):
     (see property attribute_list for a list of attributes)
     """
 
-    _attribute_list = [
-        "pysiral_version", "mission", "mission_data_version",
-        "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
-        "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
-        "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
-        "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
-        "open_ocean_percent", "timeliness"]
-
     def __init__(self):
+        """
+        Class containing a specific set of metadata attributes for l1b/l1p data
+        """
+
         # Init all fields
-        for field in self.attribute_list:
-            setattr(self, field, None)
+        self._attribute_list = [
+            "pysiral_version", "mission", "mission_data_version",
+            "mission_sensor", "mission_data_source", "n_records", "orbit", "rel_orbit",
+            "cycle", "sar_mode_percent", "lrm_mode_percent", "sin_mode_percent",
+            "is_orbit_subset", "is_merged_orbit", "start_time", "stop_time",
+            "region_name", "lat_min", "lat_max", "lon_min", "lon_max",
+            "open_ocean_percent", "timeliness"]
+
+        self._attrs = {attr_name: None for attr_name in self._attribute_list}
+
         # Set some fields to False (instead of none)
-        self.orbit = 999999
-        self.is_orbit_subset = False
-        self.is_merged_orbit = False
-        self.n_records = -1
+        self._attrs["orbit"] = 999999
+        self._attrs["is_orbit_subset"] = False
+        self._attrs["is_merged_orbit"] = False
+        self._attrs["n_records"] = -1
 
     def __repr__(self):
         output = "pysiral.L1bdata object:\n"
@@ -608,6 +614,19 @@ class L1bMetaData(object):
             output += "\n"
         return output
 
+    def __getattr__(self, item):
+        """
+        Modify the attribute getter to provide a shortcut to the data content
+        :param item: Name of the parameter
+        :return:
+        """
+        if item == "__setstate__":
+            raise AttributeError(item)
+        if item in self._attrs:
+            return self._attrs[item]
+        else:
+            raise AttributeError(f"L1BMetadata does not have the attribute {item}")
+
     @property
     def attribute_list(self):
         return self._attribute_list
@@ -615,10 +634,7 @@ class L1bMetaData(object):
     @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
-        attdict = {}
-        for field in self.attribute_list:
-            attdict[field] = getattr(self, field)
-        return attdict
+        return {field: getattr(self, field) for field in self.attribute_list}
 
     @property
     def hemisphere(self):
@@ -640,23 +656,30 @@ class L1bMetaData(object):
     def set_attribute(self, tag, value):
         if tag not in self.attribute_list:
             raise ValueError("Unknown attribute: ", tag)
-        setattr(self, tag, value)
+        self._attrs[tag] = value
 
-    def check_n_records(self, n_records):
-        # First time a data set is set: Store number of records as reference
-        if self.n_records == -1:
-            self.n_records = n_records
-        else:  # n_records exists: verify consistency
-            if n_records == self.n_records:  # all good
-                pass
-            else:  # raise Error
-                msg = "n_records mismatch, len must be: %s (was %s)" % (str(self.n_records), str(n_records))
-                raise ValueError(msg)
+    def check_n_records(self, n_records: int) -> None:
+        """
+        First time a data set is set: Store number of records as reference
+
+        :param n_records: Number of records
+
+        :return: None
+
+        :raises: ValueError
+        """
+
+        if self._attrs["n_records"] == -1:
+            self._attrs["n_records"] = n_records
+
+        elif n_records != self.n_records:
+            msg = f"n_records mismatch, len must be: {self.n_records} (was {n_records})"
+            raise ValueError(msg)
 
 
 class L1bTimeOrbit(object):
-
     """ Container for Time and Orbit Information of L1b Data """
+
     def __init__(self, info, is_evenly_spaced=True):
         self._info = info  # Pointer to metadata container
         self._timestamp = None
@@ -667,6 +690,7 @@ class L1bTimeOrbit(object):
         self._antenna_pitch = None
         self._antenna_roll = None
         self._antenna_yaw = None
+        self._antenna_mispointing = None
         self._orbit_flag = None
         self._is_evenly_spaced = is_evenly_spaced
 
@@ -699,6 +723,10 @@ class L1bTimeOrbit(object):
         return np.array(self._antenna_yaw)
 
     @property
+    def antenna_mispointing(self):
+        return np.array(self._antenna_yaw)
+
+    @property
     def orbit_flag(self):
         return np.array(self._orbit_flag)
 
@@ -715,18 +743,17 @@ class L1bTimeOrbit(object):
     @property
     def parameter_list(self):
         return ["timestamp", "longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw", "orbit_flag"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "antenna_mispointing", "orbit_flag"]
 
     @property
     def geolocation_parameter_list(self):
         return ["longitude", "latitude", "altitude", "altitude_rate",
-                "antenna_pitch", "antenna_roll", "antenna_yaw"]
+                "antenna_pitch", "antenna_roll", "antenna_yaw", "antenna_mispointing"]
 
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", len(self._timestamp))])
-        return dimdict
+        return OrderedDict([("n_records", len(self._timestamp))])
 
     @property
     def is_evenly_spaced(self):
@@ -748,10 +775,7 @@ class L1bTimeOrbit(object):
 
         # Parameter that were added later
         dummy_val = np.full(self.longitude.shape, np.nan)
-        if altitude_rate is not None:
-            self._altitude_rate = altitude_rate
-        else:
-            self._altitude_rate = dummy_val
+        self._altitude_rate = altitude_rate if altitude_rate is not None else dummy_val
 
         # Set a dummy value for pitch, roll & yaw for backward compability
         if self.antenna_pitch is None:
@@ -765,39 +789,43 @@ class L1bTimeOrbit(object):
         except IndexError:
             self._orbit_flag = np.full(latitude.shape, -1)
 
-    def set_antenna_attitude(self, pitch, roll, yaw):
+    def set_antenna_attitude(self, pitch, roll, yaw, mispointing=None):
         # Check dimensions
         if self._info is not None:
             self._info.check_n_records(len(pitch))
             self._info.check_n_records(len(roll))
             self._info.check_n_records(len(yaw))
+            if self._antenna_mispointing is not None:
+                self._info.check_n_records(len(mispointing))
+
         # All fine => set values
         self._antenna_pitch = pitch
         self._antenna_roll = roll
         self._antenna_yaw = yaw
+        self._antenna_mispointing = mispointing if mispointing is not None else self.mispointing_from_angles(pitch, roll, yaw)
 
     def append(self, annex):
         for parameter in self.parameter_list:
-            this_data = getattr(self, "_"+parameter)
+            this_data = getattr(self, f"_{parameter}")
             annex_data = getattr(annex, parameter)
             this_data = np.append(this_data, annex_data)
-            setattr(self,  "_"+parameter, this_data)
+            setattr(self, f"_{parameter}", this_data)
 
     def set_subset(self, subset_list):
         for parameter in self.parameter_list:
-            data = getattr(self, "_"+parameter)
+            data = getattr(self, f"_{parameter}")
             data = data[subset_list]
-            setattr(self,  "_"+parameter, data)
+            setattr(self, f"_{parameter}", data)
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
         """ API gap filler method. Note: It is assumed that this method is
-        only evoked for filling small gaps. Therefore we use simple linear
+        only evoked for filling small gaps. Therefore, we use simple linear
         interpolation for the parameters of the time orbit group """
 
         # Set the geolocation parameters first (lon, lat, alt)
         geoloc_parameters = []
         corrected_indices = np.arange(corrected_n_records)
-        for i, parameter_name in enumerate(self.geolocation_parameter_list):
+        for parameter_name in self.geolocation_parameter_list:
             data_old = getattr(self, parameter_name)
             data_corr = np.interp(corrected_indices, indices_map, data_old)
             geoloc_parameters.append(data_corr)
@@ -813,6 +841,32 @@ class L1bTimeOrbit(object):
             return getattr(self, name)
         except AttributeError:
             return None
+
+    @staticmethod
+    def mispointing_from_angles(pitch_deg: npt.NDArray,
+                                roll_deg: npt.NDArray,
+                                heading_deg: npt.NDArray
+                                ) -> npt.NDArray:
+        """
+        Compute the mispointing (angle between -z direction in spacecraft frame and true nadir)
+        from pitch/roll/heading, assuming rotation of spacecraft is around antenna.
+
+        :param pitch_deg: pitch angles (rotation around y-axis)
+        :param roll_deg: roll angles (rotation around x-axis)
+        :param heading_deg: true heading (rotation around z-axis)
+
+        :return: mispointing angle in degrees
+        """
+
+        # Array of [0, 0, -1] vector (down in satellite reference frame)
+        x_arr = np.repeat(np.array([[0, 0, -1]]), pitch_deg.shape[0], axis=0)
+
+        # Rotate the down vector with pitch, roll, heading
+        r = Rotation.from_rotvec(np.c_[roll_deg, pitch_deg, heading_deg], degrees=True)
+        y_arr = r.apply(x_arr)
+
+        # Mis-pointing is the angle between spacecraft down and nadir
+        return np.rad2deg(np.arccos([np.dot(x, y) for x, y in zip(x_arr, y_arr)]))
 
     def __getstate__(self):
         return self.__dict__
@@ -846,8 +900,7 @@ class L1bRangeCorrections(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     def get_parameter_by_index(self, index):
         name = self._parameter_list[index]
@@ -910,16 +963,12 @@ class L1bClassifiers(object):
     @property
     def n_records(self):
         parameter_list = self.parameter_list
-        if len(parameter_list) == 0:
-            return 0
-        else:
-            return len(getattr(self, parameter_list[0]))
+        return 0 if len(parameter_list) == 0 else len(getattr(self, parameter_list[0]))
 
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     def has_parameter(self, parameter_name):
         return parameter_name in self.parameter_list
@@ -945,13 +994,31 @@ class L1bClassifiers(object):
 
     def fill_gaps(self, corrected_n_records, gap_indices, indices_map):
         """ API gap filler method. Note: Gaps will be filled with
-        the nodata=nan value"""
+        the nodata=nan value """
 
         for parameter_name in self.parameter_list:
             data_corr = np.full(corrected_n_records, np.nan)
             data_old = self.get_parameter(parameter_name)
             data_corr[indices_map] = data_old
             self.add(data_corr, parameter_name)
+
+    def __getattr__(self, item: str) -> Any:
+        """
+        Direct attribute access to the cfg dictionary
+
+        :param item:
+        :return:
+        """
+        if self.has_parameter(item):
+            return self.get_parameter(item)
+        else:
+            raise AttributeError(f"attribute {item} not found in classifier container")
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
 
 
 class L1bWaveforms(object):
@@ -1018,8 +1085,7 @@ class L1bWaveforms(object):
     def dimdict(self):
         """ Returns dictionary with dimensions"""
         shape = np.shape(self._power)
-        dimdict = OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
-        return dimdict
+        return OrderedDict([("n_records", shape[0]), ("n_bins", shape[1])])
 
     def set_waveform_data(self, power, range, radar_mode, classification_flag=None):
         """
@@ -1107,16 +1173,15 @@ class L1bWaveforms(object):
         # Power/range: set gaps to nan
         power = np.full((corrected_n_records, self.n_range_bins), np.nan)
         power[indices_map, :] = self.power
-        range = np.full((corrected_n_records, self.n_range_bins), np.nan)
-        range[indices_map, :] = self.range
+        range_ = np.full((corrected_n_records, self.n_range_bins), np.nan)
+        range_[indices_map, :] = self.range
 
         # Radar map: set gaps to lrm
-        radar_mode = np.full((corrected_n_records), 1,
-                             dtype=self.radar_mode.dtype)
+        radar_mode = np.full(corrected_n_records, 1, dtype=self.radar_mode.dtype)
         radar_mode[indices_map] = self.radar_mode
 
         # And set new values
-        self.set_waveform_data(power, range, radar_mode)
+        self.set_waveform_data(power, range_, radar_mode)
 
     def _get_wfm_shape(self, index):
         shape = np.shape(self._power)

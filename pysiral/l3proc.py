@@ -9,7 +9,7 @@ from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.output import OutputHandlerBase, Level3Output
@@ -17,7 +17,7 @@ from pysiral.core.flags import ORCondition
 from pysiral.sit import frb2sit_errprop
 
 from scipy import stats
-from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage import maximum_filter
 
 from collections import OrderedDict
 from loguru import logger
@@ -173,7 +173,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         flag_miz = getattr(l2i, "flag_miz", None)
-        if miz_filter is None:
+        if flag_miz is None:
             return
 
         idx = np.where(flag_miz >= miz_filter["mask_min_value"])[0]

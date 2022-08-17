@@ -1,15 +1,19 @@
 astropy
 attrdict
 bottleneck
+cartopy==0.18
 cftime
 cython
-dateperiods @ git+https://github.com/shendric/dateperiods.git@master#egg=dateperiods
+dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
 dateutils
+flake8
 geopy
 h5py
 loguru
+lxml
 isodate
 matplotlib
+mypy
 netCDF4
 numpy
 pillow
@@ -20,10 +24,17 @@ pyresample
 pyshp
 python-dateutil
 pyyaml
+schema
 scipy
 scikit-learn
+Sphinx
+sphinx-automodapi
+sphinx_rtd_theme
+sphinxcontrib-mermaid
 statsmodels
+torch
 xarray
 xgboost
 xmltodict
+
 
