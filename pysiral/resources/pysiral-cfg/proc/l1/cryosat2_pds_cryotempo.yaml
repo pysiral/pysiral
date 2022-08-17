@@ -87,7 +87,17 @@ level1_preprocessor:
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
-            
+
+            # Compute pulse peakiness
+            - label: "Compute Pulse Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: True
+
+
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"
