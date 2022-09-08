@@ -34,7 +34,7 @@ except ImportError:
 try:
     from samosa.sampy import SAMOSA as initialize_SAMOSAlib
     from samosa.sampy import initialize_epoch, compute_ThNEcho
-    from samosa.help_functions import calc_sigma0, func_wind_speed
+    from samosa.help_functions import calc_sigma0, func_wind_speed, calc_ssb_j2Table
 
     logger.info("SAMOSA retracker loaded from the environment")
     logging.getLogger('samosa.sampy').addHandler(InterceptHandler())
@@ -2165,6 +2165,71 @@ class SAMOSAPlus(BaseRetracker):
         #error_flag[self.indices] = np.logical_not(valid.flag[self.indices])
         #self._flag = error_flag
 
+class SSBCorrectionJason2(Level2ProcessorStep):
+    """
+    A processing step applying a sea state bias correction.
+
+    NOTE: Designed for use with SAMOSA retracker and taken from the Jason 2 mission
+
+    Sea state bias model by Tran et al. (2012), CLS-CNES [1]
+
+    [1]Tran N., S. Philipps, J.-C. Poisson, S. Urien, E. Bronner, N. Picot, "Impact of GDR_D standards on SSB
+    corrections", Presentation OSTST2012 in Venice, http://www.aviso.altimetry.fr/fileadmin/
+    documents/OSTST/2012/oral/02_friday_28/01_instr_processing_I/01_IP1_Tran.pdf
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(SSBCorrectionJason2, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b, l2):
+        """
+        Compute the ssb correction.
+        :param l1b:
+        :param l2:
+        :return: error_status_flag
+        """
+
+        # Get a clean error status
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Compute ssb
+        try:
+            ssb = calc_ssb_j2Table(l2.samswh, l2.samwsp)
+            logger.info('Computing sea state bias correction')
+        except AttributeError:
+            # This happens if no SAMOSA retracking because no ocean or lead records
+            ssb = np.zeros(l2.n_records)
+
+        # Change NaN values for correction to zero
+        ssb = np.nan_to_num(ssb, copy=False)
+
+        for target_variable in self.target_variables:
+            var = l2.get_parameter_by_name(target_variable)
+            var[:] = var[:] - ssb
+            l2.set_parameter(target_variable, var[:], var.uncertainty[:])
+
+        # Add pulse deblurring correction to level-2 auxiliary data
+        l2.set_auxiliary_parameter("ssb", "sea_state_bias", ssb)
+
+        # Return clean error status (for now)
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["elev", "samswh", "samwsp"]
+
+    @property
+    def l2_output_vars(self):
+        return ["ssb"]
+
+    @property
+    def target_variables(self):
+        return self.cfg.options.get("target_variables", ["elevation"])
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["retracker"]
 
 # %% Retracker getter funtion
 
