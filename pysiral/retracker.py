@@ -2117,7 +2117,7 @@ class SAMOSAPlus(BaseRetracker):
             if self._options.uncertainty.type == "fixed":
                 self._uncertainty[:] = self._options.uncertainty.value
 
-        if True:
+        if False:
             import xarray as xr
             outds = xr.Dataset({'SSHunc': (['time_20_ku'], self._l1b.time_orbit.altitude-self._range),
                                 'raw_elev' : (['time_20_ku'], Raw_Elevation),
@@ -2193,24 +2193,30 @@ class SSBCorrectionJason2(Level2ProcessorStep):
         # Get a clean error status
         error_status = self.get_clean_error_status(l2.n_records)
 
-        # Compute ssb
-        try:
-            ssb = calc_ssb_j2Table(l2.samswh, l2.samwsp)
-            logger.info('Computing sea state bias correction')
-        except AttributeError:
-            # This happens if no SAMOSA retracking because no ocean or lead records
-            ssb = np.zeros(l2.n_records)
+        surface_lead = l2.surface_type.get_by_name('lead')
+        surface_ocean = l2.surface_type.get_by_name('ocean')
+        ssb_mask = np.bitwise_or(surface_lead.flag, surface_ocean.flag)
 
-        # Change NaN values for correction to zero
-        ssb = np.nan_to_num(ssb, copy=False)
+        if np.count_nonzero(ssb_mask) > 0:
+            # Compute ssb
+            try:
+                # Need nan to num because SSB is -0.297281 for nan inputs!
+                ssb = calc_ssb_j2Table(np.nan_to_num(l2.samswh), np.nan_to_num(l2.samwsp))
+                logger.info('Computing sea state bias correction')
+            except AttributeError:
+                # This happens if no SAMOSA retracking because no ocean or lead records
+                ssb = np.zeros(l2.n_records)
 
-        for target_variable in self.target_variables:
-            var = l2.get_parameter_by_name(target_variable)
-            var[:] = var[:] - ssb
-            l2.set_parameter(target_variable, var[:], var.uncertainty[:])
+            # Change NaN values for correction to zero, and mask out non-ocean/lead
+            ssb = np.nan_to_num(ssb, copy=False) * np.array(ssb_mask).astype(float)
 
-        # Add pulse deblurring correction to level-2 auxiliary data
-        l2.set_auxiliary_parameter("ssb", "sea_state_bias", ssb)
+            for target_variable in self.target_variables:
+                var = l2.get_parameter_by_name(target_variable)
+                var[:] = var[:] - ssb
+                l2.set_parameter(target_variable, var[:], var.uncertainty[:])
+
+            # Add sea state bias correction to level-2 auxiliary data
+            l2.set_auxiliary_parameter("ssb", "sea_state_bias", ssb)
 
         # Return clean error status (for now)
         return error_status
