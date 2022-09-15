@@ -299,6 +299,8 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
         # Keep the total range correction
         total_range_correction = np.full(l2.n_records, 0.0)
 
+        preserve_nan = self.cfg.options.get("preserve_nan", False)
+
         # Apply the range corrections (content of l1b data package)
         # to the l2 elevation (output of retracker) data
         for correction_name in self.cfg.options.corrections:
@@ -316,9 +318,15 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             # Check if NaN's, set values to zero and provide warning
             nans_indices = np.where(np.isnan(range_delta))[0]
             if len(nans_indices) > 0:
-                range_delta[nans_indices] = 0.0
+                if not preserve_nan:
+                    logger.warning(
+                        "NaNs encountered and replaced with zero in range correction parameter: %s" % correction_name)
+                    range_delta[nans_indices] = 0.0
+                else:
+                    logger.warning(
+                        "NaNs encountered and preserved in range correction parameter: %s" % correction_name)
+
                 error_status[nans_indices] = True
-                logger.warning("NaNs encountered in range correction parameter: %s" % correction_name)
 
             # Apply the range correction
             #
