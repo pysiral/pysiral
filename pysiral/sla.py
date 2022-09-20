@@ -74,7 +74,7 @@ class SLABaseFunctionality(object):
         # All done, return the index list of tie points
         return ssh_tiepoint_indices
 
-    def get_tiepoint_distance_from_l2(self, l2, smooth_filter_width_footprint_size):
+    def get_tiepoint_distance_from_l2(self, l2, smooth_filter_width_footprint_size, use_ocean_wfm=False):
         """
         Returns the distance in meter to the next ssh tiepoint for each record
         :param l2: Level-2 data container
@@ -84,6 +84,11 @@ class SLABaseFunctionality(object):
 
         # prepare parameter arrays
         lead_indices = l2.surface_type.lead.indices
+
+        # (Optional) Add ocean waveforms if applicable
+        if use_ocean_wfm:
+            lead_indices = np.where(np.bitwise_or(l2.surface_type.ocean.flag, l2.surface_type.lead.flag))[0]
+
         lead_elevation = np.full(l2.n_records, np.nan, dtype=np.float32)
         lead_elevation[lead_indices] = l2.elev[lead_indices]
 
@@ -111,7 +116,8 @@ class SLABaseFunctionality(object):
         # distance_threshold = filter_options.maximum_distance_to_tiepoint
 
         # Compute distance to next tie point
-        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, footprint_size)
+        use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
+        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, footprint_size, use_ocean_wfm)
 
         # Get indices
         invalid_indices = np.where(tiepoint_distance > distance_threshold)[0]
@@ -140,7 +146,7 @@ class SLABaseFunctionality(object):
         return np.minimum(distance_forward, distance_reverse)
 
     @staticmethod
-    def marine_segment_filter(l2, minimum_lead_number, footprint_size):
+    def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):
         """
         Check all sections divided by land masses for reliable information content.
         Specifically, each marine segment between two land masses must have a minimum
@@ -148,6 +154,7 @@ class SLABaseFunctionality(object):
         :param l2:
         :param minimum_lead_number:
         :param footprint_size:
+        :param use_ocean_wfm:
         :return: mask: True: To be masked, False: Valid SLA
         """
 
@@ -163,6 +170,11 @@ class SLABaseFunctionality(object):
 
         # Get indices for land sections
         lead_flag = l2.surface_type.lead.flag
+        if use_ocean_wfm:
+            ocean_flag = l2.surface_type.ocean.flag
+            logger.info('Addded {nocean} ocean records to {nlead} lead records'.format(nocean=ocean_flag.sum(), nlead=lead_flag.sum()))
+            lead_flag = np.bitwise_or(lead_flag, ocean_flag)
+
         land_flag = land.flag.astype(int)
         land_start = np.where(np.ediff1d(land_flag) > 0)[0]
         land_stop = np.where(np.ediff1d(land_flag) < 0)[0]
@@ -473,7 +485,8 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         mask = np.full(l2.n_records, False)
         if "marine_segment_filter" in self.cfg.options:
             minimum_lead_number = self.cfg.options.marine_segment_filter.get("minimum_lead_number", np.nan)
-            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, footprint_size)
+            use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
+            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 5 (optional): Filter SLA segments that are far away from the next SSH tie point
@@ -546,7 +559,8 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         """
 
         # get tie point distance
-        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, smooth_filter_width_footprint_size)
+        use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
+        tiepoint_distance = self.get_tiepoint_distance_from_l2(l2, smooth_filter_width_footprint_size, use_ocean_wfm)
 
         # Compute the influence of distance to next tie points
         # in the range of 0: minimum influence to 1: maximum influence
