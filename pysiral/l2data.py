@@ -5,6 +5,8 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
+
+import contextlib
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
@@ -107,7 +109,7 @@ class Level2Data(object):
         is_correct_size = self._check_valid_size(value)
         if not is_correct_size:
             msg = "Invalid parameter dimension: %s (See self._L2_DATA_ITEMS)"
-            msg = msg % str(target)
+            msg %= str(target)
             self.error.add_error("l2-invalid-parameter_name", msg)
             self.error.raise_on_error()
 
@@ -228,7 +230,8 @@ class Level2Data(object):
                 source = catalog[parameter_name]
                 parameter = getattr(self, source)
             except KeyError:
-                msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
+                msg = f"Variable name `{parameter_name}` is not in the catalog of this l2 object"
+
                 self.error.add_error("l2data-missing-variable", msg)
                 if raise_on_error:
                     self.error.raise_on_error()
@@ -240,7 +243,7 @@ class Level2Data(object):
         required for the output data handler """
 
         try:
-            attr_getter = getattr(self, "_get_attr_" + attribute_name)
+            attr_getter = getattr(self, f"_get_attr_{attribute_name}")
             return attr_getter(*args)
         except AttributeError:
             return "unkown"
@@ -292,13 +295,12 @@ class Level2Data(object):
             return np.full(self.arrshape, value).astype(dtype)
 
         # if array, check if correct size
+        is_np_array = isinstance(value, (np.ndarray, np.array))
+        is_correct_size = self._check_valid_size(value)
+        if is_np_array and is_correct_size:
+            return value
         else:
-            is_np_array = isinstance(value, (np.ndarray, np.array))
-            is_correct_size = self._check_valid_size(value)
-            if is_np_array and is_correct_size:
-                return value
-            else:
-                return np.full(self.arrshape, np.nan)
+            return np.full(self.arrshape, np.nan)
 
     # TODO: All this needs to go to the metadata class with standardized attributes
     @staticmethod
@@ -317,7 +319,7 @@ class Level2Data(object):
                 mission_id_code, label = entry.split(":")
                 if mission_id == mission_id_code:
                     return label
-            return "Error (mission id %s not in select statement)" % mission_id
+            return f"Error (mission id {mission_id} not in select statement)"
         return mission_id
 
     def _get_attr_source_mission_name(self, *args):
@@ -430,37 +432,21 @@ class Level2Data(object):
 
     def _get_attr_utcnow(self, *args):
         dt = self._creation_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         # Cryo-TEMPO change from start of invocation timeperiod to start of L2 object coverage
         dt = self.info.start_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_end(self, *args):
         # Cryo-TEMPO change from end of invocation timeperiod to end of L2 object coverage
         dt = self.info.stop_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_period_coverage_start(self, *args):
         dt = self.period.tcs.dt
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_period_coverage_end(self, *args):
         dt = self.period.tce.dt
@@ -904,11 +890,8 @@ class Level2PContainer(DefaultLoggingClass):
         # or do not make sense (surface type for valid freeboard will
         # always be sea ice)
         for parameter_name in ["timestamp", "time", "longitude", "latitude", "surface_type"]:
-            try:
+            with contextlib.suppress(ValueError):
                 parameter_list.remove(parameter_name)
-            except ValueError:
-                pass
-
         # 4. Set parameters
         for parameter_name in parameter_list:
 
@@ -947,10 +930,7 @@ class Level2PContainer(DefaultLoggingClass):
 
     @staticmethod
     def _get_empty_data_group(parameter_list):
-        data = {}
-        for parameter_name in parameter_list:
-            data[parameter_name] = np.array([], dtype=np.float32)
-        return data
+        return {parameter_name: np.array([], dtype=np.float32) for parameter_name in parameter_list}
 
     @property
     def l2i_stack(self):
@@ -1022,10 +1002,8 @@ class L2iNCFileImport(object):
     def mask_variables(self, indices, targets, value=np.nan):
         for target in targets:
             parameter = getattr(self, target)
-            try:
+            with contextlib.suppress(ValueError):
                 parameter[indices] = value
-            except ValueError:
-                pass
             setattr(self, target, parameter)
 
     # TODO: Does this need to be here?
