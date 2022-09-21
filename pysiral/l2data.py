@@ -15,6 +15,7 @@ from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 
 import numpy as np
 from datetime import datetime
+from loguru import logger
 from geopy.distance import great_circle
 from collections import OrderedDict
 import uuid
@@ -140,7 +141,10 @@ class Level2Data(object):
         # NOTE: In this case an empty value will be generated
         if value is None:
             value = np.full(self.n_records, np.nan)
-        param.set_value(value)
+        try:
+            param.set_value(value)
+        except ValueError:
+            logger.error(f"Could not set auxiliary parameter: {var_name}")
         if uncertainty is not None:
             param.set_uncertainty(uncertainty)
         setattr(self, var_id, param)
@@ -910,9 +914,15 @@ class Level2PContainer(DefaultLoggingClass):
 
         return l2
 
-    def _get_merged_data(self, valid_mask=None):
-        """ Returns a dict with merged data groups for all parameters
-        in the l2i file (assumed to be identical for all files in the stack
+    def _get_merged_data(self, valid_mask: str = None) -> dict:
+        """
+        Returns a dict with merged data groups for all parameters
+        in the l2i file (assumed to be identical for all files in the stack)
+
+        :param valid_mask: The name of the parameter that defines the
+            mask of valid l2i data points
+
+        :return: Dictionary with all mergered l2i parameters
         """
         parameter_list = self.l2i_stack[0].parameter_list
         data = self._get_empty_data_group(parameter_list)
@@ -924,8 +934,15 @@ class Level2PContainer(DefaultLoggingClass):
                 is_valid = np.arange(l2i.n_records)
             for parameter in parameter_list:
                 stack_data = getattr(l2i, parameter)
-                stack_data = stack_data[is_valid]
-                data[parameter] = np.append(data[parameter], stack_data)
+
+                # TODO: This needs better handling
+                # NOTE: Some variables are dimensions and not data variables.
+                #       These should not be concatenated
+                if stack_data.size == l2i.n_records:
+                    stack_data = stack_data[is_valid]
+                    data[parameter] = np.append(data[parameter], stack_data)
+                else:
+                    data[parameter] = stack_data
         return data
 
     @staticmethod
