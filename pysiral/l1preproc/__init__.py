@@ -445,7 +445,7 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_0_last_latlon = l1_0.time_orbit.latitude[-1], l1_0.time_orbit.longitude[-1]
         l1_1_first_latlon = l1_1.time_orbit.latitude[0], l1_1.time_orbit.longitude[0]
         distance_km = distance.distance(l1_0_last_latlon, l1_1_first_latlon).km
-        logger.debug(f"- {distance_km=}")
+        logger.debug(f"- distance_km={distance_km}")
 
         # Test if segments are adjacent based on time gap between them
         tdelta = l1_1.info.start_time - l1_0.info.stop_time
