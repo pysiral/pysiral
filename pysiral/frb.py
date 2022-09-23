@@ -294,7 +294,7 @@ class LaforgeTFMR50PPCorrection(Level2ProcessorStep):
         # Step 3: Set high peakiness (lead)
         range_correction[pp > 0.33] = 0.25
 
-        l2.elev[:] += range_correction
+        l2.elev[:] -= range_correction
         l2.set_auxiliary_parameter("pp_rc", "pp_range_correction", range_correction)
 
         return error_status
