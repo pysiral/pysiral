@@ -26,8 +26,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Sanity check of product definition object
         if not isinstance(product_def, Level2PreProcProductDefinition):
-            msg = "Invalid Level-2 PreProcessor product definition: %s" % \
-                type(product_def)
+            msg = f"Invalid Level-2 PreProcessor product definition: {type(product_def)}"
             self.error.add_error("invalid-l2preproc-def", msg)
             self.error.raise_on_error()
         self._job = product_def
@@ -46,7 +45,7 @@ class Level2PreProcessor(DefaultLoggingClass):
                 l2i = L2iNCFileImport(l2i_file)
             except Exception as ex:
                 msg = "Error (%s) in l2i file: %s"
-                msg = msg % (ex, Path(l2i_file).name)
+                msg %= (ex, Path(l2i_file).name)
                 logger.error(msg)
                 continue
             l2p.append_l2i(l2i)
@@ -59,7 +58,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
-        logger.info("- Wrote %s data file: %s" % (self.job.output_handler.id, output.export_filename))
+        logger.info(f"- Wrote {self.job.output_handler.id} data file: {output.export_filename}")
 
     @property
     def job(self):
@@ -120,6 +119,7 @@ class Level2POutputHandler(OutputHandlerBase):
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
 
+        global filename_template
         try:
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
@@ -132,11 +132,10 @@ class Level2POutputHandler(OutputHandlerBase):
             filename_template = self.output_def.filenaming
         except KeyError:
             msg = "Missing filenaming convention for period [%s] in [%s]"
-            msg = msg % (str(self._period), self.output_def_filename)
+            msg %= (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
-        filename = self.fill_template_string(filename_template, l2p)
-        return filename
+        return self.fill_template_string(filename_template, l2p)
 
     def get_directory_from_data(self, l2p, create=True):
         """ Return the output directory based on information provided
