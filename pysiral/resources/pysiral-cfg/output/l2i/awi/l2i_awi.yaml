@@ -201,6 +201,12 @@ variables:
     valid_max: 100.0
     coordinates: time
 
+  distance_to_ocean:
+    long_name: "distance to open ocean"
+    units: m
+    comment: "computed from gridded sea ice concentration mask"
+    coordinates: time
+
   snow_depth:
     long_name: "thickness of the snow layer"
     standard_name: snow_depth
@@ -282,8 +288,28 @@ variables:
     units: 1
     coordinates: time
 
+  sigma0_rolling_sdev:
+    long_name: "radar backscatter (sigma0) rolling standard deviation"
+    units: 1
+    coordinates: time
+
+  sigma0_rolling_mean:
+    long_name: "radar backscatter (sigma0) width rolling mean"
+    units: 1
+    coordinates: time
+
   pulse_peakiness:
     long_name: "pulse peakiness"
+    units: 1
+    coordinates: time
+
+  pulse_peakiness_rolling_sdev:
+    long_name: "pulse peakiness rolling standard deviation"
+    units: 1
+    coordinates: time
+
+  pulse_peakiness_rolling_mean:
+    long_name: "pulse peakiness rolling mean"
     units: 1
     coordinates: time
 
@@ -291,12 +317,22 @@ variables:
     long_name: "leading edge width"
     units: 1
     coordinates: time
-  
+
+  leading_edge_width_rolling_sdev:
+    long_name: "leading edge width rolling standard deviation"
+    units: 1
+    coordinates: time
+
+  leading_edge_width_rolling_mean:
+    long_name: "leading edge width rolling mean"
+    units: 1
+    coordinates: time
+
   leading_edge_quality:
     long_name: "leading edge width"
     units: 1
     coordinates: time
-  
+
   stack_standard_deviation:
     long_name: "standard deviation of power over the stack"
     units: 1
@@ -312,8 +348,8 @@ variables:
     units: "m"
     coordinates: time
 
-  inverse_barometric:
-    long_name: "inverse barometric range correction"
+  dynamic_atmosphere:
+    long_name: "dynamic atmosphere range correction"
     units: "m"
     coordinates: time
 
@@ -364,4 +400,14 @@ variables:
     valid_max: 32768
     flag_values: "1, 2, 4, 8, 16, 32, 64, 128, 256, 32768"
     flag_meanings: "l1p_source_data l2_processor auxiliary_data surface_type_classification retracker range_correction sea_level_anomaly freeboard_retrieval freeboard_to_thickness_conversion parameter_filter other"
+    coordinates: time
+
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
+    units: 1
+    valid_min: 0
+    valid_max: 3
+    flag_values: "0, 1, 2"
+    flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
     coordinates: time
