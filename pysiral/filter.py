@@ -399,9 +399,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         # Only compute the filter flag, if all basic conditions are met
         filter_execute_conditions = [
-            l2.surface_type.ocean.num >= 0,      # There needs to be ocean waveforms data
-            np.isfinite(l2.frb[:]).any(),        # There needs to be freeboard data
-            np.any(l2.sic[:] <= 15),              # There needs to be sea ice concentration
+            np.isfinite(l2.frb[:]).any(),       # There needs to be freeboard data
             np.isfinite(l2.footprint_spacing)   # There have been instances where footprint was NaN
         ]
         if not all(filter_execute_conditions):
@@ -414,6 +412,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         # Compute the flag and store result in the L2 data container
         args = [l2.get_parameter_by_name("leading_edge_width"),
+                l2.get_parameter_by_name("leading_edge_width_rolling_mean"),
+                l2.get_parameter_by_name("pulse_peakiness_rolling_sdev"),
                 l2.get_parameter_by_name("sea_ice_freeboard"),
                 l2.get_parameter_by_name("sea_ice_concentration"),
                 l2.get_parameter_by_name("distance_to_ocean"),
@@ -424,6 +424,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
     def get_miz_filter_flag(self,
                             leading_edge_width: np.ndarray,
+                            leading_edge_width_rolling_mean: np.ndarray,
+                            pulse_peakiness_rolling_sdev: np.ndarray,
                             sea_ice_freeboard: np.ndarray,
                             sea_ice_concentration: np.ndarray,
                             distance_to_ocean: np.ndarray,
@@ -431,11 +433,61 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                             ) -> Tuple[np.ndarray, Union[None, List["MarginalIceZoneFilterData"]]]:
         """
         Compute the filter flag
+
         :param leading_edge_width:
+        :param leading_edge_width_rolling_mean:
+        :param pulse_peakiness_rolling_sdev:
         :param sea_ice_freeboard:
         :param sea_ice_concentration:
         :param distance_to_ocean:
         :param footprint_spacing:
+
+        :return:
+        """
+
+        # The first filter step looks for ocean/ice transitions and
+        # searches for freeboard anomalies
+        filter_flag_01, miz_segments = self.get_miz_filter_flag_ice_edge_transition(
+                leading_edge_width,
+                sea_ice_concentration,
+                sea_ice_freeboard,
+                distance_to_ocean,
+                footprint_spacing
+        )
+
+        # The second filter step checks if there are close passes
+        # to the ice edge that are influenced by wave action
+        # but never cross into open water. Such a pass will not
+        # be detected by the first filter step
+        filter_flag_02 = self.get_miz_filter_flag_proximity_based(
+                distance_to_ocean,
+                sea_ice_concentration,
+                leading_edge_width_rolling_mean,
+                pulse_peakiness_rolling_sdev
+        )
+
+        # Merge the two filter_flags
+        filter_flag = np.maximum(filter_flag_01, filter_flag_02)
+
+        return filter_flag, miz_segments
+
+    def get_miz_filter_flag_ice_edge_transition(
+            self,
+            leading_edge_width,
+            sea_ice_concentration,
+            sea_ice_freeboard,
+            distance_to_ocean,
+            footprint_spacing
+    ) -> Tuple[np.ndarray, Union[None, List["MarginalIceZoneFilterData"]]]:
+        """
+        Get the filter flag for ice edge crossings
+
+        :param leading_edge_width:
+        :param sea_ice_concentration:
+        :param sea_ice_freeboard:
+        :param distance_to_ocean:
+        :param footprint_spacing:
+
         :return:
         """
 
@@ -501,14 +553,19 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         """
 
         # Get properties
-        sea_ice_filter_size_m = self.cfg.options.get("sea_ice_filter_size_m", None)
-        if sea_ice_filter_size_m is None:
-            logger.error(f"{self.__class__.__name__}: Missing option `sea_ice_filter_size_m")
+        opt = self.cfg.options.get("ice_edge_transition", None)
+        if opt is None:
+            logger.error(f"{self.__class__.__name__}: Missing option category `ice_edge_transition`")
             return None
 
-        ocean_filter_size_m = self.cfg.options.get("ocean_filter_size_m", None)
+        sea_ice_filter_size_m = opt.get("sea_ice_filter_size_m", None)
+        if sea_ice_filter_size_m is None:
+            logger.error(f"{self.__class__.__name__}: Missing option `sea_ice_filter_size_m`")
+            return None
+
+        ocean_filter_size_m = opt.get("ocean_filter_size_m", None)
         if ocean_filter_size_m is None:
-            logger.error(f"{self.__class__.__name__}: Missing option `ocean_leading_edge_window")
+            logger.error(f"{self.__class__.__name__}: Missing option `ocean_leading_edge_window`")
             return None
 
         # Detect change ice edge by sea ice concentration jumps over the 15% threshold
@@ -571,6 +628,12 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         :return: None (miz prop is changed in-place)
         """
 
+        # Get properties
+        opt = self.cfg.options.get("ice_edge_transition", None)
+        if opt is None:
+            logger.error(f"{self.__class__.__name__}: Missing option category `ice_edge_transition")
+            return None
+
         # First test: There must be a valid ocean leading edge width and freeboard estimate
         miz_frbs = data.sea_ice_freeboard[data.seaice_idxs]
         ocean_lews = data.leading_edge_width[data.ocean_idxs]
@@ -584,7 +647,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # Compute the gradient of filtered sea ice freeboard as change / km
         # which is expected to be strong in the presence of wave influence
         x_all = np.arange(0, data.n_records)
-        freeboard_smoother_filter_size_m = self.cfg.options.get("freeboard_smoother_filter_size_m", None)
+        freeboard_smoother_filter_size_m = opt.get("freeboard_smoother_filter_size_m", None)
         if freeboard_smoother_filter_size_m is None:
             logger.error(f"{self.__class__.__name__}: Missing option `freeboard_smoother_filter_size_m")
             return None
@@ -617,8 +680,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # NOTE: From SIC based distance_to_ocean, not the along-track distance
         filter_flag[data.seaice_idxs] = 1
 
-        frb_gradient_threshold = self.cfg.options.get("sea_ice_freeboard_miz_gradient")
-        lew_ocean_threshold = self.cfg.options.get("leading_edge_width_ocean_value")
+        frb_gradient_threshold = opt.get("sea_ice_freeboard_miz_gradient")
+        lew_ocean_threshold = opt.get("leading_edge_width_ocean_value")
 
         # Find first zero passing of freeboard gradient next to ice edge
         condition = (
@@ -684,6 +747,8 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         to the ice edge to the point where the sea ice freeboard gradient show the first
         zero crossing (-> reversal of freeboard trend). This method should only be called,
         when it is quite certain that the freeboard is impacted by wave.
+
+        :param sea_ice_freeboard_filtered:
         :param sea_ice_freeboard_gradient:
         :param ice_edge_idx:
         :param sea_ice_is_left:
@@ -728,8 +793,50 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             np.arange(ice_edge_idx, max_impacted_range_idx)
         )
 
+    def get_miz_filter_flag_proximity_based(
+            self,
+            distance_to_ocean: np.ndarray,
+            sea_ice_concentration: np.ndarray,
+            leading_edge_width_rolling_mean: np.ndarray,
+            pulse_peakiness_rolling_sdev: np.ndarray
+    ) -> Union[np.ndarray, None]:
+        """
+        Compute the MIZ Flag based on a set of thresholds only. Conditions
+
+        :param distance_to_ocean:
+        :param sea_ice_concentration:
+        :param leading_edge_width_rolling_mean:
+        :param pulse_peakiness_rolling_sdev:
+        :return:
+        """
+
+        filter_flag = np.full(sea_ice_concentration.shape[0], -1, dtype=int)
+
+        # Get properties
+        opt = self.cfg.options.get("ice_edge_proximity", None)
+        if opt is None:
+            logger.error(f"{self.__class__.__name__}: Missing option category `ice_edge_proximity")
+            return None
+
+        close_proximity_idx = np.where(
+            np.logical_and(
+                distance_to_ocean <= opt["ocean_distance_max"],
+                np.isfinite(sea_ice_concentration)
+            )
+        )
+        filter_flag[close_proximity_idx] = 1
+
+        miz_threshold_filter = ANDCondition()
+        miz_threshold_filter.add(filter_flag >= 1)
+        miz_threshold_filter.add(sea_ice_concentration <= opt["sea_ice_concentration_max"])
+        miz_threshold_filter.add(leading_edge_width_rolling_mean >= opt["leading_edge_width_rolling_mean_min"])
+        miz_threshold_filter.add(pulse_peakiness_rolling_sdev <= opt["pulse_peakiness_rolling_sdev_max"])
+
+        filter_flag[miz_threshold_filter.indices] = 2
+        return filter_flag
+
     @staticmethod
-    def get_default_filter_flag(n_records: int):
+    def get_default_filter_flag(n_records: int) -> np.ndarray:
         return np.full(n_records, -1)
 
     @property
