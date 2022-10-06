@@ -32,6 +32,7 @@ l2_parameter:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
+
     tfmra_threshold:
         grid_method: none
         dtype: f4
@@ -162,11 +163,13 @@ l2_parameter:
 # ==================================================
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
+
 miz_filter: 
     mask_min_value: 2
     mask_targets: 
         - sea_ice_freeboard
         - sea_ice_thickness
+        
 l2i_prefilter:
     active: True
     nan_source: sea_ice_thickness

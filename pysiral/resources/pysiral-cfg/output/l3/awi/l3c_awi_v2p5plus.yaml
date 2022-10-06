@@ -262,6 +262,19 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
 
+  miz_flag:
+    var_source_name: flag_miz
+    long_name: Marginal Ice Zone Flag
+    standard_name: "quality_flag"
+    units: 1
+    valid_min: -1
+    valid_max: 3
+    flag_values: "-1, 0, 1, 2, 3"
+    flag_meanings: "no_data not_in_miz miz_low_bias miz_potential_bias miz_bias"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag
     standard_name: "quality_flag"
@@ -300,6 +313,15 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: referenceInformation
 
+  
+  ocean_area_fraction:
+    long_name: "Fraction of grid cell area covered by ocean"
+    comment: "Derived from higher resolution land masks by Thomas Lavergne (MET.NO)"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    
   stat_radar_mode:
     var_source_name: radar_mode
     long_name: "radar mode flag"
