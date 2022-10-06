@@ -23,7 +23,7 @@ class SnowGeometricCorrection(Level2ProcessorStep):
     only. No form of penetration correction is applied based on the assumption that radar freeboard is the
     sea-ice freeboard with missing correction for the slower wave propagation speed inside the snow layer.
 
-    The correction can be be computed in two cases:
+    The correction can be computed in two cases:
 
         1. [Static Correction] A correction factor 0 < c < 1 need to be supplied that describes
            the fraction of slower wave propagation speed in the snow layer compared to the
