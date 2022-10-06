@@ -2,8 +2,9 @@
 """
 Created on Sat Apr 23 15:30:53 2016
 
-@author: Stefan
+@author: Stefan Hendricks
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 from dataclasses import dataclass
@@ -48,7 +49,7 @@ class L1bEnvisatBackscatterDriftCorrection(Level2ProcessorStep):
         # Get the default error status
         error_status = self.get_clean_error_status(l2.n_records)
 
-        # Get the backcatter value
+        # Get the backscatter value
         datagroup = self.cfg.options.l1b_data_group
         name = self.cfg.options.l1b_parameter_name
         value = l1b.get_parameter_by_name(datagroup, name)
@@ -190,7 +191,7 @@ class ParameterSmoother(Level2ProcessorStep):
         # check if requested smoothing method is implemented
         if self.cfg.options.smoothing_method not in filter_func.keys():
             error_status[:] = True
-            msg = "Not-Implemented: Smoothing method: {}".format(self.cfg.options.smoothing_method)
+            msg = f"Not-Implemented: Smoothing method: {self.cfg.options.smoothing_method}"
             self.error.add_error("filter-not-implemented", msg)
             l2.register_auxvar(auxid, auxname, np.full(error_status.shape, np.nan), None)
             return error_status
@@ -865,7 +866,7 @@ def scipy_smooth(x, window):
     return uniform_filter(x, size=window)
 
 
-def astropy_smooth(x, window ,**kwargs):
+def astropy_smooth(x, window, **kwargs):
     kernel = Box1DKernel(window)
     return convolve(x, kernel, **kwargs)
 
@@ -949,7 +950,7 @@ def fill_nan(y):
         pass
     # fill nan-borders with first/last valid value
     if valid0 != 0:
-        result[0:valid0] = y[valid0]
+        result[:valid0] = y[valid0]
     if valid1 != len(y)-1:
         result[valid1+1:len(y)+1] = y[valid1]
     return result
