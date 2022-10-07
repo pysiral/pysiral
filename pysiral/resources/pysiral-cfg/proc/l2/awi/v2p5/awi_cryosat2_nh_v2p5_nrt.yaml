@@ -99,7 +99,7 @@ procsteps:
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
-                inverse_barometric: [rcib, inverse_barometric]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
                 ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
@@ -145,9 +145,11 @@ procsteps:
         pyclass: ParameterRollingStatistics
         options:
             window_size_m: 25000.
-            statistics: ["sdev"]
+            statistics: ["sdev", "mean"]
             input_parameters:
                 - pulse_peakiness
+                - leading_edge_width
+                - sigma0
 
     # Surface type classification algorithm
     -   module: surface
@@ -341,3 +343,13 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
+
+        # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            sea_ice_filter_size_m: 300000.
+            ocean_filter_size_m: 25000.
+            freeboard_smoother_filter_size_m: 150000.
+            sea_ice_freeboard_miz_gradient: 0.002
+            leading_edge_width_ocean_value: 2.5
