@@ -169,6 +169,7 @@ miz_filter:
     mask_targets: 
         - sea_ice_freeboard
         - sea_ice_thickness
+        - sea_ice_draft
         
 l2i_prefilter:
     active: True
