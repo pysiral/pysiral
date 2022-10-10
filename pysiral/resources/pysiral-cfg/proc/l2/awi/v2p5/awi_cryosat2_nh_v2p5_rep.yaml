@@ -47,14 +47,14 @@ auxdata:
         name: c3s
         options:
             version: v2p0
-            exception_on_error: True
+            exception_on_error: False
 
     - sitype:
         name: c3s
         options:
             version: v2p0
             fill_valid_sic_gaps: True
-            exception_on_error: True
+            exception_on_error: False
 
     - snow:
         name: clim_w99amsr2
