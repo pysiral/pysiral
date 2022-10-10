@@ -480,7 +480,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
         rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
         for parameter_name, statistics_id in self.statistics_combinations:
 
-            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl"
+            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl{statistics_id}"
             aux_name = f"{parameter_name}_rolling_{statistics_id}"
 
             if window_size is None:

@@ -1,9 +1,9 @@
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product (TDS phase 2)"
+    label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product (TDS2 phase 2)"
     product_line: esa
     record_type: rep-si
     platform: cryosat2
-    version: B001-tds1
+    version: B001-tds2
     file_version_tag: "B001"
     hemisphere: north
 
@@ -178,6 +178,11 @@ procsteps:
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
+
+    # Range bias correction based on pulse-peakiness based surface roughness proxy (Laforge et al. 2020)
+    - module: frb
+      pyclass: LaforgeTFMR50PPCorrection
+      option: null
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla

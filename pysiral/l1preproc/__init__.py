@@ -310,10 +310,19 @@ class L1PreProcBase(DefaultLoggingClass):
             for l1_export in l1_export_list:
                 self.l1_export_to_netcdf(l1_export)
 
-        # Step : Export the last item in the stack
-        if len(l1_connected_stack) != 1:
+        # Step : Export the last item in the stack (if it exists)
+        # Stack is clean -> return
+        if len(l1_connected_stack) == 0:
+            return
+
+        # Single stack item -> export and return
+        elif len(l1_connected_stack) == 1:
+            self.l1_export_to_netcdf(l1_connected_stack[-1])
+            return
+
+        # A case with more than 1 stack item is an error
+        else:
             raise ValueError("something went wrong here")
-        self.l1_export_to_netcdf(l1_connected_stack[-1])
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
@@ -445,7 +454,7 @@ class L1PreProcBase(DefaultLoggingClass):
         l1_0_last_latlon = l1_0.time_orbit.latitude[-1], l1_0.time_orbit.longitude[-1]
         l1_1_first_latlon = l1_1.time_orbit.latitude[0], l1_1.time_orbit.longitude[0]
         distance_km = distance.distance(l1_0_last_latlon, l1_1_first_latlon).km
-        logger.debug(f"- {distance_km=}")
+        logger.debug(f"- distance_km={distance_km}")
 
         # Test if segments are adjacent based on time gap between them
         tdelta = l1_1.info.start_time - l1_0.info.stop_time
