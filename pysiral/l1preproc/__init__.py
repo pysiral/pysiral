@@ -310,10 +310,19 @@ class L1PreProcBase(DefaultLoggingClass):
             for l1_export in l1_export_list:
                 self.l1_export_to_netcdf(l1_export)
 
-        # Step : Export the last item in the stack
-        if len(l1_connected_stack) != 1:
+        # Step : Export the last item in the stack (if it exists)
+        # Stack is clean -> return
+        if len(l1_connected_stack) == 0:
+            return
+
+        # Single stack item -> export and return
+        elif len(l1_connected_stack) == 1:
+            self.l1_export_to_netcdf(l1_connected_stack[-1])
+            return
+
+        # A case with more than 1 stack item is an error
+        else:
             raise ValueError("something went wrong here")
-        self.l1_export_to_netcdf(l1_connected_stack[-1])
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
