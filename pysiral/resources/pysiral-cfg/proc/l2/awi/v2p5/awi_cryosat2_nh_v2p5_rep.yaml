@@ -1,5 +1,5 @@
 metadata:
-    label: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.4 reprocessed)"
+    label: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.5 reprocessed)"
     product_line: awi
     record_type: rep
     platform: cryosat2
@@ -215,7 +215,6 @@ procsteps:
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
-
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
