@@ -1372,9 +1372,20 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
     ax.add_feature(cfeature.OCEAN, color="#D0CFD4", zorder=150)
     ax.add_feature(cfeature.LAND, color="#EAEAEA", zorder=200)
 
-    for l1p in l1p_list:
+    for i, l1p in enumerate(l1p_list):
         ax.scatter(l1p.time_orbit.longitude, l1p.time_orbit.latitude,
                    s=1, zorder=300, linewidths=0.0,
                    transform=proj
                    )
+        ax.scatter(l1p.time_orbit.longitude[0], l1p.time_orbit.latitude[0],
+                   s=10, zorder=300, linewidths=0.5, color="none", edgecolors="black",
+                   transform=proj
+                   )
+
+        ax.annotate(f"{i+1}",
+                    xy=(l1p.time_orbit.longitude[0], l1p.time_orbit.latitude[0]),
+                    xycoords=proj._as_mpl_transform(ax), zorder=300,
+                    xytext=(10, 10), textcoords="offset pixels",
+                    fontsize=6
+                    )
     plt.show()
