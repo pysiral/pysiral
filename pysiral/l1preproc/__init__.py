@@ -540,6 +540,39 @@ class L1PreProcBase(DefaultLoggingClass):
 
         return l1_list
 
+    def trim_multiple_hemisphere_segment_to_polar_regions(self, l1: "Level1bData"
+                                                          ) -> Union[None, List["Level1bData"]]:
+        """
+        Extract polar regions segments from an orbit segment that may cross from north to south
+        to north again (or vice versa).
+
+        :param l1: Input Level-1 object
+
+        :return: List of Trimmed Input Level-1 objects
+        """
+
+        # Compute flag for segments in polar regions
+        # regardless of hemisphere
+        polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
+        is_polar = np.array(np.abs(l1.time_orbit.latitude) >= polar_threshold)
+
+        # Find start and end indices of continuous polar
+        # segments based on the change of the `is_polar` flag
+        change_to_polar = np.ediff1d(is_polar.astype(int))
+        change_to_polar = np.insert(change_to_polar, 0, 1 if is_polar[0] else 0)
+        change_to_polar[-1] = -1 if is_polar[-1] else change_to_polar[-1]
+        start_idx = np.where(change_to_polar > 0)[0]
+        end_idx = np.where(change_to_polar < 0)[0]
+
+        # Create a list of l1 subsets
+        l1_list = []
+        for i in np.arange(len(start_idx)):
+            polar_idxs = np.arange(start_idx[i], end_idx[i])
+            l1_segment = l1.extract_subset(polar_idxs)
+            l1_list.append(l1_segment)
+
+        return l1_list
+
     def trim_full_orbit_segment_to_polar_regions(self, l1: "Level1bData") -> Union[None, List["Level1bData"]]:
         """
         Extract polar regions of interest from a segment that is either north, south or both. The method will
@@ -926,7 +959,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
         logger.info("- extracting polar region subset(s)")
-        l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        l1_list = self.trim_multiple_hemisphere_segment_to_polar_regions(l1)
         logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
