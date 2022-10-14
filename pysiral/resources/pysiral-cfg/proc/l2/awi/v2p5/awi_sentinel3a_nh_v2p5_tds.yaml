@@ -172,8 +172,8 @@ procsteps:
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{pulse_peakiness} >= 66.0"
-                      - "{sigma0} >= 23.0"
-                      - "{leading_edge_width} <= 0.75"
+                      - "{sigma0} >= 20.7"
+                      - "{leading_edge_width} <= 0.36"
 
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
