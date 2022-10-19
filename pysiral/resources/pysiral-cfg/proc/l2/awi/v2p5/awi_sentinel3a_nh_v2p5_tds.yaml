@@ -95,7 +95,7 @@ procsteps:
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
-                inverse_barometric: [rcib, inverse_barometric]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
                 ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
