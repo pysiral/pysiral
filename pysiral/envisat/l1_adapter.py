@@ -221,6 +221,16 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
                 msg = "Remaining NaN's after filtering in %s" % target_parameter
                 logger.warning(msg)
 
+            # The range correction for the DAC follows a different convention. It is supposed to be
+            # "provided as a correction to the inverted barometer correction (inv_bar_cor_01)", but in reality
+            # includes the change if sea level from atmospheric pressure changes. Therefore, IB and DAC are
+            # of the same magnitude in the SGDR v3.0, but inverted. To apply DAC instead of IB, the DAC must be
+            # inverted.
+
+            # Apply inversion to both `hf_fluct_cor_01` and `hf_fluct_cor_reanalysis_01`
+            if re.search("hf_fluct", target_parameter):
+                correction_filtered *= -1.0
+
             # Set the parameter
             self.l1.correction.set_parameter(name, correction_filtered)
 
