@@ -118,7 +118,9 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
         """
 
         # Transfer the orbit position
-        self.l1.time_orbit.set_position(self.sgdr.lon_20, self.sgdr.lat_20, self.sgdr.alt_20)
+        # and ensure longitude is -180:180 degrees east
+        longitude_degrees_east = (self.sgdr.lon_20 + 180) % 360 - 180
+        self.l1.time_orbit.set_position(longitude_degrees_east, self.sgdr.lat_20, self.sgdr.alt_20)
 
         # Transfer the timestamp
         sgdr_timestamp = self.sgdr.time_20
