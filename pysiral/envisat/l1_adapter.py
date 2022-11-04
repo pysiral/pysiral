@@ -165,9 +165,9 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
     def _transfer_range_corrections(self):
         """
         Transfer range correction data from the SGDR netCDF to the
-        l1bdata object. The parameter are defined in
+        l1bdata object. The parameters are defined in
         config/mission_def.yaml for ers1/ers2
-        -> ersX.settings.sgdr_range_correction_targets
+        -> settings.sgdr_range_correction_targets
 
         For a description of the parameter see section 3.10 in the
         REAPER handbook
@@ -190,16 +190,17 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
             # Debug code
             # -> in this case discard the variable
             n_nans = len(np.where(np.isnan(correction))[0])
+            # TODO: 500 is hardcoded
             if 500 < n_nans < len(correction):
                 msg = "Significant number of NaNs (%g) in range correction variable: %s"
-                msg = msg % (n_nans, target_parameter)
+                msg %= (n_nans, target_parameter)
                 logger.warning(msg)
             elif n_nans == len(correction):
                 msg = "All-NaN array encountered in range correction variable: %s"
-                msg = msg % target_parameter
+                msg %= target_parameter
                 logger.warning(msg)
 
-            # Some of the Envisat range corrections are 1Hz others 20Hz
+            # Some Envisat range corrections are 1Hz others 20Hz
             # -> Those with "_01" in the variable name need to be
             # extrapolated to 20 Hz
             error = False
@@ -207,7 +208,7 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
                 correction, error = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz,
                                                             fill_on_error_value=0.0)
             if error:
-                msg = "Failing to create 20Hz range correction variable for %s" % target_parameter
+                msg = f"Failing to create 20Hz range correction variable for {target_parameter}"
                 logger.warning(msg)
 
             # Interpolate NaN's or return a zero-filled array for all-nan input variables
