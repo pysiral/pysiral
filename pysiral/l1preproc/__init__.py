@@ -32,6 +32,8 @@ from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
 from pysiral.output import L1bDataNC
 
+SHOW_DEBUG_MAP = False
+
 
 class Level1PInputHandlerBase(DefaultLoggingClass):
     """
@@ -274,7 +276,8 @@ class L1PreProcBase(DefaultLoggingClass):
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
                 continue
-            # l1p_debug_map([l1], title="Source File")
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map([l1], title="Source File")
 
             # Step 2: Apply processor items on source data
             # for the sake of computational efficiency.
@@ -285,7 +288,8 @@ class L1PreProcBase(DefaultLoggingClass):
             # It is the job of the L1PReProc children class to return only the relevant
             # segments over polar ocean as a list of l1 objects.
             l1_po_segments = self.extract_polar_ocean_segments(l1)
-            # l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
 
             self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction")
 
@@ -299,7 +303,8 @@ class L1PreProcBase(DefaultLoggingClass):
             # l1p_debug_map(l1_connected_stack, title="Polar Ocean Segments - Stack")
             if not l1_export_list:
                 continue
-            # l1p_debug_map(l1_export_list, title="Polar Ocean Segments - Export")
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_export_list, title="Polar Ocean Segments - Export")
 
             # Step 4: Processor items post
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
@@ -309,6 +314,9 @@ class L1PreProcBase(DefaultLoggingClass):
             # Step 5: Export
             for l1_export in l1_export_list:
                 self.l1_export_to_netcdf(l1_export)
+
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_connected_stack, title="Stack after Export")
 
         # Step : Export the last item in the stack (if it exists)
         # Stack is clean -> return
@@ -323,6 +331,7 @@ class L1PreProcBase(DefaultLoggingClass):
         # A case with more than 1 stack item is an error
         else:
             raise ValueError("something went wrong here")
+
 
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
