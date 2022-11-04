@@ -9,7 +9,7 @@ import re
 import numpy as np
 from attrdict import AttrDict
 from loguru import logger
-from typing import Union, Dict
+from typing import Union, Dict, Any
 from scipy import interpolate
 from cftime import num2pydate
 from pathlib import Path
@@ -17,11 +17,9 @@ from pathlib import Path
 from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.envisat.functions import (get_envisat_window_delay, get_envisat_wfm_range)
-from pysiral.errorhandler import ErrorStatus
+from pysiral.envisat.functions import get_envisat_wfm_range
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
-from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
@@ -51,11 +49,17 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
         self.l1 = None
 
     def get_l1(self,
-               filepath: Union[str, Path]
+               filepath: Union[str, Path],
+               polar_ocean_check: Any = None,
+               raise_on_error: bool = False
                ) -> "Level1bData":
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
+
+        :param raise_on_error:
+        :param polar_ocean_check:
         :param filepath: The full file path to the netCDF file
+
         :return: The parsed (or empty) Level-1 data container
         """
 
@@ -144,7 +148,7 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
 
         # In Envisat data v3.0 the tracker range is already corrected for all internal effects,
         # but the nominal tracking bin is variable.
-        nominal_tracking_bin = 63 + self.sgdr.offset_tracking_20.values/256
+        nominal_tracking_bin = (63 + self.sgdr.offset_tracking_20/256).astype(int)
         window_delay_m = self.sgdr.tracker_range_20_ku - nominal_tracking_bin * self.cfg.bin_width_meter
 
         # Compute the range value for each range bin of the 18hz waveform
