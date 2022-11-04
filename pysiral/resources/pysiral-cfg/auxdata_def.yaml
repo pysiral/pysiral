@@ -705,6 +705,10 @@ sitype:
             v2p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
+            # Specific parameters for v2p0
+            v3p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
         subfolders:
             - year
             - month
