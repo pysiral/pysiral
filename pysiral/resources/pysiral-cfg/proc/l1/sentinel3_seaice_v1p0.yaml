@@ -25,7 +25,7 @@ input_adapter:
         
         name: "IPF SRAL/MWR Level 2 Measurement"
 
-        range_bin_width: 0.234375 # (60 m range window / 256 bins)
+        range_bin_width: 0.2342125 # (60 m range window / 256 bins)
         nominal_tracking_bin: 88
 
         # Settings for the xml manifest
