@@ -565,7 +565,6 @@ sic:
             is_cdr_icdr: True
             global:
                 variable_name: ice_conc
-                uncertainty_variable_name: total_standard_error
                 north:
                     projection:
                         proj: laea
@@ -589,11 +588,18 @@ sic:
 
             # Specific parameters for v1p0
             v1p0:
+                uncertainty_variable_name: total_standard_error
                 cdr_time_coverage_end: 2016-01-01T00:00:00
 
             # Specific parameters for v2p0
             v2p0:
+                uncertainty_variable_name: total_standard_error
                 cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2021-01-01T00:00:00
 
         subfolders:
             - year
