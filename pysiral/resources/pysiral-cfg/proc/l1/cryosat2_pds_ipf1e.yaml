@@ -66,7 +66,7 @@ output_handler:
         local_machine_def_tag: baseline_e
         version:
             source_file_tag: esa_pds_ipf1e
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -112,7 +112,25 @@ level1_preprocessor:
                           n_lines: 40000
                           dx: 250
                           dy: 250
-                  
+
+            # Compute pulse peakiness
+            - label: "Compute Pulse Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: True
+
+            # Compute normed pulse peakiness
+            - label: "Compute Pulse Peakiness (normed)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: False
+
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"

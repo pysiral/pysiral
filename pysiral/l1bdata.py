@@ -259,6 +259,12 @@ class Level1bData(DefaultLoggingClass):
 
         info = self.info
 
+        # Check if timestamp is monotonically increasing
+        tdelta_dt = self.time_orbit.timestamp[1:]-self.time_orbit.timestamp[:-1]
+        tdelta_secs = np.array([t.total_seconds() for t in tdelta_dt])
+        if np.any(tdelta_secs < 0.0):
+            logger.warning("- Found anomaly (negative time step)")
+
         # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
         info.set_attribute("lat_max", np.nanmax(self.time_orbit.latitude))
@@ -853,7 +859,7 @@ class L1bTimeOrbit(object):
         """
 
         # Array of [0, 0, -1] vector (down in satellite reference frame)
-        x_arr = np.repeat(np.array([[0, 0, -1]]), 10, axis=0)
+        x_arr = np.repeat(np.array([[0, 0, -1]]), pitch_deg.shape[0], axis=0)
 
         # Rotate the down vector with pitch, roll, heading
         r = Rotation.from_rotvec(np.c_[roll_deg, pitch_deg, heading_deg], degrees=True)

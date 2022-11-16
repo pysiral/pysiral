@@ -90,7 +90,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p2
+            version_file_tag: v1p3
 
 
 # Settings for the pre-processor
@@ -130,13 +130,14 @@ level1_preprocessor:
                       noise_level_range_bin_idx: [10, 20]
                       first_maximum_ignore_leading_bins: 10
             
-            # Compute waveform peakiness CCI style
+            # Compute waveform peakiness
             - label: "Compute Waveform Peakiness"
               stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 5
+                  norm_is_range_bin: True
 
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group: 

@@ -4,9 +4,10 @@ Created on Fri Jul 01 13:07:10 2016
 
 @author: shendric
 """
-import matplotlib
 
 import numpy as np
+import numpy.typing as npt
+from typing import Union
 import bottleneck as bn
 from loguru import logger
 
@@ -15,7 +16,7 @@ from pysiral.retracker import cTFMRA
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
-def get_waveforms_peak_power(wfm, dB=False):
+def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
     """
     Return the peak power (in input coordinates) of an array of waveforms
 
@@ -29,7 +30,7 @@ def get_waveforms_peak_power(wfm, dB=False):
         float array with maximum for each echo
     """
     peak_power = np.amax(wfm, axis=1)
-    if dB:
+    if use_db:
         peak_power = 10 * np.log10(peak_power)
     return peak_power
 
@@ -51,9 +52,7 @@ def get_footprint_pulse_limited(r: float, band_width: float) -> float:
 
     c_0 = 299792458.0
     footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
-    area_pl = np.pi * footprint_radius ** 2.
-
-    return area_pl
+    return np.pi * footprint_radius ** 2.
 
 
 def get_footprint_sar(r: float,
@@ -86,9 +85,7 @@ def get_footprint_sar(r: float,
     alpha_earth = 1. + (r / r_mean)
     lx = (lambda_0 * r) / (2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
-    area_sar = (2. * ly) * (wf * lx)
-
-    return area_sar
+    return (2. * ly) * (wf * lx)
 
 
 def get_sigma0_sar(rx_pwr: float,
@@ -122,9 +119,7 @@ def get_sigma0_sar(rx_pwr: float,
     """
 
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a)
-    sigma0 = 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
 def get_sigma0(wf_peak_power_watt: float,
@@ -410,56 +405,104 @@ class L1PSigma0(L1PProcItem):
 
 class L1PWaveformPeakiness(L1PProcItem):
     """
-    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
-    using three TFMRA thresholds """
+    A L1P pre-processor item class for computing pulse peakiness """
 
-    def __init__(self, **cfg):
+    def __init__(self,
+                 skip_first_range_bins: int = 0,
+                 norm_is_range_bin: bool = True
+                 ):
+
+        cfg = {"skip_first_range_bins": skip_first_range_bins,
+               "norm_is_range_bin": norm_is_range_bin
+               }
         super(L1PWaveformPeakiness, self).__init__(**cfg)
-        for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
-            if option_value is None:
-                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
-                logger.warning(msg)
-            setattr(self, option_name, option_value)
 
-        # Init Parameters
-        self.peakiness = None
-
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
-        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        Computes pulse peakiness and adds parameter to classifier data group.
+
+        NOTE: The classifier parameter name depends on the `norm_is_range_bin keyword:
+
+            norm_is_range_bin = True -> parameter name: 'peakiness'
+            norm_is_range_bin = False -> parameter name: 'peakiness_normed'
+
         :param l1: l1bdata.Level1bData instance
+
+        :raises None:
+
         :return: None
         """
-        self._calc(l1)
-        l1.classifier.add(self.peakiness, "peakiness")
+        waveforms = l1.waveform.power
+        pulse_peakiness = self.compute_for_waveforms(waveforms)
+        parameter_target_name = "peakiness" if self.norm_is_range_bin else "peakiness_normed"
+        l1.classifier.add(pulse_peakiness, parameter_target_name)
 
-    def _calc(self, l1):
-        """ Compute pulse peakiness (from SICCI v1 processor)."""
+    def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
+        """
+        Compute pulse peakiness for a waveform array
+
+        :param waveforms:
+
+        :return: pulse peakiness array
+        """
 
         # Get the waveform
-        wfm = l1.waveform.power
-        n_records, n_range_bins = wfm.shape
+        n_records, n_range_bins = waveforms.shape
+        if waveforms.dtype.kind != "f":
+            waveforms = waveforms.astype(np.float)
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bin else 1.0
 
         # Init output parameters
-        self.peakiness = np.full(n_records, np.nan)
-        self.peakiness_old = np.full(n_records, np.nan)
+        pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
+            waveform = waveforms[i, self.skip_first_range_bins:]
+            pulse_peakiness[i] = self._compute(waveform, norm)
 
-            # Discard first bins, they are FFT artefacts anyway
-            wave = wfm[i, self.skip_first_range_bins:]
+        return pulse_peakiness
 
-            # new peakiness
-            try:
-                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
-            except ZeroDivisionError:
-                self.peakiness[i] = np.nan
+    def compute_for_waveform(self, waveform: npt.NDArray) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform:
+
+        :return: pulse peakiness
+        """
+
+        # Get the waveform
+        n_range_bins = waveform.shape
+        if waveform.dtype.kind != "f":
+            waveform = waveform.astype(np.float)
+        waveform = waveform[self.skip_first_range_bins:]
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bins else 1.0
+
+        return self._compute(waveform, norm)
+
+    @staticmethod
+    def _compute(waveform: npt.NDArray, norm: Union[int, float]) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform: The waveform
+        :param norm
+
+        :return: pulse peakiness
+        """
+        try:
+            pulse_peakiness = bn.nanmax(waveform) / (bn.nansum(waveform)) * norm
+        except ZeroDivisionError:
+            pulse_peakiness = np.nan
+        return pulse_peakiness
 
     @property
     def required_options(self):
-        return ["skip_first_range_bins"]
+        return ["skip_first_range_bins", "norm_is_range_bin"]
 
 
 class L1PLeadingEdgeQuality(L1PProcItem):

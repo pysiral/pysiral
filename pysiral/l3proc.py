@@ -173,7 +173,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         flag_miz = getattr(l2i, "flag_miz", None)
-        if miz_filter is None:
+        if flag_miz is None:
             return
 
         idx = np.where(flag_miz >= miz_filter["mask_min_value"])[0]
@@ -1152,6 +1152,39 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for variable_name in self.l3_output_variables.keys():
             vardef = self.l3_output_variables[variable_name]
             self.l3grid.add_grid_variable(variable_name, vardef["fill_value"], vardef["dtype"])
+
+
+class Level3ValidSeaIceFreeboardCount(Level3ProcessorItem):
+    """
+    A Level-3 processor item to count valid sea ice freeboard values.
+    This class should be used for very limited l2i outputs files that
+    do not have the surface_type variable necessary for
+    `Level3SurfaceTypeStatistics`
+    """
+
+    # Mandatory properties
+    required_options = []
+    l2_variable_dependencies = []
+    l3_variable_dependencies = ["sea_ice_freeboard"]
+    l3_output_variables = dict(n_valid_freeboards=dict(dtype="i4", fill_value=0))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3ValidSeaIceFreeboardCount, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Computes the number of valid sea_ice_freeboard values
+        """
+        for xi, yj in self.l3grid.grid_indices:
+
+            # Extract the list of surface types inm the grid cell
+            sea_ice_freeboards = np.array(self.l3grid.l2.stack["sea_ice_freeboard"][yj][xi])
+            self.l3grid.vars["n_valid_freeboards"][yj, xi] = np.where(np.isfinite(sea_ice_freeboards))[0].size
 
 
 class Level3SurfaceTypeStatistics(Level3ProcessorItem):

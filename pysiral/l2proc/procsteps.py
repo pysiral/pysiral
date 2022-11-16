@@ -52,7 +52,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
             "filter": 9,
             "other": 15}
 
-    def execute(self, l1b, l2):
+    def execute(self, l1b: Level1bData, l2: Level2Data) -> None:
         """
         The main entry point for the
         :param l1b:
@@ -65,7 +65,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
         # Check if the error status is correctly implemented
         if error_status is None:
-            logger.warning("Class {} does not provide error status".format(self.classname))
+            logger.warning(f"Class {self.classname} does not provide error status")
             error_status = self.get_clean_error_status(l2.n_records)
 
         # Update the status flag
@@ -244,7 +244,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 #       -> this will be noted in the error status flag
                 var = l1b.get_parameter_by_name(data_group, var_name)
                 if var is None:
-                    logger.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
+                    logger.warning(f"Cannot find variable {data_group}.{var_name} in l1p")
                     var = np.full(l2.n_records, np.nan)
                     error_status = np.logical_not(error_status)
 
@@ -456,14 +456,18 @@ class ParameterRollingStatistics(Level2ProcessorStep):
         super(ParameterRollingStatistics, self).__init__(*args, **kwargs)
 
     def execute_procstep(self,
-                         l1b: "Level1bData",
+                         l1: "Level1bData",
                          l2: "Level2Data"
                          ) -> np.ndarray:
         """
         API method for Level2ProcessorStep subclasses. Computes and add rolling statistics
         based on the processor item options in the Level-2 processor definition file.
-        :param l1b:
-        :param l2:
+
+        :param l1: Level-1 data object
+        :param l2: Level-2 data object
+        
+        :raises None:
+
         :return: error_status
         """
 
@@ -476,7 +480,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
         rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
         for parameter_name, statistics_id in self.statistics_combinations:
 
-            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl"
+            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl{statistics_id}"
             aux_name = f"{parameter_name}_rolling_{statistics_id}"
 
             if window_size is None:
@@ -496,7 +500,6 @@ class ParameterRollingStatistics(Level2ProcessorStep):
                 ts_rolled = pd.Series(np.full(l2.n_records, np.nan))
 
             # Output is added as an auxiliary parameter
-
             l2.set_auxiliary_parameter(aux_id, aux_name, ts_rolled.values, None)
 
         return error_status

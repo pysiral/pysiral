@@ -88,3 +88,9 @@ processing_items:
       class_name: Level3LoadMasks
       options:
         mask_names: ["landsea"]
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Number of valid freeboards"
+      module_name: pysiral.l3proc
+      class_name: Level3ValidSeaIceFreeboardCount
+      options: {}

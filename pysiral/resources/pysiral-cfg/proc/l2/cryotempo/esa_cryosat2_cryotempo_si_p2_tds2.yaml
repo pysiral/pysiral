@@ -1,45 +1,51 @@
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product"
+    label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product (TDS2 phase 2)"
     product_line: esa
     record_type: rep-si
     platform: cryosat2
-    version: A001
-    file_version_tag: "A001"
+    version: B001-tds2
+    file_version_tag: "B001"
     hemisphere: north
 
 
 # --- Ingest auxiliary data ---
-# 
-# A list auxilliary datasets to be ingested before the execution of the processing steps. 
-# 
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
+#
 # Usage:
 #
 #  - <auxdata_category>:       <- links to corresponding category in auxdata_def.yaml
 #       name: <auxdata_name>   <- links auxdata_category.auxdata_name auxdata_def.yaml
 #       options: {dict}        <- Options that may overwrite the ones already provided in auxdata_def.yaml
-# 
-# Notes: 
+#
+# Notes:
 #
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
-#   
+#
 auxdata:
 
     # Load the
     - mss:
-        name: dtu15
+        name: dtu21
         options:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s_v2p0
+        name: c3s
         options:
+            version: v2p0
             exception_on_error: True
 
     - sitype:
-        name: c3s_v1p0
+        name: c3s
         options:
+            version: v2p0
             fill_valid_sic_gaps: True
             exception_on_error: True
+
+    - region:
+        name: nsidc_2021
+        options: null
 
     - snow:
         name: clim_w99amsr2
@@ -57,11 +63,33 @@ auxdata:
 
 
 # --- Level-2 processor steps ---
-# 
-# A list auxilliary datasets to be ingested before the execution of the processing steps. 
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
 
-procsteps: 
+procsteps:
 
+    -   module: l2proc.procsteps
+        pyclass: L1BL2TransferVariables
+        options:
+            correction:
+                dry_troposphere: [rcdt, dry_troposphere]
+                wet_troposphere: [rcwt, wet_troposphere]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
+                ionosphere: [rcio, ionosphere]
+                ocean_tide_elastic: [rcote, ocean_tide_elastic]
+                ocean_tide_elastic_2: [rcote2, ocean_tide_elastic_2]
+                ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
+                ocean_loading_tide: [rcolt, ocean_loading_tide]
+                solid_earth_tide: [rcset, solid_earth_tide]
+                geocentric_polar_tide: [rcgpt,  geocentric_polar_tide]
+            classifier:
+                sigma0: [sig, sigma0]
+                peakiness_normed: [ppn, pulse_peakiness_normed]
+                leading_edge_width: [lew, leading_edge_width]
+                peak_power: [pkp, peak_power]
+                ocog_amplitude: [oamp, ocog_amplitude]
+
+ 
     # Surface type classification algorithm
     -   module: surface
         pyclass: SICCI2SurfaceType
@@ -136,20 +164,25 @@ procsteps:
                         type: fixed
                         value: 0.1
 
-    # Apply the range corrections 
+    # Apply the range corrections
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections: 
+            corrections:
                 - dry_troposphere
                 - wet_troposphere
-                - inverse_barometric
+                - dynamic_atmosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
+
+    # Range bias correction based on pulse-peakiness based surface roughness proxy (Laforge et al. 2020)
+    - module: frb
+      pyclass: LaforgeTFMR50PPCorrection
+      option: null
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
@@ -188,7 +221,7 @@ procsteps:
             target_variables: [frb]
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
-            
+
     # Create a filtered/smoothed version of sea-ice freeboard
     -   module: filter
         pyclass: ParameterSmoother
@@ -202,12 +235,6 @@ procsteps:
 #                # in fractions of data points to determine the filter size
 #                # The lowess filter therefore computes the data fraction
 #                # from the `filter_size_n_points` keyword
-                filter_size_n_points: 1501
+                filter_size_n_points: 83
                 filter_props:
                      it: 1
-
-    # Create an instrument mode flag for CryoSat-2 data
-    # (instrument mode = radar mode + 1)
-    -   module: l2proc.procsteps
-        pyclass: CS2InstrumentModeflag
-        options: null

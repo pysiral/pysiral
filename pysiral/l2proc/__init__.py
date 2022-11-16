@@ -150,10 +150,10 @@ class Level2Processor(DefaultLoggingClass):
 
     def set_procstep_handler(self):
         """
-        Add the proc
-        :return:
-        """
+        Add and initialize Level-2 processor items
 
+        :return: None
+        """
         logger.info("Init Processor Steps")
         cfg = self.l2def.procsteps
         self.procsteps = Level2ProcessorStepOrder(cfg)
@@ -166,11 +166,12 @@ class Level2Processor(DefaultLoggingClass):
 
         Note: This is where the algorithm are executed in their order defined
               in the Level-2 processor definition file
+
         :param l1b:
         :param l2:
-        :return:
-        """
 
+        :return: None
+        """
         # Loop over all Level-2 processing steps.
         # Note: The property `class_instances` return freshly initialized
         #       class instances of the respective processor step

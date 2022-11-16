@@ -2,11 +2,17 @@
 
 import os
 import re
+from parse import parse
 from pathlib import Path
+from datetime import datetime
 from collections import deque
+from loguru import logger
 
 from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
+from pysiral.clocks import StopWatch
+
+from dateperiods import DatePeriod
 
 
 class Sentinel3FileList(DefaultLoggingClass):
@@ -127,6 +133,85 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
         return self._sorted_list
 
 
+class L2SeaIceFileDiscovery(object):
+    """ Class to retrieve Sentinel-3 SRAL files from the Copernicus Online Data Archive """
+
+    def __init__(self, cfg):
+        """
+
+        :param cfg: dict/treedict configuration options (see l1proc config file)
+        """
+
+        # Save config
+        self.cfg = cfg
+
+        # Create inventory
+        logger.info(f"Sentinel-3 source directory: {cfg.lookup_dir}")
+        timer = StopWatch().start()
+        self.catalogue = self._get_dataset_catalogue()
+        logger.info(f"Found {self.n_catalogue_files} files ({self.cfg.filename_search})")
+        timer.stop()
+        logger.debug(f"Created Sentinel-3 file catalogue in {timer.get_seconds():.04f} seconds")
+
+        # Init empty file lists
+        self._reset_file_list()
+
+    def _get_dataset_catalogue(self):
+        """
+        Create a catalogues with the time coverage of the files on the server
+        :return:
+        """
+
+        # Simple catalogue format
+        # [(datetime, filepath), (datetime, filepath), ...]
+        return [
+            (nc_filepath, S3FileNaming(nc_filepath.parent.parts[-1]).tcs_dt)
+            for nc_filepath in Path(self.cfg.lookup_dir).glob(f"**/{self.cfg.filename_search}")
+        ]
+
+    def get_file_for_period(self, period):
+        """
+        Query for Sentinel Level-2 files for a specific period.
+
+        :param period: dateperiods.DatePeriod
+
+        :return: sorted list of filenames
+        """
+        # Make sure file list are empty
+        self._reset_file_list()
+        self._query(period)
+        return self.sorted_list
+
+    def _query(self, period: DatePeriod) -> None:
+        """
+        Searches for files in the given period and stores result in property _sorted_list
+        :param period: dateperiods.DatePeriod
+        :return: None
+        """
+
+        # Loop over all months in the period
+        file_list = [filepath for filepath, dt in self.catalogue if period.tcs.dt <= dt <= period.tce.dt]
+        self._sorted_list = sorted(file_list)
+
+    def _reset_file_list(self):
+        """ Resets the result of previous file searches """
+        self._list = deque([])
+        self._sorted_list = []
+
+    @property
+    def sorted_list(self):
+        """ Return the search result """
+        return self._sorted_list
+
+    @property
+    def n_catalogue_files(self) -> int:
+        """
+        Return the number of files in the file catalogue
+        :return:
+        """
+        return len(self.catalogue)
+
+
 def get_sentinel3_l1b_filelist(folder, target_nc_filename):
     """ Returns a list with measurement.nc files for given month """
     s3_file_list = []
@@ -172,3 +257,59 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc")
     else:
         return None
     return l1nc_filename
+
+
+class S3FileNaming(object):
+    """
+    Deciphering the Sentinel-3 filenaming convention
+    (source: Sentinel 3 PDGS File Naming Convention (EUM/LEO-SEN3/SPE/10/0070, v1D, 24 June 2016)
+    """
+
+    def __init__(self, filename: str) -> None:
+        """
+        Decode the Sentinel-3 filename
+
+        :param filename: The filename to be decoded
+        """
+
+        self.filenaming_convention = "{mission_id:3}_{data_source:2}_{processing_level:1}_" \
+                                     "{data_type_id:6}_{time_coverage_start:15}_{time_coverage_end:15}_" \
+                                     "{creation_time:15}_{instance_id:3}_{product_class_id:8}.{extension}"
+
+        self.date_format = "%Y%m%dT%H%M%S"
+
+        self.elements = parse(self.filenaming_convention, filename)
+        if self.elements is None:
+            raise ValueError(f"{filename} is not a valid sentinel3 filename [{self.filenaming_convention}")
+
+    def _get_dt(self, start_time_str: str) -> datetime:
+        """
+        Convert a string to datetime
+        :param start_time_str:
+        :return:
+        """
+        return datetime.strptime(start_time_str, self.date_format)
+
+    @property
+    def dict(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return dict(**self.elements.named)
+
+    @property
+    def tcs_dt(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return self._get_dt(self.dict["time_coverage_start"])
+
+    @property
+    def tce_dt(self) -> dict:
+        """
+        Dictionary of elements
+        :return:
+        """
+        return self._get_dt(self.dict["time_coverage_end"])
