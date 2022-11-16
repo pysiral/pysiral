@@ -35,5 +35,5 @@ torch
 xarray
 xgboost
 xmltodict
-cartopy==0.18
+cartopy
 
