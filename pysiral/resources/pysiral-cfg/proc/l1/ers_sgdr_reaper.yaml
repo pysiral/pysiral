@@ -90,7 +90,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p2
+            version_file_tag: v1p3
 
 
 # Settings for the pre-processor
