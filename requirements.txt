@@ -3,7 +3,7 @@ attrdict
 bottleneck
 cftime
 cython
-dateperiods @ git+https://github.com/shendric/dateperiods.git@master#egg=dateperiods
+dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
 geopy
