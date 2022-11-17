@@ -242,12 +242,6 @@ procsteps:
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
-            target_variables:
-                - elevation
-                - elevation_ocean
-                - elevation_ice1
-                - elevation_ice2
-                - elevation_sitrack
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
