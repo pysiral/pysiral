@@ -52,7 +52,7 @@ are currently implemented:
 
 from attrdict import AttrDict
 from schema import Schema, And
-from typing import Any, Dict, TypeVar, Union
+from typing import Any, Dict, TypeVar, Union, List
 
 from pysiral import get_cls
 from pysiral.l1bdata import Level1bData
@@ -77,6 +77,17 @@ class L1PProcItem(object):
         :return:
         """
         raise NotImplementedError(f"Do not call {self.__class__.__name__} directly")
+
+    def apply_list(self, l1_list: List[Level1bData]) -> List[Level1bData]:
+        """
+        Optional class for Level-1 processing item. Needs to be overwritten
+        by the inheriting class to have any effect
+
+        :param l1_list:
+
+        :return:
+        """
+        return l1_list
 
     def __getattr__(self, item: str) -> Any:
         """
@@ -152,7 +163,12 @@ class L1PProcItemDef(object):
 
     @property
     def valid_stages(self):
-        return ["post_source_file", "post_ocean_segment_extraction", "post_merge"]
+        return [
+            "post_source_file",
+            "post_ocean_segment_extraction",
+            "post_ocean_segment_extraction_stack",
+            "post_merge"
+        ]
 
 
 def get_l1_proc_item(module_name: str,

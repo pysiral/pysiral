@@ -43,6 +43,7 @@ input_adapter:
             E1: ers1
             E2: ers2
 
+
         # The timeliness is fixed (always reprocessed)
         timeliness: rep
         
@@ -114,9 +115,21 @@ level1_preprocessor:
         # The maximum separation in seconds for two orbits so that they count as connected
         orbit_segment_connectivity:
             max_connected_segment_timedelta_seconds: 10
+
+        # Some data sets may have overlaps (ERS-1/2 SGDR). If this optional
+        # settings is set to True, overlapping data will be removed
+        # from the second file.
+        identify_and_remove_overlaps: True
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
+
+            # Ensure ERS data is
+            - label: "Remove ERS SGDR Overlaps"
+              stage: post_ocean_segment_extraction_stack
+              module_name: pysiral.ers.l1procitems
+              class_name: SGDRRemoveOverlaps
+              options: {}
 
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"

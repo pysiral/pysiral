@@ -4,6 +4,7 @@
 
 """
 
+import re
 import sys
 import copy
 import numpy as np
@@ -291,6 +292,7 @@ class L1PreProcBase(DefaultLoggingClass):
             if SHOW_DEBUG_MAP:
                 l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
 
+            self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction_stack", stack=True)
             self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction")
 
             # Step 5: Merge orbit segments
@@ -332,7 +334,6 @@ class L1PreProcBase(DefaultLoggingClass):
         else:
             raise ValueError("something went wrong here")
 
-
     def extract_polar_ocean_segments(self, l1: "Level1bData") -> List["Level1bData"]:
         """
         Needs to be implemented by child classes, because the exact algorithm
@@ -348,7 +349,8 @@ class L1PreProcBase(DefaultLoggingClass):
 
     def l1_apply_processor_items(self,
                                  l1: Union["Level1bData", List["Level1bData"]],
-                                 stage_name: str
+                                 stage_name: str,
+                                 stack: bool = False,
                                  ) -> None:
         """
         Apply the processor items defined in the l1 processor configuration file
@@ -361,6 +363,7 @@ class L1PreProcBase(DefaultLoggingClass):
         :param l1: Level-1 data object or list of Level-1 data objects
         :param stage_name: Name of the processing stage. Valid options are
             (`post_source_file`, `post_ocean_segment_extraction`, `post_merge`)
+        :param stack: If set to True, `apply_list` method will be used and not the `apply` method.
 
         :return: None, the l1_segments are changed in place
         """
@@ -369,10 +372,33 @@ class L1PreProcBase(DefaultLoggingClass):
         logger.info(f"- Apply {stage_name} processing items")
         if stage_name not in self.processor_item_dict:
             return
-        (
-            [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if isinstance(l1, list)
-            else self._l1_apply_proc_item(l1, stage_name)
-        )
+
+        if not stack:
+            (
+                [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if isinstance(l1, list)
+                else self._l1_apply_proc_item(l1, stage_name)
+            )
+        else:
+            self._l1_apply_proc_item_list(l1, stage_name)
+
+    def _l1_apply_proc_item_list(self,
+                                 l1_list: List["Level1bData"],
+                                 stage_name: str
+                                 ) -> None:
+        """
+        Apply processor item to full stack
+
+        :param l1_item:
+        :param stage_name:
+
+        :return:
+        """
+        timer = StopWatch().start()
+        for procitem, label in self.processor_item_dict.get(stage_name, []):
+            procitem.apply_list(l1_list)
+        timer.stop()
+        msg = f"- L1 processing items applied in {timer.get_seconds():.3f} seconds"
+        logger.debug(msg)
 
     def _l1_apply_proc_item(self,
                             l1_item: "Level1bData",

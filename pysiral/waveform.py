@@ -222,8 +222,7 @@ class TFMRALeadingEdgeWidth(object):
         :param thres1: (float) The minimum threshold
         :return:
         """
-        width = self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
-        return width
+        return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
 
 
 class L1PLeadingEdgeWidth(L1PProcItem):
