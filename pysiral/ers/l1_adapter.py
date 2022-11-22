@@ -148,8 +148,6 @@ class ERSReaperSGDR(Level1PInputHandlerBase):
         # Transfer the orbit position
         self.l1.time_orbit.set_position(lon, lat, alt)
 
-
-
         # Mandatory antenna pointing parameter (but not available for ERS)
         dummy_angle = np.full(timestamp.shape, 0.0)
         mispointing_deg = np.rad2deg(self.sgdr.nc.off_nadir_angle_wf_20hz.flatten())

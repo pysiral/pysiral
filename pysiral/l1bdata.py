@@ -185,8 +185,11 @@ class Level1bData(DefaultLoggingClass):
         self.info.set_attribute("mission_data_source", mission_data_source)
         self.update_l1b_metadata()
 
-    def trim_to_subset(self, subset_list):
-        """ Create a subset from an indix list """
+    def trim_to_subset(self, subset_list: Union[List, npt.NDArray]) -> None:
+        """ Create a subset from an index list """
+
+        if len(subset_list) == 0:
+            raise ValueError("subset list is emtpy")
 
         # Trim all data groups
         for data_group in self.data_groups:
@@ -306,8 +309,15 @@ class Level1bData(DefaultLoggingClass):
         # Check if timestamp is monotonically increasing
         tdelta_dt = self.time_orbit.timestamp[1:]-self.time_orbit.timestamp[:-1]
         tdelta_secs = np.array([t.total_seconds() for t in tdelta_dt])
-        if np.any(tdelta_secs < 0.0):
-            logger.warning("- Found anomaly (negative time step)")
+        if np.any(np.logical_and(tdelta_secs < 0.0, tdelta_secs >= -1.0)):
+            logger.warning("- Found anomaly (small negative time step < -0.1 sec)")
+        elif np.any(tdelta_secs < -1.0):
+            logger.error("- Found anomaly (large negative time step > -1.0 sec)")
+            import matplotlib.pyplot as plt
+            plt.figure(dpi=150)
+            plt.plot(tdelta_secs)
+            plt.show()
+            breakpoint()
 
         # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))

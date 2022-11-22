@@ -381,7 +381,7 @@ class L1PreProcBase(DefaultLoggingClass):
         """
         Apply processor item to full stack
 
-        :param l1_item:
+        :param l1_list:
         :param stage_name:
 
         :return:
@@ -430,10 +430,6 @@ class L1PreProcBase(DefaultLoggingClass):
         # Create a list of all currently available l1 segments. This includes the
         # elements from the stack and the polar ocean segments
         all_l1_po_segments = [*l1_connected_stack, *l1_po_segments]
-
-        # logger.debug(f"l1_po_segments = {len(l1_po_segments)} elements")
-        # logger.debug(f"l1_connected_stack = {len(l1_connected_stack)} elements")
-        # logger.debug(f"all_l1_po_segments = {len(all_l1_po_segments)} elements")
 
         # There is a number of case to be caught her.
         # Case 1: The list of polar ocean segments might be empty
@@ -497,7 +493,6 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return:
         """
-
         minimum_n_records = self.cfg.get("export_minimum_n_records", 0)
         if l1.n_records >= minimum_n_records:
             self.output_handler.export_to_netcdf(l1)
