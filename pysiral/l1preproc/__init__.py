@@ -466,7 +466,7 @@ class L1PreProcBase(DefaultLoggingClass):
         for idx, is_connected in enumerate(are_connected):
             target_l1 = all_l1_po_segments[idx+1]
             if is_connected:
-                merged_l1_list[-1].append(target_l1)
+                merged_l1_list[-1].append(target_l1, remove_overlap=True)
             else:
                 merged_l1_list.append(copy.deepcopy(target_l1))
 
