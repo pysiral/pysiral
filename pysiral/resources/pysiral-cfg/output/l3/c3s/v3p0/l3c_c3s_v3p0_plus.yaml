@@ -8,9 +8,9 @@ metadata:
 
 # Output Definition
 filenaming: 
-  monthly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m}.nc"
-  weekly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  daily: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}.nc"
+  month: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m}.nc"
+  isoweek: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  day: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}.nc"
   custom: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   default: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   
@@ -333,8 +333,8 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  stat_ice_fraction:
-    var_source_name: ice_fraction
+  stat_sea_ice_fraction:
+    var_source_name: sea_ice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"

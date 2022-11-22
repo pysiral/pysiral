@@ -8,9 +8,9 @@ metadata:
 
 # Output Definition
 filenaming: 
-  monthly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m}.nc"
-  weekly: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  daily: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}.nc"
+  month: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m}.nc"
+  isoweek: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  day: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}.nc"
   custom: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   default: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   
