@@ -1399,7 +1399,10 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
 
     plt.figure(dpi=150)
     fig_manager = plt.get_current_fig_manager()
-    fig_manager.window.showMaximized()
+    try:
+        fig_manager.window.showMaximized()
+    except AttributeError:
+        fig_manager.window.state('zoomed')
     ax = plt.axes(projection=proj)
     ax.set_global()
     ax.set_title(title)
