@@ -89,7 +89,7 @@ Surface Type
 
 """
 
-from typing import Union, Any
+from typing import Union, Any, List
 from cftime import num2pydate as cn2pyd
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
@@ -124,8 +124,52 @@ class Level1bData(DefaultLoggingClass):
         self.classifier = L1bClassifiers(self.info)
         self.surface_type = SurfaceType()
 
-    def append(self, l1b_annex):
-        """ Appends another l1b object to this one """
+    def append(self,
+               l1b_annex: "Level1bData",
+               remove_overlap: bool = False,
+               warn_if_temporal_offset_seconds: int = 10,
+               raise_on_error: bool = False
+               ) -> None:
+        """
+        Appends another l1b object to this one. The `l1b_annex` object is expected
+        to have data after the self instance.
+
+        :param l1b_annex:
+
+        :return:
+        """
+
+        # Validity Checks
+        timedelta_seconds = (l1b_annex.tcs - self.tce).total_seconds()
+        if np.abs(timedelta_seconds) >= warn_if_temporal_offset_seconds:
+            logger.warning(f"Appending l1 segment with time offset of {timedelta_seconds} seconds")
+
+        # 1. The appending segment must not be a full subset of the current one
+        time_coverage_str = f"self=[{l1b_annex.tcs}-{l1b_annex.tce}] annex=[{self.tcs}-{self.tce}]"
+        if l1b_annex.tce < self.tce and l1b_annex.tcs > self.tcs:
+            msg = f"l1.append: l1 segment to append is full subset of base segment: ({time_coverage_str})"
+            logger.error(msg)
+            if raise_on_error:
+                raise ValueError(msg)
+            logger.error(" -> l1 segment will not be appended")
+            return
+
+        # 2. There must be data after this one
+        if l1b_annex.tce <= self.tce:
+            msg = f"l1.append: No data after base segment: ({time_coverage_str})"
+            logger.error(msg)
+            if raise_on_error:
+                raise ValueError(msg)
+            logger.error(" -> l1 segment will not be appended")
+            return
+
+        # 3. There should not be an overlap
+        if l1b_annex.tcs < self.tce:
+            logger.warning(f"l1.append: Partial overlap between segments: ({time_coverage_str})")
+            if remove_overlap:
+                annex_non_overlap_idx = np.where(l1b_annex.time_orbit.timestamp > self.tce)[0]
+                logger.warning("-> trimming appending segment")
+                l1b_annex.trim_to_subset(annex_non_overlap_idx)
 
         # Append data in each data group
         for data_group in self.data_groups:
