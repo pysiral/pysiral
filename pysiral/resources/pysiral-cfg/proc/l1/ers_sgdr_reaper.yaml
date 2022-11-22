@@ -124,13 +124,6 @@ level1_preprocessor:
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
 
-            # Ensure ERS data is
-            - label: "Remove ERS SGDR Overlaps"
-              stage: post_ocean_segment_extraction_stack
-              module_name: pysiral.ers.l1procitems
-              class_name: SGDRRemoveOverlaps
-              options: {}
-
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
               stage: post_ocean_segment_extraction

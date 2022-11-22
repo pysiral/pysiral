@@ -78,17 +78,6 @@ class L1PProcItem(object):
         """
         raise NotImplementedError(f"Do not call {self.__class__.__name__} directly")
 
-    def apply_list(self, l1_list: List[Level1bData]) -> List[Level1bData]:
-        """
-        Optional class for Level-1 processing item. Needs to be overwritten
-        by the inheriting class to have any effect
-
-        :param l1_list:
-
-        :return:
-        """
-        return l1_list
-
     def __getattr__(self, item: str) -> Any:
         """
         Direct attribute access to the cfg dictionary. Required for historical reasons
