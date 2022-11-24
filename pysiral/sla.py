@@ -155,17 +155,26 @@ class SLABaseFunctionality(object):
         """
         Filter tie points if their elevation is outside a specified multiple of
         the local elevation standard deviation. Two thresholds for upper and lower
-        elevation bound can be given.
+        elevation bound must be specified.
 
-        :param ssh_tiepoint_indices:
-        :param elevation:
-        :param footprint_spacing:
-        :param elevation_filter_window_m:
-        :param upper_limit_standard_deviation:
-        :param lower_limit_standard_deviation:
-        :param minimum_standard_deviation_m:
+        :param ssh_tiepoint_indices: Indices of elevation that are a (potential)
+            sea surface height tiepoint
+        :param elevation: elevation array
+        :param footprint_spacing: Average footprint spacing. Needed to convert
+            filter lenghts in meters into number of array items.
+        :param elevation_filter_window_m: The filter window used for computing the
+            mean elevation and the computation of rolling standard deviation.
+        :param upper_limit_standard_deviation: Sea surface height tie points
+            are removed if their elevation exceeds the mean elevation plus
+            the local standard deviation multiplied by this factor.
+        :param lower_limit_standard_deviation: Sea surface height tie points
+            are removed if their elevation is below the mean elevation minus
+            the local standard deviation multiplied by this factor.
+        :param minimum_standard_deviation_m: The minimum local standard devation.
+            This value prevents the filter becoming to greedy in the case
+            of small local standard devation.
 
-        :return: The filtere ssh tiepoint list
+        :return: The filtered ssh tiepoint index list
         """
 
         # Step 1: Convert filter size to number of array entries
@@ -524,8 +533,11 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2.surface_type, l2.elev, use_ocean_wfm)
 
         # Legacy MSS offset filter
+        # Deprecated: Not a reliable filter, `tiepoint_elevation_filter` should be used
+        # instead
         filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
         if filter_max_mss_offset_m is not None:
+            logger.warning("filter_max_mss_offset_m is deprecated, use tiepoint_elevation_filter instead")
             sla_observed = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
             valid = np.where(np.abs(sla_observed) <= filter_max_mss_offset_m)[0]
             ssh_tiepoint_indices = ssh_tiepoint_indices[valid]
@@ -550,15 +562,14 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
 
         # Step 2: Calculate the SLA by
         smooth_filter_width_m = self.cfg.options.get("smooth_filter_width_m", np.nan)
-        footprint_size = self.cfg.options.get("smooth_filter_width_footprint_size", np.nan)
-        filter_width = self.get_filter_width(smooth_filter_width_m, footprint_size)
+        filter_width = self.get_filter_width(smooth_filter_width_m, l2.footprint_spacing)
         sla = self.smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width)
 
         # Step 3: Compute sea level anomaly uncertainty
         max_distance = self.cfg.options.get("uncertainty_tiepoints_distance_max", np.nan)
         sla_unc_min = self.cfg.options.get("uncertainty_minimum", np.nan)
         sla_unc_max = self.cfg.options.get("uncertainty_maximum", np.nan)
-        sla_unc = self.calculate_sla_uncertainty(l2, max_distance, sla_unc_min, sla_unc_max, footprint_size)
+        sla_unc = self.calculate_sla_uncertainty(l2, max_distance, sla_unc_min, sla_unc_max, l2.footprint_spacing)
 
         # Step 4 (optional): Filter small marine segments surrounded by land
         # Note: This intends to remove small segments in fjords/channels for which
@@ -566,7 +577,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         mask = np.full(l2.n_records, False)
         if "marine_segment_filter" in self.cfg.options:
             minimum_lead_number = self.cfg.options.marine_segment_filter.get("minimum_lead_number", np.nan)
-            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, footprint_size)
+            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, l2.footprint_spacing)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 5 (optional): Filter SLA segments that are far away from the next SSH tie point
@@ -575,7 +586,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
             is_tiepoint[ssh_tiepoint_indices] = True
             distance_threshold = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", np.nan)
             edges_only = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", False)
-            filter_mask = self.tiepoint_maxdist_filter(l2, edges_only, distance_threshold, footprint_size)
+            filter_mask = self.tiepoint_maxdist_filter(l2, edges_only, distance_threshold, l2.footprint_spacing)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 6: Apply filter (if any)

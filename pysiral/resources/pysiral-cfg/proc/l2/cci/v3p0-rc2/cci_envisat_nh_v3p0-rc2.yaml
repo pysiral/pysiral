@@ -257,14 +257,12 @@ procsteps:
                 - elevation_ice2
                 - elevation_sitrack
 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    # Algorithm for instantaneous sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
-            smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
             tiepoint_elevation_filter:
                 elevation_filter_window_m: 50000.
                 upper_limit_standard_deviation: 2
