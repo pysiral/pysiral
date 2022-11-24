@@ -17,11 +17,16 @@ NOTES:
 
 
 import numpy as np
+import pandas as pd
+import numpy.typing as npt
 from loguru import logger
 
+import statsmodels.api as sm
 from sklearn import gaussian_process
 from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
+from pysiral.l2data import L2DataArray
+from pysiral.core.flags import SurfaceType
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 from pysiral.filter import (fill_nan, idl_smooth)
 
@@ -39,37 +44,35 @@ class SLABaseFunctionality(object):
         pass
 
     @staticmethod
-    def get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m=None, use_ocean_wfm=False):
+    def get_ssh_tiepoints_indices(
+            surface_type: SurfaceType,
+            elevation: L2DataArray,
+            use_ocean_wfm: bool = None
+    ) -> npt.NDArray:
         """
         Return the index list of SSH tiepoints. These are as a minimum waveforms identified as lead in the
         surface type classifcation. Ocean waveforms can be added and an optional filter applies that removes
         SSH tiepoints based on their distance to the mean sea surface (mss).
         optional addition
-        :param l2: The Level-2 data container
-        :param filter_max_mss_offset_m: Filter values for maximum raw observed SLA in meter
+
+        :param surface_type: Surface type flag object
+        :param elevation: retracked elevation (will be checked for NaN values)
         :param use_ocean_wfm: Boolean flag whether to include ocean waveforms
+
         :return: A list of indices indicated valid SSH tie points for the Level-2 data object
         """
 
         # Use waveforms identified as leads in first iteration
-        ssh_tiepoint_indices = l2.surface_type.lead.indices
+        ssh_tiepoint_indices = surface_type.lead.indices
 
         # (Optional) Add ocean waveforms if applicable
         if use_ocean_wfm:
-            ssh_tiepoint_indices = np.append(ssh_tiepoint_indices, l2.surface_type.ocean.indices)
+            ssh_tiepoint_indices = np.append(ssh_tiepoint_indices, surface_type.ocean.indices)
             ssh_tiepoint_indices = np.sort(ssh_tiepoint_indices)
 
         # Remove indices that point to a valid range value
-        valid_range = np.isfinite(l2.elev[ssh_tiepoint_indices])
+        valid_range = np.isfinite(elevation[ssh_tiepoint_indices])
         ssh_tiepoint_indices = ssh_tiepoint_indices[valid_range]
-
-        # (Optional) Remove ssh tie points from the list if their elevation
-        # corrected by the median offset of all tie points from the mss
-        # exceeds a certain threshold
-        if filter_max_mss_offset_m is not None:
-            sla_observed = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
-            valid = np.where(np.abs(sla_observed) <= filter_max_mss_offset_m)[0]
-            ssh_tiepoint_indices = ssh_tiepoint_indices[valid]
 
         # All done, return the index list of tie points
         return ssh_tiepoint_indices
@@ -96,7 +99,7 @@ class SLABaseFunctionality(object):
 
     def tiepoint_maxdist_filter(self, l2, edges_only, distance_threshold, footprint_size):
         """
-        A filter that does not removes sla values which distance to
+        A filter that does not remove sla values which distance to
         the next ssh tiepoint exceeds a defined threshold
         :param l2: Level-2 data container
         :param edges_only:
@@ -138,6 +141,81 @@ class SLABaseFunctionality(object):
         distance_forward = self.get_tiepoints_oneway_distance(is_tiepoint)
         distance_reverse = self.get_tiepoints_oneway_distance(is_tiepoint, reverse=True)
         return np.minimum(distance_forward, distance_reverse)
+
+    @staticmethod
+    def tiepoint_elevation_sdev_filter(
+            ssh_tiepoint_indices: npt.NDArray,
+            elevation: npt.NDArray,
+            footprint_spacing: float,
+            elevation_filter_window_m: float = 50000.,
+            upper_limit_standard_deviation: float = 2.,
+            lower_limit_standard_deviation: float = 3.,
+            minimum_standard_deviation_m: float = 0.1
+    ) -> npt.NDArray:
+        """
+        Filter tie points if their elevation is outside a specified multiple of
+        the local elevation standard deviation. Two thresholds for upper and lower
+        elevation bound can be given.
+
+        :param ssh_tiepoint_indices:
+        :param elevation:
+        :param footprint_spacing:
+        :param elevation_filter_window_m:
+        :param upper_limit_standard_deviation:
+        :param lower_limit_standard_deviation:
+        :param minimum_standard_deviation_m:
+
+        :return: The filtere ssh tiepoint list
+        """
+
+        # Step 1: Convert filter size to number of array entries
+        window_size_float = elevation_filter_window_m / footprint_spacing
+        window_size = None if np.isnan(window_size_float) else int(int(window_size_float) // 2 * 2 + 1)
+
+        # Step 2: Compute a smoothed representation of the elevation profile
+        #         with a lowess filter
+        x = np.arange(elevation.shape[0])
+        data_fraction = min(window_size / float(x.shape[0]), 1.)
+        elevation_rolling_mean = sm.nonparametric.lowess(elevation, x, frac=data_fraction, return_sorted=False)
+
+        # Step 3: Compute the elevation standard deviation of trend-corrected elevation profile
+        rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
+        ts = pd.Series(elevation - elevation_rolling_mean)
+        elevation_rolling_sdev = ts.rolling(**rolling_kwargs).std()
+
+        # Step 4: Set minimum value for standard deviation
+        elevation_rolling_sdev = np.maximum(elevation_rolling_sdev, minimum_standard_deviation_m)
+
+        # Step 5: Find ssh tie-point indices outside the valid bounds
+        upper_limit = elevation_rolling_mean + upper_limit_standard_deviation * elevation_rolling_sdev
+        lower_limit = elevation_rolling_mean - lower_limit_standard_deviation * elevation_rolling_sdev
+        tie_points_inside_elevation_bounds = np.logical_and(
+            elevation[ssh_tiepoint_indices] < upper_limit.values[ssh_tiepoint_indices],
+            elevation[ssh_tiepoint_indices] > lower_limit.values[ssh_tiepoint_indices]
+        )
+
+        # Debug code
+        # import matplotlib.pyplot as plt
+        # tie_points_outside_elevation_bounds = np.logical_not(tie_points_inside_elevation_bounds)
+        # plt.figure(dpi=150)
+        # plt.fill_between(x, elevation_rolling_mean - elevation_rolling_sdev,
+        #                  elevation_rolling_mean + elevation_rolling_sdev,
+        #                  color="green", alpha=0.25, edgecolor="none")
+        # plt.fill_between(x, lower_limit, upper_limit, color="green", alpha=0.25, edgecolor="none")
+        # plt.plot(x, elevation, lw=0.5, color="0.0", label="raw elevation")
+        # plt.plot(x, elevation_rolling_mean, lw=0.75, linestyle="dashed")
+        # plt.scatter(x[ssh_tiepoint_indices], elevation[ssh_tiepoint_indices], s=30,
+        #             c="none", edgecolors="red", label="all tie-points")
+        # plt.scatter(x[ssh_tiepoint_indices[tie_points_outside_elevation_bounds]],
+        #             elevation[ssh_tiepoint_indices[tie_points_outside_elevation_bounds]], s=20,
+        #             marker="x", c="red", edgecolors="red", label="filtered tie-points")
+        # plt.legend()
+        # plt.show()
+        # breakpoint()
+
+        return ssh_tiepoint_indices[tie_points_inside_elevation_bounds]
+
+
 
     @staticmethod
     def marine_segment_filter(l2, minimum_lead_number, footprint_size):
@@ -442,9 +520,25 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         # Step 1: Get a list of valid SSH tie points
         # This method will return a list of indices for all SSH observations
         # with an optional pre-filtering step
-        filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
         use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
-        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
+        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2.surface_type, l2.elev, use_ocean_wfm)
+
+        # Legacy MSS offset filter
+        filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
+        if filter_max_mss_offset_m is not None:
+            sla_observed = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
+            valid = np.where(np.abs(sla_observed) <= filter_max_mss_offset_m)[0]
+            ssh_tiepoint_indices = ssh_tiepoint_indices[valid]
+
+        # Offset from mean elevation filter
+        tiepoint_elevation_filter = self.cfg.options.get("tiepoint_elevation_filter", None)
+        if tiepoint_elevation_filter is not None:
+            ssh_tiepoint_indices = self.tiepoint_elevation_sdev_filter(
+                ssh_tiepoint_indices,
+                l2.elev[:],
+                l2.footprint_spacing,
+                **tiepoint_elevation_filter
+            )
 
         # Verification that there is any ssh tie points
         # -> Will return all NaN sla if not
@@ -618,7 +712,7 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
         # with an optional pre-filtering step
         filter_max_mss_offset_m = self.cfg.options.get("filter_max_mss_offset_m", None)
         use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
-        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2, filter_max_mss_offset_m, use_ocean_wfm)
+        ssh_tiepoint_indices = self.get_ssh_tiepoints_indices(l2.surface_type, l2.elev, use_ocean_wfm)
 
         # Verification that there is any ssh tie points
         # -> Will return all NaN sla if not
