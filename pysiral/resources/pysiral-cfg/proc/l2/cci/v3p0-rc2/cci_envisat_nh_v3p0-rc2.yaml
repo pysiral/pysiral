@@ -272,7 +272,7 @@ procsteps:
                 minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
-            uncertainty_maximum: 0.10
+            uncertainty_maximum: 0.15
             marine_segment_filter:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
