@@ -249,12 +249,14 @@ procsteps:
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
-            smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
-            uncertainty_maximum: 0.10
+            uncertainty_maximum: 0.15
             marine_segment_filter:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
@@ -313,17 +315,17 @@ procsteps:
         options: {}
 
     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
-    -   module: filter
-        pyclass: MarginalIceZoneFilterFlag
-        options:
-            ice_edge_proximity:
-                sea_ice_concentration_max: 75.
-                ocean_distance_max: 300000.
-                leading_edge_width_rolling_mean_min: 2.0
-                pulse_peakiness_rolling_sdev_max: 15.0
-            ice_edge_transition:
-                sea_ice_filter_size_m: 300000.
-                ocean_filter_size_m: 25000.
-                freeboard_smoother_filter_size_m: 150000.
-                sea_ice_freeboard_miz_gradient: 0.002
-                leading_edge_width_ocean_value: 2.5
+#    -   module: filter
+#        pyclass: MarginalIceZoneFilterFlag
+#        options:
+#            ice_edge_proximity:
+#                sea_ice_concentration_max: 75.
+#                ocean_distance_max: 300000.
+#                leading_edge_width_rolling_mean_min: 2.0
+#                pulse_peakiness_rolling_sdev_max: 15.0
+#            ice_edge_transition:
+#                sea_ice_filter_size_m: 300000.
+#                ocean_filter_size_m: 25000.
+#                freeboard_smoother_filter_size_m: 150000.
+#                sea_ice_freeboard_miz_gradient: 0.002
+#                leading_edge_width_ocean_value: 2.5
