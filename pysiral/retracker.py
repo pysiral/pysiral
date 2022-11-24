@@ -1514,7 +1514,8 @@ class ERSPulseDeblurring(Level2ProcessorStep):
         eps = l2.epss * 0.5 * 299792458.
 
         # Compute and apply pulse deblurring correction
-        pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / 5.0
+        slope = self.constant_slope
+        pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / slope
         for target_variable in self.target_variables:
             var = l2.get_parameter_by_name(target_variable)
             var[:] = var[:] + pulse_deblurring_correction
@@ -1541,6 +1542,12 @@ class ERSPulseDeblurring(Level2ProcessorStep):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["retracker"]
+
+    @property
+    def constant_slope(self):
+        #return slope term depending on ERS mission
+        #defaults to 5.0, the ERS-2 value
+        return self.cfg.options.get("slope", 5.0)
 
 
 class SGDRMultipleElevations(Level2ProcessorStep):

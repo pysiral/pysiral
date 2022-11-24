@@ -452,8 +452,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
             all_nans = np.full(l2.n_records, np.nan)
             l2.sla.set_value(all_nans)
             l2.sla.set_uncertainty(all_nans)
-            error_status = np.isnan(l2.sla[:])
-            return error_status
+            return np.isnan(l2.sla[:])
 
         # Step 2: Calculate the SLA by
         smooth_filter_width_m = self.cfg.options.get("smooth_filter_width_m", np.nan)
@@ -495,8 +494,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         l2.sla.set_uncertainty(sla_unc)
 
         # Return the error status
-        error_status = np.isnan(l2.sla[:])
-        return error_status
+        return np.isnan(l2.sla[:])
 
     @staticmethod
     def smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width):
@@ -583,6 +581,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
+
 
 class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
     """

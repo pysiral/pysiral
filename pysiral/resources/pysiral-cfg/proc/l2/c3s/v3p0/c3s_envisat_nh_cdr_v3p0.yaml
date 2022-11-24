@@ -1,11 +1,11 @@
 # Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 metadata:
-    label: "ESA CCI+ Envisat northern hemisphere sea-ice thickness climate data record v3.0 - release candidate 3"
-    product_line: cci
-    record_type: tds
+    label: "C3S Envisat northern hemisphere sea-ice thickness climate data record v3.0"
+    product_line: c3s
+    record_type: cdr
     platform: envisat
-    version: v3p0-rc2
-    file_version_tag: v3p0-rc2
+    version: v3p0
+    file_version_tag: v3p0
     hemisphere: north
 
 
@@ -75,7 +75,7 @@ auxdata:
                 model_file: fnn_cci_envisat_nh_v3p0-rc1.pth
                 torch_class: TorchFunctionalWaveformModelFNN
                 input_neurons: 45
-                # The model may predict non-sense threshold values. Limit
+                # The model may predict nonsense threshold values. Limit
                 # to a normal range
                 valid_range: [0.1, 1.0]
 
@@ -175,14 +175,6 @@ procsteps:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
 
-    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
-        pyclass: SGDRMultipleElevations
-        options: 
-            predefined_retrackers: [ocean, ice1, ice2, sitrack]
-            classifier_name_fmt: "{}_range"
-            output_name_fmt: "elevation_{}"
-
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
@@ -250,12 +242,6 @@ procsteps:
                 - ocean_loading_tide
                 - solid_earth_tide
                 - geocentric_polar_tide
-            target_variables:
-                - elevation
-                - elevation_ocean
-                - elevation_ice1
-                - elevation_ice2
-                - elevation_sitrack
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
@@ -274,13 +260,6 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
-
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    -   module: sla
-        pyclass: SLARaw
-        options:
-            use_ocean_wfm: False
-            filter_max_mss_offset_m: 3.0 # in meter
 
     # Estimation of Radar Freeboard
     -   module: frb
