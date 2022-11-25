@@ -103,7 +103,7 @@ variables:
 
   orbit_flag:
     long_name: Flag indicated descending/ascending orbit
-    units: 1
+    units: "1"
     flag_values: 0, 1
     flag_meanings: ascending descending
     valid_min: 0
@@ -112,7 +112,7 @@ variables:
 
   surface_type:
     long_name: "surface type classification flag"
-    units: 1
+    units: "1"
     flag_values: "0, 1, 2, 4, 5, 6, 7, 8"
     valid_min: 0
     valid_max: 8
@@ -121,7 +121,7 @@ variables:
 
   radar_mode:
     long_name: "radar mode flag"
-    units: 1
+    units: "1"
     flag_values: "0, 1, 2"
     flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
     valid_min: 0
@@ -135,7 +135,7 @@ variables:
     valid_max: 21
     flag_values: "{source_hemisphere:select;0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21;0, 1, 2, 3, 4, 5, 6, 20}"
     flag_meaning: "{source_hemisphere:select;inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic baltic_sea land land_outline;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
-    units: 1
+    units: "1"
     coordinates: time
     
   elevation:
@@ -226,7 +226,7 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
     standard_name: sea_ice_classification
-    units: 1
+    units: "1"
     valid_min: 0.0
     valid_max: 1.0
     coordinates: time
@@ -234,7 +234,7 @@ variables:
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standar_error
-    units: 1
+    units: "1"
     coordinates: time
 
   sea_ice_concentration:
@@ -307,36 +307,36 @@ variables:
     long_name: "threshold of the tfmra retracker"
     valid_min: 0
     valid_max: 1
-    units: 1
+    units: "1"
     coordinates: time
 
   sigma0:
     long_name: "radar backscatter (sigma0)"
-    units: 1
+    units: "1"
     coordinates: time
 
   pulse_peakiness:
     long_name: "pulse peakiness"
-    units: 1
+    units: "1"
     coordinates: time
 
   pulse_peakiness_rolling_sdev:
     long_name: "pulse peakiness rolling standard deviation"
-    units: 1
+    units: "1"
     coordinates: time
   leading_edge_width:
     long_name: "leading edge width"
-    units: 1
+    units: "1"
     coordinates: time
   
   leading_edge_quality:
     long_name: "leading edge width"
-    units: 1
+    units: "1"
     coordinates: time
   
   stack_standard_deviation:
     long_name: "standard deviation of power over the stack"
-    units: 1
+    units: "1"
     coordinates: time
 
   dry_troposphere:
@@ -390,13 +390,13 @@ variables:
     valid_max: 1
     flag_values: "0, 1"
     flag_meaning: "0: waveform is valid, 1: waveform is invalid"
-    units: 1
+    units: "1"
     coordinates: time
 
   flag:
     long_name: "L2 algorithm error flag"
     comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 15
     flag_meaning: "Errors (bit 0): l1p source data, (bit 1): Level-2 processor (bit 2): auxiliary data (bit 3): surface type classification (bit 4): retracker (bit 5): range_correction (bit 6) sea level anomaly (bit 7): freeboard retrieval  (bit 8) freeboard to thickness conversion (bit 9) parameter filter (bit 15) other"
@@ -405,7 +405,7 @@ variables:
   flag_miz:
     long_name: "marginal ice zone flag"
     comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 3
     flag_values: "0, 1, 2"

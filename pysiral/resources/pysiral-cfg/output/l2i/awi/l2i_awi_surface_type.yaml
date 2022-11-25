@@ -78,7 +78,7 @@ variables:
 
   surface_type:
     long_name: "surface type classification flag"
-    units: 1
+    units: "1"
     flag_values: "0, 1, 2, 4, 5, 6, 7, 8"
     valid_min: 0
     valid_max: 8
@@ -88,7 +88,7 @@ variables:
   flag:
     long_name: "L2 algorithm error flag"
     comment: "This is a bit flag with the bit value: flag^2. An error is indicated if the respective bit is True (multiple error can be set at the same time)"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 32768
     flag_values: "1, 2, 4, 8, 16, 32, 64, 128, 256, 32768"

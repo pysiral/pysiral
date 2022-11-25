@@ -148,7 +148,7 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
     standard_name: sea_ice_classification
-    units: 1
+    units: "1"
     valid_min: 0.0
     valid_max: 1.0
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -158,7 +158,7 @@ variables:
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standard_error
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: auxiliaryInformation
@@ -261,7 +261,7 @@ variables:
     var_source_name: flag_miz
     long_name: Marginal Ice Zone Flag
     standard_name: "quality_flag"
-    units: 1
+    units: "1"
     valid_min: -1
     valid_max: 3
     flag_values: "-1 0 1 2 3"
@@ -273,7 +273,7 @@ variables:
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag
     standard_name: "quality_flag"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 3
     flag_values: "0 1 2 3"
@@ -286,7 +286,7 @@ variables:
   status_flag:
     long_name: Sea Ice Thickness Status Flag
     standard_name: "status_flag"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 5
     flag_values: "0 1 2 3 4 5"
@@ -303,7 +303,7 @@ variables:
     valid_max: 21
     flag_values: "{source_hemisphere:select;0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21;0, 1, 2, 3, 4, 5, 6, 20}"
     flag_meaning: "{source_hemisphere:select;inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic baltic_sea land land_outline;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: referenceInformation
@@ -324,7 +324,7 @@ variables:
     flag_values: "0 1 2"
     flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
     comment: "median of radar mode flags within grid cells"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: referenceInformation
@@ -332,7 +332,7 @@ variables:
   stat_n_total_waveforms:
     var_source_name: n_total_waveforms
     long_name: "number of total measurements per grid cell"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -340,7 +340,7 @@ variables:
   stat_n_valid_waveforms:
     var_source_name: n_valid_waveforms
     long_name: "number of valid measurements per grid cell"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "definition of valid: either lead or ice"
@@ -349,7 +349,7 @@ variables:
   stat_valid_fraction:
     var_source_name: valid_fraction
     long_name: "fraction of valid to total waveforms"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     comment: "definition of valid: either lead or ice"
@@ -358,7 +358,7 @@ variables:
   stat_lead_fraction:
     var_source_name: lead_fraction
     long_name: "lead waveform detections per valid waveforms in grid cell"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -366,7 +366,7 @@ variables:
   stat_seaice_fraction:
     var_source_name: seaice_fraction
     long_name: "sea ice waveform detections per valid waveforms in grid cell"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -374,7 +374,7 @@ variables:
   stat_ocean_fraction:
     var_source_name: ocean_fraction
     long_name: "ocean waveform detections per valid waveforms in grid cell"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -385,7 +385,7 @@ variables:
     comment: "The uniformity factor indicates if the observation are uniform distributed throughout the period of the grid, e.g. whether all days in the period contribute equally to the full grid period. The values for this parameter range between close to 0 (singular distribution) and 1 (uniform distribution). The factor is computed with by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a uniform distribution (1-D with D being the result of KS test)"
     valid_min: 0.0
     valid_max: 1.0
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -394,7 +394,7 @@ variables:
     var_source_name: temporal_coverage_day_fraction
     long_name: "fraction of days with sea-ice thickness data coverage in full grid period"
     comment: "This parameter is defined as len(days_with_observations)/number_of_days_in_grid_period"
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -405,7 +405,7 @@ variables:
     comment: "This parameter describes the fraction of the period between the first and the last day with observations (irrespectively if all days between first and last day have data coverage): (last_day-first_day)/number_of_days_in_grid_period"
     valid_min: 0.0
     valid_max: 1.0
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -416,7 +416,7 @@ variables:
     comment: "This parameter describes the temporal center of the days with observations with taken the number observations on indiviual days into account: mean(day number for all observations)/number_of_days_in_grid_period. A value smaller or larger than 0.5 indicates a possible phase bias."
     valid_min: 0.0
     valid_max: 1.0
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
@@ -426,7 +426,7 @@ variables:
     long_name: "fraction of negative sea-ice thickness values"
     valid_min: 0.0
     valid_max: 1.0
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation

@@ -239,7 +239,7 @@ variables:
   quality_flag:
     long_name: Sea Ice Thickness Quality Flag
     standard_name: "quality_flag"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 3
     flag_values: "0, 1, 2, 3"
@@ -252,7 +252,7 @@ variables:
   status_flag:
     long_name: Sea Ice Thickness Status Flag
     standard_name: "status_flag"
-    units: 1
+    units: "1"
     valid_min: 0
     valid_max: 5
     flag_values: "0, 1, 2, 3, 4, 5"

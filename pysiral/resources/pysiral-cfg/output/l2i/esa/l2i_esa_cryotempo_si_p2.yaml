@@ -165,6 +165,6 @@ variables:
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
     flag_meanings: "inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john 
     baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic valtic_sea land land_outline"
-    units: 1
+    units: "1"
     coordinates: time
     
