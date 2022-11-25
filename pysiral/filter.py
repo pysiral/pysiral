@@ -214,8 +214,7 @@ class ParameterSmoother(Level2ProcessorStep):
         x = np.arange(y.shape[0])
 
         # Compute the data fraction to use at each y-value
-        # TODO: Value of 1501 is hard coded -> move to the settings
-        data_fraction = min(1501./float(y.shape[0]), 1.)
+        data_fraction = min(smoother_args.get("filter_size_n_points", 1501.) / float(y.shape[0]), 1.)
 
         # Compute the lowess filter with potential keywords from the config file
         filter_props = smoother_args.get("filter_props", {})
