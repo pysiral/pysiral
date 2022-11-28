@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition
 filenaming: 
-  month: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m}.nc"
-  isoweek: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  day: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}.nc"
-  custom: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
-  default: "ice_thickness_nh_ease2-250_{data_record_type}-v2p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  month: "ice_thickness_nh_ease2-250_{data_record_type}-v3p0plus_{time_coverage_start:%Y%m}.nc"
+  isoweek: "ice_thickness_nh_ease2-250_{data_record_type}-v3p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  day: "ice_thickness_nh_ease2-250_{data_record_type}-v3p0plus_{time_coverage_start:%Y%m%d}.nc"
+  custom: "ice_thickness_nh_ease2-250_{data_record_type}-v3p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
+  default: "ice_thickness_nh_ease2-250_{data_record_type}-v3p0plus_{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}.nc"
   
 product_level_subfolder: l3c-plus
 
@@ -32,13 +32,13 @@ global_attributes:
   - references: "Product User Guide and Specification (PUGS): Sea Ice Thickness Version 2, Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 2"
   - tracking_id: "{uuid}"
   - Conventions:  "CF-1.7 ACDD-1.3"
-  - product_version: "2p0"
+  - product_version: "3p0"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Monthly gridded Northern Hemisphere Sea Ice Thickness {data_record_type:select;Climate Data Record (CDR);Interim Climate Data Record (ICDR)} from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "GCMDSK:Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, GCMDSK:Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, GCMDSK:Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, GCMDLOC:Geographic Region > Northern Hemisphere, GCMDLOC:Vertical Location > Sea Surface, GCMDPROV:Consortia/Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
   - keywords_vocabulary: "GCMDSK:GCMD Science Keywords:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/sciencekeywords, GCMDLOC:GCMD Locations:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/locations, GCMDPROV:GCMD Providers:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/providers"
-  - id: "c3s-sit-{data_record_type}-v2p0plus-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
+  - id: "c3s-sit-{data_record_type}-v3p0plus-l3c-{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m%d}"
   - naming_authority: "de.awi"
   - doi: "{doi}"
   - cdm_data_type: "Grid"
