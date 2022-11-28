@@ -311,8 +311,8 @@ procsteps:
         pyclass: MarginalIceZoneFilterFlag
         options:
             ice_edge_proximity:
-                sea_ice_concentration_max: 75.
-                ocean_distance_max: 300000.
+                sea_ice_concentration_max: 90.
+                low_ice_concentration_distance_max: 200000.
                 leading_edge_width_rolling_mean_min: 2.0
                 pulse_peakiness_rolling_sdev_max: 15.0
             ice_edge_transition:
