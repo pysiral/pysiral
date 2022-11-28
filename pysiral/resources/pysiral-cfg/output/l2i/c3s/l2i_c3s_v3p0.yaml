@@ -204,6 +204,12 @@ variables:
     valid_max: 100.0
     coordinates: time
 
+  distance_to_coast:
+    long_name: "distance to coast"
+    units: m
+    comment: "from SGDR"
+    coordinates: time
+
   distance_to_ocean:
     long_name: "distance to open ocean"
     units: m

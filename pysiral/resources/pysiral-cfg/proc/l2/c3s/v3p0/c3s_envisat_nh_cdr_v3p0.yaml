@@ -96,6 +96,7 @@ procsteps:
             classifier:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
+                dist_coast: [dtc, distance_to_coast]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
             correction:
@@ -308,6 +309,15 @@ procsteps:
             target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
+
+    # Remove close values to the coast
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: dtc  # distance to coast
+            target_variables: [sit, frb, afrb]
+            valid_minimum_point_value: 10000
+            valid_maximum_point_value: 99999999999.
 
     # Compute sea ice draft
     -   module: sit
