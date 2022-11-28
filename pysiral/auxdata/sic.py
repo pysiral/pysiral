@@ -36,17 +36,20 @@ Important Note:
 """
 
 
-from pysiral.l2data import Level2Data
-from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
+
 
 import scipy.ndimage as ndimage
 from scipy.spatial.distance import cdist
 
 from pyproj import Proj
 import numpy as np
+import numpy.typing as npt
 from pathlib import Path
 from typing import List, Tuple
+
+from pysiral.l2data import Level2Data
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.iotools import ReadNC
 
 
 class OsiSafSIC(AuxdataBaseClass):
@@ -78,6 +81,7 @@ class OsiSafSIC(AuxdataBaseClass):
         # Class properties
         self._data = None
         self._ocean_proximity = None
+        self._low_ice_conc_proximity = None
         self.start_time = None
         self.hemisphere_code = None
         self.hemisphere = None
@@ -104,9 +108,11 @@ class OsiSafSIC(AuxdataBaseClass):
         if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
             ocean_proximity = self.get_empty_array(l2)
+            distance_to_low_ice_concentration = self.get_empty_array()
+
         else:
             # Get and return the track
-            sic, ocean_proximity = self._get_sic_track(l2)
+            sic, ocean_proximity, distance_to_low_ice_concentration = self._get_sic_track(l2)
 
             # Fill pole hole
             if "fill_pole_hole" in self.cfg.options:
@@ -118,6 +124,7 @@ class OsiSafSIC(AuxdataBaseClass):
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
         self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)
+        self.register_auxvar("dtlsic", "distance_to_low_ice_concentration", distance_to_low_ice_concentration, None)
 
     def load_requested_auxdata(self) -> None:
         """
@@ -147,9 +154,10 @@ class OsiSafSIC(AuxdataBaseClass):
         self._data.ice_conc[flagged] = np.nan
 
         # Compute ice/ocean proximity variable
-        self._compute_ice_ocean_proximity()
+        self._ocean_proximity = self._compute_ice_conc_threshold_proximity(15.0)
+        self._low_ice_conc_proximity = self._compute_ice_conc_threshold_proximity(70.0)
 
-    def _get_sic_track(self, l2: "Level2Data") -> Tuple[np.ndarray, np.ndarray]:
+    def _get_sic_track(self, l2: "Level2Data") -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Simple extraction along trajectory
         :param l2:
@@ -161,14 +169,21 @@ class OsiSafSIC(AuxdataBaseClass):
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
-        ocean_proximity = grid2track.get_from_grid_variable(self._ocean_proximity, flipud=True, order=1)
-
+        ocean_proximity = grid2track.get_from_grid_variable(
+            self._ocean_proximity,
+            flipud=True,
+            order=1
+        )
+        distance_to_low_ice_concentration = grid2track.get_from_grid_variable(
+            self._low_ice_conc_proximity,
+            flipud=True,
+            order=1
+        )
         # Remove ocean proximity for trajectory points outside the sea ice mask
         ocean_proximity[sic < 15.] = np.nan
+        return sic, ocean_proximity, distance_to_low_ice_concentration
 
-        return sic, ocean_proximity
-
-    def _compute_ice_ocean_proximity(self) -> None:
+    def _compute_ice_conc_threshold_proximity(self, ice_concentration_threshold: float = 15.) -> npt.NDArray:
         """
         Computes the distance of each sea ice grid cell (SIC >= 15%) to the
         next ocean (SIC <= 15% and not land) grid cell. The result will be
@@ -179,8 +194,8 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Create pixel-based masks for ice and ocean pixels
         ice_conc = self._data.ice_conc
-        ice_pixels = ice_conc >= 15.
-        ocean_pixels = ice_conc < 15.
+        ice_pixels = ice_conc >= ice_concentration_threshold
+        ocean_pixels = ice_conc < ice_concentration_threshold
         ice_pixels_extended = ndimage.maximum_filter(ice_pixels, 3)
 
         # Detect the ocean side of the ice/ocean transition
@@ -209,9 +224,9 @@ class OsiSafSIC(AuxdataBaseClass):
         min_dist = np.nanmin(dist, axis=1) * pixel_spacing
 
         # Convert back to grid shape and save
-        ocean_proximity = np.full(ice_conc.shape, 0.0)
-        ocean_proximity[ice_points_idx] = min_dist
-        self._ocean_proximity = ocean_proximity
+        proximity = np.full(ice_conc.shape, 0.0)
+        proximity[ice_points_idx] = min_dist
+        return proximity
 
     @property
     def requested_filepath(self) -> "Path":
