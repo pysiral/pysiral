@@ -1,10 +1,10 @@
 metadata:
-    label: "ESA CCI+ CryoSat-2 reprocessed southern hemisphere sea-ice thickness climate data record - release candidate 1"
+    label: "ESA CCI+ CryoSat-2 southern hemisphere sea-ice thickness climate data record v3.0 - release candidate 2"
     product_line: cci
     record_type: tds
     platform: cryosat2
-    version: v3p0-rc1
-    file_version_tag: v3p0-rc1
+    version: v3p0-rc2
+    file_version_tag: v3p0-rc2
     hemisphere: south
 
 
@@ -23,16 +23,11 @@ auxdata:
         name: dtu21
         options:
             latitude_range: [-90.0, -45.]
-    
-    - mdt:
-        name: dtu17
-        options:
-            latitude_range: [-90.0, -45.]
 
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: False
 
     - sitype:
@@ -77,7 +72,7 @@ procsteps:
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
-                inverse_barometric: [rcib, inverse_barometric]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
                 ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
@@ -98,10 +93,12 @@ procsteps:
         pyclass: ParameterRollingStatistics
         options:
             window_size_m: 25000.
-            statistics: ["sdev"]
+            statistics: ["sdev", "mean"]
             input_parameters:
                 - pulse_peakiness
-
+                - leading_edge_width
+                - sigma0
+                
     # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
@@ -167,7 +164,6 @@ procsteps:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
 
-
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
@@ -211,8 +207,10 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections: 
+            corrections:
+                - dry_troposphere 
                 - wet_troposphere
+                - dynamic_atmosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
@@ -220,14 +218,13 @@ procsteps:
                 - solid_earth_tide
                 - geocentric_polar_tide
 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    # Algorithm for instantaneous sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
             pre_filter_maximum_mss_median_offset: 5.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
@@ -236,20 +233,7 @@ procsteps:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
-                edges_only: false
-
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    -   module: sla
-        pyclass: SLARaw
-        options:
-            # True here so we can gauge the ocean retracking/SSB problem.
-            use_ocean_wfm: False
-            filter_max_mss_offset_m: 3.0 # in meter
-
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
+                edges_only: False
 
     # Estimation of Radar Freeboard
     -   module: frb

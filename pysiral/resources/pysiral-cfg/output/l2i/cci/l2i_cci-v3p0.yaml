@@ -8,7 +8,7 @@ metadata:
 
 # Output Definition
 filenaming:
-  default: c3s-seaice-l2i-sithick-{source_mission_sensor_fn:lowercase}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
+  default: esacci-seaice-l2i-sithick-{source_mission_sensor_fn:lowercase}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
 product_level_subfolder: l2i
 
 # A list of global attributes
@@ -16,31 +16,30 @@ product_level_subfolder: l2i
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "C3S2 312a Lot 3: Northern Hemisphere Sea Ice Thickness Climate Data Record"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline C (ipf1-c);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-d);envisat:Envisat SGDR (final v9.3p5)}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
-  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "TBD"
   - tracking_id: "{uuid}"
   # - conventions: "CF-1.6"
   - product_version: "3.0"
   - processing_level: "Level-2 Intermediate (l2i)"
-  - summary: "Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry since October 2002"
+  - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2017.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2017.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
   - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"
-  - id: "c3s-seaice-l2i-sithick-{source_mission_sensor_fn}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}"
+  - id: "esacci-seaice-l2i-sithick-{source_mission_sensor_fn}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "{doi}"
   - cdm_data_type: Trajectory
-  - comment: "Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard. Please consult the Product User Guide (PUG) for more information."
+  - comment: "{source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum fuer Polar und Meeresforschung"
-  - creator_type: "institution"
-  - creator_url: "http://www.awi.de/en"
-  - creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de"
-  - project: "European Union Copernicus Climate Change Services (C3S)"
+  - creator_name: "Stefan Hendricks, Stephan Paul (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine (Finnish Meteorological Institute, Helsinki, Finland)"
+  - creator_url: "http://www.awi.de"
+  - creator_email: "stefan.hendricks@awi.de, eero.rinne@fmi.fi, heidi.sallila@fmi.fi"
+  - project: "Climate Change Initiative - European Space Agency"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
@@ -111,15 +110,13 @@ variables:
 
   region_code:
     long_name: "region code"
-    unit: 1
-    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
+    comment: "Region code from {source_hemisphere:selectA new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC);Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
     valid_min: 0
-    valid_max: 18
-    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska"
-    flag_values: "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"
+    valid_max: 21
+    flag_values: "{source_hemisphere:select0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
+    flag_meaning: "{source_hemisphere:select;Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
     units: "1"
-    coordinates: "time"
-    coverage_content_type: referenceInformation
+    coordinates: time
 
   elevation:
     long_name: "elevation"
@@ -135,11 +132,46 @@ variables:
     units: m
     coordinates: time
 
+  elevation_ocean:
+    long_name: "elevation (ocean retracker)"
+    standard_name: "surface_altitude"
+    comment: "not available for all platforms, all range correction applied"
+    units: m
+    coordinates: time
+
+  elevation_ice1:
+    long_name: "elevation (ICE1 retracker)"
+    standard_name: "surface_altitude"
+    comment: "not available for all platforms, all range correction applied"
+    units: m
+    coordinates: time
+
+  elevation_ice2:
+    long_name: "elevation (ICE2 retracker)"
+    standard_name: "surface_altitude"
+    comment: "not available for all platforms, all range correction applied"
+    units: m
+    coordinates: time
+
+  elevation_sitrack:
+    long_name: "elevation (sea ice retracker)"
+    standard_name: "surface_altitude"
+    comment: "not available for all platforms, all range correction applied"
+    units: m
+    coordinates: time
+
   mean_sea_surface:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
     standard_name: sea_surface_height_above_reference_ellipsoid
     units: m
     coordinates: time
+
+  sea_level_anomaly_raw:
+    long_name: "sea level anomaly (unsmoothed)"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+    comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. No smoothing or interpolation applied."
 
   sea_level_anomaly:
     long_name: "departure of instantaneous sea surface height from mean sea surface height"
@@ -294,6 +326,11 @@ variables:
     units: "1"
     coordinates: time
 
+  pulse_deblurring_correction:
+    long_name: "Pulse deblurring correction (ERS only)"
+    units: meter
+    coordinates: time
+
   antenna_pitch:
     long_name: "antenna bench pitch angle"
     comment: "Pitch angle with respect to the nadir pointing, measured by the STRs and post-processed by the ground facility."
@@ -326,7 +363,6 @@ variables:
     long_name: "radar backscatter (sigma0) width rolling mean"
     units: "1"
     coordinates: time
-
   pulse_peakiness:
     long_name: "pulse peakiness"
     units: "1"
@@ -341,7 +377,6 @@ variables:
     long_name: "pulse peakiness rolling mean"
     units: "1"
     coordinates: time
-
   leading_edge_width:
     long_name: "leading edge width"
     units: "1"

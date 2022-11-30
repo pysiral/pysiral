@@ -39,7 +39,7 @@ auxdata:
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: False
 
     - sitype:
@@ -116,7 +116,6 @@ procsteps:
                 - pulse_peakiness
                 - leading_edge_width
                 - sigma0
-
 
     # Surface type classification algorithm
     -   module: surface
@@ -244,8 +243,7 @@ procsteps:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            filter_max_mss_offset_m: 5.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10

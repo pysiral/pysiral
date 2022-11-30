@@ -28,7 +28,7 @@ auxdata:
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: False
 
     - sitype:
@@ -242,17 +242,26 @@ procsteps:
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
-            smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
-            uncertainty_maximum: 0.10
+            uncertainty_maximum: 0.15
             marine_segment_filter:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
+
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    -   module: sla
+        pyclass: SLARaw
+        options:
+            use_ocean_wfm: False
+            filter_max_mss_offset_m: 3.0 # in meter
 
     # Estimation of Radar Freeboard
     -   module: frb
@@ -308,7 +317,6 @@ procsteps:
             target_variables: [sit, frb, afrb]
             valid_minimum_point_value: 10000
             valid_maximum_point_value: 99999999999.
-
 
     # Compute sea ice draft
     -   module: sit

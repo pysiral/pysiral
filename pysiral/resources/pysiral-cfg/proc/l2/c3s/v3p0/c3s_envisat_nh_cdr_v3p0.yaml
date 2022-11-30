@@ -264,6 +264,13 @@ procsteps:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
 
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    -   module: sla
+        pyclass: SLARaw
+        options:
+            use_ocean_wfm: False
+            filter_max_mss_offset_m: 3.0 # in meter
+
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
