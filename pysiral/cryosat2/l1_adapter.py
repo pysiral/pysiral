@@ -511,7 +511,7 @@ class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
         p = re.compile('L1B')
         newpath = p.sub('L1B/ARCTIDE', newpath)
         p = re.compile('nc')
-        newpath = p.sub('RegAT_Arctic_tides_v1.1.nc', newpath)
+        newpath = p.sub('RegAT_Arctic_tides_v1.2.nc', newpath)
         p = re.compile('TEST')
         newpath = p.sub('LTA_', newpath)
         return newpath
