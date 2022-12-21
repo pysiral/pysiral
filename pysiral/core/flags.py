@@ -117,7 +117,7 @@ class SurfaceType(DefaultLoggingClass):
 
     def get_by_name(self, name: str) -> 'FlagContainer':
         if name not in self.surface_type_dict.keys():
-            return FlagContainer(np.zeros(shape=self.n_records, dtype=np.bool))
+            return FlagContainer(np.zeros(shape=self.n_records, dtype=bool))
         type_id = self._get_type_id(name)
         flag = np.array(self._surface_type == type_id)
         return FlagContainer(flag)

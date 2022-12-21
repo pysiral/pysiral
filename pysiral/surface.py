@@ -130,7 +130,7 @@ class SurfaceTypeClassifier(object):
         This method can be used to initialize the surface type with unknown values
         :return:
         """
-        flag = np.ones(shape=n_records, dtype=np.bool)
+        flag = np.ones(shape=n_records, dtype=bool)
         self.surface_type.add_flag(flag, "unknown")
 
     def set_l1b_land_mask(self, l1: L1bdataNCFile) -> None:
