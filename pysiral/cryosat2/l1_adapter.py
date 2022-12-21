@@ -495,6 +495,11 @@ class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
             #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_01'
             #    logger.warning(msg)
             #    raise FileNotFoundError
+            nans_indices = np.where(np.isnan(variable_20hz))[0]
+            if len(nans_indices) > 0:
+                msg = 'Arctide file had {numnan} NaN values of {numval}. These have been replaced with FES2014b data'.format(numnan=len(nans_indices), numval=len(variable_20hz))
+                logger.warning(msg)
+                variable_20hz[nans_indices] = self.l1.correction.get_parameter_by_name('ocean_tide_elastic')[nans_indices]
             self.l1.correction.set_parameter('ocean_tide_elastic_2', self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
             self.l1.correction.set_parameter('ocean_tide_elastic', variable_20hz)
 
@@ -506,7 +511,7 @@ class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
         p = re.compile('L1B')
         newpath = p.sub('L1B/ARCTIDE', newpath)
         p = re.compile('nc')
-        newpath = p.sub('RegAT_Arctic_tides.nc', newpath)
+        newpath = p.sub('RegAT_Arctic_tides_v1.2.nc', newpath)
         p = re.compile('TEST')
         newpath = p.sub('LTA_', newpath)
         return newpath
