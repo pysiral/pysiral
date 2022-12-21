@@ -27,6 +27,7 @@ pyyaml
 schema
 scipy
 scikit-learn
+shapely<2.0.0
 Sphinx
 sphinx-automodapi
 sphinx_rtd_theme
