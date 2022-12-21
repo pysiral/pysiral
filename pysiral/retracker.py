@@ -148,7 +148,7 @@ class BaseRetracker(object):
         for parameter in ["_range", "_power"]:
             setattr(self, parameter, np.full(n_records, np.nan))
         self._uncertainty = np.full(n_records, 0.0, dtype=np.float32)
-        self._flag = np.zeros(shape=n_records, dtype=np.bool)
+        self._flag = np.zeros(shape=n_records, dtype=bool)
 
     def create_retracker_properties(self, n_records):
         # Will have to be overwritten
