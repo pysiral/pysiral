@@ -15,7 +15,7 @@ isodate
 matplotlib
 mypy
 netCDF4
-numpy
+numpy<1.24
 pillow
 parse
 pykdtree
