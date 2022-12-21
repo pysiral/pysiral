@@ -2,21 +2,21 @@
 
 # Metadata
 metadata: 
-  output_id: l2p_cci_vp3p0-rc1
+  output_id: l2p_cci_v3p0-rc2
   data_level: 2
   data_level_description: Level-2 Pre-processed (daily summary of geophysical parameters at footprint resolution)
 
 # Output Definition
 filenaming: 
-  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-v3p0-rc1.nc"
-  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-v3p0-rc1.nc"
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-v3p0-rc2.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-v3p0-rc2.nc"
 
 product_level_subfolder: l2p_plus
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (release candidate 1)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record} (release candidate 2)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-D (2010-11 till 2020-04-30) and baseline-E (from 2010-10-01);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR} v2.0, Sea ice type:  {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR;First-year sea ice only}, Region code: {source_hemisphere:select;Adapted from NSIDC region mask;Not implemented for southern hemisphere in v3.0-rc1}"
   - platform: "{source_mission_name}"
@@ -25,7 +25,7 @@ global_attributes:
   - references: "CCI+ Sea Ice ECV, D2.1 Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "3.0-rc1"
+  - product_version: "3.0-rc2"
   - format_version: "CCI Data Standards v2.1"  
   - processing_level: "Level-2 Pre-processed (l2p)"
   - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2019.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2019.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval. (plus version with extended set of variables)"
@@ -160,12 +160,21 @@ variables:
     coordinates: time
 
   region_code:
-    long_name: "Region code from {source_hemisphere:select;modified NSIDC region mask;Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
-    comment: "{source_hemisphere:select;Added flag for Baltic Sea (flag value 16);}"
+    long_name: "region code"
+    comment: "Region code from {source_hemisphere:selectA new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC);Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
     valid_min: 0
     valid_max: 21
-    flag_values: "{source_hemisphere:select;0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21;0, 1, 2, 3, 4, 5, 6, 20}"
-    flag_meaning: "{source_hemisphere:select;inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic baltic_sea land land_outline;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
+    flag_values: "{source_hemisphere:select0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
+    flag_meaning: "{source_hemisphere:select;Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
     units: "1"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
+    coordinates: time
+
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
+    units: "1"
+    valid_min: 0
+    valid_max: 3
+    flag_values: "0, 1, 2"
+    flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
+    coordinates: time

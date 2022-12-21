@@ -4,6 +4,7 @@
 
 """
 
+import re
 import sys
 import copy
 import numpy as np
@@ -31,6 +32,8 @@ from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_a
 from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
 from pysiral.output import L1bDataNC
+
+SHOW_DEBUG_MAP = False
 
 
 class Level1PInputHandlerBase(DefaultLoggingClass):
@@ -274,7 +277,8 @@ class L1PreProcBase(DefaultLoggingClass):
             if l1 is None:
                 logger.info("- No polar ocean data for curent job -> skip file")
                 continue
-            # l1p_debug_map([l1], title="Source File")
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map([l1], title="Source File")
 
             # Step 2: Apply processor items on source data
             # for the sake of computational efficiency.
@@ -285,8 +289,8 @@ class L1PreProcBase(DefaultLoggingClass):
             # It is the job of the L1PReProc children class to return only the relevant
             # segments over polar ocean as a list of l1 objects.
             l1_po_segments = self.extract_polar_ocean_segments(l1)
-            # l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
-
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
             self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction")
 
             # Step 5: Merge orbit segments
@@ -299,7 +303,8 @@ class L1PreProcBase(DefaultLoggingClass):
             # l1p_debug_map(l1_connected_stack, title="Polar Ocean Segments - Stack")
             if not l1_export_list:
                 continue
-            # l1p_debug_map(l1_export_list, title="Polar Ocean Segments - Export")
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_export_list, title="Polar Ocean Segments - Export")
 
             # Step 4: Processor items post
             # Computational expensive post-processing (e.g. computation of waveform shape parameters) can now be
@@ -309,6 +314,9 @@ class L1PreProcBase(DefaultLoggingClass):
             # Step 5: Export
             for l1_export in l1_export_list:
                 self.l1_export_to_netcdf(l1_export)
+
+            if SHOW_DEBUG_MAP:
+                l1p_debug_map(l1_connected_stack, title="Stack after Export")
 
         # Step : Export the last item in the stack (if it exists)
         # Stack is clean -> return
@@ -360,10 +368,30 @@ class L1PreProcBase(DefaultLoggingClass):
         logger.info(f"- Apply {stage_name} processing items")
         if stage_name not in self.processor_item_dict:
             return
+
         (
             [self._l1_apply_proc_item(l1_item, stage_name) for l1_item in l1] if isinstance(l1, list)
             else self._l1_apply_proc_item(l1, stage_name)
         )
+
+    def _l1_apply_proc_item_list(self,
+                                 l1_list: List["Level1bData"],
+                                 stage_name: str
+                                 ) -> None:
+        """
+        Apply processor item to full stack
+
+        :param l1_list:
+        :param stage_name:
+
+        :return:
+        """
+        timer = StopWatch().start()
+        for procitem, label in self.processor_item_dict.get(stage_name, []):
+            procitem.apply_list(l1_list)
+        timer.stop()
+        msg = f"- L1 processing items applied in {timer.get_seconds():.3f} seconds"
+        logger.debug(msg)
 
     def _l1_apply_proc_item(self,
                             l1_item: "Level1bData",
@@ -403,10 +431,6 @@ class L1PreProcBase(DefaultLoggingClass):
         # elements from the stack and the polar ocean segments
         all_l1_po_segments = [*l1_connected_stack, *l1_po_segments]
 
-        # logger.debug(f"l1_po_segments = {len(l1_po_segments)} elements")
-        # logger.debug(f"l1_connected_stack = {len(l1_connected_stack)} elements")
-        # logger.debug(f"all_l1_po_segments = {len(all_l1_po_segments)} elements")
-
         # There is a number of case to be caught her.
         # Case 1: The list of polar ocean segments might be empty
         if not l1_po_segments:
@@ -431,7 +455,7 @@ class L1PreProcBase(DefaultLoggingClass):
         for idx, is_connected in enumerate(are_connected):
             target_l1 = all_l1_po_segments[idx+1]
             if is_connected:
-                merged_l1_list[-1].append(target_l1)
+                merged_l1_list[-1].append(target_l1, remove_overlap=True)
             else:
                 merged_l1_list.append(copy.deepcopy(target_l1))
 
@@ -469,7 +493,6 @@ class L1PreProcBase(DefaultLoggingClass):
 
         :return:
         """
-
         minimum_n_records = self.cfg.get("export_minimum_n_records", 0)
         if l1.n_records >= minimum_n_records:
             self.output_handler.export_to_netcdf(l1)
@@ -537,6 +560,39 @@ class L1PreProcBase(DefaultLoggingClass):
         # (only if more than 1 segment)
         if len(l1_list) > 1:
             l1_list = sorted(l1_list, key=attrgetter("tcs"))
+
+        return l1_list
+
+    def trim_multiple_hemisphere_segment_to_polar_regions(self, l1: "Level1bData"
+                                                          ) -> Union[None, List["Level1bData"]]:
+        """
+        Extract polar regions segments from an orbit segment that may cross from north to south
+        to north again (or vice versa).
+
+        :param l1: Input Level-1 object
+
+        :return: List of Trimmed Input Level-1 objects
+        """
+
+        # Compute flag for segments in polar regions
+        # regardless of hemisphere
+        polar_threshold = self.cfg.polar_ocean.polar_latitude_threshold
+        is_polar = np.array(np.abs(l1.time_orbit.latitude) >= polar_threshold)
+
+        # Find start and end indices of continuous polar
+        # segments based on the change of the `is_polar` flag
+        change_to_polar = np.ediff1d(is_polar.astype(int))
+        change_to_polar = np.insert(change_to_polar, 0, 1 if is_polar[0] else 0)
+        change_to_polar[-1] = -1 if is_polar[-1] else change_to_polar[-1]
+        start_idx = np.where(change_to_polar > 0)[0]
+        end_idx = np.where(change_to_polar < 0)[0]
+
+        # Create a list of l1 subsets
+        l1_list = []
+        for i in np.arange(len(start_idx)):
+            polar_idxs = np.arange(start_idx[i], end_idx[i])
+            l1_segment = l1.extract_subset(polar_idxs)
+            l1_list.append(l1_segment)
 
         return l1_list
 
@@ -926,7 +982,7 @@ class L1PreProcFullOrbit(L1PreProcBase):
 
         # Step: Extract Polar ocean segments from full orbit respecting the selected target hemisphere
         logger.info("- extracting polar region subset(s)")
-        l1_list = self.trim_two_hemisphere_segment_to_polar_regions(l1)
+        l1_list = self.trim_multiple_hemisphere_segment_to_polar_regions(l1)
         logger.info(f"- extracted {len(l1_list)} polar region subset(s)")
 
         # Step: Split the l1 segments at time discontinuities.
@@ -1331,7 +1387,10 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
 
     plt.figure(dpi=150)
     fig_manager = plt.get_current_fig_manager()
-    fig_manager.window.showMaximized()
+    try:
+        fig_manager.window.showMaximized()
+    except AttributeError:
+        fig_manager.window.state('zoomed')
     ax = plt.axes(projection=proj)
     ax.set_global()
     ax.set_title(title)
@@ -1339,9 +1398,20 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
     ax.add_feature(cfeature.OCEAN, color="#D0CFD4", zorder=150)
     ax.add_feature(cfeature.LAND, color="#EAEAEA", zorder=200)
 
-    for l1p in l1p_list:
+    for i, l1p in enumerate(l1p_list):
         ax.scatter(l1p.time_orbit.longitude, l1p.time_orbit.latitude,
                    s=1, zorder=300, linewidths=0.0,
                    transform=proj
                    )
+        ax.scatter(l1p.time_orbit.longitude[0], l1p.time_orbit.latitude[0],
+                   s=10, zorder=300, linewidths=0.5, color="none", edgecolors="black",
+                   transform=proj
+                   )
+
+        ax.annotate(f"{i+1}",
+                    xy=(l1p.time_orbit.longitude[0], l1p.time_orbit.latitude[0]),
+                    xycoords=proj._as_mpl_transform(ax), zorder=300,
+                    xytext=(10, 10), textcoords="offset pixels",
+                    fontsize=6
+                    )
     plt.show()

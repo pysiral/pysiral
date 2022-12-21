@@ -215,8 +215,7 @@ class ParameterSmoother(Level2ProcessorStep):
         x = np.arange(y.shape[0])
 
         # Compute the data fraction to use at each y-value
-        # TODO: Value of 1501 is hard coded -> move to the settings
-        data_fraction = min(1501./float(y.shape[0]), 1.)
+        data_fraction = min(smoother_args.get("filter_size_n_points", 1501.) / float(y.shape[0]), 1.)
 
         # Compute the lowess filter with potential keywords from the config file
         filter_props = smoother_args.get("filter_props", {})
@@ -418,6 +417,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                 l2.get_parameter_by_name("sea_ice_freeboard"),
                 l2.get_parameter_by_name("sea_ice_concentration"),
                 l2.get_parameter_by_name("distance_to_ocean"),
+                l2.get_parameter_by_name("distance_to_low_ice_concentration"),
                 l2.footprint_spacing]
         filter_flag, _ = self.get_miz_filter_flag(*args)
         l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag, None)
@@ -430,6 +430,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                             sea_ice_freeboard: np.ndarray,
                             sea_ice_concentration: np.ndarray,
                             distance_to_ocean: np.ndarray,
+                            distance_to_low_ice_concentration: np.ndarray,
                             footprint_spacing: float,
                             ) -> Tuple[np.ndarray, Union[None, List["MarginalIceZoneFilterData"]]]:
         """
@@ -441,6 +442,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         :param sea_ice_freeboard:
         :param sea_ice_concentration:
         :param distance_to_ocean:
+        :param distance_to_low_ice_concentration:
         :param footprint_spacing:
 
         :return:
@@ -461,7 +463,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # but never cross into open water. Such a pass will not
         # be detected by the first filter step
         filter_flag_02 = self.get_miz_filter_flag_proximity_based(
-                distance_to_ocean,
+                distance_to_low_ice_concentration,
                 sea_ice_concentration,
                 leading_edge_width_rolling_mean,
                 pulse_peakiness_rolling_sdev
@@ -796,7 +798,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
     def get_miz_filter_flag_proximity_based(
             self,
-            distance_to_ocean: np.ndarray,
+            distance_to_low_ice_concentration: np.ndarray,
             sea_ice_concentration: np.ndarray,
             leading_edge_width_rolling_mean: np.ndarray,
             pulse_peakiness_rolling_sdev: np.ndarray
@@ -804,7 +806,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         """
         Compute the MIZ Flag based on a set of thresholds only. Conditions
 
-        :param distance_to_ocean:
+        :param distance_to_low_ice_concentration:
         :param sea_ice_concentration:
         :param leading_edge_width_rolling_mean:
         :param pulse_peakiness_rolling_sdev:
@@ -821,7 +823,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
 
         close_proximity_idx = np.where(
             np.logical_and(
-                distance_to_ocean <= opt["ocean_distance_max"],
+                distance_to_low_ice_concentration <= opt["low_ice_concentration_distance_max"],
                 np.isfinite(sea_ice_concentration)
             )
         )

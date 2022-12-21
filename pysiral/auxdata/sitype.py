@@ -35,10 +35,8 @@ Important Note:
 
 """
 
-from pysiral import psrlcfg
-from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
-from pysiral.sla import SLABaseFunctionality
+
+import contextlib
 
 import scipy.ndimage as ndimage
 from scipy import interpolate
@@ -46,6 +44,10 @@ from pyproj import Proj
 from typing import List
 import numpy as np
 from pathlib import Path
+
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.iotools import ReadNC
+from pysiral.sla import SLABaseFunctionality
 
 
 class OsiSafSIType(AuxdataBaseClass):
@@ -102,7 +104,7 @@ class OsiSafSIType(AuxdataBaseClass):
 
         # Validation
         if not path.is_file():
-            msg = "OsiSafSIType: File not found: %s " % path
+            msg = f"OsiSafSIType: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
@@ -111,7 +113,7 @@ class OsiSafSIType(AuxdataBaseClass):
         self._data = ReadNC(path)
 
         # Report
-        self.add_handler_message("OsiSafSIType: Loaded SIType file: %s" % path)
+        self.add_handler_message(f"OsiSafSIType: Loaded SIType file: {path}")
 
     def _get_sitype_track(self, l2):
 
@@ -248,7 +250,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
 
         # Validation
         if not path.is_file():
-            msg = "%s: File not found: %s " % (self.__class__.__name__, path)
+            msg = f"{self.__class__.__name__}: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
@@ -436,7 +438,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
         # Check if the file exists, add an error if not
         # (error is not raised at this point)
         if not path.is_file():
-            msg = "ICDCNasaTeam: File not found: %s " % path
+            msg = f"ICDCNasaTeam: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sitype", msg)
             return
@@ -458,7 +460,7 @@ class ICDCNasaTeam(AuxdataBaseClass):
         self._data.ice_type_uncertainty = myi_fraction_unc[0, :, :]
 
         # Report and save current data period
-        self.add_handler_message("ICDCNasaTeam: Loaded SIType file: %s" % path)
+        self.add_handler_message(f"ICDCNasaTeam: Loaded SIType file: {path}")
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -541,11 +543,9 @@ class FYIDefault(AuxdataBaseClass):
 
     @property
     def uncertainty_default(self):
-        try:
+        with contextlib.suppress(TypeError):
             if "uncertainty_default" in self.cfg.options:
                 return self.cfg.options.uncertainty_default
-        except TypeError:
-            pass
         return 0.0
 
 

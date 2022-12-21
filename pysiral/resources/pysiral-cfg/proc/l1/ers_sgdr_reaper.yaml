@@ -43,6 +43,7 @@ input_adapter:
             E1: ers1
             E2: ers2
 
+
         # The timeliness is fixed (always reprocessed)
         timeliness: rep
         
@@ -90,7 +91,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p2
+            version_file_tag: v1p3
 
 
 # Settings for the pre-processor
@@ -104,7 +105,7 @@ level1_preprocessor:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
             input_file_is_single_hemisphere: False
-            allow_nonocean_segment_nrecords: 250
+            allow_nonocean_segment_nrecords: 540  # 30 Seconds at 18 Hz
             ocean_mininum_size_nrecords: 5
 
         # Check for gaps in the input files and split at a certain gap size (in seconds)
@@ -113,7 +114,12 @@ level1_preprocessor:
 
         # The maximum separation in seconds for two orbits so that they count as connected
         orbit_segment_connectivity:
-            max_connected_segment_timedelta_seconds: 10
+            max_connected_segment_timedelta_seconds: 30
+
+        # Some data sets may have overlaps (ERS-1/2 SGDR). If this optional
+        # settings is set to True, overlapping data will be removed
+        # from the second file.
+        identify_and_remove_overlaps: True
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:

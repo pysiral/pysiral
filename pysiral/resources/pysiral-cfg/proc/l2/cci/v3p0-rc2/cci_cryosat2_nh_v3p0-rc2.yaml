@@ -1,45 +1,51 @@
-# Based on sicci2sit_protoC01_cryosat2_north.yaml and added with uncertainty tags and updated ssa smoothing
 metadata:
-    label: "ESA CCI+ CryoSat-2 reprocessed northern hemisphere sea-ice thickness climate data record - Fall 2021 preview 3 - developer version"
+    label: "ESA CCI+ CryoSat-2 northern hemisphere sea-ice thickness climate data record v3.0 - release candidate 2"
     product_line: cci
-    record_type: cdr
+    record_type: tds
     platform: cryosat2
-    version: v3p0-preview3b
-    file_version_tag: v3p0-preview3b
+    version: v3p0-rc2
+    file_version_tag: v3p0-rc2
     hemisphere: north
 
 
-# A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
-# NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
+# --- Ingest auxiliary data ---
+# 
+# A list auxilliary datasets to be ingested before the execution of the processing steps. 
+# 
+# Usage:
+#
+#  - <auxdata_category>:       <- links to corresponding category in auxdata_def.yaml
+#       name: <auxdata_name>   <- links auxdata_category.auxdata_name auxdata_def.yaml
+#       options: {dict}        <- Options that may overwrite the ones already provided in auxdata_def.yaml
+# 
+# Notes: 
+#
+#   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
+#
 auxdata:
 
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_mod
+        name: nsidc_2021
         options: null
 
-    # MSS: Mean Sea Surface
     - mss:
         name: dtu21
         options:
             latitude_range: [45.0, 90.0]
 
-    # MSS: Mean Dynamic Topography
-    - mdt:
-        name: dtu17
-        options:
-            latitude_range: [45.0, 90.0]
-
     - sic:
-         name: c3s_v2p0
-         options:
+        name: c3s
+        options:
+            version: v3p0
             exception_on_error: False
 
     - sitype:
-         name: c3s_v1p0
+         name: c3s
          options:
+            version: v3p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 
@@ -84,7 +90,7 @@ procsteps:
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
-                inverse_barometric: [rcib, inverse_barometric]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
                 ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
@@ -100,30 +106,18 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    # --- Surface type classification algorithm ---
-    #
-    # Surface type classification algorithm can be fully constructed from the
-    # config file. Only the land flag will always overwrite all classification after
-    # the surface type classification.
-    #
-    # The conventions for the options are: 
-    #
-    # <surface_type_code>:  -> [ocean, lead, sea_ice]
-    #   - radar_mode: <radar_mode>
-    #     exclude: <surface type> 
-    #     conditions:
-    #         - logical expression of the type 
-    #              "{<parameter_name>} <operator> <value>"
-    #           including the parameter name in {}, e.g.
-    #              "{sea_ice_concentration} < 15.0"
-    #           Fixed values as in example above are possible, but also monthly values, e.g.:
-    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
-    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
-    #           "{sigma0} >= 12.0" for December.
-    #           
-    #         - ...
-    #   - ...
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
 
+    # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
         options:
@@ -144,12 +138,12 @@ procsteps:
                 - radar_mode: sar
                   conditions: 
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness} < 5.0" 
+                      - "{pulse_peakiness_rolling_sdev} < 1.0" 
 
                 - radar_mode: sin
                   conditions: 
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness} < 5.0"
+                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
@@ -234,7 +228,7 @@ procsteps:
             corrections: 
                 - dry_troposphere
                 - wet_troposphere
-                - inverse_barometric
+                - dynamic_atmosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
@@ -242,15 +236,14 @@ procsteps:
                 - solid_earth_tide
                 - geocentric_polar_tide
 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    # Algorithm for instantaneous sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            pre_filter_maximum_mss_median_offset: 5.0 # in meter
+            filter_max_mss_offset_m: 5.0 # in meter
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
@@ -258,20 +251,7 @@ procsteps:
                 minimum_lead_number: 1
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
-                edges_only: false
-
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
-    -   module: sla
-        pyclass: SLARaw
-        options:
-            # True here so we can gauge the ocean retracking/SSB problem.
-            use_ocean_wfm: False
-            filter_max_mss_offset_m: 3.0 # in meter
-
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
+                edges_only: False
 
     # Estimation of Radar Freeboard
     -   module: frb
@@ -315,7 +295,7 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 
@@ -323,3 +303,19 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
+
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            ice_edge_proximity:
+                sea_ice_concentration_max: 90.
+                low_ice_concentration_distance_max: 200000.
+                leading_edge_width_rolling_mean_min: 2.0
+                pulse_peakiness_rolling_sdev_max: 15.0
+            ice_edge_transition:
+                sea_ice_filter_size_m: 300000.
+                ocean_filter_size_m: 25000.
+                freeboard_smoother_filter_size_m: 150000.
+                sea_ice_freeboard_miz_gradient: 0.002
+                leading_edge_width_ocean_value: 2.5

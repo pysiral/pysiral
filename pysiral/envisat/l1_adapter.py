@@ -9,7 +9,7 @@ import re
 import numpy as np
 from attrdict import AttrDict
 from loguru import logger
-from typing import Union, Dict
+from typing import Union, Dict, Any
 from scipy import interpolate
 from cftime import num2pydate
 from pathlib import Path
@@ -17,11 +17,9 @@ from pathlib import Path
 from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
 from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.envisat.functions import (get_envisat_window_delay, get_envisat_wfm_range)
-from pysiral.errorhandler import ErrorStatus
+from pysiral.envisat.functions import get_envisat_wfm_range
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
-from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 
 
@@ -51,11 +49,17 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
         self.l1 = None
 
     def get_l1(self,
-               filepath: Union[str, Path]
+               filepath: Union[str, Path],
+               polar_ocean_check: Any = None,
+               raise_on_error: bool = False
                ) -> "Level1bData":
         """
         Read the Envisat SGDR file and transfers its content to a Level1Data instance
+
+        :param raise_on_error:
+        :param polar_ocean_check:
         :param filepath: The full file path to the netCDF file
+
         :return: The parsed (or empty) Level-1 data container
         """
 
@@ -114,7 +118,9 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
         """
 
         # Transfer the orbit position
-        self.l1.time_orbit.set_position(self.sgdr.lon_20, self.sgdr.lat_20, self.sgdr.alt_20)
+        # and ensure longitude is -180:180 degrees east
+        longitude_degrees_east = (self.sgdr.lon_20 + 180) % 360 - 180
+        self.l1.time_orbit.set_position(longitude_degrees_east, self.sgdr.lat_20, self.sgdr.alt_20)
 
         # Transfer the timestamp
         sgdr_timestamp = self.sgdr.time_20
@@ -144,7 +150,7 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
 
         # In Envisat data v3.0 the tracker range is already corrected for all internal effects,
         # but the nominal tracking bin is variable.
-        nominal_tracking_bin = 63 + self.sgdr.offset_tracking_20.values/256
+        nominal_tracking_bin = (63 + self.sgdr.offset_tracking_20/256).astype(int)
         window_delay_m = self.sgdr.tracker_range_20_ku - nominal_tracking_bin * self.cfg.bin_width_meter
 
         # Compute the range value for each range bin of the 18hz waveform
@@ -165,9 +171,9 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
     def _transfer_range_corrections(self):
         """
         Transfer range correction data from the SGDR netCDF to the
-        l1bdata object. The parameter are defined in
+        l1bdata object. The parameters are defined in
         config/mission_def.yaml for ers1/ers2
-        -> ersX.settings.sgdr_range_correction_targets
+        -> settings.sgdr_range_correction_targets
 
         For a description of the parameter see section 3.10 in the
         REAPER handbook
@@ -190,16 +196,17 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
             # Debug code
             # -> in this case discard the variable
             n_nans = len(np.where(np.isnan(correction))[0])
+            # TODO: 500 is hardcoded
             if 500 < n_nans < len(correction):
                 msg = "Significant number of NaNs (%g) in range correction variable: %s"
-                msg = msg % (n_nans, target_parameter)
+                msg %= (n_nans, target_parameter)
                 logger.warning(msg)
             elif n_nans == len(correction):
                 msg = "All-NaN array encountered in range correction variable: %s"
-                msg = msg % target_parameter
+                msg %= target_parameter
                 logger.warning(msg)
 
-            # Some of the Envisat range corrections are 1Hz others 20Hz
+            # Some Envisat range corrections are 1Hz others 20Hz
             # -> Those with "_01" in the variable name need to be
             # extrapolated to 20 Hz
             error = False
@@ -207,7 +214,7 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
                 correction, error = self.interp_1Hz_to_20Hz(correction, time_1Hz, time_20Hz,
                                                             fill_on_error_value=0.0)
             if error:
-                msg = "Failing to create 20Hz range correction variable for %s" % target_parameter
+                msg = f"Failing to create 20Hz range correction variable for {target_parameter}"
                 logger.warning(msg)
 
             # Interpolate NaN's or return a zero-filled array for all-nan input variables
@@ -219,6 +226,16 @@ class EnvisatSGDRNC(Level1PInputHandlerBase):
             if n_nans > 0:
                 msg = "Remaining NaN's after filtering in %s" % target_parameter
                 logger.warning(msg)
+
+            # The range correction for the DAC follows a different convention. It is supposed to be
+            # "provided as a correction to the inverted barometer correction (inv_bar_cor_01)", but in reality
+            # includes the change if sea level from atmospheric pressure changes. Therefore, IB and DAC are
+            # of the same magnitude in the SGDR v3.0, but inverted. To apply DAC instead of IB, the DAC must be
+            # inverted.
+
+            # Apply inversion to both `hf_fluct_cor_01` and `hf_fluct_cor_reanalysis_01`
+            if re.search("hf_fluct", target_parameter):
+                correction_filtered *= -1.0
 
             # Set the parameter
             self.l1.correction.set_parameter(name, correction_filtered)

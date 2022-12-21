@@ -250,7 +250,7 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             start = spacing + 1
             h_a = x[start:start + bins]  # after
             
-            peak_candidate = np.logical_and(h_c > h_b, h_c > h_a)
+            peak_candidate = np.logical_and(h_c > h_b, h_c >= h_a)
             peak_candidate = np.logical_and(peak_candidate, np.arange(bins) > 10)
             peak_candidate = np.logical_and(peak_candidate, wfm > 0.5)
 

@@ -1,10 +1,10 @@
 metadata:
-    label: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.5 reprocessed)"
-    product_line: awi
-    record_type: rep
+    label: "C3S CryoSat-2 northern hemisphere sea-ice thickness climate data record v3.0"
+    product_line: c3s
+    record_type: cdr
     platform: cryosat2
-    version: v2p5
-    file_version_tag: "v2p5"
+    version: v3p0
+    file_version_tag: v3p0
     hemisphere: north
 
 
@@ -21,7 +21,7 @@ metadata:
 # Notes: 
 #
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
-#   
+#
 auxdata:
 
     # Add region codes
@@ -31,37 +31,29 @@ auxdata:
         name: nsidc_2021
         options: null
 
-    # Load the
     - mss:
         name: dtu21
-        options:
-            latitude_range: [45.0, 90.0]
-
-    # Load the
-    - mdt:
-        name: dtu17
         options:
             latitude_range: [45.0, 90.0]
 
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: False
 
     - sitype:
-        name: c3s
-        options:
-            version: v2p0
+         name: c3s
+         options:
+            version: v3p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
+            name: clim_w99amsr2
+            options:
+                daily_scaling: True
+                fyi_correction_factor: 0.5
 
     # Note: The snow density in this class will overwrite the snow density
     #       from the W99/AMSR2 climatology (this is intended)
@@ -114,31 +106,6 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-
-    # --- Surface type classification algorithm ---
-    #
-    # Surface type classification algorithm can be fully constructed from the
-    # config file. Only the land flag will always overwrite all classification after
-    # the surface type classification.
-    #
-    # The conventions for the options are: 
-    #
-    # <surface_type_code>:  -> [ocean, lead, sea_ice]
-    #   - radar_mode: <radar_mode>
-    #     exclude: <surface type> 
-    #     conditions:
-    #         - logical expression of the type 
-    #              "{<parameter_name>} <operator> <value>"
-    #           including the parameter name in {}, e.g.
-    #              "{sea_ice_concentration} < 15.0"
-    #           Fixed values as in example above are possible, but also monthly values, e.g.:
-    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
-    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
-    #           "{sigma0} >= 12.0" for December.
-    #           
-    #         - ...
-    #   - ...
-
     # Compute rolling classifier statistics
     -   module: l2proc.procsteps
         pyclass: ParameterRollingStatistics
@@ -158,7 +125,7 @@ procsteps:
 
             # This option defines the surface type order. It is important that
             # leads are classified before sea ice to fullfill the condition
-            # that sea-ice waveforms are not lead waveforms.
+            # that sea-ice waveforms are not lead waveforms. 
             surface_types: [ocean, lead, sea_ice]
 
             # Ocean classification is based on a low pulse peakiness
@@ -166,16 +133,16 @@ procsteps:
             ocean:
 
                 - radar_mode: lrm
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
 
                 - radar_mode: sar
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 1.0"
+                      - "{pulse_peakiness_rolling_sdev} < 1.0" 
 
                 - radar_mode: sin
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
                       - "{pulse_peakiness_rolling_sdev} < 4.0"
 
@@ -185,7 +152,7 @@ procsteps:
             lead:
 
                 - radar_mode: sar
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} >= 15.0"
                       - "{pulse_peakiness} >= 66.0"
                       - "{sigma0} >= 23.0"
@@ -197,11 +164,11 @@ procsteps:
                       - "{pulse_peakiness} >= 260.0"
                       - "{sigma0} >= 24.0"
                       - "{leading_edge_width} <= 1.05"
-
+                    
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
-            # valid leading edge.
+            # valid leading edge. 
             sea_ice:
 
                 - radar_mode: sar
@@ -288,11 +255,6 @@ procsteps:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
 
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
-
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
@@ -344,13 +306,13 @@ procsteps:
         pyclass: L2SeaIceDraft
         options: {}
 
-        # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:
             ice_edge_proximity:
-                sea_ice_concentration_max: 75.
-                ocean_distance_max: 300000.
+                sea_ice_concentration_max: 90.
+                low_ice_concentration_distance_max: 200000.
                 leading_edge_width_rolling_mean_min: 2.0
                 pulse_peakiness_rolling_sdev_max: 15.0
             ice_edge_transition:

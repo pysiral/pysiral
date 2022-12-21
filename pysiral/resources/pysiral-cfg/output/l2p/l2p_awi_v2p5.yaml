@@ -29,7 +29,7 @@ global_attributes:
   # - conventions: "CF-1.6"
   - product_version: "2.5"
   - processing_level: "Level-2 Pre-processed (l2p)"
-  - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
+  - summary: "This dataset contains daily summaries of Level-2 sea ice parameters from CryoSat-2 for the location of valid sea ice freeboard retrievals"
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
   - id: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p5"
@@ -84,15 +84,26 @@ variables:
     coordinates: time
     coverage_content_type: coordinate
 
-  radar_mode:
+  flag_radar_mode:
     long_name: "radar mode flag"
     valid_min: 0
     valid_max: 2
-    flag_values: "0, 1, 2"
+    flag_values: "0 1 2"
     flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
-    units: 1
+    units: "1"
     coordinates: time
     coverage_content_type: referenceInformation
+
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    comment: "Flag indicating potential freeboard bias by wave penetration into the marginal ice zone"
+    units: "1"
+    valid_min: 0
+    valid_max: 3
+    flag_values: "0 1 2"
+    flag_meanings: "not_in_miz miz_no_bias_detected miz_bias_detected"
+    coordinates: time
+    coverage_content_type: qualityInformation
 
   region_code:
     long_name: "region code"
@@ -102,7 +113,7 @@ variables:
     valid_max: 18
     flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska"
     flag_values: "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"
-    units: 1
+    units: "1"
     coordinates: "time"
     coverage_content_type: referenceInformation
 
@@ -111,6 +122,7 @@ variables:
     units: m
     coordinates: time
     comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+    ancillary_variables: "radar_freeboard_uncertainty flag_miz flag_radar_mode region_code"
     coverage_content_type: physicalMeasurement
 
   radar_freeboard_uncertainty:
@@ -124,6 +136,7 @@ variables:
     standard_name: sea_ice_freeboard
     units: m
     coordinates: time
+    ancillary_variables: "sea_ice_freeboard_uncertainty flag_miz flag_radar_mode region_code"
     coverage_content_type: physicalMeasurement
 
   sea_ice_freeboard_uncertainty:
@@ -136,37 +149,41 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year sea ice"
     standard_name: sea_ice_classification
-    units: 1
+    units: "1"
     valid_min: 0.0
     valid_max: 1.0
     coordinates: time
+    ancillary_variables: "sea_ice_type_uncertainty"
     coverage_content_type: auxiliaryInformation
 
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standard_error
-    units: 1
+    units: "1"
     coordinates: time
     coverage_content_type: qualityInformation
 
   snow_depth:
     long_name: "thickness of the snow layer"
-    standard_name: snow_depth
+    standard_name: "surface_snow_thickness_where_sea_ice"
     units: m
     coordinates: time
+    ancillary_variables: "snow_depth_uncertainty"
     coverage_content_type: auxiliaryInformation
 
   snow_depth_uncertainty:
     long_name: "uncertainty of the snow layer thickness"
-    standard_name: snow_depth standard_error
+    standard_name: surface_snow_thickness_where_sea_ice standard_error
     units: m
     coordinates: time
     coverage_content_type: qualityInformation
 
   snow_density:
     long_name: "density of the snow layer"
+    standard_name: "surface_snow_density"
     units: kg m-3
     coordinates: time
+    ancillary_variables: "snow_density_uncertainty"
     coverage_content_type: auxiliaryInformation
 
   snow_density_uncertainty:
@@ -180,6 +197,7 @@ variables:
     standard_name: sea_ice_density
     units: kg m-3
     coordinates: time
+    ancillary_variables: "sea_ice_density_uncertainty"
     coverage_content_type: auxiliaryInformation
 
   sea_ice_density_uncertainty:
@@ -194,6 +212,7 @@ variables:
     standard_name: sea_ice_thickness
     units: m
     coordinates: time
+    ancillary_variables: "sea_ice_thickness_uncertainty flag_miz flag_radar_mode region_code"
     coverage_content_type: physicalMeasurement
 
   sea_ice_thickness_uncertainty:
