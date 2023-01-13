@@ -108,7 +108,7 @@ class OsiSafSIC(AuxdataBaseClass):
         if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
             ocean_proximity = self.get_empty_array(l2)
-            distance_to_low_ice_concentration = self.get_empty_array()
+            distance_to_low_ice_concentration = self.get_empty_array(l2)
 
         else:
             # Get and return the track
