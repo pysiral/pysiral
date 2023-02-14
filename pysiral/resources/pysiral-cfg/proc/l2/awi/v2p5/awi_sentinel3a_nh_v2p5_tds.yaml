@@ -37,22 +37,16 @@ auxdata:
         options:
             latitude_range: [45.0, 90.0]
 
-    # Load the
-    - mdt:
-        name: dtu17
-        options:
-            latitude_range: [45.0, 90.0]
-
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: True
 
     - sitype:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             fill_valid_sic_gaps: True
             exception_on_error: True
 
@@ -259,11 +253,6 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
-
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
 
     # Estimation of Radar Freeboard
     -   module: frb
