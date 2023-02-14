@@ -1,6 +1,6 @@
 
 import xmltodict
-
+import contextlib
 import xarray
 import numpy as np
 from loguru import logger
@@ -64,7 +64,8 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
             return self.empty
 
         # Parse xml header file
-        self._parse_xml_manifest(filepath)
+        with contextlib.suppress(FileNotFoundError):
+            self._parse_xml_manifest(filepath)
 
         # Parse the input netCDF file
         self._read_input_netcdf(filepath)
@@ -399,7 +400,8 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
             return self.empty
 
         # Parse xml header file
-        self._parse_xml_manifest(filepath)
+        with contextlib.suppress(FileNotFoundError):
+            self._parse_xml_manifest(filepath)
 
         # Parse the input netCDF file
         self._read_input_netcdf(filepath)
