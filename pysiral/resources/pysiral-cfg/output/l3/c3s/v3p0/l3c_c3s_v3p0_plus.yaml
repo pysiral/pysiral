@@ -380,16 +380,16 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
 
-    stat_lead_fraction:
-      var_source_name: lead_fraction
-      long_name: "lead waveform detections"
-      valid_min: 0
-      valid_max: 1
-      comment: "Computed as fraction per valid waveforms in grid cell"
-      units: "1"
-      grid_mapping: "Lambert_Azimuthal_Grid"
-      coordinates: "time lat lon"
-      coverage_content_type: qualityInformation
+  stat_lead_fraction:
+    var_source_name: lead_fraction
+    long_name: "lead waveform detections"
+    valid_min: 0
+    valid_max: 1
+    comment: "Computed as fraction per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
 
   stat_seaice_fraction:
     var_source_name: seaice_fraction
