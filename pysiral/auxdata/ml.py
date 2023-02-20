@@ -219,7 +219,8 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             msg = f"PyTorch model class not found: pysiral.auxdata.ml.{torch_model_class}"
             self.error.add_error("class-not-found", msg)
             self.error.raise_on_error()
-        self.model = model_class(input_neurons)
+#        self.model = model_class(input_neurons)
+        self.model = model_class()
         self.model.load_state_dict(torch.load(self.model_filepath,
                                               map_location=torch.device('cpu')))
         self.model.eval()
@@ -250,7 +251,7 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             start = spacing + 1
             h_a = x[start:start + bins]  # after
             
-            peak_candidate = np.logical_and(h_c > h_b, h_c >= h_a)
+            peak_candidate = np.logical_and(h_c > h_b, h_c > h_a)
             peak_candidate = np.logical_and(peak_candidate, np.arange(bins) > 10)
             peak_candidate = np.logical_and(peak_candidate, wfm > 0.5)
 
@@ -265,7 +266,13 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         #get normalized waveform power
         waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
         normed_waveform_power = l1p.waveform.power[:]/waveform_norms[:, np.newaxis]
-                
+        
+        #get all necessary waveform classifiers to be handed to the model
+        eps = l1p.classifier.epsilon_sec
+        eps = eps * 0.5 * 299792458.
+        sig = l1p.classifier.sigma0
+        lep = l1p.classifier.leading_edge_peakiness
+        
         #get waveform/sensor meta
         n_bins = normed_waveform_power.shape[1]
         n_wf = normed_waveform_power.shape[0]
@@ -273,24 +280,59 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             i0 = 10
             i1 = 35
         else:
-            i0 = 10
-            i1 = 25
+            i0 = 5
+            i1 = 30
         
         #subset waveform
         sub_waveform_power = np.zeros((n_wf,i0+i1))
-        c = 0
-        for x in normed_waveform_power:
+        fmi = np.zeros(n_wf)
+#        c = 0
+#        for x in normed_waveform_power:
+#            try:
+#                wf_fmi = id_fmi(x, bins=n_bins)
+#            except IndexError:
+#                c += 1
+#                continue
+#            if wf_fmi >= 10:
+#                sub_waveform_power[c] = get_sub_wf(x,wf_fmi,i0,i1)
+#                fmi[c] = wf_fmi
+#            c += 1
+        for i,x in enumerate(normed_waveform_power):
             try:
                 wf_fmi = id_fmi(x, bins=n_bins)
             except IndexError:
-                c += 1
                 continue
             if wf_fmi >= 10:
-                sub_waveform_power[c] = get_sub_wf(x,wf_fmi,i0,i1)
-            c += 1
-        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
-#        self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+                sub_waveform_power[i] = get_sub_wf(x,wf_fmi,i0,i1)
+                fmi[i] = wf_fmi
 
+
+        #convert to tensor
+        sub_waveform_power = torch.tensor(sub_waveform_power.astype('float32'))
+        
+        #clean-up for prediction and add waveform classifiers if desired
+        if 'classifiers' in self.cfg.options.keys():
+            #get normalization parameters from settings file
+            p_fmi = self.cfg.options.classifiers.get("first_maximum_index", [0, 1])
+            p_eps = self.cfg.options.classifiers.get("epsilon", [0, 1])
+            p_pwr = self.cfg.options.classifiers.get("waveform_max_power", [0, 1])
+            p_sig = self.cfg.options.classifiers.get("sigma0", [0, 1])
+            p_lep = self.cfg.options.classifiers.get("leading_edge_peakiness", [0, 1])
+
+            #create stacks [in correct order: pwr,fmi,eps]
+            par = np.stack((waveform_norms/1000.,fmi,sig,lep,eps),axis=1)
+            p_norm = np.stack((p_pwr,p_fmi,p_sig,p_lep,p_eps),axis=1)
+
+            #normalize classifiers
+            par = (par - p_norm[0]) / (p_norm[1] - p_norm[0])
+ 
+            #combine classifiers with waveform power
+            sub_waveform_power = torch.cat((sub_waveform_power,
+                                            torch.tensor(par).float()),1)
+                                                      
+        #store for prediction
+        self.waveform_for_prediction = sub_waveform_power#.unsqueeze(1)
+        
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
         """
@@ -308,6 +350,9 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         with torch.no_grad():
             opt = self.model(self.waveform_for_prediction)
         tfmra_threshold_predicted = opt.numpy().flatten()
+        accumulated_power = np.sum(self.waveform_for_prediction.numpy(),axis=1)#axis=2)
+        invalid_waveforms = np.where(accumulated_power==0)[0]
+        tfmra_threshold_predicted[invalid_waveforms] = None
 
         # Limit threshold range to pre-defined range (or at least [0-1])
         valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
@@ -317,6 +362,35 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
         # Add prediction to the Level-2 data object
         var_id, var_name = self.cfg.options.get("output_parameter", ["tfmrathrs_ml", "tfmra_threshold_ml"])
         l2.set_auxiliary_parameter(var_id, var_name, tfmra_threshold_predicted)
+
+
+class TorchERS2WaveformModel(nn.Module):
+    """
+    Create Self-Normalizing Neural Network architecture
+    REQ: Required for RetrackerThresholdModelTorch
+    """
+    def __init__(self):
+        super(TorchERS2WaveformModel, self).__init__()
+        self.fc1 = nn.Linear(40, 2048)
+        self.fc2 = nn.Linear(2048, 2048)
+        self.fc3 = nn.Linear(2048, 2048)
+        self.fc4 = nn.Linear(2048, 2048)
+        self.fc5 = nn.Linear(2048, 2048)
+        self.fc6 = nn.Linear(2048, 1)
+    def forward(self, x):
+        x = self.fc1(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc2(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc3(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc4(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc5(x)
+        x = torch_nn_functional.relu(x)
+        x = self.fc6(x)
+        x = torch.sigmoid(x)
+        return x
 
 
 # class TorchFunctionalWaveformModel(nn.Module):
@@ -359,16 +433,23 @@ class TorchFunctionalWaveformModelFNN(nn.Module):
     """
     def __init__(self, fc1_input=45):
         super(TorchFunctionalWaveformModelFNN, self).__init__()
-        self.fc1 = nn.Linear(fc1_input, 2048)
-        #self.bn1 = nn.BatchNorm1d(256)
-        self.fc2 = nn.Linear(2048, 2048)
-        #self.bn2 = nn.BatchNorm1d(512)
-        self.fc3 = nn.Linear(2048, 2048)
-        #self.bn3 = nn.BatchNorm1d(256)
-        self.fc4 = nn.Linear(2048, 2048)
-        #self.bn4 = nn.BatchNorm1d(128)
-        self.fc5 = nn.Linear(2048, 2048)
-        self.fc6 = nn.Linear(2048, 1)
+#        self.fc1 = nn.Linear(fc1_input, 2048)
+#        #self.bn1 = nn.BatchNorm1d(256)
+#        self.fc2 = nn.Linear(2048, 2048)
+#        #self.bn2 = nn.BatchNorm1d(512)
+#        self.fc3 = nn.Linear(2048, 2048)
+#        #self.bn3 = nn.BatchNorm1d(256)
+#        self.fc4 = nn.Linear(2048, 2048)
+#        #self.bn4 = nn.BatchNorm1d(128)
+#        self.fc5 = nn.Linear(2048, 2048)
+#        self.fc6 = nn.Linear(2048, 1)i
+
+        self.fc1 = nn.Linear(fc1_input, 512)
+        self.fc2 = nn.Linear(512, 512)
+        self.fc3 = nn.Linear(512, 512)
+        self.fc4 = nn.Linear(512, 512)
+        self.fc5 = nn.Linear(512, 512)
+        self.fc6 = nn.Linear(512, 1)
 
     def forward(self, x):
         x = self.fc1(x)
