@@ -230,7 +230,7 @@ class SLABaseFunctionality(object):
 
         return ssh_tiepoint_indices[tie_points_inside_elevation_bounds]
 
-    def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):
+    def marine_segment_filter(self, l2, minimum_lead_number, footprint_size, use_ocean_wfm):
         """
         Check all sections divided by land masses for reliable information content.
         Specifically, each marine segment between two land masses must have a minimum
