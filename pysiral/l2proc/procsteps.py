@@ -87,7 +87,9 @@ class Level2ProcessorStep(DefaultLoggingClass):
         l2.flag = l2.flag + flag
 
     def execute_procstep(self, l1b, l2):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @staticmethod
     def get_clean_error_status(shape):
@@ -104,15 +106,21 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
     @property
     def error_bit(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @property
     def l2_input_vars(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @property
     def l2_output_vars(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
 
 class Level2ProcessorStepOrder(DefaultLoggingClass):
@@ -148,17 +156,19 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
 
             # Get the module & pyclass
             module = procstep_def["module"]
-            full_module_name = "pysiral.{}".format(module)
+            full_module_name = f"pysiral.{module}"
             obj = get_cls(full_module_name, procstep_def["pyclass"])
 
             # This object should not be None
             if obj is None:
-                msg = "Invalid L2 processing step class: {}.{}".format(full_module_name, procstep_def["pyclass"])
+                msg = f'Invalid L2 processing step class: {full_module_name}.{procstep_def["pyclass"]}'
                 self.error.add_error("missing-class", msg)
                 self.error.raise_on_error()
 
             # Append the class
-            logger.info("Added L2 processor step: {}.{}".format(full_module_name, procstep_def["pyclass"]))
+            logger.info(
+                f'Added L2 processor step: {full_module_name}.{procstep_def["pyclass"]}'
+            )
             self._classes.append(obj)
 
     def get_algorithm_error_flag_bit(self, procstep_module):
@@ -263,8 +273,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         output_vars = []
         for data_group, varlist in list(self.cfg.options.items()):
             l1p_variables = varlist.items()
-            for var_name, vardef in list(l1p_variables):
-                output_vars.append(vardef[0])
+            output_vars.extend(vardef[0] for var_name, vardef in list(l1p_variables))
         return output_vars
 
     @property
@@ -312,7 +321,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             # -> skip with warning if not
             if range_delta is None:
                 error_status[:] = True
-                logger.warning("Cannot find range correction: {} - skipping".format(correction_name))
+                logger.warning(f"Cannot find range correction: {correction_name} - skipping")
                 continue
 
             # Check if NaN's, set values to zero and provide warning
@@ -320,11 +329,13 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             if len(nans_indices) > 0:
                 if not preserve_nan:
                     logger.warning(
-                        "NaNs encountered and replaced with zero in range correction parameter: %s" % correction_name)
+                        f"NaNs encountered and replaced with zero in range correction parameter: {correction_name}"
+                    )
                     range_delta[nans_indices] = 0.0
                 else:
                     logger.warning(
-                        "NaNs encountered and preserved in range correction parameter: %s" % correction_name)
+                        f"NaNs encountered and preserved in range correction parameter: {correction_name}"
+                    )
 
                 error_status[nans_indices] = True
 
