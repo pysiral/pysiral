@@ -872,9 +872,13 @@ class cTFMRA(BaseRetracker):
 
             # Find first maxima
             # (needs to be above radar mode dependent noise threshold)
-            fmnt = first_maximum_normalized_threshold[radar_mode[i]]
-            peak_minimum_power = fmnt + noise_level_normed
-            fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx_filt)
+            first_maximum_equal_total_maximum = self._options.get("first_maximum_equal_total_maximum", False)
+            if first_maximum_equal_total_maximum:
+                fmi = np.argmax(filt_wfm)
+            else:
+                fmnt = first_maximum_normalized_threshold[radar_mode[i]]
+                peak_minimum_power = fmnt + noise_level_normed
+                fmi = self.get_first_maximum_index(filt_wfm, peak_minimum_power, fmi_first_valid_idx_filt)
             tfmra_first_maximum_index[i] = fmi
 
             # first maximum finder might have failed
