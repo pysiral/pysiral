@@ -219,9 +219,17 @@ class DefaultCommandLineArguments(object):
             "l2i-product-dir": {
                 "action": "store",
                 "dest": "l2i_product_dir",
+                "nargs": "+",
                 "default": None,
                 "required": True,
                 "help": "l2i input directory"},
+
+            "l3-product-dir": {
+                "action": "store",
+                "dest": "l3_product_dir",
+                "default": None,
+                "required": False,
+                "help": "l3 output directory"},
 
             "l3-settings": {
                 "action": "store",

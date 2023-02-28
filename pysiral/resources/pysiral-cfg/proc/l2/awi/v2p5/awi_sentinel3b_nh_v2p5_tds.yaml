@@ -2,7 +2,7 @@ metadata:
     label: "AWI Sentinel-3 reprocessed sea-ice thickness product (cs2awi v2.5 reprocessed)"
     product_line: awi
     record_type: tds
-    platform: sentinel3a
+    platform: sentinel3b
     version: v2p5
     file_version_tag: "v2p5"
     hemisphere: north
