@@ -99,7 +99,7 @@ import numpy as np
 import numpy.typing as npt
 import copy
 
-from pysiral._class_template import DefaultLoggingClass
+from core._class_template import DefaultLoggingClass
 from pysiral.output import NCDateNumDef
 from pysiral.config import RadarModes
 from pysiral.core.flags import SurfaceType

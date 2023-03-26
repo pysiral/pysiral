@@ -9,7 +9,7 @@ import numpy as np
 from typing import List
 from collections import OrderedDict
 
-from pysiral._class_template import DefaultLoggingClass
+from core._class_template import DefaultLoggingClass
 
 
 # The standard ESA surface type flag in L1B data

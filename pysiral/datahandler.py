@@ -19,7 +19,7 @@ from dateperiods import DatePeriod
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral._class_template import DefaultLoggingClass
+from core._class_template import DefaultLoggingClass
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.output import PysiralOutputFilenaming
 

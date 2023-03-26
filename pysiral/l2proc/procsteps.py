@@ -11,7 +11,7 @@ from itertools import product
 from pysiral import get_cls
 from pysiral.l2data import Level2Data
 from pysiral.l1bdata import Level1bData
-from pysiral._class_template import DefaultLoggingClass
+from core._class_template import DefaultLoggingClass
 
 
 class Level2ProcessorStep(DefaultLoggingClass):

@@ -15,7 +15,7 @@ from typing import Tuple, Union, Any
 import scipy.ndimage as ndimage
 
 from pysiral.config import get_yaml_config
-from pysiral._class_template import DefaultLoggingClass
+from core._class_template import DefaultLoggingClass
 from pyresample import geometry
 
 
