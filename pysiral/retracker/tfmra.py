@@ -16,9 +16,9 @@ from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 # cythonized bottleneck functions for cTFMRA
 try:
-    from cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
-                         cytfmra_normalize_wfm,
-                         cytfmra_wfm_noise_level)
+    from pysiral.retracker.cytfmra import \
+        (cytfmra_findpeaks, cytfmra_interpolate,
+         cytfmra_normalize_wfm, cytfmra_wfm_noise_level)
     CYTFMRA_OK = True
 except ImportError:
     logger.error("Cannot import cytfmra")
