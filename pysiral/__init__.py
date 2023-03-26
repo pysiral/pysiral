@@ -8,7 +8,7 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "clas
            "config", "datahandler", "filter", "frb", "grid",
            "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "output", "proj", "retracker",
-           "sit", "surface", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
+           "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "InterceptHandler", "__version__"]
 
 import importlib
