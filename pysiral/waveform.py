@@ -175,10 +175,7 @@ def get_sigma0(wf_peak_power_watt: float,
     a_lrm = np.pi * footprint_radius ** 2.
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a_lrm)
 
-    # Final computation of sigma nought
-    sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
 class TFMRALeadingEdgeWidth(object):
@@ -247,9 +244,9 @@ class L1PLeadingEdgeWidth(L1PProcItem):
 
         # Get the option settings from the input
         for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
+            option_value = cfg.get(option_name)
             if option_value is None:
-                msg = "Missing option `%s` -> No computation of leading edge width!" % option_name
+                msg = f"Missing option `{option_name}` -> No computation of leading edge width!"
                 logger.warning(msg)
             setattr(self, option_name, option_value)
 
@@ -587,7 +584,7 @@ class L1PLeadingEdgeQuality(L1PProcItem):
 
             # Get the search range
             i0, i1 = fmi[i]-window, fmi[i]+1
-            i0 = i0 if i0 > 1 else 1   # ensure the lower index stays in the valid range
+            i0 = max(i0, 1)
             power_diff = wfm[i0:i1]-wfm[i0-1:i1-1]
             positive_power_diff = power_diff[power_diff > 0]
             total_power_raise = np.sum(positive_power_diff) + wfm[i0]
@@ -667,13 +664,8 @@ class L1PLeadingEdgePeakiness(L1PProcItem):
 
         # Get the waveform subset prior to first maximum
         i0 = fmi - window
-        i0 = i0 if i0 > 0 else 0
-        i1 = fmi
-
-        # Compute the peakiness
-        lep = wfm[fmi] / bn.nanmean(wfm[i0:i1]) * (i1 - i0)
-
-        return lep
+        i0 = max(i0, 0)
+        return wfm[fmi] / bn.nanmean(wfm[i0:fmi]) * (fmi - i0)
 
     @property
     def required_options(self):
