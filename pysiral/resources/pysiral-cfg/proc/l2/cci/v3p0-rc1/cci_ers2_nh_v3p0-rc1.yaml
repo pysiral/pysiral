@@ -187,7 +187,7 @@ procsteps:
                         value: 0.15
 
     # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
+    -   module: retracker.mock
         pyclass: SGDRMultipleElevations
         options: 
             predefined_retrackers: [ocean, ice1, ice2, sitrack]
@@ -195,7 +195,7 @@ procsteps:
             output_name_fmt: "elevation_{}"
 
     # Apply ERS pulse deblurring correction
-    -   module: retracker
+    -   module: retracker.corrections
         pyclass: ERSPulseDeblurring
         options: 
             target_variables:
@@ -266,7 +266,7 @@ procsteps:
             valid_maximum_point_value: 2.25
 
     # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
+    -   module: retracker.tfmra
         pyclass: TFMRAMultiThresholdFreeboards
         options: 
             threshold_range: [0.1, 1.0]
