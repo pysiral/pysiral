@@ -38,7 +38,7 @@ class TestL2ProcDef(unittest.TestCase):
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
                 for required_tag in required_tags:
-                    msg = "Search for root tag `{}` in {}".format(required_tag, l2procdef_file)
+                    msg = f"Search for root tag `{required_tag}` in {l2procdef_file}"
                     self.assertTrue(required_tag in content, msg=msg)
 
     def testConfigMetadataTags(self):
@@ -47,7 +47,7 @@ class TestL2ProcDef(unittest.TestCase):
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
                 for required_tag in required_tags:
-                    msg = "Search for root tag `{}` in {}".format(required_tag, l2procdef_file)
+                    msg = f"Search for root tag `{required_tag}` in {l2procdef_file}"
                     self.assertTrue(required_tag in content.metadata, msg=msg)
 
     def testConfigFileL2ProcStepContent(self):
@@ -64,7 +64,10 @@ class TestL2ProcDef(unittest.TestCase):
                     procsteps.validate()
                 except SystemExit:
                     is_valid = False
-                self.assertTrue(is_valid, "Validating procsteps definition in {}".format(l2procdef_file))
+                self.assertTrue(
+                    is_valid,
+                    f"Validating procsteps definition in {l2procdef_file}",
+                )
 
 
 if __name__ == '__main__':
