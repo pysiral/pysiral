@@ -6,7 +6,7 @@ plib A collection of python libraries
 
 from loguru import logger
 
-__all__ = ["functions", "iotools", "cs2_procstage2timeliness"]
+__all__ = ["functions", "iotools", "l1_adapter", "cs2_procstage2timeliness"]
 
 
 def cs2_procstage2timeliness(processing_stage_str: str) -> str:
