@@ -22,7 +22,7 @@ with open(str(version_file_path)) as version_file:
 # cythonized extensions go here
 # TODO: Autodetect cython files
 extensions = [
-    Extension("pysiral.retracker.tfmra.cytfmra", ["pysiral/retracker/tfmra/cytfmra.pyx"])
+    Extension("pysiral.retracker.cytfmra", ["pysiral/retracker/cytfmra.pyx"])
 ]
 
 # Package requirements
