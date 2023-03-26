@@ -4,12 +4,12 @@
 pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
 """
 
-__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "classifier", "clocks",
-           "config", "datahandler", "errorhandler", "filter", "frb", "grid",
+__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "classifier",
+           "config", "datahandler", "filter", "frb", "grid",
            "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "output", "proj", "retracker",
            "sit", "surface", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "__version__"]
+           "InterceptHandler", "__version__"]
 
 import importlib
 import logging
@@ -40,6 +40,7 @@ fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | ' + \
       '<level>{message}</level>'
 logger.add(sys.stderr, format=fmt, enqueue=True)
 
+
 class InterceptHandler(logging.Handler):
     def emit(self, record):
         # Get corresponding Loguru level if it exists
@@ -55,6 +56,7 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent

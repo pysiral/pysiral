@@ -6,7 +6,7 @@
 __author__ = "Stefan Hendricks"
 
 from collections import OrderedDict
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from core.class_template import DefaultLoggingClass
@@ -226,7 +226,7 @@ class ANDCondition(FlagContainer):
     def __init__(self, **kwargs):
         super(ANDCondition, self).__init__(**kwargs)
 
-    def add(self, flag: np.ndarray) -> None:
+    def add(self, flag: Union[np.ndarray, bool]) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:
@@ -238,7 +238,7 @@ class ORCondition(FlagContainer):
     def __init__(self, **kwargs):
         super(ORCondition, self).__init__(**kwargs)
 
-    def add(self, flag: np.ndarray) -> None:
+    def add(self, flag: Union[np.ndarray, bool]) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:
