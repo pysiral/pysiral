@@ -142,9 +142,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.long_name
+        return None if platform_info is None else platform_info.long_name
 
     def get_sensor(self, platform_id):
         """
@@ -153,9 +151,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.sensor
+        return None if platform_info is None else platform_info.sensor
 
     def get_orbit_inclination(self, platform_id):
         """
@@ -164,9 +160,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.orbit_max_latitude
+        return None if platform_info is None else platform_info.orbit_max_latitude
 
     def get_time_coverage(self, platform_id):
         """
@@ -196,7 +190,8 @@ class _MissionDefinitionCatalogue(object):
     @property
     def ids(self):
         """
-        A list of id's for each platforms
+        A list of id's for each platform.
+
         :return: list with platform ids
         """
         return list(self.content.platforms.keys())
@@ -425,7 +420,7 @@ class _PysiralPackageConfiguration(object):
         # -> must be populated with content from the package config dir
         if not config_path.is_dir():
             print(f"Creating pysiral config directory: {config_path}")
-            dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
+            dir_util.copy_tree(str(self.path.package_config_path), str(config_path))
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = config_path / "local_machine_def.yaml"
