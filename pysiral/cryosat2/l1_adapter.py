@@ -10,7 +10,7 @@ from loguru import logger
 from scipy import interpolate
 
 from pysiral import __version__ as pysiral_version
-from pysiral.classifier import CS2OCOGParameter
+from pysiral.waveform import CS2OCOGParameter
 from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.cryosat2 import cs2_procstage2timeliness
