@@ -29,7 +29,7 @@ from pysiral.core.helper import (ProgressIndicator, get_first_array_index,
                          get_last_array_index, rle)
 from pysiral.l1bdata import L1bMetaData, Level1bData
 from pysiral.l1preproc.procitems import L1PProcItemDef
-from pysiral.output import L1bDataNC
+from pysiral.core.output import L1bDataNC
 
 SHOW_DEBUG_MAP = False
 

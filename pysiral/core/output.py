@@ -776,7 +776,7 @@ class Level2Output(NCDataFile):
         """
         A class for data of processing level-2 (l2i, l2p)
         :param data: The data container (l2data.Level2Data)
-        :param output_handler: The output handler (pysiral.output.DefaultLevel2OutputHandler)
+        :param output_handler: The output handler (pysiral.core.output.DefaultLevel2OutputHandler)
         """
 
         # Init the parent

@@ -976,7 +976,7 @@ class L2iNCFileImport(object):
     # TODO: Needs proper implementation
 
     def __init__(self, filename):
-        from pysiral.output import NCDateNumDef
+        from pysiral.core.output import NCDateNumDef
         self.filename = filename
         self._n_records = 0
         self.time_def = NCDateNumDef()

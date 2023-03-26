@@ -20,7 +20,7 @@ from loguru import logger
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
-from pysiral.output import PysiralOutputFilenaming
+from pysiral.core.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):

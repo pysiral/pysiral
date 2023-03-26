@@ -18,7 +18,7 @@ from netCDF4 import Dataset
 
 from pysiral import psrlcfg
 from pysiral.core.errorhandler import ErrorStatus
-from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
+from pysiral.core.output import NCDateNumDef, PysiralOutputFilenaming
 
 
 # TODO: Replace by xarray

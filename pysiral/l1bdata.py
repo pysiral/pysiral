@@ -103,7 +103,7 @@ from scipy.spatial.transform import Rotation
 
 from pysiral.config import RadarModes
 from pysiral.core.flags import SurfaceType
-from pysiral.output import NCDateNumDef
+from pysiral.core.output import NCDateNumDef
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 

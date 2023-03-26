@@ -26,7 +26,7 @@ from pysiral.core.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
-from pysiral.output import Level3Output, OutputHandlerBase
+from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
@@ -975,7 +975,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         Arguments:
             l3_settings_file (str): Full filename to l3 settings file
             grid (pysiral.grid.GridDefinition): Output grid class
-            output (Level-3 compliant output handler from pysiral.output)
+            output (Level-3 compliant output handler from pysiral.core.output)
         """
         super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
