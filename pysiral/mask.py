@@ -25,7 +25,7 @@ from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition, GridTrajectoryExtract
-from core._class_template import DefaultLoggingClass
+from core.class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem

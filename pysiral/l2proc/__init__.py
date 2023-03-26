@@ -15,7 +15,7 @@ from datetime import datetime
 
 from pysiral import psrlcfg
 from pysiral.l1bdata import L1bdataNCFile
-from core._class_template import DefaultLoggingClass
+from core.class_template import DefaultLoggingClass
 from pysiral.config import get_yaml_config
 from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
