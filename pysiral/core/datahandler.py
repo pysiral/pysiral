@@ -313,7 +313,7 @@ class L2iDataHandler(object):
                 l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
                 result = list(Path(lookup_directory).glob(l2i_pattern))
                 l2i_files.extend(sorted(result))
-                logger.info(f"Found {len(result)} l2i files in {lookup_directory}")
+                logger.info(f"Found {len(result)} l2i files in {lookup_directory} for {year}-{month}-{day}")
 
         return l2i_files
 
