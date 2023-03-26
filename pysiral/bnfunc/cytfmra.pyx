@@ -5,14 +5,14 @@ Created on Mon Sep 05 19:09:08 2016
 @author: Stefan
 """
 
-from scipy.interpolate import interp1d
-
+import bottleneck as bn
 import cython
 import numpy as np
-import bottleneck as bn
+from scipy.interpolate import interp1d
 
 cimport cython
 cimport numpy as np
+
 # cimport bottleneck as bn
 
 DTYPE = np.float64

@@ -4,33 +4,32 @@
 
 """
 
+import copy
 import re
 import sys
-import copy
-import numpy as np
-from loguru import logger
-from attrdict import AttrDict
-from pathlib import Path
-from operator import attrgetter
-from geopy import distance
 from datetime import timedelta
-from typing import Union, List, TypeVar, Dict, Tuple
+from operator import attrgetter
+from pathlib import Path
+from typing import Dict, List, Tuple, TypeVar, Union
 
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-
-
+import matplotlib.pyplot as plt
+import numpy as np
+from attrdict import AttrDict
 from dateperiods import DatePeriod, PeriodIterator
+from geopy import distance
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.l1bdata import Level1bData, L1bMetaData
-from pysiral.l1preproc.procitems import L1PProcItemDef
 from pysiral.clocks import StopWatch
 from pysiral.config import get_yaml_config
-from pysiral.helper import (ProgressIndicator, get_first_array_index, get_last_array_index, rle)
-from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
+from pysiral.helper import (ProgressIndicator, get_first_array_index,
+                            get_last_array_index, rle)
+from pysiral.l1bdata import L1bMetaData, Level1bData
+from pysiral.l1preproc.procitems import L1PProcItemDef
 from pysiral.output import L1bDataNC
 
 SHOW_DEBUG_MAP = False

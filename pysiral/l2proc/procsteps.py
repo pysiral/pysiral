@@ -3,15 +3,16 @@
 @author: Stefan Hendricks
 """
 
-import numpy as np
-import pandas as pd
-from loguru import logger
 from itertools import product
 
-from pysiral import get_cls
-from pysiral.l2data import Level2Data
-from pysiral.l1bdata import Level1bData
+import numpy as np
+import pandas as pd
 from core.class_template import DefaultLoggingClass
+from loguru import logger
+
+from pysiral import get_cls
+from pysiral.l1bdata import Level1bData
+from pysiral.l2data import Level2Data
 
 
 class Level2ProcessorStep(DefaultLoggingClass):

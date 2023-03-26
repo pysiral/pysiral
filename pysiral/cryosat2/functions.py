@@ -5,19 +5,21 @@ Created on Tue Jul 14 14:48:01 2015
 @author: Stefan
 """
 
-import parse
-import xmltodict
+from datetime import datetime, timedelta
+from pathlib import Path
+
 import numpy as np
 import numpy.typing as npt
-from loguru import logger
+import parse
+import xmltodict
 from attrdict import AttrDict
-from pathlib import Path
 from dateutil import parser as dtparser
-from datetime import datetime, timedelta
+from loguru import logger
 
 from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
-from pysiral.waveform import get_waveforms_peak_power, get_footprint_sar, get_sigma0_sar
+from pysiral.waveform import (get_footprint_sar, get_sigma0_sar,
+                              get_waveforms_peak_power)
 
 
 class L1PWaveformResampleSIN(L1PProcItem):

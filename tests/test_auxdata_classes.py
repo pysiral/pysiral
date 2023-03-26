@@ -6,7 +6,9 @@ Created on Mon Jul 06 17:57:33 2015
 """
 
 import unittest
+
 from loguru import logger
+
 logger.disable("pysiral")
 
 from pysiral.auxdata import get_all_auxdata_classes

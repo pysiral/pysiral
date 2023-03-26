@@ -2,21 +2,23 @@
 
 
 import contextlib
-from pysiral import psrlcfg
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus
-from pysiral.core import DefaultLoggingClass
+import re
+from collections import OrderedDict
+from datetime import datetime
+from pathlib import Path
+
+import cftime
+import numpy as np
+import parse
+from attrdict import AttrDict
+from dateutil import parser as dtparser
 from loguru import logger
 from netCDF4 import Dataset, date2num
-from datetime import datetime
-from dateutil import parser as dtparser
-from collections import OrderedDict
-from pathlib import Path
-from attrdict import AttrDict
-import numpy as np
-import cftime
-import parse
-import re
+
+from pysiral import psrlcfg
+from pysiral.config import get_yaml_config
+from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 
 
 class OutputHandlerBase(DefaultLoggingClass):

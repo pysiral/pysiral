@@ -5,12 +5,11 @@
 
 __author__ = "Stefan Hendricks"
 
-import numpy as np
-from typing import List
 from collections import OrderedDict
+from typing import List
 
+import numpy as np
 from core.class_template import DefaultLoggingClass
-
 
 # The standard ESA surface type flag in L1B data
 ESA_SURFACE_TYPE_DICT = {

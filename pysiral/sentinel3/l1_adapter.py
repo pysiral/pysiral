@@ -1,19 +1,20 @@
 
-import xmltodict
 import contextlib
-import xarray
-import numpy as np
-from loguru import logger
-from scipy import interpolate
-from cftime import num2pydate
 from pathlib import Path
 
+import numpy as np
+import xarray
+import xmltodict
+from cftime import num2pydate
+from loguru import logger
+from scipy import interpolate
+
 from pysiral import __version__ as pysiral_version
-from pysiral.l1preproc import Level1PInputHandlerBase
 from pysiral.clocks import StopWatch
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.helper import parse_datetime_str
 from pysiral.l1bdata import Level1bData
-from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
 # DEPR: Marked as deprecated

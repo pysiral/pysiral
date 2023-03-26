@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import re
-
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
-
-from setuptools.extension import Extension
-from setuptools import setup, find_packages
+from pathlib import Path
 
 import numpy
-from pathlib import Path
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
+from setuptools import find_packages, setup
+from setuptools.extension import Extension
 
 # Get the readme
 with open('README.md') as f:

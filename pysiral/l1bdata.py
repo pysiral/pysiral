@@ -89,20 +89,21 @@ Surface Type
 
 """
 
-from typing import Union, Any, List
-from cftime import num2pydate as cn2pyd
-from netCDF4 import Dataset, date2num
-from scipy.spatial.transform import Rotation
+import copy
 from collections import OrderedDict
-from loguru import logger
+from typing import Any, List, Union
+
 import numpy as np
 import numpy.typing as npt
-import copy
-
+from cftime import num2pydate as cn2pyd
 from core.class_template import DefaultLoggingClass
-from pysiral.output import NCDateNumDef
+from loguru import logger
+from netCDF4 import Dataset, date2num
+from scipy.spatial.transform import Rotation
+
 from pysiral.config import RadarModes
 from pysiral.core.flags import SurfaceType
+from pysiral.output import NCDateNumDef
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 

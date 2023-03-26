@@ -7,34 +7,36 @@ Created on Fri Jul 31 15:48:58 2015
 TODO: move this to it own module and separate retrackers into different files
 """
 
+import logging
 # Utility methods for retracker:
 import os.path
-
-from scipy.interpolate import interp1d
-from scipy.optimize import curve_fit
-import bottleneck as bn
-
 import sys
 import time
+
+import bottleneck as bn
 import numpy as np
-from loguru import logger
 from attrdict import AttrDict
-import logging
+from loguru import logger
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+
 from pysiral import InterceptHandler
 
 # cythonized bottleneck functions for cTFMRA
 try:
     from .bnfunc.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
-                                 cytfmra_wfm_noise_level, cytfmra_normalize_wfm)
+                                 cytfmra_normalize_wfm,
+                                 cytfmra_wfm_noise_level)
     CYTFMRA_OK = True
 except ImportError:
     logger.error("Cannot import cytfmra")
     CYTFMRA_OK = False
 
 try:
+    from samosa.help_functions import (calc_sigma0, calc_ssb_j2Table,
+                                       func_wind_speed)
     from samosa.sampy import SAMOSA as initialize_SAMOSAlib
-    from samosa.sampy import initialize_epoch, compute_ThNEcho
-    from samosa.help_functions import calc_sigma0, func_wind_speed, calc_ssb_j2Table
+    from samosa.sampy import compute_ThNEcho, initialize_epoch
 
     logger.info("SAMOSA retracker loaded from the environment")
     logging.getLogger('samosa.sampy').addHandler(InterceptHandler())

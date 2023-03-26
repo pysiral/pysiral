@@ -5,11 +5,11 @@ Created on Fri Jul 10 15:25:45 2015
 @author: Stefan
 """
 import sys
-from loguru import logger
-from pathlib import Path
-from inspect import getframeinfo, stack
 from collections import OrderedDict
+from inspect import getframeinfo, stack
+from pathlib import Path
 
+from loguru import logger
 
 # TODO: This is also obsolete
 PYSIRAL_ERROR_CODES = OrderedDict([

@@ -11,24 +11,24 @@ __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "clas
            "sit", "surface", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "__version__"]
 
-import sys
-import yaml
-import socket
-import shutil
-import subprocess
-
 import importlib
-import pkgutil
-from datetime import datetime
-from dateperiods import DatePeriod
-from pathlib import Path
-from attrdict import AttrDict
-from distutils import dir_util
-from loguru import logger
 import logging
-from typing import Union, Iterable
-
+import pkgutil
+import shutil
+import socket
+import subprocess
+import sys
 import warnings
+from datetime import datetime
+from distutils import dir_util
+from pathlib import Path
+from typing import Iterable, Union
+
+import yaml
+from attrdict import AttrDict
+from dateperiods import DatePeriod
+from loguru import logger
+
 warnings.filterwarnings("ignore")
 
 # Set standard logger format

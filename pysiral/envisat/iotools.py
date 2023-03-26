@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import os
-import numpy as np
-from loguru import logger
-from pathlib import Path
-from typing import Tuple, List
 from collections import deque
+from pathlib import Path
+from typing import List, Tuple
 
+import numpy as np
 from dateperiods import DatePeriod
-from pysiral.errorhandler import ErrorStatus
+from loguru import logger
+
 from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):

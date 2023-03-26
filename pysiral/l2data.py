@@ -7,19 +7,20 @@ Created on Fri Jul 24 16:30:24 2015
 
 
 import contextlib
-from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
-from pysiral.iotools import ReadNC
-from pysiral.core import DefaultLoggingClass
-from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
+import re
+import uuid
+from collections import OrderedDict
+from datetime import datetime
 
 import numpy as np
-from datetime import datetime
-from loguru import logger
 from geopy.distance import great_circle
-from collections import OrderedDict
-import uuid
-import re
+from loguru import logger
+
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
+from pysiral.iotools import ReadNC
+from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 
 
 class Level2Data(object):

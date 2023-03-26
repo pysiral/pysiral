@@ -36,7 +36,6 @@ Important Note:
 
 import numpy as np
 import scipy.ndimage as ndimage
-
 from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass

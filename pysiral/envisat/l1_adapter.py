@@ -6,21 +6,22 @@
 __author__ = "Stefan Hendricks"
 
 import re
+from pathlib import Path
+from typing import Any, Dict, Union
+
 import numpy as np
 from attrdict import AttrDict
-from loguru import logger
-from typing import Union, Dict, Any
-from scipy import interpolate
 from cftime import num2pydate
-from pathlib import Path
+from loguru import logger
+from scipy import interpolate
 
 from pysiral import psrlcfg
 from pysiral.clocks import StopWatch
-from pysiral.l1preproc import Level1PInputHandlerBase
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.envisat.functions import get_envisat_wfm_range
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
-from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
 class EnvisatSGDRNC(Level1PInputHandlerBase):

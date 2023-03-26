@@ -12,6 +12,7 @@ h5py
 loguru
 lxml
 isodate
+isort
 matplotlib
 mypy
 netCDF4

@@ -6,14 +6,16 @@ Level2Processor conventions
 @author: Stefan Hendricks
 """
 
-import yaml
 import unittest
+
+import yaml
 from attrdict import AttrDict
+from loguru import logger
 
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from loguru import logger
+
 logger.disable("pysiral")
 
 

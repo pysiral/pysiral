@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 
 
-from loguru import logger
-
-from dateperiods import DatePeriod
-from datetime import timedelta
 import argparse
 import glob
-import time
-import sys
 import re
+import sys
+import time
+from datetime import timedelta
+
+from dateperiods import DatePeriod
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.config import (DefaultCommandLineArguments)
-from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import L1PDataHandler
-from pysiral.l2proc import Level2Processor, Level2ProductDefinition
+from pysiral.config import DefaultCommandLineArguments
 from pysiral.core import DefaultLoggingClass
+from pysiral.datahandler import L1PDataHandler
+from pysiral.errorhandler import ErrorStatus
+from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
 def pysiral_l2proc():

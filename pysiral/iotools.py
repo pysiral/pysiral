@@ -10,16 +10,16 @@ TODO: Evaluate usefulness (or move to internal module)
 
 import tempfile
 import uuid
-import numpy as np
+from pathlib import Path
 
+import numpy as np
+from cftime import num2pydate
 from dateperiods import DatePeriod
+from netCDF4 import Dataset
 
 from pysiral import psrlcfg
 from pysiral.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
-from cftime import num2pydate
-from netCDF4 import Dataset
-from pathlib import Path
 
 
 # TODO: Replace by xarray

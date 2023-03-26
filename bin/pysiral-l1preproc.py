@@ -2,13 +2,15 @@
 # NOTE: pysiral-l1preproc is a complete re-design of pysiral-l1bpreproc.py and will successively replace the
 #       older version
 
-import sys
 import argparse
+import sys
+
 from loguru import logger
 
 from pysiral import get_cls
 from pysiral.config import DefaultCommandLineArguments
-from pysiral.l1preproc import get_preproc, Level1PreProcJobDef, Level1POutputHandler
+from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef,
+                               get_preproc)
 
 
 def pysiral_l1preproc(job):

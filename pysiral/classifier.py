@@ -11,8 +11,8 @@ LTPP added
 
 """
 
-import numpy as np
 import bottleneck as bn
+import numpy as np
 
 
 class CS2OCOGParameter(object):

@@ -20,18 +20,17 @@ __all__ = ["AuxdataBaseClass",
 
 
 import re
+from pathlib import Path
+from typing import List
 
 import numpy as np
-from typing import List
-from attrdict import AttrDict
-
 import scipy.ndimage as ndimage
-from pathlib import Path
+from attrdict import AttrDict
 from pyproj import Proj
 
 from pysiral import import_submodules
-from pysiral.l1bdata import L1bdataNCFile
 from pysiral.errorhandler import ErrorStatus
+from pysiral.l1bdata import L1bdataNCFile
 
 
 class AuxdataBaseClass(object):

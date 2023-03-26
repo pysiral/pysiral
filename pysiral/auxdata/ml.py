@@ -35,20 +35,19 @@ Important Note:
 """
 import re
 from pathlib import Path
-from typing import Iterable, Any, Union
+from typing import Any, Iterable, Union
 
+import bottleneck as bn
 import numpy as np
-import xgboost as xgb
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as torch_nn_functional
-import bottleneck as bn
+import xgboost as xgb
 
 from pysiral import get_cls
 from pysiral.auxdata import AuxdataBaseClass
-from pysiral.l2data import Level2Data
 from pysiral.l1bdata import L1bdataNCFile
+from pysiral.l2data import Level2Data
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 

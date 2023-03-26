@@ -8,11 +8,13 @@ Created on Mon Jul 06 17:57:33 2015
 import datetime
 import unittest
 from pathlib import Path
+
 from attrdict import AttrDict
+from loguru import logger
 
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
-from loguru import logger
+
 logger.disable("pysiral")
 
 

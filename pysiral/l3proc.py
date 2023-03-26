@@ -4,32 +4,30 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral import __version__, get_cls, psrlcfg
-from pysiral.core.flags import SURFACE_TYPE_DICT
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition
-from pysiral.core import DefaultLoggingClass
-from pysiral.l2data import L2iNCFileImport
-from pysiral.mask import L3Mask
-from pysiral.output import OutputHandlerBase, Level3Output
-from pysiral.core.flags import ORCondition
-from pysiral.sit import frb2sit_errprop
+import itertools
+import re
+import sys
+import uuid
+from collections import OrderedDict
+from datetime import date, datetime
+from pathlib import Path
 
+import numpy as np
+from loguru import logger
 from scipy import stats
 from scipy.ndimage import maximum_filter
-
-from collections import OrderedDict
-from loguru import logger
-from datetime import datetime, date
-from pathlib import Path
 from xarray import open_dataset
-import itertools
-import uuid
-import numpy as np
-import sys
-import re
 
+from pysiral import __version__, get_cls, psrlcfg
+from pysiral.config import get_yaml_config
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.errorhandler import ErrorStatus
+from pysiral.grid import GridDefinition
+from pysiral.l2data import L2iNCFileImport
+from pysiral.mask import L3Mask
+from pysiral.output import Level3Output, OutputHandlerBase
+from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
 

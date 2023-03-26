@@ -6,21 +6,20 @@ Created on Fri May 19 18:16:09 2017
 """
 
 import re
-from typing import List, Union
-from pathlib import Path
-from loguru import logger
-from attrdict import AttrDict
-from itertools import product
-
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from itertools import product
+from pathlib import Path
+from typing import List, Union
 
+from attrdict import AttrDict
+from core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
+from dateutil.relativedelta import relativedelta
+from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from core.class_template import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
+from pysiral.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
 from pysiral.output import PysiralOutputFilenaming
 
 

@@ -2,17 +2,17 @@
 
 import os
 import re
-from parse import parse
-from pathlib import Path
-from datetime import datetime
 from collections import deque
-from loguru import logger
-
-from pysiral.errorhandler import ErrorStatus
-from pysiral.core import DefaultLoggingClass
-from pysiral.clocks import StopWatch
+from datetime import datetime
+from pathlib import Path
 
 from dateperiods import DatePeriod
+from loguru import logger
+from parse import parse
+
+from pysiral.clocks import StopWatch
+from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 
 
 class Sentinel3FileList(DefaultLoggingClass):

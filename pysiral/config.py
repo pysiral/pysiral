@@ -15,10 +15,12 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
-import yaml
 from pathlib import Path
-from typing import Union, Dict
+from typing import Dict, Union
+
+import yaml
 from attrdict import AttrDict
+
 from pysiral import psrlcfg
 
 

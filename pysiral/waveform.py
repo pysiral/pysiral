@@ -5,15 +5,16 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
+from typing import Union
+
+import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
-from typing import Union
-import bottleneck as bn
 from loguru import logger
 
 from pysiral.l1bdata import Level1bData
-from pysiral.retracker import cTFMRA
 from pysiral.l1preproc.procitems import L1PProcItem
+from pysiral.retracker import cTFMRA
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:

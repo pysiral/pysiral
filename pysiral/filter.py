@@ -5,21 +5,20 @@ Created on Sat Apr 23 15:30:53 2016
 @author: Stefan Hendricks
 """
 
+from dataclasses import dataclass
+from typing import List, Tuple, Union
+
+import bottleneck as bn
 import matplotlib.pyplot as plt
 import numpy as np
-from dataclasses import dataclass
-import bottleneck as bn
-from typing import List, Union, Tuple
-from loguru import logger
-from scipy.interpolate import interp1d, UnivariateSpline
-from astropy.convolution import convolve, Box1DKernel
-
 import statsmodels.api as sm
+from astropy.convolution import Box1DKernel, convolve
+from loguru import logger
+from scipy.interpolate import UnivariateSpline, interp1d
 
-from pysiral.l2data import Level2Data
+from pysiral.core.flags import ANDCondition, FlagContainer, ORCondition
 from pysiral.l1bdata import Level1bData
-from pysiral.core.flags import ANDCondition
-from pysiral.core.flags import FlagContainer, ORCondition
+from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 

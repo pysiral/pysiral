@@ -6,24 +6,22 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 import sys
-
-from loguru import logger
-from pathlib import Path
-from dateperiods import DatePeriod
-from collections import deque, OrderedDict
+from collections import OrderedDict, deque
 from datetime import datetime
+from pathlib import Path
+
+from core.class_template import DefaultLoggingClass
+from dateperiods import DatePeriod
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.l1bdata import L1bdataNCFile
-from core.class_template import DefaultLoggingClass
 from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
 from pysiral.datahandler import DefaultAuxdataClassHandler
-
+from pysiral.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral.output import (Level2Output, DefaultLevel2OutputHandler)
-
+from pysiral.output import DefaultLevel2OutputHandler, Level2Output
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
 

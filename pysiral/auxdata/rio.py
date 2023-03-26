@@ -8,6 +8,7 @@ Module created for FMI version of pysiral
 """
 
 import numpy as np
+
 from pysiral.auxdata import AuxdataBaseClass
 
 

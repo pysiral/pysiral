@@ -3,17 +3,17 @@
 
 import os
 import re
-import numpy as np
+from collections import deque
+from datetime import timedelta
+from pathlib import Path
 
 import dateutil
-from pathlib import Path
+import numpy as np
 from loguru import logger
-from datetime import timedelta
 from parse import compile
 
-from collections import deque
-from pysiral.errorhandler import ErrorStatus
 from pysiral.core import DefaultLoggingClass
+from pysiral.errorhandler import ErrorStatus
 
 
 class ERSFileList(DefaultLoggingClass):

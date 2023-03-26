@@ -8,24 +8,23 @@ Created on Thu Sep 28 14:00:52 2017
 """
 
 import contextlib
-
+import struct
 from collections import OrderedDict
-from netCDF4 import Dataset
-from loguru import logger
+from pathlib import Path
+from typing import Tuple
 
-from pyresample import image, geometry, kd_tree
 import numpy as np
 import numpy.typing as npt
-from typing import Tuple
-import struct
 import xarray as xr
-from pathlib import Path
+from core.class_template import DefaultLoggingClass
+from loguru import logger
+from netCDF4 import Dataset
+from pyresample import geometry, image, kd_tree
 
 from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition, GridTrajectoryExtract
-from core.class_template import DefaultLoggingClass
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
