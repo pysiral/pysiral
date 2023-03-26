@@ -45,7 +45,7 @@ class ERSReaperSGDR(Level1PInputHandlerBase):
         """
 
         # Import here to avoid circular imports
-        from pysiral.l1bdata import Level1bData
+        from pysiral.l1data import Level1bData
 
         # Store arguments
         self.filepath = filepath

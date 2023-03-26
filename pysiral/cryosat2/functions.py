@@ -16,7 +16,7 @@ from attrdict import AttrDict
 from dateutil import parser as dtparser
 from loguru import logger
 
-from pysiral.l1bdata import Level1bData
+from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.waveform import (get_footprint_sar, get_sigma0_sar,
                               get_waveforms_peak_power)

@@ -12,7 +12,7 @@ import numpy as np
 import numpy.typing as npt
 from loguru import logger
 
-from pysiral.l1bdata import Level1bData
+from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
 

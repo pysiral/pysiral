@@ -12,7 +12,7 @@ from typing import overload
 import numpy as np
 import numpy.typing as npt
 
-from pysiral.l1bdata import Level1bData
+from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 

@@ -30,7 +30,7 @@ from pyproj import Proj
 
 from pysiral import import_submodules
 from pysiral.core.errorhandler import ErrorStatus
-from pysiral.l1bdata import L1bdataNCFile
+from pysiral.l1data import L1bdataNCFile
 
 
 class AuxdataBaseClass(object):

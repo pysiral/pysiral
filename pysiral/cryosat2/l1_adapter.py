@@ -15,7 +15,7 @@ from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.core.helper import parse_datetime_str
-from pysiral.l1bdata import Level1bData
+from pysiral.l1data import Level1bData
 from pysiral.l1preproc import Level1PInputHandlerBase
 
 

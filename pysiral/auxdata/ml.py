@@ -46,7 +46,7 @@ import xgboost as xgb
 
 from pysiral import get_cls
 from pysiral.auxdata import AuxdataBaseClass
-from pysiral.l1bdata import L1bdataNCFile
+from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"

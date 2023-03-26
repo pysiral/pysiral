@@ -20,7 +20,7 @@ from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.core.iotools import ReadNC
-from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
+from pysiral.l1data import L1bMetaData, L1bTimeOrbit
 
 
 class Level2Data(object):

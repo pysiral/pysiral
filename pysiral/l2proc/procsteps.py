@@ -11,7 +11,7 @@ from core.class_template import DefaultLoggingClass
 from loguru import logger
 
 from pysiral import get_cls
-from pysiral.l1bdata import Level1bData
+from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
 
 
