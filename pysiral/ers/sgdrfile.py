@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pysiral.core.iotoolsimport ReadNC
+from pysiral.core.iotools import ReadNC
 
 
 class ERSSGDR(object):
