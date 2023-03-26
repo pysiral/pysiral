@@ -179,7 +179,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
         :return:
         """
 
-    def validate(self):
+    def validate(self) -> bool:
         """
         Checkout the difference processing steps and validate input/output variables in
         the order of the steps
@@ -197,8 +197,9 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
                 if not has_attr:
                     msg = "Class {} is missing the mandatory method/property: {}"
                     msg = msg.format(obj.__class__.__name__, mandatory_attr)
-                    self.error.add_error("invalid-class", msg)
-        self.error.raise_on_error()
+                    logger.error(msg)
+                    return False
+        return True
 
     @property
     def class_list(self):

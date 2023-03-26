@@ -155,7 +155,9 @@ class Level2Processor(DefaultLoggingClass):
         logger.info("Init Processor Steps")
         cfg = self.l2def.procsteps
         self.procsteps = Level2ProcessorStepOrder(cfg)
-        self.procsteps.validate()
+        is_valid = self.procsteps.validate()
+        if not is_valid:
+            raise IOError()
         logger.info("Processor steps initialized and validated")
 
     def execute_l2_processor_steps(self, l1b, l2):
