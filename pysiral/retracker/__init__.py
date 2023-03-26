@@ -14,8 +14,6 @@ from typing import Dict
 from attrdict import AttrDict
 from loguru import logger
 
-from tfmra import CYTFMRA_OK
-from samosa import SAMOSA_OK
 from pysiral.core.flags import FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
@@ -357,6 +355,9 @@ def get_retracker_class(name: str):
 
     :return: Initialized retracker class
     """
+
+    from pysiral.retracker.tfmra import CYTFMRA_OK
+    from pysiral.retracker.samosa import SAMOSA_OK
 
     if name == "cTFMRA" and not CYTFMRA_OK:
         msg = (
