@@ -16,7 +16,7 @@ from loguru import logger
 from scipy import interpolate
 
 from pysiral import psrlcfg
-from pysiral.clocks import StopWatch
+from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.envisat.functions import get_envisat_wfm_range
 from pysiral.iotools import ReadNC

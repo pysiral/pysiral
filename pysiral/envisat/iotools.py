@@ -10,7 +10,7 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):

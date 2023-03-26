@@ -12,7 +12,7 @@ from cftime import num2pydate
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.clocks import StopWatch
+from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
 from pysiral.ers.sgdrfile import ERSSGDR
 from pysiral.l1preproc import Level1PInputHandlerBase

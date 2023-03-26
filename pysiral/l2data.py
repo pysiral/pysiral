@@ -18,7 +18,7 @@ from loguru import logger
 
 from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
 

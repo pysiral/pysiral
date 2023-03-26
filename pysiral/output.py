@@ -18,7 +18,7 @@ from netCDF4 import Dataset, date2num
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class OutputHandlerBase(DefaultLoggingClass):

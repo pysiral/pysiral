@@ -22,7 +22,7 @@ from pysiral import __version__, get_cls, psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask

@@ -22,10 +22,10 @@ from geopy import distance
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.clocks import StopWatch
+from core.clocks import StopWatch
 from pysiral.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.helper import (ProgressIndicator, get_first_array_index,
                             get_last_array_index, rle)
 from pysiral.l1bdata import L1bMetaData, Level1bData

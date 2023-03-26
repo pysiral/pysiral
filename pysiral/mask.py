@@ -23,7 +23,7 @@ from pyresample import geometry, image, kd_tree
 
 from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition, GridTrajectoryExtract
 from pysiral.iotools import ReadNC
 from pysiral.l1bdata import Level1bData
@@ -54,7 +54,7 @@ def MaskSourceFile(mask_name, mask_cfg):
 
 class MaskSourceBase(DefaultLoggingClass):
     """ Parent class for various source masks. Main functionality is to
-    create gridded mask netCDF for for level-3 grid definitions """
+    create gridded mask netCDF for level-3 grid definitions """
 
     def __init__(self, mask_dir, mask_name, cfg):
         super(MaskSourceBase, self).__init__(self.__class__.__name__)

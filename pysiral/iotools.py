@@ -18,7 +18,7 @@ from dateperiods import DatePeriod
 from netCDF4 import Dataset
 
 from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.output import NCDateNumDef, PysiralOutputFilenaming
 
 

@@ -10,9 +10,9 @@ from dateperiods import DatePeriod
 from loguru import logger
 from parse import parse
 
-from pysiral.clocks import StopWatch
+from core.clocks import StopWatch
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class Sentinel3FileList(DefaultLoggingClass):

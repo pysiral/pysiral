@@ -9,7 +9,7 @@ import numpy as np
 from loguru import logger
 
 from pysiral.core import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):

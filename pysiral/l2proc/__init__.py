@@ -17,7 +17,7 @@ from loguru import logger
 from pysiral import psrlcfg
 from pysiral.config import get_yaml_config
 from pysiral.datahandler import DefaultAuxdataClassHandler
-from pysiral.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
