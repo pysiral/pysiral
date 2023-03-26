@@ -7,7 +7,7 @@ pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
 __all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "classifier", "clocks",
            "config", "datahandler", "errorhandler", "filter", "frb", "grid",
            "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
-           "mask", "output", "proj", "retracker", "roi",
+           "mask", "output", "proj", "retracker",
            "sit", "surface", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "__version__"]
 
