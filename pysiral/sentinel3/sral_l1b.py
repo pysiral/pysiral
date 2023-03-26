@@ -70,7 +70,7 @@ class Sentinel3SRALL1b(object):
 
     def _parse_measurement_nc(self):
 
-        from pysiral.iotools import ReadNC
+        from pysiral.core.iotoolsimport ReadNC
         self._validate()
 
         # Read the L2 netCDF file

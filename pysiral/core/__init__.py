@@ -5,7 +5,7 @@
 
 __author__ = "Stefan Hendricks"
 
-__all__ = ["class_template", "clocks", "errorhandler", "flags"]
+__all__ = ["class_template", "clocks", "errorhandler", "flags", "helper", "iotools"]
 
 from loguru import logger
 

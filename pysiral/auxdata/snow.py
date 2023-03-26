@@ -51,7 +51,7 @@ from xarray import open_dataset
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.filter import idl_smooth
-from pysiral.iotools import ReadNC
+from pysiral.core.iotoolsimport ReadNC
 
 
 class Warren99(AuxdataBaseClass):

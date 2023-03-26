@@ -46,7 +46,7 @@ from pyproj import Proj
 from scipy import interpolate
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
+from pysiral.core.iotoolsimport ReadNC
 from pysiral.sla import SLABaseFunctionality
 
 

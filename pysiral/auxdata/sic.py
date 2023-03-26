@@ -48,7 +48,7 @@ from pyproj import Proj
 from scipy.spatial.distance import cdist
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
+from pysiral.core.iotoolsimport ReadNC
 from pysiral.l2data import Level2Data
 
 

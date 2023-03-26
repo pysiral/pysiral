@@ -14,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 from cftime import num2pydate
-from dateperiods import DatePeriod
 from netCDF4 import Dataset
 
 from pysiral import psrlcfg
