@@ -14,7 +14,7 @@ from loguru import logger
 
 from pysiral.l1bdata import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
-from pysiral.retracker import cTFMRA
+from pysiral.retracker.tfmra import cTFMRA
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
