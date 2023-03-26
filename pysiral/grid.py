@@ -16,7 +16,7 @@ from core.class_template import DefaultLoggingClass
 from pyproj import Proj
 from pyresample import geometry
 
-from pysiral.config import get_yaml_config
+from pysiral.core.config import get_yaml_config
 
 
 class GridDefinition(DefaultLoggingClass):

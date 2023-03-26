@@ -22,7 +22,7 @@ from loguru import logger
 
 from pysiral import psrlcfg
 from core.clocks import StopWatch
-from pysiral.config import get_yaml_config
+from pysiral.core.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.core.helper import (ProgressIndicator, get_first_array_index,

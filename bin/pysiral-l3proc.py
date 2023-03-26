@@ -13,7 +13,7 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.config import DefaultCommandLineArguments
+from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.datahandler import L2iDataHandler
 from pysiral.core.errorhandler import ErrorStatus

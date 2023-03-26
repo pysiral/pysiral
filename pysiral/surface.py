@@ -13,7 +13,7 @@ import numpy as np
 from attrdict import AttrDict
 from loguru import logger
 
-from pysiral.config import RadarModes
+from pysiral.core.config import RadarModes
 from pysiral.core.flags import ANDCondition, SurfaceType
 from pysiral.l1bdata import L1bdataNCFile
 from pysiral.l2data import Level2Data

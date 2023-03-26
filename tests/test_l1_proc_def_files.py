@@ -14,7 +14,7 @@ from attrdict import AttrDict
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.config import get_yaml_config
+from pysiral.core.config import get_yaml_config
 
 logger.disable("pysiral")
 

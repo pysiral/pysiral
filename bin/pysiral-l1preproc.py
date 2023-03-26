@@ -8,7 +8,7 @@ import sys
 from loguru import logger
 
 from pysiral import get_cls
-from pysiral.config import DefaultCommandLineArguments
+from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef,
                                get_preproc)
 

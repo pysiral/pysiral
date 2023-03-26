@@ -101,7 +101,7 @@ from loguru import logger
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
 
-from pysiral.config import RadarModes
+from pysiral.core.config import RadarModes
 from pysiral.core.flags import SurfaceType
 from pysiral.core.output import NCDateNumDef
 
