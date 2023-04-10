@@ -118,7 +118,7 @@ class OutputHandlerBase(DefaultLoggingClass):
         self._validate_outputdef()
 
     def _set_basedir(self, basedir, create=True):
-        """ Sets and and (per default) creates the main output directory """
+        """ Sets and (per default) creates the main output directory """
         self._basedir = basedir
         if create:
             self._create_directory(self._basedir)
@@ -324,10 +324,11 @@ class DefaultLevel2OutputHandler(OutputHandlerBase):
         runtag subdirectory, optional second subdirectory for overwrite
         protection and product level id subfolder"""
         basedir = Path(psrlcfg.local_machine.product_repository)
-        if not isinstance(self.subdirectory, list):
-            basedir = basedir / self.subdirectory
-        else:
-            basedir = basedir / Path(*self.subdirectory)
+        basedir = (
+            basedir / Path(*self.subdirectory)
+            if isinstance(self.subdirectory, list)
+            else basedir / self.subdirectory
+        )
         if self.overwrite_protection:
             basedir = basedir / self.now_directory
         basedir = basedir / self.product_level_subfolder
@@ -417,7 +418,7 @@ class NCDataFile(DefaultLoggingClass):
 
         for parameter_name, attribute_dict in self.output_handler.variable_def:
 
-            # Check if parameter name is also the the name or the source
+            # Check if parameter name is also the name or the source
             # parameter
             if "var_source_name" in attribute_dict.keys():
                 attribute_dict = dict(attribute_dict)
@@ -431,7 +432,7 @@ class NCDataFile(DefaultLoggingClass):
             # Check if the data exists
             if data is None:
                 msg = "Invalid parameter name for data object: %s"
-                msg = msg % parameter_name
+                msg %= parameter_name
                 logger.error(msg)
                 self.error.add_error("invalid-paramater", msg)
                 self.error.raise_on_error()
@@ -446,16 +447,20 @@ class NCDataFile(DefaultLoggingClass):
 
             # Set dimensions (dependent on product level)
             if level3:
+
                 if flip_yc:
                     data = np.flipud(data)
+
                 if parameter_name not in lonlat_parameter_names:
                     data = np.array([data])
                     dimensions = tuple(list(dims)[0:len(data.shape)])
                 else:
                     dimensions = tuple(list(dims)[1:len(data.shape)+1])
+
             else:
                 if len(data.shape) == 1:
                     dimensions = tuple(list(dims)[0:len(data.shape)])
+
                 else:
 
                     # Register the additional dimension
@@ -471,24 +476,21 @@ class NCDataFile(DefaultLoggingClass):
                     # The full dimension
                     dimensions = aux_dimdict["dimensions"]
 
-            dtype = np.byte
-            flag_mask_vals = []
+            # flag_meanings attributes need special handling
 
-            # flag_mask attributes need special handling
-            if 'flag_masks' in attribute_dict.keys():
-                # Check to see if data is currently using less bits than the flag allows
-                flag_mask_vals = [int(x) for x in str(attribute_dict['flag_masks']).split(sep=',')]
-                if max(flag_mask_vals) >= 128:
-                    dtype = np.short
-                if max(flag_mask_vals) >= 65536:
-                    dtype = np.int32
-                # Create and set the variable with the wider type
-                var = self._rootgrp.createVariable(parameter_name, dtype, dimensions, zlib=self.zlib)
-                var[:] = data.astype(dtype)
+            if 'flag_meanings' in attribute_dict.keys() and "flag_values" in attribute_dict.keys():
+                # Check to see if data is currently using fewer bits than the flag allows
+                flag_values = [int(x) for x in re.split(r"\s+|, |,", str(attribute_dict['flag_values']))]
+                flag_dtype = np.byte
+                if max(flag_values) >= 128:
+                    flag_dtype = np.short
+                if max(flag_values) >= 65536:
+                    flag_dtype = np.int32
             else:
                 # Create and set the variable
-                var = self._rootgrp.createVariable(parameter_name, data.dtype.str, dimensions, zlib=self.zlib)
-                var[:] = data
+                flag_dtype = data.dtype.str
+            var = self._rootgrp.createVariable(parameter_name, flag_dtype, dimensions, zlib=self.zlib)
+            var[:] = data
 
             # Add Parameter Attributes
             # NOTE: The parameter attributes may be template strings and there are special cases with
@@ -496,13 +498,10 @@ class NCDataFile(DefaultLoggingClass):
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
                 attribute = self.output_handler.fill_template_string(attribute, self.data)
-                if key == 'flag_masks':
-                    # Use values pre-computed above
-                    attribute = np.asarray(flag_mask_vals, dtype=dtype)
-                elif key == 'flag_values':
+                if key == 'flag_values':
                     # The flag_values attribute also needs to be converted to a list of the correct datatype
-                    flag_values = [int(x) for x in re.split("\s+|, |,", attribute)]
-                    attribute = np.asarray(flag_values, dtype=data.dtype)
+                    flag_values = [int(x) for x in re.split(r"\s+|, |,", attribute)]
+                    attribute = np.asarray(flag_values, dtype=flag_dtype)
                 setattr(var, key, attribute)
 
     def _create_root_group(self, attdict, **global_attr_keyw):
@@ -691,9 +690,9 @@ class L1bDataNC(DefaultLoggingClass):
                 # Convert bool objects to integer
                 if data.dtype.str == "|b1":
                     data = np.int8(data)
-                dimensions = tuple(list(dims)[0:len(data.shape)])
+                dimensions = tuple(list(dims)[:len(data.shape)])
                 if self.verbose:
-                    print(" "+parameter, dimensions, data.dtype.str, data.shape)
+                    print(f" {parameter}", dimensions, data.dtype.str, data.shape)
 
                 var = dgroup.createVariable(parameter, data.dtype.str, dimensions, zlib=self.zlib)
                 var[:] = data
