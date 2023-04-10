@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming: 
-  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-v3p0.nc"
-  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-v3p0.nc"
+  daily: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-fv3.0.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-fv3.0.nc"
 
 product_level_subfolder: l2p_release
 
@@ -20,9 +20,9 @@ global_attributes:
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-D (2010-11 till 2020-04-30) and baseline-E (from 2010-10-01);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR v3.0, Sea ice type: {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR v3.0;First-year sea ice only}, Region code: {source_hemisphere:select;NSIDC regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier (2021), NSIDC);Longitude-based sectors from Parkinson, C. L. and Cavalieri, D. J. (2012)}"
   - platform: "{source_mission_name}"
-  - sensor: "{source_mission_sensor}"  
+  - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "CCI+ Sea Ice ECV, Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
+  - references: "Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.8"
   - product_version: "3.0"
@@ -42,7 +42,7 @@ global_attributes:
   - creator_url: "http://www.awi.de"
   - contributor_name: "Stefan Hendricks, Stephan Paul, Eero Rinne, heidi.sallila@fmi.fi"
   - contributor_role: "PrincipalInvestigator, Author, Author, Author"
-  - project: "Climate Change Initiative – European Space Agency"
+  - project: "Climate Change Initiative - European Space Agency"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
@@ -127,7 +127,7 @@ variables:
     ancillary_variables: "sea_ice_thickness_uncertainty, region_code, flag_miz"
     
   sea_ice_thickness_uncertainty:
-    long_name: "uncertainty of the sea ice layer thickness"
+    long_name: "uncertainty associated with sea ice thickness"
     standard_name: sea_ice_thickness standard_error
     units: m
     coordinates: time
@@ -136,7 +136,7 @@ variables:
     long_name: "region code"
     comment: "Region code from {source_hemisphere:select;A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC);Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
     valid_min: 0
-    valid_max: 21
+    valid_max: 20
     flag_values: "{source_hemisphere:select;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
     flag_meaning: "{source_hemisphere:select;undefined_region central_arctic beaufort_sea chukchi_sea east_siberian_sea laptev_sea kara_sea barents_sea east_greenland_sea baffin_bay_&_labrador_sea gulf_of_st._lawrence hudson_bay canadian_archipelago bering_sea sea_of_okhotsk sea_of_japan bohai_sea baltic_sea gulf_of_alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
     units: "1"
@@ -147,7 +147,7 @@ variables:
     comment: "indicates potential freeboard/thickness bias by surface waves the marginal ice zone"
     units: "1"
     valid_min: 0
-    valid_max: 3
+    valid_max: 2
     flag_values: "0 1 2"
     flag_meanings: "not_in_miz miz_no_bias_detected miz_bias_detected"
     coordinates: time
