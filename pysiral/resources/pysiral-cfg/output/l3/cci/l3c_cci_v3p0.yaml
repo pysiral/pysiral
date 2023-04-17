@@ -36,7 +36,7 @@ global_attributes:
   - format_version: "CCI Data Standards v2.3"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2020.}"
-  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor_fn}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0"
+  - id: "esacci-seaice-l3c-sithick-{source_mission_sensor:lower}_{source_mission_id}-{grid_id}-{time_coverage_start:%Y%m}-fv3p0"
   - naming_authority: "de.awi"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Cryosphere > Sea Ice > Freeboard, Earth Science > Cryosphere > Sea Ice > Snow Depth, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Earth Remote Sensing Instruments > Active Remote Sensing > Altimeters > Radar Altimeters > KU-BAND RADAR, Space-based Platforms > Earth Observation Satellites > {source_mission_id:select;cryosat2:CRYOSAT;envisat:ENVISAT}, Multinational Organizations > ESA/CCI, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research, Geographic Region > {source_hemisphere:select;Northern;Southern} Hemisphere, Vertical Location > Sea Surface"
   - keywords_vocabulary: "GCMD Science Keywords"
