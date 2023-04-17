@@ -279,6 +279,7 @@ class L2iDataStack(DefaultLoggingClass):
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
         # Stack the l2 parameter in the corresponding grid cells
+        outside_grid_flag = False
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
@@ -290,6 +291,11 @@ class L2iDataStack(DefaultLoggingClass):
                     self.stack[parameter_name][y][x].append(data[i])
                 except AttributeError:
                     pass
+                except IndexError:
+                    outside_grid_flag = True
+
+        if outside_grid_flag:
+            logger.warning("L2 input data outside grid definition")
 
     @property
     def n_total_records(self):
