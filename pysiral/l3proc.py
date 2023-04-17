@@ -575,6 +575,8 @@ class L3DataGrid(DefaultLoggingClass):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
+        elif args[0] == "lower":
+            mission_sensor = mission_sensor.lower()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
