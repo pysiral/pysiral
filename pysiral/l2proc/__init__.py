@@ -204,8 +204,12 @@ class Level2Processor(DefaultLoggingClass):
             # Log the current position in the file stack
             logger.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
 
-            # Read the the level 1b file (l1bdata netCDF is required)
-            l1b = self._read_l1b_file(l1b_file)
+            # Read the level-1p file
+            try:
+                l1b = self._read_l1b_file(l1b_file)
+            except RuntimeError:
+                logger.error(f"Cannot read {Path(l1b_file).name}, ... skipping")
+                continue
             source_primary_filename = Path(l1b_file).parts[-1]
 
             # Initialize the orbit level-2 data container
