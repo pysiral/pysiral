@@ -1,7 +1,8 @@
 astropy
 attrdict
 bottleneck
-cartopy ~= 0.18; python_version<="3.7"
+pyproj
+cartopy=="0.18.0"; python_version<="3.7"
 cartopy; python_version>="3.8"
 cftime
 cython
@@ -23,7 +24,6 @@ pillow
 pandas
 parse
 pykdtree
-pyproj
 pyresample
 pyshp
 python-dateutil
