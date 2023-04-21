@@ -9,6 +9,7 @@ dateutils
 flake8
 geopy
 h5py
+isort
 loguru
 lxml
 isodate
