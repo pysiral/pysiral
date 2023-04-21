@@ -2,4 +2,4 @@ Sphinx
 sphinx-automodapi
 sphinx_rtd_theme
 sphinxcontrib-mermaid
-yaml
+pyyaml
