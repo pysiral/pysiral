@@ -6,16 +6,16 @@ Created on Fri Aug 11 17:07:02 2017
 """
 
 
-from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
-from pysiral.l2data import Level2PContainer, L2iNCFileImport
-from pysiral.logging import DefaultLoggingClass
-from pysiral.output import Level2Output, OutputHandlerBase
-
 from collections import OrderedDict
-
 from pathlib import Path
+
 from loguru import logger
+
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.output import Level2Output, OutputHandlerBase
+from pysiral.l2data import L2iNCFileImport, Level2PContainer, Level2Data
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -26,8 +26,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Sanity check of product definition object
         if not isinstance(product_def, Level2PreProcProductDefinition):
-            msg = "Invalid Level-2 PreProcessor product definition: %s" % \
-                type(product_def)
+            msg = f"Invalid Level-2 PreProcessor product definition: {type(product_def)}"
             self.error.add_error("invalid-l2preproc-def", msg)
             self.error.raise_on_error()
         self._job = product_def
@@ -46,7 +45,7 @@ class Level2PreProcessor(DefaultLoggingClass):
                 l2i = L2iNCFileImport(l2i_file)
             except Exception as ex:
                 msg = "Error (%s) in l2i file: %s"
-                msg = msg % (ex, Path(l2i_file).name)
+                msg %= (ex, Path(l2i_file).name)
                 logger.error(msg)
                 continue
             l2p.append_l2i(l2i)
@@ -59,7 +58,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 
         # Write output
         output = Level2Output(l2, self.job.output_handler)
-        logger.info("- Wrote %s data file: %s" % (self.job.output_handler.id, output.export_filename))
+        logger.info(f"- Wrote {self.job.output_handler.id} data file: {output.export_filename}")
 
     @property
     def job(self):
@@ -69,6 +68,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 class Level2PreProcProductDefinition(DefaultLoggingClass):
 
     def __init__(self):
+        self._output_handler = None
         class_name = self.__class__.__name__
         super(Level2PreProcProductDefinition, self).__init__(class_name)
 
@@ -116,10 +116,11 @@ class Level2POutputHandler(OutputHandlerBase):
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
 
-    def get_filename_from_data(self, l2p):
+    def get_filename_from_data(self, l2p: Level2Data) -> str:
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
 
+        global filename_template
         try:
             template_ids = self.output_def.filenaming.keys()
             period_id = self._period
@@ -132,16 +133,21 @@ class Level2POutputHandler(OutputHandlerBase):
             filename_template = self.output_def.filenaming
         except KeyError:
             msg = "Missing filenaming convention for period [%s] in [%s]"
-            msg = msg % (str(self._period), self.output_def_filename)
+            msg %= (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
-        filename = self.fill_template_string(filename_template, l2p)
-        return filename
+        return self.fill_template_string(filename_template, l2p)
 
-    def get_directory_from_data(self, l2p, create=True):
-        """ Return the output directory based on information provided
-        in an l2 data object """
-        directory = self._get_directory_from_dt(l2p.info.start_time)
+    def get_directory_from_data(self, l2p: Level2Data, create: bool = True) -> str:
+        """
+        Return the output directory based on l2 data object metadata
+
+        :param l2p:
+        :param create:
+        :return:
+        """
+        l2p_period = l2p.period.tcs.dt
+        directory = self._get_directory_from_dt(l2p_period)
         if create:
             self._create_directory(directory)
         self.error.raise_on_error()
@@ -150,8 +156,8 @@ class Level2POutputHandler(OutputHandlerBase):
     def get_fullpath_from_data(self, l2):
         """ Return export path and filename based on information
         provided in the l2 data object """
-        export_directory = self.get_directory_from_l2(l2)
-        export_filename = self.get_filename_from_l2(l2)
+        export_directory = self.get_directory_from_data(l2)
+        export_filename = self.get_filename_from_data(l2)
         return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l2):

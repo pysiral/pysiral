@@ -9,6 +9,7 @@ __all__ = ["AuxdataBaseClass",
            "AuxClassConfig",
            "GridTrackInterpol",
            "get_all_auxdata_classes",
+           "ml",
            "mss",
            "icechart",
            "rio",
@@ -19,22 +20,22 @@ __all__ = ["AuxdataBaseClass",
 
 
 import re
+from pathlib import Path
+from typing import List
 
 import numpy as np
-from typing import List
-from attrdict import AttrDict
-
 import scipy.ndimage as ndimage
-from pathlib import Path
+from attrdict import AttrDict
 from pyproj import Proj
 
 from pysiral import import_submodules
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l1data import L1bdataNCFile
 
 
 class AuxdataBaseClass(object):
     """
-    Base class for all sub-type auxdata base classes (e.g. SICBaseClass).
+    Base class for all subtype auxdata base classes (e.g. SICBaseClass).
     This class defines the mandatory set of methods and properties for all
     auxdata classes
     """
@@ -49,7 +50,7 @@ class AuxdataBaseClass(object):
         # Auxiliary class options
         if not isinstance(auxclass_cfg, AuxClassConfig):
             msg = "Invalid config object: %s (needs to be of type pysiral.auxdata.AuxClassConfig"
-            msg = msg % str(auxclass_cfg)
+            msg %= str(auxclass_cfg)
             self.error.add_error("invalid-auxclasscfg-type", msg)
             self.error.raise_on_error()
         self._cfg = auxclass_cfg
@@ -70,6 +71,7 @@ class AuxdataBaseClass(object):
         # requested date and if a new product is loaded upon mismatch of current & requested data
         # NOTE: This will be bypassed by static auxiliary data classes
         # TODO: Load all auxiliary products for processing period in memory (allow parallel processing)
+        # TODO: Add actual periods, e.g. for trajectory based auxiliary data
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
 
@@ -93,7 +95,7 @@ class AuxdataBaseClass(object):
         data_container = getattr(self, data_container_name, None)
         if data_container is None:
             msg = "%s: Data not loaded [%s]"
-            msg = msg % (self.__class__.__name__, self.year+"-"+self.month+"-"+self.day)
+            msg %= (self.__class__.__name__, f"{self.year}-{self.month}-{self.day}")
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing", msg)
 
@@ -107,13 +109,23 @@ class AuxdataBaseClass(object):
         before retrieving data (e.g. since the Level-2 processor calls this instance repeatedly) """
         self.msgs = []
 
+    def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
+        """
+        An optional method to pass l1p information to the auxiliary data class prior
+        to execution. For this method to work it needs to be overwritten to by the child class.
+        :param l1p:
+        :return:
+        """
+        pass
+
     def add_variables_to_l2(self, l2):
         """ Main Access points for the Level-2 Processor """
 
         # Call the API get_track class. This is the mandatory method of all auxiliary subclasses (independent
-        # of type. Test if this is indeed the case
+        # of type). Test if this is indeed the case
         if not self.has_mandatory_track_method:
-            msg = "Mandatory subclass method `get_l2_track_vars` not implemented for %s " % self.pyclass
+            msg = f"Mandatory subclass method `get_l2_track_vars` not implemented for {self.pyclass} "
+
             self.error.add_error("not-implemented", msg)
             self.error.raise_on_error()
 
@@ -134,7 +146,7 @@ class AuxdataBaseClass(object):
         try:
             self.update_l2(l2)
         except KeyError:
-            msg = "Invalid auxiliary parameter return from class %s" % self.pyclass
+            msg = f"Invalid auxiliary parameter return from class {self.pyclass}"
             self.error.add_error("invalid-auxvar-return", msg)
             self.error.raise_on_error()
 
@@ -162,8 +174,13 @@ class AuxdataBaseClass(object):
         return np.full(l2.n_records, empty_val)
 
     def update_external_data(self):
-        """ This method will check if the requested date matches current data
-        and call the subclass data loader method if not """
+        """
+        This method will check if the requested date matches current data
+        and call the subclass data loader method if not
+
+        :return:
+        """
+
         # Check if data for day is already loaded
         if self._requested_date != self._current_date:
             # NOTE: The implementation of this method needs to be in the subclass
@@ -180,7 +197,7 @@ class AuxdataBaseClass(object):
 
     def load_requested_auxdata(self):
         """
-        This methods raises a NotImplementedError if it is not overwritten by child class
+        This method raises a NotImplementedError if it is not overwritten by child class
         :return:
         """
         msg = """
@@ -191,7 +208,7 @@ class AuxdataBaseClass(object):
 
     def get_l2_track_vars(self, *args):
         """
-        This methods raises a NotImplementedError if it is not overwritten by child class
+        This method raises a NotImplementedError if it is not overwritten by child class
         :return:
         """
         msg = """
@@ -216,14 +233,11 @@ class AuxdataBaseClass(object):
 
     @property
     def has_data_loaded(self) -> bool:
-        if not hasattr(self, "_data"):
-            return False
-        return self._data is not None
+        return self._data is not None if hasattr(self, "_data") else False
 
     @property
     def exception_on_error(self) -> bool:
-        exception_on_error = self.cfg.options.get("exception_on_error", False)
-        return exception_on_error
+        return self.cfg.options.get("exception_on_error", False)
 
     @property
     def requested_filepath(self) -> "Path":
@@ -235,7 +249,7 @@ class AuxdataBaseClass(object):
         # Main directory
         path = Path(self.cfg.local_repository)
 
-        # Add the subfolders
+        # Add the sub-folders
         for subfolder_tag in self.cfg.subfolders:
             subfolder = getattr(self, subfolder_tag)
             path = path / subfolder
@@ -266,15 +280,12 @@ class AuxdataBaseClass(object):
     def has_mandatory_track_method(self):
         """ Test if this object instance has the mandatory method for extracting track data. This method
         is named get_l2_track_vars() and needs to be present in any auxiliary subclass"""
-        has_method = False
         get_track_children_method = getattr(self, "get_l2_track_vars", None)
-        if callable(get_track_children_method):
-            has_method = True
-        return has_method
+        return callable(get_track_children_method)
 
     @property
     def auxvar_names(self):
-        return list([auxvar["name"] for auxvar in self._auxvars])
+        return [auxvar["name"] for auxvar in self._auxvars]
 
 
 class AuxClassConfig(object):
@@ -361,7 +372,12 @@ class AuxClassConfig(object):
         """
         self.subfolders = subfolder_list
 
+    @property
+    def option_keys(self):
+        return self.options.keys()
 
+
+# TODO: Deprecate this class -> Use pysiral.grid.GridImageExtract
 class GridTrackInterpol(object):
     """ Implements fast extraction of gridded data along a track using Image Interpolation """
 
@@ -417,8 +433,7 @@ class GridTrackInterpol(object):
         """ Returns a along-track data from a grid variable"""
         if flipud:
             gridvar = np.flipud(gridvar)
-        trackvar = ndimage.map_coordinates(gridvar, [self.iy, self.ix], order=order)
-        return trackvar
+        return ndimage.map_coordinates(gridvar, [self.iy, self.ix], order=order)
 
     def debug_map(self, *args, **kwargs):
         raise NotImplementedError()

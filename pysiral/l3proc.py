@@ -4,32 +4,30 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+import itertools
+import re
+import sys
+import uuid
+from collections import OrderedDict
+from datetime import date, datetime
+from pathlib import Path
+
+import numpy as np
+from loguru import logger
+from scipy import stats
+from scipy.ndimage import maximum_filter
+from xarray import open_dataset
+
 from pysiral import __version__, get_cls, psrlcfg
-from pysiral.core.flags import SURFACE_TYPE_DICT
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.grid import GridDefinition
-from pysiral.logging import DefaultLoggingClass
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
-from pysiral.output import OutputHandlerBase, Level3Output
-from pysiral.core.flags import ORCondition
 from pysiral.sit import frb2sit_errprop
-
-from scipy import stats
-from scipy.ndimage.filters import maximum_filter
-
-from collections import OrderedDict
-from loguru import logger
-from datetime import datetime, date
-from pathlib import Path
-from xarray import open_dataset
-import itertools
-import uuid
-import numpy as np
-import sys
-import re
-
 
 # %% Level 3 Processor
 
@@ -79,35 +77,18 @@ class Level3Processor(DefaultLoggingClass):
             # Apply the orbit filter (for masking descending or ascending orbit segments)
             # NOTE: This tag may not be present in all level-3 settings files, as it has
             #       been added as a test case
-            try:
-                orbitfilter = self._job.l3def.orbit_filter
-                orbitfilter_is_active = orbitfilter.active
-            except AttributeError:
-                orbitfilter_is_active = False
+            # TODO: Create a configurable processor item
+            orbit_filter = self._job.l3def.get("orbit_filter")
+            if orbit_filter is not None:
+                self.apply_orbit_filter(l2i, orbit_filter)
 
-            if orbitfilter_is_active:
-
-                # Display warning if filter is active
-                logger.warning("Orbit filter is active [%s]" % str(orbitfilter.mask_orbits))
-
-                # Get indices to filter
-                if orbitfilter.mask_orbits == "ascending":
-                    indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
-                elif orbitfilter.mask_orbits == "descending":
-                    indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
-                else:
-                    logger.error(
-                        "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
-                    indices = []
-
-                # Filter geophysical parameters only
-                targets = l2i.parameter_list
-                for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-                    try:
-                        targets.remove(non_target)
-                    except ValueError:
-                        pass
-                l2i.mask_variables(indices, targets)
+            # Apply the orbit filter (for masking descending or ascending orbit segments)
+            # NOTE: This tag may not be present in all level-3 settings files, as it has
+            #       been added as a test case
+            # TODO: Create a configurable processor item
+            miz_filter = self._job.l3def.get("miz_filter")
+            if miz_filter is not None:
+                self.apply_miz_filter(l2i, miz_filter)
 
             # Prefilter l2i product
             # Note: In the l2i product only the minimum set of nan are used
@@ -116,6 +97,7 @@ class Level3Processor(DefaultLoggingClass):
             #       inconsistent results during gridding and therefore it is
             #       highly recommended to harmonize the mask for thickness
             #       and the different freeboard levels
+            # TODO: Create a configurable processor item
             prefilter = self._job.l3def.l2i_prefilter
             if prefilter.active:
                 l2i.transfer_nan_mask(prefilter.nan_source, prefilter.nan_targets)
@@ -142,8 +124,58 @@ class Level3Processor(DefaultLoggingClass):
         last_reminder = np.mod(self._l3_progress_percent, 10)
         if last_reminder > current_reminder:
             logger.info(
-                "Creating l2i orbit stack: %3g%% (%g of %g)" % (progress_percent - current_reminder, i + 1, n))
+                'Creating l2i orbit stack: %3g%% (%g of %g)'
+                % (progress_percent - current_reminder, i + 1, n)
+            )
+
         self._l3_progress_percent = progress_percent
+
+    @staticmethod
+    def apply_orbit_filter(l2i, orbit_filter):
+        """
+        Apply a
+        :param l2i:
+        :param orbit_filter:
+        :return:
+        """
+
+        # Display warning if filter is active
+        logger.warning("Orbit filter is active [%s]" % str(orbit_filter.mask_orbits))
+
+        # Get indices to filter
+        if orbit_filter.mask_orbits == "ascending":
+            indices = np.where(np.ediff1d(l2i.latitude) > 0.)[0]
+        elif orbit_filter.mask_orbits == "descending":
+            indices = np.where(np.ediff1d(l2i.latitude) < 0.)[0]
+        else:
+            logger.error(
+                "Invalid orbit filter target, needs to be [ascending, descending], Skipping filter ...")
+            indices = []
+
+        # Filter geophysical parameters only
+        targets = l2i.parameter_list
+        for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
+            try:
+                targets.remove(non_target)
+            except ValueError:
+                pass
+        l2i.mask_variables(indices, targets)
+
+    @staticmethod
+    def apply_miz_filter(l2i, miz_filter):
+        """
+        Flag values based on the miz filter value
+        :param l2i:
+        :param miz_filter:
+        :return:
+        """
+
+        flag_miz = getattr(l2i, "flag_miz", None)
+        if flag_miz is None:
+            return
+
+        idx = np.where(flag_miz >= miz_filter["mask_min_value"])[0]
+        l2i.mask_variables(idx, miz_filter["mask_targets"])
 
     def _apply_processing_items(self, l3grid):
         """
@@ -215,11 +247,10 @@ class L2iDataStack(DefaultLoggingClass):
         with `add` method """
 
         # Stack dictionary that will hold the data
-        self.stack = {}
-
-        # create a stack for each l2 parameter
-        for parameter_name in self.l2_parameter.keys():
-            self.stack[parameter_name] = self.parameter_stack
+        self.stack = {
+            parameter_name: self.parameter_stack
+            for parameter_name in self.l2_parameter.keys()
+        }
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
@@ -232,10 +263,7 @@ class L2iDataStack(DefaultLoggingClass):
         """
 
         # Save the metadata from the orbit data
-        if hasattr(l2i, "time"):
-            time = l2i.time
-        else:
-            time = l2i.timestamp
+        time = l2i.time if hasattr(l2i, "time") else l2i.timestamp
         self.start_time.append(time[0])
         self.stop_time.append(time[-1])
         self.mission.append(l2i.mission)
@@ -249,26 +277,31 @@ class L2iDataStack(DefaultLoggingClass):
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
         # Stack the l2 parameter in the corresponding grid cells
+        outside_grid_flag = False
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
-
             for parameter_name in self.l2_parameter.keys():
                 try:
                     data = getattr(l2i, parameter_name)
                     self.stack[parameter_name][y][x].append(data[i])
                 except AttributeError:
                     pass
+                except IndexError:
+                    outside_grid_flag = True
+
+        if outside_grid_flag:
+            logger.warning("L2 input data outside grid definition")
 
     @property
     def n_total_records(self):
-        return self._n_records
+        return int(self._n_records)
 
     @property
     def l2i_count(self):
-        return self._l2i_count
+        return int(self._l2i_count)
 
     @property
     def parameter_stack(self):
@@ -321,9 +354,13 @@ class L3DataGrid(DefaultLoggingClass):
         # list of stacked l2 parameters for each grid cell
         if not isinstance(stack, L2iDataStack):
             msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
-            msg = msg % type(stack)
+            msg %= type(stack)
             raise ValueError(msg)
         self.l2 = stack
+
+        # Get a list of non-empty
+        self._non_empty_grid_indices = None
+        self._init_grid_indices_mask()
 
         # container for gridded parameters
         self.vars = {}
@@ -354,8 +391,7 @@ class L3DataGrid(DefaultLoggingClass):
         required for the output data handler """
         try:
             attr_getter = getattr(self, "_get_attr_" + attribute_name)
-            attribute = attr_getter(*args)
-            return attribute
+            return attr_getter(*args)
         except AttributeError:
             return "attr_unavailable"
         except Exception as ex:
@@ -430,7 +466,7 @@ class L3DataGrid(DefaultLoggingClass):
                     self.vars[name][yj, xi] = np.nanmedian(data)
                 else:
                     msg = "Invalid grid method (%s) for %s"
-                    msg = msg % (str(grid_method), name)
+                    msg %= (str(grid_method), name)
                     self.error.add_error("invalid-l3def", msg)
                     self.error.raise_on_error()
 
@@ -459,6 +495,20 @@ class L3DataGrid(DefaultLoggingClass):
         except Exception as ex:
             print("L3DataGrid.get_parameter_by_name Exception: " + str(ex))
             sys.exit(1)
+
+    def _init_grid_indices_mask(self) -> None:
+        """
+        Compute a mask of non-empty grid indices
+        :return:
+        """
+
+        # Get number of items per stack
+        n_records = np.ndarray(shape=self.grid_shape)
+        for xi, yj in self.all_grid_indices:
+            n_records[yj][xi] = len(self.l2.stack["time"][yj][xi])
+
+        # Get indices
+        self._non_empty_grid_indices = np.flip(np.array(np.where(n_records > 0))).T
 
     def _init_metadata_from_l2(self):
         """
@@ -496,8 +546,7 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_source_mission_name(self, *args):
         ids = self.metadata.mission_ids
-        names = ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
-        return names
+        return ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
 
     def _get_attr_source_timeliness(self, *args):
         timeliness = self.metadata.source_timeliness
@@ -524,6 +573,8 @@ class L3DataGrid(DefaultLoggingClass):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
+        elif args[0] == "lower":
+            mission_sensor = mission_sensor.lower()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
@@ -536,11 +587,10 @@ class L3DataGrid(DefaultLoggingClass):
         return mission_sensor
 
     def _get_attr_source_hemisphere(self, *args):
-        if args[0] == "select":
-            choices = {"north": args[1], "south": args[2]}
-            return choices.get(self.hemisphere, "n/a")
-        else:
+        if args[0] != "select":
             return self.hemisphere
+        choices = {"north": args[1], "south": args[2]}
+        return choices.get(self.hemisphere, "n/a")
 
     @staticmethod
     def _get_attr_uuid(*args):
@@ -583,27 +633,15 @@ class L3DataGrid(DefaultLoggingClass):
 
     def _get_attr_utcnow(self, *args):
         dt = self._creation_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         dt = self.metadata.time_coverage_start
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_end(self, *args):
         dt = self.metadata.time_coverage_end
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_duration(self, *args):
         return self.metadata.time_coverage_duration
@@ -612,11 +650,10 @@ class L3DataGrid(DefaultLoggingClass):
         return self._doi
 
     def _get_attr_data_record_type(self, *args):
-        if args[0] == "select":
-            choices = {"cdr": args[1], "icdr": args[2]}
-            return choices.get(self._data_record_type, "n/a")
-        else:
+        if args[0] != "select":
             return self._data_record_type
+        choices = {"cdr": args[1], "icdr": args[2]}
+        return choices.get(self._data_record_type, "n/a")
 
     @staticmethod
     def _get_attr_pysiral_version(*args):
@@ -639,8 +676,15 @@ class L3DataGrid(DefaultLoggingClass):
         return np.arange(self.griddef.extent.numy)
 
     @property
-    def grid_indices(self):
+    def all_grid_indices(self):
         return itertools.product(self.grid_xi_range, self.grid_yj_range)
+
+    @property
+    def grid_indices(self):
+        if self._non_empty_grid_indices is None:
+            return itertools.product(self.grid_xi_range, self.grid_yj_range)
+        else:
+            return self._non_empty_grid_indices
 
     # @property
     # def parameter_list(self):
@@ -653,13 +697,10 @@ class L3DataGrid(DefaultLoggingClass):
 
     @property
     def dimdict(self):
-        time_dim = 1
-        if True in self._time_dim_is_unlimited:
-            time_dim = 0
-        dimdict = OrderedDict([("time", time_dim),
-                               ("yc", self.griddef.extent.numx),
-                               ("xc", self.griddef.extent.numy)])
-        return dimdict
+        time_dim = 0 if True in self._time_dim_is_unlimited else 1
+        return OrderedDict([("time", time_dim),
+                            ("yc", self.griddef.extent.numx),
+                            ("xc", self.griddef.extent.numy)])
 
     @property
     def grid_shape(self):
@@ -719,9 +760,6 @@ class L3MetaData(object):
             self.set_attribute("mission_ids", "unkown")
 
         source_timeliness = np.unique(stack.timeliness)[0]
-        if len(source_timeliness) != 1:
-            # XXX: Different timeliness should not be mixed
-            pass
         self.set_attribute("source_timeliness", source_timeliness)
 
     def get_data_period_from_stack(self, stack):
@@ -778,10 +816,7 @@ class L3MetaData(object):
     @property
     def attdict(self):
         """ Return attributes as dictionary (e.g. for netCDF export) """
-        attdict = {}
-        for field in self.attribute_list:
-            attdict[field] = getattr(self, field)
-        return attdict
+        return {field: getattr(self, field) for field in self.attribute_list}
 
     @property
     def mission(self):
@@ -844,12 +879,11 @@ class Level3OutputHandler(OutputHandlerBase):
             filename_template = self.output_def.filenaming
         except KeyError:
             msg = "Missing filenaming convention for period [%s] in [%s]"
-            msg = msg % (str(self._period), self.output_def_filename)
+            msg %= (str(self._period), self.output_def_filename)
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
 
-        filename = self.fill_template_string(filename_template, l3)
-        return filename
+        return self.fill_template_string(filename_template, l3)
 
     def get_directory_from_data(self, l3, create=True):
         """ Return the output directory based on information provided
@@ -949,7 +983,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         Arguments:
             l3_settings_file (str): Full filename to l3 settings file
             grid (pysiral.grid.GridDefinition): Output grid class
-            output (Level-3 compliant output handler from pysiral.output)
+            output (Level-3 compliant output handler from pysiral.core.output)
         """
         super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)
@@ -963,7 +997,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         logger.info("Output grid id: %s" % str(self._grid.grid_id))
         for output in self._output:
             msg = "L3 product directory (%s): %s"
-            msg = msg % (str(output.id), str(output.basedir))
+            msg %= (str(output.id), str(output.basedir))
             logger.info(msg)
 
     def _parse_l3_settings(self):
@@ -1035,8 +1069,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         """ Extract a list of paramter names to be computed by the
         Level-3 processor """
         l3_parameter = sorted(self.l3def.l3_parameter.keys(branch_mode="only"))
-        l3_param_def = [self.l3def.l3_parameter[n] for n in l3_parameter]
-        return l3_param_def
+        return [self.l3def.l3_parameter[n] for n in l3_parameter]
 
 
 class Level3ProcessorItem(DefaultLoggingClass):
@@ -1060,7 +1093,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         # Store the arguments with type validation
         if not isinstance(l3grid, L3DataGrid):
             msg = "Invalid data type [%s] for l3grid parameter. Must be l3proc.L3DataGrid"
-            msg = msg % type(l3grid)
+            msg %= type(l3grid)
             self.error.add_error("invalid-argument", msg)
             self.error.raise_on_error()
         self.l3grid = l3grid
@@ -1087,7 +1120,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for l2_var_name in self.l2_variable_dependencies:
             if l2_var_name not in self.l3grid.l2.stack:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, l2_var_name)
+                msg %= (self.__class__.__name__, l2_var_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
                 self.error.raise_on_error()
 
@@ -1095,7 +1128,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
         for l3_var_name in self.l3_variable_dependencies:
             if l3_var_name not in self.l3grid.vars:
                 msg = "Level-3 processor item %s requires l3 grid parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, l3_var_name)
+                msg %= (self.__class__.__name__, l3_var_name)
                 self.error.add_error("l3procitem-missing-l3griditem", msg)
                 self.error.raise_on_error()
 
@@ -1127,6 +1160,39 @@ class Level3ProcessorItem(DefaultLoggingClass):
             self.l3grid.add_grid_variable(variable_name, vardef["fill_value"], vardef["dtype"])
 
 
+class Level3ValidSeaIceFreeboardCount(Level3ProcessorItem):
+    """
+    A Level-3 processor item to count valid sea ice freeboard values.
+    This class should be used for very limited l2i outputs files that
+    do not have the surface_type variable necessary for
+    `Level3SurfaceTypeStatistics`
+    """
+
+    # Mandatory properties
+    required_options = []
+    l2_variable_dependencies = []
+    l3_variable_dependencies = ["sea_ice_freeboard"]
+    l3_output_variables = dict(n_valid_freeboards=dict(dtype="i4", fill_value=0))
+
+    def __init__(self, *args, **kwargs):
+        """
+        Compute surface type statistics
+        :param args:
+        :param kwargs:
+        """
+        super(Level3ValidSeaIceFreeboardCount, self).__init__(*args, **kwargs)
+
+    def apply(self):
+        """
+        Computes the number of valid sea_ice_freeboard values
+        """
+        for xi, yj in self.l3grid.grid_indices:
+
+            # Extract the list of surface types inm the grid cell
+            sea_ice_freeboards = np.array(self.l3grid.l2.stack["sea_ice_freeboard"][yj][xi])
+            self.l3grid.vars["n_valid_freeboards"][yj, xi] = np.where(np.isfinite(sea_ice_freeboards))[0].size
+
+
 class Level3SurfaceTypeStatistics(Level3ProcessorItem):
     """ A Level-3 processor item to compute surface type stastics """
 
@@ -1134,12 +1200,13 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
     required_options = []
     l2_variable_dependencies = ["surface_type", "sea_ice_thickness"]
     l3_variable_dependencies = []
-    l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=np.nan),
-                               n_valid_waveforms=dict(dtype="f4", fill_value=np.nan),
-                               valid_fraction=dict(dtype="f4", fill_value=np.nan),
-                               lead_fraction=dict(dtype="f4", fill_value=np.nan),
-                               ice_fraction=dict(dtype="f4", fill_value=np.nan),
-                               negative_thickness_fraction=dict(dtype="f4", fill_value=np.nan),
+    l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=0.0),
+                               n_valid_waveforms=dict(dtype="f4", fill_value=0.0),
+                               valid_fraction=dict(dtype="f4", fill_value=0.0),
+                               lead_fraction=dict(dtype="f4", fill_value=0.0),
+                               seaice_fraction=dict(dtype="f4", fill_value=0.0),
+                               ocean_fraction=dict(dtype="f4", fill_value=0.0),
+                               negative_thickness_fraction=dict(dtype="f4", fill_value=0.0),
                                is_land=dict(dtype="i2", fill_value=-1))
 
     def __init__(self, *args, **kwargs):
@@ -1160,10 +1227,11 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
         The current list
           - is_land (land flag exists in l2i stack)
           - n_total_waveforms (size of l2i stack)
-          - n_valid_waveforms (tagged as either lead or sea ice )
+          - n_valid_waveforms (tagged as either lead, sea ice or ocean )
           - valid_fraction (n_valid/n_total)
           - lead_fraction (n_leads/n_valid)
           - ice_fraction (n_ice/n_valid)
+          - ocean_fraction (n_ocean/n_valid)
           - negative thickness fraction (n_sit<0 / n_sit)
         """
 
@@ -1191,6 +1259,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             valid_waveform = ORCondition()
             valid_waveform.add(surface_type == stflags["lead"])
             valid_waveform.add(surface_type == stflags["sea_ice"])
+            valid_waveform.add(surface_type == stflags["ocean"])
             n_valid_waveforms = valid_waveform.num
             self.l3grid.vars["n_valid_waveforms"][yj, xi] = n_valid_waveforms
 
@@ -1198,29 +1267,24 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
             try:
                 valid_fraction = float(n_valid_waveforms) / float(n_total_waveforms)
             except ZeroDivisionError:
-                valid_fraction = np.nan
+                valid_fraction = 0
             self.l3grid.vars["valid_fraction"][yj, xi] = valid_fraction
 
-            # Fractions of leads on valid_waveforms
-            n_leads = len(np.where(surface_type == stflags["lead"])[0])
-            try:
-                lead_fraction = float(n_leads) / float(n_valid_waveforms)
-            except ZeroDivisionError:
-                lead_fraction = np.nan
-            self.l3grid.vars["lead_fraction"][yj, xi] = lead_fraction
-
-            # Fractions of leads on valid_waveforms
-            n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
-            try:
-                ice_fraction = float(n_ice) / float(n_valid_waveforms)
-            except ZeroDivisionError:
-                ice_fraction = np.nan
-            self.l3grid.vars["ice_fraction"][yj, xi] = ice_fraction
+            # Fractions of surface types with respect to valid_waveforms
+            for surface_type_name in ["ocean", "lead", "sea_ice"]:
+                n_wfm = len(np.where(surface_type == stflags[surface_type_name])[0])
+                try:
+                    detection_fraction = float(n_wfm) / float(n_valid_waveforms)
+                except ZeroDivisionError:
+                    detection_fraction = 0
+                surface_type_id = surface_type_name.replace("_", "")
+                self.l3grid.vars[f"{surface_type_id}_fraction"][yj, xi] = detection_fraction
 
             # Fractions of negative thickness values
             sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
+                n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
                 negative_thickness_fraction = float(n_negative_thicknesses) / float(n_ice)
             except ZeroDivisionError:
                 negative_thickness_fraction = np.nan
@@ -1474,6 +1538,13 @@ class Level3QualityFlag(Level3ProcessorItem):
             area_lfr = maximum_filter(lfr, size=window_size)
             thrs = rule_options["area_lead_fraction_minimum"]
             flag[np.where(area_lfr <= thrs)] = rule_options["target_flag"]
+            qif = np.maximum(qif, flag)
+
+        if "qif_miz_flag" in quality_flag_rules:
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            rule_options = self.rules["qif_miz_flag"]
+            for source_flag, target_flag in zip(rule_options["source_flags"], rule_options["source_flags"]):
+                flag[np.where(self.l3grid.vars["flag_miz"] == source_flag)] = target_flag
             qif = np.maximum(qif, flag)
 
         # Check the negative thickness fraction (higher value -> higher warnung flag)
@@ -1756,7 +1827,7 @@ class Level3ParameterMask(Level3ProcessorItem):
                     filter_mask = np.logical_and(filter_mask, new_filter)
                 else:
                     msg = "Invalid l3 mask operation: %s"
-                    msg = msg % self.cfg["connect_conditions"]
+                    msg %= self.cfg["connect_conditions"]
                     self.error.add_error("invalid-l3mask-def", msg)
                     self.error.raise_on_error()
 
@@ -1822,17 +1893,18 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
 
         # Get surface type flag
         surface_type = self.l3grid.l2.stack["surface_type"]
-        target_surface_types = self.surface_types
+        target_surface_types = list(self.surface_types)
         target_surface_types.append("all")
 
         # Loop over all parameters
         for parameter_name in self.parameters:
             # Get the stack
+            classifier_stack = None
             try:
                 classifier_stack = self.l3grid.l2.stack[parameter_name]
             except KeyError:
                 msg = "Level-3 processor item %s requires l2 stack parameter [%s], which does not exist"
-                msg = msg % (self.__class__.__name__, parameter_name)
+                msg %= (self.__class__.__name__, parameter_name)
                 self.error.add_error("l3procitem-missing-l2stackitem", msg)
                 self.error.raise_on_error()
 
@@ -1840,7 +1912,10 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
             for statistic in self.statistics:
                 # Loop over target surface types
                 for target_surface_type in target_surface_types:
-                    self._compute_grid_variable(parameter_name, classifier_stack, surface_type, target_surface_type,
+                    self._compute_grid_variable(parameter_name,
+                                                classifier_stack,
+                                                surface_type,
+                                                target_surface_type,
                                                 statistic)
 
     def _compute_grid_variable(self, parameter_name, classifier_stack, surface_type, target_surface_type, statistic):

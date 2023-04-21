@@ -3,10 +3,16 @@
 @author: Stefan Hendricks
 """
 
+from itertools import product
+
 import numpy as np
+import pandas as pd
+from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
+
 from pysiral import get_cls
-from pysiral._class_template import DefaultLoggingClass
+from pysiral.l1data import Level1bData
+from pysiral.l2data import Level2Data
 
 
 class Level2ProcessorStep(DefaultLoggingClass):
@@ -14,7 +20,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
     Parent class for any Level-2 processor step class, which may be distributed over the
     different pysiral modules.
 
-    This class also serves as a template for all sub-classes. Mandatory methods and properties
+    This class also serves as a template for all subclasses. Mandatory methods and properties
     in this class which raise a NotImplementedException must be overwritten by the subclass
     """
 
@@ -47,7 +53,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
             "filter": 9,
             "other": 15}
 
-    def execute(self, l1b, l2):
+    def execute(self, l1b: Level1bData, l2: Level2Data) -> None:
         """
         The main entry point for the
         :param l1b:
@@ -60,7 +66,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
         # Check if the error status is correctly implemented
         if error_status is None:
-            logger.warning("Class {} does not provide error status".format(self.classname))
+            logger.warning(f"Class {self.classname} does not provide error status")
             error_status = self.get_clean_error_status(l2.n_records)
 
         # Update the status flag
@@ -82,7 +88,9 @@ class Level2ProcessorStep(DefaultLoggingClass):
         l2.flag = l2.flag + flag
 
     def execute_procstep(self, l1b, l2):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @staticmethod
     def get_clean_error_status(shape):
@@ -99,15 +107,21 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
     @property
     def error_bit(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @property
     def l2_input_vars(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
     @property
     def l2_output_vars(self):
-        raise NotImplementedError("This method needs to implemented in {}".format(self.classname))
+        raise NotImplementedError(
+            f"This method needs to implemented in {self.classname}"
+        )
 
 
 class Level2ProcessorStepOrder(DefaultLoggingClass):
@@ -143,17 +157,19 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
 
             # Get the module & pyclass
             module = procstep_def["module"]
-            full_module_name = "pysiral.{}".format(module)
+            full_module_name = f"pysiral.{module}"
             obj = get_cls(full_module_name, procstep_def["pyclass"])
 
             # This object should not be None
             if obj is None:
-                msg = "Invalid L2 processing step class: {}.{}".format(full_module_name, procstep_def["pyclass"])
+                msg = f'Invalid L2 processing step class: {full_module_name}.{procstep_def["pyclass"]}'
                 self.error.add_error("missing-class", msg)
                 self.error.raise_on_error()
 
             # Append the class
-            logger.info("Added L2 processor step: {}.{}".format(full_module_name, procstep_def["pyclass"]))
+            logger.info(
+                f'Added L2 processor step: {full_module_name}.{procstep_def["pyclass"]}'
+            )
             self._classes.append(obj)
 
     def get_algorithm_error_flag_bit(self, procstep_module):
@@ -163,7 +179,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
         :return:
         """
 
-    def validate(self):
+    def validate(self) -> bool:
         """
         Checkout the difference processing steps and validate input/output variables in
         the order of the steps
@@ -181,8 +197,9 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
                 if not has_attr:
                     msg = "Class {} is missing the mandatory method/property: {}"
                     msg = msg.format(obj.__class__.__name__, mandatory_attr)
-                    self.error.add_error("invalid-class", msg)
-        self.error.raise_on_error()
+                    logger.error(msg)
+                    return False
+        return True
 
     @property
     def class_list(self):
@@ -199,9 +216,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
         definition file passed to the class instance)
         :return:
         """
-        # Get the options
-        classes = [pyclass(opt) for pyclass, opt in zip(self.class_list, self.cfg)]
-        return classes
+        return [pyclass(opt) for pyclass, opt in zip(self.class_list, self.cfg)]
 
 
 class L1BL2TransferVariables(Level2ProcessorStep):
@@ -241,7 +256,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
                 #       -> this will be noted in the error status flag
                 var = l1b.get_parameter_by_name(data_group, var_name)
                 if var is None:
-                    logger.warning("Cannot find variable {}.{} in l1p".format(data_group, var_name))
+                    logger.warning(f"Cannot find variable {data_group}.{var_name} in l1p")
                     var = np.full(l2.n_records, np.nan)
                     error_status = np.logical_not(error_status)
 
@@ -260,8 +275,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
         output_vars = []
         for data_group, varlist in list(self.cfg.options.items()):
             l1p_variables = varlist.items()
-            for var_name, vardef in list(l1p_variables):
-                output_vars.append(vardef[0])
+            output_vars.extend(vardef[0] for var_name, vardef in list(l1p_variables))
         return output_vars
 
     @property
@@ -296,6 +310,8 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
         # Keep the total range correction
         total_range_correction = np.full(l2.n_records, 0.0)
 
+        preserve_nan = self.cfg.options.get("preserve_nan", False)
+
         # Apply the range corrections (content of l1b data package)
         # to the l2 elevation (output of retracker) data
         for correction_name in self.cfg.options.corrections:
@@ -307,15 +323,23 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             # -> skip with warning if not
             if range_delta is None:
                 error_status[:] = True
-                logger.warning("Cannot find range correction: {} - skipping".format(correction_name))
+                logger.warning(f"Cannot find range correction: {correction_name} - skipping")
                 continue
 
             # Check if NaN's, set values to zero and provide warning
             nans_indices = np.where(np.isnan(range_delta))[0]
             if len(nans_indices) > 0:
-                range_delta[nans_indices] = 0.0
+                if not preserve_nan:
+                    logger.warning(
+                        f"NaNs encountered and replaced with zero in range correction parameter: {correction_name}"
+                    )
+                    range_delta[nans_indices] = 0.0
+                else:
+                    logger.warning(
+                        f"NaNs encountered and preserved in range correction parameter: {correction_name}"
+                    )
+
                 error_status[nans_indices] = True
-                logger.warning("NaNs encountered in range correction parameter: %s" % correction_name)
 
             # Apply the range correction
             #
@@ -361,8 +385,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
 
     @property
     def l2_output_vars(self):
-        output_vars = ["rctotal"]
-        return output_vars
+        return ["rctotal"]
 
     @property
     def error_bit(self):
@@ -410,6 +433,109 @@ class CS2InstrumentModeflag(Level2ProcessorStep):
     @property
     def l2_output_vars(self):
         return ["instrument_mode"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
+
+
+class ParameterRollingStatistics(Level2ProcessorStep):
+    """
+    This class add rolling statistics (mean, sdev) using the pandas rolling
+    framework to the Level-2 data object.
+
+        -   module: l2proc.procsteps
+            pyclass: ParameterRollingStatistics
+            options:
+                window_size_m: <maximum size of the marginal ice zone>
+                statistics: [ <list of statistics: "mean" | "sdev"]
+                input_parameters:
+                    - <l2_parameter-01>
+                    - <l2_parameter-02>
+                    - ...
+
+    For each parameter & statistics combination a new parameter will be added
+    with the naming convention:
+
+                <source_parameter_name>_rolling_<statistics_id>
+
+        e.g.
+
+        -   module: l2proc.procsteps
+            pyclass: ParameterRollingStatistics
+            options:
+                window_size_m: 25000.
+                statistics: ["sdev"]
+                input_parameters:
+                    - pulse_peakiness
+
+        will add the parameter `pulse_peakiness_rolling_sdev` to the list of l2 (auxiliary)
+        data parameters.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(ParameterRollingStatistics, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self,
+                         l1: "Level1bData",
+                         l2: "Level2Data"
+                         ) -> np.ndarray:
+        """
+        API method for Level2ProcessorStep subclasses. Computes and add rolling statistics
+        based on the processor item options in the Level-2 processor definition file.
+
+        :param l1: Level-1 data object
+        :param l2: Level-2 data object
+        
+        :raises None:
+
+        :return: error_status
+        """
+
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # The filter windows size needs to be an odd integer
+        window_size_float = self.cfg.options.get("window_size_m") / l2.footprint_spacing
+        window_size = None if np.isnan(window_size_float) else int(int(window_size_float) // 2 * 2 + 1)
+
+        rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
+        for parameter_name, statistics_id in self.statistics_combinations:
+
+            aux_id = f"{l2.full_variable_catalog[parameter_name]}rl{statistics_id}"
+            aux_name = f"{parameter_name}_rolling_{statistics_id}"
+
+            if window_size is None:
+                error_status[:] = True
+                l2.set_auxiliary_parameter(aux_id, aux_name, np.full(l2.n_records, np.nan), None)
+                continue
+
+            # The rolling statistics are computed using the pandas rolling framework
+            ts = pd.Series(l2.get_parameter_by_name(parameter_name)[:])
+            if statistics_id == "sdev":
+                ts_rolled = ts.rolling(**rolling_kwargs).std()
+            elif statistics_id == "mean":
+                ts_rolled = ts.rolling(**rolling_kwargs).mean()
+            else:
+                logger.error(f"{self.__class__.__name__}: Encountered invalid statistic name: {statistics_id}")
+                error_status[:] = True
+                ts_rolled = pd.Series(np.full(l2.n_records, np.nan))
+
+            # Output is added as an auxiliary parameter
+            l2.set_auxiliary_parameter(aux_id, aux_name, ts_rolled.values, None)
+
+        return error_status
+
+    @property
+    def statistics_combinations(self):
+        return product(self.cfg.options.input_parameters, self.cfg.options.statistics)
+
+    @property
+    def l2_input_vars(self):
+        return [self.cfg.options.input_parameters]
+
+    @property
+    def l2_output_vars(self):
+        return [f"{varname}_rolling_{statname}" for (varname, statname) in self.statistics_combinations]
 
     @property
     def error_bit(self):

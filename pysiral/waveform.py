@@ -4,18 +4,20 @@ Created on Fri Jul 01 13:07:10 2016
 
 @author: shendric
 """
-import matplotlib
 
-import numpy as np
+from typing import Union
+
 import bottleneck as bn
+import numpy as np
+import numpy.typing as npt
 from loguru import logger
 
-from pysiral.l1bdata import Level1bData
-from pysiral.retracker import cTFMRA
-from pysiral.logging import DefaultLoggingClass
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc.procitems import L1PProcItem
+from pysiral.retracker.tfmra import cTFMRA
 
 
-def get_waveforms_peak_power(wfm, dB=False):
+def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
     """
     Return the peak power (in input coordinates) of an array of waveforms
 
@@ -29,7 +31,7 @@ def get_waveforms_peak_power(wfm, dB=False):
         float array with maximum for each echo
     """
     peak_power = np.amax(wfm, axis=1)
-    if dB:
+    if use_db:
         peak_power = 10 * np.log10(peak_power)
     return peak_power
 
@@ -51,9 +53,7 @@ def get_footprint_pulse_limited(r: float, band_width: float) -> float:
 
     c_0 = 299792458.0
     footprint_radius = np.sqrt(r * c_0 / band_width) / 1000.
-    area_pl = np.pi * footprint_radius ** 2.
-
-    return area_pl
+    return np.pi * footprint_radius ** 2.
 
 
 def get_footprint_sar(r: float,
@@ -86,21 +86,19 @@ def get_footprint_sar(r: float,
     alpha_earth = 1. + (r / r_mean)
     lx = (lambda_0 * r) / (2. * v_s * tau_b)
     ly = np.sqrt((c_0 * r * ptr_width) / alpha_earth)
-    area_sar = (2. * ly) * (wf * lx)
-
-    return area_sar
+    return (2. * ly) * (wf * lx)
 
 
-def get_sigma0(rx_pwr: float,
-               tx_pwr: float,
-               r: float,
-               a: float,
-               lambda_0: float,
-               g_0: float,
-               l_atm: float = 1.0,
-               l_rx: float = 1.0,
-               bias_sigma0: float = 0.0,
-               ) -> float:
+def get_sigma0_sar(rx_pwr: float,
+                   tx_pwr: float,
+                   r: float,
+                   a: float,
+                   lambda_0: float,
+                   g_0: float,
+                   l_atm: float = 1.0,
+                   l_rx: float = 1.0,
+                   bias_sigma0: float = 0.0,
+                   ) -> float:
     """
     Compute the sigma0 backscatter coefficient according the radar equation, e.g.
     equation 20 in
@@ -122,12 +120,10 @@ def get_sigma0(rx_pwr: float,
     """
 
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a)
-    sigma0 = 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(rx_pwr/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
-def lrm_sigma0(wf_peak_power_watt: float,
+def get_sigma0(wf_peak_power_watt: float,
                tx_pwr: float,
                r: float,
                wf_thermal_noise_watt: float = 0.0,
@@ -179,10 +175,7 @@ def lrm_sigma0(wf_peak_power_watt: float,
     a_lrm = np.pi * footprint_radius ** 2.
     k = ((4.*np.pi)**3. * r**4. * l_atm * l_rx)/(lambda_0**2. * g_0**2. * a_lrm)
 
-    # Final computation of sigma nought
-    sigma0 = 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
-
-    return sigma0
+    return 10. * np.log10(pu/tx_pwr) + 10. * np.log10(k) + bias_sigma0
 
 
 class TFMRALeadingEdgeWidth(object):
@@ -227,11 +220,10 @@ class TFMRALeadingEdgeWidth(object):
         :param thres1: (float) The minimum threshold
         :return:
         """
-        width = self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
-        return width
+        return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
 
 
-class L1PLeadingEdgeWidth(DefaultLoggingClass):
+class L1PLeadingEdgeWidth(L1PProcItem):
     """
     A L1P pre-processor item class for computing leading edge width of a waveform
     using the TFMRA retracker as the difference between two thresholds. The
@@ -240,9 +232,10 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
     def __init__(self, **cfg):
         """
         Init the class with the mandatory options
-        :param cfg: (dict) Required options (see self.required.options)Ä
+
+        :param cfg: (dict) Required options (see self.required.options)
         """
-        super(L1PLeadingEdgeWidth, self).__init__(self.__class__.__name__)
+        super(L1PLeadingEdgeWidth, self).__init__(**cfg)
 
         # Init Required Options
         self.tfmra_leading_edge_start = None
@@ -251,13 +244,13 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
 
         # Get the option settings from the input
         for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
+            option_value = cfg.get(option_name)
             if option_value is None:
-                msg = "Missing option `%s` -> No computation of leading edge width!" % option_name
+                msg = f"Missing option `{option_name}` -> No computation of leading edge width!"
                 logger.warning(msg)
             setattr(self, option_name, option_value)
 
-    def apply(self, l1):
+    def apply(self, l1: "Level1bData") -> None:
         """
         API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
         second half) and adding the result to the classifier data group
@@ -267,12 +260,17 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
 
         # Prepare input
         radar_mode = l1.waveform.radar_mode
-        is_ocean = l1.surface_type.get_by_name("ocean").flag
+        is_valid = l1.surface_type.get_by_name("ocean").flag
 
-        # Compute the leading edge width (requires TFMRA retracking)
-        width = TFMRALeadingEdgeWidth(l1.waveform.range, l1.waveform.power, radar_mode, is_ocean,
+        # Compute the leading edge width (requires TFMRA retracking) using
+        # -> Use a wrapper for cTFMRA
+        width = TFMRALeadingEdgeWidth(l1.waveform.range,
+                                      l1.waveform.power,
+                                      radar_mode,
+                                      is_valid,
                                       tfmra_options=self.tfmra_options)
-        lew = width.get_width_from_thresholds(self.tfmra_leading_edge_start, self.tfmra_leading_edge_end)
+        lew = width.get_width_from_thresholds(self.tfmra_leading_edge_start,
+                                              self.tfmra_leading_edge_end)
 
         # Add result to classifier group
         l1.classifier.add(lew, "leading_edge_width")
@@ -284,7 +282,7 @@ class L1PLeadingEdgeWidth(DefaultLoggingClass):
                 "tfmra_options"]
 
 
-class L1PSigma0(DefaultLoggingClass):
+class L1PSigma0(L1PProcItem):
     """
     A L1P pre-processor item class for computing the backscatter coefficient (sigma0) from
     waveform data
@@ -292,14 +290,16 @@ class L1PSigma0(DefaultLoggingClass):
     """
 
     def __init__(self, **cfg):
-        super(L1PSigma0, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PSigma0, self).__init__(**cfg)
 
     def apply(self, l1):
         """
-        API class for the Level-1 pre-processor. Functionality is compute leading edge width (full, first half &
-        second half) and adding the result to the classifier data group
+        API class for the Level-1 pre-processor. Functionality is to compute
+        leading edge width (full, first half & second half) and adding the result to
+        the classifier data group
+
         :param l1: A Level-1 data instance
+
         :return: None, Level-1 object is change in place
         """
 
@@ -379,19 +379,16 @@ class L1PSigma0(DefaultLoggingClass):
         for i in np.arange(rx_power.shape[0]):
 
             # Compute the footprint area
-            if radar_mode[i] == 0:
-                args = (altitude[i],)
-            else:
-                args = (altitude[i], velocity[i])
+            args = (altitude[i], ) if radar_mode[i] == 0 else (altitude[i], velocity[i])
             func = footprint_func_dict[radar_mode[i]]
             footprint_area = func(*args, **footprint_func_kwargs[radar_mode[i]])
 
             # Compute the backscatter coefficient
-            sigma0[i] = get_sigma0(rx_power[i],
-                                   tx_power[i],
-                                   altitude[i],
-                                   footprint_area,
-                                   **sigma0_kwargs)
+            sigma0[i] = get_sigma0_sar(rx_power[i],
+                                       tx_power[i],
+                                       altitude[i],
+                                       footprint_area,
+                                       **sigma0_kwargs)
 
         # Eliminate infinite values
         sigma0[np.isinf(sigma0)] = np.nan
@@ -403,69 +400,116 @@ class L1PSigma0(DefaultLoggingClass):
         return ["footprint_pl_kwargs", "footprint_sar_kwargs", "sigma0_kwargs", "sigma0_bias"]
 
 
-class L1PWaveformPeakiness(DefaultLoggingClass):
+class L1PWaveformPeakiness(L1PProcItem):
     """
-    A L1P pre-processor item class for computing leading edge width (full, first half, second half)
-    using three TFMRA thresholds """
+    A L1P pre-processor item class for computing pulse peakiness """
 
-    def __init__(self, **cfg):
-        super(L1PWaveformPeakiness, self).__init__(self.__class__.__name__)
-        for option_name in self.required_options:
-            option_value = cfg.get(option_name, None)
-            if option_value is None:
-                msg = "Missing option `%s` -> No computation of peakiness!" % option_name
-                logger.warning(msg)
-            setattr(self, option_name, option_value)
+    def __init__(self,
+                 skip_first_range_bins: int = 0,
+                 norm_is_range_bin: bool = True
+                 ):
 
-        # Init Parameters
-        self.peakiness = None
+        cfg = {"skip_first_range_bins": skip_first_range_bins,
+               "norm_is_range_bin": norm_is_range_bin
+               }
+        super(L1PWaveformPeakiness, self).__init__(**cfg)
 
-    def apply(self, l1):
+    def apply(self, l1: Level1bData) -> None:
         """
-        Computes pulse peakiness for lrm waveforms (from SICCI v1 processor).
+        Computes pulse peakiness and adds parameter to classifier data group.
+
+        NOTE: The classifier parameter name depends on the `norm_is_range_bin keyword:
+
+            norm_is_range_bin = True -> parameter name: 'peakiness'
+            norm_is_range_bin = False -> parameter name: 'peakiness_normed'
+
         :param l1: l1bdata.Level1bData instance
+
+        :raises None:
+
         :return: None
         """
-        self._calc(l1)
-        l1.classifier.add(self.peakiness, "peakiness")
+        waveforms = l1.waveform.power
+        pulse_peakiness = self.compute_for_waveforms(waveforms)
+        parameter_target_name = "peakiness" if self.norm_is_range_bin else "peakiness_normed"
+        l1.classifier.add(pulse_peakiness, parameter_target_name)
 
-    def _calc(self, l1):
-        """ Compute pulse peakiness (from SICCI v1 processor)."""
+    def compute_for_waveforms(self, waveforms: npt.NDArray) -> npt.NDArray:
+        """
+        Compute pulse peakiness for a waveform array
+
+        :param waveforms:
+
+        :return: pulse peakiness array
+        """
 
         # Get the waveform
-        wfm = l1.waveform.power
-        n_records, n_range_bins = wfm.shape
+        n_records, n_range_bins = waveforms.shape
+        if waveforms.dtype.kind != "f":
+            waveforms = waveforms.astype(np.float)
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bin else 1.0
 
         # Init output parameters
-        self.peakiness = np.full(n_records, np.nan)
-        self.peakiness_old = np.full(n_records, np.nan)
+        pulse_peakiness = np.full(n_records, np.nan)
 
         # Compute peakiness for each waveform
         for i in np.arange(n_records):
+            waveform = waveforms[i, self.skip_first_range_bins:]
+            pulse_peakiness[i] = self._compute(waveform, norm)
 
-            # Discard first bins, they are FFT artefacts anyway
-            wave = wfm[i, self.skip_first_range_bins:]
+        return pulse_peakiness
 
-            # new peakiness
-            try:
-                self.peakiness[i] = float(max(wave))/float(sum(wave))*n_range_bins
-            except ZeroDivisionError:
-                self.peakiness[i] = np.nan
+    def compute_for_waveform(self, waveform: npt.NDArray) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform:
+
+        :return: pulse peakiness
+        """
+
+        # Get the waveform
+        n_range_bins = waveform.shape
+        if waveform.dtype.kind != "f":
+            waveform = waveform.astype(np.float)
+        waveform = waveform[self.skip_first_range_bins:]
+
+        # Get the norm (default is range bins)
+        norm = n_range_bins if self.norm_is_range_bins else 1.0
+
+        return self._compute(waveform, norm)
+
+    @staticmethod
+    def _compute(waveform: npt.NDArray, norm: Union[int, float]) -> float:
+        """
+        Compute pulse peakiness for a single waveform
+
+        :param waveform: The waveform
+        :param norm
+
+        :return: pulse peakiness
+        """
+        try:
+            pulse_peakiness = bn.nanmax(waveform) / (bn.nansum(waveform)) * norm
+        except ZeroDivisionError:
+            pulse_peakiness = np.nan
+        return pulse_peakiness
 
     @property
     def required_options(self):
-        return ["skip_first_range_bins"]
+        return ["skip_first_range_bins", "norm_is_range_bin"]
 
 
-class L1PLeadingEdgeQuality(DefaultLoggingClass):
+class L1PLeadingEdgeQuality(L1PProcItem):
     """
     Class to compute a leading edge width quality indicator
     Requires `first_maximum_index` classifier parameter
     """
 
     def __init__(self, **cfg):
-        super(L1PLeadingEdgeQuality, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PLeadingEdgeQuality, self).__init__(**cfg)
         for option_name in self.required_options:
             if option_name not in self.cfg.keys():
                 logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
@@ -473,7 +517,9 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
     def apply(self, l1):
         """
         Adds a quality indicator for the leading edge
+
         :param l1: l1bdata.Level1bData instance
+
         :return: None
         """
 
@@ -538,7 +584,7 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
 
             # Get the search range
             i0, i1 = fmi[i]-window, fmi[i]+1
-            i0 = i0 if i0 > 1 else 1   # ensure the lower index stays in the valid range
+            i0 = max(i0, 1)
             power_diff = wfm[i0:i1]-wfm[i0-1:i1-1]
             positive_power_diff = power_diff[power_diff > 0]
             total_power_raise = np.sum(positive_power_diff) + wfm[i0]
@@ -557,11 +603,10 @@ class L1PLeadingEdgeQuality(DefaultLoggingClass):
                 "minimum_valid_first_maximum_index"]
 
 
-class L1PLeadingEdgePeakiness(DefaultLoggingClass):
+class L1PLeadingEdgePeakiness(L1PProcItem):
 
     def __init__(self, **cfg):
-        super(L1PLeadingEdgePeakiness, self).__init__(self.__class__.__name__)
-        self.cfg = cfg
+        super(L1PLeadingEdgePeakiness, self).__init__(**cfg)
         for option_name in self.required_options:
             if option_name not in self.cfg.keys():
                 logger.error(f"Missing option: {option_name} -> Leading Edge Quality will not be computed")
@@ -569,6 +614,7 @@ class L1PLeadingEdgePeakiness(DefaultLoggingClass):
     def apply(self, l1: Level1bData):
         """
         Mandatory class of a L1 preproceessor item. Computes the leading edge peakiness
+
         :param l1:
         :return:
         """
@@ -618,14 +664,237 @@ class L1PLeadingEdgePeakiness(DefaultLoggingClass):
 
         # Get the waveform subset prior to first maximum
         i0 = fmi - window
-        i0 = i0 if i0 > 0 else 0
-        i1 = fmi
-
-        # Compute the peakiness
-        lep = wfm[fmi] / bn.nanmean(wfm[i0:i1]) * (i1 - i0)
-
-        return lep
+        i0 = max(i0, 0)
+        return wfm[fmi] / bn.nanmean(wfm[i0:fmi]) * (fmi - i0)
 
     @property
     def required_options(self):
         return ["window_size"]
+
+
+class CS2OCOGParameter(object):
+    """
+    Calculate OCOG Parameters (Amplitude, Width) for CryoSat-2 waveform
+    counts.
+    Algorithm Source: retrack_ocog.pro from CS2AWI lib
+    """
+
+    def __init__(self, wfm_counts):
+        self._n = np.shape(wfm_counts)[0]
+        self._amplitude = np.ndarray(shape=[self._n], dtype=np.float32)
+        self._width = np.ndarray(shape=[self._n], dtype=np.float32)
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        for i in np.arange(self._n):
+            y = wfm_counts[i, :].flatten().astype(np.float64)
+            y -= bn.nanmean(y[:11])  # Remove Noise
+            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+            y2 = y ** 2.0
+            self._amplitude[i] = np.sqrt((y2 ** 2.0).sum() / y2.sum())
+            self._width[i] = ((y2.sum()) ** 2.0) / (y2 ** 2.0).sum()
+
+    @property
+    def amplitude(self):
+        return self._amplitude
+
+    @property
+    def width(self):
+        return self._width
+
+
+class CS2PulsePeakiness(object):
+    """
+    Calculates Pulse Peakiness (full, left & right) for CryoSat-2 waveform
+    counts
+    XXX: This is a 1 to 1 legacy implementation of the IDL CS2AWI method,
+         consistent method of L1bData or L2Data is required
+    """
+
+    def __init__(self, wfm_counts, pad=2):
+        shape = np.shape(wfm_counts)
+        self._n = shape[0]
+        self._n_range_bins = shape[1]
+        self._pad = pad
+        self._peakiness = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_r = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_l = np.full(self._n, np.nan).astype(np.float32)
+        self._noise_floor = np.full(self._n, np.nan).astype(np.float32)
+        # self.peakiness_no_noise_removal = np.full(self._n, np.nan).astype(np.float32)
+        self._peakiness_normed = np.full(self._n, np.nan).astype(np.float32)
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        for i in np.arange(self._n):
+            try:
+                y = wfm_counts[i, :].flatten().astype(np.float32)
+                self._noise_floor[i] = bn.nanmean(y[:11])
+                y_no_noise_removal = y.copy()
+                y -= self._noise_floor[i]  # Remove Noise
+                y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+                yp = np.nanmax(y)  # Waveform peak value
+                ypi = np.nanargmax(y)  # Waveform peak index
+                if 3 * self._pad < ypi < self._n_range_bins - 4 * self._pad:
+                    self._peakiness_l[i] = yp / bn.nanmean(y[ypi - 3 * self._pad:ypi - 1 * self._pad + 1]) * 3.0
+                    self._peakiness_r[i] = yp / bn.nanmean(y[ypi + 1 * self._pad:ypi + 3 * self._pad + 1]) * 3.0
+                    self._peakiness_normed[i] = yp / y.sum()
+                    self._peakiness[i] = self.peakiness_normed[i] * self._n_range_bins
+
+                    # self.peakiness_no_noise_removal[i] = np.nanmax(y_no_noise_removal) / y_no_noise_removal.sum() * self._n_range_bins
+            except ValueError:
+                self._peakiness_l[i] = np.nan
+                self._peakiness_r[i] = np.nan
+                self._peakiness[i] = np.nan
+
+    @property
+    def peakiness(self):
+        return self._peakiness
+
+    @property
+    def peakiness_normed(self):
+        return self._peakiness_normed
+
+    @property
+    def noise_floor(self):
+        return self._noise_floor
+
+    @property
+    def peakiness_r(self):
+        return self._peakiness_r
+
+    @property
+    def peakiness_l(self):
+        return self._peakiness_l
+
+
+# Late tail to peak power (LTPP) ratio added for fmi needs
+class S3LTPP(object):
+    """
+    Calculates Late-Tail-to-Peak-Power ratio.
+    source: Rinne 2016
+    """
+
+    def __init__(self, wfm_counts, pad=1):
+        # Warning: if 0padding is introduced in S3 L1 processing baseline, pad must be set to 2
+        shape = np.shape(wfm_counts)
+        self._n = shape[0]
+        self._n_range_bins = shape[1]
+        self._pad = pad
+        dtype = np.float32
+        self._ltpp = np.ndarray(shape=[self._n], dtype=dtype) * np.nan
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        # loop over the waveforms
+        for i in np.arange(self._n):
+            try:
+                y = wfm_counts[i, :].flatten().astype(np.float32)
+                y -= bn.nanmean(y[:11])  # Remove Noise
+                y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+                yp = np.nanmax(y)  # Waveform peak value
+
+                if np.isnan(yp):  # if the current wf is nan
+                    # no ltpp can be computed
+                    self._ltpp[i] = np.nan
+                else:
+                    ypi = np.nanargmax(y)  # Waveform peak index
+
+                    # gates to compute the late tail:
+                    # [ypi+50:ypi+70] if 0padding=2, [ypi+25:ypi+35] if 0padding=1
+                    gate_start = ypi + self._pad * 25
+                    gate_stop = ypi + self._pad * 35 + 1
+
+                    if gate_start > self._n_range_bins or gate_stop > self._n_range_bins:
+                        # not enough gates to compute the LTPP
+                        self._ltpp[i] = np.nan
+                    else:
+                        self._ltpp[i] = np.mean(y[gate_start:gate_stop]) / yp
+
+            except ValueError:
+                self._ltpp[i] = np.nan
+
+    @property
+    def ltpp(self):
+        return self._ltpp
+
+
+class CS2LTPP(object):
+    """
+    Calculates Late-Tail-to-Peak-Power ratio.
+    """
+
+    def __init__(self, wfm_counts, pad=2):
+        shape = np.shape(wfm_counts)
+        self._n = shape[0]
+        self._n_range_bins = shape[1]
+        self._pad = pad
+        dtype = np.float32
+        self._ltpp = np.ndarray(shape=[self._n], dtype=dtype) * np.nan
+        self._calc_parameters(wfm_counts)
+
+    def _calc_parameters(self, wfm_counts):
+        # loop over the waveforms
+        for i in np.arange(self._n):
+            y = wfm_counts[i, :].flatten().astype(np.float32)
+            y -= bn.nanmean(y[:11])  # Remove Noise
+            y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
+            yp = np.nanmax(y)  # Waveform peak value
+            ypi = bn.nanargmax(y)  # Waveform peak index
+
+            # AMANDINE: implementation for wf of 256 bins (128 zero-padded)?
+            onediv = float(1) / float(41)
+
+            # AMANDINE: here i seems to be understood as gate index, but it is wf index!?
+            if i == 256:
+                break
+            if [i > (ypi + 100)] and [i < (ypi + 140)]:  # AMANDINE: syntax to be checked
+                try:
+                    self._ltpp[i] = (onediv * float(y[i])) / float(yp)  # AMANDINE: where is the sum in this formula?
+                except ZeroDivisionError:
+                    self._ltpp[i] = np.nan
+
+    @property
+    def ltpp(self):
+        return self._ltpp
+
+
+class EnvisatWaveformParameter(object):
+    """
+    Currently only computes pulse peakiness for Envisat waveforms
+    from SICCI processor.
+
+    Parameter for Envisat from SICCI Processor
+        skip = 5
+        bins_after_nominal_tracking_bin = 83
+    """
+
+    def __init__(self, wfm, skip=5, bins_after_nominal_tracking_bin=83):
+        self.t_n = bins_after_nominal_tracking_bin
+        self.skip = skip
+        self._n = wfm.shape[0]
+        self._n_range_bins = wfm.shape[1]
+        self._init_parameter()
+        self._calc_parameter(wfm)
+
+    def _init_parameter(self):
+        self.peakiness_old = np.ndarray(shape=self._n, dtype=np.float32)
+        self.peakiness = np.ndarray(shape=self._n, dtype=np.float32) * np.nan
+
+    def _calc_parameter(self, wfm):
+
+        for i in np.arange(self._n):
+            # Discard first bins, they are FFT artefacts anyway
+            wave = wfm[i, self.skip:]
+
+            # old peakiness
+            try:
+                pp = 0.0 + self.t_n * float(max(wave)) / float(sum(wave))
+            except ZeroDivisionError:
+                pp = np.nan
+            self.peakiness_old[i] = pp
+
+            # new peakiness
+            try:
+                self.peakiness[i] = float(max(wave)) / float(sum(wave)) * self._n_range_bins
+            except ZeroDivisionError:
+                self.peakiness[i] = np.nan

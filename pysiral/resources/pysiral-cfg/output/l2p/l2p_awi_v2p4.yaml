@@ -8,8 +8,8 @@ metadata:
 
 # Output Definition
 filenaming:
-  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
-  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p4.nc"
+  daily: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{period_coverage_start:%Y%m%d}-fv2p4.nc"
+  default: "awi-siral-l2p-sithick-{source_mission_id}-{source_timeliness:lowercase}_{hemisphere_code}-{period_coverage_start:%Y%m%d}-fv2p4.nc"
 
 product_level_subfolder: l2p_trajectory
 
@@ -49,12 +49,12 @@ global_attributes:
   - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - creator_type: "institution"
   - creator_url: "https://spaces.awi.de/display/SIRAL/"
-  - contributor_name: "Stefan Hendricks, Robert Ricker"
-  - contributor_role: "PrincipalInvestigator, Author"
+  - contributor_name: "Stefan Hendricks, Robert Ricker, Stephan Paul"
+  - contributor_role: "PrincipalInvestigator, Author, Author"
   - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
   - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - publisher_url: "www.awi.de"
-  - publisher_email: "info@meereisportal.de"
+  - publisher_email: "cs2smos-support@awi.de"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
@@ -95,7 +95,7 @@ variables:
     valid_max: 2
     flag_values: "0, 1, 2"
     flag_meanings: "pulse_limited_lrm doppler_delay_sar doppler_delay_sar_interferometric"
-    units: 1
+    units: "1"
     coordinates: time
 
   region_code:
@@ -105,7 +105,7 @@ variables:
     valid_max: 21
     flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
     flag_meaning: "inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic baltic_sea land land_outline"
-    units: 1
+    units: "1"
     coordinates: time
 
   radar_freeboard:
@@ -135,7 +135,7 @@ variables:
   sea_ice_type:
     long_name: "fraction of multi-year ice (0: only first year ice, 1: only multi-year ice)"
     standard_name: sea_ice_classification
-    units: 1
+    units: "1"
     valid_min: 0.0
     valid_max: 1.0
     coordinates: time
@@ -143,7 +143,7 @@ variables:
   sea_ice_type_uncertainty:
     long_name: "uncertainty of sea ice classification"
     standard_name: sea_ice_classification standard_error
-    units: 1
+    units: "1"
     coordinates: time
 
   snow_depth:

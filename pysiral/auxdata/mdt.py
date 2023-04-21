@@ -36,7 +36,6 @@ Important Note:
 
 import numpy as np
 import scipy.ndimage as ndimage
-
 from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass
@@ -71,8 +70,19 @@ class DTUMDTGrid(AuxdataBaseClass):
                                                    dtu_grid.lat.values <= lat_range[1]))[0]
 
         # Crop data to subset
-        self.mean_dynamic_topography = dtu_grid.MDT.values[latitude_indices, :]
-        self.mean_dynamic_topography_uncertainty = dtu_grid.err.values[latitude_indices, :]
+        if 'variables' in self.cfg.options:
+            self.mean_dynamic_topography = dtu_grid.__getattr__(self.cfg.options['variables'][0]).values[latitude_indices, :]
+            self.mean_dynamic_topography[np.isnan(self.mean_dynamic_topography)] = 0.0
+            if self.cfg.options['variables'][1] is not None:
+                self.mean_dynamic_topography_uncertainty = dtu_grid.__getattr__(self.cfg.options['variables'][1]).values[latitude_indices, :]
+            else:
+                self.mean_dynamic_topography_uncertainty = np.zeros_like(self.mean_dynamic_topography)
+        else:
+            self.mean_dynamic_topography = dtu_grid.MDT.values[latitude_indices, :]
+            self.mean_dynamic_topography[np.isnan(self.mean_dynamic_topography)] = 0.0
+            self.mean_dynamic_topography_uncertainty = dtu_grid.err.values[latitude_indices, :]
+            self.mean_dynamic_topography_uncertainty[np.isnan(self.mean_dynamic_topography_uncertainty)] = 0.0
+
         self.longitude = dtu_grid.lon.values
         self.latitude = dtu_grid.lat.values[latitude_indices]
 

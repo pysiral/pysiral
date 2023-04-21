@@ -54,8 +54,7 @@ class DynamicOceanTopography(Level2ProcessorStep):
         l2.dot.set_value(dot)
         l2.dot.set_uncertainty(dot_unc)
 
-        error_status = np.isnan(l2.dot[:])
-        return error_status
+        return np.isnan(l2.dot[:])
 
     @property
     def l2_input_vars(self):

@@ -5,12 +5,12 @@
 
 __author__ = "Stefan Hendricks"
 
-import numpy as np
-from typing import List
 from collections import OrderedDict
+from typing import List, Union
 
-from pysiral._class_template import DefaultLoggingClass
+import numpy as np
 
+from pysiral.core.class_template import DefaultLoggingClass
 
 # The standard ESA surface type flag in L1B data
 ESA_SURFACE_TYPE_DICT = {
@@ -73,7 +73,9 @@ class SurfaceType(DefaultLoggingClass):
     def name(self, flag_value: int) -> List[bool]:
         """
         Return the flag name for a give flag value
+
         :param flag_value:
+
         :return:
         """
         i = list(self.surface_type_dict.values()).index(flag_value)
@@ -114,12 +116,11 @@ class SurfaceType(DefaultLoggingClass):
         return type_str in self._surface_type_flags
 
     def get_by_name(self, name: str) -> 'FlagContainer':
-        if name in self.surface_type_dict.keys():
-            type_id = self._get_type_id(name)
-            flag = np.array(self._surface_type == type_id)
-            return FlagContainer(flag)
-        else:
-            return FlagContainer(np.zeros(shape=self.n_records, dtype=np.bool))
+        if name not in self.surface_type_dict.keys():
+            return FlagContainer(np.zeros(shape=self.n_records, dtype=bool))
+        type_id = self._get_type_id(name)
+        flag = np.array(self._surface_type == type_id)
+        return FlagContainer(flag)
 
     def append(self, annex: 'SurfaceType') -> None:
         self._surface_type = np.append(self._surface_type, annex.flag)
@@ -137,12 +138,7 @@ class SurfaceType(DefaultLoggingClass):
 
     def invalid_n_records(self, n: int) -> bool:
         """ Check if flag array has the correct length """
-        if self.n_records is None:  # New flag, ok
-            return False
-        elif self.n_records == n:   # New flag has correct length
-            return False
-        else:                       # New flag has wrong length
-            return True
+        return self.n_records is not None and self.n_records != n
 
     def _get_type_id(self, name: str) -> int:
         return self.surface_type_dict[name]
@@ -153,17 +149,12 @@ class SurfaceType(DefaultLoggingClass):
 
     @property
     def n_records(self) -> int:
-        if self._surface_type is None:
-            n_records = None
-        else:
-            n_records = len(self._surface_type)
-        return n_records
+        return None if self._surface_type is None else len(self._surface_type)
 
     @property
     def dimdict(self) -> 'OrderedDict':
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("n_records", self.n_records)])
-        return dimdict
+        return OrderedDict([("n_records", self.n_records)])
 
     @property
     def parameter_list(self) -> List[str]:
@@ -194,7 +185,7 @@ class IceType(object):
     Possible classifications
         - young thin ice
         - first year ice
-        - multi year ice
+        - multi-year ice
         - wet ice
     """
     _ICE_TYPE_DICT = {
@@ -233,10 +224,10 @@ class FlagContainer(object):
 
 class ANDCondition(FlagContainer):
 
-    def __init__(self):
-        super(ANDCondition, self).__init__()
+    def __init__(self, **kwargs):
+        super(ANDCondition, self).__init__(**kwargs)
 
-    def add(self, flag: np.ndarray) -> None:
+    def add(self, flag: Union[np.ndarray, bool]) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:
@@ -245,10 +236,10 @@ class ANDCondition(FlagContainer):
 
 class ORCondition(FlagContainer):
 
-    def __init__(self):
-        super(ORCondition, self).__init__()
+    def __init__(self, **kwargs):
+        super(ORCondition, self).__init__(**kwargs)
 
-    def add(self, flag: np.ndarray) -> None:
+    def add(self, flag: Union[np.ndarray, bool]) -> None:
         if self._flag is None:
             self.set_flag(flag)
         else:

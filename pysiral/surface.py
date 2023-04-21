@@ -6,18 +6,18 @@ Created on Mon Jul 27 11:25:04 2015
 
 
 import re
-import numpy as np
-from typing import Union, List, Tuple
 from copy import deepcopy
-from loguru import logger
+from typing import List, Tuple, Union
+
+import numpy as np
 from attrdict import AttrDict
+from loguru import logger
 
-
-from pysiral.config import RadarModes
-from pysiral.core.flags import SurfaceType, ANDCondition
-from pysiral.l1bdata import L1bdataNCFile
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.core.config import RadarModes
+from pysiral.core.flags import ANDCondition, SurfaceType
+from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class ClassifierContainer(object):
@@ -120,6 +120,9 @@ class SurfaceTypeClassifier(object):
         """
         for parameter_name in parameter_list:
             parameter = l2.get_parameter_by_name(parameter_name)
+            if not np.isfinite(parameter).any():
+                msg = f"- Classifier {parameter_name} is all NaN/Inf -> surface type classification may fail"
+                logger.warning(msg)
             self.classifier.add_parameter(parameter, parameter_name)
 
     def set_unknown_default(self, n_records: int) -> None:
@@ -127,7 +130,7 @@ class SurfaceTypeClassifier(object):
         This method can be used to initialize the surface type with unknown values
         :return:
         """
-        flag = np.ones(shape=n_records, dtype=np.bool)
+        flag = np.ones(shape=n_records, dtype=bool)
         self.surface_type.add_flag(flag, "unknown")
 
     def set_l1b_land_mask(self, l1: L1bdataNCFile) -> None:

@@ -51,5 +51,9 @@ def get_envisat_window_delay(tracker_range, doppler_correction, slope_doppler_co
     """
 
     range_delta = -1.0 * nominal_tracking_bin * bin_width_meter
-    window_delay_meter = tracker_range + range_delta + doppler_correction + slope_doppler_correction
-    return window_delay_meter
+    return (
+        tracker_range
+        + range_delta
+        + doppler_correction
+        + slope_doppler_correction
+    )

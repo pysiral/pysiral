@@ -3,16 +3,22 @@ attrdict
 bottleneck
 cftime
 cython
-dateperiods @ git+https://github.com/shendric/dateperiods.git@master#egg=dateperiods
+dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
 dateutils
+flake8
 geopy
 h5py
+isort
 loguru
+lxml
 isodate
+isort
 matplotlib
+mypy
 netCDF4
 numpy
 pillow
+pandas
 parse
 pykdtree
 pyproj
@@ -20,8 +26,21 @@ pyresample
 pyshp
 python-dateutil
 pyyaml
+schema
 scipy
 scikit-learn
+setuptools
+Sphinx
+sphinx-automodapi
+sphinx_rtd_theme
+sphinxcontrib-mermaid
 statsmodels
-xmltodict
+torch
 xarray
+xgboost
+xmltodict
+
+shapely==1.8.5
+# cartopy==0.20.0; python_version<="3.7"
+# cartopy; python_version>="3.8"
+cartopy

@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pysiral import psrlcfg
-from pysiral.config import (DefaultCommandLineArguments)
-from pysiral.errorhandler import ErrorStatus
-from pysiral.datahandler import L1PDataHandler
-from pysiral.l2proc import Level2Processor, Level2ProductDefinition
-from pysiral.logging import DefaultLoggingClass
 
-from loguru import logger
-
-from dateperiods import DatePeriod
-from datetime import timedelta
 import argparse
 import glob
-import time
-import sys
 import re
+import sys
+import time
+from datetime import timedelta
+
+from dateperiods import DatePeriod
+from loguru import logger
+
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.core.datahandler import L1PDataHandler
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
 def pysiral_l2proc():
-
     # Collect job settings from pysiral configuration data and
     # command line arguments
     args = Level2ProcArgParser()
@@ -85,7 +85,7 @@ def pysiral_l2proc_time_range_job(args):
     for time_range in period_segments:
 
         # Do some extra logging
-        logger.info("Processing period: %s" % time_range.label)
+        logger.info(f"Processing period: {time_range.label}")
 
         # Product Data Management
         if args.remove_old:
@@ -101,8 +101,8 @@ def pysiral_l2proc_time_range_job(args):
 
     # All done
     t1 = time.process_time()
-    seconds = int(t1-t0)
-    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    seconds = int(t1 - t0)
+    logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
 
 def pysiral_l2proc_l1b_predef_job(args):
@@ -125,8 +125,8 @@ def pysiral_l2proc_l1b_predef_job(args):
 
     # All done
     t1 = time.process_time()
-    seconds = int(t1-t0)
-    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+    seconds = int(t1 - t0)
+    logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
 
 class Level2ProcArgParser(DefaultLoggingClass):
@@ -145,8 +145,10 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
         l1b_file_preset_is_set = self._args.l1b_files_preset is not None
-        start_and_stop_is_set = self._args.start_date is not None and \
-            self._args.stop_date is not None
+        start_and_stop_is_set = (
+                self._args.start_date is not None and
+                self._args.stop_date is not None
+        )
 
         if l1b_file_preset_is_set and start_and_stop_is_set:
             self.parser.error("-start & -stop and -l1b-files are exclusive")
@@ -163,9 +165,9 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # erased for all month
         if self._args.remove_old and not no_prompt:
             message = "You have selected to remove all previous " + \
-                "l2 files for the requested period\n" + \
-                "(Note: use --no-critical-prompt to skip confirmation)\n" + \
-                "Enter \"YES\" to confirm and continue: "
+                      "l2 files for the requested period\n" + \
+                      "(Note: use --no-critical-prompt to skip confirmation)\n" + \
+                      "Enter \"YES\" to confirm and continue: "
             result = input(message)
 
             if result != "YES":
@@ -228,7 +230,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         with the l2 settings file basename as subfolder.
 
         One can however specify a custom string, or a relative path, with subfolders
-        defined by `\` or `/`, e.g.
+        defined by using slashes or backslashes
 
         Examples:
             -run-tag cs2awi_v2p0_nrt
@@ -256,15 +258,14 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def l2_settings_file(self):
         l2_settings = self._args.l2_settings
         filename = self.pysiral_config.get_settings_file("proc", "l2", l2_settings)
-        if filename is None:
-            msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
-            msg = msg + " \nRecognized Level-2 processor setting ids:\n"
-            for l2_settings_id in self.pysiral_config.get_setting_ids("proc", "l2"):
-                msg = msg + "  " + l2_settings_id+"\n"
-            self.error.add_error("invalid-l2-settings", msg)
-            self.error.raise_on_error()
-        else:
+        if filename is not None:
             return filename
+        msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
+        msg = msg + " \nRecognized Level-2 processor setting ids:\n"
+        for l2_settings_id in self.pysiral_config.get_setting_ids("proc", "l2"):
+            msg = f'{msg}  {l2_settings_id}' + "\n"
+        self.error.add_error("invalid-l2-settings", msg)
+        self.error.raise_on_error()
 
     @property
     def source_version(self):
@@ -276,23 +277,21 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
     @property
     def l1b_predef_files(self):
-        l1b_files = glob.glob(self._args.l1b_files_preset)
-        return l1b_files
+        return glob.glob(self._args.l1b_files_preset)
 
     @property
     def l2_output(self):
         l2_output = self._args.l2_output
         filename = self.pysiral_config.get_settings_file("output", "l2i", l2_output)
-        if filename is None:
-            msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
-            msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-            l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
-            for l2_output_id in l2_output_ids:
-                msg = msg + "    - " + l2_output_id+"\n"
-            self.error.add_error("invalid-l2-outputdef", msg)
-            self.error.raise_on_error()
-        else:
+        if filename is not None:
             return filename
+        msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
+        msg = msg + " \nRecognized Level-2 output definitions ids:\n"
+        l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
+        for l2_output_id in l2_output_ids:
+            msg = f'{msg}    - {l2_output_id}' + "\n"
+        self.error.add_error("invalid-l2-outputdef", msg)
+        self.error.raise_on_error()
 
     @property
     def force_l2def_record_type(self):

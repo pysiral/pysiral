@@ -3,17 +3,17 @@
 
 import os
 import re
-import numpy as np
+from collections import deque
+from datetime import timedelta
+from pathlib import Path
 
 import dateutil
-from pathlib import Path
+import numpy as np
 from loguru import logger
-from datetime import timedelta
 from parse import compile
 
-from collections import deque
-from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class ERSFileList(DefaultLoggingClass):
@@ -71,7 +71,7 @@ class ERSFileList(DefaultLoggingClass):
             if current_day not in self.day_list:
                 continue
 
-            logger.info("Searching folder: %s" % dirpath)
+            logger.info(f"Searching folder: {dirpath}")
             # Get the list of all dbl files
             files = [os.path.join(dirpath, fn) for fn in filenames
                      if self.pattern in fn]
@@ -125,7 +125,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
 
     def _create_date_lookup_table(self):
         """
-        Get a look up table based on the folder names for each cycle. The content will be stored in
+        Get a lookup table based on the folder names for each cycle. The content will be stored in
         self._date_lookup_table
         :return: None
         """
@@ -157,9 +157,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
                 dates.append("%04g-%02g-%02g" % (date.year, date.month, date.day))
 
             # Add entry to lookup table
-            result_dict = {}
-            for item in result.named.items():
-                result_dict[item[0]] = item[1]
+            result_dict = {item[0]: item[1] for item in result.named.items()}
             self._lookup_table.append(dict(dir=cycle_folder, dates=dates, **result_dict))
 
     def _reset_file_list(self):
@@ -186,7 +184,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
             # Get a list of cycle folders
             cycle_folders = self._get_cycle_folders_from_lookup_table(datestr)
             if len(cycle_folders) > 2:
-                raise IOError("Date %s in more than 2 cycle folders (this should not happen)" % datestr)
+                raise IOError(f"Date {datestr} in more than 2 cycle folders (this should not happen)")
 
             # Query each cycle folder
             filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
@@ -200,12 +198,7 @@ class ERSCycleBasedSGDR(DefaultLoggingClass):
         :param datestr:
         :return:
         """
-
-        cycle_folders = []
-        for entry in self._lookup_table:
-            if datestr in entry["dates"]:
-                cycle_folders.append(entry["dir"])
-        return cycle_folders
+        return [entry["dir"] for entry in self._lookup_table if datestr in entry["dates"]]
 
     @property
     def sorted_list(self):

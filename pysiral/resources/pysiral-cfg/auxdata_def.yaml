@@ -152,8 +152,6 @@ mdt:
         options: null
         source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
 
-
-
 # List of snow depth (density products)
 snow:
 
@@ -235,7 +233,6 @@ snow:
                     dx: 12500
                     dy: 12500
             subfolders: null
-
 
 # List of sea ice concentration products
 sic:
@@ -568,7 +565,6 @@ sic:
             is_cdr_icdr: True
             global:
                 variable_name: ice_conc
-                uncertainty_variable_name: total_standard_error
                 north:
                     projection:
                         proj: laea
@@ -592,11 +588,18 @@ sic:
 
             # Specific parameters for v1p0
             v1p0:
+                uncertainty_variable_name: total_standard_error
                 cdr_time_coverage_end: 2016-01-01T00:00:00
 
             # Specific parameters for v2p0
             v2p0:
+                uncertainty_variable_name: total_standard_error
                 cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2021-01-01T00:00:00
 
         subfolders:
             - year
@@ -708,6 +711,10 @@ sitype:
             v2p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
+            # Specific parameters for v2p0
+            v3p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
         subfolders:
             - year
             - month
@@ -749,7 +756,7 @@ sitype:
             type: daily
             link: "outgoing/icdc/esasicci/"
 
-
+# Region codes
 region:
 
     blank_region:
@@ -760,8 +767,7 @@ region:
 
     antarctic_seas:
         pyclass: AntarcticSeas
-        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S 
-        (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
+        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
         local_repository: null
         options:
             ice_free_ocean_code: 1
@@ -800,6 +806,19 @@ region:
                     dx: 25000
                     dy: 25000
 
+    # New version of the NSIDC region mask (v2021)
+    # NOTE: The attributes and projection can be pulled directly from the mask netCDF files
+    nsidc_2021:
+        pyclass: NSIDCRegionMask2021
+        long_name: NSIDC regional mask for Arctic sea ice trends and climatologies (version 2021, J. Scott Stewart and Walter N. Meier, NSIDC)
+        local_repository: nsidc_2021
+        options:
+            filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_m:05g}.nc
+            # This is the default value, can be overwritten in l2 settings (if required)
+            resolution_m: 1000
+            outside_value: 0 
+
+# risk index outcome
 rio:
 
     rio_fmi:
@@ -808,3 +827,18 @@ rio:
         local_repository: null
         options: null
 
+# Machine learned models
+ml:
+    tfmra_threshold_model:
+        pyclass: RetrackerThresholdModel
+        long_name: Learned model (xgboost) for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model
+        options:
+            suffixes:
+                - ".model"
+
+    tfmra_threshold_model_torch:
+        pyclass: RetrackerThresholdModelTorch
+        long_name: Learned model (torch) for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model_torch
+        options: null

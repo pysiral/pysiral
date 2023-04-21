@@ -43,6 +43,7 @@ input_adapter:
             E1: ers1
             E2: ers2
 
+
         # The timeliness is fixed (always reprocessed)
         timeliness: rep
         
@@ -76,6 +77,11 @@ input_adapter:
             significant_wave_height: swh_20hz
             center_of_gravity_corr: cog_corr_20hz
             epsilon_sec: htl_disc_out
+            alt_state_flag: alt_state_flag_20hz
+            alt_state_flag_chirp_type: alt_state_flag_chirp_type_20hz
+            alt_state_flag_tracking_type: alt_state_flag_tracking_type_20hz
+            alt_state_flag_tracking_surface: alt_state_flag_tracking_surface_20hz
+            noise_floor: noise_floor
 
 
 # Output handler (will always be default handler -> only options)
@@ -85,7 +91,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p1
+            version_file_tag: v1p3
 
 
 # Settings for the pre-processor
@@ -99,7 +105,7 @@ level1_preprocessor:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
             input_file_is_single_hemisphere: False
-            allow_nonocean_segment_nrecords: 250
+            allow_nonocean_segment_nrecords: 540  # 30 Seconds at 18 Hz
             ocean_mininum_size_nrecords: 5
 
         # Check for gaps in the input files and split at a certain gap size (in seconds)
@@ -108,28 +114,36 @@ level1_preprocessor:
 
         # The maximum separation in seconds for two orbits so that they count as connected
         orbit_segment_connectivity:
-            max_connected_segment_timedelta_seconds: 10
+            max_connected_segment_timedelta_seconds: 30
+
+        # Some data sets may have overlaps (ERS-1/2 SGDR). If this optional
+        # settings is set to True, overlapping data will be removed
+        # from the second file.
+        identify_and_remove_overlaps: True
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
+        processing_items:
 
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
                   tfmra_leading_edge_start: 0.05
                   tfmra_leading_edge_end: 0.95
                   tfmra_options:
-                      noise_level_range_bin_idx: [ 10, 20 ]
+                      noise_level_range_bin_idx: [10, 20]
                       first_maximum_ignore_leading_bins: 10
             
-            # Compute waveform peakiness CCI style
+            # Compute waveform peakiness
             - label: "Compute Waveform Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PWaveformPeakiness
               options:
                   skip_first_range_bins: 5
+                  norm_is_range_bin: True
 
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group: 
@@ -137,6 +151,7 @@ level1_preprocessor:
             #  2. first maximum index
             #  3. first maximum power (in units of peak power)
             - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
               options:
@@ -156,6 +171,7 @@ level1_preprocessor:
             # This class will add three parameters to the l1p classifier data group: 
             #  1. Leading edge peakiness
             - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgePeakiness
               options:

@@ -5,20 +5,20 @@
 
 __author__ = "Stefan Hendricks"
 
-import numpy as np
 from pathlib import Path
-from loguru import logger
+
+import numpy as np
 from cftime import num2pydate
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.clocks import StopWatch
-from pysiral.errorhandler import ErrorStatus
-from pysiral.ers.sgdrfile import ERSSGDR
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
+from pysiral.ers.sgdrfile import ERSSGDR
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
-class ERSReaperSGDR(DefaultLoggingClass):
+class ERSReaperSGDR(Level1PInputHandlerBase):
     """ Converts a Envisat SGDR object into a L1bData object """
 
     def __init__(self, cfg, raise_on_error=False):
@@ -30,12 +30,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         """
 
         cls_name = self.__class__.__name__
-        super(ERSReaperSGDR, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Store arguments
-        self.raise_on_error = raise_on_error
-        self.cfg = cfg
+        super(ERSReaperSGDR, self).__init__(cfg, raise_on_error, cls_name)
 
         # Debug variables
         self.timer = None
@@ -50,7 +45,7 @@ class ERSReaperSGDR(DefaultLoggingClass):
         """
 
         # Import here to avoid circular imports
-        from pysiral.l1bdata import Level1bData
+        from pysiral.l1data import Level1bData
 
         # Store arguments
         self.filepath = filepath
@@ -113,14 +108,15 @@ class ERSReaperSGDR(DefaultLoggingClass):
         self._transfer_surface_type_data()    # (land flag, ocean flag, ...)
         self._transfer_classifiers()          # (beam parameters, flags, ...)
 
-    def _transfer_timeorbit(self):
-        """ Extracts the time/orbit data group from the SGDR data """
+    def _transfer_timeorbit(self) -> None:
+        """
+        Extracts the time/orbit data group from the SGDR data and set
+        the l1 timeorbit data group
 
-        # Transfer the orbit position
-        self.l1.time_orbit.set_position(
-            self.sgdr.nc.lon_20hz.flatten(),
-            self.sgdr.nc.lat_20hz.flatten(),
-            self.sgdr.nc.alt_20hz.flatten())
+        :raises None:
+
+        :return: None
+        """
 
         # Transfer the timestamp
         sgdr_timestamp = self.sgdr.nc.time_20hz.flatten()
@@ -129,9 +125,34 @@ class ERSReaperSGDR(DefaultLoggingClass):
         timestamp = num2pydate(sgdr_timestamp, units, calendar)
         self.l1.time_orbit.timestamp = timestamp
 
+        # Get the 20Hz positions
+        lon, lat, alt = (
+            self.sgdr.nc.lon_20hz.flatten(),
+            self.sgdr.nc.lat_20hz.flatten(),
+            self.sgdr.nc.alt_20hz.flatten()
+        )
+
+        # Check for invalid positions
+        # (anecdotal evidence of invalid latitude values in reaper files)
+        lon_is_valid = np.logical_and(lon >= -180., lon <= 180)
+        lat_is_valid = np.logical_and(lat >= -90., lat <= 90)
+        is_valid = np.logical_and(lon_is_valid, lat_is_valid)
+        if not is_valid.all():
+            idxs = np.where(np.logical_not(is_valid))[0]
+            logger.error(f"- Found {len(idxs)} invalid lat/lon positions -> Set to NaN")
+            lon[idxs] = np.nan
+            lat[idxs] = np.nan
+            alt[idxs] = np.nan
+
+        # breakpoint()
+
+        # Transfer the orbit position
+        self.l1.time_orbit.set_position(lon, lat, alt)
+
         # Mandatory antenna pointing parameter (but not available for ERS)
         dummy_angle = np.full(timestamp.shape, 0.0)
-        self.l1.time_orbit.set_antenna_attitude(dummy_angle, dummy_angle, dummy_angle)
+        mispointing_deg = np.rad2deg(self.sgdr.nc.off_nadir_angle_wf_20hz.flatten())
+        self.l1.time_orbit.set_antenna_attitude(dummy_angle, dummy_angle, dummy_angle, mispointing=mispointing_deg)
 
         # Update meta data container
         self.l1.update_data_limit_attributes()

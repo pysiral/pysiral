@@ -1,24 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import re
-
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
-
-from setuptools.extension import Extension
-from setuptools import setup, find_packages
-
-import numpy
 from pathlib import Path
 
+import numpy
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
+from setuptools import find_packages, setup
+from setuptools.extension import Extension
+
 # Get the readme
-with open('README.md') as f:
-    readme = f.read()
-
+readme = Path('README.md').read_text()
 # Get the licence
-with open('LICENSE') as f:
-    license_text = f.read()
-
+license_text = Path('LICENSE').read_text()
 # Get the version
 mypackage_root_dir = Path(__file__).absolute().parent
 version_file_path = mypackage_root_dir / "pysiral" / 'VERSION'
@@ -26,8 +20,10 @@ with open(str(version_file_path)) as version_file:
     version = version_file.read().strip()
 
 # cythonized extensions go here
+# TODO: Autodetect cython files
 extensions = [
-    Extension("pysiral.bnfunc.cytfmra", ["pysiral/bnfunc/cytfmra.pyx"])]
+    Extension("pysiral.retracker.cytfmra", ["pysiral/retracker/cytfmra.pyx"])
+]
 
 # Package requirements
 with open("requirements.txt") as f:
@@ -41,27 +37,27 @@ dependency_links = [r for r in requirements_content if not r.find("git+")]
 for i, requirement in enumerate(requirements_content):
     m = re.search(r'/(.+?)\.git', requirement)
     if m:
-        package_name = m.group(1).split("/")[-1]
+        package_name = m[1].split("/")[-1]
         requirements_content[i] = package_name
 
 setup(
     name='pysiral',
     version=version,
-    description='python sea ice radar altimetry processing library',
+    description='PYthon Sea Ice Radar ALtimetry toolbox',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ],
     long_description=readme,
     author='Stefan Hendricks',
     author_email='stefan.hendricks@awi.de',
-    url='https://github.com/shendric/pysiral',
+    url='https://github.com/pysiral/pysiral',
     license=license_text,
     install_requires=install_requires,
     dependency_links=dependency_links,

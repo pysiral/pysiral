@@ -66,7 +66,7 @@ output_handler:
         local_machine_def_tag: baseline_e
         version:
             source_file_tag: esa_pds_ipf1e
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -79,18 +79,62 @@ level1_preprocessor:
         polar_ocean:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
-            input_file_is_single_hemisphere: True
+            input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 1000
     
         orbit_segment_connectivity:
             max_connected_segment_timedelta_seconds: 10
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
-        pre_processing_items:
-            
+        processing_items:
+
+            # Resample SIN waveforms to the same size as SAR waveforms
+            # NOTE: This will only have an effect of SIN segments
+            - label: "High Resolution Land Mask"
+              stage: post_source_file
+              module_name: pysiral.mask
+              class_name: L1PHighResolutionLandMask
+              options:
+                  local_machine_def_auxclass: mask
+                  local_machine_def_tag: landmask_highres
+                  dummy_val: 
+                    land_ocean_flag: -1
+                    distance_to_coast: .nan
+                  filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
+                  valid_latitude_range: [45.0, 88.0]
+                  grid_def:
+                      projection:
+                          proj: laea
+                          lon_0: 0.0
+                          lat_0: 90
+                      dimension:
+                          n_cols: 40000
+                          n_lines: 40000
+                          dx: 250
+                          dy: 250
+
+            # Compute pulse peakiness
+            - label: "Compute Pulse Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: True
+
+            # Compute normed pulse peakiness
+            - label: "Compute Pulse Peakiness (normed)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PWaveformPeakiness
+              options:
+                  skip_first_range_bins: 0
+                  norm_is_range_bin: False
+
             # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "Resample SIN waveforms"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
               class_name: L1PWaveformResampleSIN
               options:
@@ -99,6 +143,7 @@ level1_preprocessor:
             # Pad LRM waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of LRM segments
             - label: "Pad LRM waveforms"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.cryosat2.functions
               class_name: L1PWaveformPadLRM
               options:
@@ -106,6 +151,7 @@ level1_preprocessor:
 
             # Compute the leading edge width parameters (full, first half & second half)
             - label: "Compute Leading Edge Width"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeWidth
               options:
@@ -114,6 +160,7 @@ level1_preprocessor:
                   tfmra_leading_edge_end: 0.95
                   tfmra_options: 
                     noise_level_range_bin_idx: [0, 5]
+                    wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_ignore_leading_bins: 0
 
             # Compute the leading edge quality indicator
@@ -122,6 +169,7 @@ level1_preprocessor:
             #  2. first maximum index
             #  3. first maximum power (in units of peak power)
             - label: "Compute Leading Edge Quality"
+              stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PLeadingEdgeQuality
               options:
@@ -145,8 +193,9 @@ level1_preprocessor:
 
             # Compute the sigma_0
             - label: "Compute Sigma0"
-              module_name: pysiral.waveform
-              class_name: L1PSigma0
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.cryosat2.functions
+              class_name: L1PCryoSat2Sigma0
               options:
 
                   # CryoSat-2 altimeter constants to compute the LRM footprint
@@ -161,7 +210,7 @@ level1_preprocessor:
                       wf: 1.0
 
                   # CryoSat-2 altimeter constants to compute sigma0
-                  sigma0_kwargs:
+                  sigma0_sar_kwargs:
                       lambda_0: 0.022084
                       g_0: 19054.607179632483
 

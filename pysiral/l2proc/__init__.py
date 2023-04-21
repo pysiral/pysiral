@@ -6,24 +6,22 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 import sys
-
-from loguru import logger
-from pathlib import Path
-from dateperiods import DatePeriod
-from collections import deque, OrderedDict
+from collections import OrderedDict, deque
 from datetime import datetime
+from pathlib import Path
+
+from pysiral.core.class_template import DefaultLoggingClass
+from dateperiods import DatePeriod
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.l1bdata import L1bdataNCFile
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.datahandler import DefaultAuxdataClassHandler
-
+from pysiral.core.config import get_yaml_config
+from pysiral.core.datahandler import DefaultAuxdataClassHandler
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
+from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral.output import (Level2Output, DefaultLevel2OutputHandler, get_output_class)
-
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
 
@@ -139,25 +137,27 @@ class Level2Processor(DefaultLoggingClass):
             auxhandler = self._auxclass_handler.get_pyclass(auxdata_type, auxdata_def["name"], l2_procdef_opt)
 
             # Get a unique id of the auxhandler
-            auxhandler_id = "%s_%s" % (auxdata_type, auxhandler.pyclass.lower())
+            auxhandler_id = f"{auxdata_type}_{auxhandler.pyclass.lower()}"
 
             # Add & register the class to the Level-2 processor instance
             self._auxhandlers[auxhandler_id] = auxhandler
             self._registered_auxdata_handlers.append((auxhandler_id, auxdata_type))
 
             # Report the auxdata class
-            logger.info("Processor Settings - %s auxdata handler registered" % auxhandler_id.upper())
+            logger.info(f"Processor Settings - {auxhandler_id.upper()} auxdata handler registered")
 
     def set_procstep_handler(self):
         """
-        Add the proc
-        :return:
-        """
+        Add and initialize Level-2 processor items
 
+        :return: None
+        """
         logger.info("Init Processor Steps")
         cfg = self.l2def.procsteps
         self.procsteps = Level2ProcessorStepOrder(cfg)
-        self.procsteps.validate()
+        is_valid = self.procsteps.validate()
+        if not is_valid:
+            raise IOError()
         logger.info("Processor steps initialized and validated")
 
     def execute_l2_processor_steps(self, l1b, l2):
@@ -166,26 +166,21 @@ class Level2Processor(DefaultLoggingClass):
 
         Note: This is where the algorithm are executed in their order defined
               in the Level-2 processor definition file
+
         :param l1b:
         :param l2:
-        :return:
-        """
 
+        :return: None
+        """
         # Loop over all Level-2 processing steps.
         # Note: The property `class_instances` return freshly initialized
         #       class instances of the respective processor step
         for procstep_class in self.procsteps.class_instances:
-
-            # Execute the processing step with the mandatory method.
-            # Note: Each processing step is always supplied with both l1b and
-            #       l2 data object, no matter if actually needed
-            class_name = procstep_class.classname
-            # logger.debug("Executing processing step {}".format(class_name))
             procstep_class.execute(l1b, l2)
 
     def _report_output_location(self):
         for output_handler in self._output_handler:
-            msg = "Level-2 Output [%s]: %s" % (str(output_handler.id), output_handler.basedir)
+            msg = f"Level-2 Output [{str(output_handler.id)}]: {output_handler.basedir}"
             logger.info(msg)
 
     def _initialize_summary_report(self):
@@ -209,8 +204,12 @@ class Level2Processor(DefaultLoggingClass):
             # Log the current position in the file stack
             logger.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
 
-            # Read the the level 1b file (l1bdata netCDF is required)
-            l1b = self._read_l1b_file(l1b_file)
+            # Read the level-1p file
+            try:
+                l1b = self._read_l1b_file(l1b_file)
+            except RuntimeError:
+                logger.error(f"Cannot read {Path(l1b_file).name}, ... skipping")
+                continue
             source_primary_filename = Path(l1b_file).parts[-1]
 
             # Initialize the orbit level-2 data container
@@ -231,7 +230,7 @@ class Level2Processor(DefaultLoggingClass):
                 l2.info.timeliness = self._l2def.record_type
 
             # Get auxiliary data from all registered auxdata handlers
-            error_status, error_codes = self.get_auxiliary_data(l2)
+            error_status, error_codes = self.get_auxiliary_data(l1b, l2)
             if True in error_status:
                 self._discard_l1b_procedure(error_codes, l1b_file)
                 continue
@@ -252,7 +251,7 @@ class Level2Processor(DefaultLoggingClass):
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """
         filename = Path(l1b_file).name
-        logger.info("- Parsing l1bdata file: %s" % filename)
+        logger.info(f"- Parsing l1bdata file: {filename}")
         l1b = L1bdataNCFile(l1b_file)
         l1b.parse()
         l1b.info.subset_region_name = self.l2def.hemisphere
@@ -264,7 +263,7 @@ class Level2Processor(DefaultLoggingClass):
         for error_code in error_codes:
             self.report.add_orbit_discarded_event(error_code, l1b_file)
 
-    def get_auxiliary_data(self, l2):
+    def get_auxiliary_data(self, l1p: 'L1bdataNCFile', l2: 'Level2Data'):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
 
         # Loop over all auxilary data types. Each type must have:
@@ -280,18 +279,21 @@ class Level2Processor(DefaultLoggingClass):
             # Get the class
             auxclass = self._auxhandlers[auxdata_id]
 
+            # Pass optional l1p data container
+            auxclass.receive_l1p_input(l1p)
+
             # Transfer variables (or at least attempt to)
             auxclass.add_variables_to_l2(l2)
 
             # Reporting
             for msg in auxclass.msgs:
-                logger.info("- %s auxdata handler message: %s" % (auxdata_type.upper(), msg))
+                logger.info(f"- {auxdata_type.upper()} auxdata handler message: {msg}")
 
             # Check for errors
             if auxclass.error.status:
                 error_messages = auxclass.error.get_all_messages()
                 for error_message in error_messages:
-                    logger.warning("! "+error_message)
+                    logger.warning(f"! {error_message}")
                     # auxdata handler is persistent, therefore errors status
                     # needs to be reset before next orbit
                     auxclass.error.reset()
@@ -299,7 +301,7 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_error_status.append(auxclass.error.status)
             auxdata_error_codes.extend(auxclass.error.codes)
 
-            logger.info("- %s auxdata handler completed" % (auxdata_type.upper()))
+            logger.info(f"- {auxdata_type.upper()} auxdata handler completed")
 
         # Return error status list
         return auxdata_error_status, auxdata_error_codes
@@ -307,7 +309,7 @@ class Level2Processor(DefaultLoggingClass):
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:
             output = Level2Output(l2, output_handler)
-            logger.info("- Write {} data file: {}".format(output_handler.id, output.export_filename))
+            logger.info(f"- Write {output_handler.id} data file: {output.export_filename}")
 
     def _add_to_orbit_collection(self, l2):
         self._orbit.append(l2)
@@ -389,8 +391,8 @@ class Level2ProductDefinition(DefaultLoggingClass):
         if run_tag is not None:
             value = run_tag
         else:
-            value = "{}/{}/{}/{}/{}".format(self.product_line, self.record_type,
-                                            self.platform, self.version, self.hemisphere_code)
+            value = f"{self.product_line}/{self.record_type}/{self.platform}/{self.version}/{self.hemisphere_code}"
+
         self._run_tag = value
 
     @property
@@ -475,15 +477,15 @@ class L2ProcessorReport(DefaultLoggingClass):
         # Only except defined error codes
         try:
             self.error_counter[error_code].append(l1b_file)
-        except:
-            logger.warning("Unknown error code (%s), ignoring" % error_code)
+        except KeyError:
+            logger.warning(f"Unknown error code ({error_code}), ignoring")
 
     def write_to_file(self, output_id, directory):
         """ Write a summary file to the defined export directory """
 
         # Create a simple filename
         filename = Path(directory) / "pysiral-l2proc-summary.txt"
-        logger.info("Exporting summary report: %s" % filename)
+        logger.info(f"Exporting summary report: {filename}")
 
         lfmt = "  %-16s : %s\n"
         current_time = str(datetime.now()).split(".")[0]
@@ -542,15 +544,12 @@ class L2ProcessorReport(DefaultLoggingClass):
     def data_period_str(self):
         try:
             return self.time_range.label
-        except:
+        except AttributeError:
             return "invalid/mission data period"
 
     @property
     def n_discarded_files(self):
-        num_discarded_files = 0
-        for error_code in self.error_counter.keys():
-            num_discarded_files += len(self.error_counter[error_code])
-        return num_discarded_files
+        return sum(len(self.error_counter[error_code]) for error_code in self.error_counter.keys())
 
     @property
     def n_warnings(self):

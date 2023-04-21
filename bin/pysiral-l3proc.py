@@ -2,21 +2,23 @@
 # -*- coding: utf-8 -*-
 
 
-from datetime import timedelta
 import argparse
-import time
 import sys
-from loguru import logger
+import time
+from datetime import timedelta
 from pathlib import Path
+from typing import List
+
 from dateperiods import DatePeriod
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.config import DefaultCommandLineArguments
-from pysiral.datahandler import L2iDataHandler
-from pysiral.errorhandler import ErrorStatus
-from pysiral.l3proc import (Level3Processor, Level3ProductDefinition,
-                            Level3GridDefinition, Level3OutputHandler)
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.core.datahandler import L2iDataHandler
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
+                            Level3Processor, Level3ProductDefinition)
 
 
 def pysiral_l3proc():
@@ -41,10 +43,10 @@ def pysiral_l3proc():
     grid = Level3GridDefinition(args.l3_griddef)
 
     # Initialize the interface to the l2i products
-    l2i_handler = L2iDataHandler(args.l2i_product_directory, search_str="l2", force_l2i_subfolder=False)
+    l2i_handler = L2iDataHandler(args.l2i_product_directories, search_str="l2")
 
     # Initialize the output handler
-    # Currently the overwrite protection is disabled per default
+    # Currently,  overwrite protection is disabled per default
     output = []
     for l3_output_file in args.l3_output_file:
         output_handler = Level3OutputHandler(output_def=l3_output_file,
@@ -66,7 +68,7 @@ def pysiral_l3proc():
 
         # Report processing period
         msg = "# Processing %s period (%g of %g): %s"
-        msg = msg % (args.period, i+1, n_periods, time_range.date_label)
+        msg %= (args.period, i+1, n_periods, time_range.date_label)
         logger.info(msg)
 
         # Retrieve files
@@ -139,6 +141,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
         # (argname, argtype (see config module), destination, required flag)
         options = [
             ("-l2i-product-dir", "l2i-product-dir", "l2i_basedir", True),
+            ("-l3-product-dir", "l3-product-dir", "l3_product_dir", False),
             ("-l3-settings", "l3-settings", "l3_settings", False),
             ("-l3-griddef", "l3-griddef", "l3_griddef", True),
             ("-l3-output", "l3-output", "l3_output", True),
@@ -187,36 +190,34 @@ class Level3ProcArgParser(DefaultLoggingClass):
         return self._args.data_record_type
 
     @property
-    def l2i_product_directory(self):
-        return Path(self._args.l2i_basedir)
+    def l2i_product_directories(self) -> List[Path]:
+        return [Path(base_dir) for base_dir in self._args.l2i_basedir]
 
     @property
     def l3_settings_file(self):
         l3_settings = self._args.l3_settings
         filename = psrlcfg.get_settings_file("proc", "l3", l3_settings)
-        if filename is None:
-            msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
-            msg = msg + " \nRecognized Level-3 processor setting ids:\n"
-            for l3_settings_id in psrlcfg.get_setting_ids("proc", "l3"):
-                msg = msg + "  " + l3_settings_id + "\n"
-            self.error.add_error("invalid-l3-settings", msg)
-            self.error.raise_on_error()
-        else:
+        if filename is not None:
             return filename
+        msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
+        msg = msg + " \nRecognized Level-3 processor setting ids:\n"
+        for l3_settings_id in psrlcfg.get_setting_ids("proc", "l3"):
+            msg = f"{msg}  {l3_settings_id}" + "\n"
+        self.error.add_error("invalid-l3-settings", msg)
+        self.error.raise_on_error()
 
     @property
     def l3_griddef(self):
         l3_griddef = self._args.l3_griddef
         filename = psrlcfg.get_settings_file("grid", None, l3_griddef)
-        if filename is None:
-            msg = "Invalid griddef filename or id: %s\n" % l3_griddef
-            msg = msg + "    Recognized grid definition ids:\n"
-            for griddef_id in psrlcfg.get_setting_ids("grid"):
-                msg = msg + "    - " + griddef_id + "\n"
-            self.error.add_error("invalid-griddef", msg)
-            self.error.raise_on_error()
-        else:
+        if filename is not None:
             return filename
+        msg = "Invalid griddef filename or id: %s\n" % l3_griddef
+        msg = msg + "    Recognized grid definition ids:\n"
+        for griddef_id in psrlcfg.get_setting_ids("grid"):
+            msg = f"{msg}    - {griddef_id}" + "\n"
+        self.error.add_error("invalid-griddef", msg)
+        self.error.raise_on_error()
 
     @property
     def l3_output_file(self):
@@ -233,29 +234,54 @@ class Level3ProcArgParser(DefaultLoggingClass):
                 msg = "Invalid output definition filename or id: %s\n" % l3_output
                 msg = msg + "    Recognized output definition ids:\n"
                 for output_id in psrlcfg.get_setting_ids("output", "l3"):
-                    msg = msg + "    - " + output_id + "\n"
+                    msg = f"{msg}    - {output_id}" + "\n"
                 self.error.add_error("invalid-outputdef", msg)
             else:
                 filenames.append(filename)
 
-        if len(filenames) == 0:
+        if not filenames:
             msg = "No valid output definition file found for argument: %s"
-            msg = msg % (str(self._args.l3_output))
+            msg %= (str(self._args.l3_output))
             self.error.add_error("invalid-outputdef", msg)
             self.error.raise_on_error()
 
         return filenames
 
     @property
-    def l3_product_basedir(self):
-        """ Returns the base directory (one level below l2i) """
+    def l3_product_basedir(self) -> Path:
+        """
+        Returns the base directory for the L3 output. There are several cases depending on
+        whether multiple l2i product dirs are specified and most importantly if the L3 output
+        directory has been specified (`--l3-product-dir`)
+
+        L3C (single L2 data source):
+
+        - L3C target dir: ../l2i/../l3c
+
+        L3S (multiple L2 data sources):
+
+        - Multiple l2i dirs, no dedicated l3 target dir -> ../l2i/../l3s of first l2i directory [Warning displayed]
+        - dedicated l3 target dir -> used if speficied
+
+        :return:
+        """
+
+        # The specification of `--l3-product-dir` trumps all other conditions
+        if self._args.l3_product_dir:
+            output_dir = Path(self._args.l3_product_dir)
+            if not output_dir.is_dir():
+                output_dir.mkdir(parents=True, exist_ok=True)
+            return output_dir
+
         # 1. Clean up the path
-        product_basedir = Path(self._args.l2i_basedir).resolve(strict=False)
+        product_basedir = self.l2i_product_directories[0].resolve(strict=False)
         dirs = product_basedir.parts
-        if dirs[-1] == "l2i":
-            return Path(*dirs[:-1])
-        else:
-            return product_basedir
+        l3_product_basedir = Path(*dirs[:-1]) if dirs[-1] in ["l2i", "l2"] else product_basedir
+        if len(self.l2i_product_directories) > 1:
+            logger.warning(
+                f"Multiple l2i directories, but no dedicated l3 product directory. Defaulting to {l3_product_basedir}"
+            )
+        return l3_product_basedir
 
     @property
     def remove_old(self):

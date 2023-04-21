@@ -2,13 +2,14 @@
 
 import os
 import re
-import numpy as np
-from pathlib import Path
-from loguru import logger
 from collections import deque
+from pathlib import Path
 
-from pysiral.errorhandler import ErrorStatus
-from pysiral.logging import DefaultLoggingClass
+import numpy as np
+from loguru import logger
+
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):

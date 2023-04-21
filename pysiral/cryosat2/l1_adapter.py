@@ -1,35 +1,30 @@
 
+import re
 from pathlib import Path
 
-import xarray
 import numpy as np
+import xarray
+from astropy.time import Time
+from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate
-from cftime import num2pydate
 
 from pysiral import __version__ as pysiral_version
-from pysiral.classifier import CS2OCOGParameter, CS2LTPP, CS2PulsePeakiness
-from pysiral.clocks import StopWatch, UTCTAIConverter
-from pysiral.cryosat2 import cs2_procstage2timeliness
-from pysiral.errorhandler import ErrorStatus
-from pysiral.helper import parse_datetime_str
-from pysiral.l1bdata import Level1bData
-from pysiral.logging import DefaultLoggingClass
+from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
-import re
+from pysiral.core.helper import parse_datetime_str
+from pysiral.cryosat2 import cs2_procstage2timeliness
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc import Level1PInputHandlerBase
+from pysiral.waveform import CS2OCOGParameter
 
 
-class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
+class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
 
     def __init__(self, cfg, raise_on_error=False):
 
         cls_name = self.__class__.__name__
-        super(ESACryoSat2PDSBaselineD, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
-
-        # Store arguments
-        self.raise_on_error = raise_on_error
-        self.cfg = cfg
+        super(ESACryoSat2PDSBaselineD, self).__init__(cfg, raise_on_error, cls_name)
 
         # Init main class variables
         self.nc = None
@@ -61,7 +56,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Input Validation
         if not Path(filepath).is_file():
-            msg = "Not a valid file: %s" % filepath
+            msg = f"Not a valid file: {filepath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
@@ -120,7 +115,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
         lightspeed = 299792458.0
         bandwidth = 320000000.0
-        # The two way delay time give the distance to the central bin
+        # The two-way delay time give the distance to the central bin
         central_window_range = window_delay * lightspeed / 2.0
         # Calculate the offset from the center to the first range bin
         window_size = (n_range_bins * lightspeed) / (4.0 * bandwidth)
@@ -132,9 +127,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         range_offset = np.tile(range_increment, (window_delay.shape[0], 1)) - first_bin_offset
         window_range = np.tile(central_window_range, (n_range_bins, 1)).transpose()
 
-        # Compute the range for each bin and return
-        wfm_range = window_range + range_offset
-        return wfm_range
+        return window_range + range_offset
 
     @staticmethod
     def interp_1hz_to_20hz(variable_1hz, time_1hz, time_20hz, **kwargs):
@@ -187,10 +180,14 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         info.set_attribute("timeliness", cs2_procstage2timeliness(metadata["processing_stage"]))
 
         # Time-Orbit Metadata
+        tcs_tai = parse_datetime_str(metadata["first_record_time"][4:])
+        tce_tai = parse_datetime_str(metadata["last_record_time"][4:])
+        tcs_utc, tce_utc = Time([tcs_tai, tce_tai], scale="tai").utc.datetime
+
         lats = [float(metadata["first_record_lat"])*1e-6, float(metadata["last_record_lat"])*1e-6]
         lons = [float(metadata["first_record_lon"])*1e-6, float(metadata["last_record_lon"])*1e-6]
-        info.set_attribute("start_time", parse_datetime_str(metadata["first_record_time"][4:]))   # TAI=....
-        info.set_attribute("stop_time", parse_datetime_str(metadata["last_record_time"][4:]))     # TAI=....
+        info.set_attribute("start_time", tcs_utc)
+        info.set_attribute("stop_time", tce_utc)
         info.set_attribute("lat_min", np.amin(lats))
         info.set_attribute("lat_max", np.amax(lats))
         info.set_attribute("lon_min", np.amin(lons))
@@ -201,7 +198,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             percent_value = 0.0
             if metadata["sir_op_mode"].strip().lower() == mode:
                 percent_value = 100.
-            info.set_attribute("{}_mode_percent".format(mode), percent_value)
+            info.set_attribute(f"{mode}_mode_percent", percent_value)
         info.set_attribute("open_ocean_percent", float(metadata["open_ocean_percent"])*0.01)
 
     def _set_l1_data_groups(self):
@@ -227,9 +224,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         #       difficult to work with the numpy datetime64 date format. Better to compute datetimes using
         #       a know num2pydate conversion
         tai_datetime = num2pydate(self.nc.time_20_ku.values, units=self.nc.time_20_ku.units)
-        converter = UTCTAIConverter()
-        utc_timestamp = converter.tai2utc(tai_datetime, check_all=False)
-        self.l1.time_orbit.timestamp = utc_timestamp
+        self.l1.time_orbit.timestamp = Time(tai_datetime, scale="tai").utc.datetime
 
         # Set the geolocation
         self.l1.time_orbit.set_position(
@@ -279,11 +274,6 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
 
         # Convert window delay to range for each waveform range bin
         wfm_range = self.get_wfm_range(window_delay, dim_ns)
-
-        # Make sure that parameter are float and not double
-        # -> Import for cythonized algorithm parts (ctfrma specifically uses floats)
-        wfm_power = wfm_power.astype(np.float32)
-        wfm_range = wfm_range.astype(np.float32)
 
         # Set the waveform
         op_mode = str(self.nc.attrs["sir_op_mode"].strip().lower())
@@ -347,7 +337,7 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             variable_1hz = getattr(self.nc, pds_var_name)
             variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
             if error_status:
-                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % pds_var_name
+                msg = f"- Error in 20Hz interpolation for variable `{pds_var_name}` -> set only dummy"
                 logger.warning(msg)
             self.l1.correction.set_parameter(key, variable_20hz)
 
@@ -379,9 +369,11 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
         """
         Transfer the classifiers defined in the l1p config file to the Level-1 object.
         NOTE: It is assumed that all classifiers are 20Hz
+
         In addition, a few legacy parameter are computed based on the waveform counts that is only available at
         this stage. Computation of other parameter such as sigma_0, leading_edge_width, ... are moved to the
         post-processing
+
         :return: None
         """
         # Loop over all classifier variables defined in the processor definition file
@@ -389,25 +381,10 @@ class ESACryoSat2PDSBaselineD(DefaultLoggingClass):
             variable_20hz = getattr(self.nc, self.cfg.classifier_targets[key])
             self.l1.classifier.add(variable_20hz, key)
 
-        # Calculate Parameters from waveform counts
-        # XXX: This is a legacy of the CS2AWI IDL processor
-        #      Threshold defined for waveform counts not power in dB
-        wfm_counts = self.nc.pwr_waveform_20_ku.values
-
         # Calculate the OCOG Parameter (CryoSat-2 notation)
         ocog = CS2OCOGParameter(self.l1.waveform.power)
         self.l1.classifier.add(ocog.width, "ocog_width")
         self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
-
-        # Calculate the Peakiness (CryoSat-2 notation)
-        pulse = CS2PulsePeakiness(wfm_counts)
-        self.l1.classifier.add(pulse.peakiness, "peakiness")
-        self.l1.classifier.add(pulse.peakiness_r, "peakiness_r")
-        self.l1.classifier.add(pulse.peakiness_l, "peakiness_l")
-
-        # fmi version: Calculate the LTPP
-        # ltpp = CS2LTPP(wfm_counts)
-        # self.l1.classifier.add(ltpp.ltpp, "late_tail_to_peak_power")
 
         # Get satellite velocity vector (classifier needs to be vector -> manual extraction needed)
         satellite_velocity_vector = self.nc.sat_vel_vec_20_ku.values
@@ -428,7 +405,7 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
         ESACryoSat2PDSBaselineD._set_l1_data_groups(self)
         fespath = self._get_fes_path(self.filepath)
         if not Path(fespath).is_file():
-            msg = "Not a valid file: %s" % fespath
+            msg = f"Not a valid file: {fespath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             raise FileNotFoundError
@@ -438,7 +415,7 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
             # time_1hz = self.nc.time_cor_01.values
             # time_20hz = self.nc.time_20_ku.values
 
-            msg = "Patching FES2014b tide data from: %s" % fespath
+            msg = f"Patching FES2014b tide data from: {fespath}"
             logger.info(msg)
 
             # ocean_tide_elastic: ocean_tide_01
@@ -468,13 +445,13 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
             #     raise FileNotFoundError
             self.l1.correction.set_parameter('ocean_loading_tide', variable_20hz)
         except:
-            msg = "Error encountered by xarray parsing: %s" % fespath
+            msg = f"Error encountered by xarray parsing: {fespath}"
             self.error.add_error("xarray-parse-error", msg)
             self.nc = None
             logger.warning(msg)
             raise FileNotFoundError
 
-    def _get_fes_path(self,filepath):
+    def _get_fes_path(self, filepath):
         # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
         # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
         newpath = str(filepath)
@@ -482,6 +459,59 @@ class ESACryoSat2PDSBaselineDPatchFES(ESACryoSat2PDSBaselineD):
         newpath = p.sub('L1B/FES2014', newpath)
         p = re.compile('nc')
         newpath = p.sub('fes2014b.nc', newpath)
+        p = re.compile('TEST')
+        newpath = p.sub('LTA_', newpath)
+        return newpath
+
+
+class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
+    def __init__(self, cfg, raise_on_error=False):
+        ESACryoSat2PDSBaselineDPatchFES.__init__(self, cfg, raise_on_error)
+
+    def _set_l1_data_groups(self):
+        ESACryoSat2PDSBaselineDPatchFES._set_l1_data_groups(self)
+        arcpath = self._get_arctide_path(self.filepath)
+        if not Path(arcpath).is_file():
+            msg = f"Not a valid file: {arcpath}"
+            logger.warning(msg)
+            self.error.add_error("invalid-filepath", msg)
+            # The handling of missing files here is different so that we can still process
+            # south files even though we don't have Arctide for them
+            self.l1.correction.set_parameter('ocean_tide_elastic_2',
+                                             self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
+        else:
+            nc_arc = xarray.open_dataset(arcpath, decode_times=False, mask_and_scale=True)
+
+            # time_1hz = self.nc.time_cor_01.values
+            # time_20hz = self.nc.time_20_ku.values
+
+            msg = f"Patching ARCTIDE tide data from: {arcpath}"
+            logger.info(msg)
+
+            # ocean_tide_elastic: ocean_tide_01
+            variable_20hz = getattr(nc_arc, 'tide_Arctic')
+            # variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
+            # if error_status:
+            #    msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % 'ocean_tide_01'
+            #    logger.warning(msg)
+            #    raise FileNotFoundError
+            nans_indices = np.where(np.isnan(variable_20hz))[0]
+            if len(nans_indices) > 0:
+                msg = 'Arctide file had {numnan} NaN values of {numval}. These have been replaced with FES2014b data'.format(numnan=len(nans_indices), numval=len(variable_20hz))
+                logger.warning(msg)
+                variable_20hz[nans_indices] = self.l1.correction.get_parameter_by_name('ocean_tide_elastic')[nans_indices]
+            self.l1.correction.set_parameter('ocean_tide_elastic_2', self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
+            self.l1.correction.set_parameter('ocean_tide_elastic', variable_20hz)
+
+
+    def _get_arctide_path(self, filepath):
+        # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
+        # pathsubs = [ ( 'L1B', 'L1B/FES2014' ), ( 'nc', 'fes2014b.nc' ) ]
+        newpath = str(filepath)
+        p = re.compile('L1B')
+        newpath = p.sub('L1B/ARCTIDE', newpath)
+        p = re.compile('nc')
+        newpath = p.sub('RegAT_Arctic_tides_v1.2.nc', newpath)
         p = re.compile('TEST')
         newpath = p.sub('LTA_', newpath)
         return newpath

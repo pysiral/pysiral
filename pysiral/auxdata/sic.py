@@ -36,16 +36,20 @@ Important Note:
 """
 
 
-from pysiral.l2data import Level2Data
-from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
 
 
+from pathlib import Path
+from typing import List, Tuple
+
+import numpy as np
+import numpy.typing as npt
 import scipy.ndimage as ndimage
 from pyproj import Proj
-import numpy as np
-from pathlib import Path
-from typing import List
+from scipy.spatial.distance import cdist
+
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.core.iotools import ReadNC
+from pysiral.l2data import Level2Data
 
 
 class OsiSafSIC(AuxdataBaseClass):
@@ -76,8 +80,11 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # Class properties
         self._data = None
+        self._ocean_proximity = None
+        self._low_ice_conc_proximity = None
         self.start_time = None
         self.hemisphere_code = None
+        self.hemisphere = None
 
     def get_l2_track_vars(self, l2: "Level2Data") -> None:
         """
@@ -88,6 +95,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # These properties are needed to construct the product path
         self.start_time = l2.info.start_time
+        self.hemisphere = l2.hemisphere
         self.hemisphere_code = l2.hemisphere_code
 
         # Set the requested date
@@ -99,9 +107,12 @@ class OsiSafSIC(AuxdataBaseClass):
         # Check if error with file I/O
         if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
+            ocean_proximity = self.get_empty_array(l2)
+            distance_to_low_ice_concentration = self.get_empty_array(l2)
+
         else:
             # Get and return the track
-            sic = self._get_sic_track(l2)
+            sic, ocean_proximity, distance_to_low_ice_concentration = self._get_sic_track(l2)
 
             # Fill pole hole
             if "fill_pole_hole" in self.cfg.options:
@@ -112,6 +123,8 @@ class OsiSafSIC(AuxdataBaseClass):
 
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
+        self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)
+        self.register_auxvar("dtlsic", "distance_to_low_ice_concentration", distance_to_low_ice_concentration, None)
 
     def load_requested_auxdata(self) -> None:
         """
@@ -124,7 +137,7 @@ class OsiSafSIC(AuxdataBaseClass):
 
         #  --- Validation ---
         if not path.is_file():
-            msg = self.pyclass+": File not found: %s " % path
+            msg = f"{self.pyclass}: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
             return
@@ -140,11 +153,15 @@ class OsiSafSIC(AuxdataBaseClass):
         flagged = np.where(self._data.ice_conc < 0)
         self._data.ice_conc[flagged] = np.nan
 
-    def _get_sic_track(self, l2: "Level2Data") -> np.ndarray:
+        # Compute ice/ocean proximity variable
+        self._ocean_proximity = self._compute_ice_conc_threshold_proximity(15.0)
+        self._low_ice_conc_proximity = self._compute_ice_conc_threshold_proximity(70.0)
+
+    def _get_sic_track(self, l2: "Level2Data") -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Simple extraction along trajectory
         :param l2:
-        :return: sea ice concentration array
+        :return: sea ice concentration, distance to ocean arrays
         """
 
         # Extract from grid
@@ -152,8 +169,64 @@ class OsiSafSIC(AuxdataBaseClass):
         grid_lons, grid_lats = self._data.lon, self._data.lat
         grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
         sic = grid2track.get_from_grid_variable(self._data.ice_conc, flipud=True)
+        ocean_proximity = grid2track.get_from_grid_variable(
+            self._ocean_proximity,
+            flipud=True,
+            order=1
+        )
+        distance_to_low_ice_concentration = grid2track.get_from_grid_variable(
+            self._low_ice_conc_proximity,
+            flipud=True,
+            order=1
+        )
+        # Remove ocean proximity for trajectory points outside the sea ice mask
+        ocean_proximity[sic < 15.] = np.nan
+        return sic, ocean_proximity, distance_to_low_ice_concentration
 
-        return sic
+    def _compute_ice_conc_threshold_proximity(self, ice_concentration_threshold: float = 15.) -> npt.NDArray:
+        """
+        Computes the distance of each sea ice grid cell (SIC >= 15%) to the
+        next ocean (SIC <= 15% and not land) grid cell. The result will be
+        stored to this instance and the data can be extracted along the
+        track similar to sea ice concentration
+        :return:
+        """
+
+        # Create pixel-based masks for ice and ocean pixels
+        ice_conc = self._data.ice_conc
+        ice_pixels = ice_conc >= ice_concentration_threshold
+        ocean_pixels = ice_conc < ice_concentration_threshold
+        ice_pixels_extended = ndimage.maximum_filter(ice_pixels, 3)
+
+        # Detect the ocean side of the ice/ocean transition
+        flag = np.full(ice_conc.shape, -1, dtype=int)
+        flag[np.where(ice_pixels)] = 1
+        flag[np.where(ocean_pixels)] = 0
+        gx, gy = np.gradient(flag)
+        total_gradient = np.sqrt(gx ** 2. + gy ** 2.)
+
+        # The ocean side of the ice/ocean edge must have a flag gradient and be of type ocean ...
+        ice_edge_ocean_pixel = np.logical_and(total_gradient > 0, flag == 0)
+        # ... and there needs to be a sea ice pixel next to it
+        ice_edge_ocean_pixel = np.logical_and(ice_edge_ocean_pixel, ice_pixels_extended)
+
+        # Convert the grid cell indices in coordinates
+        ice_points_idx = np.where(ice_pixels)
+        ice_edge_ocean_points_idx = np.where(ice_edge_ocean_pixel)
+        ice_points = np.array([ice_points_idx[0], ice_points_idx[1]]).T
+        ice_edge_ocean_points = np.array([ice_edge_ocean_points_idx[0], ice_edge_ocean_points_idx[1]]).T
+
+        # Compute the minimal distance between each sea ice pixel and all
+        # ice/ocean edge pixel and convert result to physical units
+        griddef = self.cfg.options[self.hemisphere]
+        pixel_spacing = float(griddef["dimension"]["dx"])
+        dist = cdist(ice_points, ice_edge_ocean_points)
+        min_dist = np.nanmin(dist, axis=1) * pixel_spacing
+
+        # Convert back to grid shape and save
+        proximity = np.full(ice_conc.shape, 0.0)
+        proximity[ice_points_idx] = min_dist
+        return proximity
 
     @property
     def requested_filepath(self) -> "Path":
@@ -248,7 +321,7 @@ class IfremerSIC(AuxdataBaseClass):
 
         # Validation
         if not path.is_file():
-            msg ="IfremerSIC: File not found: %s " % path
+            msg = f"IfremerSIC: File not found: {path} "
             self.add_handler_message(msg)
             self.error.add_error("auxdata_missing_sic", msg)
             return
@@ -260,7 +333,7 @@ class IfremerSIC(AuxdataBaseClass):
 
         # This step is important for calculation of image coordinates
         self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self.add_handler_message("IfremerSIC: Loaded SIC file: %s" % path)
+        self.add_handler_message(f"IfremerSIC: Loaded SIC file: {path}")
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
@@ -287,6 +360,4 @@ class IfremerSIC(AuxdataBaseClass):
         x_min = x[dim.n_lines-1, 0]
         y_min = y[dim.n_lines-1, 0]
         ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
-        # Extract along track data from grid
-        sic = ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)
-        return sic
+        return ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)

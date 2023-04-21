@@ -5,22 +5,27 @@ Created on Fri Jul 24 16:30:24 2015
 @author: Stefan
 """
 
-from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
-from pysiral.iotools import ReadNC
-from pysiral.logging import DefaultLoggingClass
-from pysiral.l1bdata import L1bMetaData, L1bTimeOrbit
+
+import contextlib
+import re
+import uuid
+from collections import OrderedDict
+from datetime import datetime
 
 import numpy as np
-from datetime import datetime
 from geopy.distance import great_circle
-from collections import OrderedDict
 from loguru import logger
-import uuid
-import re
+
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.iotools import ReadNC
+from pysiral.l1data import L1bMetaData, L1bTimeOrbit
 
 
 class Level2Data(object):
+
+    # TODO: Using class variables may break things during multi-processing
     _L2_DATA_ITEMS = ["range", "sla", "sla_raw", "dot", "elev", "afrb", "frb", "sit", "radar_mode"]
 
     _HEMISPHERE_CODES = {"north": "nh", "south": "sh"}
@@ -106,7 +111,7 @@ class Level2Data(object):
         is_correct_size = self._check_valid_size(value)
         if not is_correct_size:
             msg = "Invalid parameter dimension: %s (See self._L2_DATA_ITEMS)"
-            msg = msg % str(target)
+            msg %= str(target)
             self.error.add_error("l2-invalid-parameter_name", msg)
             self.error.raise_on_error()
 
@@ -137,7 +142,10 @@ class Level2Data(object):
         # NOTE: In this case an empty value will be generated
         if value is None:
             value = np.full(self.n_records, np.nan)
-        param.set_value(value)
+        try:
+            param.set_value(value)
+        except ValueError:
+            logger.error(f"Could not set auxiliary parameter: {var_name}")
         if uncertainty is not None:
             param.set_uncertainty(uncertainty)
         setattr(self, var_id, param)
@@ -227,7 +235,8 @@ class Level2Data(object):
                 source = catalog[parameter_name]
                 parameter = getattr(self, source)
             except KeyError:
-                msg = "Variable name `%s` is not in the catalog of this l2 object" % parameter_name
+                msg = f"Variable name `{parameter_name}` is not in the catalog of this l2 object"
+
                 self.error.add_error("l2data-missing-variable", msg)
                 if raise_on_error:
                     self.error.raise_on_error()
@@ -239,9 +248,8 @@ class Level2Data(object):
         required for the output data handler """
 
         try:
-            attr_getter = getattr(self, "_get_attr_" + attribute_name)
-            attribute = attr_getter(*args)
-            return attribute
+            attr_getter = getattr(self, f"_get_attr_{attribute_name}")
+            return attr_getter(*args)
         except AttributeError:
             return "unkown"
 
@@ -253,10 +261,7 @@ class Level2Data(object):
         """ Performs a test if parameter name is a valid level-2 parameter
         name. Adds error if result negative and returns flag (valid: True,
         invalid: False) """
-        if parameter_name not in self._L2_DATA_ITEMS:
-            return False
-        else:
-            return True
+        return parameter_name in self._L2_DATA_ITEMS
 
     def _check_valid_size(self, array, **kwargs):
         """ Test if array has the correct size shape=(n_records). Adds error
@@ -264,9 +269,8 @@ class Level2Data(object):
         condition = array.ndim == 1 and len(array) == self._n_records
         if condition:
             return True
-        else:
-            self.error.add_error("Invalid array added to level-2 class")
-            return False
+        self.error.add_error("Invalid array added to level-2 class")
+        return False
 
     def _get_as_array(self, value, dtype=np.float32):
         """ Create an output array from values that is of length n_records.
@@ -296,13 +300,12 @@ class Level2Data(object):
             return np.full(self.arrshape, value).astype(dtype)
 
         # if array, check if correct size
+        is_np_array = isinstance(value, (np.ndarray, np.array))
+        is_correct_size = self._check_valid_size(value)
+        if is_np_array and is_correct_size:
+            return value
         else:
-            is_np_array = isinstance(value, (np.ndarray, np.array))
-            is_correct_size = self._check_valid_size(value)
-            if is_np_array and is_correct_size:
-                return value
-            else:
-                return np.full(self.arrshape, np.nan)
+            return np.full(self.arrshape, np.nan)
 
     # TODO: All this needs to go to the metadata class with standardized attributes
     @staticmethod
@@ -321,7 +324,7 @@ class Level2Data(object):
                 mission_id_code, label = entry.split(":")
                 if mission_id == mission_id_code:
                     return label
-            return "Error (mission id %s not in select statement)" % mission_id
+            return f"Error (mission id {mission_id} not in select statement)"
         return mission_id
 
     def _get_attr_source_mission_name(self, *args):
@@ -334,6 +337,8 @@ class Level2Data(object):
         mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
+        elif args[0] == "lower":
+            mission_sensor = mission_sensor.lower()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
@@ -434,24 +439,24 @@ class Level2Data(object):
 
     def _get_attr_utcnow(self, *args):
         dt = self._creation_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_start(self, *args):
         # Cryo-TEMPO change from start of invocation timeperiod to start of L2 object coverage
         dt = self.info.start_time
-        if re.match("%", args[0]):
-            time_string = dt.strftime(args[0])
-        else:
-            time_string = dt.isoformat()
-        return time_string
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
     def _get_attr_time_coverage_end(self, *args):
         # Cryo-TEMPO change from end of invocation timeperiod to end of L2 object coverage
         dt = self.info.stop_time
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
+
+    def _get_attr_period_coverage_start(self, *args):
+        dt = self.period.tcs.dt
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
+
+    def _get_attr_period_coverage_end(self, *args):
+        dt = self.period.tce.dt
         if re.match("%", args[0]):
             time_string = dt.strftime(args[0])
         else:
@@ -587,6 +592,12 @@ class Level2Data(object):
         return dict(self._PARAMETER_CATALOG)
 
     @property
+    def full_variable_catalog(self):
+        full_variable_catalog = self.parameter_catalog
+        full_variable_catalog.update(self.auxiliary_catalog)
+        return full_variable_catalog
+
+    @property
     def property_catalog(self):
         return dict(self._PROPERTY_CATALOG)
 
@@ -599,6 +610,10 @@ class Level2Data(object):
         name = "auxvar%02g" % self._auto_auxvar_num
         self._auto_auxvar_num += 1
         return name
+
+    @property
+    def auxiliary_catalog(self):
+        return dict(self._auxiliary_catalog)
 
     @property
     def arrshape(self):
@@ -618,6 +633,9 @@ class Level2Data(object):
 
     @property
     def footprint_spacing(self):
+        if self.n_records < 2:
+            return np.nan
+
         spacing = great_circle(
             (self.latitude[1], self.longitude[1]),
             (self.latitude[0], self.longitude[0])).meters
@@ -632,8 +650,7 @@ class Level2Data(object):
     @property
     def dimdict(self):
         """ Returns dictionary with dimensions"""
-        dimdict = OrderedDict([("time", self.n_records)])
-        return dimdict
+        return OrderedDict([("time", self.n_records)])
 
     @property
     def time(self):
@@ -880,11 +897,8 @@ class Level2PContainer(DefaultLoggingClass):
         # or do not make sense (surface type for valid freeboard will
         # always be sea ice)
         for parameter_name in ["timestamp", "time", "longitude", "latitude", "surface_type"]:
-            try:
+            with contextlib.suppress(ValueError):
                 parameter_list.remove(parameter_name)
-            except ValueError:
-                pass
-
         # 4. Set parameters
         for parameter_name in parameter_list:
 
@@ -903,9 +917,15 @@ class Level2PContainer(DefaultLoggingClass):
 
         return l2
 
-    def _get_merged_data(self, valid_mask=None):
-        """ Returns a dict with merged data groups for all parameters
-        in the l2i file (assumed to be identical for all files in the stack
+    def _get_merged_data(self, valid_mask: str = None) -> dict:
+        """
+        Returns a dict with merged data groups for all parameters
+        in the l2i file (assumed to be identical for all files in the stack)
+
+        :param valid_mask: The name of the parameter that defines the
+            mask of valid l2i data points
+
+        :return: Dictionary with all mergered l2i parameters
         """
         parameter_list = self.l2i_stack[0].parameter_list
         data = self._get_empty_data_group(parameter_list)
@@ -917,16 +937,20 @@ class Level2PContainer(DefaultLoggingClass):
                 is_valid = np.arange(l2i.n_records)
             for parameter in parameter_list:
                 stack_data = getattr(l2i, parameter)
-                stack_data = stack_data[is_valid]
-                data[parameter] = np.append(data[parameter], stack_data)
+
+                # TODO: This needs better handling
+                # NOTE: Some variables are dimensions and not data variables.
+                #       These should not be concatenated
+                if stack_data.size == l2i.n_records:
+                    stack_data = stack_data[is_valid]
+                    data[parameter] = np.append(data[parameter], stack_data)
+                else:
+                    data[parameter] = stack_data
         return data
 
     @staticmethod
     def _get_empty_data_group(parameter_list):
-        data = {}
-        for parameter_name in parameter_list:
-            data[parameter_name] = np.array([], dtype=np.float32)
-        return data
+        return {parameter_name: np.array([], dtype=np.float32) for parameter_name in parameter_list}
 
     @property
     def l2i_stack(self):
@@ -954,7 +978,7 @@ class L2iNCFileImport(object):
     # TODO: Needs proper implementation
 
     def __init__(self, filename):
-        from pysiral.output import NCDateNumDef
+        from pysiral.core.output import NCDateNumDef
         self.filename = filename
         self._n_records = 0
         self.time_def = NCDateNumDef()
@@ -980,13 +1004,8 @@ class L2iNCFileImport(object):
         self._n_records = len(self.longitude)
 
         # Get timestamp (can be either time or timestamp in l2i files)
-        if hasattr(self, "time"):
-            time = self.time
-            time_parameter_name = "time"
-        # FIXME: The use of `timestamp is deprecated, compliance with CF style can be assumed
-        else:
-            time = self.time
-            time_parameter_name = "timestamp"
+        time_parameter_name = "time" if hasattr(self, "time") else "timestamp"
+        time = self.time
         self._time_parameter_name = time_parameter_name
         dt = num2pydate(time, content.time_def.units, content.time_def.calendar)
         setattr(self, "time", dt)
@@ -1003,10 +1022,8 @@ class L2iNCFileImport(object):
     def mask_variables(self, indices, targets, value=np.nan):
         for target in targets:
             parameter = getattr(self, target)
-            try:
+            with contextlib.suppress(ValueError):
                 parameter[indices] = value
-            except ValueError:
-                pass
             setattr(self, target, parameter)
 
     # TODO: Does this need to be here?
@@ -1037,8 +1054,7 @@ class L2iNCFileImport(object):
 
         if hasattr(self.info, "platform"):
             platform_name = self.info.platform
-            mission = psrlcfg.platforms.get_platform_id(platform_name)
-            return mission
+            return psrlcfg.platforms.get_platform_id(platform_name)
 
         return None
 

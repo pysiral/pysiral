@@ -1,5 +1,63 @@
 # History of changes
 
+## [0.10] 2023-04-21
+
+### Added
+- high resolution land/ocean masks in the Level-1 pre-processor
+- Support for 2021 version of the NSIDC sea ice region mask
+- Support for SAMOSA+ retracker (external package) has been added (@djbwork)
+- Support for sea state bias correction of lead waveforms (@djbwork)
+- mypy type hint check have been added
+- Support for ERS-1/ERS-2/Envisat ML based TFMRA thresholds (@sp-awi)
+- southern hemisphere grids (12.5 & 25 km)
+- filter class to detect and flag wave-based freeboard biases in the marginal ice zone
+- distance to ice edge computed from ice concentration data
+- support for Cryo-TEMPO phase 2.1 sea ice and polar ocean products (@djbwork)
+- `ml` sub-module to `auxdata` for accessing trained models in the Level-2 processor
+- type hints throughout the project (work in progress) 
+- citation file (CITATION.cff)
+- Support for Sentinel-3A thematic sea ice product
+- AWI CryoSat-2 v2.5 processor and output definition files
+- CCI v3.0 processor and output definition files (and relase candidates)
+- C3S c3.0 processor and output definition files
+- New option `tiepoint_elevation_filter` to class `pysiral.sla.SLASmoothedLinear` that deprecates `filter_max_mss_offset_m`
+- Ability to grid data from several platforms (L3S grids)
+- Graphical debugging tools for Level-1 pre-processor
+
+### Changed
+- Level-1 pre-processor workflow has been changed to allow processor items at different stages
+- Data type for waveforms has been changed from float32 to float64 (@djbwork)
+- Level-3 processor now only iterates over grid cells with data to increase execution speed
+- Allow flexible epoch/units for Level-2 output
+- Numerous changes to configuration files 
+- TFMRA retracker may now exclude certain range bins for leading edge detection
+- Refactoring of retracker module
+- Moved several package to `pysiral.core`
+- Force `units` attribute in netCDF output to `str` to avoid issues with `xarray.open_dataset`
+
+### Fixed
+- Fixed a SEGV when running cythonized TFMRA under macOS (@djbwork)
+- Fixed an issue with a hard-coded nominal tracking bin for Envisat data
+- Fixed incorrect date in L2P output filename when L2 data object contained a few data points of the previous day
+- Fixed an issue of noise/FFT artefacts confusing the computation of leading edge width for pulse-limited waveforms
+- Fixed an issue in the Level-1 pre-processor, where Level-1 polar ocean segements were not properly merged (https://github.com/shendric/pysiral/issues/91)
+- Fixed an issue for CryoSat-2 metadata, where the initial time bounds of the l1p data object was in TAI and not in UTC
+- Fixed an issue for CryoSat-2 pulse peakiness, where the noise or signal in the first range bins resuluted in biased high pulse peakiniess value
+- Fixed an exception in the Level-1 pre-processor caused by an empty stack after the last file
+- Fixed an issue where date in l2p files was incorrect, leading to loss of data by overwriting previously generated files
+- Fixed an issue where l2p files were saved in the wrong directory
+- Fixed an issue with properly handling `flag_meaning` and `flag_values` in netCDF output
+
+### Deprecated
+- class `pysiral.auxdata.GridTrackInterpol`. To be replaced by `pysiral.grid.GridImageExtract`
+- class `pysiral.core.DefaultLoggingClass`
+- Option `filter_max_mss_offset_m` to `pysiral.sla.SLASmoothedLinear`
+
+### Removed
+- TAI2UTC converter class has been removed in favor of the astropy.tyme module
+- module `pysiral.logging` (replaced by use of loguru)
+- Deprecated processor and output definition files
+
 ## [0.9.6] - 2021-10-12
 
 ### Added
