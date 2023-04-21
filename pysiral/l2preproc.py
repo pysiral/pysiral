@@ -15,7 +15,7 @@ from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.core.output import Level2Output, OutputHandlerBase
-from pysiral.l2data import L2iNCFileImport, Level2PContainer
+from pysiral.l2data import L2iNCFileImport, Level2PContainer, Level2Data
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -68,6 +68,7 @@ class Level2PreProcessor(DefaultLoggingClass):
 class Level2PreProcProductDefinition(DefaultLoggingClass):
 
     def __init__(self):
+        self._output_handler = None
         class_name = self.__class__.__name__
         super(Level2PreProcProductDefinition, self).__init__(class_name)
 
@@ -155,8 +156,8 @@ class Level2POutputHandler(OutputHandlerBase):
     def get_fullpath_from_data(self, l2):
         """ Return export path and filename based on information
         provided in the l2 data object """
-        export_directory = self.get_directory_from_l2(l2)
-        export_filename = self.get_filename_from_l2(l2)
+        export_directory = self.get_directory_from_data(l2)
+        export_filename = self.get_filename_from_data(l2)
         return Path(export_directory) / export_filename
 
     def get_global_attribute_dict(self, l2):
