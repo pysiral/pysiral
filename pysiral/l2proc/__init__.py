@@ -10,7 +10,7 @@ from collections import OrderedDict, deque
 from datetime import datetime
 from pathlib import Path
 
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from loguru import logger
 

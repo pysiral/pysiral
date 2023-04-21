@@ -7,7 +7,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
 
 from pysiral import get_cls

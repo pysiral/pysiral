@@ -16,7 +16,7 @@ from typing import Tuple
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
 from netCDF4 import Dataset
 from pyresample import geometry, image, kd_tree

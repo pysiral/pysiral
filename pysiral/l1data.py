@@ -96,7 +96,7 @@ from typing import Any, List, Union
 import numpy as np
 import numpy.typing as npt
 from cftime import num2pydate as cn2pyd
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
