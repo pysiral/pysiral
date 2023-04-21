@@ -20,23 +20,22 @@ __all__ = ["AuxdataBaseClass",
 
 
 import re
+from pathlib import Path
+from typing import List
 
 import numpy as np
-from typing import List
-from attrdict import AttrDict
-
 import scipy.ndimage as ndimage
-from pathlib import Path
+from attrdict import AttrDict
 from pyproj import Proj
 
 from pysiral import import_submodules
-from pysiral.l1bdata import L1bdataNCFile
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l1data import L1bdataNCFile
 
 
 class AuxdataBaseClass(object):
     """
-    Base class for all sub-type auxdata base classes (e.g. SICBaseClass).
+    Base class for all subtype auxdata base classes (e.g. SICBaseClass).
     This class defines the mandatory set of methods and properties for all
     auxdata classes
     """
@@ -123,7 +122,7 @@ class AuxdataBaseClass(object):
         """ Main Access points for the Level-2 Processor """
 
         # Call the API get_track class. This is the mandatory method of all auxiliary subclasses (independent
-        # of type. Test if this is indeed the case
+        # of type). Test if this is indeed the case
         if not self.has_mandatory_track_method:
             msg = f"Mandatory subclass method `get_l2_track_vars` not implemented for {self.pyclass} "
 

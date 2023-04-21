@@ -4,31 +4,31 @@
 pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
 """
 
-__all__ = ["auxdata", "bnfunc", "cryosat2", "envisat", "ers", "sentinel3", "classifier", "clocks",
-           "config", "datahandler", "errorhandler", "filter", "frb", "grid",
-           "iotools", "l1bdata", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
-           "mask", "output", "proj", "retracker", "roi",
-           "sit", "surface", "validator", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "__version__"]
-
-import sys
-import yaml
-import socket
-import shutil
-import subprocess
+__all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
+           "filter", "frb", "grid",
+           "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
+           "mask", "proj", "retracker",
+           "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
+           "InterceptHandler", "__version__"]
 
 import importlib
-import pkgutil
-from datetime import datetime
-from dateperiods import DatePeriod
-from pathlib import Path
-from attrdict import AttrDict
-from distutils import dir_util
-from loguru import logger
 import logging
-from typing import Union, Iterable
-
+import pkgutil
+import shutil
+import socket
+import subprocess
+import sys
 import warnings
+from datetime import datetime
+from distutils import dir_util
+from pathlib import Path
+from typing import Iterable, Union
+
+import yaml
+from attrdict import AttrDict
+from dateperiods import DatePeriod
+from loguru import logger
+
 warnings.filterwarnings("ignore")
 
 # Set standard logger format
@@ -39,6 +39,7 @@ fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | ' + \
       '<cyan>L{line: <5}</cyan> | ' + \
       '<level>{message}</level>'
 logger.add(sys.stderr, format=fmt, enqueue=True)
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -55,6 +56,7 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
@@ -140,9 +142,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.long_name
+        return None if platform_info is None else platform_info.long_name
 
     def get_sensor(self, platform_id):
         """
@@ -151,9 +151,7 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.sensor
+        return None if platform_info is None else platform_info.sensor
 
     def get_orbit_inclination(self, platform_id):
         """
@@ -162,14 +160,12 @@ class _MissionDefinitionCatalogue(object):
         :return:
         """
         platform_info = self.get_platform_info(platform_id)
-        if platform_info is None:
-            return None
-        return platform_info.orbit_max_latitude
+        return None if platform_info is None else platform_info.orbit_max_latitude
 
     def get_time_coverage(self, platform_id):
         """
         Get the time coverage (start and end of data coverage) of the requested plaform.
-        If the the end data is not defined because the platform is still active, the current
+        If the end data is not defined because the platform is still active, the current
         date is returned.
         :param platform_id:
         :return: time coverage start & time coverage end
@@ -194,7 +190,8 @@ class _MissionDefinitionCatalogue(object):
     @property
     def ids(self):
         """
-        A list of id's for each platforms
+        A list of id's for each platform.
+
         :return: list with platform ids
         """
         return list(self.content.platforms.keys())
@@ -423,7 +420,7 @@ class _PysiralPackageConfiguration(object):
         # -> must be populated with content from the package config dir
         if not config_path.is_dir():
             print(f"Creating pysiral config directory: {config_path}")
-            dir_util.copy_tree(str(self.path.package_config_path), str(config_path), verbose=1)
+            dir_util.copy_tree(str(self.path.package_config_path), str(config_path))
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = config_path / "local_machine_def.yaml"

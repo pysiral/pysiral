@@ -16,20 +16,20 @@ NOTES:
 """
 
 
-import numpy as np
-import pandas as pd
 import typing as tp
-import numpy.typing as npt
-from loguru import logger
 
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
 import statsmodels.api as sm
+from loguru import logger
 from sklearn import gaussian_process
 from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
-from pysiral.l2data import L2DataArray
 from pysiral.core.flags import SurfaceType
+from pysiral.filter import fill_nan, idl_smooth
+from pysiral.l2data import L2DataArray
 from pysiral.l2proc.procsteps import Level2ProcessorStep
-from pysiral.filter import (fill_nan, idl_smooth)
 
 
 def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):

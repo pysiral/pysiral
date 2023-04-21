@@ -3,11 +3,11 @@
 A short script that should be used to set the location of the pysiral config file for the
 """
 
-import sys
 import argparse
 import shutil
-from pathlib import Path
+import sys
 from distutils import dir_util
+from pathlib import Path
 
 from pysiral import psrlcfg
 

@@ -5,5 +5,5 @@ include requirements.txt
 include Makefile
 recursive-include bin *.py
 recursive-include pysiral/resources *
-recursive-include pysiral/bnfunc *
+recursive-include pysiral *.pyx
 recursive-include tests *.py

@@ -9,14 +9,15 @@ Module created for FMI version of pysiral
 
 __all__ = ["IC", "ICA"]
 
-from pysiral.auxdata import AuxdataBaseClass
+import datetime
+from pathlib import Path
 
+import numpy as np
+import pyproj
 from PIL import Image
 
-import pyproj
-import datetime
-import numpy as np
-from pathlib import Path
+from pysiral.auxdata import AuxdataBaseClass
+
 
 class IC(AuxdataBaseClass):
 

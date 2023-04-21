@@ -6,17 +6,17 @@ Created on Sun Jun 11 19:24:04 2017
 """
 
 
+from typing import Any, Tuple, Union
+
 import numpy as np
 import numpy.typing as npt
-
-from attrdict import AttrDict
-from pyproj import Proj
-from typing import Tuple, Union, Any
 import scipy.ndimage as ndimage
-
-from pysiral.config import get_yaml_config
-from pysiral._class_template import DefaultLoggingClass
+from attrdict import AttrDict
+from core.class_template import DefaultLoggingClass
+from pyproj import Proj
 from pyresample import geometry
+
+from pysiral.core.config import get_yaml_config
 
 
 class GridDefinition(DefaultLoggingClass):

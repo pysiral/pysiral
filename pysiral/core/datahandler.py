@@ -6,22 +6,21 @@ Created on Fri May 19 18:16:09 2017
 """
 
 import re
-from typing import List, Union
-from pathlib import Path
-from loguru import logger
-from attrdict import AttrDict
-from itertools import product
-
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from itertools import product
+from pathlib import Path
+from typing import List, Union
 
+from attrdict import AttrDict
+from core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
+from dateutil.relativedelta import relativedelta
+from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.output import PysiralOutputFilenaming
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):
@@ -314,7 +313,7 @@ class L2iDataHandler(object):
                 l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
                 result = list(Path(lookup_directory).glob(l2i_pattern))
                 l2i_files.extend(sorted(result))
-                logger.info(f"Found {len(result)} l2i files in {lookup_directory}")
+                logger.info(f"Found {len(result)} l2i files in {lookup_directory} for {year}-{month}-{day}")
 
         return l2i_files
 

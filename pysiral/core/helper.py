@@ -6,13 +6,14 @@ Created on Tue Jul 21 18:04:43 2015
 TODO: Is this still being used?
 """
 
-from dateutil import parser as dtparser
-import numpy as np
-import time
 import calendar
+import time
 from datetime import datetime
+
+import numpy as np
+from dateutil import parser as dtparser
 from dateutil.relativedelta import relativedelta
-from dateutil.rrule import rrule, MONTHLY, DAILY
+from dateutil.rrule import DAILY, MONTHLY, rrule
 
 
 def parse_datetime_str(dtstr):

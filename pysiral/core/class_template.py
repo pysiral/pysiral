@@ -1,7 +1,7 @@
 
 # TODO: Evaluate use and move to core module
 
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class DefaultLoggingClass(object):
