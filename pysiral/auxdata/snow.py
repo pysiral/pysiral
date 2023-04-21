@@ -50,8 +50,8 @@ from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.core.errorhandler import ErrorStatus
-from pysiral.filter import idl_smooth
 from pysiral.core.iotools import ReadNC
+from pysiral.filter import idl_smooth
 
 
 class Warren99(AuxdataBaseClass):

@@ -22,10 +22,10 @@ from netCDF4 import Dataset
 from pyresample import geometry, image, kd_tree
 
 from pysiral import psrlcfg
-from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.core.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition, GridTrajectoryExtract
+from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.core.iotools import ReadNC
+from pysiral.grid import GridDefinition, GridTrajectoryExtract
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 

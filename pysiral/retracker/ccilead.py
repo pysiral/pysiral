@@ -7,13 +7,14 @@ Its implementation comes from the first phase of the ESA Climate Change Initiati
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
-import numpy as np
 from typing import Any
+
+import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
-from pysiral.retracker import BaseRetracker
 from pysiral.core.flags import ANDCondition
+from pysiral.retracker import BaseRetracker
 
 
 class SICCILead(BaseRetracker):
