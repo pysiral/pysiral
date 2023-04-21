@@ -2,7 +2,7 @@ astropy
 attrdict
 bottleneck
 pyproj
-cartopy=="0.18.0"; python_version<="3.7"
+cartopy==0.18.0; python_version<="3.7"
 cartopy; python_version>="3.8"
 cftime
 cython
