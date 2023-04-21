@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Union
 
 from attrdict import AttrDict
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from dateutil.relativedelta import relativedelta
 from loguru import logger

@@ -158,13 +158,6 @@ procsteps:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
 
-    # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
-        pyclass: SGDRMultipleElevations
-        options: 
-            predefined_retrackers: [ocean, ice1, ice2, sitrack]
-            classifier_name_fmt: "{}_range"
-            output_name_fmt: "elevation_{}"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
@@ -235,10 +228,6 @@ procsteps:
                 - geocentric_polar_tide
             target_variables:
                 - elevation
-                - elevation_ocean
-                - elevation_ice1
-                - elevation_ice2
-                - elevation_sitrack
 
     # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla

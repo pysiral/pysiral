@@ -11,7 +11,7 @@ authors:
     given-names: David
   - family-names: Paul
     given-names: Stephan
-title: "python sea ice radar altimetry library (version 0.10)"
-version: v0.9.6
-doi: 10.5281/zenodo.5566347
-date-released: tbd
+title: "python sea ice radar altimetry toolbox (version 0.10)"
+version: v0.10
+doi: tbd
+date-released: 2023-04-21

@@ -21,15 +21,15 @@ from geopy import distance
 from loguru import logger
 
 from pysiral import psrlcfg
-from core.clocks import StopWatch
-from pysiral.core.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
+from pysiral.core.clocks import StopWatch
+from pysiral.core.config import get_yaml_config
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.core.helper import (ProgressIndicator, get_first_array_index,
-                         get_last_array_index, rle)
+                                 get_last_array_index, rle)
+from pysiral.core.output import L1bDataNC
 from pysiral.l1data import L1bMetaData, Level1bData
 from pysiral.l1preproc.procitems import L1PProcItemDef
-from pysiral.core.output import L1bDataNC
 
 SHOW_DEBUG_MAP = False
 

@@ -19,14 +19,14 @@ from scipy.ndimage import maximum_filter
 from xarray import open_dataset
 
 from pysiral import __version__, get_cls, psrlcfg
-from pysiral.core.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
-from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.core.config import get_yaml_config
 from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.grid import GridDefinition
 from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
-from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor

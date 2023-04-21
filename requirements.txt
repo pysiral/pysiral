@@ -1,7 +1,6 @@
 astropy
 attrdict
 bottleneck
-cartopy
 cftime
 cython
 dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
@@ -9,6 +8,7 @@ dateutils
 flake8
 geopy
 h5py
+isort
 loguru
 lxml
 isodate
@@ -39,3 +39,8 @@ torch
 xarray
 xgboost
 xmltodict
+
+shapely==1.8.5
+# cartopy==0.20.0; python_version<="3.7"
+# cartopy; python_version>="3.8"
+cartopy

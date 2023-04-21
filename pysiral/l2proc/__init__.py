@@ -10,19 +10,18 @@ from collections import OrderedDict, deque
 from datetime import datetime
 from pathlib import Path
 
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg
-
+from pysiral.core.config import get_yaml_config
+from pysiral.core.datahandler import DefaultAuxdataClassHandler
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
 from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral.core.config import get_yaml_config
-from pysiral.core.datahandler import DefaultAuxdataClassHandler
-from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
 

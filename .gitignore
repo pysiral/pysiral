@@ -246,3 +246,4 @@ pysiral_classes.png
 pysiral_classes.txt
 .vscode/settings.json
 mypy-coverage.txt/
+mypy-coverage/

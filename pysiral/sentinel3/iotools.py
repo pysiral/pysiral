@@ -10,8 +10,8 @@ from dateperiods import DatePeriod
 from loguru import logger
 from parse import parse
 
-from core.clocks import StopWatch
 from pysiral.core import DefaultLoggingClass
+from pysiral.core.clocks import StopWatch
 from pysiral.core.errorhandler import ErrorStatus
 
 

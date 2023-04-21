@@ -10,7 +10,7 @@ from loguru import logger
 from scipy import interpolate
 
 from pysiral import __version__ as pysiral_version
-from core.clocks import StopWatch
+from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.core.helper import parse_datetime_str
 from pysiral.l1data import Level1bData

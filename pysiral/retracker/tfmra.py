@@ -6,19 +6,21 @@
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
+from typing import Tuple
+
+import bottleneck as bn
 import numpy as np
 from loguru import logger
-from typing import Tuple
-import bottleneck as bn
 
-from pysiral.retracker import BaseRetracker
 from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.retracker import BaseRetracker
 
 # cythonized bottleneck functions for cTFMRA
 try:
-    from pysiral.retracker.cytfmra import \
-        (cytfmra_findpeaks, cytfmra_interpolate,
-         cytfmra_normalize_wfm, cytfmra_wfm_noise_level)
+    from pysiral.retracker.cytfmra import (cytfmra_findpeaks,
+                                           cytfmra_interpolate,
+                                           cytfmra_normalize_wfm,
+                                           cytfmra_wfm_noise_level)
     CYTFMRA_OK = True
 except ImportError:
     logger.error("Cannot import cytfmra")

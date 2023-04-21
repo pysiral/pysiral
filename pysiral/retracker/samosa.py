@@ -5,19 +5,20 @@
 """
 
 import logging
+
 import numpy as np
 from loguru import logger
 
 try:
-    from samosa.help_functions import (calc_sigma0, func_wind_speed)
+    from samosa.help_functions import calc_sigma0, func_wind_speed
     from samosa.sampy import SAMOSA as initialize_SAMOSAlib
     from samosa.sampy import compute_ThNEcho, initialize_epoch
     SAMOSA_OK = True
 except ImportError:
     SAMOSA_OK = False
 
-from pysiral.retracker import BaseRetracker
 from pysiral import InterceptHandler
+from pysiral.retracker import BaseRetracker
 
 
 class SAMOSAPlus(BaseRetracker):

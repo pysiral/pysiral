@@ -51,6 +51,7 @@ class TestL2ProcDef(unittest.TestCase):
                     self.assertTrue(required_tag in content.metadata, msg=msg)
 
     def testConfigFileL2ProcStepContent(self):
+        logger.enable("pysiral")
         for l2procdef_file in self.l2procdef_files:
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
@@ -68,6 +69,7 @@ class TestL2ProcDef(unittest.TestCase):
                     is_valid,
                     f"Validating procsteps definition in {l2procdef_file}",
                 )
+        logger.disable("pysiral")
 
 
 if __name__ == '__main__':

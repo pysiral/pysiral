@@ -16,8 +16,8 @@ from loguru import logger
 from netCDF4 import Dataset, date2num
 
 from pysiral import psrlcfg
-from pysiral.core.config import get_yaml_config
 from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
 from pysiral.core.errorhandler import ErrorStatus
 
 
