@@ -6,18 +6,18 @@ Created on Mon Jul 27 11:25:04 2015
 
 
 import re
-import numpy as np
-from typing import Union, List, Tuple
 from copy import deepcopy
-from loguru import logger
+from typing import List, Tuple, Union
+
+import numpy as np
 from attrdict import AttrDict
+from loguru import logger
 
-
-from pysiral.config import RadarModes
-from pysiral.core.flags import SurfaceType, ANDCondition
-from pysiral.l1bdata import L1bdataNCFile
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.core.config import RadarModes
+from pysiral.core.flags import ANDCondition, SurfaceType
+from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class ClassifierContainer(object):

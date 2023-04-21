@@ -37,16 +37,16 @@ Important Note:
 
 
 import contextlib
-
-import scipy.ndimage as ndimage
-from scipy import interpolate
-from pyproj import Proj
-from typing import List
-import numpy as np
 from pathlib import Path
+from typing import List
+
+import numpy as np
+import scipy.ndimage as ndimage
+from pyproj import Proj
+from scipy import interpolate
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
+from pysiral.core.iotools import ReadNC
 from pysiral.sla import SLABaseFunctionality
 
 

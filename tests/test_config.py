@@ -6,10 +6,13 @@ Testing the pysiral configuration management
 """
 
 import unittest
-from attrdict import AttrDict
 from pathlib import Path
-from pysiral import psrlcfg
+
+from attrdict import AttrDict
 from loguru import logger
+
+from pysiral import psrlcfg
+
 logger.disable("pysiral")
 
 

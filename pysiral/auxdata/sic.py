@@ -38,18 +38,18 @@ Important Note:
 
 
 
-import scipy.ndimage as ndimage
-from scipy.spatial.distance import cdist
-
-from pyproj import Proj
-import numpy as np
-import numpy.typing as npt
 from pathlib import Path
 from typing import List, Tuple
 
-from pysiral.l2data import Level2Data
+import numpy as np
+import numpy.typing as npt
+import scipy.ndimage as ndimage
+from pyproj import Proj
+from scipy.spatial.distance import cdist
+
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.iotools import ReadNC
+from pysiral.core.iotools import ReadNC
+from pysiral.l2data import Level2Data
 
 
 class OsiSafSIC(AuxdataBaseClass):
@@ -108,7 +108,7 @@ class OsiSafSIC(AuxdataBaseClass):
         if self.error.status or self._data is None:
             sic = self.get_empty_array(l2)
             ocean_proximity = self.get_empty_array(l2)
-            distance_to_low_ice_concentration = self.get_empty_array()
+            distance_to_low_ice_concentration = self.get_empty_array(l2)
 
         else:
             # Get and return the track

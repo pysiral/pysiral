@@ -7,10 +7,10 @@ Created on Fri Sep 09 17:33:45 2016
 This module is dedicatet to convert between different time standards
 """
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-
 import time
+from datetime import datetime
+
+from dateutil.relativedelta import relativedelta
 
 
 class StopWatch(object):

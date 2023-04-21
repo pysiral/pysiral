@@ -4,8 +4,9 @@ A short script that updates the settings files in the user home
 """
 
 import sys
-from loguru import logger
 from distutils import dir_util
+
+from loguru import logger
 
 from pysiral import psrlcfg
 

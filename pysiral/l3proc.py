@@ -4,32 +4,30 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
-from pysiral import __version__, get_cls, psrlcfg
-from pysiral.core.flags import SURFACE_TYPE_DICT
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus
-from pysiral.grid import GridDefinition
-from pysiral.core import DefaultLoggingClass
-from pysiral.l2data import L2iNCFileImport
-from pysiral.mask import L3Mask
-from pysiral.output import OutputHandlerBase, Level3Output
-from pysiral.core.flags import ORCondition
-from pysiral.sit import frb2sit_errprop
+import itertools
+import re
+import sys
+import uuid
+from collections import OrderedDict
+from datetime import date, datetime
+from pathlib import Path
 
+import numpy as np
+from loguru import logger
 from scipy import stats
 from scipy.ndimage import maximum_filter
-
-from collections import OrderedDict
-from loguru import logger
-from datetime import datetime, date
-from pathlib import Path
 from xarray import open_dataset
-import itertools
-import uuid
-import numpy as np
-import sys
-import re
 
+from pysiral import __version__, get_cls, psrlcfg
+from pysiral.core.config import get_yaml_config
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.grid import GridDefinition
+from pysiral.l2data import L2iNCFileImport
+from pysiral.mask import L3Mask
+from pysiral.core.output import Level3Output, OutputHandlerBase
+from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
 
@@ -279,6 +277,7 @@ class L2iDataStack(DefaultLoggingClass):
         xi, yj = self.griddef.grid_indices(l2i.longitude, l2i.latitude)
 
         # Stack the l2 parameter in the corresponding grid cells
+        outside_grid_flag = False
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
@@ -290,6 +289,11 @@ class L2iDataStack(DefaultLoggingClass):
                     self.stack[parameter_name][y][x].append(data[i])
                 except AttributeError:
                     pass
+                except IndexError:
+                    outside_grid_flag = True
+
+        if outside_grid_flag:
+            logger.warning("L2 input data outside grid definition")
 
     @property
     def n_total_records(self):
@@ -569,6 +573,8 @@ class L3DataGrid(DefaultLoggingClass):
         mission_sensor = self.metadata.mission_sensor
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
+        elif args[0] == "lower":
+            mission_sensor = mission_sensor.lower()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
@@ -977,7 +983,7 @@ class Level3ProductDefinition(DefaultLoggingClass):
         Arguments:
             l3_settings_file (str): Full filename to l3 settings file
             grid (pysiral.grid.GridDefinition): Output grid class
-            output (Level-3 compliant output handler from pysiral.output)
+            output (Level-3 compliant output handler from pysiral.core.output)
         """
         super(Level3ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(caller_id=self.__class__.__name__)

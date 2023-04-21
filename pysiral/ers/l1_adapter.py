@@ -5,16 +5,17 @@
 
 __author__ = "Stefan Hendricks"
 
-import numpy as np
 from pathlib import Path
-from loguru import logger
+
+import numpy as np
 from cftime import num2pydate
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.clocks import StopWatch
-from pysiral.ers.sgdrfile import ERSSGDR
+from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
+from pysiral.ers.sgdrfile import ERSSGDR
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
 class ERSReaperSGDR(Level1PInputHandlerBase):
@@ -44,7 +45,7 @@ class ERSReaperSGDR(Level1PInputHandlerBase):
         """
 
         # Import here to avoid circular imports
-        from pysiral.l1bdata import Level1bData
+        from pysiral.l1data import Level1bData
 
         # Store arguments
         self.filepath = filepath

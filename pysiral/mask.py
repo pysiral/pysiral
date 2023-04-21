@@ -8,27 +8,25 @@ Created on Thu Sep 28 14:00:52 2017
 """
 
 import contextlib
-import pyproj
-
+import struct
 from collections import OrderedDict
-from netCDF4 import Dataset
-from loguru import logger
+from pathlib import Path
+from typing import Tuple
 
-from pyresample import image, geometry, kd_tree
 import numpy as np
 import numpy.typing as npt
-from typing import Tuple
-import struct
 import xarray as xr
-from pathlib import Path
+from core.class_template import DefaultLoggingClass
+from loguru import logger
+from netCDF4 import Dataset
+from pyresample import geometry, image, kd_tree
 
 from pysiral import psrlcfg
 from pysiral.core.flags import SURFACE_TYPE_DICT
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.grid import GridDefinition, GridTrajectoryExtract
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.iotools import ReadNC
-from pysiral.l1bdata import Level1bData
+from pysiral.core.iotools import ReadNC
+from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 
 
@@ -56,7 +54,7 @@ def MaskSourceFile(mask_name, mask_cfg):
 
 class MaskSourceBase(DefaultLoggingClass):
     """ Parent class for various source masks. Main functionality is to
-    create gridded mask netCDF for for level-3 grid definitions """
+    create gridded mask netCDF for level-3 grid definitions """
 
     def __init__(self, mask_dir, mask_name, cfg):
         super(MaskSourceBase, self).__init__(self.__class__.__name__)

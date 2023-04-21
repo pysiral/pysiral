@@ -12,11 +12,13 @@ h5py
 loguru
 lxml
 isodate
+isort
 matplotlib
 mypy
 netCDF4
 numpy
 pillow
+pandas
 parse
 pykdtree
 pyproj
@@ -27,6 +29,7 @@ pyyaml
 schema
 scipy
 scikit-learn
+setuptools
 Sphinx
 sphinx-automodapi
 sphinx_rtd_theme
@@ -36,5 +39,3 @@ torch
 xarray
 xgboost
 xmltodict
-
-

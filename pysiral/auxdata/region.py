@@ -32,16 +32,17 @@ Important Note:
 
 """
 
-import numpy as np
 from pathlib import Path
-from loguru import logger
-from typing import Union, Any, Optional, Dict
-from xarray import open_dataset
-from pyproj import CRS
+from typing import Any, Dict, Optional, Union
 
-from pysiral.l2data import Level2Data
+import numpy as np
+from loguru import logger
+from pyproj import CRS
+from xarray import open_dataset
+
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.grid import GridTrajectoryExtract
+from pysiral.l2data import Level2Data
 
 
 class NSIDCRegionMask(AuxdataBaseClass):

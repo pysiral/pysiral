@@ -5,11 +5,11 @@ Created on Fri Jul 10 15:25:45 2015
 @author: Stefan
 """
 import sys
-from loguru import logger
-from pathlib import Path
-from inspect import getframeinfo, stack
 from collections import OrderedDict
+from inspect import getframeinfo, stack
+from pathlib import Path
 
+from loguru import logger
 
 # TODO: This is also obsolete
 PYSIRAL_ERROR_CODES = OrderedDict([
@@ -49,7 +49,7 @@ class ErrorStatus(object):
             output = "{} Critical Error(s): {:g} [raised in {} L{}]\n"
             output = output.format(self.caller_id, len(self.codes), filename, caller.lineno)
             for i in range(len(self.codes)):
-                output += "  [%s] %s" % (self.codes[i], self.messages[i])
+                output += f"  [{self.codes[i]}] {self.messages[i]}"
                 output += "\n"
             logger.error(output)
             sys.exit(1)
@@ -58,8 +58,7 @@ class ErrorStatus(object):
         output = []
         if self.status:
             for i in range(len(self.codes)):
-                error_message = "%s error: [%s] %s" % (
-                    self.caller_id, self.codes[i], self.messages[i])
+                error_message = f"{self.caller_id} error: [{self.codes[i]}] {self.messages[i]}"
                 output.append(error_message)
         return output
 

@@ -6,16 +6,16 @@ Created on Fri Aug 11 17:07:02 2017
 """
 
 
-from pysiral import psrlcfg
-from pysiral.errorhandler import ErrorStatus
-from pysiral.l2data import Level2PContainer, L2iNCFileImport
-from pysiral.core import DefaultLoggingClass
-from pysiral.output import Level2Output, OutputHandlerBase
-
 from collections import OrderedDict
-
 from pathlib import Path
+
 from loguru import logger
+
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l2data import L2iNCFileImport, Level2PContainer
+from pysiral.core.output import Level2Output, OutputHandlerBase
 
 
 class Level2PreProcessor(DefaultLoggingClass):
@@ -115,7 +115,7 @@ class Level2POutputHandler(OutputHandlerBase):
         self.overwrite_protection = overwrite_protection
         self._init_product_directory()
 
-    def get_filename_from_data(self, l2p):
+    def get_filename_from_data(self, l2p: Level2Data) -> str:
         """ Return the filename for a defined level-2 data object
         based on tag filenaming in output definition file """
 
@@ -137,10 +137,16 @@ class Level2POutputHandler(OutputHandlerBase):
             self.error.raise_on_error()
         return self.fill_template_string(filename_template, l2p)
 
-    def get_directory_from_data(self, l2p, create=True):
-        """ Return the output directory based on information provided
-        in an l2 data object """
-        directory = self._get_directory_from_dt(l2p.info.start_time)
+    def get_directory_from_data(self, l2p: Level2Data, create: bool = True) -> str:
+        """
+        Return the output directory based on l2 data object metadata
+
+        :param l2p:
+        :param create:
+        :return:
+        """
+        l2p_period = l2p.period.tcs.dt
+        directory = self._get_directory_from_dt(l2p_period)
         if create:
             self._create_directory(directory)
         self.error.raise_on_error()

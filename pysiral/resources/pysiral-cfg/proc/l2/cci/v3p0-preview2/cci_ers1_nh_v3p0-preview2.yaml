@@ -120,7 +120,7 @@ procsteps:
                     ice_concentration_min: 70.0
 
 # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
+    -   module: retracker.mock
         pyclass: SGDRMultipleElevations
         options: 
             predefined_retrackers: [ocean, ice1, ice2, sitrack]
@@ -186,7 +186,7 @@ procsteps:
                 - geocentric_polar_tide
 
     # Apply ERS pulse deblurring correction
-    -   module: retracker
+    -   module: retracker.corrections
         pyclass: ERSPulseDeblurring
         options: {}
 

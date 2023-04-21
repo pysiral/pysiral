@@ -6,24 +6,23 @@ Created on Fri Jul 24 14:04:27 2015
 """
 
 import sys
-
-from loguru import logger
-from pathlib import Path
-from dateperiods import DatePeriod
-from collections import deque, OrderedDict
+from collections import OrderedDict, deque
 from datetime import datetime
+from pathlib import Path
+
+from core.class_template import DefaultLoggingClass
+from dateperiods import DatePeriod
+from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.l1bdata import L1bdataNCFile
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.config import get_yaml_config
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.datahandler import DefaultAuxdataClassHandler
 
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
-from pysiral.output import (Level2Output, DefaultLevel2OutputHandler)
-
+from pysiral.core.config import get_yaml_config
+from pysiral.core.datahandler import DefaultAuxdataClassHandler
+from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
 
@@ -157,7 +156,9 @@ class Level2Processor(DefaultLoggingClass):
         logger.info("Init Processor Steps")
         cfg = self.l2def.procsteps
         self.procsteps = Level2ProcessorStepOrder(cfg)
-        self.procsteps.validate()
+        is_valid = self.procsteps.validate()
+        if not is_valid:
+            raise IOError()
         logger.info("Processor steps initialized and validated")
 
     def execute_l2_processor_steps(self, l1b, l2):
@@ -204,8 +205,12 @@ class Level2Processor(DefaultLoggingClass):
             # Log the current position in the file stack
             logger.info("+ [ %g of %g ] (%.2f%%)" % (i+1, n_files, float(i+1)/float(n_files)*100.))
 
-            # Read the the level 1b file (l1bdata netCDF is required)
-            l1b = self._read_l1b_file(l1b_file)
+            # Read the level-1p file
+            try:
+                l1b = self._read_l1b_file(l1b_file)
+            except RuntimeError:
+                logger.error(f"Cannot read {Path(l1b_file).name}, ... skipping")
+                continue
             source_primary_filename = Path(l1b_file).parts[-1]
 
             # Initialize the orbit level-2 data container

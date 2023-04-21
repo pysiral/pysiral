@@ -6,21 +6,21 @@ Created on Fri May 19 18:16:09 2017
 """
 
 import re
-from typing import List, Union
-from pathlib import Path
-from loguru import logger
-from attrdict import AttrDict
-
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from itertools import product
+from pathlib import Path
+from typing import List, Union
 
+from attrdict import AttrDict
+from core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
+from dateutil.relativedelta import relativedelta
+from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral._class_template import DefaultLoggingClass
-from pysiral.errorhandler import ErrorStatus, PYSIRAL_ERROR_CODES
-from pysiral.output import PysiralOutputFilenaming
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):
@@ -69,7 +69,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
             if local_repo is None and local_repository_id is not None:
                 error_id = "auxdata_missing_localrepo_def"
                 error_message = f"Missing entry `auxdata_repository.{auxdata_class}.{auxdata_id}` in " + \
-                    f"local_machine_def ({psrlcfg.local_machine_def_filepath})"
+                                f"local_machine_def ({psrlcfg.local_machine_def_filepath})"
                 self.error.add_error(error_id, error_message)
                 self.error.raise_on_error()
             empty_str = len(local_repo) == 0 if local_repo is not None else False
@@ -113,16 +113,11 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         auxclass = get_cls(module_name, class_name, relaxed=False)
         if auxclass is None:
             error_id = "auxdata_invalid_class_name"
-            msg = "Invalid Auxdata class: %s.%s" % (module_name, class_name)
+            msg = f"Invalid Auxdata class: {module_name}.{class_name}"
             self.error.add_error(PYSIRAL_ERROR_CODES[error_id], msg)
             self.error.raise_on_error()
 
-        # Init the auxiliary class
-        # Note: This will trigger any action defined in the subclasses, such as reading static background files
-        auxdata_handler = auxclass(cfg)
-
-        # All done, return
-        return auxdata_handler
+        return auxclass(cfg)
 
     def get_local_repository(self, auxdata_class, auxdata_id):
         """ Get the local repository for the the auxdata type and id """
@@ -191,7 +186,7 @@ class L1PDataHandler(DefaultLoggingClass):
         # Validate time_range (needs to be of type DatePeriod)
         if not isinstance(time_range, DatePeriod):
             error = ErrorStatus()
-            msg = "Invalid type of time_range, required: dateperiods.DatePeriod, was %s" % (type(time_range))
+            msg = f"Invalid type of time_range, required: dateperiods.DatePeriod, was {type(time_range)}"
             error.add_error("invalid-timerange-type", msg)
             error.raise_on_error()
 
@@ -228,7 +223,7 @@ class L1PDataHandler(DefaultLoggingClass):
         invalid_versions = ["north", "south", "global", "nh", "sh"]
         file_versions = [d for d in all_subfolders if d not in invalid_versions]
 
-        if len(file_versions) == 0:
+        if not file_versions:
             logger.info("l1p file version autodetect: No file version subfolder")
             return None
         elif len(file_versions) == 1:
@@ -236,20 +231,25 @@ class L1PDataHandler(DefaultLoggingClass):
             return file_versions[0]
         else:
             msg = f"l1p file version autodetect failure: Multiple versions found [{file_versions}]"
-            msg = msg + " -> specify file_version"
+            msg = f"{msg} -> specify file_version"
             self.error.add_error("l1p-input-error", msg)
             self.error.raise_on_error()
         return None
 
     @staticmethod
     def l1p_in_trange(fn: str, tr: DatePeriod) -> bool:
-        """ Returns flag if filename is within time range """
+        """
+        Returns flag if filename is within time range
+
+        :param fn:
+        :param tr:
+
+        :return:
+        """
         # Parse infos from l1bdata filename
         fnattr = PysiralOutputFilenaming()
         fnattr.parse_filename(fn)
-        # Compute overlap between two start/stop pairs
-        is_overlap = fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
-        return is_overlap
+        return fnattr.start <= tr.tce.dt and fnattr.stop >= tr.tcs.dt
 
     @property
     def l1p_base_dir(self) -> str:
@@ -263,7 +263,7 @@ class L1PDataHandler(DefaultLoggingClass):
             l1p_base_dir = psrlcfg.local_machine.l1b_repository[self._platform][self._source_version]["l1p"]
         except (AttributeError, KeyError):
             msg = f"missing entry `l1bdata.{self._platform}.{self._source_version}.l1p` in local_machine_def.yaml"
-            msg = msg + f" ({psrlcfg.local_machine_def_filepath})"
+            msg = f"{msg} ({psrlcfg.local_machine_def_filepath})"
             error_id = "l1bdata_missing_localrepo_def"
             self.error.add_error(error_id, msg)
             self.error.raise_on_error()
@@ -274,96 +274,139 @@ class L1PDataHandler(DefaultLoggingClass):
         return str(self._last_directory)
 
 
-class L2iDataHandler(DefaultLoggingClass):
-    """ Class for retrieving default l1b directories and filenames """
+class L2iDataHandler(object):
+    """ Class for discovering l2i files """
 
-    def __init__(self, base_directory, force_l2i_subfolder=True, search_str="l2i"):
-        super(L2iDataHandler, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus(caller_id=self.__class__.__name__)
-        self._base_directory = base_directory
-        self._force_l2i_subfolder = force_l2i_subfolder
-        self._subdirectory_list = self.get_subdirectory_list()
+    def __init__(self,
+                 base_directories: Union[List[str], List[Path], str, Path],
+                 search_str: str = "l2i"
+                 ) -> None:
+        """
+        Set the base directory(ies) to look for l2i file
+
+        :param base_directories: List of l2i base directories
+        :param search_str: Identifier for netCDF file lookup
+        """
+
         self._search_str = search_str
-        self._validate_base_directory()
+        self._base_directories = self._validate_base_directories(base_directories)
+        self._subdirectory_list = [self.get_subdirectory_list(base_dir) for base_dir in self._base_directories]
 
-    def get_files_from_time_range(self, time_range):
-        """ Get all files that fall into time range (May be spread over
-        the different year/ month subfolders """
+    def get_files_from_time_range(self, time_range: DatePeriod) -> List[Path]:
+        """
+        Get all files that fall into time range (Maybe spread over
+        the different year/ month subfolders
+
+        # TODO: Use get_files_for_day() ?
+
+        :param time_range:
+
+        :return:
+        """
         l2i_files = []
-
         for daily_periods in time_range.get_segments("day"):
             year, month, day = daily_periods.tcs.year, daily_periods.tcs.month, daily_periods.tcs.day
-            lookup_directory = self.get_lookup_directory(year, month)
-            if not Path(lookup_directory).is_dir():
-                continue
-            l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
-            result = list(Path(lookup_directory).glob(l2i_pattern))
-            l2i_files.extend(sorted(result))
+            lookup_directories = self.get_lookup_directory(year, month)
+            for lookup_directory in lookup_directories:
+                if not Path(lookup_directory).is_dir():
+                    continue
+                l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
+                result = list(Path(lookup_directory).glob(l2i_pattern))
+                l2i_files.extend(sorted(result))
+                logger.info(f"Found {len(result)} l2i files in {lookup_directory} for {year}-{month}-{day}")
+
         return l2i_files
 
-    def get_files_for_day(self, day_dt):
-        """ Retrieve a list of l2i files with data points for a given day.
-        Also specifically looks for files with had a start time on the
-        previous day """
+    def get_files_for_day(self, day_dt: datetime) -> List[Path]:
+        """
+        Retrieve a list of l2i files with data points for a given day.
+        Also, specifically looks for files with had a start time on the
+        previous day
+
+        :param day_dt:
+        :return:
+        """
 
         # Get the lookup directory
-        lookup_directory = self.get_lookup_directory(day_dt.year, day_dt.month)
+        lookup_directories = self.get_lookup_directory(day_dt.year, day_dt.month)
+        previous_day = day_dt - timedelta(days=1)
+        lookup_directories_previus_day = self.get_lookup_directory(previous_day.year, previous_day.month)
 
         # XXX: We are not evaluating the netCDF attributes at this point
         #      but assuming that the filename contains start and stop
         #      time. This is a pretty safe assumption, but this approach
         #      should be replaced as soon as a proper inspection tool is
         #      available
-        day_search = self.get_l2i_search_str(year=day_dt.year, month=day_dt.month, day=day_dt.day)
-        l2i_files = Path(lookup_directory).glob(day_search)
-        l2i_files = list(l2i_files)
+        l2i_files = []
+        for lookup_dir, lookup_dir_previous_day in product(lookup_directories, lookup_directories_previus_day):
+            day_search = self.get_l2i_search_str(year=day_dt.year, month=day_dt.month, day=day_dt.day)
+            l2i_files.extend(list(lookup_dir.glob(day_search)))
 
-        # Check if day is the first day of the month
-        # yes -> check last file of previous month which might have data
-        #        for the target day
-        if day_dt.day == 1:
-            previous_day = day_dt - timedelta(days=1)
-            lookup_directory = self.get_lookup_directory(previous_day.year, previous_day.month)
-            additional_l2i_files = Path(lookup_directory).glob(day_search)
-            l2i_files.extend(additional_l2i_files)
+            # Check if day is the first day of the month
+            # yes -> check last file of previous month which might have data
+            #        for the target day
+            # TODO: This needs to be revisited, convention: start time (?)
+            if day_dt.day == 1:
+                l2i_files.extend(lookup_dir_previous_day.glob(day_search))
 
         # All done, return sorted output
         return sorted(l2i_files)
 
-    def _validate_base_directory(self):
-        """ Performs sanity checks and enforces the l2i subfolder """
-        # 1. Path must exist
-        if not Path(self._base_directory).is_dir():
-            msg = "Invalid %s product directory: %s"
-            msg = msg % (self._search_str, str(self._base_directory))
-            self.error.add_error("invalid-l2i-productdir", msg)
-            self.error.raise_on_error()
+    @staticmethod
+    def _validate_base_directories(
+            base_directories: Union[List[str], List[Path], str, Path]
+    ) -> List[Path]:
+        """
+        Performs sanity checks and enforces the l2i subfolder type is
+        pathlib.Path
 
-    def get_lookup_directory(self, year, month):
-        """ Return the sub folders for a given time (datetime object) """
-        subfolders = ["%4g" % year, "%02g" % month]
-        lookup_directory = Path(self.product_basedir) / "/".join(subfolders)
-        return lookup_directory
+        :param base_directories: List of l2i lookup directory as str
 
-    def get_subdirectory_list(self):
-        """ Returns a list of all subdirectories of type yyyy/mm """
-        subdirectory_list = list()
+        :raises IOError: One of the directories is not valid
 
-        # 1. Check if directory exists
-        if not self.product_basedir.is_dir():
-            msg = "Directory {} does not exist".format(str(self.product_basedir))
-            self.error.add_error("invalid-l2i-product-dir", msg)
-            self.error.raise_on_error()
+        :return:List of l2i lookup directory as str
+        """
+        base_directories = base_directories if type(base_directories) in [list, tuple] else [base_directories]
+
+        def validate_dir(directory: str) -> Path:
+            dir_as_path = Path(directory)
+            if not dir_as_path.is_dir():
+                raise IOError(f"Directory is not a path: {directory}")
+            return dir_as_path
+
+        return [validate_dir(directory) for directory in base_directories]
+
+    def get_lookup_directory(self, year: int, month: int) -> List[Path]:
+        """
+        Rturn the list of l2i lookup folder for a given year and month (no daily granularity)
+
+        :param year:
+        :param month:
+        :return:
+        """
+        return [
+            basedir / "/".join(["%4g" % year, "%02g" % month]) for basedir in self.product_basedirs
+        ]
+
+    @staticmethod
+    def get_subdirectory_list(base_dir: Path) -> List[List[str]]:
+        """
+        Returns a list of all subdirectories of type yyyy/mm
+
+        :return:
+        """
+        subdirectory_list = []
 
         try:
-            years = sorted([f.parts[-1] for f in Path(self.product_basedir).iterdir() if f.is_dir()])
+            years = sorted([f.parts[-1] for f in Path(base_dir).iterdir() if f.is_dir()])
         except StopIteration:
-            logger.warning("No subdirectories in %s" % self.product_basedir)
+            logger.warning(f"No subdirectories in {base_dir}")
             return []
+
         # filter any invalid directories
         years = [y for y in years if re.match(r'[1-3][0-9]{3}', y)]
         for year in years:
-            subdir_year = Path(self.product_basedir) / year
+            subdir_year = Path(base_dir) / year
             months = [f.parts[-1] for f in subdir_year.iterdir() if f.is_dir()]
             # filter any invalid directories
             months = [m for m in months if re.match(r'[0-1][0-9]', m)]
@@ -401,12 +444,11 @@ class L2iDataHandler(DefaultLoggingClass):
             raise ValueError("year & month must be set if day is set")
         if len(date_str) > 1:
             date_str += "*"
-        l2i_file_pattern = "%s.nc" % date_str
-        return l2i_file_pattern
+        return f"{date_str}.nc"
 
     @property
-    def product_basedir(self):
-        return self._base_directory
+    def product_basedirs(self):
+        return self._base_directories
 
     @property
     def subdirectory_list(self):

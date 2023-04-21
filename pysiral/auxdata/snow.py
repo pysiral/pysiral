@@ -40,17 +40,18 @@ Important Note:
 """
 
 import re
-import numpy as np
-from pyproj import Proj
-from pathlib import Path
 from datetime import datetime
-from xarray import open_dataset
+from pathlib import Path
+
+import numpy as np
 from loguru import logger
+from pyproj import Proj
+from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.core.errorhandler import ErrorStatus
 from pysiral.filter import idl_smooth
-from pysiral.iotools import ReadNC
-from pysiral.errorhandler import ErrorStatus
+from pysiral.core.iotools import ReadNC
 
 
 class Warren99(AuxdataBaseClass):

@@ -3,10 +3,12 @@
 @author: Stefan
 """
 
-import unittest
 import importlib
 import pkgutil
+import unittest
+
 from loguru import logger
+
 logger.disable("pysiral")
 
 

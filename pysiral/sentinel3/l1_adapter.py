@@ -1,19 +1,21 @@
 
-import xmltodict
-
-import xarray
-import numpy as np
-from loguru import logger
-from scipy import interpolate
-from cftime import num2pydate
+import contextlib
 from pathlib import Path
 
+import numpy as np
+import xarray
+import xmltodict
+from cftime import num2pydate
+from loguru import logger
+from scipy import interpolate
+
 from pysiral import __version__ as pysiral_version
-from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.clocks import StopWatch
-from pysiral.helper import parse_datetime_str
-from pysiral.l1bdata import Level1bData
+from core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
+from pysiral.core.helper import parse_datetime_str
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc import Level1PInputHandlerBase
+
 
 # DEPR: Marked as deprecated
 class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
@@ -26,6 +28,8 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         :param raise_on_error: Boolean value if the class should raise an exception upon an error (default: False)
         """
 
+        self.l1 = None
+        self.filepath = None
         cls_name = self.__class__.__name__
         super(Sentinel3CODAL2Wat, self).__init__(cfg, raise_on_error, cls_name)
 
@@ -55,13 +59,14 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
 
         # Input Validation
         if not Path(filepath).is_file():
-            msg = "Not a valid file: %s" % filepath
+            msg = f"Not a valid file: {filepath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
 
         # Parse xml header file
-        self._parse_xml_manifest(filepath)
+        with contextlib.suppress(FileNotFoundError):
+            self._parse_xml_manifest(filepath)
 
         # Parse the input netCDF file
         self._read_input_netcdf(filepath)
@@ -88,23 +93,23 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         return self.l1
 
     @staticmethod
-    def interp_1Hz_to_20Hz(variable_1Hz, time_1Hz, time_20Hz, **kwargs):
+    def interp_1hz_to_20hz(variable_1hz, time_1hz, time_20hz, **kwargs):
         """
         Computes a simple linear interpolation to transform a 1Hz into a 20Hz variable
-        :param variable_1Hz: an 1Hz variable array
-        :param time_1Hz: 1Hz reference time
-        :param time_20Hz: 20 Hz reference time
+        :param variable_1hz: an 1Hz variable array
+        :param time_1hz: 1Hz reference time
+        :param time_20hz: 20 Hz reference time
         :return: the interpolated 20Hz variable
         """
         error_status = False
         try:
-            f = interpolate.interp1d(time_1Hz, variable_1Hz, bounds_error=False, **kwargs)
-            variable_20Hz = f(time_20Hz)
+            f = interpolate.interp1d(time_1hz, variable_1hz, bounds_error=False, **kwargs)
+            variable_20hz = f(time_20hz)
         except ValueError:
             fill_value = np.nan
-            variable_20Hz = np.full(time_20Hz.shape, fill_value)
+            variable_20hz = np.full(time_20hz.shape, fill_value)
             error_status = True
-        return variable_20Hz, error_status
+        return variable_20hz, error_status
 
     @staticmethod
     def parse_sentinel3_l1b_xml_header(filename):
@@ -138,9 +143,7 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         # Extract General Product Info
         index = self.cfg.xml_metadata_object_index[section_name]
         product_info = metadata[index]["metadataWrap"]["xmlData"]
-        product_info = product_info[tag]
-
-        return product_info
+        return product_info[tag]
 
     def _read_input_netcdf(self, filepath):
         """
@@ -151,7 +154,7 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         try:
             self.nc = xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
         except:
-            msg = "Error encountered by xarray parsing: %s" % filepath
+            msg = f"Error encountered by xarray parsing: {filepath}"
             self.error.add_error("xarray-parse-error", msg)
             logger.warning(msg)
             return
@@ -163,8 +166,8 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         :return: None
         """
 
-        # Short cuts
-        metadata =  self.nc.attrs
+        # Shortcuts
+        metadata = self.nc.attrs
         info = self.l1.info
 
         # Get xml manifest content
@@ -199,7 +202,7 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
             percent_value = 0.0
             if mode == "sar":
                 percent_value = 100.
-            info.set_attribute("{}_mode_percent".format(mode), percent_value)
+            info.set_attribute(f"{mode}_mode_percent", percent_value)
         info.set_attribute("open_ocean_percent", float(sral_info["sral:openOceanPercentage"]))
 
     def _set_l1_data_groups(self):
@@ -237,9 +240,9 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         # Set antenna attitude
         # NOTE: This are only available in 1Hz and need to be interpolated
         time_01, time_20 = self.nc.time_01.values, self.nc.time_20_ku.values
-        pitch_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_pitch_angle_pf_01.values, time_01, time_20)
-        roll_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_roll_angle_pf_01.values, time_01, time_20)
-        yaw_angle_20, stat = self.interp_1Hz_to_20Hz(self.nc.off_nadir_yaw_angle_pf_01.values, time_01, time_20)
+        pitch_angle_20, stat = self.interp_1hz_to_20hz(self.nc.off_nadir_pitch_angle_pf_01.values, time_01, time_20)
+        roll_angle_20, stat = self.interp_1hz_to_20hz(self.nc.off_nadir_roll_angle_pf_01.values, time_01, time_20)
+        yaw_angle_20, stat = self.interp_1hz_to_20hz(self.nc.off_nadir_yaw_angle_pf_01.values, time_01, time_20)
         self.l1.time_orbit.set_antenna_attitude(pitch_angle_20, roll_angle_20, yaw_angle_20)
 
     def _set_waveform_data_group(self):
@@ -302,18 +305,18 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         """
 
         # Get the reference times for interpolating the range corrections from 1Hz -> 20Hz
-        time_1Hz = self.nc.time_01.values
-        time_20Hz = self.nc.time_20_ku.values
+        time_1hz = self.nc.time_01.values
+        time_20hz = self.nc.time_20_ku.values
 
         # Loop over all range correction variables defined in the processor definition file
         for key in self.cfg.range_correction_targets.keys():
             var_name = self.cfg.range_correction_targets[key]
-            variable_1Hz = getattr(self.nc, var_name)
-            variable_20Hz, error_status = self.interp_1Hz_to_20Hz(variable_1Hz.values, time_1Hz, time_20Hz)
+            variable_1hz = getattr(self.nc, var_name)
+            variable_20hz, error_status = self.interp_1hz_to_20hz(variable_1hz.values, time_1hz, time_20hz)
             if error_status:
-                msg = "- Error in 20Hz interpolation for variable `%s` -> set only dummy" % var_name
+                msg = f"- Error in 20Hz interpolation for variable `{var_name}` -> set only dummy"
                 logger.warning(msg)
-            self.l1.correction.set_parameter(key, variable_20Hz)
+            self.l1.correction.set_parameter(key, variable_20hz)
 
     def _set_surface_type_group(self):
         """
@@ -339,8 +342,8 @@ class Sentinel3CODAL2Wat(Level1PInputHandlerBase):
         """
         # Loop over all classifier variables defined in the processor definition file
         for key in self.cfg.classifier_targets.keys():
-            variable_20Hz = getattr(self.nc, self.cfg.classifier_targets[key])
-            self.l1.classifier.add(variable_20Hz, key)
+            variable_20hz = getattr(self.nc, self.cfg.classifier_targets[key])
+            self.l1.classifier.add(variable_20hz, key)
 
     @property
     def empty(self):
@@ -392,13 +395,14 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
 
         # Input Validation
         if not Path(filepath).is_file():
-            msg = "Not a valid file: %s" % filepath
+            msg = f"Not a valid file: {filepath}"
             logger.warning(msg)
             self.error.add_error("invalid-filepath", msg)
             return self.empty
 
         # Parse xml header file
-        self._parse_xml_manifest(filepath)
+        with contextlib.suppress(FileNotFoundError):
+            self._parse_xml_manifest(filepath)
 
         # Parse the input netCDF file
         self._read_input_netcdf(filepath)
@@ -475,9 +479,7 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         # Extract General Product Info
         index = self.cfg.xml_metadata_object_index[section_name]
         product_info = metadata[index]["metadataWrap"]["xmlData"]
-        product_info = product_info[tag]
-
-        return product_info
+        return product_info[tag]
 
     def _read_input_netcdf(self, filepath):
         """
@@ -537,7 +539,7 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
             percent_value = 0.0
             if mode == "sar":
                 percent_value = 100.
-            info.set_attribute("{}_mode_percent".format(mode), percent_value)
+            info.set_attribute(f"{mode}_mode_percent", percent_value)
         info.set_attribute("open_ocean_percent", float(sral_info["sral:openOceanPercentage"]))
 
     def _set_l1_data_groups(self):

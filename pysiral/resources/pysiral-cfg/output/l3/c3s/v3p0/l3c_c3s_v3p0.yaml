@@ -29,7 +29,7 @@ global_attributes:
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"  
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
-  - references: "Product User Guide and Specification (PUGS): Sea Ice Thickness Version 2, Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 2"
+  - references: "Product User Guide and Specification (PUGS): Sea Ice Thickness Version 3, Algorithm Theoretical Baseline Document (ATBD): Sea Ice Thickness Version 3"
   - tracking_id: "{uuid}"
   - Conventions:  "CF-1.7 ACDD-1.3"
   - product_version: "3p0"

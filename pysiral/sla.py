@@ -16,19 +16,100 @@ NOTES:
 """
 
 
-import numpy as np
-import pandas as pd
-import numpy.typing as npt
-from loguru import logger
+import typing as tp
 
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
 import statsmodels.api as sm
+from loguru import logger
 from sklearn import gaussian_process
 from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
-from pysiral.l2data import L2DataArray
 from pysiral.core.flags import SurfaceType
+from pysiral.filter import fill_nan, idl_smooth
+from pysiral.l2data import L2DataArray
 from pysiral.l2proc.procsteps import Level2ProcessorStep
-from pysiral.filter import (fill_nan, idl_smooth)
+
+
+def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):
+    """
+    Check all sections divided by land masses for reliable information content.
+    Specifically, each marine segment between two land masses must have a minimum
+    number of leads
+    :param l2:
+    :param minimum_lead_number:
+    :param footprint_size:
+    :param use_ocean_wfm:
+    :return: mask: True: To be masked, False: Valid SLA
+    """
+
+    # Create a mask (all valid by default)
+    mask = np.full(l2.n_records, False)
+
+    # Find sea ice clusters
+    land = l2.surface_type.land
+
+    # No land -> nothing to do
+    if land.num == 0:
+        return mask
+
+    # Get indices for land sections
+    lead_flag = l2.surface_type.lead.flag
+    if use_ocean_wfm:
+        ocean_flag = l2.surface_type.ocean.flag
+        logger.info('Addded {nocean} ocean records to {nlead} lead records'.format(
+            nocean=ocean_flag.sum(), nlead=lead_flag.sum())
+        )
+        lead_flag = np.bitwise_or(lead_flag, ocean_flag)
+
+    land_flag = land.flag.astype(int)
+    land_start = np.where(np.ediff1d(land_flag) > 0)[0]
+    land_stop = np.where(np.ediff1d(land_flag) < 0)[0]
+
+    # It is assumed here, that the l1b orbit segment never starts
+    # or end with land. Thus, the number of land start and land stop
+    # events need to be identical.
+    if len(land_start) != len(land_stop):
+        msg = "l2 segments either starts or ends with land. SLA marine segment will not perform properly."
+        logger.error(msg)
+        return mask
+
+    # Add artificial large land sections on beginning and end of profile
+    n_marine_segments = len(land_start) + 1
+    n = l2.n_records
+    land_start = np.concatenate(([-1000], land_start, [n-1]))
+    land_stop = np.concatenate(([-1], land_stop, [n+1000]))
+
+    # Loop over marine segments and collect information
+    # TODO: The marine segment list does not to be kept
+    marine_segments = []
+    section_prop = {"i0": 0.0, "i1": 0.0,
+                    "width": 0.0, "n_tiepoints": 0,
+                    "land_before": (9999.0, 0),
+                    "land_after": (9999.0, 0)}
+    for i in np.arange(n_marine_segments):
+
+        marine_segment = section_prop.copy()
+
+        # Get the start stop indices for marine section
+        i0 = land_stop[i]+1
+        i1 = land_start[i+1]
+        marine_segment["i0"] = i0
+        marine_segment["i1"] = i1
+        marine_segment["width"] = (i1-i0) * footprint_size
+
+        # get the number of leads
+        marine_section_indices = np.arange(i0, i1+1)
+        n_tiepoints = np.where(lead_flag[marine_section_indices])[0].size
+        marine_segment["n_tiepoints"] = n_tiepoints
+
+        if marine_segment["n_tiepoints"] < minimum_lead_number:
+            mask[marine_section_indices] = True
+
+        marine_segments.append(marine_segment)
+
+    return mask
 
 
 class SLABaseFunctionality(object):
@@ -80,8 +161,11 @@ class SLABaseFunctionality(object):
     def get_tiepoint_distance_from_l2(self, l2, smooth_filter_width_footprint_size, use_ocean_wfm=False):
         """
         Returns the distance in meter to the next ssh tiepoint for each record
+
         :param l2: Level-2 data container
         :param smooth_filter_width_footprint_size:
+        :param use_ocean_wfm:
+
         :return: array(float32, shape=l2.n_records)
         """
 
@@ -187,26 +271,17 @@ class SLABaseFunctionality(object):
         window_size_float = elevation_filter_window_m / footprint_spacing
         window_size = None if np.isnan(window_size_float) else int(int(window_size_float) // 2 * 2 + 1)
 
-        # Step 2: Compute a smoothed representation of the elevation profile
-        #         with a lowess filter
-        x = np.arange(elevation.shape[0])
-        data_fraction = min(window_size / float(x.shape[0]), 1.)
-        elevation_rolling_mean = sm.nonparametric.lowess(elevation, x, frac=data_fraction, return_sorted=False)
+        upper_limit, lower_limit = get_rolling_standard_deviation_elevation_window(
+            elevation,
+            window_size,
+            minimum_standard_deviation_m=minimum_standard_deviation_m,
+            lower_limit_standard_deviation=lower_limit_standard_deviation,
+            upper_limit_standard_deviation=upper_limit_standard_deviation
+        )
 
-        # Step 3: Compute the elevation standard deviation of trend-corrected elevation profile
-        rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
-        ts = pd.Series(elevation - elevation_rolling_mean)
-        elevation_rolling_sdev = ts.rolling(**rolling_kwargs).std()
-
-        # Step 4: Set minimum value for standard deviation
-        elevation_rolling_sdev = np.maximum(elevation_rolling_sdev, minimum_standard_deviation_m)
-
-        # Step 5: Find ssh tie-point indices outside the valid bounds
-        upper_limit = elevation_rolling_mean + upper_limit_standard_deviation * elevation_rolling_sdev
-        lower_limit = elevation_rolling_mean - lower_limit_standard_deviation * elevation_rolling_sdev
         tie_points_inside_elevation_bounds = np.logical_and(
-            elevation[ssh_tiepoint_indices] < upper_limit.values[ssh_tiepoint_indices],
-            elevation[ssh_tiepoint_indices] > lower_limit.values[ssh_tiepoint_indices]
+            elevation[ssh_tiepoint_indices] < upper_limit[ssh_tiepoint_indices],
+            elevation[ssh_tiepoint_indices] > lower_limit[ssh_tiepoint_indices]
         )
 
         # Debug code
@@ -229,83 +304,6 @@ class SLABaseFunctionality(object):
         # breakpoint()
 
         return ssh_tiepoint_indices[tie_points_inside_elevation_bounds]
-
-    def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):
-        """
-        Check all sections divided by land masses for reliable information content.
-        Specifically, each marine segment between two land masses must have a minimum
-        number of leads
-        :param l2:
-        :param minimum_lead_number:
-        :param footprint_size:
-        :param use_ocean_wfm:
-        :return: mask: True: To be masked, False: Valid SLA
-        """
-
-        # Create a mask (all valid by default)
-        mask = np.full(l2.n_records, False)
-
-        # Find sea ice clusters
-        land = l2.surface_type.land
-
-        # No land -> nothing to do
-        if land.num == 0:
-            return mask
-
-        # Get indices for land sections
-        lead_flag = l2.surface_type.lead.flag
-        if use_ocean_wfm:
-            ocean_flag = l2.surface_type.ocean.flag
-            logger.info('Addded {nocean} ocean records to {nlead} lead records'.format(nocean=ocean_flag.sum(), nlead=lead_flag.sum()))
-            lead_flag = np.bitwise_or(lead_flag, ocean_flag)
-
-        land_flag = land.flag.astype(int)
-        land_start = np.where(np.ediff1d(land_flag) > 0)[0]
-        land_stop = np.where(np.ediff1d(land_flag) < 0)[0]
-
-        # It is assumed here, that the l1b orbit segment never starts
-        # or end with land. Thus the number of land start and land stop
-        # events need to be identical.
-        if len(land_start) != len(land_stop):
-            msg = "l2 segments either starts or ends with land. SLA marine segment will not perform properly."
-            logger.error(msg)
-            return mask
-
-        # Add artificial large land sections on beginning and end of profile
-        n_marine_segments = len(land_start) + 1
-        n = l2.n_records
-        land_start = np.concatenate(([-1000], land_start, [n-1]))
-        land_stop = np.concatenate(([-1], land_stop, [n+1000]))
-
-        # Loop over marine segments and collect information
-        # TODO: The marine segment list does not to be kept
-        marine_segments = []
-        section_prop = {"i0": 0.0, "i1": 0.0,
-                        "width": 0.0, "n_tiepoints": 0,
-                        "land_before": (9999.0, 0),
-                        "land_after": (9999.0, 0)}
-        for i in np.arange(n_marine_segments):
-
-            marine_segment = section_prop.copy()
-
-            # Get the start stop indices for marine section
-            i0 = land_stop[i]+1
-            i1 = land_start[i+1]
-            marine_segment["i0"] = i0
-            marine_segment["i1"] = i1
-            marine_segment["width"] = (i1-i0) * footprint_size
-
-            # get the number of leads
-            marine_section_indices = np.arange(i0, i1+1)
-            n_tiepoints = np.where(lead_flag[marine_section_indices])[0].size
-            marine_segment["n_tiepoints"] = n_tiepoints
-
-            if marine_segment["n_tiepoints"] < minimum_lead_number:
-                mask[marine_section_indices] = True
-
-            marine_segments.append(marine_segment)
-
-        return mask
 
     @staticmethod
     def get_filter_width(smooth_filter_width_m, smooth_filter_width_footprint_size):
@@ -350,9 +348,7 @@ class SLABaseFunctionality(object):
         for i in np.arange(n):
             if a[i]:
                 dist = 0
-            elif dist == n:
-                pass
-            else:
+            elif dist != n:
                 dist += 1
             distance[i] = dist
         if reverse:
@@ -404,8 +400,7 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
             all_nans = np.full(l2.n_records, np.nan)
             l2.sla.set_value(all_nans)
             l2.sla.set_uncertainty(all_nans)
-            error_status = np.isnan(l2.sla[:])
-            return error_status
+            return np.isnan(l2.sla[:])
 
         # Step 2: A linear interpolation between lead elevations
         # -> will add properties `sla_raw`, `ssh_tiepoints` and `sla` to the instance
@@ -417,23 +412,11 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         surface_types = self.cfg.options.get("surface_types_masks", [])
         sla, sla_unc = self.apply_surface_type_masks(sla, sla_unc, l2, surface_types)
 
-        # import matplotlib.pyplot as plt
-        # x = np.arange(l2.n_records)
-        # sla_raw = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
-        # plt.figure(figsize=(10, 8))
-        # plt.scatter(x[ssh_tiepoint_indices], sla_raw, zorder=20)
-        # plt.plot(x, sla, color="red", lw=2, zorder=50)
-        # plt.fill_between(x, sla-sla_unc, sla+sla_unc, zorder=10)
-        # plt.show()
-        # breakpoint()
-
         # Step 4: Modify the Level-2 data container with the result in-place
         l2.sla.set_value(sla)
         l2.sla.set_uncertainty(sla_unc)
 
-        # Return the error status
-        error_status = np.isnan(l2.sla[:])
-        return error_status
+        return np.isnan(l2.sla[:])
 
     @staticmethod
     def sla_from_gaussian_process(l2, ssh_tiepoint_indices, matern_kernel=None, white_noise_kernel=None):
@@ -467,10 +450,10 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
         # that the data is noisy (white noise kernel)
         if matern_kernel is None:
             logger.warning("SLAGaussianProcess: No input for matern kernel")
-            matern_kernel = dict()
+            matern_kernel = {}
         if white_noise_kernel is None:
             logger.warning("SLAGaussianProcess: No input for white noise kernel")
-            white_noise_kernel = dict()
+            white_noise_kernel = {}
         kernel = Matern(**matern_kernel) + WhiteKernel(**white_noise_kernel)
 
         # Step 5: Execute the Gaussian Process Regressor
@@ -587,7 +570,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         if "marine_segment_filter" in self.cfg.options:
             minimum_lead_number = self.cfg.options.marine_segment_filter.get("minimum_lead_number", np.nan)
             use_ocean_wfm = self.cfg.options.get("use_ocean_wfm", False)
-            filter_mask = self.marine_segment_filter(l2, minimum_lead_number, l2.footprint_spacing, use_ocean_wfm)
+            filter_mask = marine_segment_filter(l2, minimum_lead_number, l2.footprint_spacing, use_ocean_wfm)
             mask = np.logical_or(mask, filter_mask)
 
         # Step 5 (optional): Filter SLA segments that are far away from the next SSH tie point
@@ -638,10 +621,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
 
         # Step 4: The sea level anomaly is the smoothed version
         # of the gap filled sla
-        sla = idl_smooth(sla_filter2, filter_width)
-
-        # All done, return value
-        return sla
+        return idl_smooth(sla_filter2, filter_width)
 
     def calculate_sla_uncertainty(self, l2, max_distance, sla_unc_min, sla_unc_max,
                                   smooth_filter_width_footprint_size):
@@ -673,10 +653,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
 
         # Compute the sla uncertainty based on a min/max approach scaled by factor
         sla_unc_range = sla_unc_max - sla_unc_min
-        sla_unc = sla_unc_min + sla_unc_range * tiepoint_distance_scalefact
-
-        # Return uncertainty value
-        return sla_unc
+        return sla_unc_min + sla_unc_range * tiepoint_distance_scalefact
 
     @property
     def l2_input_vars(self):
@@ -742,8 +719,7 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
             all_nans = np.full(l2.n_records, np.nan)
             l2.sla_raw.set_value(all_nans)
             l2.sla_raw.set_uncertainty(all_nans)
-            error_status = np.isnan(l2.sla_raw[:])
-            return error_status
+            return np.isnan(l2.sla_raw[:])
 
         # Step 2: Get sla = elev - mss
         sla_raw, sla_raw_unc = self.sla_from_raw_process(l2, ssh_tiepoint_indices)
@@ -752,28 +728,18 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
         surface_types = self.cfg.options.get("surface_types_masks", [])
         sla_raw, sla_raw_unc = self.apply_surface_type_masks(sla_raw, sla_raw_unc, l2, surface_types)
 
-        # import matplotlib.pyplot as plt
-        # x = np.arange(l2.n_records)
-        # sla_raw = l2.elev[ssh_tiepoint_indices] - l2.mss[ssh_tiepoint_indices]
-        # plt.figure(figsize=(10, 8))
-        # plt.scatter(x[ssh_tiepoint_indices], sla_raw, zorder=20)
-        # plt.plot(x, sla, color="red", lw=2, zorder=50)
-        # plt.fill_between(x, sla-sla_unc, sla+sla_unc, zorder=10)
-        # plt.show()
-        # breakpoint()
-
         # Step 4: Modify the Level-2 data container with the result in-place
         l2.sla_raw.set_value(sla_raw)
         l2.sla_raw.set_uncertainty(sla_raw_unc)
 
         # Return the error status
-        error_status = np.isnan(l2.sla_raw[:])
-        return error_status
+        return np.isnan(l2.sla_raw[:])
 
     @staticmethod
     def sla_from_raw_process(l2, ssh_tiepoint_indices):
         """
         Compute sea level anomaly
+
         :param l2:
         :param ssh_tiepoint_indices:
         :return:
@@ -807,3 +773,51 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["sla"]
+
+
+def get_rolling_standard_deviation_elevation_window(
+        elevation: npt.NDArray,
+        window_size: int,
+        minimum_standard_deviation_m: float = 0.0,
+        maximum_standard_deviation_m: float = np.inf,
+        upper_limit_standard_deviation: float = 1.0,
+        lower_limit_standard_deviation: float = 1.0
+) -> tp.Tuple[npt.NDArray, npt.NDArray]:
+    """
+    Compute a rolling window determined by
+
+        upper_limit = rolling_mean + upper_limit_standard_deviation * rolling_standard_devation
+
+        lower_limit = rolling_mean - lower_limit_standard_deviation * rolling_standard_devation
+
+    the window size for the computation of rolling mean and standard devation is specified
+    as number of points. The elevation array is assumed to be equidistant.
+
+    :param elevation: Elevation array
+    :param window_size: Number of points used to compute rolling mean and standard deviation
+    :param minimum_standard_deviation_m: Minimum permissible rolling standard deviation
+    :param maximum_standard_deviation_m: Maximum permissible rolling standard deviation
+    :param upper_limit_standard_deviation: Multiplier for local standard deviation for upper limit
+    :param lower_limit_standard_deviation: Multiplier for local standard deviation for lower limit
+
+    :return: lower limit & upper limit with same dimension as input array.
+    """
+
+    x = np.arange(elevation.shape[0])
+    data_fraction = min(window_size / float(x.shape[0]), 1.)
+    elevation_rolling_mean = sm.nonparametric.lowess(elevation, x, frac=data_fraction, return_sorted=False)
+
+    # Step 3: Compute the elevation standard deviation of trend-corrected elevation profile
+    rolling_kwargs = dict(window=window_size, center=True, min_periods=1)
+    ts = pd.Series(elevation - elevation_rolling_mean)
+    elevation_rolling_sdev = ts.rolling(**rolling_kwargs).std()
+
+    # Step 4: Set minimum value for standard deviation
+    elevation_rolling_sdev = np.maximum(elevation_rolling_sdev, minimum_standard_deviation_m)
+    elevation_rolling_sdev = np.minimum(elevation_rolling_sdev, maximum_standard_deviation_m)
+
+    # Step 5: Find ssh tie-point indices outside the valid bounds
+    upper_limit = elevation_rolling_mean + upper_limit_standard_deviation * elevation_rolling_sdev
+    lower_limit = elevation_rolling_mean - lower_limit_standard_deviation * elevation_rolling_sdev
+
+    return lower_limit.values, upper_limit.values

@@ -32,11 +32,11 @@ Important Note:
 
 """
 
-from pysiral.auxdata import AuxdataBaseClass
-from pysiral.iotools import ReadNC
-
-import scipy.ndimage as ndimage
 import numpy as np
+import scipy.ndimage as ndimage
+
+from pysiral.auxdata import AuxdataBaseClass
+from pysiral.core.iotools import ReadNC
 
 
 class DTU1MinGrid(AuxdataBaseClass):

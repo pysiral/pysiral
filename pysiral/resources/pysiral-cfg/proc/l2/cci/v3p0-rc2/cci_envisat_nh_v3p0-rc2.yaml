@@ -177,7 +177,7 @@ procsteps:
                       - "{leading_edge_quality} <= 1.02"
 
     # Add elevations from other retrackers in SGDR (ERS/Envisat only)
-    -   module: retracker
+    -   module: retracker.mock
         pyclass: SGDRMultipleElevations
         options: 
             predefined_retrackers: [ocean, ice1, ice2, sitrack]

@@ -15,9 +15,12 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
+from pathlib import Path
+from typing import Dict, Union
+
 import yaml
-from typing import Union
 from attrdict import AttrDict
+
 from pysiral import psrlcfg
 
 
@@ -38,10 +41,14 @@ class RadarModes(object):
 
     @classmethod
     def get_name(cls, flag: int) -> Union[str, None]:
-        for mode_name, mode_flag in cls.flag_dict.items():
-            if flag == mode_flag:
-                return mode_name
-        return None
+        return next(
+            (
+                mode_name
+                for mode_name, mode_flag in cls.flag_dict.items()
+                if flag == mode_flag
+            ),
+            None,
+        )
 
     def name(self, index: int) -> str:
         i = list(self.flag_dict.values()).index(index)
@@ -219,9 +226,17 @@ class DefaultCommandLineArguments(object):
             "l2i-product-dir": {
                 "action": "store",
                 "dest": "l2i_product_dir",
+                "nargs": "+",
                 "default": None,
                 "required": True,
                 "help": "l2i input directory"},
+
+            "l3-product-dir": {
+                "action": "store",
+                "dest": "l3_product_dir",
+                "default": None,
+                "required": False,
+                "help": "l3 output directory"},
 
             "l3-settings": {
                 "action": "store",
@@ -275,24 +290,16 @@ class DefaultCommandLineArguments(object):
         return options
 
 
-def get_yaml_config(filename, output="attrdict"):
+def get_yaml_config(filename: Union[str, Path], output: str = "attrdict") -> Union[Dict, AttrDict]:
     """
     Parses the contents of a configuration file in .yaml format
     and returns the content in various formats
 
-    Arguments:
-        filename (str)
-            path the configuration file
-
-    Keywords:
-        output (str)
-            "treedict" (default): Returns a treedict object
-            "dict": Returns a python dictionary
+    :param filename: The full file path of the config file
+    :param output: Dict or AttrDict (depends on `output` keyword)
+    :return:
     """
     with open(str(filename), 'r') as fileobj:
         content_dict = yaml.safe_load(fileobj)
 
-    if output == "attrdict":
-        return AttrDict(content_dict)
-
-    return content_dict
+    return AttrDict(content_dict) if output == "attrdict" else content_dict
