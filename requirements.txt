@@ -1,8 +1,8 @@
 astropy
 attrdict
 bottleneck
-cartopy ~= 0.18; python_version <= 3.7
-cartopy; python_version > 3.7
+cartopy ~= 0.18; python_version<="3.7"
+cartopy; python_version>="3.8"
 cftime
 cython
 dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
