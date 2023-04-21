@@ -40,5 +40,6 @@ xarray
 xgboost
 xmltodict
 
-cartopy==0.18.0; python_version<="3.7"
-cartopy; python_version>="3.8"
+# cartopy==0.20.0; python_version<="3.7"
+# cartopy; python_version>="3.8"
+cartopy
