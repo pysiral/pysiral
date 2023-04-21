@@ -337,6 +337,8 @@ class Level2Data(object):
         mission_sensor = psrlcfg.platforms.get_sensor(self.info.mission)
         if args[0] == "uppercase":
             mission_sensor = mission_sensor.upper()
+        elif args[0] == "lower":
+            mission_sensor = mission_sensor.lower()
         return mission_sensor
 
     def _get_attr_source_mission_sensor_fn(self, *args):
