@@ -43,21 +43,21 @@ for i, requirement in enumerate(requirements_content):
 setup(
     name='pysiral',
     version=version,
-    description='PYthon Sea Ice Radar ALtimetry toolbox',
+    description='python sea ice radar altimetry processing library',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9'
+        'Programming Language :: Python :: 3.8'
     ],
     long_description=readme,
     author='Stefan Hendricks',
     author_email='stefan.hendricks@awi.de',
-    url='https://github.com/pysiral/pysiral',
+    url='https://github.com/shendric/pysiral',
     license=license_text,
     install_requires=install_requires,
     dependency_links=dependency_links,
