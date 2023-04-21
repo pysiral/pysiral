@@ -1,9 +1,6 @@
 astropy
 attrdict
 bottleneck
-pyproj
-cartopy==0.18.0; python_version<="3.7"
-cartopy; python_version>="3.8"
 cftime
 cython
 dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
@@ -24,6 +21,7 @@ pillow
 pandas
 parse
 pykdtree
+pyproj
 pyresample
 pyshp
 python-dateutil
@@ -41,3 +39,6 @@ torch
 xarray
 xgboost
 xmltodict
+
+cartopy==0.18.0; python_version<="3.7"
+cartopy; python_version>="3.8"
