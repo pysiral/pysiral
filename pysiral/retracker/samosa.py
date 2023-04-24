@@ -347,7 +347,7 @@ class SAMOSAPlus(BaseRetracker):
         :param n_records:
         """
 
-        if SAMOSA_DEBUG_MODE:
+        if not SAMOSA_DEBUG_MODE:
             parameter = [
                 "misfit", "swh", "wind_speed", "oceanlike_flag", "epoch",
                 "guess", "Pu", "rval", "kval", "pval", "cval"
