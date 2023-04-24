@@ -2,7 +2,6 @@
 
 """
 
-
 """
 
 import os
@@ -176,7 +175,6 @@ class SAMOSARadarSpecs:
 
 
 class SAMOSAGeoVariables(object):
-
 
     def __init__(self,
                  lat: float,
@@ -358,7 +356,7 @@ class SAMOSAPlus(BaseRetracker):
             parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag"]
 
         for parameter_name in parameter:
-            self._retracker_params[parameter_name] = np.full(np.nan, n_records, dtype=np.float32)
+            self._retracker_params[parameter_name] = np.full(n_records, np.nan, dtype=np.float32)
 
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid) -> None:
         """
@@ -468,6 +466,8 @@ class SAMOSAPlus(BaseRetracker):
             #                               num=int(self._l1b.classifier.stack_beams[index]), endpoint=True)
 
             LookAngles = self._get_look_angles(index)
+
+            # Create the GEO structure needed for the samosa pacakge
             GEO = SAMOSAGeoVariables.from_l1(self._l1b, vel, hrate, ThNEcho, index)
 
             # GEO.LAT = self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
@@ -634,7 +634,7 @@ class SAMOSAPlus(BaseRetracker):
                             'cval': (['time_20_ku'], self.cval),
                             'rval': (['time_20_ku'], self.rval),
                             'kval': (['time_20_ku'], self.kval),
-                            'wf': (['time_20_ku','bins'], wf_norm),
+                            'wf': (['time_20_ku', 'bins'], wf_norm),
                             'misfit': (['time_20_ku'], self.misfit),
                             'oceanlike_flag': (['time_20_ku'], self.oceanlike_flag),
                             'SWH': (['time_20_ku'], self.swh),
@@ -672,8 +672,3 @@ class SAMOSAPlus(BaseRetracker):
             return self._retracker_params[item]
         else:
             raise AttributeError(f"{self.__class__.__name__} has no attribute {item}")
-
-
-
-
-
