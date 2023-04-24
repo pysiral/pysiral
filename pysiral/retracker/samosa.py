@@ -8,6 +8,7 @@ import os
 import logging
 
 import matplotlib.pyplot as plt
+import multiprocessing
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
@@ -28,6 +29,7 @@ from pysiral.retracker import BaseRetracker
 
 # TODO: Move this to an environment variable?
 SAMOSA_DEBUG_MODE = False
+
 
 
 @dataclass
@@ -424,30 +426,30 @@ class SAMOSAPlus(BaseRetracker):
             raw_range[sin_index] = range[sin_index, np.shape(wfm)[1]//2]
             logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
 
-        for index in indices:
+        args = [samlib, self._l1b, wfm, tau, window_del_20_hr_ku_deuso, vel, hrate, ThNEcho,
+                CONF, epoch0, MaskRanges, raw_range, CST, RDB]
 
-            LookAngles = self._get_look_angles(index)
+        # Single process
+        fit_results = [
+            self._fit_samosa_waveform_model(index, *args) for index in indices
+        ]
 
-            # Create the GEO structure needed for the samosa pacakge
-            GEO = SAMOSAGeoVariables.from_l1(self._l1b, vel, hrate, ThNEcho, index)
+        # TODO Investigate speeding multi-processing
+        # The use of a multiprocessing Pool is currently slower (!) than just using
+        # a single thread. The reason might the work overhead for creating each process.
+        # One idea would be to divide the indices in x chunks and not to start a process
+        # for each waveform.
 
-            wf = np.array(wfm[index, :]).astype("float64")
+        # n_processes = multiprocessing.cpu_count()
+        # logger.info(f"Use multi-processing with {n_processes} workers")
+        # process_pool = multiprocessing.Pool(n_processes)
+        # jobs = [process_pool.apply_async(fit_samosa_waveform_model, args=(index, *args)) for index in indices]
+        # process_pool.close()
+        # process_pool.join()
+        # fit_results = [job.get() for job in jobs]
 
-            CONF.guess_epoch = epoch0[index]
-
-            # Do retrack in units of Watts as we don't have the scaling factors available for calc_sigma0
-            epoch_sec, swh, Pu, misfit, oceanlike_flag = samlib.Retrack_Samosa(
-                tau, wf, LookAngles, MaskRanges, GEO, CONF
-            )
-
-            # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
-            self._range[index] = raw_range[index] + epoch_sec * CST.c0 * 0.5
-
-            # Compute sigma0
-            sigma0, pval, cval, rval, kval = calc_sigma0(
-                None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
-                GEO.LAT, GEO.Height, GEO.Vs, self._l1b.classifier.transmit_power[index]
-            )
+        for index, fit_result in zip(indices, fit_results):
+            rng, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf = fit_result
 
             # fig, axs = plt.subplots(2)
             # axs[0].plot(samlib.last_wfm_ref, label="Waveform")
@@ -458,6 +460,7 @@ class SAMOSAPlus(BaseRetracker):
             # plt.savefig(r"D:\temp\samosa\wfm_fit"+f"{index:06g}.jpg", dpi=300)
             # plt.close(fig)
 
+            self._range[index] = rng
             self._power[index] = sigma0
 
             # Store additional retracker parameters
@@ -542,22 +545,6 @@ class SAMOSAPlus(BaseRetracker):
         :return:
         """
         return compute_ThNEcho(wfm, n_start_noise * wf_zp, n_end_noise * wf_zp)
-
-    def _get_look_angles(self, index: int):
-        """
-        Compute the lookangles based on l1b stack information
-
-        :param index: Waveform index
-
-        :return:
-        """
-
-        return 90. - np.linspace(
-            np.rad2deg(self._l1b.classifier.look_angle_start[index]),
-            np.rad2deg(self._l1b.classifier.look_angle_stop[index]),
-            num=int(self._l1b.classifier.stack_beams[index]),
-            endpoint=True
-        )
 
     @staticmethod
     def _get_normalized_waveform(wfm: npt.NDArray) -> npt.NDArray:
@@ -677,3 +664,69 @@ class SAMOSAPlus(BaseRetracker):
             return self._retracker_params[item]
         else:
             raise AttributeError(f"{self.__class__.__name__} has no attribute {item}")
+
+
+def fit_samosa_waveform_model(
+        index, samlib, l1b, wfm, tau, window_del_20_hr_ku_deuso, vel, hrate,
+        ThNEcho, CONF, epoch0, MaskRanges, raw_range, CST, RDB
+):
+    """
+    Fitting procedure for one waveform as function
+
+    :param index:
+    :param samlib:
+    :param wfm:
+    :param tau:
+    :param window_del_20_hr_ku_deuso:
+    :param vel:
+    :param hrate:
+    :param ThNEcho:
+    :param CONF:
+    :param epoch0:
+    :param MaskRanges:
+    :param raw_range:
+    :param CST:
+    :param RDB:
+    :return:
+    """
+
+    LookAngles = get_look_angles(l1b, index)
+
+    # Create the GEO structure needed for the samosa pacakge
+    GEO = SAMOSAGeoVariables.from_l1(l1b, vel, hrate, ThNEcho, index)
+
+    wf = np.array(wfm[index, :]).astype("float64")
+
+    CONF.guess_epoch = epoch0[index]
+
+    # Do retrack in units of Watts as we don't have the scaling factors available for calc_sigma0
+    epoch_sec, swh, Pu, misfit, oceanlike_flag = samlib.Retrack_Samosa(
+        tau, wf, LookAngles, MaskRanges, GEO, CONF
+    )
+
+    # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
+    rng = raw_range[index] + epoch_sec * CST.c0 * 0.5
+
+    # Compute sigma0
+    sigma0, pval, cval, rval, kval = calc_sigma0(
+        None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
+        GEO.LAT, GEO.Height, GEO.Vs, l1b.classifier.transmit_power[index]
+    )
+
+    return rng, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf
+
+
+def get_look_angles(l1b, index: int):
+    """
+    Compute the lookangles based on l1b stack information
+
+    :param index: Waveform index
+
+    :return:
+    """
+    return 90. - np.linspace(
+        np.rad2deg(l1b.classifier.look_angle_start[index]),
+        np.rad2deg(l1b.classifier.look_angle_stop[index]),
+        num=int(l1b.classifier.stack_beams[index]),
+        endpoint=True
+    )
