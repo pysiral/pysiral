@@ -347,14 +347,23 @@ class SAMOSAPlus(BaseRetracker):
         :param n_records:
         """
 
-        if not SAMOSA_DEBUG_MODE:
-            parameter = [
-                "misfit", "swh", "wind_speed", "oceanlike_flag", "epoch",
-                "guess", "Pu", "rval", "kval", "pval", "cval"
+        parameter = (
+            ["misfit", "swh", "wind_speed", "oceanlike_flag"]
+            if SAMOSA_DEBUG_MODE
+            else [
+                "misfit",
+                "swh",
+                "wind_speed",
+                "oceanlike_flag",
+                "epoch",
+                "guess",
+                "Pu",
+                "rval",
+                "kval",
+                "pval",
+                "cval",
             ]
-        else:
-            parameter = ["misfit", "swh", "wind_speed", "oceanlike_flag"]
-
+        )
         for parameter_name in parameter:
             self._retracker_params[parameter_name] = np.full(n_records, np.nan, dtype=np.float32)
 
