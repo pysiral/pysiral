@@ -29,7 +29,7 @@ from pysiral.retracker import BaseRetracker
 SAMOSA_DEBUG_MODE = False
 
 
-@dataclass(frozen=True)
+@dataclass
 class SAMOSAConstants:
     """
     Physical constants used for the SAMOSA+ Waveform model
@@ -65,7 +65,7 @@ class SAMOSAFittingOptions:
     loss: str = 'linear'
 
 
-@dataclass(frozen=True)
+@dataclass
 class SAMOSALookUpTables:
     """
     Links to the lookup-table filenames in the samosa package
