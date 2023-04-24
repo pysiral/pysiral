@@ -550,7 +550,7 @@ class SAMOSAPlus(BaseRetracker):
         :param n_end_noise: noise range gate counting from 1, no oversampling
         :return:
         """
-        return compute_ThNEcho(wfm.T, n_start_noise * wf_zp, n_end_noise * wf_zp)
+        return compute_ThNEcho(wfm, n_start_noise * wf_zp, n_end_noise * wf_zp)
 
     def _get_look_angles(self, index: int):
         """
