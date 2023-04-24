@@ -7,6 +7,7 @@
 import os
 import logging
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
@@ -382,6 +383,11 @@ class SAMOSAPlus(BaseRetracker):
 
         # Run the retracker
         self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
+
+        # Extract ocean/lead properties
+
+        # Extract sea ice properties
+
         # Filter the results
         # Needs a filter option in the config file
         # if self._options.filter.use_filter:
@@ -394,41 +400,22 @@ class SAMOSAPlus(BaseRetracker):
         # How to get an option
         # opt_val = self._options.name_in_file
 
-        # Universal constants
-        CST = SAMOSAConstants()
+        # Get datastructure and initialize samosa/sampy
+        CST, OPT, RDB, CONF, LUT = self._get_samosa_dataclasses()
+        samlib = initialize_SAMOSAlib(CST, RDB, OPT, LUT)
 
-        # minimization scheme settings
-        OPT = SAMOSAFittingOptions()
+        # Further settings (l2 processor options?)
+        MaskRanges = None
 
-        # Radar altimeter specifications
-        RDB = SAMOSARadarSpecs.from_preset("cryosat2_siral_sar")
-
-        # SAMOSA retracker configuration
-        CONF = SAMOSAConfiguration(CST, RDB)
-
-        # Lookup table for resources filenames in the samosa package
-        LUT = SAMOSALookUpTables()
-
-        ### time array tau : it gives the relative time of each range gate of the radar waveform with respect a time zero
-        ### time zero corresponds at the time of the reference gate
-
-        # wf_zp = np.shape(wfm)[1] / RDB.Npulse  #### zero-padding factor of the waveform
-        # logger.info('Waveform zero padding factor is {:f}'.format(wf_zp))
-        # Nstart = RDB.Npulse * wf_zp
-        # Nend = RDB.Npulse * wf_zp
-        # dt = 1. / (RDB.Bs * wf_zp)  #### time sampling step for the array tau, it includes the zero-padding factor
-        #
-        # # print(np.arange(-(4 / 2), ((4 - 1) / 2)))
-        # # [-2. -1.  0.  1.]
-        # # Zero bin as at len()//2. So use the range at this location as the base to adjust from
-        # tau = np.arange(-(Nstart / 2) * dt, ((Nend - 1) / 2) * dt, dt)
-        #
-        # #window_del_20_hr_ku_deuso = window_del_20_hr_ku * (uso_cor_20_hr_ku + 1)
+        # Prepare input data
         window_del_20_hr_ku_deuso = self._l1b.classifier.window_delay
-        # #Raw_Elevation = alt_20_hr_ku - cst.c0 / 2 * window_del_20_hr_ku_deuso
-        # raw_range = CST.c0 * window_del_20_hr_ku_deuso * 0.5
-        # Raw_Elevation = self._l1b.time_orbit.altitude - raw_range
         tau, raw_range, Raw_Elevation, wf_zp = self._get_range_array(wfm, RDB, CST)
+        wf_norm = self._get_normalized_waveform(wfm)
+        hrate, vel = self._get_altitude_velocity_from_l1()
+        # TODO: Move n_start_noise, n_end_noise to config file
+        ThNEcho = self._compute_thermal_noise(wfm.T, wf_zp)
+        # initializing the epoch (first-guess epoch) from the waveform matrix
+        epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST, size_half_block=10)
 
         sin_index = np.where(radar_mode == 2)[0]
         if len(sin_index > 0):
@@ -436,59 +423,12 @@ class SAMOSAPlus(BaseRetracker):
             raw_range[sin_index] = range[sin_index, np.shape(wfm)[1]//2]
             logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
 
-        # computing Thermal Noise from the waveform matric
-        # NstartNoise = 2  # noise range gate counting from 1, no oversampling
-        # NendNoise = 6  # noise range gate counting from 1, no oversampling
-        # ThNEcho = compute_ThNEcho(wfm.T, NstartNoise * wf_zp, NendNoise * wf_zp)
-        ThNEcho = self._compute_thermal_noise(wfm.T, wf_zp)
-
-        # initialize_epoch relies on the waveform being in counts, not watts, so revert
-        wf_norm = np.zeros_like(wfm)
-        for rec in np.arange(np.shape(wfm)[0]):
-            wf_norm[rec, :] = (65535.0 * wfm[rec, :] / np.nanmax(wfm[rec, :])).round().astype(np.uint16)
-
-        # initializing the epoch (first-guess epoch) from the waveform matrix
-        epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST, size_half_block=10)
-
-        # initializing the SAMOSA library sampy, it's a mandatory step
-        samlib = initialize_SAMOSAlib(CST, RDB, OPT, LUT)
-
-        # n = np.shape(wfm)[0]
-        #
-        # # dummy array for interpolation of actual retracker range window
-        # x = np.arange(wfm.shape[1])
-
-        # Make an altitude rate. Currently zero as L1b rate is nan. Not used anyway with flag_slope false.
-        # hrate = np.zeros_like(self._l1b.time_orbit.altitude_rate)
-        # vel = np.sqrt(self.get_l1b_parameter("classifier", "satellite_velocity_x")**2
-        #               + self.get_l1b_parameter("classifier", "satellite_velocity_y")**2
-        #               + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
-        hrate, vel = self._get_altitude_velocity_from_l1()
-
-        # Loop over waveform indices marked as surface type
-        # GEO = type('', (), {})()
-        MaskRanges = None
         for index in indices:
-            #
-            # LookAngles = 90 - np.linspace(np.rad2deg(self._l1b.classifier.look_angle_start[index]),
-            #                               np.rad2deg(self._l1b.classifier.look_angle_stop[index]),
-            #                               num=int(self._l1b.classifier.stack_beams[index]), endpoint=True)
 
             LookAngles = self._get_look_angles(index)
 
             # Create the GEO structure needed for the samosa pacakge
             GEO = SAMOSAGeoVariables.from_l1(self._l1b, vel, hrate, ThNEcho, index)
-
-            # GEO.LAT = self._l1b.time_orbit.latitude[index]                              ### latitude in degree for the waveform under iteration
-            # GEO.LON = self._l1b.time_orbit.longitude[index]                              ### longitude in degree between -180, 180 for the waveform under iteration
-            # GEO.Height = self._l1b.time_orbit.altitude[index]                            ### Orbit Height in meter for the waveform under iteration
-            # GEO.Vs = np.squeeze(vel)[index]                       ### Satellite Velocity in m/s for the waveform under iteration
-            # GEO.Hrate = hrate[index]                   ### Orbit Height rate in m/s for the waveform under iteration
-            # GEO.Pitch = np.radians(self._l1b.time_orbit.antenna_pitch[index])     ### Altimeter Reference Frame Pitch in radiant
-            # GEO.Roll = np.radians(self._l1b.time_orbit.antenna_roll[index])       ### Altimeter Reference Frame Roll in radiant
-            # GEO.nu = 0                                                         ### Inverse of the mean square slope
-            # GEO.track_sign = 0                                                 ### if Track Ascending => -1, if Track Descending => +1, set it to zero if flag_slope=False in CONF
-            # GEO.ThN = np.squeeze(ThNEcho)[index]                                   ### Thermal Noise
 
             wf = np.array(wfm[index, :]).astype("float64")
 
@@ -507,13 +447,22 @@ class SAMOSAPlus(BaseRetracker):
                 None, Pu, CST, RDB, GEO, epoch_sec, window_del_20_hr_ku_deuso[index],
                 GEO.LAT, GEO.Height, GEO.Vs, self._l1b.classifier.transmit_power[index]
             )
-            wind_speed = func_wind_speed([sigma0])
+
+            # fig, axs = plt.subplots(2)
+            # axs[0].plot(samlib.last_wfm_ref, label="Waveform")
+            # axs[0].plot(samlib.last_wfm_model, label="Model")
+            # axs[0].legend()
+            # axs[1].plot(samlib.last_wfm_ref-samlib.last_wfm_model)
+            # axs[1].set_ylim(-0.25, 0.25)
+            # plt.savefig(r"D:\temp\samosa\wfm_fit"+f"{index:06g}.jpg", dpi=300)
+            # plt.close(fig)
+
             self._power[index] = sigma0
 
             # Store additional retracker parameters
             self.swh[index] = swh
             self.misfit[index] = misfit
-            self.wind_speed[index] = wind_speed
+            self.wind_speed[index] = func_wind_speed([sigma0])
             self.oceanlike_flag[index] = oceanlike_flag
             if not SAMOSA_DEBUG_MODE:
                 self.epoch[index] = epoch_sec
@@ -525,6 +474,7 @@ class SAMOSAPlus(BaseRetracker):
                 self.kval[index] = kval
 
         # Register additional auxiliary variables
+        # TODO: Potentially register a lot more variables (waveforms mode, mean square slope, ...)
         self.register_auxdata_output("samswh", "samosa_swh", self.swh)
         self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
 
@@ -547,6 +497,36 @@ class SAMOSAPlus(BaseRetracker):
         # Write debugging file
         if SAMOSA_DEBUG_MODE:
             self._samosa_debug_output(Raw_Elevation, raw_range, vel, wf_norm)
+
+    def _get_samosa_dataclasses(self) -> Tuple[
+        "SAMOSAConstants",
+        "SAMOSAFittingOptions",
+        "SAMOSARadarSpecs",
+        "SAMOSAConfiguration",
+        "SAMOSALookUpTables"
+    ]:
+        """
+        Get the data classes requires for the SAMOSA retracker
+
+        :return:
+        """
+
+        # Universal constants
+        cst = SAMOSAConstants()
+
+        # minimization scheme settings
+        opt = SAMOSAFittingOptions()
+
+        # Radar altimeter specifications
+        rdb = SAMOSARadarSpecs.from_preset("cryosat2_siral_sar")
+
+        # SAMOSA retracker configuration
+        conf = SAMOSAConfiguration(cst, rdb)
+
+        # Lookup table for resources filenames in the samosa package
+        lut = SAMOSALookUpTables()
+
+        return cst, opt, rdb, conf, lut
 
     @staticmethod
     def _compute_thermal_noise(wfm, wf_zp, n_start_noise: int = 2, n_end_noise: int = 6):
@@ -576,6 +556,20 @@ class SAMOSAPlus(BaseRetracker):
             num=int(self._l1b.classifier.stack_beams[index]),
             endpoint=True
         )
+
+    @staticmethod
+    def _get_normalized_waveform(wfm: npt.NDArray) -> npt.NDArray:
+        """
+        The samosa/SAMPy package expectes waveforms with 16bit scaling
+
+        :param wfm:
+
+        :return:
+        """
+        wf_norm = np.zeros_like(wfm)
+        for rec in np.arange(np.shape(wfm)[0]):
+            wf_norm[rec, :] = (65535.0 * wfm[rec, :] / np.nanmax(wfm[rec, :])).round().astype(np.uint16)
+        return wf_norm
 
     def _get_range_array(self,
                          wfm,
