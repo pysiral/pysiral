@@ -408,6 +408,7 @@ class SAMOSAPlus(BaseRetracker):
         MaskRanges = None
 
         # Prepare input data
+        # TODO: Potentially move to data class ?
         window_del_20_hr_ku_deuso = self._l1b.classifier.window_delay
         tau, raw_range, Raw_Elevation, wf_zp = self._get_range_array(wfm, RDB, CST)
         wf_norm = self._get_normalized_waveform(wfm)
@@ -498,7 +499,8 @@ class SAMOSAPlus(BaseRetracker):
         if SAMOSA_DEBUG_MODE:
             self._samosa_debug_output(Raw_Elevation, raw_range, vel, wf_norm)
 
-    def _get_samosa_dataclasses(self) -> Tuple[
+    @staticmethod
+    def _get_samosa_dataclasses() -> Tuple[
         "SAMOSAConstants",
         "SAMOSAFittingOptions",
         "SAMOSARadarSpecs",
