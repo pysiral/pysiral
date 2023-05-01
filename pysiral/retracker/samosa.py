@@ -448,7 +448,7 @@ class SAMOSAPlus(BaseRetracker):
             self.oceanlike_flag[index] = fit_result.oceanlike_flag
             if not SAMOSA_DEBUG_MODE:
                 self.epoch[index] = fit_result.epoch_sec
-                self.guess[index] = fit_result.epoch0
+                self.guess[index] = self._retracker_params["epoch0"][index]
                 self.Pu[index] = 65535.0 * fit_result.Pu/np.max(fit_result.wf)
                 self.pval[index] = fit_result.pval
                 self.cval[index] = fit_result.cval
@@ -471,7 +471,7 @@ class SAMOSAPlus(BaseRetracker):
                 range_bias = self._options.range_bias[radar_mode_index]
                 self._range[indices] -= range_bias
 
-    def _set_uncertainty(self) -> None:
+    def _set_range_uncertainty(self) -> None:
         """
         Estimate the uncertainty of the SAMOSA+ retracker result.
 
@@ -555,6 +555,7 @@ class SAMOSAPlus(BaseRetracker):
             logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
 
         # for Write debugging file
+        self._retracker_params["epoch0"] = epoch0
         if SAMOSA_DEBUG_MODE:
             self._retracker_params["raw_elevation"] = Raw_Elevation
             self._retracker_params["raw_range"] = raw_range
