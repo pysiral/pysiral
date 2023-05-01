@@ -409,7 +409,7 @@ class SAMOSAPlus(BaseRetracker):
 
         # Run the retracker
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices
-        fit_results, debug_vars = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
+        fit_results = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
 
         # Store retracker properties (including range)
         self._store_retracker_properties(fit_results, indices)
@@ -448,7 +448,7 @@ class SAMOSAPlus(BaseRetracker):
             self.oceanlike_flag[index] = fit_result.oceanlike_flag
             if not SAMOSA_DEBUG_MODE:
                 self.epoch[index] = fit_result.epoch_sec
-                self.guess[index] = fit_result.epoch0[index]
+                self.guess[index] = fit_result.epoch0
                 self.Pu[index] = 65535.0 * fit_result.Pu/np.max(fit_result.wf)
                 self.pval[index] = fit_result.pval
                 self.cval[index] = fit_result.cval
@@ -470,15 +470,6 @@ class SAMOSAPlus(BaseRetracker):
                     continue
                 range_bias = self._options.range_bias[radar_mode_index]
                 self._range[indices] -= range_bias
-
-        # Extract ocean/lead properties
-
-        # Extract sea ice properties
-
-        # Filter the results
-        # Needs a filter option in the config file
-        # if self._options.filter.use_filter:
-        #    self._filter_results()
 
     def _set_uncertainty(self) -> None:
         """
