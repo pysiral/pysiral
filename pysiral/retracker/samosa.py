@@ -6,6 +6,7 @@
 
 import os
 import logging
+import typing
 
 import matplotlib.pyplot as plt
 import multiprocessing
@@ -13,8 +14,9 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Tuple, List
 from loguru import logger
+from pysiral.l1data import L1bdataNCFile
 
 try:
     from samosa.help_functions import calc_sigma0, func_wind_speed
@@ -29,7 +31,6 @@ from pysiral.retracker import BaseRetracker
 
 # TODO: Move this to an environment variable?
 SAMOSA_DEBUG_MODE = False
-
 
 
 @dataclass
@@ -175,6 +176,28 @@ class SAMOSARadarSpecs:
             raise ValueError(f"Unknown preset name {preset} [cryosat2_siral_sar]")
 
         return cls(**kwargs)
+
+
+@dataclass
+class SAMOSAFitResult:
+    """
+    Container for output of the SAMOSA+ retracker
+    """
+    rng: float
+    nu: float
+    epoch_sec: np.ndarray
+    swh: float
+    nu: float
+    Pu: float
+    misfit: float
+    oceanlike_flag: int
+    sigma0: float
+    pval: float
+    cval: float
+    rval: float
+    kval: float
+    wf: np.ndarray
+    wf_model: np.ndarray
 
 
 class SAMOSAGeoVariables(object):
@@ -356,6 +379,7 @@ class SAMOSAPlus(BaseRetracker):
             else [
                 "misfit",
                 "swh",
+                "mean_square_slope",
                 "wind_speed",
                 "oceanlike_flag",
                 "epoch",
@@ -384,7 +408,68 @@ class SAMOSAPlus(BaseRetracker):
         """
 
         # Run the retracker
-        self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
+        # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices
+        fit_results, debug_vars = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
+
+        # Store retracker properties (including range)
+        self._store_retracker_properties(fit_results, indices)
+
+        # Set/compute uncertainty
+        self._set_range_uncertainty()
+
+        # Add range biases (when set in config file)
+        self._set_range_bias(radar_mode)
+
+        # Add auxiliary variables to the l2 data object
+        self._register_auxiliary_variables()
+
+        if SAMOSA_DEBUG_MODE:
+            self._samosa_debug_output()
+
+    def _store_retracker_properties(self, fit_results, indices) -> None:
+        """
+        Store the output of the SAMOSA+ retracker in the class.
+
+        :param fit_results:
+        :param indices:
+
+        :return:
+        """
+
+        for index, fit_result in zip(indices, fit_results):
+
+            self._range[index] = fit_result.rng
+            self._power[index] = fit_result.sigma0
+
+            # Store additional retracker parameters
+            self.swh[index] = fit_result.swh
+            self.misfit[index] = fit_result.misfit
+            self.wind_speed[index] = func_wind_speed([fit_result.sigma0])
+            self.oceanlike_flag[index] = fit_result.oceanlike_flag
+            if not SAMOSA_DEBUG_MODE:
+                self.epoch[index] = fit_result.epoch_sec
+                self.guess[index] = fit_result.epoch0[index]
+                self.Pu[index] = 65535.0 * fit_result.Pu/np.max(fit_result.wf)
+                self.pval[index] = fit_result.pval
+                self.cval[index] = fit_result.cval
+                self.rval[index] = fit_result.rval
+                self.kval[index] = fit_result.kval
+
+    def _set_range_bias(self, radar_mode) -> None:
+        """
+        Set range bias bases on radar mode (from config file)
+        :param radar_mode:
+        :return:
+        """
+
+        # Apply range bias from config files
+        if "range_bias" in self._options:
+            for radar_mode_index in np.arange(3):
+                indices = np.where(radar_mode == radar_mode_index)[0]
+                if len(indices) == 0:
+                    continue
+                range_bias = self._options.range_bias[radar_mode_index]
+                self._range[indices] -= range_bias
 
         # Extract ocean/lead properties
 
@@ -395,7 +480,59 @@ class SAMOSAPlus(BaseRetracker):
         # if self._options.filter.use_filter:
         #    self._filter_results()
 
-    def _samosa_plus_retracker(self, range, wfm, indices, radar_mode) -> None:
+    def _set_uncertainty(self) -> None:
+        """
+        Estimate the uncertainty of the SAMOSA+ retracker result.
+
+        :return:
+        """
+
+        # Set the uncertainty
+        if (
+            "uncertainty" in self._options
+            and self._options.uncertainty.type == "fixed"
+        ):
+            self._uncertainty[:] = self._options.uncertainty.value
+        else:
+            logger.warning("No uncertainty definition for SAMOSA+ range")
+
+    def _register_auxiliary_variables(self) -> None:
+        """
+        Add auxiliary variables to the L2 data object. The specific variables
+        depend on surface type.
+
+        :return:
+        """
+
+        # General auxiliary variables
+        self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
+
+        # Lead and open ocean surfaces
+        surface_type = self._options.get("surface_type", "undefined")
+        if surface_type == "polar_ocean":
+            self.register_auxdata_output("samswh", "samosa_swh", self.swh)
+            self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
+
+        # Sea ice surface types
+        elif surface_type == "sea_ice":
+            self.register_auxdata_output("samshsd", "samosa_surface_height_standard_deviation", self.swh / 4.)
+            self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
+
+        else:
+            logger.warning("No specific surface type set for SAMOSA+: No auxiliary variables added to L2")
+
+    def _samosa_plus_retracker(self, rng, wfm, indices, radar_mode) -> List[SAMOSAFitResult]:
+        """
+        Run the SAMOSA+ retracker for a set of waveforms.
+
+        NOTE: The entire data structure will likely change.
+
+        :param rng:
+        :param wfm:
+        :param indices:
+        :param radar_mode:
+        :return:
+        """
         # Range contains the range to each bin in each waveform
 
         # All retracker options need to be defined in the l2 settings file
@@ -422,15 +559,21 @@ class SAMOSAPlus(BaseRetracker):
 
         sin_index = np.where(radar_mode == 2)[0]
         if len(sin_index > 0):
-            Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - range[sin_index, np.shape(wfm)[1]//2]
-            raw_range[sin_index] = range[sin_index, np.shape(wfm)[1]//2]
+            Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - rng[sin_index, np.shape(wfm)[1]//2]
+            raw_range[sin_index] = rng[sin_index, np.shape(wfm)[1]//2]
             logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
 
+        # for Write debugging file
+        if SAMOSA_DEBUG_MODE:
+            self._retracker_params["raw_elevation"] = Raw_Elevation
+            self._retracker_params["raw_range"] = raw_range
+            self._retracker_params["vel"] = vel
+            self._retracker_params["wf_norm"] = wf_norm
+
+        # Fit SAMOSA+ waveform model and return list of results
         args = [samlib, self._l1b, wfm, tau, window_del_20_hr_ku_deuso, vel, hrate, ThNEcho,
                 CONF, epoch0, MaskRanges, raw_range, CST, RDB]
-
-        # Single process
-        fit_results = [
+        return [
             fit_samosa_waveform_model(index, *args) for index in indices
         ]
 
@@ -447,60 +590,6 @@ class SAMOSAPlus(BaseRetracker):
         # process_pool.close()
         # process_pool.join()
         # fit_results = [job.get() for job in jobs]
-
-        for index, fit_result in zip(indices, fit_results):
-            rng, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf = fit_result
-
-            # fig, axs = plt.subplots(2)
-            # axs[0].plot(samlib.last_wfm_ref, label="Waveform")
-            # axs[0].plot(samlib.last_wfm_model, label="Model")
-            # axs[0].legend()
-            # axs[1].plot(samlib.last_wfm_ref-samlib.last_wfm_model)
-            # axs[1].set_ylim(-0.25, 0.25)
-            # plt.savefig(r"D:\temp\samosa\wfm_fit"+f"{index:06g}.jpg", dpi=300)
-            # plt.close(fig)
-
-            self._range[index] = rng
-            self._power[index] = sigma0
-
-            # Store additional retracker parameters
-            self.swh[index] = swh
-            self.misfit[index] = misfit
-            self.wind_speed[index] = func_wind_speed([sigma0])
-            self.oceanlike_flag[index] = oceanlike_flag
-            if not SAMOSA_DEBUG_MODE:
-                self.epoch[index] = epoch_sec
-                self.guess[index] = epoch0[index]
-                self.Pu[index] = 65535.0 * Pu/np.max(wf)
-                self.pval[index] = pval
-                self.cval[index] = cval
-                self.rval[index] = rval
-                self.kval[index] = kval
-
-        # Register additional auxiliary variables
-        # TODO: Potentially register a lot more variables (waveforms mode, mean square slope, ...)
-        self.register_auxdata_output("samswh", "samosa_swh", self.swh)
-        self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
-
-        # Apply range bias from config files
-        if "range_bias" in self._options:
-            for radar_mode_index in np.arange(3):
-                indices = np.where(radar_mode == radar_mode_index)[0]
-                if len(indices) == 0:
-                    continue
-                range_bias = self._options.range_bias[radar_mode_index]
-                self._range[indices] -= range_bias
-
-        # Set the uncertainty
-        if (
-            "uncertainty" in self._options
-            and self._options.uncertainty.type == "fixed"
-        ):
-            self._uncertainty[:] = self._options.uncertainty.value
-
-        # Write debugging file
-        if SAMOSA_DEBUG_MODE:
-            self._samosa_debug_output(Raw_Elevation, raw_range, vel, wf_norm)
 
     @staticmethod
     def _get_samosa_dataclasses() -> Tuple[
@@ -600,33 +689,28 @@ class SAMOSAPlus(BaseRetracker):
                       + self.get_l1b_parameter("classifier", "satellite_velocity_z")**2)
         return hrate, vel
 
-    def _samosa_debug_output(self, Raw_Elevation, raw_range, vel, wf_norm) -> None:
+    def _samosa_debug_output(self) -> None:
         """
         Write a netCDF file with debugging parameters
-
-        :param Raw_Elevation:
-        :param raw_range:
-        :param vel:
-        :param wf_norm:
 
         :return:
         """
 
         outds = xr.Dataset({'SSHunc': (['time_20_ku'], self._l1b.time_orbit.altitude-self._range),
-                            'raw_elev': (['time_20_ku'], Raw_Elevation),
+                            'raw_elev': (['time_20_ku'], self._retracker_params["raw_elevation"]),
                             'range': (['time_20_ku'], self._range),
-                            'wd_range': (['time_20_ku'], raw_range),
+                            'wd_range': (['time_20_ku'], self._retracker_params["raw_range"]),
                             'epoch': (['time_20_ku'], self.epoch),
                             'guess': (['time_20_ku'], self.guess),
                             'Pu': (['time_20_ku'], self.Pu),
                             'lat': (['time_20_ku'], self._l1b.time_orbit.latitude),
                             'height': (['time_20_ku'], self._l1b.time_orbit.altitude),
-                            'vel': (['time_20_ku'], vel),
+                            'vel': (['time_20_ku'], self._retracker_params["vel"]),
                             'pval': (['time_20_ku'], self.pval),
                             'cval': (['time_20_ku'], self.cval),
                             'rval': (['time_20_ku'], self.rval),
                             'kval': (['time_20_ku'], self.kval),
-                            'wf': (['time_20_ku', 'bins'], wf_norm),
+                            'wf': (['time_20_ku', 'bins'], self._retracker_params["wf_norm"]),
                             'misfit': (['time_20_ku'], self.misfit),
                             'oceanlike_flag': (['time_20_ku'], self.oceanlike_flag),
                             'SWH': (['time_20_ku'], self.swh),
@@ -713,13 +797,16 @@ def fit_samosa_waveform_model(
         GEO.LAT, GEO.Height, GEO.Vs, l1b.classifier.transmit_power[index]
     )
 
-    return rng, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf
+    var = [rng, None, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf, None]
+    return SAMOSAFitResult(*var)
 
 
-def get_look_angles(l1b, index: int):
+def get_look_angles(l1b: L1bdataNCFile, index: int) -> npt.NDArray:
     """
     Compute the lookangles based on l1b stack information
+    # TODO: This functions raises a ValueError for NaN values in the classifiers (LRM?)
 
+    :param l1b: The level 1 data object
     :param index: Waveform index
 
     :return:
