@@ -431,7 +431,7 @@ class SAMOSAPlus(BaseRetracker):
 
         # Single process
         fit_results = [
-            self._fit_samosa_waveform_model(index, *args) for index in indices
+            fit_samosa_waveform_model(index, *args) for index in indices
         ]
 
         # TODO Investigate speeding multi-processing
