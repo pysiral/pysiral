@@ -281,7 +281,28 @@ class SAMOSAConfiguration(object):
     Configuration settings for the SAMOSA+ retracker
     """
 
-    def __init__(self, cst: "SAMOSAConstants", rdb: "SAMOSARadarSpecs") -> None:
+    def __init__(self,
+                 cst: "SAMOSAConstants",
+                 rdb: "SAMOSARadarSpecs",
+                 flag_slope: bool = False,
+                 beamsamp_factor: int = 1,
+                 wf_weighted: bool = True,
+                 N_Look_min: int = -90,
+                 N_Look_max: int = 90,
+                 guess_swh: float = 2.,
+                 guess_pu: float =  1.,
+                 guess_nu: float =  2.,
+                 lb_epoch: float =  None,
+                 lb_swh: float = -0.5,
+                 lb_pu: float = 0.2,
+                 lb_nu: float = 0.0,
+                 ub_epoch: float = None,
+                 ub_swh: float = 30.,
+                 ub_pu: float = 1.5,
+                 ub_nu: float = 1e9,
+                 rtk_type: str = 'samosa+',
+                 wght_factor: float = 1.4705
+                 ) -> None:
         """
 
         :param cst: Universal constants
@@ -290,60 +311,60 @@ class SAMOSAConfiguration(object):
 
         # flag True commands to include in the model the slope of orbit and surface
         # #(this effect usually is included in LookAngles Array)
-        self.flag_slope = False
+        self.flag_slope = flag_slope
 
         # 1 means only one beam per resolution cell is generated in the DDM, the other ones are decimated
-        self.beamsamp_factor = 1
+        self.beamsamp_factor = beamsamp_factor
 
         # flag True if the waveform under iteration is weighted
-        self.wf_weighted = True
+        self.wf_weighted = wf_weighted
 
         # number of the first Look to generate in the DDM
         # (only used if LookAngles array is not passed in input: i.e. set to  None)
-        self.N_Look_min = -90
+        self.N_Look_min = N_Look_min
 
         # number of the last Look to generate in the DDM
         # (only used if LookAngles array is not passed in input: i.e. set to  None)
-        self.N_Look_max = 90
+        self.N_Look_max = N_Look_max
 
         # first-guess SWH in meter
-        self.guess_swh = 2
+        self.guess_swh = guess_swh
 
         # first-guess Pu
-        self.guess_pu = 1
+        self.guess_pu = guess_pu
 
         # first-guess nu (only used in second step of SAMOSA+)
-        self.guess_nu = 2
+        self.guess_nu = guess_nu
 
         # lower bound on epoch in sec. If set to None, lower bound will be set to the first time in input array tau
-        self.lb_epoch = None
+        self.lb_epoch = lb_epoch
 
         # lower bound on SWH in m
-        self.lb_swh = -0.5
+        self.lb_swh = lb_swh
 
         # lower bound on Pu
-        self.lb_pu = 0.2
+        self.lb_pu = lb_pu
 
         # lower bound on nu (only used in second step of SAMOSA+)
-        self.lb_nu = 0
+        self.lb_nu = lb_nu
 
         # upper bound on epoch in sec. If set to None, upper bound will be set to the last time in input array tau
-        self.ub_epoch = None
+        self.ub_epoch = ub_epoch
 
         # upper bound on SWH in m
-        self.ub_swh = 30
+        self.ub_swh = ub_swh
 
         # upper bound on Pu
-        self.ub_pu = 1.5
+        self.ub_pu = ub_pu
 
         # upper bound on nu (only used in second step of SAMOSA+)
-        self.ub_nu = 1e9
+        self.ub_nu = ub_nu
 
         # choose between 'samosa' or 'samosa+'
-        self.rtk_type = 'samosa+'
+        self.rtk_type = rtk_type
 
         # widening factor of PTR main lobe after Weighting Window Application
-        self.wght_factor = 1.4705
+        self.wght_factor = wght_factor
 
         self.Lz = cst.c0 / (2. * rdb.Bs)
 
@@ -600,8 +621,7 @@ class SAMOSAPlus(BaseRetracker):
         # process_pool.join()
         # fit_results = [job.get() for job in jobs]
 
-    @staticmethod
-    def _get_samosa_dataclasses() -> Tuple[
+    def _get_samosa_dataclasses(self) -> Tuple[
         "SAMOSAConstants",
         "SAMOSAFittingOptions",
         "SAMOSARadarSpecs",
@@ -624,7 +644,8 @@ class SAMOSAPlus(BaseRetracker):
         rdb = SAMOSARadarSpecs.from_preset("cryosat2_siral_sar")
 
         # SAMOSA retracker configuration
-        conf = SAMOSAConfiguration(cst, rdb)
+        sampy_conf_kwargs = self._options.get("sampy_conf_kwargs", {})
+        conf = SAMOSAConfiguration(cst, rdb, **sampy_conf_kwargs)
 
         # Lookup table for resources filenames in the samosa package
         lut = SAMOSALookUpTables()
