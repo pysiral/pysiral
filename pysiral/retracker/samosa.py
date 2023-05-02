@@ -532,7 +532,8 @@ class SAMOSAPlus(BaseRetracker):
 
         # Get datastructure and initialize samosa/sampy
         CST, OPT, RDB, CONF, LUT = self._get_samosa_dataclasses()
-        samlib = initialize_SAMOSAlib(CST, RDB, OPT, LUT)
+        sampy_kwargs = self._options.get("sampy_kwargs", {})
+        samlib = initialize_SAMOSAlib(CST, RDB, OPT, LUT, **sampy_kwargs)
 
         # Further settings (l2 processor options?)
         MaskRanges = None

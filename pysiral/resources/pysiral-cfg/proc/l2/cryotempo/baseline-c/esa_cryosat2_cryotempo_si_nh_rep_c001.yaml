@@ -228,6 +228,8 @@ procsteps:
             sea_ice:
                 pyclass: SAMOSAPlus
                 options:
+                    sampy_kwargs: 
+                        disable_ocean_like_check: True
                     surface_type: "sea_ice"
                     range_bias: [0.0, 0.0, 0.0]
                     uncertainty:
