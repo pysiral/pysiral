@@ -206,7 +206,7 @@ class SAMOSAFitResult:
         plt.plot(self.tau, self.wf_model, color="#542788", lw=0.75, alpha=0.8)
         plt.axvline(self.epoch_sec, color="black", lw=0.5, ls="dashed")
         plt.annotate(f"misfit = {self.misfit:.02f}", (0.5, 0.9), xycoords="axes fraction")
-        plt.annotate(f"surface height sdev (swh/4) = {np.abs(self.swh)/4.:.02f}m", (0.5, 0.85),
+        plt.annotate(f"surface height sdev (swh/4) = {self.swh/4.:.02f}m", (0.5, 0.85),
                      xycoords="axes fraction")
         plt.annotate(r"mean square slope (1/$\nu$)" + f" = {1./self.nu:.2E}", (0.5, 0.8),
                      xycoords="axes fraction")
