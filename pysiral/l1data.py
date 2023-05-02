@@ -516,31 +516,30 @@ class L1bdataNCFile(Level1bData):
 
         super(L1bdataNCFile, self).__init__()
         self.filename = filename
-        self.nc = None
         self.time_def = NCDateNumDef()
         self.ncattrs_ignore_list = ['_NCProperties']
 
     def parse(self):
         """ populated the L1b data container from the l1bdata netcdf file """
-        self.nc = Dataset(self.filename, "r")
-        self.nc.set_auto_scale(False)
-        self._import_metadata()
-        self._import_timeorbit()
-        self._import_waveforms()
-        self._import_corrections()
-        self._import_surface_type()
-        self._import_classifier()
-        self.nc.close()
+        nc = Dataset(self.filename, "r")
+        nc.set_auto_scale(False)
+        self._import_metadata(nc)
+        self._import_timeorbit(nc)
+        self._import_waveforms(nc)
+        self._import_corrections(nc)
+        self._import_surface_type(nc)
+        self._import_classifier(nc)
+        nc.close()
 
-    def _import_metadata(self):
+    def _import_metadata(self, nc):
         """
         transfers l1b metadata attributes
         (stored as global attributes in l1bdata netCDF files)
         """
-        for attribute_name in self.nc.ncattrs():
+        for attribute_name in nc.ncattrs():
             if attribute_name in self.ncattrs_ignore_list:
                 continue
-            attribute_value = getattr(self.nc, attribute_name)
+            attribute_value = getattr(nc, attribute_name)
             # Convert timestamps back to datetime objects
             if attribute_name in ["start_time", "stop_time"]:
                 attribute_value = cn2pyd(attribute_value, self.time_def.units, calendar=self.time_def.calendar)
@@ -549,13 +548,13 @@ class L1bdataNCFile(Level1bData):
                 attribute_value = bool(attribute_value)
             self.info.set_attribute(attribute_name, attribute_value)
 
-    def _import_timeorbit(self):
+    def _import_timeorbit(self, nc):
         """
         transfers l1b timeorbit group
         (timeorbit datagroup in l1bdata netCDF files)
         """
         # Get the datagroup
-        datagroup = self.nc.groups["time_orbit"]
+        datagroup = nc.groups["time_orbit"]
 
         # Set satellite position data (measurement is nadir)
         self.time_orbit.set_position(
@@ -583,13 +582,13 @@ class L1bdataNCFile(Level1bData):
             self.time_def.units,
             calendar=self.time_def.calendar)
 
-    def _import_waveforms(self):
+    def _import_waveforms(self, nc):
         """
         transfers l1b waveform group
         (waveform datagroup in l1bdata netCDF files)
         """
         # Get the datagroup
-        datagroup = self.nc.groups["waveform"]
+        datagroup = nc.groups["waveform"]
 
         # Set waveform (measurement is nadir)
         self.waveform.set_waveform_data(
@@ -600,34 +599,34 @@ class L1bdataNCFile(Level1bData):
         is_valid = datagroup.variables["is_valid"][:].astype(bool)
         self.waveform.set_valid_flag(is_valid)
 
-    def _import_corrections(self):
+    def _import_corrections(self, nc):
         """
         transfers l1b corrections group
         (waveform corrections in l1bdata netCDF files)
         """
         # Get the datagroup
-        datagroup = self.nc.groups["correction"]
+        datagroup = nc.groups["correction"]
         # Loop over parameters
         for key in datagroup.variables.keys():
             variable = np.array(datagroup.variables[key][:])
             self.correction.set_parameter(key, variable)
 
-    def _import_surface_type(self):
+    def _import_surface_type(self, nc):
         """
         transfers l1b surface_type group
         (waveform corrections in l1bdata netCDF files)
         """
         # Get the datagroup
-        datagroup = self.nc.groups["surface_type"]
+        datagroup = nc.groups["surface_type"]
         self.surface_type.set_flag(datagroup.variables["flag"][:])
 
-    def _import_classifier(self):
+    def _import_classifier(self, nc):
         """
         transfers l1b corrections group
         (waveform corrections in l1bdata netCDF files)
         """
         # Get the data group
-        datagroup = self.nc.groups["classifier"]
+        datagroup = nc.groups["classifier"]
         # Loop over parameters
         for key in datagroup.variables.keys():
             variable = np.array(datagroup.variables[key][:])
