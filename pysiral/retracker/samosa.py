@@ -422,6 +422,9 @@ class SAMOSAPlus(BaseRetracker):
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
         fit_results = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
 
+        # [fit_result.debug_plot() for fit_result in fit_results]
+        # breakpoint()
+
         # Store retracker properties (including range)
         self._store_retracker_properties(fit_results, indices)
 
@@ -457,6 +460,7 @@ class SAMOSAPlus(BaseRetracker):
             self.misfit[index] = fit_result.misfit
             self.wind_speed[index] = func_wind_speed([fit_result.sigma0])
             self.oceanlike_flag[index] = fit_result.oceanlike_flag
+            self.mean_square_slope[index] = 1. / fit_result.nu
             if not SAMOSA_DEBUG_MODE:
                 self.epoch[index] = fit_result.epoch_sec
                 self.guess[index] = self._retracker_params["epoch0"][index]
@@ -469,7 +473,9 @@ class SAMOSAPlus(BaseRetracker):
     def _set_range_bias(self, radar_mode) -> None:
         """
         Set range bias bases on radar mode (from config file)
+
         :param radar_mode:
+
         :return:
         """
 
@@ -485,8 +491,9 @@ class SAMOSAPlus(BaseRetracker):
     def _set_range_uncertainty(self) -> None:
         """
         Estimate the uncertainty of the SAMOSA+ retracker result.
-
-        :return:
+        At the moment there is no other implementation than using
+        a fixed uncertainty value from the Level-2 processor
+        definition file.
         """
 
         # Set the uncertainty
@@ -502,12 +509,11 @@ class SAMOSAPlus(BaseRetracker):
         """
         Add auxiliary variables to the L2 data object. The specific variables
         depend on surface type.
-
-        :return:
         """
 
         # General auxiliary variables
         self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
+        self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
 
         # Lead and open ocean surfaces
         surface_type = self._options.get("surface_type", "undefined")
@@ -518,7 +524,6 @@ class SAMOSAPlus(BaseRetracker):
         # Sea ice surface types
         elif surface_type == "sea_ice":
             self.register_auxdata_output("samshsd", "samosa_surface_height_standard_deviation", self.swh / 4.)
-            self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
 
         else:
             logger.warning("No specific surface type set for SAMOSA+: No auxiliary variables added to L2")
@@ -627,22 +632,30 @@ class SAMOSAPlus(BaseRetracker):
         return cst, opt, rdb, conf, lut
 
     @staticmethod
-    def _compute_thermal_noise(wfm, wf_zp, n_start_noise: int = 2, n_end_noise: int = 6):
+    def _compute_thermal_noise(
+            wfm: npt.NDArray,
+            wf_zp: int,
+            n_start_noise: int = 2,
+            n_end_noise: int = 6
+    ) -> float:
         """
-        Compute thermal noise for all waveforms with samosa package
+        Compute thermal noise for all waveforms with samosa/sampy package from the
+        early range gated in the range window.
 
-        :param wfm:
-        :param wf_zp:
+        :param wfm: waveform power
+        :param wf_zp: zero padding waveform oversampling factor
         :param n_start_noise: noise range gate counting from 1, no oversampling
         :param n_end_noise: noise range gate counting from 1, no oversampling
-        :return:
+
+        :return: Thermal noise as computed by the `sampy` package
         """
         return compute_ThNEcho(wfm, n_start_noise * wf_zp, n_end_noise * wf_zp)
 
     @staticmethod
     def _get_normalized_waveform(wfm: npt.NDArray) -> npt.NDArray:
         """
-        The samosa/SAMPy package expectes waveforms with 16bit scaling
+        The samosa/SAMPy package expecte waveforms with 16bit scaling. Scale
+        any waveform to this range.
 
         :param wfm:
 
