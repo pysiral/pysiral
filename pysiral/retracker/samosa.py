@@ -781,6 +781,11 @@ def fit_samosa_waveform_model(
         tau, wf, look_angles, MaskRanges, GEO, CONF
     )
 
+    # Extract additional parameters from samlib instance
+    wf_model = samlib.last_wfm_model
+    wf_ref = samlib.last_wfm_ref
+    nu = samlib.last_nu
+
     # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
     rng = raw_range[index] + epoch_sec * CST.c0 * 0.5
 
@@ -790,7 +795,7 @@ def fit_samosa_waveform_model(
         GEO.LAT, GEO.Height, GEO.Vs, l1b.classifier.transmit_power[index]
     )
 
-    var = [rng, None, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf, None]
+    var = [rng, nu, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf_ref, wf_model]
     return SAMOSAFitResult(*var)
 
 
