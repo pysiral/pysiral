@@ -183,21 +183,32 @@ class SAMOSAFitResult:
     """
     Container for output of the SAMOSA+ retracker
     """
+    tau: np.ndarray
+    wf: np.ndarray
+    wf_model: np.ndarray
+    epoch_sec: float
     rng: float
     nu: float
-    epoch_sec: np.ndarray
     swh: float
-    nu: float
     Pu: float
     misfit: float
-    oceanlike_flag: int
+    oceanlike_flag: bool
     sigma0: float
     pval: float
     cval: float
     rval: float
     kval: float
-    wf: np.ndarray
-    wf_model: np.ndarray
+
+    def debug_plot(self):
+
+        plt.figure(dpi=150)
+        plt.plot(self.tau, self.wf)
+        plt.plot(self.tau, self.wf_model)
+        plt.axvline(self.epoch_sec, color="black", lw=0.5, ls="dashed")
+        plt.annotate(f"misfit={self.misfit:.02f}", (0.8, 0.8), xycoords="axes fraction")
+        plt.xlabel(r"$\tau$ (sec)")
+        plt.ylabel("Normed Waveform Power")
+        plt.show()
 
 
 class SAMOSAGeoVariables(object):
@@ -396,19 +407,19 @@ class SAMOSAPlus(BaseRetracker):
 
     def l2_retrack(self, rng, wfm, indices, radar_mode, is_valid) -> None:
         """
-        API method for the retracker interface in the Level-2 processor
+        API method for the retracker interface in the Level-2 processor.
 
-        :param rng:
-        :param wfm:
-        :param indices:
-        :param radar_mode:
-        :param is_valid:
+        :param rng: The range per waveform samples for all waveforms in the Level-1 data object
+        :param wfm: All waveforms in the Level-1 data object
+        :param indices: List of waveforms for the retracker
+        :param radar_mode: Flag indicating the radar mode for all waveforms
+        :param is_valid: Error flag for all waveforms
 
-        :return:
+        :return: None (Output is added to the instance)
         """
 
         # Run the retracker
-        # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices
+        # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
         fit_results = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
 
         # Store retracker properties (including range)
@@ -795,7 +806,7 @@ def fit_samosa_waveform_model(
         GEO.LAT, GEO.Height, GEO.Vs, l1b.classifier.transmit_power[index]
     )
 
-    var = [rng, nu, epoch_sec, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval, wf_ref, wf_model]
+    var = [tau, wf_ref, wf_model, epoch_sec, rng, nu, swh, Pu, misfit, oceanlike_flag, sigma0, pval, cval, rval, kval]
     return SAMOSAFitResult(*var)
 
 
