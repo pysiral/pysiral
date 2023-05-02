@@ -5,7 +5,7 @@ metadata:
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
-    hemisphere: north
+    hemisphere: south
 
 
 # --- Ingest auxiliary data ---
@@ -28,7 +28,7 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
+        name: antarctic_seas
         options: null
 
     # Load the
@@ -44,25 +44,18 @@ auxdata:
             exception_on_error: False
 
     - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
@@ -211,6 +204,7 @@ procsteps:
                       - "{sea_ice_concentration} >= 15.0"
                       - "{leading_edge_quality} <= 1.02"
 
+    # Retracking algorithm dependent on surface type
     # Retracking algorithm dependent on surface type
     -   module: retracker
         pyclass: Level2RetrackerContainer
