@@ -112,6 +112,7 @@ variables:
 
   mean_square_slope: 
     long_name: "mean square slope"
+    var_source_name: "samosa_mean_square_slope"
     standard_name: "sea_surface_wave_mean_square_slope"
     units: "1"
     coordinates: longitude latitude
@@ -119,6 +120,7 @@ variables:
 
   surface_height_standard_deviation:
     long_name: "surface height standard deviation"
+    var_source_name: "samosa_surface_height_standard_deviation"
     units: "m"
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
@@ -126,7 +128,30 @@ variables:
   samosa_misfit:
     long_name: "misfit of the samosa+ waveform model"
     coordinates: longitude latitude
-  
+
+  elevation:
+    long_name: "elevation"
+    comment: "relative to WGS84 ellipsoid, computed as: satellite altitude - range corrections - retracker range"
+    units: m
+    coordinates: time
+
+  elevation_uncertainty:
+    long_name: "uncertainty estimate related to elevation"
+    units: m
+    coordinates: time
+
+  sea_level_anomaly:
+    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+
+  sea_level_anomaly_uncertainty:
+    long_name: "uncertainty of instantaneous sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level standard_error
+    units: m
+    coordinates: time
+
   radar_freeboard:
     long_name: "Radar freeboard"
     units: m
