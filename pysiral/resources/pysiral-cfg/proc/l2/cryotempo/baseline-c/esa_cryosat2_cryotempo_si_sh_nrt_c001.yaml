@@ -1,7 +1,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 near real-time sea ice product"
     product_line: esa
-    record_type: tds-nrt
+    record_type: tds-si-nrt-C001
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
