@@ -646,7 +646,7 @@ class SAMOSAPlus(BaseRetracker):
                          wfm,
                          rdb: "SAMOSARadarSpecs",
                          cst: "SAMOSAConstants"
-                         ) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
+                         ) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray, float]:
 
         # zero-padding factor of the waveform
         wf_zp = np.shape(wfm)[1] / rdb.Npulse
@@ -767,7 +767,7 @@ def fit_samosa_waveform_model(
     :return:
     """
 
-    LookAngles = get_look_angles(l1b, index)
+    look_angles = get_look_angles(l1b, index)
 
     # Create the GEO structure needed for the samosa pacakge
     GEO = SAMOSAGeoVariables.from_l1(l1b, vel, hrate, ThNEcho, index)
@@ -778,7 +778,7 @@ def fit_samosa_waveform_model(
 
     # Do retrack in units of Watts as we don't have the scaling factors available for calc_sigma0
     epoch_sec, swh, Pu, misfit, oceanlike_flag = samlib.Retrack_Samosa(
-        tau, wf, LookAngles, MaskRanges, GEO, CONF
+        tau, wf, look_angles, MaskRanges, GEO, CONF
     )
 
     # SAMOSA returns a dR based upon the retracker chosen bin sampled from tau
