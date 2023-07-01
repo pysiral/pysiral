@@ -35,7 +35,7 @@ auxdata:
 
     # Load the
     - mdt:
-        name: dtu22
+        name: dtu17
         options:
             latitude_range: [45.0, 90.0]
 
