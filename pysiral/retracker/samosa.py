@@ -485,7 +485,10 @@ class SAMOSAPlus(BaseRetracker):
             self.misfit[index] = fit_result.misfit
             self.wind_speed[index] = func_wind_speed([fit_result.sigma0])
             self.oceanlike_flag[index] = fit_result.oceanlike_flag
-            self.mean_square_slope[index] = 1. / fit_result.nu
+            if fit_result.nu == 0:
+                self.mean_square_slope[index] = np.nan
+            else:
+                self.mean_square_slope[index] = 1. / fit_result.nu
             if not SAMOSA_DEBUG_MODE:
                 self.epoch[index] = fit_result.epoch_sec
                 self.guess[index] = self._retracker_params["epoch0"][index]
