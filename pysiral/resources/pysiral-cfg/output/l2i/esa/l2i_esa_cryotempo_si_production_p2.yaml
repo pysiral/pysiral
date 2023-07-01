@@ -110,48 +110,6 @@ variables:
     coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
 
-  mean_square_slope: 
-    long_name: "mean square slope"
-    var_source_name: "samosa_mean_square_slope"
-    standard_name: "sea_surface_wave_mean_square_slope"
-    units: "1"
-    coordinates: longitude latitude
-    comment: "output from SAMOSA+ retracker"
-
-  surface_height_standard_deviation:
-    long_name: "surface height standard deviation"
-    var_source_name: "samosa_surface_height_standard_deviation"
-    units: "m"
-    coordinates: longitude latitude
-    comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
-
-  samosa_misfit:
-    long_name: "misfit of the samosa+ waveform model"
-    coordinates: longitude latitude
-
-  elevation:
-    long_name: "elevation"
-    comment: "relative to WGS84 ellipsoid, computed as: satellite altitude - range corrections - retracker range"
-    units: m
-    coordinates: time
-
-  elevation_uncertainty:
-    long_name: "uncertainty estimate related to elevation"
-    units: m
-    coordinates: time
-
-  sea_level_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
-    standard_name: sea_surface_height_above_mean_sea_level
-    units: m
-    coordinates: time
-
-  sea_level_anomaly_uncertainty:
-    long_name: "uncertainty of instantaneous sea surface height"
-    standard_name: sea_surface_height_above_mean_sea_level standard_error
-    units: m
-    coordinates: time
-
   radar_freeboard:
     long_name: "Radar freeboard"
     units: m
@@ -171,12 +129,13 @@ variables:
     units: m
     ancillary_variables: sea_ice_freeboard_uncertainty
     coordinates: longitude latitude
+    comment: "freeboard of the sea ice layer"
 
   sea_ice_freeboard_uncertainty:
     long_name: "sea ice freeboard uncertainty"
     units: m
     coordinates: longitude latitude
-    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    comment: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
     
   sea_ice_freeboard_filtered:
     long_name: "smoothed freeboard of the sea ice layer"
@@ -200,12 +159,11 @@ variables:
     comment: "Uncertainty of the snow depth."
 
   region_code:
-    long_name: "Region code (adapted from NSIDC region mask)"
-    comment: "Added flag for Baltic Sea (flag value 16)"
-    valid_min: 0
-    valid_max: 21
-    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
-    flag_meanings: "inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic valtic_sea land land_outline"
-    units: "1"
-    coordinates: time
-    
+      long_name: "region id"
+      unit: 1
+      valid_min: 0
+      valid_max: 18
+      flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska"
+      flag_values: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+      comment: "Adapted from 'A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)'"
+      coordinates: time
