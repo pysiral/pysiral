@@ -702,7 +702,7 @@ class ClassifierAuxiliarySurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
 
         # CLS NN discrimination from L1
         # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
-        ocean.add(parameter.cls_nn_discrimination in [1, 10])
+        ocean.add(np.isin(parameter.cls_nn_discrimination, [1, 10]))
 
         # Ice Concentration
         ocean.add(parameter.sic < 15)
@@ -725,7 +725,7 @@ class ClassifierAuxiliarySurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
         # CLS NN discrimination from L1
         # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
         # 6 has coincident sea ice (maybe 4 is a bit contaminated too, so may need tuning)
-        lead.add(parameter.cls_nn_discrimination in [2, 4])
+        lead.add(np.isin(parameter.cls_nn_discrimination, [2, 4]))
 
         # Ice Concentration
         lead.add(parameter.sic >= 70)
@@ -747,7 +747,7 @@ class ClassifierAuxiliarySurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
 
         # CLS NN discrimination from L1
         # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
-        ice.add(parameter.cls_nn_discrimination in [2, 4, 6])
+        ice.add(np.isin(parameter.cls_nn_discrimination, [2, 4, 6]))
 
         # Ice Concentration
         ice.add(parameter.sic >= 70)
