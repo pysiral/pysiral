@@ -747,7 +747,7 @@ class ClassifierAuxiliarySurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
 
         # CLS NN discrimination from L1
         # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
-        ice.add(np.isin(parameter.cls_nn_discrimination, [2, 4, 6]))
+        ice.add(np.isin(parameter.cls_nn_discrimination, [1, 10]))
 
         # Ice Concentration
         ice.add(parameter.sic >= 70)
