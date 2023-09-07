@@ -104,57 +104,25 @@ procsteps:
             # Ocean classification is based on a low pulse peakiness
             # and the sea-ice concentration based ice mask
             ocean:
+                nn: [1, 10]
+                sic: 15.0
 
-                - radar_mode: lrm
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-
-                - radar_mode: sar
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 1.0"
-
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
             # NOTE: No LRM data over sea ice
             lead:
+                nn: [2, 4]
+                sic: 70.0
 
-                - radar_mode: sar
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= 66.0"
-                      - "{sigma0} >= 23.0"
-                      - "{leading_edge_width} <= 0.75"
-
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= 260.0"
-                      - "{sigma0} >= 24.0"
-                      - "{leading_edge_width} <= 1.05"
 
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
             # valid leading edge.
             sea_ice:
-
-                - radar_mode: sar
-                  exclude: lead
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.02"
-
-                - radar_mode: sin
-                  exclude: lead
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.02"
+                nn: [1, 10]
+                sic: 70.0
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
