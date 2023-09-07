@@ -586,18 +586,21 @@ class SAMOSAPlus(BaseRetracker):
         # TODO: Potentially move to data class ?
         window_del_20_hr_ku_deuso = self._l1b.classifier.window_delay
         tau, raw_range, Raw_Elevation, wf_zp = self._get_range_array(wfm, RDB, CST)
+
+        # Correct raw elevation and range, because window delay was preserved from L1 and we have windowed the SARIN
+        # waveforms, meaning it no longer corresponds to the middle of the window
+        sin_index = np.where(radar_mode == 2)[0]
+        if len(sin_index > 0):
+            Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - rng[sin_index, np.shape(wfm)[1]//2]
+            raw_range[sin_index] = rng[sin_index, np.shape(wfm)[1]//2]
+            logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
+
         wf_norm = self._get_normalized_waveform(wfm)
         hrate, vel = self._get_altitude_velocity_from_l1()
         # TODO: Move n_start_noise, n_end_noise to config file
         ThNEcho = self._compute_thermal_noise(wfm.T, wf_zp)
         # initializing the epoch (first-guess epoch) from the waveform matrix
         epoch0 = initialize_epoch(wf_norm.T, tau, Raw_Elevation, CST, size_half_block=10)
-
-        sin_index = np.where(radar_mode == 2)[0]
-        if len(sin_index > 0):
-            Raw_Elevation[sin_index] = self._l1b.time_orbit.altitude[sin_index] - rng[sin_index, np.shape(wfm)[1]//2]
-            raw_range[sin_index] = rng[sin_index, np.shape(wfm)[1]//2]
-            logger.info('Using L1b range array for {:d} SARIn mode records'.format(len(sin_index)))
 
         # for Write debugging file
         self._retracker_params["epoch0"] = epoch0
@@ -608,6 +611,8 @@ class SAMOSAPlus(BaseRetracker):
             self._retracker_params["wf_norm"] = wf_norm
 
         # Fit SAMOSA+ waveform model and return list of results
+        # TODO: is there an issue to be corrected here with the use of window delay for SARIN waveforms
+        # Do we need to correct that value above as well?
         args = [samlib, self._l1b, wfm, tau, window_del_20_hr_ku_deuso, vel, hrate, ThNEcho,
                 CONF, epoch0, MaskRanges, raw_range, CST, RDB]
         return [
