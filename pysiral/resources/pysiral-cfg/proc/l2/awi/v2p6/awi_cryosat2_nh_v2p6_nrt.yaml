@@ -3,7 +3,7 @@ metadata:
     product_line: awi
     record_type: nrt
     platform: cryosat2
-    version: v2p5
+    version: v2p6
     file_version_tag: "v2p6"
     hemisphere: north
 
