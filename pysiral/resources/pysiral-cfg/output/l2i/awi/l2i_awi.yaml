@@ -16,21 +16,19 @@ product_level_subfolder: l2i
 global_attributes:
   - title: "Sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level-1B baseline D before October 2021 and baseline E from October 2021 and later, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface, Mean Dynamic Topography: DTU17, Sea ice concentration: source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},Region code: Adapted from NSIDC region mask"
+  - source: "Altimetry: CryoSat-2 Level-1B ICE baseline E, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP  Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface, Mean Dynamic Topography: DTU17, Sea ice concentration: source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF Sea Ice Concentration CDR/ICDR v3.0}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR v3.0},Region code: Adapted from NSIDC region mask"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "Hendricks, S., Ricker, R. and Paul, S. (2021): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.4), https://epic.awi.de/id/eprint/54733/"
+  - references: "Hendricks, S., Ricker, R. and Paul, S. (2021): Product User Guide & Algorithm Specification: AWI CryoSat-2 Sea Ice Thickness (version 2.6), https://epic.awi.de/id/eprint/54733/"
   - tracking_id: "{uuid}"
   - conventions: "CF-1.6"
-  - product_version: "2.4"
+  - product_version: "2.6"
   - processing_level: "Level-2 intermediate (l2i)"
-  - summary: "This dataset contains Level-2 sea ice thickness data from
-  satellite observations in the northern hemisphere. Level-3 data are raw
-  observations processed to geophysical quantities, and placed onto a regular grid."
+  - summary: "This dataset contains Level-2 sea ice thickness data from   satellite observations in the northern hemisphere. Level-3 data are raw   observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p4"
+  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p6"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
@@ -104,35 +102,38 @@ variables:
     coordinates: time
 
   region_code:
-    long_name: "Region code (adapted from NSIDC region mask)"
-    comment: "Added flag for Baltic Sea (flag value 16)"
+    long_name: "region code"
+    unit: 1
+    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
     valid_min: 0
-    valid_max: 21
-    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21"
-    flag_meanings: "inland_sea_and_lakes ice_free_oceans sea_of_okhotsk bering hudson_bay st_john baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic valtic_sea land land_outline"
+    valid_max: 18
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska"
+    flag_values: "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"
     units: "1"
-    coordinates: time
+    coordinates: "time"
+    coverage_content_type: referenceInformation
 
   elevation:
-    long_name: "elevation of retracked point above WGS84 ellipsoid"
-    comment: "satellite altitude - range corrections - retracker range"
+    long_name: surface elevation"
+    comment: "satellite altitude - range corrections - retracker range (WGS84 ellipsoid)"
     units: m
     coordinates: time
 
   elevation_uncertainty:
-    long_name: "uncertainty of retracked point above WGS84 ellipsoid"
-    comment: "satellite altitude - range corrections - retracker range"
+    long_name: "uncertainty of surface elevation"
     units: m
     coordinates: time
 
   mean_sea_surface:
-    long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
+    long_name: "mean sea surface height"
+    comment: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
     standard_name: sea_surface_height_above_reference_ellipsoid
     units: m
     coordinates: time
 
   sea_level_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    long_name: "sea level anomaly"
+    comment: "departure of instantaneous sea surface height from mean sea surface height"
     standard_name: sea_surface_height_above_mean_sea_level
     units: m
     coordinates: time
@@ -142,19 +143,6 @@ variables:
     standard_name: sea_surface_height_above_mean_sea_level standard_error
     units: m
     coordinates: time
-
-  dynamic_ocean_topography:
-    long_name: "dynamic ocean topography"
-    standard_name: sea_surface_height_above_geoid
-    units: m
-    coordinates: longitude latitude
-    ancillary_variables: dynamic_ocean_topography_uncertainty
-    
-  dynamic_ocean_topography_uncertainty:
-    long_name: "dynamic ocean topography uncertainty"
-    units: m
-    coordinates: longitude latitude
-    comment: "Algorithm uncertainty (error propagation) of the dynamic ocean topography"
 
   radar_freeboard:
     long_name: "elevation of retracked point above instantaneous sea surface height"
