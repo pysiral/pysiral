@@ -326,6 +326,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
                 logger.warning(f"Cannot find range correction: {correction_name} - skipping")
                 continue
 
+            # TODO: This is not a good solution, better use linear interpolation
             # Check if NaN's, set values to zero and provide warning
             nans_indices = np.where(np.isnan(range_delta))[0]
             if len(nans_indices) > 0:
@@ -350,7 +351,7 @@ class L2ApplyRangeCorrections(Level2ProcessorStep):
             #       is already included in the general range uncertainty budget
             #
             #    2. the range correction variable `range_delta` is subtracted from the elevation
-            #       as the it has to be added to range:
+            #       as it has to be added to range:
             #
             #           elevation = altitude - (range + range_correction)
             #       ->  elevation = altitude - range - range_correction
