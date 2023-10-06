@@ -224,6 +224,12 @@ class Level2Processor(DefaultLoggingClass):
             # Init the Level-2 data object
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
 
+            # Basic sanity check
+            # TODO: This needs to be put to a better place
+            if l2.n_records < 2:
+                logger.warning(f"{source_primary_filename} has only {l2.n_records} records -> skipping")
+                continue
+
             # Overwrite the timeliness value of the l1p input data
             # (requires settings of --force-l2def-record-type option in pysiral-l2proc)
             if self._l2def.force_l2def_record_type:
