@@ -700,8 +700,13 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         :return: None
         """
         # Loop over all classifier variables defined in the processor definition file
-        for key in self.cfg.classifier_targets.keys():
-            variable_20_hz = getattr(self.nc, self.cfg.classifier_targets[key])
+        time_01, time_20 = self.nc.time_01.values, self.nc.time_20_ku.values
+        for key, target in self.cfg.classifier_targets.items():
+            if "01" in target:
+                variable_01_hz = getattr(self.nc, target)
+                variable_20_hz, _ = self.interp_01_hz_to_20_hz(variable_01_hz, time_01, time_20)
+            else:
+                variable_20_hz = getattr(self.nc, target)
             self.l1.classifier.add(variable_20_hz, key)
 
     @property
