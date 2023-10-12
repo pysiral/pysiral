@@ -1,11 +1,11 @@
 metadata:
-    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (cs2awi v2.6 reprocessed)"
+    label: "AWI CryoSat-2 operational sea-ice thickness product (cs2awi v2.6 operational)"
     product_line: awi
     record_type: rep
-    platform: sentinel3a
+    platform: cryosat2
     version: v2p6
     file_version_tag: "v2p6"
-    hemisphere: north
+    hemisphere: south
 
 
 # --- Ingest auxiliary data ---
@@ -28,14 +28,13 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
+        name: antarctic_seas
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
         name: c3s
@@ -44,25 +43,18 @@ auxdata:
             exception_on_error: False
 
     - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
@@ -86,13 +78,14 @@ procsteps:
                 leading_edge_quality: [leq, leading_edge_quality]
                 first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
+                stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 dynamic_atmosphere: [rdac, dynamic_atmosphere]
-                ionosphere_gim: [rcio, ionosphere]
+                ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]
@@ -107,16 +100,6 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
-        pyclass: ParameterRollingStatistics
-        options:
-            window_size_m: 25000.
-            statistics: ["sdev", "mean"]
-            input_parameters:
-                - pulse_peakiness
-                - leading_edge_width
-                - sigma0
 
     # --- Surface type classification algorithm ---
     #
@@ -141,6 +124,17 @@ procsteps:
     #           
     #         - ...
     #   - ...
+
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
 
     # Surface type classification algorithm
     -   module: surface
@@ -250,11 +244,11 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections: 
+            corrections:
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
-                - ionosphere_gim
+                - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
                 - ocean_loading_tide
