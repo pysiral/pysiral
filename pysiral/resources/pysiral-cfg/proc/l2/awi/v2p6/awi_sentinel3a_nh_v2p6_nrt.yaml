@@ -1,7 +1,7 @@
 metadata:
-    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
+    label: "AWI Sentinel-3A near real-time sea-ice thickness product (s3awi v2.6 reprocessed)"
     product_line: awi
-    record_type: rep
+    record_type: nrt
     platform: sentinel3a
     version: v2p6
     file_version_tag: "v2p6"
@@ -38,15 +38,16 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v3p0
             exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v3p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 

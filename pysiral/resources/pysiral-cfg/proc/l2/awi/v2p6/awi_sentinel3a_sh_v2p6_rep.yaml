@@ -1,5 +1,5 @@
 metadata:
-    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (cs2awi v2.6 reprocessed)"
+    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
     product_line: awi
     record_type: rep
     platform: sentinel3a
