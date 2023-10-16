@@ -2,6 +2,8 @@
 import contextlib
 from pathlib import Path
 
+import pytz
+import datetime
 import numpy as np
 import xarray
 import xmltodict
@@ -12,7 +14,7 @@ from scipy import interpolate
 from pysiral import __version__ as pysiral_version
 from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
-from pysiral.core.helper import parse_datetime_str
+from pysiral.core.helper import parse_datetime_str, ensure_is_utc
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc import Level1PInputHandlerBase
 
@@ -527,8 +529,10 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         # Time-Orbit Metadata
         lats = [float(metadata["first_meas_lat"]), float(metadata["last_meas_lat"])]
         lons = [float(metadata["first_meas_lon"]), float(metadata["last_meas_lon"])]
-        info.set_attribute("start_time", parse_datetime_str(metadata["first_meas_time"][4:]))
-        info.set_attribute("stop_time", parse_datetime_str(metadata["last_meas_time"][4:]))
+        start_time = parse_datetime_str(metadata["first_meas_time"][4:])
+        stop_time = parse_datetime_str(metadata["last_meas_time"][4:])
+        info.set_attribute("start_time", start_time.replace(tzinfo=None))
+        info.set_attribute("stop_time", stop_time.replace(tzinfo=None))
         info.set_attribute("lat_min", np.amin(lats))
         info.set_attribute("lat_max", np.amax(lats))
         info.set_attribute("lon_min", np.amin(lons))
@@ -716,3 +720,5 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         :return: Representation of an empty object (None)
         """
         return None
+
+
