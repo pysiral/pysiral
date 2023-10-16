@@ -42,7 +42,8 @@ input_adapter:
 
         # Translates the timeliness nomenclature to pysiral conventions
         timeliness_dict:
-            NT: nrt
+            NT: rep
+            NR: nrt
 
         # Translates instrument operate mode nomenclature to pysiral conventions
         # From the documentation in the netCDF global attributes:
