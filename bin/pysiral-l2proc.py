@@ -55,7 +55,8 @@ def pysiral_l2proc_time_range_job(args):
     hemisphere = product_def.l2def.metadata.hemisphere
 
     # Specifically add an output handler
-    product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
+    for l2_output in args.l2_output:
+        product_def.add_output_definition(l2_output, overwrite_protection=args.overwrite_protection)
 
     # --- Get the period for the Level-2 Processor ---
     # Evaluate the input arguments
@@ -281,17 +282,28 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
     @property
     def l2_output(self):
-        l2_output = self._args.l2_output
-        filename = self.pysiral_config.get_settings_file("output", "l2i", l2_output)
-        if filename is not None:
-            return filename
-        msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
-        msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-        l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
-        for l2_output_id in l2_output_ids:
-            msg = f'{msg}    - {l2_output_id}' + "\n"
-        self.error.add_error("invalid-l2-outputdef", msg)
-        self.error.raise_on_error()
+        filenames = []
+        for l2_output in self._args.l2_output.split(";"):
+            filename = self.pysiral_config.get_settings_file("output", "l2i", l2_output)
+
+            if filename is None:
+                msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
+                msg = msg + " \nRecognized Level-2 output definitions ids:\n"
+                l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
+                for l2_output_id in l2_output_ids:
+                    msg = f'{msg}    - {l2_output_id}' + "\n"
+                self.error.add_error("invalid-l2-outputdef", msg)
+                self.error.raise_on_error()
+            else:
+                filenames.append(filename)
+
+        if not filenames:
+            msg = "No valid output definition file found for argument: %s"
+            msg %= (str(self._args.l3_output))
+            self.error.add_error("invalid-outputdef", msg)
+            self.error.raise_on_error()
+
+        return filenames
 
     @property
     def force_l2def_record_type(self):
