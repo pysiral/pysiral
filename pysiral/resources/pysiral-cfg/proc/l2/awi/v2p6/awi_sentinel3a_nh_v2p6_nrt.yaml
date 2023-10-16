@@ -81,7 +81,7 @@ procsteps:
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
-                sigma0: [sig, sigma0]
+                sigma0_ocean: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
