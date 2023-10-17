@@ -529,8 +529,8 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         # Time-Orbit Metadata
         lats = [float(metadata["first_meas_lat"]), float(metadata["last_meas_lat"])]
         lons = [float(metadata["first_meas_lon"]), float(metadata["last_meas_lon"])]
-        start_time = parse_datetime_str(metadata["first_meas_time"][4:])
-        stop_time = parse_datetime_str(metadata["last_meas_time"][4:])
+        start_time = parse_datetime_str(metadata["first_meas_time"])
+        stop_time = parse_datetime_str(metadata["last_meas_time"])
         info.set_attribute("start_time", start_time.replace(tzinfo=None))
         info.set_attribute("stop_time", stop_time.replace(tzinfo=None))
         info.set_attribute("lat_min", np.amin(lats))
