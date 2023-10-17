@@ -91,7 +91,7 @@ Surface Type
 
 import copy
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, List, Union, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -1129,11 +1129,18 @@ class L1bWaveforms(object):
         return self._get_wfm_shape(0)
 
     @property
-    def radar_modes(self):
+    def radar_modes(self) -> Union[str, List[str]]:
         if self._radar_mode is None:
             return "none"
         flags = np.unique(self._radar_mode)
         return [self.radar_mode_def.get_name(flag) for flag in flags]
+
+    @property
+    def num_radar_modes(self) -> int:
+        radar_modes = self.radar_modes
+        if isinstance(radar_modes, list):
+            return len(radar_modes)
+        return 0
 
     @property
     def dimdict(self):
