@@ -21,7 +21,7 @@ platforms:
         docstr: Cryosphere radar altimeter mission of the European Space Agency (ESA)
         sensor: SIRAL
         time_coverage:
-            start: 2010-11-01T00:00:00.00
+            start: 2010-07-17T00:00:00.00
             end: null
         sea_ice_radar_modes: ["sar", "sin"]
         orbit_max_latitude: 88.0
