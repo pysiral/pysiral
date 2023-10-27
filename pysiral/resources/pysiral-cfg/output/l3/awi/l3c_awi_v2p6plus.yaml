@@ -29,7 +29,7 @@ global_attributes:
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "TBD"
+  - references: "Hendricks, S., & Paul, S. (2023). Product User Guide & Algorithm Specification - AWI CryoSat-2 Sea Ice Thickness (version 2.6), Issued by Zenodo (v2.6). https://doi.org/10.5281/zenodo.10044554"
   - tracking_id: "{uuid}"
   - Conventions:  "CF-1.7 ACDD-1.3"
   - product_version: "2.6"
