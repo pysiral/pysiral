@@ -580,7 +580,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
             is_tiepoint = np.full(l2.n_records, False)
             is_tiepoint[ssh_tiepoint_indices] = True
             distance_threshold = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", np.nan)
-            edges_only = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", False)
+            edges_only = self.cfg.options.tiepoint_maxdist_filter.get("edges_only", False)
             filter_mask = self.tiepoint_maxdist_filter(l2, edges_only, distance_threshold, l2.footprint_spacing)
             mask = np.logical_or(mask, filter_mask)
 
