@@ -31,7 +31,7 @@ global_attributes:
   - geospatial_vertical_max: 0.0
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
-  - product_baseline: "B"
+  - product_baseline: "C"
   - product_version: "001"
   - Conventions: "CF-1.8"
   - cycle_number: "{cycle}"
@@ -175,11 +175,13 @@ variables:
     comment: "Provided for the user to remove if necessary for their use case."
 
   region_code:
-      long_name: "region id"
-      unit: 1
-      valid_min: 0
-      valid_max: 18
-      flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska"
-      flag_values: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      comment: "Adapted from 'A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)'"
-      coordinates: time
+    long_name: "region code"
+    unit: 1
+    comment: "Source: Northern hemisphere: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC), Southern hemisphere: longitude sectors south of 40S (Parkinson, C. L. and Cavalieri, D. J. 2012)"
+    valid_min: 0
+    valid_max: 104
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea"
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
+    units: "1"
+    coordinates: "time"
+    coverage_content_type: referenceInformation

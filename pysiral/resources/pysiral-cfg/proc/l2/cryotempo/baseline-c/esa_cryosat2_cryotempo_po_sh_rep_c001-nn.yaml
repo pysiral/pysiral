@@ -28,7 +28,16 @@ metadata:
 auxdata:
     - region:
         name: antarctic_seas
-        options: null
+        options:
+            # default value for all points outside the regions
+            ice_free_ocean_code: 0
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [100, "Indian Ocean", 20.0,  90.0, -40.0]
+                - [101, "Western Pacific Ocean", 90.0, 160.0, -40.0]
+                - [102, "Ross Sea", 160.0,  -130.0, -40.0]
+                - [103, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
+                - [104, "Weddell Sea", -60.0,  20.0, -40.0]
 
     # Load the
     - mss:
