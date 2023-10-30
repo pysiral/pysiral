@@ -5,13 +5,14 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from typing import Union
+from typing import Union, List
 
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
 from loguru import logger
 
+from pysiral.core.config import RadarModes
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
@@ -601,6 +602,75 @@ class L1PLeadingEdgeQuality(L1PProcItem):
     def required_options(self):
         return ["leading_edge_lookup_window", "first_maximum_normalized_power_threshold",
                 "minimum_valid_first_maximum_index"]
+
+
+class L1PLateTail2PeakPower(L1PProcItem):
+
+    def __init__(self, **cfg) -> None:
+        super(L1PLateTail2PeakPower, self).__init__(**cfg)
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Compute late tail to peakiness and add to l1 data object
+        :param l1:
+
+        :return:
+        """
+
+        # Init the classifier
+        ltpp = np.full(l1.info.n_records, np.nan)
+
+        # The power threshold depends on the radar mode
+        late_tail_window_idx_dict = self.cfg.get("late_tail_window_idx", None)
+        if late_tail_window_idx_dict is None:
+            logger.error(f"settings `late_tail_window_idx` is not defined")
+            return
+
+        # Loop over all waveforms and compute ltpp
+        wfm = l1.waveform.power
+        radar_mode = l1.waveform.radar_mode
+        invalid_radar_mode_encountered = 0
+        for i in np.arange(wfm.shape[0]):
+            late_tail_window_idx = late_tail_window_idx_dict.get(
+                RadarModes.get_name(radar_mode[i]), None
+            )
+            if not late_tail_window_idx:
+                ltpp[i] = np.nan
+                invalid_radar_mode_encountered += 1
+                continue
+            ltpp[i] = self.late_tail_to_peak_power(wfm[i, :], late_tail_window_idx)
+
+        if invalid_radar_mode_encountered > 0:
+            logger.warning(
+                f"Could not compute ltpp for {invalid_radar_mode_encountered} waveforms [invalid radar mode]"
+            )
+        l1.classifier.add(ltpp, "late_tail_to_peak_power")
+
+    @staticmethod
+    def late_tail_to_peak_power(
+            wfm: npt.NDArray,
+            late_tail_window_idxs: List[int]
+    ) -> float:
+        """
+
+        :param wfm:
+        :param late_tail_window_idxs:
+        :return:
+        """
+
+        # Get Properties
+        wfm_max_power = bn.nanmax(wfm)
+        wfm_max_power_index = bn.nanargmax(wfm)
+        late_tail_window = np.arange(
+            wfm_max_power_index + late_tail_window_idxs[0],
+            wfm_max_power_index + late_tail_window_idxs[1] + 1
+        )
+
+        # Do not compute ltpp if late tail window is incomplete
+        if (late_tail_window >= wfm.shape[0]).any():
+            return np.nan
+
+        return bn.nanmean(wfm[late_tail_window])/wfm_max_power
 
 
 class L1PLeadingEdgePeakiness(L1PProcItem):

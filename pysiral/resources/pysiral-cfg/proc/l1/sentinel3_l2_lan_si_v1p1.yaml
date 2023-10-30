@@ -80,6 +80,9 @@ input_adapter:
             swh_ocean: swh_water_20_ku
             brightness_temperature_238: tb_238_01
             brightness_temperature_365: tb_365_01
+            first_year_ice_class_membership: first_year_ice_class_01_ku
+            multi_year_ice_class_membership: multi_year_ice_class_01_ku
+            open_water_class_membership: open_water_class_01_ku
 
 
 
@@ -90,7 +93,7 @@ output_handler:
         local_machine_def_tag: l2_lan_si
         version:
             source_file_tag: l2_lan_si
-            version_file_tag: v1p0
+            version_file_tag: v1p1
 
 
 # Settings for the pre-processor
@@ -191,3 +194,15 @@ level1_preprocessor:
                 # Power threshold for the normalized waveform
                 # that the first maximum has to exceed
                 window_size: 3
+
+            # Compute the Late Tail to Peak Power Parameter
+            # This class will one parameter to the l1p classifier data group:
+            #  1. late tail to peak power
+            - label: "Compute Late Tail to Peak Power (LTPP)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLateTail2PeakPower
+              options:
+                # Index Window after maximum power for late tail power
+                late_tail_window_idx:
+                  sar: [50, 70]
