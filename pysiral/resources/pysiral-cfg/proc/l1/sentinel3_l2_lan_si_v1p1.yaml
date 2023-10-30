@@ -206,3 +206,15 @@ level1_preprocessor:
                 # Index Window after maximum power for late tail power
                 late_tail_window_idx:
                   sar: [50, 70]
+
+
+            # Compute the Late Tail to Peak Power Parameter
+            # This class will three parameter to the l1p classifier data group:
+            #  1. trailing_edge_exponential_decay
+            #  2. trailing_edge_exponential_fit_rmse
+            #  3. trailing_edge_median_absolute_diff
+            - label: "Compute Trailing Edge Decay"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PTrailingEdgeDecay
+              options: {}

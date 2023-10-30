@@ -5,11 +5,13 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from typing import Union, List
+from typing import Union, List, Tuple
 
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
+from scipy.signal import argrelmin
+from scipy.optimize import curve_fit
 from loguru import logger
 
 from pysiral.core.config import RadarModes
@@ -447,7 +449,7 @@ class L1PWaveformPeakiness(L1PProcItem):
         # Get the waveform
         n_records, n_range_bins = waveforms.shape
         if waveforms.dtype.kind != "f":
-            waveforms = waveforms.astype(np.float)
+            waveforms = waveforms.astype(np.float64)
 
         # Get the norm (default is range bins)
         norm = n_range_bins if self.norm_is_range_bin else 1.0
@@ -474,7 +476,7 @@ class L1PWaveformPeakiness(L1PProcItem):
         # Get the waveform
         n_range_bins = waveform.shape
         if waveform.dtype.kind != "f":
-            waveform = waveform.astype(np.float)
+            waveform = waveform.astype(np.float64)
         waveform = waveform[self.skip_first_range_bins:]
 
         # Get the norm (default is range bins)
@@ -671,6 +673,93 @@ class L1PLateTail2PeakPower(L1PProcItem):
             return np.nan
 
         return bn.nanmean(wfm[late_tail_window])/wfm_max_power
+
+
+class L1PTrailingEdgeDecay(L1PProcItem):
+
+    def __init__(self, **cfg) -> None:
+        super(L1PTrailingEdgeDecay, self).__init__(**cfg)
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Compute late tail to peakiness and add to l1 data object
+        :param l1:
+
+        :return:
+        """
+
+        # Init the classifier
+        teed = np.full(l1.info.n_records, np.nan)  # Trailing Edge Exponential Decay
+        teefe = np.full(l1.info.n_records, np.nan)  # Trailing Edge Exponential Fit Error
+        temad = np.full(l1.info.n_records, np.nan)  # Trailing Eedge Median Absolute Diff
+
+        # Loop over all waveforms and compute ltpp
+        wfm = l1.waveform.power
+        for i in np.arange(wfm.shape[0]):
+            teed[i], teefe[i], temad[i] = self.trailing_edge_exponential_decay(wfm[i, :])
+
+        l1.classifier.add(teed, "trailing_edge_exponential_decay")
+        l1.classifier.add(teefe, "trailing_edge_exponential_fit_quality")
+        l1.classifier.add(temad, "trailing_edge_mean_absolute_deviation")
+
+    def trailing_edge_exponential_decay(self, wfm: npt.NDArray) -> Tuple[float, float, float]:
+        """
+
+        :param wfm:
+        :return:
+        """
+
+        # Get Trailing Edge (defined as after the full max) (?)
+        wfm_max_power_index = bn.nanargmax(wfm)
+        wfm_trailing_edge = wfm[wfm_max_power_index:]
+
+        # Get indices of trailing edge lower envelope
+        idx_le = self.get_trailing_edge_lower_envelope(wfm_trailing_edge)
+
+        # Fit the exponential function
+        wfm_trailing_edge_fit = wfm_trailing_edge[idx_le]
+        x_values = np.arange(0, wfm_trailing_edge.size)
+        try:
+            popt, pcov = curve_fit(
+                simple_exponential_decay,
+                idx_le,
+                wfm_trailing_edge_fit,
+                p0=[wfm[wfm_max_power_index], 1e-2, 0.0]
+            )
+            exp_fit = simple_exponential_decay(x_values, *popt)
+        except TypeError:
+            return np.nan, np.nan, np.nan
+
+
+        # import matplotlib.pyplot as plt
+        # x = np.arange(wfm.size)
+        # plt.plot(x, wfm)
+        # # plt.scatter(x[wfm_max_power_index:], wfm_trailing_edge, color="none", edgecolors="red")
+        # # plt.plot(idx_le + wfm_max_power_index, wfm_trailing_edge[idx_le])
+        # plt.scatter(idx_le + wfm_max_power_index, wfm_trailing_edge[idx_le], color="none", edgecolors="red")
+        # plt.plot(x_values + wfm_max_power_index, exp_fit)
+        # plt.show()
+
+        # Compute parameters
+        mad = bn.nanmedian(np.abs(exp_fit-wfm_trailing_edge))
+        fit_quality = coeficient_of_determination(wfm_trailing_edge, exp_fit)
+        return popt[1], fit_quality, mad
+
+    @staticmethod
+    def get_trailing_edge_lower_envelope(wfm_trailing_edge: npt.NDArray) -> npt.NDArray:
+        """
+
+        :param wfm_trailing_edge:
+        :return:
+        """
+
+        idx_le = argrelmin(wfm_trailing_edge)[0]
+        idx_le = np.insert(idx_le, 0, 0)
+        idx_le = np.insert(idx_le, len(idx_le), wfm_trailing_edge.size-1)
+
+        wfm_change = [wfm_trailing_edge[idx_le[1:]]-wfm_trailing_edge[idx_le[0:-1]]][0]
+        wfm_change = np.insert(wfm_change, 0, -1)
+        return idx_le[wfm_change < 0.0]
 
 
 class L1PLeadingEdgePeakiness(L1PProcItem):
@@ -968,3 +1057,23 @@ class EnvisatWaveformParameter(object):
                 self.peakiness[i] = float(max(wave)) / float(sum(wave)) * self._n_range_bins
             except ZeroDivisionError:
                 self.peakiness[i] = np.nan
+
+
+def simple_exponential_decay(x, scale, decay, offset):
+    return scale * np.exp(-decay * x) + offset
+
+
+def coeficient_of_determination(y, y_fit):
+    """
+    Compute coeficient of determination
+    :param y:
+    :param y_fit:
+    :return:
+    """
+    # residual sum of squares
+    ss_res = bn.nansum((y - y_fit) ** 2)
+
+    # total sum of squares
+    ss_tot = bn.nansum((y - bn.nanmean(y)) ** 2)
+
+    return 1 - (ss_res / ss_tot)
