@@ -377,6 +377,11 @@ variables:
     units: "m"
     coordinates: time
 
+  total_range_correction:
+    long_name: "sum of all range corrections"
+    units: "m"
+    coordinates: time
+
   flag_waveform_is_valid:
     long_name: "Level-1 flag indicating issues with the waveform"
     valid_min: 0
