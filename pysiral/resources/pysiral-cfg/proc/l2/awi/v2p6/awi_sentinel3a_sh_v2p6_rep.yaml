@@ -245,7 +245,8 @@ procsteps:
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
-                - ionosphere_gim
+                - ionosphere
+                - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
                 - ocean_loading_tide
