@@ -184,7 +184,8 @@ procsteps:
                 pyclass: SAMOSAPlus
                 options:
                     # if arrays than [lrm, sar, sin]
-                    range_bias: [0.0, 0.0, 0.0]
+                    # Empirically derived for Baseline C by DTU
+                    range_bias: [-50.0, -50.0, -50.0]
                     uncertainty:
                         type: fixed
                         value: 0.1
@@ -208,7 +209,8 @@ procsteps:
                 pyclass: SAMOSAPlus
                 options:
                     # if arrays than [lrm, sar, sin]
-                    range_bias: [0.0, 0.0, 0.0]
+                    # Empirically derived for Baseline C by DTU
+                    range_bias: [-50.0, -50.0, -50.0]
                     uncertainty:
                         type: fixed
                         value: 0.1
