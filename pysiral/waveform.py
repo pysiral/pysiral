@@ -10,6 +10,7 @@ from typing import Union, List, Tuple
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
+from dataclasses import dataclass
 from scipy.signal import argrelmin
 from scipy.optimize import curve_fit
 from loguru import logger
@@ -675,10 +676,55 @@ class L1PLateTail2PeakPower(L1PProcItem):
         return bn.nanmean(wfm[late_tail_window])/wfm_max_power
 
 
-class L1PTrailingEdgeDecay(L1PProcItem):
+@dataclass
+class WFMTrailingEdgeData:
+    """ Data Class for L1PTrailingEdgeProperties """
+    waveform: np.ndarray
+    first_maximum_index: int
+    trailing_edge_idx: np.ndarray
+    trailing_edge_normed: np.ndarray
+    trailing_edge_lower_envelope_idx: np.ndarray
+    trailing_edge_scale: float
+    trailing_edge_offset: float
+
+    def debug_plot_trailing_edge_fit(
+            self,
+            fit_range_gates,
+            fit_values,
+            fit_func_label=""
+    ) -> None:
+
+        import matplotlib.pyplot as plt
+        x = np.arange(self.waveform.size)
+        plt.figure(dpi=150)
+
+        # Plot Waveform
+        plt.plot(x, self.waveform, label="Waveform")
+
+        # Plot Trailing Edge Lower Envelope
+        idx_lower_envelope = self.trailing_edge_lower_envelope_idx + self.first_maximum_index
+        plt.scatter(
+            idx_lower_envelope,
+            self.waveform[idx_lower_envelope],
+            color="none", edgecolors="red", label="Trailing Edge Lower Envelope"
+        )
+
+        # Plot Fit
+        plt.plot(
+            fit_range_gates,
+            fit_values,
+            label=fit_func_label
+        )
+        plt.legend()
+        plt.xlabel("Range Gate")
+        plt.ylabel("Waveform Power Units")
+        plt.show()
+
+
+class L1PTrailingEdgeProperties(L1PProcItem):
 
     def __init__(self, **cfg) -> None:
-        super(L1PTrailingEdgeDecay, self).__init__(**cfg)
+        super(L1PTrailingEdgeProperties, self).__init__(**cfg)
 
     def apply(self, l1: Level1bData) -> None:
         """
@@ -689,61 +735,96 @@ class L1PTrailingEdgeDecay(L1PProcItem):
         """
 
         # Init the classifier
-        teed = np.full(l1.info.n_records, np.nan)  # Trailing Edge Exponential Decay
+        tew = np.full(l1.info.n_records, np.nan)  # Trailing Edge Width
+        teq = np.full(l1.info.n_records, np.nan)  # Trailing Edge Quality
+        ted = np.full(l1.info.n_records, np.nan)  # Trailing Edge (exponential) Decay
         teefe = np.full(l1.info.n_records, np.nan)  # Trailing Edge Exponential Fit Error
-        temad = np.full(l1.info.n_records, np.nan)  # Trailing Eedge Median Absolute Diff
+        temad = np.full(l1.info.n_records, np.nan)  # Trailing Edge Median Absolute Diff
 
-        # Loop over all waveforms and compute ltpp
+        fmi = l1.classifier.get_parameter("first_maximum_index", raise_on_error=False)
+        if fmi is None:
+            logger.error("Classifier `first_maximum_index` not available -> skipping L1PTrailingEdgeDecay")
+            return
+
+        # Loop over all waveforms and compute parameters
         wfm = l1.waveform.power
         for i in np.arange(wfm.shape[0]):
-            teed[i], teefe[i], temad[i] = self.trailing_edge_exponential_decay(wfm[i, :])
+            trailing_edge_data = self.get_waveform_trailing_edge_data(wfm[i, :], fmi[i])
+            ted[i], teefe[i], temad[i] = self.trailing_edge_exponential_decay(trailing_edge_data)
 
-        l1.classifier.add(teed, "trailing_edge_exponential_decay")
+        l1.classifier.add(ted, "trailing_edge_exponential_decay")
         l1.classifier.add(teefe, "trailing_edge_exponential_fit_quality")
         l1.classifier.add(temad, "trailing_edge_mean_absolute_deviation")
 
-    def trailing_edge_exponential_decay(self, wfm: npt.NDArray) -> Tuple[float, float, float]:
+    def get_waveform_trailing_edge_data(
+            self,
+            waveform: np.ndarray,
+            first_maximum_index: int
+    ) -> WFMTrailingEdgeData:
         """
+        Aggregate all necesary trailing edge properties in a data class.
 
-        :param wfm:
+        :param waveform:
+        :param first_maximum_index:
+
         :return:
         """
 
-        # Get Trailing Edge (defined as after the full max) (?)
-        wfm_max_power_index = bn.nanargmax(wfm)
-        wfm_trailing_edge = wfm[wfm_max_power_index:]
+        trailing_edge_idx = np.arange(first_maximum_index, waveform.size)
+        waveform_trailing_edge = waveform[trailing_edge_idx]
 
         # Get indices of trailing edge lower envelope
-        idx_le = self.get_trailing_edge_lower_envelope(wfm_trailing_edge)
+        # Only the lower envelope will be used to compute offset/scale
+        trailing_edge_lower_envelope_idx = self.get_trailing_edge_lower_envelope(waveform_trailing_edge)
+        wfm_trailing_edge_le = waveform_trailing_edge[trailing_edge_lower_envelope_idx]
+        trailing_edge_offset = wfm_trailing_edge_le[-1]
+        trailing_edge_scale = wfm_trailing_edge_le[0] - trailing_edge_offset
+        trailing_edge_normed = (waveform_trailing_edge - trailing_edge_offset) / trailing_edge_scale
 
-        # Fit the exponential function
-        wfm_trailing_edge_fit = wfm_trailing_edge[idx_le]
-        x_values = np.arange(0, wfm_trailing_edge.size)
+        return WFMTrailingEdgeData(
+            waveform,
+            first_maximum_index,
+            trailing_edge_idx,
+            trailing_edge_normed,
+            trailing_edge_lower_envelope_idx,
+            trailing_edge_scale,
+            trailing_edge_offset,
+        )
+
+    @staticmethod
+    def trailing_edge_exponential_decay(data: WFMTrailingEdgeData) -> Tuple[float, float, float]:
+        """
+        Fit an exponential function to the normed lower envelope of the trailing edge
+        and return exponential decay factor, fit quality and residual to full trailing
+        edge power
+
+        :param data: Pre-compiled trailing edge data
+
+        :raises None:
+
+        :return:
+        """
+
+        # Execute the fit
         try:
-            popt, pcov = curve_fit(
+            popt, pcov, *_ = curve_fit(
                 simple_exponential_decay,
-                idx_le,
-                wfm_trailing_edge_fit,
-                p0=[wfm[wfm_max_power_index], 1e-2, 0.0]
+                data.trailing_edge_lower_envelope_idx,
+                data.trailing_edge_normed[data.trailing_edge_lower_envelope_idx],
             )
-            exp_fit = simple_exponential_decay(x_values, *popt)
-        except TypeError:
+        except (TypeError, RuntimeError):
             return np.nan, np.nan, np.nan
 
+        # Debug Plot
+        x_values = np.arange(data.trailing_edge_idx.size)
+        fit_values = data.trailing_edge_scale * simple_exponential_decay(x_values, *popt) + data.trailing_edge_offset
 
-        # import matplotlib.pyplot as plt
-        # x = np.arange(wfm.size)
-        # plt.plot(x, wfm)
-        # # plt.scatter(x[wfm_max_power_index:], wfm_trailing_edge, color="none", edgecolors="red")
-        # # plt.plot(idx_le + wfm_max_power_index, wfm_trailing_edge[idx_le])
-        # plt.scatter(idx_le + wfm_max_power_index, wfm_trailing_edge[idx_le], color="none", edgecolors="red")
-        # plt.plot(x_values + wfm_max_power_index, exp_fit)
-        # plt.show()
+        data.debug_plot_trailing_edge_fit(data.trailing_edge_idx, fit_values, "Exponential Decay")
 
-        # Compute parameters
-        mad = bn.nanmedian(np.abs(exp_fit-wfm_trailing_edge))
-        fit_quality = coeficient_of_determination(wfm_trailing_edge, exp_fit)
-        return popt[1], fit_quality, mad
+        # # Compute parameters
+        # mad = bn.nanmedian(np.abs(trailing_edge_fit-wfm_trailing_edge))
+        # fit_quality = coeficient_of_determination(wfm_trailing_edge, trailing_edge_fit)
+        # return popt[1], fit_quality, mad
 
     @staticmethod
     def get_trailing_edge_lower_envelope(wfm_trailing_edge: npt.NDArray) -> npt.NDArray:
@@ -1059,8 +1140,16 @@ class EnvisatWaveformParameter(object):
                 self.peakiness[i] = np.nan
 
 
-def simple_exponential_decay(x, scale, decay, offset):
-    return scale * np.exp(-decay * x) + offset
+def simple_exponential_decay(x, decay):
+    return np.exp(-decay * x)
+
+
+def linear_slope(x, slope, offset):
+    return slope * x + offset
+
+
+def inverse_power(x, decay):
+    return x ** (-1.0*decay)
 
 
 def coeficient_of_determination(y, y_fit):

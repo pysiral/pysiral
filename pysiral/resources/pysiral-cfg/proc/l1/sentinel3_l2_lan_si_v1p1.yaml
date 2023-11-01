@@ -216,5 +216,5 @@ level1_preprocessor:
             - label: "Compute Trailing Edge Decay"
               stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
-              class_name: L1PTrailingEdgeDecay
+              class_name: L1PTrailingEdgeProperties
               options: {}
