@@ -309,6 +309,7 @@ class L2iDataHandler(object):
             lookup_directories = self.get_lookup_directory(year, month)
             for lookup_directory in lookup_directories:
                 if not Path(lookup_directory).is_dir():
+                    logger.error(f"l2i directory does not exist: {lookup_directory}")
                     continue
                 l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
                 result = list(Path(lookup_directory).glob(l2i_pattern))
