@@ -185,7 +185,8 @@ procsteps:
                 options:
                     # if arrays than [lrm, sar, sin]
                     # Empirically derived for Baseline C by DTU
-                    range_bias: [-50.0, -50.0, -50.0]
+                    range_bias: [-0.05, -0.05, -0.05]
+                    surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed
                         value: 0.1
@@ -210,7 +211,8 @@ procsteps:
                 options:
                     # if arrays than [lrm, sar, sin]
                     # Empirically derived for Baseline C by DTU
-                    range_bias: [-50.0, -50.0, -50.0]
+                    range_bias: [-0.05, -0.05, -0.05]
+                    surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed
                         value: 0.1
