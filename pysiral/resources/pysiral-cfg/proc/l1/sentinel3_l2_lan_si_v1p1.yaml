@@ -208,13 +208,19 @@ level1_preprocessor:
                   sar: [50, 70]
 
 
-            # Compute the Late Tail to Peak Power Parameter
-            # This class will three parameter to the l1p classifier data group:
-            #  1. trailing_edge_exponential_decay
-            #  2. trailing_edge_exponential_fit_rmse
-            #  3. trailing_edge_median_absolute_diff
+            # Compute Trailing Edge Properties
+            # This class will several parameter to the l1p classifier data group:
+            #  1. trailing_edge_decay (Müller et al., 2023)
+            #  2. trailing_edge_decay_fit_quality
+            #  3. trailing_edge_decay_median_absolute_diff (Müller et al., 2023)
+            #  4. trailing_edge_width
+            #  5. trailing_edge_quality
             - label: "Compute Trailing Edge Decay"
               stage: post_ocean_segment_extraction
               module_name: pysiral.waveform
               class_name: L1PTrailingEdgeProperties
-              options: {}
+              options:
+                valid_first_maximum_index_range: [10, 246]
+                trailing_edge_width:
+                  oversample_factor: 10
+                  trailing_edge_end_power_treshold_normed: 0.05
