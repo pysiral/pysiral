@@ -391,6 +391,7 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
 
         # Save filepath
         self.filepath = filepath
+        logger.info(f"- {filepath.parts[-2]}")
 
         # Create an empty Level-1 data object
         self.l1 = Level1bData()

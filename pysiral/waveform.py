@@ -21,6 +21,8 @@ from pysiral.core.config import RadarModes
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
+from pysiral.core.clocks import StopWatch
+from pysiral.core.functions import inverse_power
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
@@ -777,8 +779,11 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         valid_first_maximum_index_range = self.cfg.get("valid_first_maximum_index_range")
         trailing_edge_width_kwargs = self.cfg.get("trailing_edge_width")
 
+        timer = StopWatch().start()
+
         # Loop over all waveforms and compute parameters
         wfm = l1.waveform.power
+
         for i in np.arange(wfm.shape[0]):
 
             # Collect data and sanity check
@@ -803,6 +808,8 @@ class L1PTrailingEdgeProperties(L1PProcItem):
             tew[i] = self.get_trailing_edge_width(trailing_edge_data, **trailing_edge_width_kwargs)
             teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
 
+        timer.stop()
+        logger.debug(f"- Trailing edge properties computed in {timer.get_seconds():.3f} seconds")
         logger.debug(f"- Trailing edge decay fit as failed for {decay_fit_has_failed.sum()} waveforms")
 
         l1.classifier.add(ted, "trailing_edge_decay")
@@ -854,17 +861,22 @@ class L1PTrailingEdgeProperties(L1PProcItem):
 
         # Execute the fit
         # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
-        p0 = [data.first_maximum_power, 1e-01, 0.0] if self.last_fit_popt is None else self.last_fit_popt
+        p0 = \
+            [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
+            if self.last_fit_popt is None else self.last_fit_popt
+
         try:
             popt, pcov, *_ = curve_fit(
                 inverse_power,
-                data.trailing_edge_lower_envelope_idx + 1,
+                data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
                 data.waveform_trailing_edge_subset_lower_envelope,
                 p0=p0,
                 bounds=([0.0, 0.0, -np.inf], [np.inf, np.inf, np.inf]),
                 method="trf",
-                ftol=1e-7,
-                max_nfev=150*data.trailing_edge_lower_envelope_idx.size
+                ftol=1e-3,
+                gtol=1e-3,
+                xtol=1e-4,
+                loss="linear"
             )
         # Catch fit errors
         except (TypeError, RuntimeError):
@@ -872,7 +884,7 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         self.last_fit_popt = popt
 
         # Compute fit
-        x_values = np.arange(data.trailing_edge_size) + 1
+        x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
         data.trailing_edge_fit = inverse_power(x_values, *popt)
 
         # Compute parameters
@@ -1291,10 +1303,6 @@ class EnvisatWaveformParameter(object):
                 self.peakiness[i] = np.nan
 
 
-def inverse_power(x: np.ndarray, scale: float, decay: float, offset: float) -> np.ndarray:
-    return scale * x ** (-1.0*decay) + offset
-
-
 def coeficient_of_determination(y: np.ndarray, y_fit: np.ndarray) -> float:
     """
     Compute coeficient of determination
@@ -1311,3 +1319,6 @@ def coeficient_of_determination(y: np.ndarray, y_fit: np.ndarray) -> float:
     ss_tot = bn.nansum((y - bn.nanmean(y)) ** 2)
 
     return 1 - (ss_res / ss_tot)
+
+
+
