@@ -8,6 +8,7 @@ Created on Fri Jul 01 13:07:10 2016
 from typing import Union, List, Tuple
 from schema import Schema, And
 
+import multiprocessing
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
@@ -784,29 +785,47 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         # Loop over all waveforms and compute parameters
         wfm = l1.waveform.power
 
-        for i in np.arange(wfm.shape[0]):
+        n_processes = multiprocessing.cpu_count()
+        logger.info(f"- Use multi-processing with {n_processes} workers")
 
-            # Collect data and sanity check
-            trailing_edge_data = self.get_waveform_trailing_edge_data(wfm[i, :])
-            if (
-                    valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
-                    valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
-            ):
-                continue
+        chunk_min_size = 10
+        chunk_size = int(np.ceil(float(wfm.shape[0])/float(n_processes)))
+        chunk_size = max(chunk_size, chunk_min_size)
+        chunks = np.arange(0, wfm.shape[0]-1, chunk_size)
 
-            # Compute decay factor and trailing edge fit
-            trailing_edge_data = self.get_trailing_edge_decay(trailing_edge_data)
 
-            # In this case the fitting algorithm has failed
-            if trailing_edge_data.trailing_edge_fit is None:
-                # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
-                continue
-            ted[i], tedfq[i], temad[i] = trailing_edge_data.decay_parameters
-            decay_fit_has_failed[i] = False
+        breakpoint()
 
-            # Compute other trailing edge properties
-            tew[i] = self.get_trailing_edge_width(trailing_edge_data, **trailing_edge_width_kwargs)
-            teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
+        # process_pool = multiprocessing.Pool(n_processes)
+        # jobs = [process_pool.apply_async(fit_samosa_waveform_model, args=(index, *args)) for index in indices]
+        # process_pool.close()
+        # process_pool.join()
+        # fit_results = [job.get() for job in jobs]
+
+
+        # for i in np.arange(wfm.shape[0]):
+        #
+        #     # Collect data and sanity check
+        #     trailing_edge_data = self.get_waveform_trailing_edge_data(wfm[i, :])
+        #     if (
+        #             valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
+        #             valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
+        #     ):
+        #         continue
+        #
+        #     # Compute decay factor and trailing edge fit
+        #     trailing_edge_data = self.get_trailing_edge_decay(trailing_edge_data)
+        #
+        #     # In this case the fitting algorithm has failed
+        #     if trailing_edge_data.trailing_edge_fit is None:
+        #         # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
+        #         continue
+        #     ted[i], tedfq[i], temad[i] = trailing_edge_data.decay_parameters
+        #     decay_fit_has_failed[i] = False
+        #
+        #     # Compute other trailing edge properties
+        #     tew[i] = self.get_trailing_edge_width(trailing_edge_data, **trailing_edge_width_kwargs)
+        #     teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
 
         timer.stop()
         logger.debug(f"- Trailing edge properties computed in {timer.get_seconds():.3f} seconds")

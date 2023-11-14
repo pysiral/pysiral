@@ -6,14 +6,45 @@ Created on Tue Jul 21 18:04:43 2015
 TODO: Is this still being used?
 """
 
-import calendar
 import time
+import calendar
+import multiprocessing
+from typing import List, Tuple
 from datetime import datetime
 
 import numpy as np
 from dateutil import parser as dtparser
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, rrule
+
+
+def get_multiprocessing_1d_array_chunks(
+        array_size: int,
+        chunk_min_size: int = None,
+        n_processes: int = None,
+) -> List[Tuple[int, int]]:
+    """
+    Break down an array in chunks for multiprocessing.
+
+    :param array_size:
+    :param chunk_min_size:
+    :param n_processes:
+
+    :return: List with start and end index for each chunk
+    """
+
+    n_cpus = multiprocessing.cpu_count()
+    n_processes = n_processes if n_processes is not None else n_cpus
+
+    chunk_size = int(np.ceil(float(array_size) / float(n_processes)))
+    if chunk_size is not None:
+        chunk_size = max(chunk_size, chunk_min_size)
+
+    chunks = np.arange(0, array_size, chunk_size, dtype=int)
+    if chunks[-1] != array_size-1:
+        chunks = np.append(chunks, [array_size-1])
+
+    return zip(chunks[:-1], chunks[1:]-1)
 
 
 def parse_datetime_str(dtstr):
