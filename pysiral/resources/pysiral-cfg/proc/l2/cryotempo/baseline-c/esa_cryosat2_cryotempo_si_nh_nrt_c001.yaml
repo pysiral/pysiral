@@ -28,14 +28,14 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: antarctic_seas
+        name: nsidc_2021
         options: null
 
     # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [-90., -45.0]
+            latitude_range: [45.0, 90.0]
 
     - sic:
         name: osisaf-operational
@@ -46,19 +46,24 @@ auxdata:
                 pole_hole_fill_value: 100.
 
     - sitype:
-         name: fyi_default
-         options: 
-             uncertainty_default: 0.1
+        name: osisaf-operational
+        options:
+            fill_valid_sic_gaps: True
+            exception_on_error: False
 
     - snow:
-         name: icdc_climatology_south
-         options:
-             snow_density: 300.
-             snow_density_uncertainty: 50.
-             smooth_snow_depth: true
-             smooth_filter_width_m: 25000.0
-             exception_on_error: True
+        name: clim_w99amsr2
+        options:
+            daily_scaling: True
+            fyi_correction_factor: 0.5
+            exception_on_error: False
 
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
 
 # --- Level-2 processor steps ---
 # 
@@ -140,7 +145,7 @@ procsteps:
 
     # Surface type classification algorithm
     # SH: This is the surface type classification algorithm for the 
-    #     the new ESA CCI climate data record. There are now significantly
+    #     new ESA CCI climate data record. There are now significantly
     #     more sea ice waveform 
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
