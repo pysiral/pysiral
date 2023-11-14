@@ -4,7 +4,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
     product_line: esa
-    record_type: tds-po-rep-C001-threshold
+    record_type: tds-po-rep-C001
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
@@ -185,7 +185,8 @@ procsteps:
                 options:
                     # if arrays than [lrm, sar, sin]
                     # Empirically derived for Baseline C by DTU
-                    range_bias: [-0.05, -0.05, -0.05]
+                    # Positive bias is SUBTRACTED from range
+                    range_bias: [0.05, 0.05, 0.05]
                     surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed
@@ -211,7 +212,8 @@ procsteps:
                 options:
                     # if arrays than [lrm, sar, sin]
                     # Empirically derived for Baseline C by DTU
-                    range_bias: [-0.05, -0.05, -0.05]
+                    # Positive bias is SUBTRACTED from range
+                    range_bias: [0.05, 0.05, 0.05]
                     surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed

@@ -4,7 +4,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
     product_line: esa
-    record_type: tda-po-rep-C001
+    record_type: tds-po-rep-C001
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
