@@ -5,10 +5,11 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 from schema import Schema, And
 
 import multiprocessing
+import multiprocessing.pool
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
@@ -24,6 +25,7 @@ from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
 from pysiral.core.clocks import StopWatch
 from pysiral.core.functions import inverse_power
+from pysiral.core.helper import get_1d_array_multiprocessing_chunks
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
@@ -755,87 +757,239 @@ class L1PTrailingEdgeProperties(L1PProcItem):
 
     def __init__(self, **cfg) -> None:
         super(L1PTrailingEdgeProperties, self).__init__(**cfg)
-        # TODO: This is test (better use cerberus as schema doesn't seem to be maintained?)
+        # TODO: To be implemented as a Pydantic v2 data model
         self.config_validation_schema.validate(cfg)
-        self.last_fit_popt = None
 
     def apply(self, l1: Level1bData) -> None:
         """
         Compute late tail to peakiness and add to l1 data object
-        :param l1:
+
+        :param l1: The Level-1 data container
 
         :return:
         """
 
-        # Init the classifier
-        tew = np.full(l1.info.n_records, np.nan)  # Trailing Edge Width
-        teq = np.full(l1.info.n_records, np.nan)  # Trailing Edge Quality
-        ted = np.full(l1.info.n_records, np.nan)  # Trailing Edge Decay (Müller et al. 2023)
-        tedfq = np.full(l1.info.n_records, np.nan)  # Trailing Edge Decay Fit Quality (Müller et al. 2023)
-        temad = np.full(l1.info.n_records, np.nan)  # Trailing Edge Median Absolute Diff (Müller et al. 2023)
-
-        decay_fit_has_failed = np.full(l1.info.n_records, True)
-
-        # Get input
+        # Get configuration
         valid_first_maximum_index_range = self.cfg.get("valid_first_maximum_index_range")
         trailing_edge_width_kwargs = self.cfg.get("trailing_edge_width")
+        use_multiprocessing = self.cfg.get("use_multiprocessing", False)
 
         timer = StopWatch().start()
 
         # Loop over all waveforms and compute parameters
         wfm = l1.waveform.power
-
-        n_processes = multiprocessing.cpu_count()
-        logger.info(f"- Use multi-processing with {n_processes} workers")
-
-        chunk_min_size = 10
-        chunk_size = int(np.ceil(float(wfm.shape[0])/float(n_processes)))
-        chunk_size = max(chunk_size, chunk_min_size)
-        chunks = np.arange(0, wfm.shape[0]-1, chunk_size)
-
-
-        breakpoint()
-
-        # process_pool = multiprocessing.Pool(n_processes)
-        # jobs = [process_pool.apply_async(fit_samosa_waveform_model, args=(index, *args)) for index in indices]
-        # process_pool.close()
-        # process_pool.join()
-        # fit_results = [job.get() for job in jobs]
-
-
-        # for i in np.arange(wfm.shape[0]):
-        #
-        #     # Collect data and sanity check
-        #     trailing_edge_data = self.get_waveform_trailing_edge_data(wfm[i, :])
-        #     if (
-        #             valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
-        #             valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
-        #     ):
-        #         continue
-        #
-        #     # Compute decay factor and trailing edge fit
-        #     trailing_edge_data = self.get_trailing_edge_decay(trailing_edge_data)
-        #
-        #     # In this case the fitting algorithm has failed
-        #     if trailing_edge_data.trailing_edge_fit is None:
-        #         # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
-        #         continue
-        #     ted[i], tedfq[i], temad[i] = trailing_edge_data.decay_parameters
-        #     decay_fit_has_failed[i] = False
-        #
-        #     # Compute other trailing edge properties
-        #     tew[i] = self.get_trailing_edge_width(trailing_edge_data, **trailing_edge_width_kwargs)
-        #     teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
+        result = WaveFormTrailingEdgeParameter(
+            wfm,
+            valid_first_maximum_index_range,
+            trailing_edge_width_kwargs
+        )
 
         timer.stop()
         logger.debug(f"- Trailing edge properties computed in {timer.get_seconds():.3f} seconds")
-        logger.debug(f"- Trailing edge decay fit as failed for {decay_fit_has_failed.sum()} waveforms")
+        logger.debug(f"- Trailing edge decay fit as failed for {result.params.decay_fit_has_failed.sum()} waveforms")
 
-        l1.classifier.add(ted, "trailing_edge_decay")
-        l1.classifier.add(tedfq, "trailing_edge_decay_fit_quality")
-        l1.classifier.add(temad, "trailing_edge_mean_absolute_deviation")
-        l1.classifier.add(tew, "trailing_edge_width")
-        l1.classifier.add(teq, "trailing_edge_quality")
+        l1.classifier.add(result.params.ted, "trailing_edge_decay")
+        l1.classifier.add(result.params.tedfq, "trailing_edge_decay_fit_quality")
+        l1.classifier.add(result.params.temad, "trailing_edge_mean_absolute_deviation")
+        l1.classifier.add(result.params.tew, "trailing_edge_width")
+        l1.classifier.add(result.params.teq, "trailing_edge_quality")
+
+    @staticmethod
+    def _compute_single_processing(*args) -> "WaveFormTrailingEdgeParameterData":
+        """
+        Compute waveform trailing edge parameter on a single thread
+
+        :param args: Arguments to WaveFormTrailingEdgeParameter
+
+        :return: Waveform trailing edge parameter object
+        """
+        return WaveFormTrailingEdgeParameter(*args).params
+
+    # @staticmethod
+    # def _compute_multi_processing(
+    #         waveforms: npt.NDArray,
+    #         valid_first_maximum_index_range: List,
+    #         trailing_edge_width_kwargs: Dict
+    # ) -> "WaveFormTrailingEdgeParameterData":
+    #     """
+    #     Compute waveform trailing edge parameter on a single thread
+    #
+    #     :param args: Arguments to WaveFormTrailingEdgeParameter
+    #
+    #     :return: Waveform trailing edge parameter object
+    #     """
+    #
+    #     chunk_index_list, n_processes = get_1d_array_multiprocessing_chunks(waveforms.shape[0])
+    #     logger.info(f"- Use multi-processing with {n_processes} workers")
+    #     logger.disable("pysiral")
+    #     with multiprocessing.pool.ThreadPool(n_processes) as process_pool:
+    #         result = process_pool.map(
+    #             WaveFormTrailingEdgeParameter,
+    #             args=(
+    #                 waveforms,
+    #                 valid_first_maximum_index_range,
+    #                 trailing_edge_width_kwargs
+    #             )
+    #         )
+    #     # process_pool.close()
+    #     # process_pool.join()
+    #     # results = [job.get() for job in jobs]
+    #     logger.enable("pysiral")
+    #     #
+    #     # params = results[0].params
+    #     # for result in results[1:]:
+    #     #     params.add(result.params)
+    #     return params
+
+    @property
+    def config_validation_schema(self) -> Schema:
+
+        return Schema(
+            {
+                "use_multiprocessing": bool,
+                "valid_first_maximum_index_range": And(
+                    list,
+                    lambda x: all(item > 0 for item in x)
+                ),
+                "trailing_edge_width": {
+                    "trailing_edge_end_power_treshold_normed": And(
+                        float,
+                        lambda x: 0.0 <= x <= 1.0,
+                    ),
+                    "oversample_factor": And(
+                        int,
+                        lambda x: x > 0
+                    )
+                },
+            },
+            error=f"Invalid config for {self.__class__.__name__}:\n "+"{}"
+        )
+
+
+class WaveFormTrailingEdgeParameterData(object):
+
+    def __init__(self, n_records: int) -> None:
+        """
+
+        :param n_records:
+        """
+        self.tew = np.full(n_records, np.nan)  # Trailing Edge Width
+        self.teq = np.full(n_records, np.nan)  # Trailing Edge Quality
+        self.ted = np.full(n_records, np.nan)  # Trailing Edge Decay (Müller et al. 2023)
+        self.tedfq = np.full(n_records, np.nan)  # Trailing Edge Decay Fit Quality (Müller et al. 2023)
+        self.temad = np.full(n_records, np.nan)
+        self.decay_fit_has_failed = np.full(n_records, True)
+
+    def add(self, other_params: "WaveFormTrailingEdgeParameterData") -> None:
+
+        self.tew = np.append(self.tew, other_params.tew)
+        self.teq = np.append(self.teq, other_params.teq)
+        self.ted = np.append(self.ted, other_params.ted)
+        self.tedfq = np.append(self.tedfq, other_params.tedfq)
+        self.temad = np.append(self.temad, other_params.temad)
+        self.decay_fit_has_failed = np.append(self.decay_fit_has_failed, other_params.decay_fit_has_failed)
+
+
+class WaveFormTrailingEdgeDecayFit(object):
+
+    def __init__(self, fit_kwargs=None):
+        self.default_fit_kwargs = {
+            "method": "trf",
+            "ftol": 1e-3,
+            "gtol": 1e-3,
+            "xtol": 1e-4,
+            "loss": "linear",
+            "bounds": ([0.0, 0.0, -np.inf], [np.inf, np.inf, np.inf])
+        }
+        self.fit_kwargs = self.default_fit_kwargs
+        if isinstance(fit_kwargs, dict):
+            self.fit_kwargs.update(fit_kwargs)
+
+    def fit(self, data):
+        p0 = [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)]
+        try:
+            popt, pcov, *_ = curve_fit(
+                inverse_power,
+                data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+                data.waveform_trailing_edge_subset_lower_envelope,
+                p0=p0,
+                **self.fit_kwargs
+            )
+            return popt
+        # Catch fit errors
+        except (TypeError, RuntimeError):
+            return None
+
+
+class WaveFormTrailingEdgeParameter(object):
+
+    def __init__(self,
+                 waveforms: npt.NDArray,
+                 valid_first_maximum_index_range: List,
+                 trailing_edge_width_kwargs: Dict,
+                 fit_kwargs: Dict = None
+                 ):
+        """
+        Algorithm class to compute trailing edge parameter
+
+        :param waveforms: An array of waveforms.
+        :param valid_first_maximum_index_range: F
+        :param trailing_edge_width_kwargs:
+
+        :raises None:
+        """
+
+        # Input data and config
+        self.waveforms = waveforms
+        self.valid_first_maximum_index_range = valid_first_maximum_index_range
+        self.trailing_edge_width_kwargs = trailing_edge_width_kwargs
+
+        # Fit properties
+        self.last_fit_popt = None
+
+        # Result property
+        self.params = WaveFormTrailingEdgeParameterData(waveforms.shape[0])
+
+        # Compute the parameter
+        self._compute()
+
+    def _compute(self) -> None:
+        """
+        Loop over all waveforms and compute the parameters
+        """
+
+        waveform_data_stack = []
+        for i in np.arange(self.waveforms.shape[0]):
+
+            # Collect data and sanity check
+            trailing_edge_data = self.get_waveform_trailing_edge_data(self.waveforms[i, :])
+            if (
+                    self.valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
+                    self.valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
+            ):
+                continue
+            waveform_data_stack.append(trailing_edge_data)
+
+        fit_class = WaveFormTrailingEdgeDecayFit()
+        pool = multiprocessing.Pool(multiprocessing.cpu_count())
+        results = list(pool.imap(fit_class.fit, waveform_data_stack))
+
+        for i in np.arange(self.waveforms.shape[0]):
+
+            trailing_edge_data = waveform_data_stack[i]
+            popt = results[i]
+
+            breakpoint()
+            # In this case the fitting algorithm has failed
+            if trailing_edge_data.trailing_edge_fit is None:
+                # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
+                continue
+            self.params.ted[i], self.params.tedfq[i], self.params.temad[i] = trailing_edge_data.decay_parameters
+            self.params.decay_fit_has_failed[i] = False
+
+            # Compute other trailing edge properties
+            self.params.tew[i] = self.get_trailing_edge_width(trailing_edge_data, **self.trailing_edge_width_kwargs)
+            self.params.teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
 
     def get_waveform_trailing_edge_data(
             self,
@@ -865,58 +1019,53 @@ class L1PTrailingEdgeProperties(L1PProcItem):
             trailing_edge_lower_envelope_idx,
         )
 
-    def get_trailing_edge_decay(self, data: WFMTrailingEdgeData) -> WFMTrailingEdgeData:
-        """
-        Fit inverse power law to the lower envelope of the trailing edge
-        and compute decay factor, fit quality and residual to trailing
-        edge power. Result will be added to data class.
-
-        :param data: Pre-compiled trailing edge data
-
-        :raises None:
-
-        :return: Data class with updated results
-        """
-
-        # Execute the fit
-        # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
-        p0 = \
-            [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
-            if self.last_fit_popt is None else self.last_fit_popt
-
-        try:
-            popt, pcov, *_ = curve_fit(
-                inverse_power,
-                data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
-                data.waveform_trailing_edge_subset_lower_envelope,
-                p0=p0,
-                bounds=([0.0, 0.0, -np.inf], [np.inf, np.inf, np.inf]),
-                method="trf",
-                ftol=1e-3,
-                gtol=1e-3,
-                xtol=1e-4,
-                loss="linear"
-            )
-        # Catch fit errors
-        except (TypeError, RuntimeError):
-            return data
-        self.last_fit_popt = popt
-
-        # Compute fit
-        x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
-        data.trailing_edge_fit = inverse_power(x_values, *popt)
-
-        # Compute parameters
-        data.trailing_edge_decay = popt[1]  # second parameter in inverse power function
-        data.trailing_edge_decay_mean_absolute_difference = bn.nanmedian(
-            np.abs(data.trailing_edge_fit - data.waveform_trailing_edge_subset)
-        )
-        data.trailing_edge_decay_fit_quality = coeficient_of_determination(
-            data.waveform_trailing_edge_subset,
-            data.trailing_edge_fit
-        )
-
-        return data
+    # def get_trailing_edge_decay(self, data: WFMTrailingEdgeData) -> WFMTrailingEdgeData:
+    #     """
+    #     Fit inverse power law to the lower envelope of the trailing edge
+    #     and compute decay factor, fit quality and residual to trailing
+    #     edge power. Result will be added to data class.
+    #
+    #     :param data: Pre-compiled trailing edge data
+    #
+    #     :raises None:
+    #
+    #     :return: Data class with updated results
+    #     """
+    #
+    #     # Execute the fit
+    #     # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
+    #     p0 = \
+    #         [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
+    #         if self.last_fit_popt is None else self.last_fit_popt
+    #
+    #     try:
+    #         popt, pcov, *_ = curve_fit(
+    #             inverse_power,
+    #             data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+    #             data.waveform_trailing_edge_subset_lower_envelope,
+    #             p0=p0,
+    #             **self.fit_kwargs
+    #         )
+    #     # Catch fit errors
+    #     except (TypeError, RuntimeError):
+    #         return data
+    #     self.last_fit_popt = popt
+    #
+    #     # Compute fit
+    #     x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
+    #     data.trailing_edge_fit = inverse_power(x_values, *popt)
+    #
+    #     # Compute parameters
+    #     data.trailing_edge_decay = popt[1]  # second parameter in inverse power function
+    #     data.trailing_edge_decay_mean_absolute_difference = bn.nanmedian(
+    #         np.abs(data.trailing_edge_fit - data.waveform_trailing_edge_subset)
+    #     )
+    #     data.trailing_edge_decay_fit_quality = coeficient_of_determination(
+    #         data.waveform_trailing_edge_subset,
+    #         data.trailing_edge_fit
+    #     )
+    #
+    #     return data
 
     @staticmethod
     def get_trailing_edge_width(
@@ -957,15 +1106,6 @@ class L1PTrailingEdgeProperties(L1PProcItem):
             return np.nan
         trailing_edge_end_range_gate = range_gates_oversampled[trailing_edge_end_idx][0]
 
-        # import matplotlib.pyplot as plt
-        # plt.figure(dpi=150)
-        # plt.plot(data.waveform_trailing_edge_idx, data.waveform_trailing_edge_subset, lw=0.2)
-        # plt.scatter(data.waveform_trailing_edge_idx, data.trailing_edge_fit, s=10)
-        # plt.scatter(range_gates_oversampled, trailing_edge_oversampled, s=40, color="none", edgecolors="black")
-        # plt.axhline(trailing_edge_end_power_treshold_normed*data.first_maximum_power, lw=0.2)
-        # plt.axvline(trailing_edge_end_range_gate, lw=0.2)
-        # plt.show()
-
         return trailing_edge_end_range_gate - data.trailing_edge_start_idx
 
     @staticmethod
@@ -1000,29 +1140,6 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         wfm_change = [wfm_trailing_edge[idx_le[1:]]-wfm_trailing_edge[idx_le[0:-1]]][0]
         wfm_change = np.insert(wfm_change, 0, -1)
         return idx_le[wfm_change < 0.0]
-
-    @property
-    def config_validation_schema(self) -> Schema:
-
-        return Schema(
-            {
-                "valid_first_maximum_index_range": And(
-                    list,
-                    lambda x: all(item > 0 for item in x)
-                ),
-                "trailing_edge_width": {
-                    "trailing_edge_end_power_treshold_normed": And(
-                        float,
-                        lambda x: 0.0 <= x <= 1.0,
-                    ),
-                    "oversample_factor": And(
-                        int,
-                        lambda x: x > 0
-                    )
-                },
-            },
-            error=f"Invalid config for {self.__class__.__name__}:\n "+"{}"
-        )
 
 
 class L1PLeadingEdgePeakiness(L1PProcItem):

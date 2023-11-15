@@ -220,6 +220,7 @@ level1_preprocessor:
               module_name: pysiral.waveform
               class_name: L1PTrailingEdgeProperties
               options:
+                use_multiprocessing: True
                 valid_first_maximum_index_range: [10, 246]
                 trailing_edge_width:
                   oversample_factor: 10
