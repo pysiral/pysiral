@@ -685,8 +685,9 @@ class _PysiralPackageConfiguration(object):
     def local_machine_def_filepath(self):
         if self.current_config_target != "PACKAGE":
             return self.config_path / self._LOCAL_MACHINE_DEF_FILE
-        msg = "Current config path is `PACKAGE`, lookup directory for local_machine_def.yaml changed to `USERHOME`"
-        logger.warning(msg)
+        # TODO: Disable warnings that are run on simple import (as long as everything runs)
+        # msg = "Current config path is `PACKAGE`, lookup directory for local_machine_def.yaml changed to `USERHOME`"
+        # logger.warning(msg)
         return self.userhome_config_path / self._LOCAL_MACHINE_DEF_FILE
 
     @property
