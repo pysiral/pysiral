@@ -10,6 +10,7 @@ from schema import Schema, And
 
 import multiprocessing
 import multiprocessing.pool
+from joblib import Parallel, delayed
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +26,6 @@ from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
 from pysiral.core.clocks import StopWatch
 from pysiral.core.functions import inverse_power
-from pysiral.core.helper import get_1d_array_multiprocessing_chunks
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
@@ -633,7 +633,7 @@ class L1PLateTail2PeakPower(L1PProcItem):
         # The power threshold depends on the radar mode
         late_tail_window_idx_dict = self.cfg.get("late_tail_window_idx", None)
         if late_tail_window_idx_dict is None:
-            logger.error(f"settings `late_tail_window_idx` is not defined")
+            logger.error("settings `late_tail_window_idx` is not defined")
             return
 
         # Loop over all waveforms and compute ltpp
@@ -926,8 +926,7 @@ class WaveFormTrailingEdgeParameter(object):
     def __init__(self,
                  waveforms: npt.NDArray,
                  valid_first_maximum_index_range: List,
-                 trailing_edge_width_kwargs: Dict,
-                 fit_kwargs: Dict = None
+                 trailing_edge_width_kwargs: Dict
                  ):
         """
         Algorithm class to compute trailing edge parameter
@@ -956,8 +955,10 @@ class WaveFormTrailingEdgeParameter(object):
     def _compute(self) -> None:
         """
         Loop over all waveforms and compute the parameters
+        # TODO: Need documentation and potentially move to sub-modules
         """
 
+        waveform_index_list = []
         waveform_data_stack = []
         for i in np.arange(self.waveforms.shape[0]):
 
@@ -969,17 +970,24 @@ class WaveFormTrailingEdgeParameter(object):
             ):
                 continue
             waveform_data_stack.append(trailing_edge_data)
+            waveform_index_list.append(i)
 
+        logger.disable("pysiral")
         fit_class = WaveFormTrailingEdgeDecayFit()
-        pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        results = list(pool.imap(fit_class.fit, waveform_data_stack))
+        parallel = Parallel(n_jobs=multiprocessing.cpu_count())
+        results = parallel(delayed(fit_class.fit)(waveform) for waveform in waveform_data_stack)
+        # pool = multiprocessing.Pool(multiprocessing.cpu_count())
+        # results = list(pool.imap(fit_class.fit, waveform_data_stack))
+        logger.enable("pysiral")
 
-        for i in np.arange(self.waveforms.shape[0]):
+        # Note: Not all waveforms are fitted, e.g. if the trailing edge starts to
+        #       late or too early. The list of results therefore might be shorter
+        #       than the list of waveforms. `waveform_index_list` therefore maps
+        #       the fit index to the original waveform index.
+        for fit_index, i in enumerate(waveform_index_list):
 
-            trailing_edge_data = waveform_data_stack[i]
-            popt = results[i]
+            trailing_edge_data = self.get_trailing_edge_decay(waveform_data_stack[fit_index], results[fit_index])
 
-            breakpoint()
             # In this case the fitting algorithm has failed
             if trailing_edge_data.trailing_edge_fit is None:
                 # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
@@ -1019,53 +1027,54 @@ class WaveFormTrailingEdgeParameter(object):
             trailing_edge_lower_envelope_idx,
         )
 
-    # def get_trailing_edge_decay(self, data: WFMTrailingEdgeData) -> WFMTrailingEdgeData:
-    #     """
-    #     Fit inverse power law to the lower envelope of the trailing edge
-    #     and compute decay factor, fit quality and residual to trailing
-    #     edge power. Result will be added to data class.
-    #
-    #     :param data: Pre-compiled trailing edge data
-    #
-    #     :raises None:
-    #
-    #     :return: Data class with updated results
-    #     """
-    #
-    #     # Execute the fit
-    #     # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
-    #     p0 = \
-    #         [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
-    #         if self.last_fit_popt is None else self.last_fit_popt
-    #
-    #     try:
-    #         popt, pcov, *_ = curve_fit(
-    #             inverse_power,
-    #             data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
-    #             data.waveform_trailing_edge_subset_lower_envelope,
-    #             p0=p0,
-    #             **self.fit_kwargs
-    #         )
-    #     # Catch fit errors
-    #     except (TypeError, RuntimeError):
-    #         return data
-    #     self.last_fit_popt = popt
-    #
-    #     # Compute fit
-    #     x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
-    #     data.trailing_edge_fit = inverse_power(x_values, *popt)
-    #
-    #     # Compute parameters
-    #     data.trailing_edge_decay = popt[1]  # second parameter in inverse power function
-    #     data.trailing_edge_decay_mean_absolute_difference = bn.nanmedian(
-    #         np.abs(data.trailing_edge_fit - data.waveform_trailing_edge_subset)
-    #     )
-    #     data.trailing_edge_decay_fit_quality = coeficient_of_determination(
-    #         data.waveform_trailing_edge_subset,
-    #         data.trailing_edge_fit
-    #     )
-    #
-    #     return data
+    def get_trailing_edge_decay(self, data: WFMTrailingEdgeData, popt: List) -> WFMTrailingEdgeData:
+        """
+        Fit inverse power law to the lower envelope of the trailing edge
+        and compute decay factor, fit quality and residual to trailing
+        edge power. Result will be added to data class.
+
+        :param data: Pre-compiled trailing edge data
+        :param popt: Fit coefficient (function inverse power low)
+
+        :raises None:
+
+        :return: Data class with updated results
+        """
+
+        # # Execute the fit
+        # # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
+        # p0 = \
+        #     [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
+        #     if self.last_fit_popt is None else self.last_fit_popt
+        #
+        # try:
+        #     popt, pcov, *_ = curve_fit(
+        #         inverse_power,
+        #         data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+        #         data.waveform_trailing_edge_subset_lower_envelope,
+        #         p0=p0,
+        #         **self.fit_kwargs
+        #     )
+        # # Catch fit errors
+        # except (TypeError, RuntimeError):
+        #     return data
+        # self.last_fit_popt = popt
+
+        # Compute fit
+        x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
+        data.trailing_edge_fit = inverse_power(x_values, *popt)
+
+        # Compute parameters
+        data.trailing_edge_decay = popt[1]  # second parameter in inverse power function
+        data.trailing_edge_decay_mean_absolute_difference = bn.nanmedian(
+            np.abs(data.trailing_edge_fit - data.waveform_trailing_edge_subset)
+        )
+        data.trailing_edge_decay_fit_quality = coeficient_of_determination(
+            data.waveform_trailing_edge_subset,
+            data.trailing_edge_fit
+        )
+
+        return data
 
     @staticmethod
     def get_trailing_edge_width(
@@ -1137,7 +1146,9 @@ class WaveFormTrailingEdgeParameter(object):
         idx_le = np.insert(idx_le, 0, 0)
         idx_le = np.insert(idx_le, len(idx_le), wfm_trailing_edge.size-1)
 
-        wfm_change = [wfm_trailing_edge[idx_le[1:]]-wfm_trailing_edge[idx_le[0:-1]]][0]
+        wfm_change = [
+            wfm_trailing_edge[idx_le[1:]] - wfm_trailing_edge[idx_le[:-1]]
+        ][0]
         wfm_change = np.insert(wfm_change, 0, -1)
         return idx_le[wfm_change < 0.0]
 
