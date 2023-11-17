@@ -53,6 +53,11 @@ l2_parameter:
         dtype: i4
         fillvalue: -1
 
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
 # ==================================================
 # Level-2 Pre-Filter
 # ==================================================

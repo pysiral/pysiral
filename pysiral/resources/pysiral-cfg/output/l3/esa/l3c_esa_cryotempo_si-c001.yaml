@@ -85,38 +85,40 @@ variables:
     units: degrees_north
 
   radar_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+    long_name: "radar freeboard"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
 
   radar_freeboard_uncertainty:
-    var_source_name: radar_freeboard_uncertainty
-    long_name: "uncertainty of radar freeboard"
+    long_name: "uncertainty associated with radar freeboard"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   sea_ice_freeboard:
-    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    long_name: "sea ice freeboard"
     standard_name: sea_ice_freeboard
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
 
   sea_ice_freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (level-2 mean)"
+    long_name: "uncertainty associated to sea ice freeboard"
     standard_name: sea_ice_freeboard standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   sea_ice_freeboard_filtered:
-    long_name: "sea-ice freeboard with along-track lowess filter"
+    long_name: "sea ice freeboard"
     standard_name: sea_ice_freeboard
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+    comment: "with along-track low-pass filter applied"
 
   snow_depth:
     long_name: "thickness of the snow layer"
@@ -141,6 +143,18 @@ variables:
     flag_values: "1, 2, 3"
     flag_meanings: "1: pulse limited (lrm), 2: sar, 3: sar interferometric"
     comment: "median of radar mode flags within grid cells"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "region code"
+    unit: 1
+    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
+    valid_min: 0
+    valid_max: 18
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea";
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
