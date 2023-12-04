@@ -995,12 +995,12 @@ class WaveFormTrailingEdgeParameter(object):
 
         # multiprocessing fit
         fit_class = WaveFormTrailingEdgeDecayFit()
-        chunks_idxs = get_multiprocessing_1d_array_chunks(num_waveforms, psrlcfg.CPU_COUNT)
+        chunks_idxs, cpu_count = get_multiprocessing_1d_array_chunks(num_waveforms, psrlcfg.CPU_COUNT)
         trailing_edge_data_chunks = [
             waveform_data_stack[chunks_idx[0]:chunks_idx[1] + 1]
             for chunks_idx in chunks_idxs
         ]
-        pool = multiprocessing.Pool(psrlcfg.CPU_COUNT)
+        pool = multiprocessing.Pool(cpu_count)
         result_chunks = pool.imap(fit_class.fit_chunks, trailing_edge_data_chunks)
         pool.close()
         pool.join()
