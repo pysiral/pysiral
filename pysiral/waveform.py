@@ -10,7 +10,6 @@ from schema import Schema, And
 
 import multiprocessing
 import multiprocessing.pool
-from joblib import Parallel, delayed
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
@@ -20,7 +19,9 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from loguru import logger
 
+from pysiral import psrlcfg
 from pysiral.core.config import RadarModes
+from pysiral.core.helper import get_multiprocessing_1d_array_chunks
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
@@ -902,6 +903,7 @@ class WaveFormTrailingEdgeDecayFit(object):
             "bounds": ([0.0, 0.0, -np.inf], [np.inf, np.inf, np.inf])
         }
         self.fit_kwargs = self.default_fit_kwargs
+        self.p0 = None
         if isinstance(fit_kwargs, dict):
             self.fit_kwargs.update(fit_kwargs)
 
@@ -919,6 +921,24 @@ class WaveFormTrailingEdgeDecayFit(object):
         # Catch fit errors
         except (TypeError, RuntimeError):
             return None
+
+    def fit_chunks(self, chunks: List) -> List:
+        results = []
+        for data in chunks:
+            try:
+                popt, pcov, *_ = curve_fit(
+                    inverse_power,
+                    data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+                    data.waveform_trailing_edge_subset_lower_envelope,
+                    p0=self.p0,
+                    **self.fit_kwargs
+                )
+                self.p0 = popt
+            # Catch fit errors
+            except (TypeError, RuntimeError):
+                popt = (np.nan, np.nan, np.nan)
+            results.append(popt)
+        return results
 
 
 class WaveFormTrailingEdgeParameter(object):
@@ -960,7 +980,8 @@ class WaveFormTrailingEdgeParameter(object):
 
         waveform_index_list = []
         waveform_data_stack = []
-        for i in np.arange(self.waveforms.shape[0]):
+        num_waveforms = self.waveforms.shape[0]
+        for i in np.arange(num_waveforms):
 
             # Collect data and sanity check
             trailing_edge_data = self.get_waveform_trailing_edge_data(self.waveforms[i, :])
@@ -972,13 +993,19 @@ class WaveFormTrailingEdgeParameter(object):
             waveform_data_stack.append(trailing_edge_data)
             waveform_index_list.append(i)
 
-        logger.disable("pysiral")
+        # multiprocessing fit
         fit_class = WaveFormTrailingEdgeDecayFit()
-        parallel = Parallel(n_jobs=multiprocessing.cpu_count())
-        results = parallel(delayed(fit_class.fit)(waveform) for waveform in waveform_data_stack)
-        # pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        # results = list(pool.imap(fit_class.fit, waveform_data_stack))
-        logger.enable("pysiral")
+        chunks_idxs = get_multiprocessing_1d_array_chunks(num_waveforms, psrlcfg.CPU_COUNT)
+        trailing_edge_data_chunks = [
+            waveform_data_stack[chunks_idx[0]:chunks_idx[1] + 1]
+            for chunks_idx in chunks_idxs
+        ]
+        pool = multiprocessing.Pool(psrlcfg.CPU_COUNT)
+        result_chunks = pool.imap(fit_class.fit_chunks, trailing_edge_data_chunks)
+        pool.close()
+        pool.join()
+
+        results = [result for results in result_chunks for result in results]
 
         # Note: Not all waveforms are fitted, e.g. if the trailing edge starts to
         #       late or too early. The list of results therefore might be shorter

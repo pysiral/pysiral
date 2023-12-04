@@ -18,6 +18,29 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, rrule
 
 
+def get_multiprocessing_1d_array_chunks(
+        array_size: int,
+        n_processes: int,
+) -> List[Tuple[int, int]]:
+    """
+    Break down an array in chunks for multiprocessing. The rule
+    is one chunk per process/CPU.
+
+    :param array_size: The number of elements to be distributed to chunks
+    :param n_processes: The number processes/CPU's/chunks
+
+    :return: List with start and end index for each chunk
+    """
+
+    chunk_size = int(np.ceil(float(array_size) / float(n_processes)))
+
+    chunks = np.arange(0, array_size, chunk_size, dtype=int)
+    if chunks[-1] != array_size - 1:
+        chunks = np.append(chunks, [array_size])
+
+    return zip(chunks[:-1], chunks[1:] - 1)
+
+
 def parse_datetime_str(dtstr):
     """ Converts a time string to a datetime object using dateutils """
     return dtparser.parse(dtstr)
