@@ -86,22 +86,24 @@ class SurfaceType(DefaultLoggingClass):
 
     def add_flag(self, flag: np.ndarray, type_str: str) -> None:
         """
-        Add a flag to the
+        Add a surface type flag (boolean array)
+
         :param flag:
         :param type_str:
+
         :return:
         """
 
         # Add a surface type flag
+        errors = []
         if type_str not in self.surface_type_dict.keys():
-            msg = "surface type str %s unknown" % type_str
-            self.error.add_error("invalid-surface-type-code", msg)
+            errors.append(ValueError(f"surface type str {type_str} unknown"))
 
         if self.invalid_n_records(len(flag)):
-            msg = "invalid number of records: %g (must be %g)" % (len(flag), self.n_records)
-            self.error.add_error("invalid-variable-length", msg)
+            errors.append(ValueError(f"invalid number of records: {len(flag)} (must be {self.n_records})"))
 
-        self.error.raise_on_error()
+        if errors:
+            raise Exception(errors)
 
         # Create Flag keyword if necessary
         if self._surface_type is None:
