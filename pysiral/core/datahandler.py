@@ -110,7 +110,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
         # Get the auxiliary data class
         module_name, class_name = f"pysiral.auxdata.{auxdata_class}", auxdata_def["pyclass"]
-        auxclass = get_cls(module_name, class_name, relaxed=False)
+        auxclass, err = get_cls(module_name, class_name, relaxed=False)
         if auxclass is None:
             error_id = "auxdata_invalid_class_name"
             msg = f"Invalid Auxdata class: {module_name}.{class_name}"

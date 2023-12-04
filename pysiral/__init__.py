@@ -713,14 +713,14 @@ def get_cls(module_name, class_name, relaxed=True):
         module = importlib.import_module(module_name)
     except ImportError as e:
         if relaxed:
-            return None
+            return None, e
         else:
             raise ImportError(f"Cannot load module: {module_name}") from e
     try:
-        return getattr(module, class_name)
-    except AttributeError as exc:
+        return getattr(module, class_name), None
+    except AttributeError as e:
         if relaxed:
-            return None
+            return None, e
         else:
             raise NotImplementedError(f"Cannot load class: {module_name}.{class_name}") from exc
 

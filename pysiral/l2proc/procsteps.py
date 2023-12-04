@@ -160,7 +160,7 @@ class Level2ProcessorStepOrder(DefaultLoggingClass):
             # Get the module & pyclass
             module = procstep_def["module"]
             full_module_name = f"pysiral.{module}"
-            obj = get_cls(full_module_name, procstep_def["pyclass"])
+            obj, err = get_cls(full_module_name, procstep_def["pyclass"])
 
             # This object should not be None
             if obj is None:

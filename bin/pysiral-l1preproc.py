@@ -7,7 +7,7 @@ import sys
 
 from loguru import logger
 
-from pysiral import get_cls
+from pysiral import get_cls, set_psrl_cpu_count
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef,
                                get_preproc)
@@ -26,12 +26,12 @@ def pysiral_l1preproc(job):
 
     # 1. Get the input handler
     input_handler_def = job.l1pprocdef.input_handler
-    input_handler_cls = get_cls(input_handler_def.module_name, input_handler_def.class_name, relaxed=False)
+    input_handler_cls, err = get_cls(input_handler_def.module_name, input_handler_def.class_name, relaxed=False)
     input_handler = input_handler_cls(input_handler_def.options)
 
     # 2. Get the adapter class that transfers
     adapter_def = job.l1pprocdef.input_adapter
-    input_adapter_cls = get_cls(adapter_def.module_name, adapter_def.class_name, relaxed=False)
+    input_adapter_cls, err = get_cls(adapter_def.module_name, adapter_def.class_name, relaxed=False)
     input_adapter = input_adapter_cls(adapter_def.options)
 
     # 3. Get the output handler
