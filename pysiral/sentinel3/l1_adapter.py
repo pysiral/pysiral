@@ -685,8 +685,7 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
     def _set_surface_type_group(self):
         """
         Transfer of the surface type flag to the Level-1 object
-        NOTE: In the current state (TEST dataset), the surface type flag is only 1 Hz. A nearest neighbour
-              interpolation is used to get the 20Hz surface type flag.
+
         :return: None
         """
 

@@ -70,7 +70,7 @@ class SurfaceType(DefaultLoggingClass):
         self._surface_type_flags = []
         self._surface_type = None
 
-    def name(self, flag_value: int) -> List[bool]:
+    def name(self, flag_value: int) -> str:
         """
         Return the flag name for a give flag value
 
