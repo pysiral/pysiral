@@ -741,7 +741,7 @@ class L1bDataNC(DefaultLoggingClass):
         """
         Change empty (None) values in an attrdict to an empty string
         :param attdict: dictionary like
-        :return: None, will be change in place
+        :return: None, will be changed in place
         """
         for key in attdict.keys():
             content = attdict[key]
