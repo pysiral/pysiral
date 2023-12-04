@@ -75,6 +75,8 @@ class Level1PreProcArgParser(object):
         # use python module argparse to parse the command line arguments
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
+        if self._args.mp_cpu_count is not None:
+            set_psrl_cpu_count(self._args.mp_cpu_count)
 
     def critical_prompt_confirmation(self):
 
@@ -110,10 +112,12 @@ class Level1PreProcArgParser(object):
             ("-stop", "date", "stop_date", True),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-hemisphere", "hemisphere", "hemisphere", False),
+            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
             ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
+            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False),
+        ]
 
         # create the parser
         parser = argparse.ArgumentParser()

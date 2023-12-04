@@ -9,7 +9,7 @@ __all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "proj", "retracker",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "InterceptHandler", "__version__"]
+           "set_psrl_cpu_count", "InterceptHandler", "__version__"]
 
 import importlib
 import logging
@@ -17,6 +17,7 @@ import pkgutil
 import shutil
 import socket
 import subprocess
+import multiprocessing
 import sys
 import warnings
 from datetime import datetime
@@ -24,6 +25,7 @@ from distutils import dir_util
 from pathlib import Path
 from typing import Iterable, Union
 
+import numpy as np
 import yaml
 from attrdict import AttrDict
 from dateperiods import DatePeriod
@@ -339,6 +341,15 @@ class _PysiralPackageConfiguration(object):
     VALID_PROCESSOR_LEVELS = ["l1", "l2", "l3"]
     VALID_DATA_LEVEL_IDS = ["l1", "l2", "l2i", "l2p", "l3", None]
     VALID_CONFIG_TARGETS = ["PACKAGE", "USER_HOME"]
+
+    # Multiprocessing properties
+    # Allow to package-wide specification of number of CPU's. Default value
+    # is the CPU count from the python multiprocessing package.
+    #
+    # NOTE: This is intended when `multiprocessing.cpu_count()` is unreliable, e.g.
+    #       when using slurm workload managers, or when the number of CPU's should be
+    #       limited due to other concerns.
+    CPU_COUNT = multiprocessing.cpu_count()
 
     def __init__(self):
         """
@@ -729,7 +740,7 @@ def import_submodules(package, recursive=True):
     """ Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
-    :param recursive: Flag if package is a sub-module
+    :param recursive: Flag if package is a submodule
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
@@ -742,3 +753,26 @@ def import_submodules(package, recursive=True):
         if recursive and is_pkg:
             results.update(import_submodules(full_name))
     return results
+
+
+def set_psrl_cpu_count(cpu_count: int) -> None:
+    """
+    Set the pysiral-wide CPU count for multiprocessing to the pysiral package
+    configuration
+
+    :param cpu_count: The number of CPU's to use
+
+    :raises ValueError: cpu_count is not a positive integer
+    """
+
+    try:
+        assert isinstance(cpu_count, int)
+        assert cpu_count > 0
+    except AssertionError as e:
+        raise ValueError(
+            f"specified number of CPU's ({cpu_count}) not a positive integer"
+        ) from e
+    cpu_count_mp = multiprocessing.cpu_count()
+    if cpu_count > cpu_count_mp:
+        logger.warning(f"Specified number of CPU's ({cpu_count}) > number of CPU's ({cpu_count_mp})")
+    psrlcfg.CPU_COUNT = cpu_count
