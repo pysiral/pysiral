@@ -938,7 +938,7 @@ class WaveFormTrailingEdgeDecayFit(object):
                 )
                 self.p0 = popt
             # Catch fit errors
-            except (TypeError, RuntimeError):
+            except (TypeError, RuntimeError, ValueError):
                 popt = (np.nan, np.nan, np.nan)
             results.append(popt)
         return results
