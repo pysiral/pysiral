@@ -681,7 +681,10 @@ class L1PLateTail2PeakPower(L1PProcItem):
         if (late_tail_window >= wfm.shape[0]).any():
             return np.nan
 
-        return bn.nanmean(wfm[late_tail_window])/wfm_max_power
+        try:
+            return bn.nanmean(wfm[late_tail_window])/wfm_max_power
+        except ZeroDivisionError:
+            return np.nan
 
 
 @dataclass
