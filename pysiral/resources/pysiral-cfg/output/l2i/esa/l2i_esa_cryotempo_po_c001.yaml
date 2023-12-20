@@ -8,7 +8,7 @@ metadata:
 
 # Output Definition
 filenaming: 
-  default: CS_OFFL_SIR_TDP_PO_ARCTIC_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
+  default: CS_OFFL_SIR_TDP_PO_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
 product_level_subfolder: l2
 
 # A list of global attributes 
@@ -22,7 +22,7 @@ global_attributes:
   - date_created: "{utcnow}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
-  - zone: "Arctic"
+  - zone: "{source_hemisphere}:select;Arctic;Antarctic"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"

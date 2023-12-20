@@ -2,9 +2,9 @@
 # Lowess length set to 1501 for consistency with FMR. Change to 333 for phase 2.2
 
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
+    label: "ESA CryoTEMPO CryoSat-2 near real-time polar ocean product"
     product_line: esa
-    record_type: tds-po-rep-C001
+    record_type: tds-po-nrt-C001
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
@@ -40,10 +40,12 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v3p0
-            exception_on_error: True
+            exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
     - sitype:
         name: c3s

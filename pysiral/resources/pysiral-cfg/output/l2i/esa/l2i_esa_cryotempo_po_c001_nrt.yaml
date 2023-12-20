@@ -8,14 +8,14 @@ metadata:
 
 # Output Definition
 filenaming: 
-  default: CS_TEST_SIR_TDP_PO_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
-product_level_subfolder: l2-test
+  default: CS_NRT__SIR_TDP_PO_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
+product_level_subfolder: l2
 
 # A list of global attributes 
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - title: "Cryo-TEMPO Polar Ocean Thematic Test Product"
+  - title: "Cryo-TEMPO Polar Ocean Near Real-Time Thematic Product"
   - project: "ESA Cryo-TEMPO"
   - creator_name: "ESA Cryo-TEMPO Project"
   - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
@@ -173,78 +173,6 @@ variables:
     units: "m"
     coordinates: longitude latitude
     comment: "Provided for the user to remove if necessary for their use case."
-
-  mean_sea_surface:
-    long_name: "mean sea surface"
-    standard_name: mean_sea_surface
-    units: m
-    coordinates: longitude latitude
-
-  mean_dynamic_topography:
-    long_name: "mean dynamic topography"
-    standard_name: mean_dynamic_topography
-    units: m
-    coordinates: longitude latitude
-
-  
-  dry_troposphere:
-    long_name: "dry troposphere range correction"
-    units: "m"
-    coordinates: time
-
-  wet_troposphere:
-    long_name: "wet troposphere range correction"
-    units: "m"
-    coordinates: time
-
-  dynamic_atmosphere:
-    long_name: "DAC range correction"
-    units: "m"
-    coordinates: longitude latitude
-    comment: "Provided for the user to remove if necessary for their use case."
-
-  ionosphere:
-    long_name: "ionospheric range correction"
-    units: "m"
-    coordinates: time
-
-  ocean_tide_elastic:
-    long_name: "ocean tide elastic range correction"
-    units: "m"
-    coordinates: time
-
-  ocean_tide_long_period:
-    long_name: "ocean tide long period range correction"
-    units: "m"
-    coordinates: time
-
-  ocean_loading_tide:
-    long_name: "ocean loading tide range correction"
-    units: "m"
-    coordinates: time
-
-  solid_earth_tide:
-    long_name: "solid earth tide range correction"
-    units: "m"
-    coordinates: time
-
-  geocentric_polar_tide:
-    long_name: "geocentric polar tide range correction"
-    units: "m"
-    coordinates: time
-
-  sea_ice_concentration:
-    long_name: "sea ice concentration"
-    standard_name: sea_ice_area_fraction
-    units: percent
-    valid_min: 0.0
-    valid_max: 100.0
-    coordinates: time
-
-  sea_state_bias:
-    long_name: "JASON2 Sea State Bias"
-    units: "m"
-    coordinates: time
 
   region_code:
     long_name: "region code"
