@@ -111,14 +111,6 @@ variables:
     coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
     
-# Included to help understanding, as SLA is interpolated to non-lead locations. Remove for final.
-  surface_type:
-    long_name: "surface type classification flag"
-    flag_values: 0, 1, 2, 3, 4, 5, 6, 7, 8
-    flag_meanings: "unknown ocean lead polynya sea_ice closed_sea land_ice land invalid"
-    coordinates: longitude latitude
-    comment: "Surface type at the nadir location"
-    
   sea_level_anomaly:
     long_name: "sea level anomaly"
     standard_name: sea_surface_height_above_mean_sea_level
@@ -175,7 +167,7 @@ variables:
     comment: "Provided for the user to remove if necessary for their use case."
 
   region_code:
-    long_name: "region code"
+    long_name: "region id"
     unit: 1
     comment: "Source: Northern hemisphere: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC), Southern hemisphere: longitude sectors south of 40S (Parkinson, C. L. and Cavalieri, D. J. 2012)"
     valid_min: 0
