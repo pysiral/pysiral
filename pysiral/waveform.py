@@ -922,7 +922,7 @@ class WaveFormTrailingEdgeDecayFit(object):
             )
             return popt
         # Catch fit errors
-        except (TypeError, RuntimeError):
+        except (TypeError, RuntimeError, ValueError):
             return None
 
     def fit_chunks(self, chunks: List) -> List:
