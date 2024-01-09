@@ -222,7 +222,7 @@ class TFMRALeadingEdgeWidth(object):
         filt_rng, filt_wfm, fmi, norm = self.tfmra.get_preprocessed_wfm(rng, wfm, radar_mode, retrack_flag)
         self.wfm, self.rng, self.fmi = filt_wfm, filt_rng, fmi
 
-    def get_width_from_thresholds(self, thres0, thres1):
+    def get_width_from_thresholds(self, thres0, thres1, **kwargs):
         """
         Returns the range difference in range bin units between two thresholds,
         by subtracting the range value of thresh0 from thresh1. This is done
@@ -232,7 +232,7 @@ class TFMRALeadingEdgeWidth(object):
         :param thres1: (float) The minimum threshold
         :return:
         """
-        return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1)
+        return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1, **kwargs)
 
 
 class L1PLeadingEdgeWidth(L1PProcItem):
@@ -926,6 +926,11 @@ class WaveFormTrailingEdgeDecayFit(object):
             return None
 
     def fit_chunks(self, chunks: List) -> List:
+        """
+
+        :param chunks:
+        :return:
+        """
         results = []
         for data in chunks:
             try:
