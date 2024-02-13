@@ -22,7 +22,7 @@ global_attributes:
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
+  - references: "CCI+ Sea Ice ECV - Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)https://doi.org/10.5281/zenodo.10605840; CCI+ Sea Ice ECV - Sea Ice Thickness Product User Guide (PUG) https://doi.org/10.5281/zenodo.10605998"
   - tracking_id: "{uuid}"
   - Conventions: "CF-1.8"
   - product_version: "3.0"
