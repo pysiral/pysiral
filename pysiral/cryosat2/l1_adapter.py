@@ -499,7 +499,7 @@ class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
             if len(nans_indices) > 0:
                 msg = 'Arctide file had {numnan} NaN values of {numval}. These have been replaced with FES2014b data'.format(numnan=len(nans_indices), numval=len(variable_20hz))
                 logger.warning(msg)
-                variable_20hz[nans_indices] = self.l1.correction.get_parameter_by_name('ocean_tide_elastic')[nans_indices]
+                variable_20hz[nans_indices] = self.l1.correction.get_parameter_by_name('ocean_tide_elastic')[nans_indices].values
             self.l1.correction.set_parameter('ocean_tide_elastic_2', self.l1.correction.get_parameter_by_name('ocean_tide_elastic'))
             self.l1.correction.set_parameter('ocean_tide_elastic', variable_20hz)
 
