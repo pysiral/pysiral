@@ -47,13 +47,6 @@ auxdata:
                 pole_hole_lat_threshold: 87.0
                 pole_hole_fill_value: 100.
 
-    - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: True
-
     - region:
         name: nsidc_2021
         options: null
