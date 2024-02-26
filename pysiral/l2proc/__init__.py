@@ -10,11 +10,11 @@ from collections import OrderedDict, deque
 from datetime import datetime
 from pathlib import Path
 
-from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
 from pysiral.core.datahandler import DefaultAuxdataClassHandler
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus

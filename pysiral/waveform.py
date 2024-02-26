@@ -5,28 +5,28 @@ Created on Fri Jul 01 13:07:10 2016
 @author: shendric
 """
 
-from typing import Union, List, Tuple, Dict
-from schema import Schema, And
-
 import multiprocessing
 import multiprocessing.pool
+from dataclasses import dataclass, field
+from typing import Dict, List, Tuple, Union
+
 import bottleneck as bn
 import numpy as np
 import numpy.typing as npt
-from dataclasses import dataclass, field
-from scipy.signal import argrelmin
+from loguru import logger
+from schema import And, Schema
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-from loguru import logger
+from scipy.signal import argrelmin
 
 from pysiral import psrlcfg
+from pysiral.core.clocks import StopWatch
 from pysiral.core.config import RadarModes
+from pysiral.core.functions import inverse_power
 from pysiral.core.helper import get_multiprocessing_1d_array_chunks
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
-from pysiral.core.clocks import StopWatch
-from pysiral.core.functions import inverse_power
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:

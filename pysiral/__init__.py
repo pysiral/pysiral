@@ -13,11 +13,11 @@ __all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
 
 import importlib
 import logging
+import multiprocessing
 import pkgutil
 import shutil
 import socket
 import subprocess
-import multiprocessing
 import sys
 import warnings
 from datetime import datetime

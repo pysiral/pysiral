@@ -12,13 +12,13 @@ from pathlib import Path
 from typing import List, Union
 
 from attrdict import AttrDict
-from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from dateutil.relativedelta import relativedelta
 from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
 from pysiral.core.output import PysiralOutputFilenaming
 

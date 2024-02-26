@@ -8,11 +8,11 @@ from itertools import product
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
 from scipy.interpolate import interp1d
 
 from pysiral import get_cls
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
 

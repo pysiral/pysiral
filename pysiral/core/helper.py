@@ -6,11 +6,11 @@ Created on Tue Jul 21 18:04:43 2015
 TODO: Is this still being used?
 """
 
-import time
 import calendar
 import multiprocessing
-from typing import List, Tuple
+import time
 from datetime import datetime
+from typing import List, Tuple
 
 import numpy as np
 from dateutil import parser as dtparser

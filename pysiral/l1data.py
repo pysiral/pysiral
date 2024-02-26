@@ -91,16 +91,16 @@ Surface Type
 
 import copy
 from collections import OrderedDict
-from typing import Any, List, Union, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 from cftime import num2pydate as cn2pyd
-from pysiral.core.class_template import DefaultLoggingClass
 from loguru import logger
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
 
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.config import RadarModes
 from pysiral.core.flags import SurfaceType
 from pysiral.core.output import NCDateNumDef

@@ -1,10 +1,10 @@
 
 import contextlib
+import datetime
 from pathlib import Path
 
-import pytz
-import datetime
 import numpy as np
+import pytz
 import xarray
 import xmltodict
 from cftime import num2pydate

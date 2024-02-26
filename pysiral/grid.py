@@ -12,10 +12,10 @@ import numpy as np
 import numpy.typing as npt
 import scipy.ndimage as ndimage
 from attrdict import AttrDict
-from pysiral.core.class_template import DefaultLoggingClass
 from pyproj import Proj
 from pyresample import geometry
 
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
 
 

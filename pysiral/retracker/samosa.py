@@ -4,18 +4,19 @@
 
 """
 
-import os
 import logging
+import multiprocessing
+import os
 import typing
+from dataclasses import dataclass
+from typing import Any, List, Tuple
 
 import matplotlib.pyplot as plt
-import multiprocessing
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
-from dataclasses import dataclass
-from typing import Any, Tuple, List
 from loguru import logger
+
 from pysiral.l1data import L1bdataNCFile
 
 try:
