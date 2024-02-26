@@ -1,11 +1,11 @@
 metadata:
-    label: "AWI CryoSat-2 reprocessed sea-ice thickness product (cs2awi v2.5 reprocessed)"
+    label: "AWI CryoSat-2 operational sea-ice thickness product (cs2awi v2.6 operational)"
     product_line: awi
     record_type: rep
     platform: cryosat2
-    version: v2p5
-    file_version_tag: "v2p5"
-    hemisphere: north
+    version: v2p6
+    file_version_tag: "v2p6"
+    hemisphere: south
 
 
 # --- Ingest auxiliary data ---
@@ -28,47 +28,33 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
+        name: antarctic_seas
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
-
-    # Load the
-    - mdt:
-        name: dtu17
-        options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
         name: c3s
         options:
-            version: v2p0
+            version: v3p0
             exception_on_error: False
 
     - sitype:
-        name: c3s
-        options:
-            version: v2p0
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
@@ -114,16 +100,6 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
-        pyclass: ParameterRollingStatistics
-        options:
-            window_size_m: 25000.
-            statistics: ["sdev", "mean"]
-            input_parameters:
-                - pulse_peakiness
-                - leading_edge_width
-                - sigma0
 
     # --- Surface type classification algorithm ---
     #
@@ -148,6 +124,17 @@ procsteps:
     #           
     #         - ...
     #   - ...
+
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
 
     # Surface type classification algorithm
     -   module: surface
@@ -257,7 +244,7 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections: 
+            corrections:
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
@@ -274,9 +261,11 @@ procsteps:
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
-            smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
@@ -285,11 +274,6 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
-
-    # Algorithm for adding the DOT = SLA + MDT to the L2 data object
-    -   module: dot
-        pyclass: DynamicOceanTopography
-        options: null
 
     # Estimation of Radar Freeboard
     -   module: frb
@@ -348,6 +332,7 @@ procsteps:
         options:
             ice_edge_proximity:
                 sea_ice_concentration_max: 75.
+                low_ice_concentration_distance_max: 200000.
                 ocean_distance_max: 300000.
                 leading_edge_width_rolling_mean_min: 2.0
                 pulse_peakiness_rolling_sdev_max: 15.0

@@ -1,12 +1,11 @@
 metadata:
-    label: "AWI CryoSat-2 near real-time sea-ice thickness product (cs2awi v2.3 nrt)"
+    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
     product_line: awi
-    record_type: nrt
-    platform: cryosat2
-    version: v2p3
-    file_version_tag: "v2p3"    
-    hemisphere: north
-
+    record_type: rep
+    platform: sentinel3a
+    version: v2p6
+    file_version_tag: "v2p6"
+    hemisphere: south
 
 # --- Ingest auxiliary data ---
 # 
@@ -28,43 +27,33 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_mod
+        name: antarctic_seas
         options: null
 
-    # Load the
     - mss:
-        name: dtu15
+        name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
-        name: osisaf-operational
+        name: c3s
         options:
-            # These settings have been introduced with AWI v2p1 (pysiral v0.6.3)
-            # All NaN values inside the pole hole latitude threshold will be set to 100%
-            exception_on_error: True
-            fill_pole_hole:
-                pole_hole_lat_threshold: 87.0
-                pole_hole_fill_value: 100.
+            version: v3p0
+            exception_on_error: False
 
     - sitype:
-        name: osisaf-operational
-        options:
-            fill_valid_sic_gaps: True
-            exception_on_error: True
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
@@ -82,16 +71,19 @@ procsteps:
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
-                sigma0: [sig, sigma0]
+                sigma0_ocean: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
-                late_tail_to_peak_power: [ltpp, late_tail_to_peak_power]
+                leading_edge_quality: [leq, leading_edge_quality]
+                first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
+                stack_skewness: [ssk, stack_skewness]
+                stack_kurtosis: [skt, stack_kurtosis]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
-                inverse_barometric: [rcib, inverse_barometric]
-                ionosphere: [rcio, ionosphere]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
+                ionosphere_gim: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]
@@ -101,43 +93,110 @@ procsteps:
                 antenna_pitch: [toantptch, antenna_pitch]
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
+                orbit_flag: [tofl, orbit_flag]
             waveform:
+                radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
+
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
+
+    # --- Surface type classification algorithm ---
+    #
+    # Surface type classification algorithm can be fully constructed from the
+    # config file. Only the land flag will always overwrite all classification after
+    # the surface type classification.
+    #
+    # The conventions for the options are: 
+    #
+    # <surface_type_code>:  -> [ocean, lead, sea_ice]
+    #   - radar_mode: <radar_mode>
+    #     exclude: <surface type> 
+    #     conditions:
+    #         - logical expression of the type 
+    #              "{<parameter_name>} <operator> <value>"
+    #           including the parameter name in {}, e.g.
+    #              "{sea_ice_concentration} < 15.0"
+    #           Fixed values as in example above are possible, but also monthly values, e.g.:
+    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
+    #           This example is evaluated as "{sigma0} >= 1.0" for January and as 
+    #           "{sigma0} >= 12.0" for December.
+    #           
+    #         - ...
+    #   - ...
 
     # Surface type classification algorithm
     -   module: surface
-        pyclass: SICCI2SurfaceType
+        pyclass: ClassifierThresholdSurfaceType
         options:
-            sar:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [67.30, 66.30, 66.60, 69.90, 69.90, 69.90, 69.90, 69.90, 69.90, 76.00, 73.80, 68.60]
-                    sea_ice_backscatter_min: [23.80, 23.20, 23.30, 23.40, 23.40, 23.40, 23.40, 23.40, 23.40, 28.00, 25.80, 24.10]
-                    leading_edge_width_max: [0.77, 0.78, 0.78, 0.76, 0.76, 0.76, 0.76, 0.76, 0.76, 0.72, 0.73, 0.76]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [30.50, 28.70, 28.10, 28.50, 28.50, 28.50, 28.50, 28.50, 28.50, 35.40, 34.90, 31.90]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [20.80, 19.90, 19.60, 19.00, 19.00, 19.00, 19.00, 19.00, 19.00, 25.70, 23.20, 21.10]
-                    leading_edge_width_min: [1.02, 1.08, 1.10, 1.11, 1.11, 1.11, 1.11, 1.11, 1.11, 0.91, 0.90, 0.97]
-                    ice_concentration_min: 70.0
-            sin:
-                ocean:
-                    peakiness_max: 5.0
-                    ice_concentration_min: 5.0
-                lead:
-                    peakiness_min: [264.30, 257.90, 253.60, 264.60, 264.60, 264.60, 264.60, 264.60, 264.60, 291.80, 288.80, 272.60]
-                    sea_ice_backscatter_min: [24.90, 25.00, 24.10, 24.50, 24.50, 24.50, 24.50, 24.50, 24.50, 29.00, 27.40, 25.80]
-                    leading_edge_width_max: [1.10, 1.11, 1.13, 1.09, 1.09, 1.09, 1.09, 1.09, 1.09, 1.02, 1.03, 1.07]
-                    ice_concentration_min: 70.0
-                sea_ice:
-                    peakiness_max: [99.40, 94.20, 89.90, 90.00, 90.00, 90.00, 90.00, 90.00, 90.00, 114.40, 113.90, 103.80]
-                    sea_ice_backscatter_min: 2.5
-                    sea_ice_backscatter_max: [21.40, 20.90, 20.10, 19.10, 19.10, 19.10, 19.10, 19.10, 19.10, 24.30, 23.70, 22.00]
-                    leading_edge_width_min: [1.55, 1.58, 1.62, 1.64, 1.64, 1.64, 1.64, 1.64, 1.64, 1.44, 1.44, 1.51]
-                    ice_concentration_min: 70.0
+
+            # This option defines the surface type order. It is important that
+            # leads are classified before sea ice to fullfill the condition
+            # that sea-ice waveforms are not lead waveforms.
+            surface_types: [ocean, lead, sea_ice]
+
+            # Ocean classification is based on a low pulse peakiness
+            # and the sea-ice concentration based ice mask
+            ocean:
+
+                - radar_mode: lrm
+                  conditions:
+                      - "{sea_ice_concentration} < 15.0"
+
+                - radar_mode: sar
+                  conditions:
+                      - "{sea_ice_concentration} < 15.0"
+                      - "{pulse_peakiness_rolling_sdev} < 1.0"
+
+                - radar_mode: sin
+                  conditions:
+                      - "{sea_ice_concentration} < 15.0"
+                      - "{pulse_peakiness_rolling_sdev} < 4.0"
+
+            # Lead waveforms are classified based on sigma0, leading edge width
+            # and pulse peakiness within the sea-ice mask.
+            # NOTE: No LRM data over sea ice
+            lead:
+
+                - radar_mode: sar
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 66.0"
+                      - "{sigma0} >= 23.0"
+                      - "{leading_edge_width} <= 0.75"
+
+                - radar_mode: sin
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 260.0"
+                      - "{sigma0} >= 24.0"
+                      - "{leading_edge_width} <= 1.05"
+
+            # The sea ice classification uses as many waveforms as possible
+            # and reduces the classification to all waveforms within the
+            # sea ice mask which are not classified as leads and have a
+            # valid leading edge.
+            sea_ice:
+
+                - radar_mode: sar
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
+
+                - radar_mode: sin
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
@@ -182,10 +241,11 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections: 
+            corrections:
                 - dry_troposphere
                 - wet_troposphere
-                - inverse_barometric
+                - dynamic_atmosphere
+                - ionosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
@@ -193,15 +253,17 @@ procsteps:
                 - solid_earth_tide
                 - geocentric_polar_tide
 
-    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    # Algorithm for instantaneous sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
         options:
             use_ocean_wfm: False
             smooth_filter_width_m: 100000.0
-            smooth_filter_width_footprint_size: 300.0
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10
@@ -210,7 +272,7 @@ procsteps:
             tiepoint_maxdist_filter:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
-                
+
     # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
@@ -253,7 +315,7 @@ procsteps:
         pyclass: L2ParameterValidRange
         options:
             source_variable: sit
-            target_variables: [sit]        
+            target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
 
@@ -261,3 +323,20 @@ procsteps:
     -   module: sit
         pyclass: L2SeaIceDraft
         options: {}
+
+        # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            ice_edge_proximity:
+                sea_ice_concentration_max: 75.
+                low_ice_concentration_distance_max: 200000.
+                ocean_distance_max: 300000.
+                leading_edge_width_rolling_mean_min: 2.0
+                pulse_peakiness_rolling_sdev_max: 15.0
+            ice_edge_transition:
+                sea_ice_filter_size_m: 300000.
+                ocean_filter_size_m: 25000.
+                freeboard_smoother_filter_size_m: 150000.
+                sea_ice_freeboard_miz_gradient: 0.002
+                leading_edge_width_ocean_value: 2.5

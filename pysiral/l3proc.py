@@ -195,7 +195,7 @@ class Level3Processor(DefaultLoggingClass):
         for pitem in processing_items:
             msg = "Apply Level-3 processing item: `%s`" % (pitem["label"])
             logger.info(msg)
-            pp_class = get_cls(pitem["module_name"], pitem["class_name"], relaxed=False)
+            pp_class, err = get_cls(pitem["module_name"], pitem["class_name"], relaxed=False)
             processing_items = pp_class(l3grid, **pitem["options"])
             processing_items.apply()
 

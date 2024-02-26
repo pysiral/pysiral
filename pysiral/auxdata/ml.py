@@ -211,7 +211,7 @@ class RetrackerThresholdModelTorch(AuxdataBaseClass):
             msg = "PyTorch model class not specified (options.torch_class missing)"
             self.error.add_error("missing-option", msg)
             self.error.raise_on_error()
-        model_class = get_cls("pysiral.auxdata.ml", torch_model_class)
+        model_class, err = get_cls("pysiral.auxdata.ml", torch_model_class)
         #retrieve number of input layer neurons, defaults to 45 (the Envisat standard)
         input_neurons = self.cfg.options.get("input_neurons", 45)
         if model_class is None:

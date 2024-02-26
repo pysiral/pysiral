@@ -8,13 +8,13 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  month: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p5plus.nc"
-  isoweek: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p5plus.nc"
-  day: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p5plus.nc"
-  custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p5plus.nc"
-  default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p5plus.nc"
+  month: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m}-fv2p6.nc"
+  isoweek: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p6.nc"
+  day: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-fv2p6.nc"
+  custom: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p6.nc"
+  default: "awi-siral-l3c-sithick-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv2p6.nc"
 
-product_level_subfolder: l3c_grid_internal
+product_level_subfolder: l3c_grid
 
 grid_options: 
   flip_yc: True
@@ -25,19 +25,20 @@ grid_options:
 global_attributes:
   - title: "Monthly gridded sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung (AWI)"
-  - source: "Altimetry: CryoSat-2 Level-1B baseline D before October 2021 and baseline E from October 2021 and later, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface, Sea ice concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF Sea Ice Concentration CDR/ICDR}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR}, Region code: NSIDC regional mask for Arctic sea ice trends and climatologies (2021)"
+  - source: "Altimetry: CryoSat-2 Level-1B ICE baseline E, Snow depth: Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions, Mean Sea Surface: DTU21 global mean sea surface, Sea ice concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);OSI-SAF Sea Ice Concentration CDR/ICDR v3.0}, Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR v3.0}, Region code: NSIDC regional mask for Arctic sea ice trends and climatologies (2021)"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "TBD"
+  - references: "Hendricks, S., & Paul, S. (2023). Product User Guide & Algorithm Specification - AWI CryoSat-2 Sea Ice Thickness (version 2.6), Issued by Zenodo (v2.6). https://doi.org/10.5281/zenodo.10044554"
   - tracking_id: "{uuid}"
-  - conventions: "CF-1.6"
-  - product_version: "2.5"
+  - Conventions:  "CF-1.7 ACDD-1.3"
+  - product_version: "2.6"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "This dataset contains Level-3 monthly sea ice thickness products from satellite observations in the northern hemisphere plus additionals statistical parameters of gridded classifiers. Level-3 data are raw observations processed to geophysical quantities, and placed onto a regular grid."
   - topiccategory: "Oceans Climatology Meteorology Atmosphere"
-  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
-  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p5plus"
+  - keywords: "GCMDSK:Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, GCMDSK:Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, GCMDSK:Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, GCMDLOC:Geographic Region > Northern Hemisphere, GCMDLOC:Vertical Location > Sea Surface, GCMDPROV:Consortia/Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research"
+  - keywords_vocabulary: "GCMDSK:GCMD Science Keywords:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/sciencekeywords, GCMDLOC:GCMD Locations:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/locations, GCMDPROV:GCMD Providers:https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/providers"
+  - id: "awi-siral-l3-{source_mission_id}-{source_timeliness:lowercase}-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-fv2p6"
   - naming_authority: "de.awi"
   - keywords_vocabulary: "GCMD Science Keywords"
   - cdm_data_type: "Grid"
@@ -278,7 +279,7 @@ variables:
     units: "1"
     valid_min: 0
     valid_max: 3
-    flag_values: "0 1 2 3"
+    flag_values: "0, 1, 2, 3"
     flag_meanings: "nominal_quality intermediate_quality low_quality no_data"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -291,7 +292,7 @@ variables:
     units: "1"
     valid_min: 0
     valid_max: 5
-    flag_values: "0 1 2 3 4 5"
+    flag_values: "0, 1, 2, 3, 4, 5"
     flag_meanings: "nominal_retrieval no_data open_ocean satellite_pole_hole land_lake_landice retrieval_failed"
     coordinates: "time lat lon"
     comment: "Describes the status of the sea-ice thickness retrieval"
@@ -310,14 +311,6 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: referenceInformation
-
-  ocean_area_fraction:
-    long_name: "Fraction of grid cell area covered by ocean"
-    comment: "Derived from higher resolution land masks by Thomas Lavergne (MET.NO)"
-    valid_min: 0.0
-    valid_max: 1.0
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
     
   stat_radar_mode:
     var_source_name: radar_mode
@@ -433,167 +426,3 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
-
-  stat_sigma0_mean:
-    var_source_name: stat_sigma0_all_mean
-    long_name: "average radar backscatter coefficient (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_sdev:
-    var_source_name: stat_sigma0_all_sdev
-    long_name: "radar backscatter coefficient standard_deviation (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_sea_ice_mean:
-    long_name: "average radar backscatter coefficient (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_sea_ice_sdev:
-    long_name: "radar backscatter coefficient standard_deviation (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: qualityInformation
-
-  stat_sigma0_lead_mean:
-    long_name: "average radar backscatter coefficient (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_lead_sdev:
-    long_name: "radar backscatter coefficient standard_deviation (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_ocean_mean:
-    long_name: "average radar backscatter coefficient (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_sigma0_ocean_sdev:
-    long_name: "radar backscatter coefficient standard_deviation (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_mean:
-    var_source_name: stat_leading_edge_width_all_mean
-    long_name: "average leading edge width coefficient (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_sdev:
-    var_source_name: stat_leading_edge_width_all_sdev
-    long_name: "leading edge width coefficient standard_deviation (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_ocean_width_mean:
-    var_source_name: stat_leading_edge_width_ocean_mean
-    long_name: "average leading edge width coefficient (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_ocean_width_sdev:
-    var_source_name: stat_leading_edge_width_ocean_sdev
-    long_name: "leading edge width coefficient standard_deviation (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_sea_ice_mean:
-    long_name: "average leading edge width coefficient (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_sea_ice_sdev:
-    long_name: "leading edge width coefficient standard_deviation (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_lead_mean:
-    long_name: "average leading edge width coefficient (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_lead_sdev:
-    long_name: "leading edge width coefficient standard_deviation (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_ocean_mean:
-    long_name: "average leading edge width coefficient (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_leading_edge_width_ocean_sdev:
-    long_name: "leading edge width coefficient standard_deviation (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_mean:
-    var_source_name: stat_pulse_peakiness_all_mean
-    long_name: "average pulse peakiness coefficient (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_sdev:
-    var_source_name: stat_pulse_peakiness_all_sdev
-    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_sea_ice_mean:
-    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_sea_ice_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_ocean_mean:
-    long_name: "average pulse peakiness coefficient (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_ocean_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (ocean waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_lead_mean:
-    long_name: "average pulse peakiness coefficient (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement
-
-  stat_pulse_peakiness_lead_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-    coverage_content_type: physicalMeasurement

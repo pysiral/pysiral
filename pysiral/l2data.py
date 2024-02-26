@@ -234,14 +234,28 @@ class Level2Data(object):
             try:
                 source = catalog[parameter_name]
                 parameter = getattr(self, source)
-            except KeyError:
-                msg = f"Variable name `{parameter_name}` is not in the catalog of this l2 object"
-
-                self.error.add_error("l2data-missing-variable", msg)
+            except KeyError as error:
                 if raise_on_error:
-                    self.error.raise_on_error()
+                    raise KeyError(
+                        f"Variable name `{parameter_name}` is not in the catalog of this l2 object"
+                    ) from error
                 parameter = np.full(self.n_records, np.nan)
             return parameter
+
+    def update_parameter(self, var_name: str, value, uncertainty=None) -> None:
+
+        # Combine parameter and property catalogs
+        try:
+            var_id = self.full_variable_catalog[var_name]
+        except KeyError as error:
+            raise KeyError(f"{var_name} not in parameter catalog") from error
+
+        value = getattr(self, var_id)
+        unc = value.uncertainty if uncertainty is None else uncertainty
+        if var_name in self._auxiliary_catalog:
+            self.set_auxiliary_parameter(var_id, var_name, value, unc)
+        else:
+            self.set_parameter(var_name, value, uncertainty)
 
     def get_attribute(self, attribute_name, *args):
         """ Return a string for a given attribute name. This method is

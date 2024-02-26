@@ -70,6 +70,9 @@ setup(
              'bin/pysiral-l2preproc.py',
              'bin/pysiral-l3proc.py'],
     cmdclass={'build_ext': build_ext},
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(
+        extensions,
+        compiler_directives={'language_level': "3"}
+    ),
     include_dirs=[numpy.get_include()]
 )

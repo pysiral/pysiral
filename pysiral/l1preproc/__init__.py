@@ -289,6 +289,14 @@ class L1PreProcBase(DefaultLoggingClass):
             l1_po_segments = self.extract_polar_ocean_segments(l1)
             if SHOW_DEBUG_MAP:
                 l1p_debug_map(l1_po_segments, title="Polar Ocean Segments")
+
+            # Optional Step 4 (needs to be specifically activated in l1 processor config file)
+            # NOTE: This is here because there are files in the Sentinel-3AB thematic sea ice product
+            #       that contain both lrm and sar data.
+            detect_radar_mode_change = self.cfg.get("detect_radar_mode_change", False)
+            if detect_radar_mode_change:
+                l1_po_segments = self.l1_split_radar_mode_segments(l1_po_segments)
+
             self.l1_apply_processor_items(l1_po_segments, "post_ocean_segment_extraction")
 
             # Step 5: Merge orbit segments
@@ -459,6 +467,41 @@ class L1PreProcBase(DefaultLoggingClass):
 
         # Return (elements marked for export, l1_connected stack)
         return merged_l1_list[:-1], [merged_l1_list[-1]]
+
+    @staticmethod
+    def l1_split_radar_mode_segments(l1_list: List["Level1bData"]) -> List["Level1bData"]:
+        """
+        This method checks if there is more than one radar mode per l1 segment and
+        splits the segments for each radar mode change. This is done, because
+        multiple radar modes per segment may be problematic for Level-1 pre-processor
+        items. The final l1p output file may contain multiple radar modes.
+
+        NOTE: So far this is only needed for the Sentinel-3A/B L2 thematic sea ice product.
+              No other files have been found so far that have more than one radar mode.
+
+        :param l1_list: Input list of l1 segments.
+
+        :return: l1_output_list: Output list of l1 segments with single radar mode
+        """
+        output_l1_list = []
+        for l1 in l1_list:
+
+            if l1.waveform.num_radar_modes > 1:
+
+                # Get a list of start and end index
+                change_idxs = np.where(np.ediff1d(l1.waveform.radar_mode))[0] + 1
+
+                segment_start_idxs = np.insert(change_idxs, 0, 0)
+                segment_end_idxs = np.insert(change_idxs-1, len(change_idxs), l1.n_records-1)
+
+                for start_idx, end_idx in zip(segment_start_idxs, segment_end_idxs):
+                    l1_radar_mode_subset = l1.extract_subset(np.arange(start_idx, end_idx))
+                    output_l1_list.append(l1_radar_mode_subset)
+
+            else:
+                output_l1_list.append(l1)
+
+        return output_l1_list
 
     def l1_are_connected(self, l1_0: "Level1bData", l1_1: "Level1bData") -> bool:
         """
