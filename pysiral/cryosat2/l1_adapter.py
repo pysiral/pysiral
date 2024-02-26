@@ -515,3 +515,48 @@ class ESACryoSat2PDSBaselineDPatchFESArctide(ESACryoSat2PDSBaselineDPatchFES):
         p = re.compile('TEST')
         newpath = p.sub('LTA_', newpath)
         return newpath
+
+class ESACryoSat2PDSBaselineDPatchFESArctideDiscrim(ESACryoSat2PDSBaselineDPatchFESArctide):
+    def __init__(self, cfg, raise_on_error=False):
+        ESACryoSat2PDSBaselineDPatchFESArctide.__init__(self, cfg, raise_on_error)
+
+    def _set_l1_data_groups(self):
+        ESACryoSat2PDSBaselineDPatchFESArctide._set_l1_data_groups(self)
+        discpath = self._get_disc_path(self.filepath)
+        if not Path(discpath).is_file():
+            msg = f"Not a valid file: {discpath}"
+            logger.warning(msg)
+            self.error.add_error("invalid-filepath", msg)
+            raise FileNotFoundError
+        else:
+            nc_arc = xarray.open_dataset(discpath, decode_times=False, mask_and_scale=True)
+
+            # time_1hz = self.nc.time_cor_01.values
+            # time_20hz = self.nc.time_20_ku.values
+
+            msg = f"Patching discrimination data from: {discpath}"
+            logger.info(msg)
+
+            variable_20hz = getattr(nc_arc, 'class')
+
+            nans_indices = np.where(np.isnan(variable_20hz))[0]
+            if len(nans_indices) > 0:
+                msg = 'Discrimination data has NaN values'
+                logger.warning(msg)
+                variable_20hz[nans_indices] = -1
+
+            # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
+            self.l1.classifier.add(variable_20hz.astype(int), 'cls_nn_discrimination')
+
+
+    def _get_disc_path(self, filepath):
+        # TODO: get the substitutions to make from config file. Get a list of pairs of sub 'this' to 'that'.
+        # pathsubs = [ ( 'L1B', 'L1B/DISCRIM' ), ( 'nc', 'fes2014b.nc' ) ]
+        newpath = str(filepath)
+        p = re.compile('L1B')
+        newpath = p.sub('L1B/DISCRIM', newpath)
+        p = re.compile('.nc')
+        newpath = p.sub('_class.nc', newpath)
+        p = re.compile('TEST')
+        newpath = p.sub('LTA_', newpath)
+        return newpath

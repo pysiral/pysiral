@@ -4,11 +4,11 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
     product_line: esa
-    record_type: tds-po-rep-C001
+    record_type: tds-po-rep-C001-nn
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
-    hemisphere: north
+    hemisphere: south
 
 
 # --- Ingest auxiliary data ---
@@ -26,18 +26,30 @@ metadata:
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 #
 auxdata:
+    - region:
+        name: antarctic_seas
+        options:
+            # default value for all points outside the regions
+            ice_free_ocean_code: 0
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [100, "Indian Ocean", 20.0,  90.0, -40.0]
+                - [101, "Western Pacific Ocean", 90.0, 160.0, -40.0]
+                - [102, "Ross Sea", 160.0,  -130.0, -40.0]
+                - [103, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
+                - [104, "Weddell Sea", -60.0,  20.0, -40.0]
 
     # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     # Load the
     - mdt:
         name: dtu17
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
         name: c3s
@@ -45,16 +57,6 @@ auxdata:
             version: v3p0
             exception_on_error: True
 
-    - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: True
-
-    - region:
-        name: nsidc_2021
-        options: null
 
 # --- Level-2 processor steps ---
 #
@@ -94,24 +96,13 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
-        pyclass: ParameterRollingStatistics
-        options:
-            window_size_m: 25000.
-            statistics: ["sdev", "mean"]
-            input_parameters:
-                - pulse_peakiness
-                - leading_edge_width
-                - sigma0
-
     # Surface type classification algorithm
 # Surface type classification algorithm
     # SH: This is the surface type classification algorithm for the 
     #     the new ESA CCI climate data record. There are now significantly
     #     more sea ice waveform 
     -   module: surface
-        pyclass: ClassifierThresholdSurfaceType
+        pyclass: ClassifierAuxiliarySurfaceType
         options:
 
             # This option defines the surface type order. It is important that
@@ -122,57 +113,26 @@ procsteps:
             # Ocean classification is based on a low pulse peakiness
             # and the sea-ice concentration based ice mask
             ocean:
+                nn: [1, 10]
+                sic: 15.0
 
-                - radar_mode: lrm
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-
-                - radar_mode: sar
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 1.0"
-
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} < 15.0"
-                      - "{pulse_peakiness_rolling_sdev} < 4.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
             # and pulse peakiness within the sea-ice mask.
             # NOTE: No LRM data over sea ice
             lead:
+                nn: [2, 4]
+                sic: 70.0
 
-                - radar_mode: sar
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= 66.0"
-                      - "{sigma0} >= 23.0"
-                      - "{leading_edge_width} <= 0.75"
-
-                - radar_mode: sin
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{pulse_peakiness} >= 260.0"
-                      - "{sigma0} >= 24.0"
-                      - "{leading_edge_width} <= 1.05"
 
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
             # valid leading edge.
             sea_ice:
+                nn: [1, 10]
+                sic: 70.0
 
-                - radar_mode: sar
-                  exclude: lead
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.02"
-
-                - radar_mode: sin
-                  exclude: lead
-                  conditions:
-                      - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.02"
 
     # Retracking algorithm dependent on surface type
     -   module: retracker
