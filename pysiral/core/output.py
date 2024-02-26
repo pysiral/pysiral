@@ -485,8 +485,14 @@ class NCDataFile(DefaultLoggingClass):
                     # The full dimension
                     dimensions = aux_dimdict["dimensions"]
 
-            # flag_meanings attributes need special handling
+            # Process attributes
+            # This is necessary to e.g., check for flag value types
+            for key in sorted(attribute_dict.keys()):
+                attribute = attribute_dict[key]
+                if isinstance(attribute, str):
+                    attribute_dict[key] = self.output_handler.fill_template_string(attribute, self.data)
 
+            # flag_meanings attributes need special handling
             if 'flag_meanings' in attribute_dict.keys() and "flag_values" in attribute_dict.keys():
                 # Check to see if data is currently using fewer bits than the flag allows
                 flag_values = [int(x) for x in re.split(r"\s+|, |,", str(attribute_dict['flag_values']))]
@@ -506,7 +512,6 @@ class NCDataFile(DefaultLoggingClass):
             #       flags when the data type of the attribute is not a string
             for key in sorted(attribute_dict.keys()):
                 attribute = attribute_dict[key]
-                attribute = self.output_handler.fill_template_string(attribute, self.data)
                 if key == 'flag_values':
                     # The flag_values attribute also needs to be converted to a list of the correct datatype
                     flag_values = [int(x) for x in re.split(r"\s+|, |,", attribute)]
@@ -873,7 +878,6 @@ class Level3Output(NCDataFile):
         dims = ("time", "nv")
         var = rgrp.createVariable("time_bnds", "f8", dims, zlib=self.zlib)
         var.long_name = "Time Bounds"
-        var.units = self.time_def.units
         var.coverage_content_type = "coordinate"
         var[:] = time_bnds
 
