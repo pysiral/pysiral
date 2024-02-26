@@ -19,7 +19,7 @@ input_handler:
 input_adapter:
     
     module_name: pysiral.cryosat2.l1_adapter
-    class_name: ESACryoSat2PDSBaselineDPatchFESArctide
+    class_name: ESACryoSat2PDSBaselineDPatchFES
     
     options:
         

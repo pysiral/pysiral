@@ -2,13 +2,13 @@
 # Lowess length set to 1501 for consistency with FMR. Change to 333 for phase 2.2
 
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
+    label: "ESA CryoTEMPO CryoSat-2 near real-time polar ocean product"
     product_line: esa
-    record_type: tds-po-rep-C001
+    record_type: tds-po-nrt-C001
     platform: cryosat2
     version: C001
     file_version_tag: "C001"
-    hemisphere: north
+    hemisphere: south
 
 
 # --- Ingest auxiliary data ---
@@ -26,35 +26,39 @@ metadata:
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 #
 auxdata:
+    - region:
+        name: antarctic_seas
+        options:
+            # default value for all points outside the regions
+            ice_free_ocean_code: 0
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [100, "Indian Ocean", 20.0,  90.0, -40.0]
+                - [101, "Western Pacific Ocean", 90.0, 160.0, -40.0]
+                - [102, "Ross Sea", 160.0,  -130.0, -40.0]
+                - [103, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
+                - [104, "Weddell Sea", -60.0,  20.0, -40.0]
 
     # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     # Load the
     - mdt:
         name: dtu22
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v3p0
-            exception_on_error: True
+            exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
-    - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: True
-
-    - region:
-        name: nsidc_2021
-        options: null
 
 # --- Level-2 processor steps ---
 #
@@ -182,7 +186,9 @@ procsteps:
                 pyclass: SAMOSAPlus
                 options:
                     # if arrays than [lrm, sar, sin]
-                    range_bias: [0.0, 0.0, 0.0]
+                    # Empirically derived for Baseline C by DTU
+                    # Positive bias is SUBTRACTED from range
+                    range_bias: [0.05, 0.05, 0.05]
                     surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed
@@ -207,7 +213,9 @@ procsteps:
                 pyclass: SAMOSAPlus
                 options:
                     # if arrays than [lrm, sar, sin]
-                    range_bias: [0.0, 0.0, 0.0]
+                    # Empirically derived for Baseline C by DTU
+                    # Positive bias is SUBTRACTED from range
+                    range_bias: [0.05, 0.05, 0.05]
                     surface_type: "polar_ocean"
                     uncertainty:
                         type: fixed
