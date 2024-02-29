@@ -10,11 +10,11 @@ from collections import OrderedDict, deque
 from datetime import datetime
 from pathlib import Path
 
-from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
 from pysiral.core.datahandler import DefaultAuxdataClassHandler
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
@@ -218,11 +218,16 @@ class Level2Processor(DefaultLoggingClass):
                 period = DatePeriod(l1b.info.start_time, l1b.info.stop_time)
             except SystemExit:
                 msg = "Computation of data period caused exception"
-                logger.warning("[invalid-l1b]", msg)
+                logger.warning(f"[invalid-l1b] {msg}")
                 continue
 
             # Init the Level-2 data object
             l2 = Level2Data(l1b.info, l1b.time_orbit, period=period)
+
+            if l2.n_records < 2:
+                msg = "Single-record L1b file"
+                logger.warning(f"[invalid-l1b] {msg}")
+                continue
 
             # Overwrite the timeliness value of the l1p input data
             # (requires settings of --force-l2def-record-type option in pysiral-l2proc)

@@ -556,6 +556,7 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
     Gaps close to a valid sea-ice type value will be filled using a nearest neighbour approach,
     further gaps will be labeled as ambiguous. Any gap-filled value will be associated with a
     large uncertainty.
+
     :param sitype: sea-ice type array
     :param sitype_uncertainty: sea-ice type uncertainty array
     :param sic: sea-ice concentration array
@@ -563,6 +564,7 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
     :param gap_filled_uncertainty: the sea-ice type uncertainty value associated with gap filled values
     :param max_valid_nn_dist: The maximum distance (in points) for valid nearest neighbour interpolation
     :param ambiguos_sitype_value: The value associated to ambiguous gaps
+
     :return: Gap-filled sitype, sitype_uncertainty
     """
 
@@ -578,7 +580,7 @@ def fill_sitype_gaps(sitype, sitype_uncertainty, sic, sic_threshold=70., gap_fil
         return sitype, sitype_uncertainty
 
     # Step 2: Compute the distance of a sea ice type gap to the next valid value
-    # Must have at at least some valid sea ice type values
+    # Must have at least some valid sea ice type values
     if not is_sitype_gap.all():
         gap_dist = SLABaseFunctionality().get_tiepoint_distance(is_valid_sitype)
 

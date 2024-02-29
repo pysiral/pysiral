@@ -1,5 +1,34 @@
 # History of changes
 
+## [0.11] 2024-02-29
+
+### Added
+- L1 pre-processor support for Sentinel-3A/B Level 2 Thematic Sea Ice Product (l2_lan_si)
+- SAMOSA+ retracker for sea ice and lead waveforms (via `SAMpy` https://github.com/cls-obsnadir-dev/SAMPy) (@djbwork)
+- Processor and output configuration for CCI v3.0 CDR
+- Processor and output configuration for ESA Cryp-TEMPO SI & PO baseline-C (@dbjwork)
+- Processor and output configuration for AWI v2.6
+- Allow package wide definition of number of cores for multiprocessing (overrides `multiprocessing.cpu_count()`)
+- L1p preprocessor item for trailing edge parameter (including waveform fitting on multiple cores)
+- External surface type classification from CLS neural network (@djbwork)
+
+### Changed
+- Allow multiple l2i-type outputs from a Level-2 processor run
+- Allow data to be used from CryoSat-2 commissioning phase
+- python package required (No longer necessary to install specific cartopy version)
+
+### Fixed
+- Several issues with new cython version (compiler directives, incorrect use of `cpdef` declaration)
+- Incorrect handling of flag values attribute data type when flag values where a template string
+- Original exception was not displayed upon submodule ImportError
+
+### Deprecated
+- `core.class_template` and `core.errorhandler` will be replaced by regular or customized exceptions with additional context. 
+- `core.iotools.ReadNC` will be replaced by `xarray`. 
+
+### Removed
+- Several deprecated configuration files
+
 ## [0.10] 2023-04-21
 
 ### Added

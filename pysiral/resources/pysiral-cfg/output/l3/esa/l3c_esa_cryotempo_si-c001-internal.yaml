@@ -1,0 +1,184 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata:
+  output_id: l3c_tempo_c001
+  data_level: 3
+  data_level_description: Level-3 colated (gridded geophysical parameters)
+
+# Output Definition (for each period definition)
+filenaming:
+  month: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m}-C001.nc"
+  monthly: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m}-C001.nc"
+  isoweek: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
+  day: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}-C001.nc"
+  custom: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
+  default: "esa-cryotempo-l3c-si-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
+
+product_level_subfolder: l3c_grid_internal
+
+grid_options:
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Gridded Cryo-TEMPO sea ice output (for quality control purposes only)"
+  - institution: ""
+  - source: ""
+  - platform: "CryoSat-2"
+  - sensor: "SIRAL"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: ""
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: ""
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: ""
+  - keywords: ""
+  - id: "esa-cryotempo-l3-cryosat2-rep-{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-C001"
+  - naming_authority: "de.awi"
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Grid"
+  - comment: ""
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: ""
+  - creator_type: ""
+  - creator_url: ""
+  - contributor_name: ""
+  - contributor_role: ""
+  - project: "ESA Cryo-TEMPO"
+  - publisher_name: ""
+  - publisher_url: ""
+  - publisher_email: ""
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - spatial_resolution: "{grid_spacing_tag} grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: ""
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+    
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  radar_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  radar_freeboard_uncertainty:
+    var_source_name: radar_freeboard_uncertainty
+    long_name: "uncertainty of radar freeboard"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard:
+    long_name: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval (level-2 mean)"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_filtered:
+    long_name: "sea-ice freeboard with along-track lowess filter"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: surface_snow_thickness
+    units: m
+    valid_min: 0.0
+    valid_max: 0.6
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  samosa_misfit:
+    long_name: "samosa retracker misfit"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  mean_square_slope:
+    long_name: "mean square slope"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "SAMOSA+ retracker output"
+
+  surface_height_standard_deviation:
+    long_name: "surface height standard deviation"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "SAMOSA+ retracker output"
+
+  instrument_mode:
+    long_name: "radar mode flag"
+    valid_min: 1
+    valid_max: 3
+    flag_values: "1, 2, 3"
+    flag_meanings: "1: pulse limited (lrm), 2: sar, 3: sar interferometric"
+    comment: "median of radar mode flags within grid cells"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "region code"
+    unit: 1
+    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
+    valid_min: 0
+    valid_max: 18
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea"
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  n_valid_freeboards:
+    long_name: "number of valid freeboard measurements"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"

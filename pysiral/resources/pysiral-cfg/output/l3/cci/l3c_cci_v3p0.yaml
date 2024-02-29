@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming: 
-  month: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0.nc"
-  isoweek: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
-  day: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0.nc"
-  custom: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
-  default: "ESACCI-SEAICE-l3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
+  month: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv3p0.nc"
+  isoweek: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
+  day: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv3p0.nc"
+  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
+  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv3p0.nc"
 
 product_level_subfolder: l3c_release
 
@@ -29,9 +29,9 @@ global_attributes:
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)"
+  - references: "CCI+ Sea Ice ECV - Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)https://doi.org/10.5281/zenodo.10605840; CCI+ Sea Ice ECV - Sea Ice Thickness Product User Guide (PUG) https://doi.org/10.5281/zenodo.10605998"
   - tracking_id: "{uuid}"
-  - conventions: "CF-1.8"
+  - Conventions: "CF-1.8"
   - product_version: "3.0"
   - format_version: "CCI Data Standards v2.3"
   - processing_level: "Level-3 Collated (l3c)"
@@ -40,7 +40,7 @@ global_attributes:
   - naming_authority: "de.awi"
   - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Cryosphere > Sea Ice > Freeboard, Earth Science > Cryosphere > Sea Ice > Snow Depth, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Earth Remote Sensing Instruments > Active Remote Sensing > Altimeters > Radar Altimeters > KU-BAND RADAR, Space-based Platforms > Earth Observation Satellites > {source_mission_id:select;cryosat2:CRYOSAT;envisat:ENVISAT}, Multinational Organizations > ESA/CCI, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research, Geographic Region > {source_hemisphere:select;Northern;Southern} Hemisphere, Vertical Location > Sea Surface"
   - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: ""
+  - doi: "{doi}"
   - cdm_data_type: "Grid"
   - comment: "{source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
@@ -199,7 +199,7 @@ variables:
     valid_min: 0
     valid_max: 20
     flag_values: "{source_hemisphere:select;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
-    flag_meaning: "{source_hemisphere:select;undefined_region central_arctic beaufort_sea chukchi_sea east_siberian_sea laptev_sea kara_sea barents_sea east_greenland_sea baffin_bay_&_labrador_sea gulf_of_st._lawrence hudson_bay canadian_archipelago bering_sea sea_of_okhotsk sea_of_japan bohai_sea baltic_sea gulf_of_alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
+    flag_meanings: "{source_hemisphere:select;undefined_region central_arctic beaufort_sea chukchi_sea east_siberian_sea laptev_sea kara_sea barents_sea east_greenland_sea baffin_bay_and_labrador_sea gulf_of_st_lawrence hudson_bay canadian_archipelago bering_sea sea_of_okhotsk sea_of_japan bohai_sea baltic_sea gulf_of_alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"

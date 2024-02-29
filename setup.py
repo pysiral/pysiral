@@ -50,8 +50,6 @@ setup(
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9'
     ],
     long_description=readme,
@@ -70,6 +68,9 @@ setup(
              'bin/pysiral-l2preproc.py',
              'bin/pysiral-l3proc.py'],
     cmdclass={'build_ext': build_ext},
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(
+        extensions,
+        compiler_directives={'language_level': "3"}
+    ),
     include_dirs=[numpy.get_include()]
 )

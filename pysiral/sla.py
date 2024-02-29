@@ -271,7 +271,7 @@ class SLABaseFunctionality(object):
         window_size_float = elevation_filter_window_m / footprint_spacing
         window_size = None if np.isnan(window_size_float) else int(int(window_size_float) // 2 * 2 + 1)
 
-        upper_limit, lower_limit = get_rolling_standard_deviation_elevation_window(
+        lower_limit, upper_limit = get_rolling_standard_deviation_elevation_window(
             elevation,
             window_size,
             minimum_standard_deviation_m=minimum_standard_deviation_m,
@@ -284,16 +284,18 @@ class SLABaseFunctionality(object):
             elevation[ssh_tiepoint_indices] > lower_limit[ssh_tiepoint_indices]
         )
 
+        logger.debug(f"num tie_points_inside_elevation_bounds={len(tie_points_inside_elevation_bounds)}")
+
         # Debug code
         # import matplotlib.pyplot as plt
+        # x = np.arange(elevation.shape[0])
         # tie_points_outside_elevation_bounds = np.logical_not(tie_points_inside_elevation_bounds)
         # plt.figure(dpi=150)
-        # plt.fill_between(x, elevation_rolling_mean - elevation_rolling_sdev,
-        #                  elevation_rolling_mean + elevation_rolling_sdev,
+        # plt.fill_between(x, upper_limit, lower_limit,
         #                  color="green", alpha=0.25, edgecolor="none")
         # plt.fill_between(x, lower_limit, upper_limit, color="green", alpha=0.25, edgecolor="none")
         # plt.plot(x, elevation, lw=0.5, color="0.0", label="raw elevation")
-        # plt.plot(x, elevation_rolling_mean, lw=0.75, linestyle="dashed")
+        # # plt.plot(x, elevation_rolling_mean, lw=0.75, linestyle="dashed")
         # plt.scatter(x[ssh_tiepoint_indices], elevation[ssh_tiepoint_indices], s=30,
         #             c="none", edgecolors="red", label="all tie-points")
         # plt.scatter(x[ssh_tiepoint_indices[tie_points_outside_elevation_bounds]],
@@ -301,7 +303,6 @@ class SLABaseFunctionality(object):
         #             marker="x", c="red", edgecolors="red", label="filtered tie-points")
         # plt.legend()
         # plt.show()
-        # breakpoint()
 
         return ssh_tiepoint_indices[tie_points_inside_elevation_bounds]
 
@@ -547,6 +548,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         # Verification that there is any ssh tie points
         # -> Will return all NaN sla if not
         if len(ssh_tiepoint_indices) == 0:
+            logger.warning("No sea surface height tiepoint -> Empty SLA")
             all_nans = np.full(l2.n_records, np.nan)
             l2.sla.set_value(all_nans)
             l2.sla.set_uncertainty(all_nans)
@@ -578,7 +580,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
             is_tiepoint = np.full(l2.n_records, False)
             is_tiepoint[ssh_tiepoint_indices] = True
             distance_threshold = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", np.nan)
-            edges_only = self.cfg.options.tiepoint_maxdist_filter.get("maximum_distance_to_tiepoint", False)
+            edges_only = self.cfg.options.tiepoint_maxdist_filter.get("edges_only", False)
             filter_mask = self.tiepoint_maxdist_filter(l2, edges_only, distance_threshold, l2.footprint_spacing)
             mask = np.logical_or(mask, filter_mask)
 
@@ -598,9 +600,11 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     def smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width):
         """
         The main SLA computation method in this class
+
         :param l2: Level-2 data container
         :param ssh_tiepoint_indices:
         :param filter_width:
+
         :return: None
         """
 

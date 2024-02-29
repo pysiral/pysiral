@@ -12,13 +12,13 @@ from pathlib import Path
 from typing import List, Union
 
 from attrdict import AttrDict
-from pysiral.core.class_template import DefaultLoggingClass
 from dateperiods import DatePeriod
 from dateutil.relativedelta import relativedelta
 from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
+from pysiral.core.class_template import DefaultLoggingClass
 from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
 from pysiral.core.output import PysiralOutputFilenaming
 
@@ -110,7 +110,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
         # Get the auxiliary data class
         module_name, class_name = f"pysiral.auxdata.{auxdata_class}", auxdata_def["pyclass"]
-        auxclass = get_cls(module_name, class_name, relaxed=False)
+        auxclass, err = get_cls(module_name, class_name, relaxed=False)
         if auxclass is None:
             error_id = "auxdata_invalid_class_name"
             msg = f"Invalid Auxdata class: {module_name}.{class_name}"
@@ -309,11 +309,12 @@ class L2iDataHandler(object):
             lookup_directories = self.get_lookup_directory(year, month)
             for lookup_directory in lookup_directories:
                 if not Path(lookup_directory).is_dir():
+                    logger.error(f"l2i directory does not exist: {lookup_directory}")
                     continue
                 l2i_pattern = self.get_l2i_search_str(year=year, month=month, day=day)
                 result = list(Path(lookup_directory).glob(l2i_pattern))
                 l2i_files.extend(sorted(result))
-                logger.info(f"Found {len(result)} l2i files in {lookup_directory} for {year}-{month}-{day}")
+                logger.info(f"Found {len(result)} l2i files in {lookup_directory} for {year}-{month:02g}-{day:02g}")
 
         return l2i_files
 

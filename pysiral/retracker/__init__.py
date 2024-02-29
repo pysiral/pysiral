@@ -181,6 +181,10 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             if surface_type_flag.num == 0:
                 logger.info(f"- no waveforms of type {surface_type}")
                 continue
+            else:
+                logger.info(
+                    f"Retrack {surface_type_flag.num} {surface_type} waveforms with " + retracker_def["pyclass"]
+                )
 
             # Benchmark retracker performance
             timestamp = time.time()
