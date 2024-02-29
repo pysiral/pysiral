@@ -5,13 +5,14 @@ authors:
   - family-names: Hendricks,
     given-names: Stefan
     orcid: https://orcid.org/0000-0002-1412-3146
-  - family-names: Sallila
-    given-names: Heidi
   - family-names: Brockley
     given-names: David
   - family-names: Paul
     given-names: Stephan
-title: "python sea ice radar altimetry toolbox (version 0.10)"
-version: v0.10
+  - family-names: Sallila
+    given-names: Heidi
+
+title: "python sea ice radar altimetry toolbox (version 0.11)"
+version: v0.11
 doi: tbd
-date-released: 2023-04-21
+date-released: 2024-02-29
