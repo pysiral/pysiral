@@ -7,13 +7,54 @@ TODO: Is this still being used?
 """
 
 import calendar
+import multiprocessing
 import time
 from datetime import datetime
+from typing import List, Tuple
 
 import numpy as np
 from dateutil import parser as dtparser
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, rrule
+
+
+def get_multiprocessing_1d_array_chunks(
+        array_size: int,
+        n_processes: int,
+) -> Tuple[List[Tuple[int, int]], int]:
+    """
+    Break down an array in chunks for multiprocessing. The rule
+    is one chunk per process/CPU.
+
+    :param array_size: The number of elements to be distributed to chunks
+    :param n_processes: The number processes/CPU's/chunks
+
+    :return: List with start and end index for each chunk and number
+        of (viable) processes
+    """
+
+    # Can't have more processes than chunks
+    n_processes = min(n_processes, array_size)
+
+    # Compute the chunks
+    chunk_size = int(np.ceil(float(array_size) / float(n_processes)))
+    chunks = np.arange(0, array_size, chunk_size, dtype=int)
+
+    # Chunks with only one element are special case
+    if chunk_size == 1:
+        return zip(chunks, chunks), n_processes
+
+    # For small arrays, the number of chunks may vary from desired number
+    # of processes (integer granularity) -> recompute `n_processes`
+    n_processes = len(chunks)
+
+    # Last chunk may be smaller
+    if chunks[-1] != (array_size - 1):
+        chunks = np.append(chunks, [array_size])
+    else:
+        chunks[-1] += 1
+
+    return zip(chunks[:-1], chunks[1:] - 1), n_processes
 
 
 def parse_datetime_str(dtstr):

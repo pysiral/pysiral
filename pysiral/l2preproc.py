@@ -15,7 +15,7 @@ from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.errorhandler import ErrorStatus
 from pysiral.core.output import Level2Output, OutputHandlerBase
-from pysiral.l2data import L2iNCFileImport, Level2PContainer, Level2Data
+from pysiral.l2data import L2iNCFileImport, Level2Data, Level2PContainer
 
 
 class Level2PreProcessor(DefaultLoggingClass):

@@ -178,11 +178,11 @@ def get_l1_proc_item(module_name: str,
     """
 
     # Get the class
-    cls = get_cls(module_name, class_name, relaxed=True)
+    cls, err = get_cls(module_name, class_name)
 
     # Check 1: class must exist
     if cls is None:
-        raise ValueError(f"Unknown class {module_name}.{class_name} - Terminating")
+        raise ValueError(f"Unknown class {module_name}.{class_name} - Terminating") from err
 
     # Check 2: Class must be of inheriting L1PProcItem
     instance_ = cls(**cfg)

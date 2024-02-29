@@ -359,12 +359,17 @@ class cTFMRA(BaseRetracker):
 
         return filt_rng, filt_wfm, fmi, norm
 
-    def get_thresholds_distance(self, rng, wfm, fmi, t0, t1):
+    def get_thresholds_distance(self, rng, wfm, fmi, t0, t1, return_all_values=False):
         """
         Return the distance between two thresholds t0 < t1
         """
 
         width = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        r0 = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        p0 = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        r1 = np.full(rng.shape[0], np.nan, dtype=np.float32)
+        p1 = np.full(rng.shape[0], np.nan, dtype=np.float32)
+
         noise_level_range_bin_idx = self._options.noise_level_range_bin_idx
         oversampling_factor = self._options.wfm_oversampling_factor
         first_valid_idx = noise_level_range_bin_idx[1] * oversampling_factor
@@ -372,19 +377,21 @@ class cTFMRA(BaseRetracker):
             if fmi[i] is None:
                 continue
 
-            r0, p0, i0 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t0, first_valid_idx=first_valid_idx)
-            r1, p1, i1 = self.get_threshold_range(rng[i, :], wfm[i, :], fmi[i], t1, first_valid_idx=first_valid_idx)
-            width[i] = r1 - r0
+            r0[i], p0[i], i0 = self.get_threshold_range(
+                rng[i, :], wfm[i, :], fmi[i], t0, first_valid_idx=first_valid_idx)
+            r1[i], p1[i], i1 = self.get_threshold_range(
+                rng[i, :], wfm[i, :], fmi[i], t1, first_valid_idx=first_valid_idx)
+            width[i] = r1[i] - r0[i]
 
         # some irregular waveforms might produce negative width values
         is_negative = np.where(width < 0.)[0]
         width[is_negative] = np.nan
-        return width
+        return (width, r0, p0, r1, p1) if return_all_values else width
 
     @staticmethod
     def get_filtered_wfm(rng, wfm, oversampling_factor, window_size):
         """
-        Return a filtered version of the the waveform. This process inclused
+        Return a filtered version of the waveform. This process inclused
         oversampling, smoothing and normalization to the first maximum power.
         :param rng: (np.array, dim:n_records) window delay for each range bin
         :param wfm: (np.array, dim:n_records) the power for each range bin with

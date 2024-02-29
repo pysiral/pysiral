@@ -99,7 +99,7 @@ class SSBCorrectionJason2(Level2ProcessorStep):
     def __init__(self, *args, **kwargs):
         super(SSBCorrectionJason2, self).__init__(*args, **kwargs)
         if not SAMOSA_OK:
-            raise ImportError("Unable to import the SAMOSA retracker helper functions. Has it been installed?")
+            logger.error("Unable to import the SAMOSA retracker helper functions. Has it been installed?")
 
     def execute_procstep(self, l1b, l2):
         """
@@ -108,6 +108,9 @@ class SSBCorrectionJason2(Level2ProcessorStep):
         :param l2:
         :return: error_status_flag
         """
+
+        if not SAMOSA_OK:
+            raise ImportError("Unable to import the SAMOSA retracker helper functions. Has it been installed?")
 
         # Get a clean error status
         error_status = self.get_clean_error_status(l2.n_records)

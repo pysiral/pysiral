@@ -779,7 +779,7 @@ region:
                 - [5, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
                 - [6, "Weddell Sea", -60.0,  20.0, -40.0]
             attributes: # This is not used yet
-                flag_meaning: "0: Land Ice, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land"
+                flag_meanings: "0: Land Ice, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land"
                 flag_values:  "0, 1, 2, 3, 4, 5, 6, 20"
                 long_name:  "Antarctic Sea "
 

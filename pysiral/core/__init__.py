@@ -8,7 +8,7 @@ __author__ = "Stefan Hendricks"
 __all__ = [
     "class_template", "clocks", "config", "datahandler", "errorhandler",
     "flags", "helper", "iotools", "output",
-    "DefaultLoggingClass"
+    "DefaultLoggingClass", "functions"
 ]
 
 from loguru import logger

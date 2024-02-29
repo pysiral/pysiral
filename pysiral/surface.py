@@ -633,6 +633,140 @@ class ClassifierThresholdSurfaceType(Level2ProcessorStep, SurfaceTypeClassifier)
         return self.error_flag_bit_dict["surface_type"]
 
 
+class ClassifierAuxiliarySurfaceType(Level2ProcessorStep, SurfaceTypeClassifier):
+    """
+    Surface type classification using a parameter already present in l1p that
+    was read in from auxiliary files during preprocessing
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the class. All *args and **kwargs will be directed to Level2ProcessorStep as
+        SurfaceTypeClassifier does not take any input at __init__
+        :param args:
+        :param kwargs:
+        """
+
+        # Init the parent classes
+        Level2ProcessorStep.__init__(self, *args, **kwargs)
+        SurfaceTypeClassifier.__init__(self)
+
+        # Properties of this class
+        self.reference_date = None        # Set the classes that this classifier will detect
+        self._classes = ["unknown", "ocean", "lead", "sea_ice"]
+
+    def execute_procstep(self, l1, l2) -> np.ndarray:
+        """
+        The mandatory class for a Level2ProcessorStep.
+        :param l1:
+        :param l2:
+        :return:
+        """
+
+        # Step 1: Transfer classifier / sea ice concentration radar mode
+        self.transfer_l1b_classifier(l1)
+        self.classifier.add_parameter(l2.sic, "sic")
+
+        # Step 2: Run the classifier for different target surface types
+
+        # Classify ocean
+        self.classify_ocean()
+
+        # Classify leads
+        self.classify_leads()
+
+        # Classify sea ice
+        self.classify_sea_ice()
+
+        # Step 3: Add the l1b land flag
+        # This step is done at the end to exclude the land flag being overwritten
+        # by mis-classification
+        self.set_l1b_land_mask(l1)
+
+        # Step 4: Update the l2 data object with the classification result
+        l2.surface_type = self.surface_type
+
+        # Step 5: Generate an error flag
+        # -> all surfaces that are marked as unknown
+        error_flag = l2.surface_type.get_by_name("unknown")
+        return error_flag.flag
+
+    def classify_ocean(self):
+        """
+        Classify ocean waveforms.
+        :return:
+        """
+
+        parameter = self.classifier
+        ocean = ANDCondition()
+
+        # CLS NN discrimination from L1
+        # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
+        ocean.add(np.isin(parameter.cls_nn_discrimination, self.cfg['options']['ocean']['nn']))
+
+        # Ice Concentration
+        ocean.add(parameter.sic < self.cfg['options']['ocean']['sic'])
+
+        # Done, add flag
+        self.surface_type.add_flag(ocean.flag, "ocean")
+
+    def classify_leads(self):
+        """
+        Classify leads in sea ice
+        :return:
+        """
+
+        # Pointer
+        parameter = self.classifier
+
+        # All conditions must be fulfilled
+        lead = ANDCondition()
+
+        # CLS NN discrimination from L1
+        # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
+        # 6 has coincident sea ice (maybe 4 is a bit contaminated too, so may need tuning)
+        lead.add(np.isin(parameter.cls_nn_discrimination, self.cfg['options']['lead']['nn']))
+
+        # Ice Concentration
+        lead.add(parameter.sic >= self.cfg['options']['lead']['sic'])
+
+        # Done, add flag
+        self.surface_type.add_flag(lead.flag, "lead")
+
+    def classify_sea_ice(self):
+        """
+        Classify waveforms as sea ice
+        :return:
+        """
+
+        # Pointer
+        parameter = self.classifier
+
+        # All conditions must be fulfilled
+        ice = ANDCondition()
+
+        # CLS NN discrimination from L1
+        # The IW ATBD says 2, 4, 6 are leads and 1, 10 are sea ice
+        ice.add(np.isin(parameter.cls_nn_discrimination, self.cfg['options']['sea_ice']['nn']))
+
+        # Ice Concentration
+        ice.add(parameter.sic >= self.cfg['options']['sea_ice']['sic'])
+
+        # Done, add flag
+        self.surface_type.add_flag(ice.flag, "sea_ice")
+
+    @property
+    def l2_input_vars(self) -> List[str]:
+        return ['sic']
+
+    @property
+    def l2_output_vars(self) -> List[str]:
+        return ["surface_type"]
+
+    @property
+    def error_bit(self) -> np.ndarray:
+        return self.error_flag_bit_dict["surface_type"]
+
 # class SICCI1Envisat(Level2SurfaceTypeClassifier):
 #     """
 #     Surface Type classification algorithm from
