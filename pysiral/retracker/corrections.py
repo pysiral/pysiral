@@ -50,7 +50,7 @@ class ERSPulseDeblurring(Level2ProcessorStep):
         pulse_deblurring_correction = np.array(eps < 0.).astype(float) * eps / slope
         for target_variable in self.target_variables:
             var = l2.get_parameter_by_name(target_variable)
-            var[:] = var[:] - pulse_deblurring_correction
+            var[:] = var[:] + pulse_deblurring_correction
             l2.set_parameter(target_variable, var[:], var.uncertainty[:])
 
         # Add pulse deblurring correction to level-2 auxiliary data
