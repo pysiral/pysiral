@@ -84,7 +84,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
 
         # Get and initialize the required torch model class
         # REQ: Needs to be part of this file
-        torch_model_class = self.cfg.options.get("torch_class", None)
+        torch_model_class = self.cfg.options.get("model_class", None)
         if torch_model_class is None:
             msg = "PyTorch model class not specified (options.torch_class missing)"
             self.error.add_error("missing-option", msg)
@@ -160,23 +160,23 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             return sub
         
         # get normalized waveform power
-        waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
-        normed_waveform_power = l1p.waveform.power[:]/waveform_norms[:, np.newaxis]
-                
-        #get waveform/sensor meta
-        n_bins = normed_waveform_power.shape[1]
-        n_wf = normed_waveform_power.shape[0]
-        if n_bins>=128:
-            i0 = 10
-            i1 = 35
-        else:
-            i0 = 5
-            i1 = 35
+        p_max = bn.nanmax(l1p.waveform.power, axis=1)
+        normed_waveform_power = l1p.waveform.power[:]/p_max[:, np.newaxis]
+
+        import pdb; pdb.set_trace()
+        # get l1p parameter
+        eps = l1p.classifier.epsilon_sec
+        eps = eps * 0.5 * 299792458.
+        fmi = l1p.classifier.first_maximum_index
+        
+        # get settings for leading/trailing bins of fmi
+        i0 = self.cfg.options.fmi_leading_bins
+        i1 = self.cfg.options.fmi_leading_bins
         
         # identify first-maximum index
         fmi = np.array([id_fmi(x) for x in normed_waveform_power])
         # subset waveforms
-        sub_waveform_power = np.array([get_subset_wfm(x,i) 
+        sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
                                        for x,i in zip(normed_waveform_power, fmi)])
 
         # create stack of five waveforms
@@ -187,7 +187,8 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         self.waveform_for_prediction = torch.stack(wfm_roll.astype('float32').astype('float32'))
 
         # as well as for the parameters
-
+        par_roll = []
+        
 
         #sub_waveform_power = np.zeros((n_wf,i0+i1))
         #c = 0
@@ -319,7 +320,7 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
 
 
 
-class ERS2_TestCandidate_001_FNN_TanH(nn.Module):
+class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
     '''
     Creates Feed-Forward Neural Network architecture using tanh activation function
     using two separate branches for 1) the input of the subset waveform power of a five 
