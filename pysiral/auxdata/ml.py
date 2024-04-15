@@ -64,7 +64,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         :param args:
         :param kwargs:
         """
-        super(RetrackerThresholdModelTorch, self).__init__(*args, **kwargs)
+        super(RetrackerThresholdModel, self).__init__(*args, **kwargs)
 
         # Retrieve requested model files
         self.model_file = self.cfg.options.get("model_file", None)
