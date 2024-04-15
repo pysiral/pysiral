@@ -159,7 +159,9 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         wfm_roll = []
         wfm_roll.extend([valid_waveforms[i:(i + window_size)] 
                          for i in range(len(valid_waveforms) - window_size + 1)])
-        self.waveform_for_prediction = torch.stack(wfm_roll.astype('float32'))
+        import pdb; pdb.set_trace()
+        #torch.from_numpy(wfm_roll).to(torch.float32)
+        self.waveform_for_prediction = torch.from_numpy(np.array(wfm_roll)).to(torch.float32)
 
         # as well as for the parameters
         eps_roll = []
