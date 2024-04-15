@@ -41,6 +41,7 @@ import bottleneck as bn
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.init as torch_nn_init
 import torch.nn.functional as torch_nn_functional
 
 from pysiral import get_cls
@@ -96,7 +97,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             msg = f"PyTorch model class not found: pysiral.auxdata.ml.{torch_model_class}"
             self.error.add_error("class-not-found", msg)
             self.error.raise_on_error()
-        self.model = model_class(input_neurons)
+        self.model = model_class()
         self.model.load_state_dict(torch.load(self.model_filepath,
                                               map_location=torch.device('cpu')))
         self.model.eval()
@@ -111,59 +112,28 @@ class RetrackerThresholdModel(AuxdataBaseClass):
 
         :return:
         """
-        
-        # function to identify the first maximum index (fmi)
-        def id_fmi(wfm: np.array, 
-                   start: int = 0, 
-                   bins: int = 128, 
-                   spacing: int = 2) -> int:
-            xshape = n_bins + 2 * spacing
-            x = np.ndarray(shape=(xshape))
-        
-            x[:spacing] = wfm[0]-1.e-6
-            x[-spacing:] = wfm[-1]-1.e-6
-            x[spacing : spacing + n_bins] = wfm
-        
-            #before
-            h_b = x[start : start + n_bins]
-            start = spacing
-            #central
-            h_c = x[start : start + n_bins]
-            start = spacing + 1
-            #after
-            h_a = x[start : start + n_bins]
-        
-            #find peak candidates
-            peak_candidate = np.logical_and(h_c > h_b, h_c > h_a)
-            #exclude first 10 bins
-            peak_candidate = np.logical_and(peak_candidate, np.arange(n_bins) > 10)
-            #at least half power is needed to be considered
-            peak_candidate = np.logical_and(peak_candidate, wfm > 0.5)
-        
-            try: 
-                fmi = np.where(peak_candidate)[0][0]
-            except IndexError:
-                fmi = np.nan
-            return fmi
 
         # function to retrieve the sub waveform to be used
         def get_subset_wfm(wfm: np.array, 
                            fmi: int, 
                            i0: int = 5, 
                            i1: int = 30) -> np.array:
-            #zero-pad waveforms
-            wfm = np.concatenate((wfm, np.zeros(50)))
-            try:
-                sub = wfm[(fmi-i0):(fmi+i1)]
-            except TypeError:
+            #check for sufficient fmi position
+            if fmi >= 30:
+                #zero-pad waveforms
+                wfm = np.concatenate((wfm, np.zeros(50)))
+                try:
+                    sub = wfm[(fmi-i0):(fmi+i1)]
+                except TypeError:
+                    sub = np.repeat(np.nan, i0+i1)
+            else:
                 sub = np.repeat(np.nan, i0+i1)
             return sub
         
         # get normalized waveform power
-        p_max = bn.nanmax(l1p.waveform.power, axis=1)
-        normed_waveform_power = l1p.waveform.power[:]/p_max[:, np.newaxis]
+        power_max = bn.nanmax(l1p.waveform.power, axis=1)
+        normed_waveform_power = l1p.waveform.power[:]/power_max[:, np.newaxis]
 
-        import pdb; pdb.set_trace()
         # get l1p parameter
         eps = l1p.classifier.epsilon_sec
         eps = eps * 0.5 * 299792458.
@@ -171,38 +141,40 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
-        i1 = self.cfg.options.fmi_leading_bins
+        i1 = self.cfg.options.fmi_trailing_bins
         
-        # identify first-maximum index
-        fmi = np.array([id_fmi(x) for x in normed_waveform_power])
         # subset waveforms
         sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
                                        for x,i in zip(normed_waveform_power, fmi)])
-
+        
+        # only use valid waveforms w/ a FMI >= 30
+        self.valid_waveforms_idx = np.where(fmi>=30)[0]
+        valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
+        valid_eps = eps[self.valid_waveforms_idx]
+        valid_pmax = power_max[self.valid_waveforms_idx]
+        self.n_total_waveforms = sub_waveform_power.shape[0]
+        
         # create stack of five waveforms
         window_size = 5
         wfm_roll = []
-        wfm_roll.extend([sub_waveform_power[i:(i + window_size)] 
-                         for i in range(len(sub_waveform_power) - window_size + 1)])
-        self.waveform_for_prediction = torch.stack(wfm_roll.astype('float32').astype('float32'))
+        wfm_roll.extend([valid_waveforms[i:(i + window_size)] 
+                         for i in range(len(valid_waveforms) - window_size + 1)])
+        self.waveform_for_prediction = torch.stack(wfm_roll.astype('float32'))
 
         # as well as for the parameters
-        par_roll = []
+        eps_roll = []
+        pmax_roll = []
+        eps_roll.extend([valid_eps[i:(i + window_size)] 
+                         for i in range(len(valid_eps) - window_size + 1)])
+        pmax_roll.extend([valid_pmax[i:(i + window_size)] 
+                         for i in range(len(valid_pmax) - window_size + 1)])
+        eps = torch.stack(eps_roll)
+        pmax = torch.stack(pmax_roll)
+        import pdb; pdb.set_trace()
+        torch.cat([batch['par'][:,:,4],batch['par'][:,:,-2]],dim=1).unsqueeze(1)
         
-
-        #sub_waveform_power = np.zeros((n_wf,i0+i1))
-        #c = 0
-        #for x in normed_waveform_power:
-        #    try:
-        #        wf_fmi = id_fmi(x, bins=n_bins)
-        #    except IndexError:
-        #        c += 1
-        #        continue
-        #    if wf_fmi >= 10:
-        #        sub_waveform_power[c] = get_subset_wfm(x,wf_fmi,i0,i1)
-        #    c += 1
-        #self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
-        #self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+        #self.parameters_for_prediction = 
+        
 
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
@@ -221,6 +193,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         with torch.no_grad():
             opt = self.model(self.waveform_for_prediction)
         tfmra_threshold_predicted = opt.numpy().flatten()
+        import pdb; pdb.set_trace()
 
         # Limit threshold range to pre-defined range (or at least [0-1])
         valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
@@ -275,17 +248,17 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
         self.fc9 = nn.Linear(1024,  self.n_out)
         # initialize weights using LeCun initialization with relu nonlinearity
         torch.manual_seed(27570)
-        init.kaiming_uniform_(self.fc1.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc2.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc3.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc4.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc5.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc6.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc7.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc8.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc9.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc1_par.weight, nonlinearity='leaky_relu')
-        init.kaiming_uniform_(self.fc2_par.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc1.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc2.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc3.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc4.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc5.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc6.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc7.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc8.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc9.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc1_par.weight, nonlinearity='leaky_relu')
+        torch_nn_init.kaiming_uniform_(self.fc2_par.weight, nonlinearity='leaky_relu')
         
     def forward(self, x, par):
         # waveform part
@@ -360,17 +333,17 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         self.fc9 = nn.Linear(1024, self.n_out)
         # initialize weights using LeCun initialization with relu nonlinearity
         torch.manual_seed(27570)
-        init.xavier_uniform_(self.fc1.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc2.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc3.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc4.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc5.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc6.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc7.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc8.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc9.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc1_par.weight, gain=init.calculate_gain('tanh'))
-        init.xavier_uniform_(self.fc2_par.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc1.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc2.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc3.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc4.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc5.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc6.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc7.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc8.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc9.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc1_par.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc2_par.weight, gain=init.calculate_gain('tanh'))
         
     def forward(self, x, par):
         # waveform part
