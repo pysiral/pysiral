@@ -178,6 +178,17 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         # subset waveforms
         sub_waveform_power = np.array([get_subset_wfm(x,i) 
                                        for x,i in zip(normed_waveform_power, fmi)])
+
+        # create stack of five waveforms
+        window_size = 5
+        wfm_roll = []
+        wfm_roll.extend([sub_waveform_power[i:(i + window_size)] 
+                         for i in range(len(sub_waveform_power) - window_size + 1)])
+        self.waveform_for_prediction = torch.stack(wfm_roll.astype('float32').astype('float32'))
+
+        # as well as for the parameters
+
+
         #sub_waveform_power = np.zeros((n_wf,i0+i1))
         #c = 0
         #for x in normed_waveform_power:
@@ -189,8 +200,8 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         #    if wf_fmi >= 10:
         #        sub_waveform_power[c] = get_subset_wfm(x,wf_fmi,i0,i1)
         #    c += 1
-        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
-#        self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+        #self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
+        #self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
 
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
