@@ -160,34 +160,38 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         # keep total number of waveforms
         self.n_total_waveforms = sub_waveform_power.shape[0]
 
-        # create stack of five waveforms
-        window_size = 5
-        wfm_roll = []
-        wfm_roll.extend([valid_waveforms[i:(i + window_size)] 
-                         for i in range(len(valid_waveforms) - window_size + 1)])
-        # keep for L2 processing
-        self.waveform_for_prediction = torch.from_numpy(np.array(wfm_roll)).to(torch.float32)
+        if len(self.valid_waveforms_idx)>=5:
+            # create stack of five waveforms
+            window_size = 5
+            wfm_roll = []
+            wfm_roll.extend([valid_waveforms[i:(i + window_size)] 
+                             for i in range(len(valid_waveforms) - window_size + 1)])
+            # keep for L2 processing
+            self.waveform_for_prediction = torch.from_numpy(np.array(wfm_roll)).to(torch.float32)
+    
+            # make sure the indices are correct by putting them through the same procedure
+            idx_roll = []
+            idx_roll.extend([self.valid_waveforms_idx[i:(i + window_size)] 
+                             for i in range(len(self.valid_waveforms_idx) - window_size + 1)])
+            self.valid_waveforms_idx = np.array(idx_roll)[:,2]
 
-        # make sure the indices are correct by putting them through the same procedure
-        idx_roll = []
-        idx_roll.extend([self.valid_waveforms_idx[i:(i + window_size)] 
-                         for i in range(len(self.valid_waveforms_idx) - window_size + 1)])
-        self.valid_waveforms_idx = np.array(idx_roll)[:,2]
-        
-        # stack as well as for the parameters
-        eps_roll = []
-        pmax_roll = []
-        eps_roll.extend([valid_eps[i:(i + window_size)] 
-                         for i in range(len(valid_eps) - window_size + 1)])
-        pmax_roll.extend([valid_pmax[i:(i + window_size)] 
-                         for i in range(len(valid_pmax) - window_size + 1)])
-        eps = torch.from_numpy(np.array(eps_roll)).to(torch.float32)
-        pmax = torch.from_numpy(np.array(pmax_roll).astype(np.float32)/1000)
-        # normalize parameter
-        eps = (eps - p_eps[0]) / (p_eps[1] - p_eps[0])
-        pmax = (pmax - p_pmax[0]) / (p_pmax[1] - p_pmax[0])
-        # keep for L2 processing       
-        self.parameters_for_prediction = torch.cat([eps, pmax], dim=1)
+            # stack as well as for the parameters
+            eps_roll = []
+            pmax_roll = []
+            eps_roll.extend([valid_eps[i:(i + window_size)] 
+                             for i in range(len(valid_eps) - window_size + 1)])
+            pmax_roll.extend([valid_pmax[i:(i + window_size)] 
+                             for i in range(len(valid_pmax) - window_size + 1)])
+            eps = torch.from_numpy(np.array(eps_roll)).to(torch.float32)
+            pmax = torch.from_numpy(np.array(pmax_roll).astype(np.float32)/1000)
+            # normalize parameter
+            eps = (eps - p_eps[0]) / (p_eps[1] - p_eps[0])
+            pmax = (pmax - p_pmax[0]) / (p_pmax[1] - p_pmax[0])
+            # keep for L2 processing       
+            self.parameters_for_prediction = torch.cat([eps, pmax], dim=1)
+        else:
+            self.waveform_for_prediction = None
+            self.parameters_for_prediction = None
 
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
@@ -203,24 +207,28 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         """
 
         # Predict the waveform range
-        with torch.no_grad():
-            opt = self.model(self.waveform_for_prediction, self.parameters_for_prediction)
-        tfmra_threshold_predicted = opt.numpy().flatten()
-
-        # Limit threshold range to pre-defined range (or at least [0-1])
-        valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
-        tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
-        tfmra_threshold_predicted[tfmra_threshold_predicted > valid_max] = valid_max
-
-        # Return predicted thresholds back on original trajectory
-        tfmra_on_trajectory = np.full(self.n_total_waveforms, np.nan)
-        tfmra_on_trajectory[self.valid_waveforms_idx] = tfmra_threshold_predicted
-
+        if self.waveform_for_prediction is not None:  
+            with torch.no_grad():
+                if hasattr(self, 'parameters_for_prediction'):
+                    opt = self.model(self.waveform_for_prediction, self.parameters_for_prediction)
+                else:
+                    opt = self.model(self.waveform_for_prediction)
+            tfmra_threshold_predicted = opt.numpy().flatten()
+    
+            # Limit threshold range to pre-defined range (or at least [0-1])
+            valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
+            tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
+            tfmra_threshold_predicted[tfmra_threshold_predicted > valid_max] = valid_max
+    
+            # Return predicted thresholds back on original trajectory
+            tfmra_on_trajectory = np.full(self.n_total_waveforms, np.nan)
+            tfmra_on_trajectory[self.valid_waveforms_idx] = tfmra_threshold_predicted
+        else:
+            # Create placeholder
+            tfmra_on_trajectory = np.full(self.n_total_waveforms, np.nan)
         # Add prediction to the Level-2 data object
         var_id, var_name = self.cfg.options.get("output_parameter", ["tfmrathrs_ml", "tfmra_threshold_ml"])
         l2.set_auxiliary_parameter(var_id, var_name, tfmra_on_trajectory)
-
-
 
 
 class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
