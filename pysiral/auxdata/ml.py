@@ -336,7 +336,7 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
     REQ: Required for RetrackerThresholdModel
     '''
     def __init__(self, n_in: int = 5, n_out: int = 1, n_par: int = 2):
-        super(ERS2_TestCandidate_001_FNN_TanH, self).__init__()
+        super(ERS2_TestCandidate_002_FNN_TanH, self).__init__()
         # number of input channels
         self.n_in = n_in
         self.n_out = n_out
@@ -357,17 +357,17 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         self.fc9 = nn.Linear(1024, self.n_out)
         # initialize weights using LeCun initialization with relu nonlinearity
         torch.manual_seed(27570)
-        torch_nn_init.xavier_uniform_(self.fc1.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc2.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc3.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc4.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc5.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc6.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc7.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc8.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc9.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc1_par.weight, gain=init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc2_par.weight, gain=init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc1.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc2.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc3.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc4.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc5.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc6.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc7.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc8.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc9.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc1_par.weight, gain=torch_nn_init.calculate_gain('tanh'))
+        torch_nn_init.xavier_uniform_(self.fc2_par.weight, gain=torch_nn_init.calculate_gain('tanh'))
         
     def forward(self, x, par):
         # waveform part
