@@ -28,14 +28,14 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: antarctic_seas
+        name: nsidc_2021
         options: null
 
     # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [-90., -45.0]
+            latitude_range: [45.0, 90.0]
 
     - sic:
         name: osisaf-operational
@@ -51,13 +51,11 @@ auxdata:
              uncertainty_default: 0.1
 
     - snow:
-         name: icdc_climatology_south
-         options:
-             snow_density: 300.
-             snow_density_uncertainty: 50.
-             smooth_snow_depth: true
-             smooth_filter_width_m: 25000.0
-             exception_on_error: True
+        name: clim_w99amsr2
+        options:
+            daily_scaling: True
+            fyi_correction_factor: 0.5
+            exception_on_error: False
 
 
 # --- Level-2 processor steps ---
@@ -318,3 +316,27 @@ procsteps:
     #             freeboard_smoother_filter_size_m: 150000.
     #             sea_ice_freeboard_miz_gradient: 0.002
     #             leading_edge_width_ocean_value: 2.5
+
+    # Create a filtered/smoothed version of sea-ice freeboard
+    -   module: filter
+        pyclass: ParameterSmoother
+        options:
+            source_variable: frb
+            target_variable_name: sea_ice_freeboard_filtered
+            target_variable_id: frbflt
+            smoothing_method: lowess
+            smoother_args:
+#                # The lowess filter size in statsmodels implementation uses
+#                # in fractions of data points to determine the filter size
+#                # The lowess filter therefore computes the data fraction
+#                # from the `filter_size_n_points` keyword
+                filter_size_n_points: 83
+                filter_props:
+                     it: 1
+
+    # Create an instrument mode flag for CryoSat-2 data
+    # (instrument mode = radar mode + 1)
+    -   module: l2proc.procsteps
+        pyclass: CS2InstrumentModeflag
+        options: null
+

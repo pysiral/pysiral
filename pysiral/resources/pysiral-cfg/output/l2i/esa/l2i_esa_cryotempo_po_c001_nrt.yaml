@@ -22,7 +22,7 @@ global_attributes:
   - date_created: "{utcnow}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
-  - zone: "{source_hemisphere}:select;Arctic;Antarctic"
+  - zone: "{source_hemisphere:select;Arctic;Antarctic}"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"

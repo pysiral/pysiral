@@ -312,3 +312,27 @@ procsteps:
     #             freeboard_smoother_filter_size_m: 150000.
     #             sea_ice_freeboard_miz_gradient: 0.002
     #             leading_edge_width_ocean_value: 2.5
+
+    # Create a filtered/smoothed version of sea-ice freeboard
+    -   module: filter
+        pyclass: ParameterSmoother
+        options:
+            source_variable: frb
+            target_variable_name: sea_ice_freeboard_filtered
+            target_variable_id: frbflt
+            smoothing_method: lowess
+            smoother_args:
+#                # The lowess filter size in statsmodels implementation uses
+#                # in fractions of data points to determine the filter size
+#                # The lowess filter therefore computes the data fraction
+#                # from the `filter_size_n_points` keyword
+                filter_size_n_points: 83
+                filter_props:
+                     it: 1
+
+    # Create an instrument mode flag for CryoSat-2 data
+    # (instrument mode = radar mode + 1)
+    -   module: l2proc.procsteps
+        pyclass: CS2InstrumentModeflag
+        options: null
+
