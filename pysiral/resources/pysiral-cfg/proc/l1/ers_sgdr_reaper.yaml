@@ -29,6 +29,15 @@ input_adapter:
         name: "Radar Altimeter REAPER Sensor Geophysical Data Record - SGDR "
 
         # Radar Altimeter Settings
+        # 
+        # "The ERS radar altimeter emits 1020 pulses per second and the returned power 
+        # "is recorded in 64 gates spaced at 3.03 ns."
+        #
+        # David T. Sandwell, Walter H. F. Smith, Retracking ERS-1 altimeter waveforms 
+        # for optimal gravity field recovery, Geophysical Journal International, Volume 163, 
+        # Issue 1, October 2005, Pages 79–89, https://doi.org/10.1111/j.1365-246X.2005.02724.x
+        #
+        # 3.03 ns -> Two way! Range bin width =  3.03 ns * lightspeed * 0.5
         range_bin_width: 0.4545
         nominal_tracking_bin: 32.5
 
@@ -52,7 +61,7 @@ input_adapter:
             wet_troposphere: model_wet_tropo_corr
             inverse_barometric: inv_bar_corr
             dynamic_atmosphere: hf_fluctuations_corr
-            ionosphere: iono_corr_model
+            ionosphere: iono_corr_gps
             ocean_tide_elastic: ocean_tide_sol1
             ocean_tide_long_period: ocean_tide_equil
             ocean_loading_tide: load_tide_sol1
@@ -70,6 +79,8 @@ input_adapter:
             sigma0_ice2: ice2_sig0_20hz
             slope: slope
             leading_edge_width_ice2: ice2_le_width_20hz
+            trailing_edge_slope_first: ice2_1st_te_slope_20hz
+            trailing_edge_slope_second: ice2_2nd_te_slope_20hz
             ice1_range: ice1_range_20hz
             ice2_range: ice2_range_20hz
             sitrack_range: sitrack_range_20hz
@@ -91,7 +102,7 @@ output_handler:
         local_machine_def_tag: sgdr_reaper_v1p08
         version:
             source_file_tag: esa_sgdr_v1p08
-            version_file_tag: v1p3
+            version_file_tag: v1p4
 
 
 # Settings for the pre-processor
@@ -178,3 +189,38 @@ level1_preprocessor:
                 # Power threshold for the normalized waveform
                 # that the first maximum has to exceed
                 window_size: 3
+
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group:
+            #  1. Leading edge peakiness
+            - label: "Compute Leading Edge Peakiness"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLeadingEdgePeakiness
+              options:
+                # Power threshold for the normalized waveform
+                # that the first maximum has to exceed
+                window_size: 3
+
+            # Compute the Late Tail to Peak Power Parameter
+            # This class will one parameter to the l1p classifier data group:
+            #  1. late tail to peak power
+            - label: "Compute Late Tail to Peak Power (LTPP)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLateTail2PeakPower
+              options:
+                # Index Window after maximum power for late tail power
+                late_tail_window_idx:
+                  lrm: [10, 20]
+
+            # Compute Trailing Edge Slope
+            # This class will several parameter to the l1p classifier data group:
+            #  1. trailing_edge_slope
+            #  2. trailing_edge_slope_quality (pearson correlation coefficient of linear slope fit)
+            - label: "Compute Trailing Edge Slope"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PTrailingEdgeSlope
+              options:
+                noise_floor_power_threshold: 0.15
