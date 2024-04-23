@@ -377,6 +377,7 @@ variables:
     long_name: "pulse peakiness rolling mean"
     units: "1"
     coordinates: time
+
   leading_edge_width:
     long_name: "leading edge width"
     units: "1"
@@ -391,6 +392,37 @@ variables:
     long_name: "leading edge width rolling mean"
     units: "1"
     coordinates: time
+
+  trailing_edge_slope:
+    long_name: "trailing edge slope"
+    units: "1"
+    coordinates: time
+
+  trailing_edge_slope_rolling_sdev:
+    long_name: "trailing edge slope width rolling standard deviation"
+    units: "1"
+    coordinates: time
+
+  trailing_edge_slope_rolling_mean:
+    long_name: "trailing edge slope width rolling mean"
+    units: "1"
+    coordinates: time
+
+  late_tail_to_peak_power:
+    long_name: "late tail to peak power"
+    units: "1"
+    coordinates: time
+
+  late_tail_to_peak_power_rolling_sdev:
+    long_name: "late tail to peak power width rolling standard deviation"
+    units: "1"
+    coordinates: time
+
+  late_tail_to_peak_power_rolling_mean:
+    long_name: "late tail to peak power width rolling mean"
+    units: "1"
+    coordinates: time
+
 
   leading_edge_quality:
     long_name: "leading edge width"

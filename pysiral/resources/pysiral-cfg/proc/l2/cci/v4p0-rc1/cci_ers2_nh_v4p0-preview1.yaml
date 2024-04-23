@@ -109,6 +109,18 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
+                - trailing_edge_slope
+                - late_tail_to_peak_power
+
     # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
