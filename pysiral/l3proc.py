@@ -1198,7 +1198,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
 
     # Mandatory properties
     required_options = []
-    l2_variable_dependencies = ["surface_type", "sea_ice_thickness"]
+    l2_variable_dependencies = ["surface_type"]
     l3_variable_dependencies = []
     l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=0.0),
                                n_valid_waveforms=dict(dtype="f4", fill_value=0.0),
