@@ -314,11 +314,11 @@ class Level1bData(DefaultLoggingClass):
             logger.warning("- Found anomaly (small negative time step < -0.1 sec)")
         elif np.any(tdelta_secs < -1.0):
             logger.error("- Found anomaly (large negative time step > -1.0 sec)")
-            import matplotlib.pyplot as plt
-            plt.figure(dpi=150)
-            plt.plot(tdelta_secs)
-            plt.show()
-            breakpoint()
+            # import matplotlib.pyplot as plt
+            # plt.figure(dpi=150)
+            # plt.plot(tdelta_secs)
+            # plt.show()
+            # breakpoint()
 
         # time orbit group infos
         info.set_attribute("lat_min", np.nanmin(self.time_orbit.latitude))
