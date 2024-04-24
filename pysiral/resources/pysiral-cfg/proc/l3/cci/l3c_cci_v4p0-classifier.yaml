@@ -1,0 +1,136 @@
+# Level-3 processor settings for AWI v2.2 output
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method.
+
+l2_parameter:
+
+    time:
+        grid_method: none
+        dtype: M
+        fillvalue: null
+
+    distance_to_ocean:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    surface_type:
+        grid_method: none
+        dtype: i4
+        fillvalue: -1
+
+    sea_ice_type:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_type_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_concentration:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    radar_mode:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+    sigma0:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    leading_edge_width:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    pulse_peakiness:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    trailing_edge_slope:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    late_tail_to_peak_power:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    tfmra_threshold:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+l2i_prefilter:
+  active: False
+
+
+# ==================================================
+# Gridding settings
+# ==================================================
+grid_settings:
+    no_land_cells: True
+    minimum_valid_grid_points: 2
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+processing_items:
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load CCI land mask"
+      module_name: pysiral.l3proc
+      class_name: Level3LoadCCILandMask
+      options:
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
+            sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
+            nh12p5kmease2: LandOceanLakeMask_nh_ease2-125.nc
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_area_fraction
+
+    # Compute the status flag
+    - label: "grid surface type classifiers"
+      module_name: pysiral.l3proc
+      class_name: Level3GriddedClassifiers
+      options:
+        parameters:
+          - "sigma0"
+          - "leading_edge_width"
+          - "pulse_peakiness"
+          - "tfmra_threshold"
+          - "late_tail_to_peak_power"
+          - "trailing_edge_slope"
+        surface_types: ["sea_ice", "lead", "ocean"]
+        statistics: ["mean", "sdev"]
