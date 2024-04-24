@@ -120,6 +120,12 @@ processing_items:
         mask_variable_name: landsea
         density_variable_name: ocean_area_fraction
 
+    # Compute surface type statistics based on surface type classification
+    - label: "Compute surface type statistics"
+      module_name: pysiral.l3proc
+      class_name: Level3SurfaceTypeStatistics
+      options: {}
+
     # Compute the status flag
     - label: "grid surface type classifiers"
       module_name: pysiral.l3proc
