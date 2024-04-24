@@ -484,7 +484,7 @@ class L3DataGrid(DefaultLoggingClass):
                 sys.exit(1)
             else:
                 parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
-                
+
         return parameter
 
     def set_parameter_by_name(self, name, var):
@@ -1281,7 +1281,12 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 self.l3grid.vars[f"{surface_type_id}_fraction"][yj, xi] = detection_fraction
 
             # Fractions of negative thickness values
-            sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
+            try:
+                sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
+            except KeyError:
+                self.l3grid.vars["negative_thickness_fraction"][yj, xi] = np.nan
+                continue
+
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
                 n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
