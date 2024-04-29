@@ -219,6 +219,50 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         l2.set_auxiliary_parameter(var_id, var_name, tfmra_on_trajectory)
 
 
+
+#####
+## Model Setups
+
+class AutoEncoderERS2(nn.Module):
+    def __init__(self, n_in: int = 35, n_bn: int = 3):
+        super(AutoEncoderERS2, self).__init__()
+        # number of input channels and bottleneck layer size
+        self.n_in = n_in
+        self.n_bn = n_bn
+        # encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(self.n_in, self.n_in*3),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*3, self.n_in*2),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*2, self.n_in*1),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*1, self.n_in//2),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in//2, self.n_bn),
+            nn.LeakyReLU()
+        )
+        
+        # decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(self.n_bn, self.n_in//2),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in//2, self.n_in*1),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*1, self.n_in*2),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*2, self.n_in*3),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_in*3, self.n_in),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+        
+
 class ERS2_TestCandidate_004_FNN(nn.Module):
     def __init__(self, n_in: int = 35, n_par: int = 6):
         super(ERS2_TestCandidate_004_FNN, self).__init__()
