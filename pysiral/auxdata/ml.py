@@ -136,8 +136,8 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         normed_waveform_power = l1p.waveform.power[:]/power_max[:, np.newaxis]
 
         # get nornmalization parameters based on TDS from settings file
-        normed_parameters = np.empty((normed_waveform_power.shape[0], 0))
         if 'classifiers' in self.cfg.options.keys():
+            normed_parameters = np.empty((normed_waveform_power.shape[0], 0))
             classifiers = self.cfg.options.classifiers.keys()
             for key in classifiers:
                 #get classifier parameter
@@ -151,7 +151,6 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         
         # get reference l1p parameter
         fmi = l1p.classifier.first_maximum_index
-        sft = l1p.surface_type.flag
 
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
@@ -161,7 +160,13 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
                                        for x,i in zip(normed_waveform_power, fmi)])
         # only use valid waveforms w/ a FMI >= 30
-        self.valid_waveforms_idx = np.where(np.logical_and(fmi >= 30, sft == 4))[0]
+        self.valid_waveforms_idx = np.where(fmi >= 30)[0]
+        
+        # check for invalid parameters (mainly on non-sea-ice waveforms)
+        if 'classifiers' in self.cfg.options.keys():
+            invalid_parameters_idx = np.unique(np.where(np.isnan(normed_parameters)))
+            self.valid_waveforms_idx = np.setdiff1d(self.valid_waveforms_idx, 
+                                                    invalid_parameters_idx)
 
         #validate there a sea-ice waveforms
         if len(self.valid_waveforms_idx)>0:                                            
@@ -172,7 +177,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
     
             if 'classifiers' in self.cfg.options.keys():
                 # limit also parameters to valid ones
-                valid_parameters = normed_parameters[self.valid_waveforms_idx]
+                valid_parameters = normed_parameters[self.valid_waveforms_idx,:]
                 # keep for L2 processing
                 self.parameters_for_prediction = torch.from_numpy(valid_parameters).to(torch.float32)
         else:
@@ -202,7 +207,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                 else:
                     opt = self.model(self.waveform_for_prediction)
             tfmra_threshold_predicted = opt.numpy().flatten()
-        
+
             # Limit threshold range to pre-defined range (or at least [0-1])
             valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
             tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
