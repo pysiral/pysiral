@@ -102,6 +102,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                                               map_location=torch.device('cpu')))
         self.model.eval()
 
+
     def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
         """
         Optional method to add l1p variables to this class before `get_l2_track_vars()` is
@@ -134,64 +135,51 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         power_max = bn.nanmax(l1p.waveform.power, axis=1)
         normed_waveform_power = l1p.waveform.power[:]/power_max[:, np.newaxis]
 
-        # get l1p parameter
-        eps = l1p.classifier.epsilon_sec
-        eps = eps * 0.5 * 299792458.
-        fmi = l1p.classifier.first_maximum_index
+        # get nornmalization parameters based on TDS from settings file
+        normed_parameters = np.empty((normed_waveform_power.shape[0], 0))
+        if 'classifiers' in self.cfg.options.keys():
+            classifiers = self.cfg.options.classifiers.keys()
+            for key in classifiers:
+                #get classifier parameter
+                par = getattr(l1p.classifier, key)
+                if key == 'epsilon_sec':
+                    par = par * 0.5 * 299792458.
+                # get normalization parameters from TDS (mean/std)
+                norm_pars = self.cfg.options.classifiers.get(key, [0, 1])
+                # normalize the classifier parameter
+                normed_parameters = np.column_stack((normed_parameters, (par -norm_pars[0]) / norm_pars[1]))
         
+        # get reference l1p parameter
+        fmi = l1p.classifier.first_maximum_index
+        sft = l1p.surface_type.flag
+
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
         i1 = self.cfg.options.fmi_trailing_bins
 
-        # get nornmalization parameters based on TDS
-        p_eps = self.cfg.options.classifiers.get("epsilon", [0, 1])
-        p_pmax = self.cfg.options.classifiers.get("waveform_max_power", [0, 1])
-        
         # subset waveforms
         sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
                                        for x,i in zip(normed_waveform_power, fmi)])
-        
         # only use valid waveforms w/ a FMI >= 30
-        self.valid_waveforms_idx = np.where(fmi>=30)[0]
-        # limit waveforms and parameters to valid ones
-        valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
-        valid_eps = eps[self.valid_waveforms_idx]
-        valid_pmax = power_max[self.valid_waveforms_idx]
-        # keep total number of waveforms
-        self.n_total_waveforms = sub_waveform_power.shape[0]
+        self.valid_waveforms_idx = np.where(np.logical_and(fmi >= 30, sft == 4))[0]
 
-        if len(self.valid_waveforms_idx)>=5:
-            # create stack of five waveforms
-            window_size = 5
-            wfm_roll = []
-            wfm_roll.extend([valid_waveforms[i:(i + window_size)] 
-                             for i in range(len(valid_waveforms) - window_size + 1)])
+        #validate there a sea-ice waveforms
+        if len(self.valid_waveforms_idx)>0:                                            
+            # limit waveformsto valid ones
+            valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
             # keep for L2 processing
-            self.waveform_for_prediction = torch.from_numpy(np.array(wfm_roll)).to(torch.float32)
+            self.waveform_for_prediction = torch.from_numpy(valid_waveforms).to(torch.float32)
     
-            # make sure the indices are correct by putting them through the same procedure
-            idx_roll = []
-            idx_roll.extend([self.valid_waveforms_idx[i:(i + window_size)] 
-                             for i in range(len(self.valid_waveforms_idx) - window_size + 1)])
-            self.valid_waveforms_idx = np.array(idx_roll)[:,2]
-
-            # stack as well as for the parameters
-            eps_roll = []
-            pmax_roll = []
-            eps_roll.extend([valid_eps[i:(i + window_size)] 
-                             for i in range(len(valid_eps) - window_size + 1)])
-            pmax_roll.extend([valid_pmax[i:(i + window_size)] 
-                             for i in range(len(valid_pmax) - window_size + 1)])
-            eps = torch.from_numpy(np.array(eps_roll)).to(torch.float32)
-            pmax = torch.from_numpy(np.array(pmax_roll).astype(np.float32)/1000)
-            # normalize parameter
-            eps = (eps - p_eps[0]) / (p_eps[1] - p_eps[0])
-            pmax = (pmax - p_pmax[0]) / (p_pmax[1] - p_pmax[0])
-            # keep for L2 processing       
-            self.parameters_for_prediction = torch.cat([eps, pmax], dim=1)
+            if 'classifiers' in self.cfg.options.keys():
+                # limit also parameters to valid ones
+                valid_parameters = normed_parameters[self.valid_waveforms_idx]
+                # keep for L2 processing
+                self.parameters_for_prediction = torch.from_numpy(valid_parameters).to(torch.float32)
         else:
             self.waveform_for_prediction = None
             self.parameters_for_prediction = None
+        # keep total number of waveforms
+        self.n_total_waveforms = sub_waveform_power.shape[0]
 
 
     def get_l2_track_vars(self, l2: 'Level2Data') -> None:
@@ -207,14 +195,14 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         """
 
         # Predict the waveform range
-        if self.waveform_for_prediction is not None:  
+        if self.waveform_for_prediction is not None:
             with torch.no_grad():
                 if hasattr(self, 'parameters_for_prediction'):
                     opt = self.model(self.waveform_for_prediction, self.parameters_for_prediction)
                 else:
                     opt = self.model(self.waveform_for_prediction)
             tfmra_threshold_predicted = opt.numpy().flatten()
-    
+        
             # Limit threshold range to pre-defined range (or at least [0-1])
             valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
             tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
@@ -231,6 +219,121 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         l2.set_auxiliary_parameter(var_id, var_name, tfmra_on_trajectory)
 
 
+class ERS2_TestCandidate_004_FNN(nn.Module):
+    def __init__(self, n_in: int = 35, n_par: int = 6):
+        super(ERS2_TestCandidate_004_FNN, self).__init__()
+        # number of input channels
+        self.n_in = n_in
+        self.n_par = n_par
+        # waveform model branch
+        self.wfm = nn.Sequential(
+            nn.Linear(self.n_in, self.n_in*5),
+            nn.Tanh(),
+            nn.Linear(self.n_in*5, self.n_in*5),
+            nn.Tanh(),
+            nn.Linear(self.n_in*5, self.n_in*5),
+            nn.Tanh(),
+            nn.Linear(self.n_in*5, self.n_in*5),
+            nn.Tanh(),
+        )
+        # parameter model branch
+        self.par = nn.Sequential(
+            nn.Linear(self.n_par, self.n_par*5),
+            nn.Tanh(),
+            nn.Linear(self.n_par*5, self.n_par*5),
+            nn.Tanh(),
+            nn.Linear(self.n_par*5, self.n_par*5),
+            nn.Tanh(),
+            nn.Linear(self.n_par*5, self.n_par*5),
+            nn.Tanh(),
+        )
+        # fusion model branch
+        self.cmb = nn.Sequential(
+            nn.Linear((self.n_in+self.n_par)*5, (self.n_in+self.n_par)*5),
+            nn.Tanh(),
+            nn.Linear((self.n_in+self.n_par)*5, (self.n_in+self.n_par)*5),
+            nn.Tanh(),
+            nn.Linear((self.n_in+self.n_par)*5, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, wfm, par):
+        wfm_x = self.wfm(wfm)
+        par_x = self.par(par)#.view(-1, self.n_par))
+        x = self.cmb(torch.cat([wfm_x, par_x], dim=1))
+        return x
+
+
+
+class ERS2_TestCandidate_003_FNN_TanHLeakyRelu(nn.Module):
+    '''
+    Create Feed-Forward Neural Network architecture
+    '''
+    def __init__(self, n_in: int = 5, n_out: int = 1, n_par: int = 3):
+        super(ERS2_TestCandidate_003_FNN_TanHLeakyRelu, self).__init__()
+        # base setup
+        self.n_in = n_in
+        self.n_out = n_out
+        self.n_par = n_par
+        # layer setup
+        in_lay_wfm = self.n_in*35
+        lay_wfm = in_lay_wfm * 3
+        in_lay_par = self.n_in*self.n_par
+        lay_par = in_lay_par * 5
+        in_lay_cmb = lay_wfm + lay_par
+        lay_cmb = in_lay_cmb * 2
+        # waveform branch
+        self.fc1 = nn.Linear(in_lay_wfm, lay_wfm)
+        self.fc2 = nn.Linear(lay_wfm, lay_wfm)
+        self.fc3 = nn.Linear(lay_wfm, lay_wfm)
+        self.fc4 = nn.Linear(lay_wfm, lay_wfm)
+        self.fc5 = nn.Linear(lay_wfm, lay_wfm)
+        # eps branch
+        self.fc1_par = nn.Linear(in_lay_par, lay_par)
+        self.fc2_par = nn.Linear(lay_par, lay_par)
+        self.fc3_par = nn.Linear(lay_par, lay_par)
+        self.fc4_par = nn.Linear(lay_par, lay_par)
+        self.fc5_par = nn.Linear(lay_par, lay_par)
+        # combo
+        self.fc7 = nn.Linear(in_lay_cmb, lay_cmb)
+        self.fc8 = nn.Linear(lay_cmb, lay_cmb)
+        self.fc9 = nn.Linear(lay_cmb, self.n_out)
+        
+    def forward(self, x, par):
+        # waveform part
+        x = x.view(-1, self.n_in*35)
+        x = self.fc1(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc2(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc3(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc4(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc5(x)
+        x = torch_nn_functional.leaky_relu(x)
+        # inflow of parameter
+        par_x = par.view(-1, self.n_in*self.n_par)
+        par_x = self.fc1_par(par_x)        
+        par_x = torch_nn_functional.tanh(par_x)
+        par_x = self.fc2_par(par_x)
+        par_x = torch_nn_functional.tanh(par_x)
+        par_x = self.fc3_par(par_x)
+        par_x = torch_nn_functional.tanh(par_x)
+        par_x = self.fc4_par(par_x)
+        par_x = torch_nn_functional.tanh(par_x)
+        par_x = self.fc5_par(par_x)
+        par_x = torch_nn_functional.tanh(par_x)
+        # combine both
+        x = torch.cat([x, par_x], dim=1)
+        x = self.fc7(x)
+        x = torch_nn_functional.tanh(x)
+        x = self.fc8(x)
+        x = torch_nn_functional.tanh(x)
+        x = self.fc9(x)
+        x = torch.sigmoid(x)
+        return x
+
 class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
     '''
     Creates Feed-Forward Neural Network architecture using leaky_relu activation function
@@ -240,9 +343,6 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
     
     Both branches are then input and feed through a common two-layer network and output 
     decimal optimal retracker thresholds through a sigmoid activation finish. 
-    
-    Weights of all layers are initialized using LeCun uniform (kaiming in pytorch) with 
-    corresponding activaion function non-linearity.
 
     Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing 
     the identified first-maximum index (fmi).
@@ -270,19 +370,6 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
         self.fc7 = nn.Linear(544, 1024)
         self.fc8 = nn.Linear(1024, 1024)
         self.fc9 = nn.Linear(1024,  self.n_out)
-        # initialize weights using LeCun initialization with relu nonlinearity
-        torch.manual_seed(27570)
-        torch_nn_init.kaiming_uniform_(self.fc1.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc2.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc3.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc4.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc5.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc6.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc7.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc8.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc9.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc1_par.weight, nonlinearity='leaky_relu')
-        torch_nn_init.kaiming_uniform_(self.fc2_par.weight, nonlinearity='leaky_relu')
         
     def forward(self, x, par):
         # waveform part
@@ -326,9 +413,6 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
     
     Both branches are then input and feed through a common two-layer network and output 
     decimal optimal retracker thresholds through a sigmoid activation finish. 
-    
-    Weights of all layers are initialized using Xavier uniform with corresponding activaion
-    function gain.
 
     Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing 
     the identified first-maximum index (fmi).
@@ -355,19 +439,7 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         self.fc7 = nn.Linear(544, 1024)
         self.fc8 = nn.Linear(1024, 1024)
         self.fc9 = nn.Linear(1024, self.n_out)
-        # initialize weights using LeCun initialization with relu nonlinearity
-        torch.manual_seed(27570)
-        torch_nn_init.xavier_uniform_(self.fc1.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc2.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc3.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc4.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc5.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc6.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc7.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc8.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc9.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc1_par.weight, gain=torch_nn_init.calculate_gain('tanh'))
-        torch_nn_init.xavier_uniform_(self.fc2_par.weight, gain=torch_nn_init.calculate_gain('tanh'))
+
         
     def forward(self, x, par):
         # waveform part
@@ -400,6 +472,58 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         x = torch.sigmoid(x)
         return x
         
+
+
+
+class ERS2_TestCandidate_003_LSTM_LeakyRelu(nn.Module):
+    def __init__(self, n_in: int = 5, n_out: int = 1, n_par: int = 2):
+        super(ERS2_TestCandidate_003_LSTM_LeakyRelu, self).__init__()
+        # number of input channels
+        self.n_in = n_in
+        self.n_out = n_out
+        self.n_par = n_par
+        # waveform branch with lstm/fc [input_size, hidden_size, num_layers]
+        self.lstm = nn.LSTM(self.n_in*35, 128, 2, batch_first=True)
+        self.fc1 = nn.Linear(128, 512)
+        self.fc2 = nn.Linear(512, 512)
+        # eps branch
+        self.fc1_par = nn.Linear(self.n_in*self.n_par, 32)
+        self.fc2_par = nn.Linear(32, 32)
+        self.fc2_par = nn.Linear(32, 32)
+        # combo
+        self.fc3 = nn.Linear(544, 1024)
+        self.fc4 = nn.Linear(1024, self.n_out)
+        # flatten LSTM parameters for memory efficiency
+        self.lstm.flatten_parameters()  
+    
+    def forward(self, x, par):
+        # flatten the input data
+        batch_size, seq_len, input_size = x.size()
+        x = x.view(batch_size, -1)
+        # LSTM input [batch_size, seq_len, input_size]
+        # LSTM output [batch_size, seq_len, hidden_size]
+        lstm_out, _ = self.lstm(x)
+        # flatten the LSTM output
+        lstm_out_flat = lstm_out.contiguous().view(batch_size, -1)
+        # further waveform processing
+        x = self.fc1(lstm_out_flat)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc2(x)
+        x = torch_nn_functional.leaky_relu(x)
+        # inflow of parameter
+        par_x = par.view(-1, self.n_in*self.n_par)
+        par_x = self.fc1_par(par_x)        
+        par_x = torch_nn_functional.leaky_relu(par_x)
+        par_x = self.fc2_par(par_x)
+        par_x = torch_nn_functional.leaky_relu(par_x)
+        # combine both
+        x = torch.cat([x, par_x], dim=1)
+        x = self.fc3(x)
+        x = torch_nn_functional.leaky_relu(x)
+        x = self.fc4(x)
+        x = torch.sigmoid(x)
+        return x
+
 
 class TorchFunctionalWaveformModelFNN(nn.Module):
     """
