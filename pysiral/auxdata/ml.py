@@ -36,6 +36,7 @@ Important Note:
 import re
 from pathlib import Path
 from typing import Any, Iterable, Union
+from loguru import logger
 
 import bottleneck as bn
 import numpy as np
@@ -140,6 +141,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             normed_parameters = np.empty((normed_waveform_power.shape[0], 0))
             classifiers = self.cfg.options.classifiers.keys()
             for key in classifiers:
+                logger.debug(f'- Imported Parameter: {key}')
                 #get classifier parameter
                 par = getattr(l1p.classifier, key)
                 if key == 'epsilon_sec':
@@ -147,10 +149,12 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                 # get normalization parameters from TDS (mean/std)
                 norm_pars = self.cfg.options.classifiers.get(key, [0, 1])
                 # normalize the classifier parameter
-                normed_parameters = np.column_stack((normed_parameters, (par -norm_pars[0]) / norm_pars[1]))
+                par_normed = (par - norm_pars[0]) / norm_pars[1]
+                normed_parameters = np.column_stack((normed_parameters, par_normed))
         
         # get reference l1p parameter
         fmi = l1p.classifier.first_maximum_index
+        ami = bn.nanargmax(l1p.waveform.power, axis=1)
 
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
@@ -160,7 +164,13 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
                                        for x,i in zip(normed_waveform_power, fmi)])
         # only use valid waveforms w/ a FMI >= 30
-        self.valid_waveforms_idx = np.where(fmi >= 30)[0]
+        self.valid_waveforms_idx = np.where((fmi >= 30) & 
+                                            (l1p.classifier.peakiness>3.5) & 
+                                            (l1p.classifier.late_tail_to_peak_power < 0.35) & 
+                                            (l1p.classifier.trailing_edge_slope < -0.015) & 
+                                            (ami==fmi)
+                                           )[0]
+        logger.debug(f'- Number of valid waveforms: {len(self.valid_waveforms_idx)}')
         
         # check for invalid parameters (mainly on non-sea-ice waveforms)
         if 'classifiers' in self.cfg.options.keys():
@@ -266,7 +276,31 @@ class AutoEncoderERS2(nn.Module):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
-        
+
+
+class ERS2_TestCandidate_005_FNN(nn.Module):
+    def __init__(self, n_in: int = 35, n_par = 6):
+        super(ERS2_TestCandidate_005_FNN, self).__init__()
+        # number of input channels
+        self.n_in = n_in
+        self.n_par = n_par
+        # model
+        self.model = nn.Sequential(
+            nn.Linear(self.n_in+self.n_par, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x, par):
+        x = self.model(torch.cat([x, par], dim=1))
+        return x
+
+            
 
 class ERS2_TestCandidate_004_FNN(nn.Module):
     def __init__(self, n_in: int = 35, n_par: int = 6):
