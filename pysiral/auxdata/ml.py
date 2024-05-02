@@ -167,10 +167,10 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                                        for x,i in zip(normed_waveform_power, fmi)])
         # only use valid waveforms w/ a FMI >= 30
         self.valid_waveforms_idx = np.where((fmi >= 30) & 
-                                            (l1p.classifier.peakiness>3.5) & 
-                                            (l1p.classifier.late_tail_to_peak_power < 0.35) & 
-                                            (l1p.classifier.trailing_edge_slope < -0.015) & 
-                                            (l1p.classifier.leading_edge_width < 1.10) &
+                                            #(l1p.classifier.peakiness>3.5) & 
+                                            #(l1p.classifier.late_tail_to_peak_power < 0.35) & 
+                                            #(l1p.classifier.trailing_edge_slope < -0.015) & 
+                                            #(l1p.classifier.leading_edge_width < 1.10) &
                                             (ami==fmi)
                                            )[0]
         logger.debug(f'- Number of valid waveforms: {len(self.valid_waveforms_idx)}')
