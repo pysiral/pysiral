@@ -83,6 +83,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
 
         # The model uses waveform power as input
         self.waveform_for_prediction = None
+        self.parameters_for_prediction = None
 
         # Get and initialize the required torch model class
         # REQ: Needs to be part of this file
@@ -149,12 +150,13 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                 # get normalization parameters from TDS (mean/std)
                 norm_pars = self.cfg.options.classifiers.get(key, [0, 1])
                 # normalize the classifier parameter
-                par_normed = (par - norm_pars[0]) / norm_pars[1]
+                #par_normed = (par - norm_pars[0]) / norm_pars[1]
+                par_normed = (par - norm_pars[0]) / (norm_pars[1] - norm_pars[0])
                 normed_parameters = np.column_stack((normed_parameters, par_normed))
         
         # get reference l1p parameter
-        fmi = l1p.classifier.first_maximum_index
-        ami = bn.nanargmax(l1p.waveform.power, axis=1)
+        fmi = l1p.classifier.first_maximum_index.astype(int) 
+        ami = bn.nanargmax(l1p.waveform.power, axis=1).astype(int) 
 
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
@@ -168,6 +170,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                                             (l1p.classifier.peakiness>3.5) & 
                                             (l1p.classifier.late_tail_to_peak_power < 0.35) & 
                                             (l1p.classifier.trailing_edge_slope < -0.015) & 
+                                            (l1p.classifier.leading_edge_width < 1.10) &
                                             (ami==fmi)
                                            )[0]
         logger.debug(f'- Number of valid waveforms: {len(self.valid_waveforms_idx)}')
@@ -184,12 +187,15 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
             # keep for L2 processing
             self.waveform_for_prediction = torch.from_numpy(valid_waveforms).to(torch.float32)
-    
+            logger.debug(f'- Shape of Waveform Tensor: {self.waveform_for_prediction.size()}')
+
             if 'classifiers' in self.cfg.options.keys():
                 # limit also parameters to valid ones
                 valid_parameters = normed_parameters[self.valid_waveforms_idx,:]
                 # keep for L2 processing
                 self.parameters_for_prediction = torch.from_numpy(valid_parameters).to(torch.float32)
+                logger.debug(f'- Shape of Parameter Tensor: {self.parameters_for_prediction.size()}')
+
         else:
             self.waveform_for_prediction = None
             self.parameters_for_prediction = None
@@ -216,7 +222,9 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                     opt = self.model(self.waveform_for_prediction, self.parameters_for_prediction)
                 else:
                     opt = self.model(self.waveform_for_prediction)
-            tfmra_threshold_predicted = opt.numpy().flatten()
+            tfmra_threshold_predicted = opt.flatten().numpy()
+            logger.debug(f'Predicted Thresholds Percentiles 10%: {np.around(np.quantile(tfmra_threshold_predicted,.1),2)}'+\
+                         f'/ 90%: {np.around(np.quantile(tfmra_threshold_predicted,.9),2)}')
 
             # Limit threshold range to pre-defined range (or at least [0-1])
             valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
