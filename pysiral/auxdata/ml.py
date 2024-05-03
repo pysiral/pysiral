@@ -144,7 +144,10 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             for key in classifiers:
                 logger.debug(f'- Imported Parameter: {key}')
                 #get classifier parameter
-                par = getattr(l1p.classifier, key)
+                if key == 'latitude' or key == 'longitude':
+                    par = getattr(l1p.time_orbit, key)
+                else:
+                    par = getattr(l1p.classifier, key)
                 if key == 'epsilon_sec':
                     par = par * 0.5 * 299792458.
                 # get normalization parameters from TDS (mean/std)
@@ -187,14 +190,14 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
             # keep for L2 processing
             self.waveform_for_prediction = torch.from_numpy(valid_waveforms).to(torch.float32)
-            logger.debug(f'- Shape of Waveform Tensor: {self.waveform_for_prediction.size()}')
+            #logger.debug(f'- Shape of Waveform Tensor: {self.waveform_for_prediction.size()}')
 
             if 'classifiers' in self.cfg.options.keys():
                 # limit also parameters to valid ones
                 valid_parameters = normed_parameters[self.valid_waveforms_idx,:]
                 # keep for L2 processing
                 self.parameters_for_prediction = torch.from_numpy(valid_parameters).to(torch.float32)
-                logger.debug(f'- Shape of Parameter Tensor: {self.parameters_for_prediction.size()}')
+                #logger.debug(f'- Shape of Parameter Tensor: {self.parameters_for_prediction.size()}')
 
         else:
             self.waveform_for_prediction = None
@@ -285,6 +288,30 @@ class AutoEncoderERS2(nn.Module):
         x = self.decoder(x)
         return x
 
+
+class ERS2_TestCandidate_006_FNN(nn.Module):
+    def __init__(self, n_in: int = 35, n_par = 8):
+        super(ERS2_TestCandidate_006_FNN, self).__init__()
+        # number of input channels
+        self.n_in = n_in
+        self.n_par = n_par
+        # model
+        self.model = nn.Sequential(
+            nn.Linear(self.n_in+self.n_par, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x, par):
+        x = self.model(torch.cat([x, par], dim=1))
+        return x
 
 class ERS2_TestCandidate_005_FNN(nn.Module):
     def __init__(self, n_in: int = 35, n_par = 6):
