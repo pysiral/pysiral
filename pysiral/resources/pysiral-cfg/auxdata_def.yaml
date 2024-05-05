@@ -831,14 +831,6 @@ rio:
 ml:
     tfmra_threshold_model:
         pyclass: RetrackerThresholdModel
-        long_name: Learned model (xgboost) for predicting TFMRA retracker threshold from waveform shape parameters
+        long_name: Learned model for predicting TFMRA retracker threshold from waveform shape parameters
         local_repository: tfmra_threshold_model
-        options:
-            suffixes:
-                - ".model"
-
-    tfmra_threshold_model_torch:
-        pyclass: RetrackerThresholdModelTorch
-        long_name: Learned model (torch) for predicting TFMRA retracker threshold from waveform shape parameters
-        local_repository: tfmra_threshold_model_torch
         options: null
