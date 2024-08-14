@@ -118,7 +118,8 @@ def pysiral_l2proc_l1b_predef_job(args):
                                           force_l2def_record_type=args.force_l2def_record_type)
 
     # Specifically add an output handler
-    product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
+    for l2_output in args.l2_output:
+        product_def.add_output_definition(l2_output, overwrite_protection=args.overwrite_protection)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)
