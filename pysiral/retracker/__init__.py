@@ -16,7 +16,7 @@ from loguru import logger
 from pysiral.core.flags import FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
-__all__ = ["ccilead", "corrections", "mock", "ocog", "samosa", "tfmra",
+__all__ = ["ccilead", "corrections", "mock", "ocog", "samosa", "tfmra", "samosa_wfm",
            "BaseRetracker"]
 
 
@@ -236,6 +236,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
 def get_registered_retrackers() -> Dict:
     """
     Get a dictionary of subclasses of `BaseRetracker`
+
     :return: Dictionary {class_name: class}
     """
     return {cls.__name__: cls for cls in BaseRetracker.__subclasses__()}
@@ -255,6 +256,8 @@ def get_retracker_class(name: str):
 
     from pysiral.retracker.samosa import SAMOSA_OK
     from pysiral.retracker.tfmra import CYTFMRA_OK
+    from pysiral.retracker.samosa_wfm import SAMOSAWaveformModelFit
+    from pysiral.retracker.ocog import SICCIOcog
 
     if name == "cTFMRA" and not CYTFMRA_OK:
         msg = (

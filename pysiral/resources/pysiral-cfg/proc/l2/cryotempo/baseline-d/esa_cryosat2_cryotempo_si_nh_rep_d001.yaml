@@ -217,27 +217,12 @@ procsteps:
         options:
 
             lead:
-                pyclass: SAMOSAPlus
-                options:
-                    surface_type: "polar_ocean"
-                    range_bias: [0.0, 0.0, 0.0]
-                    uncertainty:
-                        type: fixed
-                        value: 0.1
+                pyclass: SAMOSAWaveformModelFit
+                options: {}
             
             sea_ice:
-                pyclass: SAMOSAPlus
-                options:
-                    sampy_kwargs: 
-                        disable_ocean_like_check: True
-                    sampy_conf_kwargs:
-                        lb_swh: -1.5
-                    surface_type: "sea_ice"
-                    range_bias: [0.0, 0.0, 0.0]
-                    uncertainty:
-                        type: fixed
-                        value: 0.1
-
+                pyclass: SAMOSAWaveformModelFit
+                options: {}
     # Apply the range corrections 
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
