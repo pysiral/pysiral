@@ -5,6 +5,33 @@ This is the SAMOSA+ retracker variant that uses `samosa-waveform-model`, a
 re-implementation of the SAMPy package. The objective of the re-implementation
 is better performance (code optimization and multiprocessing) and a greater flexibility
 for retracking settings (sub-waveform retracking, limiting parameters of the fit)
+
+NOTES:
+======
+
+List of fit modes:
+
+- single fit - all parameters
+- double fit - all parameters
+- single fit - fixed mean square slope
+
+All variants with options for single core and multi-processing
+
+TODO: Refine workflow (first extraction of all variables and than retracking in another class)?
+TODO: Implement sigma0/windspeed computation (per switch in config file)
+TODO: Implement waveform mask (sub-waveform tracking)
+TODO: Computation of residuals should be configurable method
+TODO: Add thermal noise to computation of residuals
+TODO: Combined method to extract first guess and parameter bounds from waveform
+TODO: Allow to add waveforms to l2 data
+
+Workflow
+
+1. Colocate all input variables in dedicated list of input data classes
+2. Initialize specified fit method (one class per fit method?)
+3. Process waveforms with/without multiprocessing
+4. Organize output
+
 """
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
@@ -96,9 +123,6 @@ class SAMOSAWaveformFit(object):
             mean_square_slope=mean_square_slope
         )
         waveform_model = self.samosa_waveform_model.generate_delay_doppler_waveform(model_parameter)
-
-        # TODO: Computation of residuals should be configurable method
-        # TODO: Add thermal noise to computation of residuals
         return waveform_model.power - self.normed_waveform.power
 
 
@@ -173,7 +197,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
     def _samosa_plus_retracker(self, rng, wfm, indices, radar_mode) -> List[SAMOSAWaveformFitResult]:
         """
-        TODO: Placeholder implementation (needs option to do multi-processing)
         :param rng:
         :param wfm:
         :param indices:
@@ -191,7 +214,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
     ) -> SAMOSAWaveformFitResult:
         """
         Sandbox version of the waveform fit.
-        TODO: To be replaced with configurable fit methods
 
         :param rng:
         :param wfm:
