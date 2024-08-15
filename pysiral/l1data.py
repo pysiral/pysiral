@@ -560,7 +560,10 @@ class L1bdataNCFile(Level1bData):
         self.time_orbit.set_position(
             datagroup.variables["longitude"][:],
             datagroup.variables["latitude"][:],
-            datagroup.variables["altitude"][:])
+            datagroup.variables["altitude"][:],
+            datagroup.variables["altitude_rate"][:]
+
+        )
 
         antenna_angles = {}
         for angle in ["pitch", "roll", "yaw"]:
