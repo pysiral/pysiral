@@ -256,7 +256,7 @@ def get_retracker_class(name: str):
 
     from pysiral.retracker.samosa import SAMOSA_OK
     from pysiral.retracker.tfmra import CYTFMRA_OK
-    from pysiral.retracker.samosa_wfm import SAMOSAWaveformModelFit
+    from pysiral.retracker.samosa_wfm import SAMOSAPlusRetracker
     from pysiral.retracker.ocog import SICCIOcog
 
     if name == "cTFMRA" and not CYTFMRA_OK:
