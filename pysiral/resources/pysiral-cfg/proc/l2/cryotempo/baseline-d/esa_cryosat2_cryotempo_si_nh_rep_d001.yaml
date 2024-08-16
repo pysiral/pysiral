@@ -224,13 +224,13 @@ procsteps:
                 fit_method: "mss_swh"
                 predictor_method: "bounds"
 
-          sea_ice:
-              pyclass: SAMOSAPlusRetracker
-              options:
-                use_multiprocessing: False
-                num_processes: "pysiral-cfg"
-                fit_method: "mss_swh"
-                predictor_method: "bounds"
+        #   sea_ice:
+        #       pyclass: SAMOSAPlusRetracker
+        #       options:
+        #         use_multiprocessing: False
+        #         num_processes: "pysiral-cfg"
+        #         fit_method: "mss_swh"
+        #         predictor_method: "bounds"
 
     # Apply the range corrections
     -   module: l2proc.procsteps

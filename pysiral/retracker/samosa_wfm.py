@@ -56,7 +56,16 @@ from pysiral.retracker import BaseRetracker
 from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
 
-VALID_METHOD_LITERAL = Literal["mss_swh", "mss_preset", "mss_seperate"]
+# NOTE:
+# There are three fit methods that may be chosen for different surface types.
+# E.g., for open ocean it has been standard practice to have a first fit only
+# for mean square slope to estimate mean square slope and then a second fit
+# with invariable mean square slope ("two_fits_mss_first_swh_second").
+# This implementation also supports fitting all parameters in single fit
+# ("single_fit_mss_swh") of only of significant wave height with mean square
+# slope sourced from waveform parameter ("single_fit_mss_preset").
+# (Epoch is always fitted).
+VALID_METHOD_LITERAL = Literal["single_fit_mss_swh", "single_fit_mss_preset", "two_fits_mss_first_swh_second"]
 VALID_METHODS = get_args(VALID_METHOD_LITERAL)
 
 DEFAULT_FIT_KWARGS = dict(
@@ -96,6 +105,7 @@ class WaveformFitData:
 @dataclass
 class SAMOSAWaveformFitResult:
     epoch: float
+    retracker_range: float
     significant_wave_height: float
     mean_square_slope: float
     thermal_noise: float
@@ -105,7 +115,8 @@ class SAMOSAWaveformFitResult:
     waveform_fit: np.ndarray
     is_sub_waveform_fit: bool = False
     misfit_sub_waveform: float = None
-    number_of_fit_iterations: int = -1
+    number_of_model_evaluations: int = -1
+    fit_return_status: int = None
 
 
 class SAMOSAWaveformFit(object):
@@ -355,8 +366,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             # Create the SAMOSA Waveform scenario data
             scenario_data = self._get_scenario_data(self._l1b, self._l2, idx)
             waveform_data = self._get_normed_waveform(
-                rng,
-                wfm,
+                rng[idx, :],
+                wfm[idx, :],
                 radar_mode[idx],
                 self._l1b.classifier.window_delay[idx],
                 self._l1b.classifier.transmit_power[idx]
@@ -563,6 +574,8 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = No
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
 
     :param fit_data:
+    :param least_square_kwargs:
+
     :return:
     """
 
@@ -581,20 +594,36 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = No
     fit_kwargs = dict(bounds=(lower_bounds, upper_bounds))
     fit_kwargs.update(least_square_kwargs)
 
+    # The fitting process is happening here:
     fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data)
     fit_result = least_squares(fit_cls.fit_func, first_guess, **fit_kwargs)
+
+    # Recompute the selected waveform model. Required to store the fitted waveform model.
+    # NOTE: The waveform model cannot (easily) be retrieved from the fit class
+    # because it is not always the last model.
     fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, fit_result.x)
+
+    # Unpack parameters for better readability
+    epoch, significant_waveheight, mean_square_slope = fit_result.x
+
+    # Compute the misfit from residuals in SAMPy fashion
     misfit = sampy_misfit(fit_result.fun)
 
+    # Convert epoch to range (excluding range corrections)
+    retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
+
     return SAMOSAWaveformFitResult(
-        fit_result.x[0],
-        fit_result.x[1],
-        fit_result.x[2],
+        epoch,
+        significant_waveheight,
+        mean_square_slope,
+        retracker_range,
         0.0,  # placeholder for thermal noise
         misfit,
-        "test",
+        "single_fit_mss_swh",
         waveform_data.power,
-        fitted_model.power
+        fitted_model.power,
+        number_of_model_evaluations=fit_result.nfev,
+        fit_return_status=fit_result.status
     )
 
 
@@ -673,3 +702,49 @@ def sampy_misfit(residuals: np.ndarray, waveform_mask: Optional[np.ndarray] = No
     """
     waveform_mask = waveform_mask if waveform_mask is not None else np.arange(residuals.size)
     return np.sqrt(1. / residuals[waveform_mask].size * np.nansum(residuals[waveform_mask] ** 2)) * 100.
+
+
+def epoch2range(epoch: float, window_delay: float) -> float:
+    """
+    Computes the retracker range, defined as range of spacecraft center or mass
+    to retracked elevation.
+
+    :param epoch: retracker epoch in seconds
+
+    :param window_delay:
+
+    :return: retracker range in meter.
+    """
+    factor = 0.5 * 299792458.
+    return epoch * factor + window_delay * factor
+
+
+def calc_sigma0(
+        Latm,
+        Pu,
+        CST,
+        RDB,
+        GEO,
+        epoch_sec,
+        window_del_20_hr_ku_deuso,
+        lat_20_hr_ku,
+        alt_20_hr_ku,
+        sat_vel_vec_20_hr_ku,
+        transmit_pwr_20_ku
+):
+    atmospheric_attenuation = 10. ** (np.zeros(np.shape(alt_20_hr_ku)) / 10.)  ### IMP!!! ===>  Atmospheric Correction, set to zero dB
+    # Atm_Atten    = 10.**(Latm/10.)
+    Range = epoch_sec * CST.c0 / 2 + CST.c0 / 2 * window_del_20_hr_ku_deuso  #### this should be the retracked range without geo-corrections
+    Pout = Pu
+    earth_radius = np.sqrt(CST.R_e ** 2.0 * (np.cos(np.deg2rad(lat_20_hr_ku))) ** 2 + CST.b_e ** 2.0 * (
+        np.sin(np.deg2rad(lat_20_hr_ku))) ** 2)
+    kappa = (1. + alt_20_hr_ku / earth_radius)
+
+    Lx = CST.c0 * Range / (2. * sat_vel_vec_20_hr_ku * RDB.f_0 * RDB.Np_burst * 1. / RDB.PRF_SAR)
+    Ly = np.sqrt(CST.c0 * Range * (1. / RDB.Bs) / kappa)
+    A_SAR = Lx * (2. * Ly)
+    C = ((4. * np.pi) ** 3. * (GEO.Height ** 4) * atmospheric_attenuation) / (((CST.c0 / RDB.f_0) ** 2) * (RDB.G_0 ** 2) * A_SAR)
+
+    sigma0 = 10. * np.log10(Pout / transmit_pwr_20_ku) + 10. * np.log10(C) + RDB.bias_sigma0
+
+    return sigma0, np.log10(Pout / transmit_pwr_20_ku), np.log10(C), Range, kappa
