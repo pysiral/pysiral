@@ -219,6 +219,7 @@ procsteps:
           lead:
               pyclass: SAMOSAPlusRetracker
               options:
+                surface_type: polar_ocean
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "mss_swh"
@@ -227,6 +228,7 @@ procsteps:
           sea_ice:
               pyclass: SAMOSAPlusRetracker
               options:
+                surface_type: sea_ice
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "mss_swh"

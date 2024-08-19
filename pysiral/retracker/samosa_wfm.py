@@ -39,6 +39,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 import multiprocessing
 import numpy as np
 from functools import partial
+from loguru import logger
 from typing import Tuple, List, Dict, Optional, Any, Literal, Callable, get_args
 from dataclasses import dataclass
 
@@ -166,6 +167,10 @@ class SAMOSAWaveformCollectionFit(object):
     collection. Can be configured to use several fitting
     strategies with or without multiprocessing.
 
+    The notation convention for class methods is `_fit_{fit_method}{_mp: use_multiprocessing: True}`.
+    Therefore, each fit method needs to class methods: One for single process and one for parallel
+    processes.
+
     :param fit_method: Name of the fitting method (choices: "mss_swh", "mss_preset", "mss_seperate")
     :param predictor_method:
     :param use_multiprocessing: Flag if to use multiprocessing (default: False)
@@ -282,8 +287,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
         # Add range biases (when set in config file)
         # self._set_range_bias(radar_mode)
 
-        # Add auxiliary variables to the l2 data object
-        # self._register_auxiliary_variables()
+        # Add retracker parameters to the l2 data object
+        self._l2_register_retracker_parameters()
 
     def create_retracker_properties(self, n_records: int) -> None:
         """
@@ -293,7 +298,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         NOTE: The properties are set to an array, but can be accessed as `self.{property_name}`
         via the __getattr__ method.
 
-        :param n_records:
+        :param n_records: Number of Level-2 data points
         """
 
         parameter = [
@@ -303,6 +308,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             "wind_speed",
             "epoch",
             "guess",
+            "fit_num_func_eval",
+            "fit_return_status",
             "Pu",
             "rval",
             "kval",
@@ -311,6 +318,14 @@ class SAMOSAPlusRetracker(BaseRetracker):
         ]
         for parameter_name in parameter:
             self._retracker_params[parameter_name] = np.full(n_records, np.nan, dtype=np.float32)
+
+        parameter = [
+            "waveform",
+            "waveform_model"
+        ]
+        n_range_gates = self._l1b.waveform.power.shape[1]
+        for parameter_name in parameter:
+            self._retracker_params[parameter_name] = np.full((n_records, n_range_gates), np.nan, dtype=np.float32)
 
     def _samosa_plus_retracker(
             self,
@@ -475,79 +490,77 @@ class SAMOSAPlusRetracker(BaseRetracker):
         }
         return args, kwargs
 
-    def _model_fit(
-            self,
-            normed_waveform: NormedWaveform,
-            scenario_data: ScenarioData
-    ) -> SAMOSAWaveformFitResult:
-        """
-        Fit the SAMOSA waveform model to the waveform and computes additional
-        fit parameters.
-
-        :param normed_waveform:
-        :param scenario_data:
-
-        :return: fit result dataclass
-        """
-
-        # Get first guess
-        epoch_first_guess = scenario_data.rp.tau[np.argmax(normed_waveform.power)]
-        epoch_bounds = get_epoch_bounds(scenario_data.rp.tau, 0.1, 0.8)
-        first_guess = [epoch_first_guess, -0.2, 5e-7]
-        lower_bounds = [epoch_bounds[0], -0.3, 0.0]
-        upper_bounds = [epoch_bounds[1], 0.5, 1e-6]
-
-        fit_kwargs = dict(
-            bounds=(lower_bounds, upper_bounds),
-            loss="linear",
-            method="trf",
-            ftol=1e-2,
-            xtol=2e-4,
-            gtol=1e-2,
-            max_nfev=None,
-        )
-
-        fit_cls = SAMOSAWaveformFit(scenario_data, normed_waveform)
-        fit_result = least_squares(fit_cls.fit_func, first_guess, **fit_kwargs)
-        fitted_model = self._get_fitted_model(fit_cls.samosa_waveform_model, fit_result.x)
-        misfit = sampy_misfit(fit_result.fun)
-
-        return SAMOSAWaveformFitResult(
-            fit_result.x[0],
-            fit_result.x[1],
-            fit_result.x[2],
-            0.0,   # placeholder for thermal noise
-            misfit,
-            "test",
-            normed_waveform.power,
-            fitted_model.power
-        )
-
     def _store_retracker_properties(
         self,
         fit_results: List[SAMOSAWaveformFitResult],
         indices: np.ndarray
     ) -> None:
         """
-        Store the output of the SAMOSA+ retracker in the class.
+        Store the output of the SAMOSA+ retracker in the class and maps
+        the fit result to the corresponding indices in the Level-2 data.
 
         :param fit_results:
         :param indices:
 
-        :return:
+        :return: None
         """
 
         for index, fit_result in zip(indices, fit_results):
 
+            # Main retracker properties
             self._range[index] = fit_result.retracker_range
             self._power[index] = fit_result.sigma0
 
-            # Store additional retracker parameters
+            # Derived physical parameters
+            # self.wind_speed[index] = func_wind_speed([fit_result.sigma0])
+
+            # Waveform model fit parameters
             self.swh[index] = fit_result.significant_wave_height
             self.misfit[index] = fit_result.misfit
-            # self.wind_speed[index] = func_wind_speed([fit_result.sigma0])
             self.mean_square_slope[index] = fit_result.mean_square_slope
             self.epoch[index] = fit_result.epoch
+
+            # Store waveform and waveform model for debugging
+            self.waveform[index, :] = fit_result.waveform
+            self.waveform_model[index, :] = fit_result.waveform_fit
+
+            # Fit method statistics
+            self.fit_num_func_eval[index] = fit_result.number_of_model_evaluations
+            self.fit_return_status[index] = fit_result.fit_return_status
+
+    def _l2_register_retracker_parameters(self) -> None:
+        """
+        Add retracker variables to the L2 data object. The specific variables
+        depend on surface type.
+        """
+
+        # General auxiliary variables
+        self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
+        self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
+        self.register_auxdata_output("samfnfe", "samosa_fit_num_func_eval", self.fit_num_func_eval)
+        self.register_auxdata_output("samfrs", "samosa_fit_return_status", self.fit_return_status)
+
+        # Waveform and waveform model
+        # Register results as auxiliary data variable
+        num_range_gates =self.waveform.shape[1]
+        dim_dict = {"new_dims": (("range_gates", num_range_gates),),
+                    "dimensions": ("time", "range_gates"),
+                    "add_dims": (("range_gates", np.arange(num_range_gates)),)}
+        self._l2.set_multidim_auxiliary_parameter("samiwfm", "waveform", self.waveform, dim_dict, update=True)
+        self._l2.set_multidim_auxiliary_parameter("samwfm", "waveform_model", self.waveform_model, dim_dict, update=True)
+
+        # Lead and open ocean surfaces
+        surface_type = self._options.get("surface_type", "undefined")
+        if surface_type == "polar_ocean":
+            self.register_auxdata_output("samswh", "samosa_swh", self.swh)
+            self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
+
+        # Sea ice surface types
+        elif surface_type == "sea_ice":
+            self.register_auxdata_output("samshsd", "samosa_surface_height_standard_deviation", self.swh / 4.)
+
+        else:
+            logger.warning("No specific surface type set for SAMOSA+: No auxiliary variables added to L2")
 
     def __getattr__(self, item: str) -> Any:
         """
@@ -569,24 +582,30 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_squares_kwargs: Dict = N
     """
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
 
-    :param fit_data:
-    :param least_square_kwargs:
+    :param fit_data: Input parameters for waveform fitting process. Mainly
+        contains waveform model scenario data and waveform data.
 
-    :return:
+    :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
+
+    :return: SAMOSA+ waveform model fit result
     """
 
+    # Input validation
     if least_squares_kwargs is None:
         least_squares_kwargs = {}
 
+    # Unpack for readability.
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
 
-    # Get first guess
+    # Get first guess and it bounds
     epoch_first_guess = scenario_data.rp.tau[np.argmax(waveform_data.power)]
     epoch_bounds = get_epoch_bounds(scenario_data.rp.tau, 0.1, 0.8)
     first_guess = [epoch_first_guess, -0.2, 5e-7]
     lower_bounds = [epoch_bounds[0], -0.3, 0.0]
     upper_bounds = [epoch_bounds[1], 0.5, 1e-6]
 
+    # Update least square kwargs with fit bounds
+    # (Fit bounds are dynamic per waveform).
     fit_kwargs = dict(bounds=(lower_bounds, upper_bounds))
     fit_kwargs.update(least_squares_kwargs)
 
@@ -606,6 +625,7 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_squares_kwargs: Dict = N
     misfit = sampy_misfit(fit_result.fun)
 
     # Convert epoch to range (excluding range corrections)
+    # TODO: apply radar mode range bias here?
     retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
 
     return SAMOSAWaveformFitResult(
