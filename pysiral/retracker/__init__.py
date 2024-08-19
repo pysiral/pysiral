@@ -193,8 +193,10 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             retracker = get_retracker_class(retracker_def["pyclass"])
 
             # Set options (if any)
+            retracker_options = {"surface_type": surface_type}
             if retracker_def["options"] is not None:
-                retracker.set_options(**retracker_def["options"])
+                retracker_options.update(retracker_def["options"])
+            retracker.set_options(**retracker_options)
 
             # set subset of waveforms
             retracker.set_indices(surface_type_flag.indices)

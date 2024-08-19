@@ -219,20 +219,28 @@ procsteps:
           lead:
               pyclass: SAMOSAPlusRetracker
               options:
-                surface_type: polar_ocean
-                use_multiprocessing: True
+                surface_class: polar_ocean
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
                 fit_method: "mss_swh"
-                predictor_method: "bounds"
+                predictor_kwargs:
+                  earliest_epoch: 0.1   # earliest fraction of range window
+                  bounds:
+                    swh: [-0.5, 2.0]
+                    mss: [1.0e-9, 1.0e10]
 
           sea_ice:
               pyclass: SAMOSAPlusRetracker
               options:
-                surface_type: sea_ice
+                surface_class: sea_ice
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "mss_swh"
-                predictor_method: "bounds"
+                predictor_kwargs:
+                  earliest_epoch: 0.1   # earliest fraction of range window
+                  bounds:
+                    swh: [-0.5, 20.0]
+                    mss: [1.0e-9, 1.0e10]
 
     # Apply the range corrections
     -   module: l2proc.procsteps

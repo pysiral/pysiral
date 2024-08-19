@@ -39,6 +39,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 import multiprocessing
 import numpy as np
 from functools import partial
+
 from loguru import logger
 from typing import Tuple, List, Dict, Optional, Any, Literal, Callable, get_args
 from dataclasses import dataclass
@@ -78,6 +79,9 @@ DEFAULT_FIT_KWARGS = dict(
     max_nfev=None,
 )
 
+SWH_FIRST_GUESS = dict(lead=-0.2, sea_ice=0.0)
+MSS_FIRST_GUESS = dict(lead=1e-8, sea_ice=1e-2)
+
 
 @dataclass
 class NormedWaveform:
@@ -86,10 +90,13 @@ class NormedWaveform:
     """
     power: np.ndarray
     range_bins: np.ndarray
+    tau: np.ndarray
     scaling_factor: float
     radar_mode_flag: int
     window_delay: float
     transmit_power: float
+    surface_type: str
+    surface_class: str
 
 
 @dataclass
@@ -227,7 +234,11 @@ class SAMOSAWaveformCollectionFit(object):
         :return: List of fit outputs
         """
         return [
-            samosa_fit_swh_mss(fit_data, least_squares_kwargs=self.least_squares_kwargs)
+            samosa_fit_swh_mss(
+                fit_data,
+                least_squares_kwargs=self.least_squares_kwargs,
+                predictor_kwargs=self.predictor_kwargs
+            )
             for fit_data in waveform_collection
         ]
 
@@ -241,11 +252,63 @@ class SAMOSAWaveformCollectionFit(object):
         """
         # TODO: set CPU count
         pool = multiprocessing.Pool(psrlcfg.CPU_COUNT)
-        fit_func = partial(samosa_fit_swh_mss, least_squares_kwargs=self.least_squares_kwargs)
+        fit_func = partial(
+            samosa_fit_swh_mss,
+            least_squares_kwargs=self.least_squares_kwargs,
+            predictor_kwargs=self.predictor_kwargs
+        )
         fit_results = pool.map(fit_func, waveform_collection)
         pool.close()
         pool.join()
         return fit_results
+
+class SAMOSAModelParameterPrediction(object):
+    """
+    Class to get initial guess and bounds of SAMOSA waveform fit parameter
+    """
+
+
+    def __init__(
+        self,
+        method: VALID_METHOD_LITERAL,
+        surface_type: str,
+        earliest_epoch: float,
+        bounds: Dict[str, Tuple[float, float]]
+    ):
+        self.surface_type = surface_type
+        self.earliest_epoch = earliest_epoch
+        self.method = method
+        self.bounds = bounds
+        self.first_guess_method = getattr(self, f"_get_first_guess_{method}")
+        self.bounds_method = getattr(self, f"_get_bounds_{method}")
+
+    def get(self, waveform: NormedWaveform) -> Tuple[Tuple, Tuple, Tuple]:
+
+        first_guess = self.first_guess_method(waveform)
+        lower_bounds, upper_bounds = self.bounds_method(waveform.tau, first_guess)
+        return first_guess, lower_bounds, upper_bounds
+
+    @staticmethod
+    def _get_first_guess_single_fit_mss_swh(waveform: NormedWaveform) -> Tuple:
+        """
+        Estimate the first guess
+
+        :param waveform:
+
+        :return:
+        """
+        epoch_first_guess = waveform.tau[np.argmax(waveform.power)]
+        swh_first_guess = SWH_FIRST_GUESS[waveform.surface_type]
+        mss_first_guess = MSS_FIRST_GUESS[waveform.surface_type]
+        return epoch_first_guess, swh_first_guess, mss_first_guess
+
+    def _get_bounds_single_fit_mss_swh(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
+        epoch_bounds = get_epoch_bounds(tau, 0.1, 0.8)
+        swh_bounds = self.bounds["swh"]
+        mss_bounds = self.bounds["mss"]
+        lower_bounds = epoch_bounds[0], float(swh_bounds[0]), float(mss_bounds[0])
+        upper_bounds = first_guess[0], float(swh_bounds[1]), float(mss_bounds[1])
+        return lower_bounds, upper_bounds
 
 
 class SAMOSAPlusRetracker(BaseRetracker):
@@ -379,6 +442,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
             waveform_data = self._get_normed_waveform(
                 rng[idx, :],
                 wfm[idx, :],
+                scenario_data.rp.tau,
                 radar_mode[idx],
                 self._l1b.classifier.window_delay[idx],
                 self._l1b.classifier.transmit_power[idx]
@@ -439,10 +503,11 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         return ScenarioData(sp, geo, sar)
 
-    @staticmethod
     def _get_normed_waveform(
+            self,
             rng: np.ndarray,
             wfm: np.ndarray,
+            tau: np.ndarray,
             radar_mode: int,
             window_delay: float,
             transmit_power: float
@@ -461,10 +526,14 @@ class SAMOSAPlusRetracker(BaseRetracker):
         return NormedWaveform(
             normed_waveform,
             rng,
+            tau,
             radar_mode,
             scaling_factor,
             window_delay,
-            transmit_power
+            transmit_power,
+            self._options.get("surface_type"),
+            self._options.get("surface_class"),
+
         )
 
     def _get_waveform_model_fit_configuration(self) -> Tuple[List, Dict]:
@@ -483,8 +552,12 @@ class SAMOSAPlusRetracker(BaseRetracker):
             raise ValueError("Mandatory configuration parameter `predictor_method not specified")
         args = [fit_method, predictor_method]
 
+
+        num_processes = self._options.get("num_processes")
+        num_processes = psrlcfg.CPU_COUNT if num_processes == "pysiral-cfg" else int(num_processes)
         kwargs = {
             "use_multiprocessing": self._options.get("use_multiprocessing", False),
+            "num_processes": num_processes,
             "least_squares_kwargs": self._options.get("fit_kwargs", {}),
             "predictor_kwargs": self._options.get("predictor_kwargs", {}),
         }
@@ -550,13 +623,13 @@ class SAMOSAPlusRetracker(BaseRetracker):
         self._l2.set_multidim_auxiliary_parameter("samwfm", "waveform_model", self.waveform_model, dim_dict, update=True)
 
         # Lead and open ocean surfaces
-        surface_type = self._options.get("surface_type", "undefined")
-        if surface_type == "polar_ocean":
+        surface_class = self._options.get("surface_class", "undefined")
+        if surface_class == "polar_ocean":
             self.register_auxdata_output("samswh", "samosa_swh", self.swh)
             self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
 
         # Sea ice surface types
-        elif surface_type == "sea_ice":
+        elif surface_class == "sea_ice":
             self.register_auxdata_output("samshsd", "samosa_surface_height_standard_deviation", self.swh / 4.)
 
         else:
@@ -578,12 +651,17 @@ class SAMOSAPlusRetracker(BaseRetracker):
             raise AttributeError(f"{self.__class__.__name__} has no attribute {item}")
 
 
-def samosa_fit_swh_mss(fit_data: WaveformFitData, least_squares_kwargs: Dict = None) -> SAMOSAWaveformFitResult:
+def samosa_fit_swh_mss(
+        fit_data: WaveformFitData,
+        predictor_kwargs: Dict = None,
+        least_squares_kwargs: Dict = None,
+) -> SAMOSAWaveformFitResult:
     """
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
 
     :param fit_data: Input parameters for waveform fitting process. Mainly
         contains waveform model scenario data and waveform data.
+    :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
 
     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
 
@@ -597,12 +675,13 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_squares_kwargs: Dict = N
     # Unpack for readability.
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
 
-    # Get first guess and it bounds
-    epoch_first_guess = scenario_data.rp.tau[np.argmax(waveform_data.power)]
-    epoch_bounds = get_epoch_bounds(scenario_data.rp.tau, 0.1, 0.8)
-    first_guess = [epoch_first_guess, -0.2, 5e-7]
-    lower_bounds = [epoch_bounds[0], -0.3, 0.0]
-    upper_bounds = [epoch_bounds[1], 0.5, 1e-6]
+    # Get first guess of fit parameters and fit bounds
+    predictor = SAMOSAModelParameterPrediction(
+        "single_fit_mss_swh",
+        waveform_data.surface_type,
+        **predictor_kwargs
+    )
+    first_guess, lower_bounds, upper_bounds = predictor.get(waveform_data)
 
     # Update least square kwargs with fit bounds
     # (Fit bounds are dynamic per waveform).
@@ -680,8 +759,8 @@ def total_velocity_from_vector(
 
 def get_epoch_bounds(
         epoch: np.ndarray,
-        earliest_fraction: float,
-        latest_fraction: float
+        earliest_fraction: float = 0.0,
+        latest_fraction: float = 1.0
 ) -> Tuple[float, float]:
     """
     Get bounds for epoch based on the valid fraction range in the range window.
