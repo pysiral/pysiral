@@ -117,6 +117,7 @@ class SAMOSAWaveformFitResult:
     misfit_sub_waveform: float = None
     number_of_model_evaluations: int = -1
     fit_return_status: int = None
+    sigma0: float = 0.0
 
 
 class SAMOSAWaveformFit(object):
@@ -221,7 +222,7 @@ class SAMOSAWaveformCollectionFit(object):
         :return: List of fit outputs
         """
         return [
-            samosa_fit_swh_mss(fit_data, least_square_kwargs=self.least_squares_kwargs)
+            samosa_fit_swh_mss(fit_data, least_squares_kwargs=self.least_squares_kwargs)
             for fit_data in waveform_collection
         ]
 
@@ -233,18 +234,13 @@ class SAMOSAWaveformCollectionFit(object):
 
         :return: List of fit outputs
         """
+        # TODO: set CPU count
         pool = multiprocessing.Pool(psrlcfg.CPU_COUNT)
-        results = pool.starmap(
-            partial(
-                samosa_fit_swh_mss,
-                least_squares_kwargs=self.least_squares_kwargs
-            ),
-            waveform_collection
-        )
+        fit_func = partial(samosa_fit_swh_mss, least_squares_kwargs=self.least_squares_kwargs)
+        fit_results = pool.map(fit_func, waveform_collection)
         pool.close()
         pool.join()
-        output = [(r.trailing_edge_slope, r.trailing_edge_slope_quality) for r in results]
-        return zip(*output)
+        return fit_results
 
 
 class SAMOSAPlusRetracker(BaseRetracker):
@@ -543,7 +539,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         for index, fit_result in zip(indices, fit_results):
 
-            self._range[index] = fit_result.rng
+            self._range[index] = fit_result.retracker_range
             self._power[index] = fit_result.sigma0
 
             # Store additional retracker parameters
@@ -569,7 +565,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
             raise AttributeError(f"{self.__class__.__name__} has no attribute {item}")
 
 
-def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = None) -> SAMOSAWaveformFitResult:
+def samosa_fit_swh_mss(fit_data: WaveformFitData, least_squares_kwargs: Dict = None) -> SAMOSAWaveformFitResult:
     """
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
 
@@ -579,8 +575,8 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = No
     :return:
     """
 
-    if least_square_kwargs is None:
-        least_square_kwargs = {}
+    if least_squares_kwargs is None:
+        least_squares_kwargs = {}
 
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
 
@@ -592,7 +588,7 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = No
     upper_bounds = [epoch_bounds[1], 0.5, 1e-6]
 
     fit_kwargs = dict(bounds=(lower_bounds, upper_bounds))
-    fit_kwargs.update(least_square_kwargs)
+    fit_kwargs.update(least_squares_kwargs)
 
     # The fitting process is happening here:
     fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data)
@@ -614,9 +610,9 @@ def samosa_fit_swh_mss(fit_data: WaveformFitData, least_square_kwargs: Dict = No
 
     return SAMOSAWaveformFitResult(
         epoch,
+        retracker_range,
         significant_waveheight,
         mean_square_slope,
-        retracker_range,
         0.0,  # placeholder for thermal noise
         misfit,
         "single_fit_mss_swh",
