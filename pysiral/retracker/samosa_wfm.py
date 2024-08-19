@@ -307,7 +307,7 @@ class SAMOSAModelParameterPrediction(object):
         swh_bounds = self.bounds["swh"]
         mss_bounds = self.bounds["mss"]
         lower_bounds = epoch_bounds[0], float(swh_bounds[0]), float(mss_bounds[0])
-        upper_bounds = first_guess[0], float(swh_bounds[1]), float(mss_bounds[1])
+        upper_bounds = epoch_bounds[1], float(swh_bounds[1]), float(mss_bounds[1])
         return lower_bounds, upper_bounds
 
 
@@ -697,6 +697,17 @@ def samosa_fit_swh_mss(
     # because it is not always the last model.
     fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, fit_result.x)
 
+    if waveform_data.surface_type == "sea_ice":
+        import matplotlib.pyplot as plt
+        plt.figure(dpi=150)
+        plt.plot(waveform_data.tau, waveform_data.power)
+        plt.plot(waveform_data.tau, fitted_model.power)
+        plt.axvline(first_guess[0])
+        plt.axvline(lower_bounds[0])
+        plt.axvline(upper_bounds[0])
+        plt.show()
+        breakpoint()
+
     # Unpack parameters for better readability
     epoch, significant_waveheight, mean_square_slope = fit_result.x
 
@@ -814,32 +825,32 @@ def epoch2range(epoch: float, window_delay: float) -> float:
     return epoch * factor + window_delay * factor
 
 
-def calc_sigma0(
-        Latm,
-        Pu,
-        CST,
-        RDB,
-        GEO,
-        epoch_sec,
-        window_del_20_hr_ku_deuso,
-        lat_20_hr_ku,
-        alt_20_hr_ku,
-        sat_vel_vec_20_hr_ku,
-        transmit_pwr_20_ku
-):
-    atmospheric_attenuation = 10. ** (np.zeros(np.shape(alt_20_hr_ku)) / 10.)  ### IMP!!! ===>  Atmospheric Correction, set to zero dB
-    # Atm_Atten    = 10.**(Latm/10.)
-    Range = epoch_sec * CST.c0 / 2 + CST.c0 / 2 * window_del_20_hr_ku_deuso  #### this should be the retracked range without geo-corrections
-    Pout = Pu
-    earth_radius = np.sqrt(CST.R_e ** 2.0 * (np.cos(np.deg2rad(lat_20_hr_ku))) ** 2 + CST.b_e ** 2.0 * (
-        np.sin(np.deg2rad(lat_20_hr_ku))) ** 2)
-    kappa = (1. + alt_20_hr_ku / earth_radius)
-
-    Lx = CST.c0 * Range / (2. * sat_vel_vec_20_hr_ku * RDB.f_0 * RDB.Np_burst * 1. / RDB.PRF_SAR)
-    Ly = np.sqrt(CST.c0 * Range * (1. / RDB.Bs) / kappa)
-    A_SAR = Lx * (2. * Ly)
-    C = ((4. * np.pi) ** 3. * (GEO.Height ** 4) * atmospheric_attenuation) / (((CST.c0 / RDB.f_0) ** 2) * (RDB.G_0 ** 2) * A_SAR)
-
-    sigma0 = 10. * np.log10(Pout / transmit_pwr_20_ku) + 10. * np.log10(C) + RDB.bias_sigma0
-
-    return sigma0, np.log10(Pout / transmit_pwr_20_ku), np.log10(C), Range, kappa
+# def calc_sigma0(
+#         Latm,
+#         Pu,
+#         CST,
+#         RDB,
+#         GEO,
+#         epoch_sec,
+#         window_del_20_hr_ku_deuso,
+#         lat_20_hr_ku,
+#         alt_20_hr_ku,
+#         sat_vel_vec_20_hr_ku,
+#         transmit_pwr_20_ku
+# ):
+#     atmospheric_attenuation = 10. ** (np.zeros(np.shape(alt_20_hr_ku)) / 10.)  ### IMP!!! ===>  Atmospheric Correction, set to zero dB
+#     # Atm_Atten    = 10.**(Latm/10.)
+#     Range = epoch_sec * CST.c0 / 2 + CST.c0 / 2 * window_del_20_hr_ku_deuso  #### this should be the retracked range without geo-corrections
+#     Pout = Pu
+#     earth_radius = np.sqrt(CST.R_e ** 2.0 * (np.cos(np.deg2rad(lat_20_hr_ku))) ** 2 + CST.b_e ** 2.0 * (
+#         np.sin(np.deg2rad(lat_20_hr_ku))) ** 2)
+#     kappa = (1. + alt_20_hr_ku / earth_radius)
+#
+#     Lx = CST.c0 * Range / (2. * sat_vel_vec_20_hr_ku * RDB.f_0 * RDB.Np_burst * 1. / RDB.PRF_SAR)
+#     Ly = np.sqrt(CST.c0 * Range * (1. / RDB.Bs) / kappa)
+#     A_SAR = Lx * (2. * Ly)
+#     C = ((4. * np.pi) ** 3. * (GEO.Height ** 4) * atmospheric_attenuation) / (((CST.c0 / RDB.f_0) ** 2) * (RDB.G_0 ** 2) * A_SAR)
+#
+#     sigma0 = 10. * np.log10(Pout / transmit_pwr_20_ku) + 10. * np.log10(C) + RDB.bias_sigma0
+#
+#     return sigma0, np.log10(Pout / transmit_pwr_20_ku), np.log10(C), Range, kappa

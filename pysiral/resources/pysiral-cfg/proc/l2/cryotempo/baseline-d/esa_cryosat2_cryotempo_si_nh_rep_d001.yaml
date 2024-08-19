@@ -233,7 +233,7 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
-                use_multiprocessing: True
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
                 fit_method: "mss_swh"
                 predictor_kwargs:
