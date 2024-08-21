@@ -896,14 +896,14 @@ def samosa_fit_samosap_standard(
     # Unpack for readability.
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
 
-    # --- SAMOSA+ Fit Step 1 ---
-
     # Get first guess of fit parameters and fit bounds
     predictor = SAMOSAModelParameterPrediction(
         "samosap_standard",
         waveform_data.surface_type,
         **predictor_kwargs
     )
+
+    # --- SAMOSA+ Fit Step 1 ---
     first_guess, lower_bounds, upper_bounds = predictor.get(waveform_data, mode=1)
 
     # Update least square kwargs with fit bounds
@@ -933,45 +933,45 @@ def samosa_fit_samosap_standard(
 
     breakpoint()
 
-    # Recompute the selected waveform model. Required to store the fitted waveform model.
-    # NOTE: The waveform model cannot (easily) be retrieved from the fit class
-    # because it is not always the last model.
-    fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, fit_result.x)
-
-    if waveform_data.surface_type == "sea_ice":
-        import matplotlib.pyplot as plt
-        plt.figure(dpi=150)
-        plt.plot(waveform_data.tau, waveform_data.power)
-        plt.plot(waveform_data.tau, fitted_model.power)
-        plt.axvline(first_guess[0])
-        plt.axvline(lower_bounds[0])
-        plt.axvline(upper_bounds[0])
-        plt.show()
-        breakpoint()
-
-    # Unpack parameters for better readability
-    epoch, significant_waveheight, mean_square_slope = fit_result.x
-
-    # Compute the misfit from residuals in SAMPy fashion
-    misfit = sampy_misfit(fit_result.fun)
-
-    # Convert epoch to range (excluding range corrections)
-    # TODO: apply radar mode range bias here?
-    retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
-
-    return SAMOSAWaveformFitResult(
-        epoch,
-        retracker_range,
-        significant_waveheight,
-        mean_square_slope,
-        0.0,  # placeholder for thermal noise
-        misfit,
-        "single_fit_mss_swh",
-        waveform_data.power,
-        fitted_model.power,
-        number_of_model_evaluations=fit_result.nfev,
-        fit_return_status=fit_result.status
-    )
+    # # Recompute the selected waveform model. Required to store the fitted waveform model.
+    # # NOTE: The waveform model cannot (easily) be retrieved from the fit class
+    # # because it is not always the last model.
+    # fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, fit_result_step2.x)
+    #
+    # if waveform_data.surface_type == "sea_ice":
+    #     import matplotlib.pyplot as plt
+    #     plt.figure(dpi=150)
+    #     plt.plot(waveform_data.tau, waveform_data.power)
+    #     plt.plot(waveform_data.tau, fitted_model.power)
+    #     plt.axvline(first_guess[0])
+    #     plt.axvline(lower_bounds[0])
+    #     plt.axvline(upper_bounds[0])
+    #     plt.show()
+    #     breakpoint()
+    #
+    # # Unpack parameters for better readability
+    # epoch, significant_waveheight, mean_square_slope = fit_result_step2.x
+    #
+    # # Compute the misfit from residuals in SAMPy fashion
+    # misfit = sampy_misfit(fit_result_step2.fun)
+    #
+    # # Convert epoch to range (excluding range corrections)
+    # # TODO: apply radar mode range bias here?
+    # retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
+    #
+    # return SAMOSAWaveformFitResult(
+    #     epoch,
+    #     retracker_range,
+    #     significant_waveheight,
+    #     mean_square_slope,
+    #     0.0,  # placeholder for thermal noise
+    #     misfit,
+    #     "single_fit_mss_swh",
+    #     waveform_data.power,
+    #     fitted_model.power,
+    #     number_of_model_evaluations=fit_result_step2.nfev,
+    #     fit_return_status=fit_result_step2.status
+    # )
 
 
     breakpoint()
