@@ -222,7 +222,7 @@ procsteps:
                 surface_class: polar_ocean
                 use_multiprocessing: False
                 num_processes: "pysiral-cfg"
-                fit_method: "mss_swh"
+                fit_method: "samosap_standard"
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
@@ -235,7 +235,7 @@ procsteps:
                 surface_class: sea_ice
                 use_multiprocessing: False
                 num_processes: "pysiral-cfg"
-                fit_method: "mss_swh"
+                fit_method: "samosap_standard"
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
