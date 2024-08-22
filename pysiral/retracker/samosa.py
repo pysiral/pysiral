@@ -578,6 +578,9 @@ class SAMOSAPlus(BaseRetracker):
         # Get datastructure and initialize samosa/sampy
         CST, OPT, RDB, CONF, LUT = self._get_samosa_dataclasses()
         sampy_kwargs = self._options.get("sampy_kwargs", {})
+        # import pickle
+        # with open(r"d:\init_samosalib_parameters.pkl", "wb") as fh:
+        #     pickle.dump([CST, RDB, OPT, LUT, sampy_kwargs], fh)
         samlib = initialize_SAMOSAlib(CST, RDB, OPT, LUT, **sampy_kwargs)
 
         # Further settings (l2 processor options?)
@@ -835,9 +838,17 @@ def fit_samosa_waveform_model(
     CONF.guess_epoch = epoch0[index]
 
     # Do retrack in units of Watts as we don't have the scaling factors available for calc_sigma0
+    # import pickle
+    # with open(r"d:\retrack_parameters.pkl", "wb") as fh:
+    #     pickle.dump([tau, wf, look_angles, MaskRanges, GEO, CONF], fh)
+
+    # Compute doppler delay map:
+
+
     epoch_sec, swh, Pu, misfit, oceanlike_flag = samlib.Retrack_Samosa(
         tau, wf, look_angles, MaskRanges, GEO, CONF
     )
+
 
     # Extract additional parameters from samlib instance
     wf_model = samlib.last_wfm_model
