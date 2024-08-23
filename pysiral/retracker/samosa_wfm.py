@@ -46,7 +46,7 @@ from typing import Tuple, List, Dict, Optional, Any, Literal, Callable, get_args
 from dataclasses import dataclass
 
 from scipy.optimize import least_squares
-from skimage.metrics import mean_squared_error
+from scipy.signal import argrelmin
 
 from samosa_waveform_model import (
     ScenarioData, SensorParameters, SAMOSAWaveformModel, PlatformLocation, SARParameters,
@@ -182,10 +182,7 @@ class SAMOSAWaveformFit(object):
         self.normed_waveform = normed_waveform
 
         # Mask is empty by default (mask=True -> point does not generate a residual value)
-        self.sub_waveform_mask = (
-            np.full(normed_waveform.power.shape, False) if sub_waveform_mask is None
-            else sub_waveform_mask
-        )
+        self.sub_waveform_mask = sub_waveform_mask
         self.method = method
 
     def fit_func(self, fit_args: List[float], *_) -> np.ndarray:
@@ -201,12 +198,39 @@ class SAMOSAWaveformFit(object):
         :return: Difference between waveform and waveform model.
             be minimized by least square process.
         """
+        epoch, significant_wave_height, nu = fit_args
+        print(fit_args)
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
-            fit_args,
+            [epoch * 1e-9, significant_wave_height, nu],
             thermal_noise=self.normed_waveform.thermal_noise
         )
-        return waveform_model.power - self.normed_waveform.power
+
+        # Compute the residuals
+        pr = waveform_model.power  # sampy notation
+        power_scale = self.normed_waveform.power[self.normed_waveform.first_maximum_index] / np.nanmax(pr)
+        waveform_model_scaled_power = power_scale * (pr / np.nanmax(pr)) + self.normed_waveform.thermal_noise
+        residuals = waveform_model_scaled_power - self.normed_waveform.power
+
+        if self.sub_waveform_mask is None:
+            return residuals
+
+        # Filter residuals
+        x = np.arange(residuals.size)
+        valid_entries = np.logical_not(self.sub_waveform_mask)
+        residuals_masked = np.interp(x, x[valid_entries], residuals[valid_entries])
+        #
+        # # x = np.arange(256)
+        # plt.figure()
+        # plt.plot(waveform_model.tau * 1e9, residuals)
+        # plt.plot(waveform_model.tau * 1e9, residuals_masked)
+        #
+        # plt.figure()
+        # plt.plot(waveform_model.tau * 1e9, waveform_model_scaled_power)
+        # plt.scatter(waveform_model.tau[valid_entries] * 1e9, self.normed_waveform.power[valid_entries])
+        # plt.show()
+
+        return residuals_masked
 
     def fit_func_samosap_standard_step1(self, fit_args: List[float], *_) -> np.ndarray:
         """
@@ -217,6 +241,7 @@ class SAMOSAWaveformFit(object):
 
         :return: Masked residual vector
         """
+
         epoch, significant_wave_height, power_scale = fit_args
         nu = 0  # The default value for nu (1/mss) is 0 in sampy 1/np.inf -> 0.0
         waveform_model = get_model_from_args(
@@ -230,10 +255,15 @@ class SAMOSAWaveformFit(object):
         waveform_model_scaled_power = power_scale * (pr / np.nanmax(pr)) + self.normed_waveform.thermal_noise
         residuals = waveform_model_scaled_power - self.normed_waveform.power
 
-        # Filter residuals
-        residuals[self.sub_waveform_mask] = 0.0
+        if self.sub_waveform_mask is None:
+            return residuals
 
-        return residuals
+        # Filter residuals
+        x = np.arange(residuals.size)
+        valid_entries = np.logical_not(self.sub_waveform_mask)
+        residuals_masked = np.interp(x, x[valid_entries], residuals[valid_entries])
+
+        return residuals_masked
 
     def fit_func_samosap_standard_step2(self, fit_args: List[float], *_) -> np.ndarray:
         """
@@ -244,12 +274,13 @@ class SAMOSAWaveformFit(object):
 
         :return: Masked residual vector
         """
-        epoch, nu, power_scale = fit_args
+
+        epoch_ns, nu, power_scale = fit_args
         significant_wave_height = 0.0  # The default value second fit step in sampy
 
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
-            [epoch * 1e-9, significant_wave_height, nu]
+            [epoch_ns * 1e-9, significant_wave_height, nu]
         )
 
         # Compute the residuals
@@ -257,15 +288,25 @@ class SAMOSAWaveformFit(object):
         waveform_model_scaled_power = power_scale * (pr / np.nanmax(pr)) + self.normed_waveform.thermal_noise
         residuals = waveform_model_scaled_power - self.normed_waveform.power
 
-        # plt.figure()
-        # plt.plot(waveform_model_scaled_power)
-        # plt.plot(self.normed_waveform.power)
-        # plt.show()
+        if self.sub_waveform_mask is None:
+            return residuals
 
         # Filter residuals
-        residuals[self.sub_waveform_mask] = 0.0
+        x = np.arange(residuals.size)
+        valid_entries = np.logical_not(self.sub_waveform_mask)
+        residuals_masked = np.interp(x, x[valid_entries], residuals[valid_entries])
 
-        return residuals
+        # x = np.arange(256)
+        # plt.figure()
+        # plt.plot(waveform_model.tau * 1e9, residuals)
+        # plt.plot(waveform_model.tau * 1e9, residuals_masked)
+        #
+        # plt.figure()
+        # plt.plot(waveform_model.tau * 1e9, waveform_model_scaled_power)
+        # plt.scatter(waveform_model.tau[valid_entries] * 1e9, self.normed_waveform.power[valid_entries])
+        # plt.show()
+
+        return residuals_masked
 
 
 class SAMOSAWaveformCollectionFit(object):
@@ -423,7 +464,7 @@ class SAMOSAModelParameterPrediction(object):
         return first_guess, lower_bounds, upper_bounds
 
     @staticmethod
-    def _get_first_guess_single_fit_mss_swh(waveform: NormedWaveform) -> Tuple:
+    def _get_first_guess_fit_mss_swh(waveform: NormedWaveform) -> Tuple:
         """
         Estimate the first guess
 
@@ -431,17 +472,22 @@ class SAMOSAModelParameterPrediction(object):
 
         :return:
         """
-        epoch_first_guess = waveform.tau[np.argmax(waveform.power)]
+        epoch_first_guess = waveform.tau[waveform.first_maximum_index] * 1e9
         swh_first_guess = SWH_FIRST_GUESS[waveform.surface_type]
         nu_first_guess = NU_FIRST_GUESS[waveform.surface_type]
         return epoch_first_guess, swh_first_guess, nu_first_guess
 
-    def _get_bounds_single_fit_mss_swh(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
-        epoch_bounds = get_epoch_bounds(tau, 0.1, 0.8)
+    def _get_bounds_fit_mss_swh(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
+        epoch_bounds_range_gate = get_epoch_bounds(tau, 0.02, 0.8)
+        tau_fmi_offset = (first_guess[0] * 1e-9) + 20. * (tau[1]-tau[0])
+        epoch_bounds = (
+            epoch_bounds_range_gate[0],
+            np.min([np.max(tau), tau_fmi_offset])
+        )
         swh_bounds = self.bounds["swh"]
         nu_bounds = self.bounds["nu"]
-        lower_bounds = epoch_bounds[0], float(swh_bounds[0]), float(nu_bounds[0])
-        upper_bounds = epoch_bounds[1], float(swh_bounds[1]), float(nu_bounds[1])
+        lower_bounds = epoch_bounds[0] * 1e9, float(swh_bounds[0]), float(nu_bounds[0])
+        upper_bounds = epoch_bounds[1] * 1e9, float(swh_bounds[1]), float(nu_bounds[1])
         return lower_bounds, upper_bounds
 
     @staticmethod
@@ -456,17 +502,22 @@ class SAMOSAModelParameterPrediction(object):
 
         :return:
         """
-        epoch_first_guess = waveform.tau[np.argmax(waveform.power)]
+        epoch_first_guess = waveform.tau[waveform.first_maximum_index]
         nu_first_guess = NU_FIRST_GUESS[waveform.surface_type]
         if mode == 1:
             return epoch_first_guess * 1e9, SWH_FIRST_GUESS[waveform.surface_type], 1
         elif mode == 2:
-            return epoch_first_guess * 1e9 , nu_first_guess, 1
+            return epoch_first_guess * 1e9,  nu_first_guess, 1
         else:
             raise ValueError(f"mode={mode} not in [1, 2]")
 
     def _get_bounds_samosap_standard(self, tau, first_guess, mode: int = 1) -> Tuple[Tuple, Tuple]:
-        epoch_bounds = get_epoch_bounds(tau, 0.1, 0.8)
+        epoch_bounds_range_gate = get_epoch_bounds(tau, 0.02, 0.8)
+        tau_fmi_offset = (first_guess[0] * 1e-9) + 20. * (tau[1]-tau[0])
+        epoch_bounds = (
+            epoch_bounds_range_gate[0],
+            np.min([np.max(tau), tau_fmi_offset])
+        )
         swh_bounds = self.bounds["swh"]
         nu_bounds = self.bounds["nu"]
         pu_bounds = [0.2, 1.5]  # TODO: copied over from sampy
@@ -479,7 +530,6 @@ class SAMOSAModelParameterPrediction(object):
         else:
             raise ValueError(f"mode={mode} not in [1, 2]")
         return lower_bounds, upper_bounds
-
 
 
 class SAMOSAPlusRetracker(BaseRetracker):
@@ -609,14 +659,17 @@ class SAMOSAPlusRetracker(BaseRetracker):
         waveform_collection = []
         for idx in indices:
             # Create the SAMOSA Waveform scenario data
-            scenario_data = self._get_scenario_data(self._l1b, self._l2, idx)
+            look_angles = get_look_angles(self._l1b, idx)
+            scenario_data = self._get_scenario_data(self._l1b, self._l2, idx, look_angles)
             waveform_data = self._get_normed_waveform(
                 rng[idx, :],
                 wfm[idx, :],
                 scenario_data.rp.tau,
                 radar_mode[idx],
                 self._l1b.classifier.window_delay[idx],
-                self._l1b.classifier.transmit_power[idx]
+                self._l1b.classifier.transmit_power[idx],
+                look_angles,
+                self._l1b.classifier.first_maximum_index[idx]
             )
             waveform_collection.append(WaveformFitData(idx, waveform_data, scenario_data))
 
@@ -626,7 +679,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             self,
             l1: Level1bData,
             l2: Level2Data,
-            idx: int
+            idx: int,
+            look_angles
     ) -> ScenarioData:
         """
         Creates the scenario data for the SAMOSA waveform model. This dataclass
@@ -645,6 +699,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         :param l1: Level-1 data container
         :param l2: Level-2 data container
         :param idx: Target Waveform index
+        :param look_angles:
 
         :return: SAMOSA waveform model scenario data for specific waveform
         """
@@ -667,9 +722,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
                 self._l1b.classifier.satellite_velocity_z[idx]
             )
         )
-
         geo = PlatformLocation(**location_data)
-        sar = SARParameters()
+        sar = SARParameters(look_angles=look_angles)
         sar.compute_multi_look_parameters(geo=geo, sp=sp)
 
         return ScenarioData(sp, geo, sar)
@@ -681,7 +735,9 @@ class SAMOSAPlusRetracker(BaseRetracker):
             tau: np.ndarray,
             radar_mode: int,
             window_delay: float,
-            transmit_power: float
+            transmit_power: float,
+            look_angles: np.ndarray,
+            first_maximum_index: int
     ) -> NormedWaveform:
         """
         Return a normed representation of the input waveform
@@ -702,9 +758,10 @@ class SAMOSAPlusRetracker(BaseRetracker):
             scaling_factor,
             window_delay,
             transmit_power,
+            look_angles,
             self._options.get("surface_type"),
             self._options.get("surface_class"),
-
+            first_maximum_index=first_maximum_index
         )
 
     def _get_waveform_model_fit_configuration(self) -> Tuple[List, Dict]:
@@ -722,7 +779,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
         if fit_method is None:
             raise ValueError("Mandatory configuration parameter `predictor_method not specified")
         args = [fit_method, predictor_method]
-
 
         num_processes = self._options.get("num_processes")
         num_processes = psrlcfg.CPU_COUNT if num_processes == "pysiral-cfg" else int(num_processes)
@@ -786,12 +842,12 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # Waveform and waveform model
         # Register results as auxiliary data variable
-        num_range_gates =self.waveform.shape[1]
-        dim_dict = {"new_dims": (("range_gates", num_range_gates),),
-                    "dimensions": ("time", "range_gates"),
-                    "add_dims": (("range_gates", np.arange(num_range_gates)),)}
-        self._l2.set_multidim_auxiliary_parameter("samiwfm", "waveform", self.waveform, dim_dict, update=True)
-        self._l2.set_multidim_auxiliary_parameter("samwfm", "waveform_model", self.waveform_model, dim_dict, update=True)
+        num_range_gates = self.waveform.shape[1]
+        dims = {"new_dims": (("range_gates", num_range_gates),),
+                "dimensions": ("time", "range_gates"),
+                "add_dims": (("range_gates", np.arange(num_range_gates)),)}
+        self._l2.set_multidim_auxiliary_parameter("samiwfm", "waveform", self.waveform, dims, update=True)
+        self._l2.set_multidim_auxiliary_parameter("samwfm", "waveform_model", self.waveform_model, dims, update=True)
 
         # Lead and open ocean surfaces
         surface_class = self._options.get("surface_class", "undefined")
@@ -826,6 +882,7 @@ def samosa_fit_swh_mss(
         fit_data: WaveformFitData,
         predictor_kwargs: Dict = None,
         least_squares_kwargs: Dict = None,
+        sub_waveform_method: Optional[Literal["filter_trailing_edge", "specular_only"]] = None
 ) -> SAMOSAWaveformFitResult:
     """
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
@@ -833,8 +890,8 @@ def samosa_fit_swh_mss(
     :param fit_data: Input parameters for waveform fitting process. Mainly
         contains waveform model scenario data and waveform data.
     :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
-
     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
+    :param sub_waveform_method:
 
     :return: SAMOSA+ waveform model fit result
     """
@@ -843,12 +900,26 @@ def samosa_fit_swh_mss(
     if least_squares_kwargs is None:
         least_squares_kwargs = {}
 
+    if predictor_kwargs is None:
+        predictor_kwargs = {}
+
     # Unpack for readability.
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
+    waveform_data.thermal_noise = compute_thermal_noise(waveform_data.power)
 
+    # Compute the lower envelope of the trailing edge
+    if sub_waveform_method is not None:
+        sub_waveform_mask = get_trailing_edge_lower_envelope_mask(
+            waveform_data.power,
+            waveform_data.first_maximum_index
+        )
+        sub_waveform_mask = np.logical_not(sub_waveform_mask)
+    else:
+        sub_waveform_mask = None
+    sub_waveform_mask = None
     # Get first guess of fit parameters and fit bounds
     predictor = SAMOSAModelParameterPrediction(
-        "single_fit_mss_swh",
+        "fit_mss_swh",
         waveform_data.surface_type,
         **predictor_kwargs
     )
@@ -860,27 +931,33 @@ def samosa_fit_swh_mss(
     fit_kwargs.update(least_squares_kwargs)
 
     # The fitting process is happening here:
-    fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data)
+    fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data, sub_waveform_mask=sub_waveform_mask)
     fit_result = least_squares(fit_cls.fit_func, first_guess, **fit_kwargs)
+
+    # Unpack parameters for better readability
+    epoch_ns, swh, mss = fit_result.x
+    epoch = epoch_ns*1.0e-9
 
     # Recompute the selected waveform model. Required to store the fitted waveform model.
     # NOTE: The waveform model cannot (easily) be retrieved from the fit class
     # because it is not always the last model.
-    fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, fit_result.x)
+    fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, [epoch, swh, mss])
 
-    if waveform_data.surface_type == "sea_ice":
-        import matplotlib.pyplot as plt
-        plt.figure(dpi=150)
-        plt.plot(waveform_data.tau, waveform_data.power)
-        plt.plot(waveform_data.tau, fitted_model.power)
-        plt.axvline(first_guess[0])
-        plt.axvline(lower_bounds[0])
-        plt.axvline(upper_bounds[0])
-        plt.show()
-        breakpoint()
+    scale_model = 1. / np.nanmax(fitted_model.power)
+    scale = 1. / waveform_data.power[waveform_data.first_maximum_index]
 
-    # Unpack parameters for better readability
-    epoch, significant_waveheight, mean_square_slope = fit_result.x
+    import matplotlib.pyplot as plt
+    plt.figure(dpi=150)
+    plt.title(f"swh={swh:0.2f}, nu={mss}")
+    plt.plot(waveform_data.tau, waveform_data.power * scale, color="black", lw=0.5)
+    plt.scatter(waveform_data.tau[sub_waveform_mask], waveform_data.power[sub_waveform_mask] * scale, color="red", s=10)
+    plt.scatter(waveform_data.tau, waveform_data.power * scale, color="black", s=2)
+    # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
+    plt.plot(waveform_data.tau, fitted_model.power * scale_model + waveform_data.thermal_noise, label="step2")
+    # plt.plot(waveform_data.tau, fitted_model_combined.power * scale_c + waveform_data.thermal_noise, label="combined")
+    plt.legend()
+    plt.show()
+    breakpoint()
 
     # Compute the misfit from residuals in SAMPy fashion
     misfit = sampy_misfit(fit_result.fun)
@@ -892,8 +969,8 @@ def samosa_fit_swh_mss(
     return SAMOSAWaveformFitResult(
         epoch,
         retracker_range,
-        significant_waveheight,
-        mean_square_slope,
+        swh,
+        mss,
         0.0,  # placeholder for thermal noise
         misfit,
         "single_fit_mss_swh",
@@ -932,6 +1009,13 @@ def samosa_fit_samosap_standard(
     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
     waveform_data.thermal_noise = compute_thermal_noise(waveform_data.power)
 
+    # Compute the lower envelope of the trailing edge
+    sub_waveform_mask = get_trailing_edge_lower_envelope_mask(
+        waveform_data.power,
+        waveform_data.first_maximum_index
+    )
+    sub_waveform_mask = np.logical_not(sub_waveform_mask)
+
     # Get first guess of fit parameters and fit bounds
     predictor = SAMOSAModelParameterPrediction(
         "samosap_standard",
@@ -949,7 +1033,12 @@ def samosa_fit_samosap_standard(
 
     # First fit step in SAMOSA+ two-stage fits, which fits
     # three parameters: 1. epoch, 2. significant wave height, 3. Amplitude
-    fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data, waveform_model_kwargs=dict(mode=1))
+    fit_cls = SAMOSAWaveformFit(
+        scenario_data,
+        waveform_data,
+        waveform_model_kwargs=dict(mode=1),
+        sub_waveform_mask=sub_waveform_mask
+    )
     fit_result_step1 = least_squares(fit_cls.fit_func_samosap_standard_step1, first_guess, **fit_kwargs)
 
     epoch_ns, swh, nu, pu_1 = fit_result_step1.x[0], fit_result_step1.x[1], 100_000.0, fit_result_step1.x[2]
@@ -970,7 +1059,12 @@ def samosa_fit_samosap_standard(
 
     # First fit step in SAMOSA+ two-stage fits, which fits
     # three parameters: 1. epoch, 2. significant wave height, 3. Amplitude
-    fit_cls = SAMOSAWaveformFit(scenario_data, waveform_data, waveform_model_kwargs=dict(mode=2))
+    fit_cls = SAMOSAWaveformFit(
+        scenario_data,
+        waveform_data,
+        waveform_model_kwargs=dict(mode=2),
+        sub_waveform_mask=sub_waveform_mask
+    )
     fit_result_step2 = least_squares(fit_cls.fit_func_samosap_standard_step2, first_guess, **fit_kwargs)
 
     # Recompute the selected waveform model. Required to store the fitted waveform model.
@@ -993,12 +1087,14 @@ def samosa_fit_samosap_standard(
     scale_2 = 1. / np.nanmax(fitted_model_step2.power)
     scale_c = 1. / np.nanmax(fitted_model_combined.power)
 
+    scale = 1. / waveform_data.power[waveform_data.first_maximum_index]
+
     import matplotlib.pyplot as plt
     plt.figure(dpi=150)
     plt.title(f"swh={swh:0.2f}, nu={nu}")
-    plt.plot(waveform_data.tau, waveform_data.power, color="black", lw=0.5)
-    plt.scatter(waveform_data.tau, waveform_data.power, color="black", s=2)
-    plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
+    plt.plot(waveform_data.tau, waveform_data.power * scale, color="black", lw=0.5)
+    plt.scatter(waveform_data.tau, waveform_data.power * scale, color="black", s=2)
+    # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
     plt.plot(waveform_data.tau, fitted_model_step2.power * scale_2 + waveform_data.thermal_noise, label="step2")
     # plt.plot(waveform_data.tau, fitted_model_combined.power * scale_c + waveform_data.thermal_noise, label="combined")
     plt.legend()
@@ -1031,6 +1127,7 @@ def samosa_fit_samosap_standard(
 
 
     breakpoint()
+
 
 def get_model_from_args(
         samosa_waveform_model,
@@ -1131,9 +1228,10 @@ def compute_thermal_noise(
     :return: thermal noise in waveform power units
     """
     waveform_sorted = np.sort(waveform[:waveform.shape[0] // 2])
-    start_index = 0 if start_index < 0 else start_index
+    start_index = max(start_index, 0)
     end_index = waveform_sorted.size - 1 if start_index >= waveform.size else end_index
     return np.nanmedian(waveform_sorted[start_index:end_index+1])
+
 
 def epoch2range(epoch: float, window_delay: float) -> float:
     """
@@ -1160,13 +1258,97 @@ def get_look_angles(l1, index: int) -> np.ndarray:
 
     :return:
     """
-    return 90. - np.linspace(
-        np.rad2deg(l1.classifier.look_angle_start[index]),
-        np.rad2deg(l1.classifier.look_angle_stop[index]),
-        num=int(l1.classifier.stack_beams[index]),
-        endpoint=True
-    )
+    return 90. - np.linspace(np.rad2deg(l1.classifier.look_angle_start[index]),
+                             np.rad2deg(l1.classifier.look_angle_stop[index]),
+                             num=int(l1.classifier.stack_beams[index]))
 
+
+def get_trailing_edge_lower_envelope_mask(
+        waveform_power: np.ndarray,
+        first_maximum_index: int,
+        max_minimum_cleaning_passes: int = 5,
+        noise_level_normed: float = 0.01,
+        return_type: Literal["bool", "indices"] = "bool"
+) -> np.ndarray:
+    """
+    Compute the indices of the waveforms trailing edge lower envelope.
+    This method relies on the computation of relative minima via scipy.
+    with added filtering.
+
+    :param waveform_power: Waveform power values (any unit)
+    :param first_maximum_index: Range gate index of the first maximum.
+    :param max_minimum_cleaning_passes: Local minima on the trailing edge
+        may not be in strictly decreasing in power depending on the
+        off-nadir backscatter contanimation of the trailing edge.
+        Local minima are iteratively removed that are not decreasing in
+        power.
+    :param noise_level_normed: Points within the noise level of the linear
+        fit between successive local minima are added to the trailing edge
+        mask. Noise level unit is the first maximum power.
+    :param return_type: Options are a boolean array with the same dimensions
+        as the waveform (default), or an index array.
+
+    :return:
+    """
+
+    # Perform operation on trailing edge only normalized by
+    # first maximum power (trailing edge is defined as
+    # everything after the first maximum).
+    wfm_trailing_edge = waveform_power[first_maximum_index:]
+    wfm_trailing_edge /= np.nanmax(wfm_trailing_edge)
+
+    # Get local minima and add first maximum and last range gate
+    # the list (important for fitting waveform power).
+    idx_lmin = argrelmin(wfm_trailing_edge)[0]
+    idx_lmin = np.insert(idx_lmin, 0, 0)
+    idx_lmin = np.insert(idx_lmin, len(idx_lmin), wfm_trailing_edge.size-1)
+
+    # Throw out local minima that have greater power then the previous
+    # one in several iterations
+    for _ in np.arange(max_minimum_cleaning_passes):
+        wfm_power_change = [
+            wfm_trailing_edge[idx_lmin[1:]] - wfm_trailing_edge[idx_lmin[:-1]]
+        ][0]
+        wfm_change = np.insert(wfm_power_change, 0, -1)
+        valid_local_minima = wfm_change < 0.0
+        if valid_local_minima.all():
+            break
+        idx_lmin = idx_lmin[wfm_change < 0.0]
+
+    # Create a leading edge mask. This is required for the
+    # following operation
+    mask_le = np.full(wfm_trailing_edge.size, False)
+    mask_le[idx_lmin] = True
+
+    # Take in again waveform points that are within the noise level
+    # (ensures that are enough points for the fit, without deviating
+    # from the lower envelope too much).
+    # This is done by computing a linear fit between successive
+    # local minima and checking the difference of actual power
+    # values to the linear fit.
+    for i in np.arange(idx_lmin.size-1):
+
+        linear_fit = np.linspace(
+            wfm_trailing_edge[idx_lmin[i]],
+            wfm_trailing_edge[idx_lmin[i+1]],
+            idx_lmin[i + 1] - idx_lmin[i]
+        )
+        power_delta = wfm_trailing_edge[idx_lmin[i]:idx_lmin[i+1]] - linear_fit
+        in_noise_level = np.absolute(power_delta) <= noise_level_normed
+        mask_le[idx_lmin[i]:idx_lmin[i+1]] = in_noise_level
+
+    # Final step: Pad trailing edge mask to full waveform mask
+    mask = np.full(waveform_power.size, True)
+    mask[first_maximum_index:] = mask_le
+
+    x = np.arange(waveform_power.size)
+    plt.figure(dpi=150)
+    plt.plot(x, waveform_power)
+    plt.scatter(x[mask], waveform_power[mask], color="black", s=30)
+    plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index], color="red", s=10)
+    plt.show()
+
+    return mask if return_type is "bool" else np.where(mask)[0]
 
 # def calc_sigma0(
 #         Latm,
