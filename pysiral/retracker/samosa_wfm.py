@@ -168,6 +168,8 @@ class SAMOSAWaveformFit(object):
             waveform_model: Optional[SAMOSAWaveformModel] = None,
             sub_waveform_mask: Optional[np.ndarray] = None,
             waveform_model_kwargs: Optional[Dict] = None,
+            step1_fixed_nu_value: float = 0.0,
+            step2_fixed_swh_value: float = 0.0,
             method: str = None
     ) -> None:
 
@@ -180,6 +182,12 @@ class SAMOSAWaveformFit(object):
             SAMOSAWaveformModel(scenario_data, **waveform_model_kwargs)
         )
         self.normed_waveform = normed_waveform
+
+        # The first fit step in the SAMOSA+ retracker uses a fixed nu value
+        self.step1_fixed_nu_value = step1_fixed_nu_value
+        self.step2_fixed_swh_value = step2_fixed_swh_value
+
+        # The second fit step in the SAMOSA+ retracker uses a fixed swh value
 
         # Mask is empty by default (mask=True -> point does not generate a residual value)
         self.sub_waveform_mask = sub_waveform_mask
@@ -199,7 +207,6 @@ class SAMOSAWaveformFit(object):
             be minimized by least square process.
         """
         epoch, significant_wave_height, nu = fit_args
-        print(fit_args)
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch * 1e-9, significant_wave_height, nu],
@@ -243,7 +250,7 @@ class SAMOSAWaveformFit(object):
         """
 
         epoch, significant_wave_height, power_scale = fit_args
-        nu = 0  # The default value for nu (1/mss) is 0 in sampy 1/np.inf -> 0.0
+        nu = self.step1_fixed_nu_value  # The default value for nu (1/mss) is 0 in sampy 1/np.inf -> 0.0
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch * 1e-9, significant_wave_height, nu],
@@ -276,8 +283,7 @@ class SAMOSAWaveformFit(object):
         """
 
         epoch_ns, nu, power_scale = fit_args
-        significant_wave_height = 0.0  # The default value second fit step in sampy
-
+        significant_wave_height = self.step2_fixed_swh_value
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch_ns * 1e-9, significant_wave_height, nu]
@@ -998,6 +1004,7 @@ def samosa_fit_samosap_standard(
     :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
 
     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
+    :param sub_waveform_method:
 
     :return: SAMOSA+ waveform model fit result
     """
@@ -1031,6 +1038,90 @@ def samosa_fit_samosap_standard(
     )
 
     # --- SAMOSA+ Fit Step 1 ---
+    model_parameters_step1, fitted_model_step1 = samosa_fit_samosap_standard_step1(
+        waveform_data, scenario_data, predictor,
+        least_squares_kwargs=least_squares_kwargs,
+        sub_waveform_mask=sub_waveform_mask
+    )
+
+    # --- SAMOSA+ Fit Step 2 ---
+    model_parameters_step2, fitted_model_step2, residual_step2 = samosa_fit_samosap_standard_step2(
+        waveform_data, scenario_data, predictor,
+        least_squares_kwargs=least_squares_kwargs,
+        sub_waveform_mask=sub_waveform_mask
+    )
+
+    # --- Summarize the result from two fits ---
+    # Note that the waveform model from the combination of swh and nu will provide the best fit
+    swh = model_parameters_step1.significant_wave_height
+    epoch = model_parameters_step2.epoch
+    nu = model_parameters_step2.nu
+    mss = model_parameters_step2.mean_square_slope
+
+    import matplotlib.pyplot as plt
+    import os
+    from pathlib import Path
+    idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
+    output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
+    plt.figure(dpi=150)
+    plt.title(f"swh={swh:0.2f}, nu={nu}")
+    plt.axvline(epoch, color="blue", lw=0.5, ls="dashed")
+    plt.plot(waveform_data.tau, waveform_data.power, color="black", lw=0.5)
+    plt.scatter(waveform_data.tau, waveform_data.power, color="black", s=2)
+    plt.scatter(
+        waveform_data.tau[sub_waveform_mask],
+        waveform_data.power[sub_waveform_mask],
+        edgecolors="red", color="none", s=8
+    )
+    # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
+    plt.plot(waveform_data.tau, fitted_model_step2.power, label="step2")
+    plt.legend()
+    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png")
+
+    # Compute the misfit from residuals in SAMPy fashion
+    misfit = sampy_misfit(residual_step2)
+    #
+    # Convert epoch to range (excluding range corrections)
+    # TODO: apply radar mode range bias here?
+    retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
+    #
+    return SAMOSAWaveformFitResult(
+         epoch,
+         retracker_range,
+         swh,
+         mss,
+         0.0,  # placeholder for thermal noise
+         misfit,
+         "single_fit_mss_swh",
+         waveform_data.power,
+         fitted_model_step2.power  #,
+         # number_of_model_evaluations=fit_result_step2.nfev,
+         # fit_return_status=fit_result_step2.status
+    )
+
+
+def samosa_fit_samosap_standard_step1(
+        waveform_data: NormedWaveform,
+        scenario_data: ScenarioData,
+        predictor: SAMOSAModelParameterPrediction,
+        step1_fixed_nu_value: float = 0.0,
+        least_squares_kwargs: Optional[Dict] = None,
+        sub_waveform_mask: Optional[np.ndarray] = None,
+) -> Tuple[WaveformModelParameters, WaveformModelOutput]:
+    """
+    Performs fit step 1 of the SAMOSAPlus retracker (as implemented in SAMPY)
+
+    :param waveform_data:
+    :param scenario_data:
+    :param predictor:
+    :param step1_fixed_nu_value:
+    :param least_squares_kwargs:
+    :param sub_waveform_mask:
+
+    :return: Fit result waveform mode
+    """
+
+    # Get the fit parameters
     first_guess, lower_bounds, upper_bounds = predictor.get(waveform_data, mode=1)
 
     # Update least square kwargs with fit bounds
@@ -1044,19 +1135,53 @@ def samosa_fit_samosap_standard(
         scenario_data,
         waveform_data,
         waveform_model_kwargs=dict(mode=1),
+        step1_fixed_nu_value=step1_fixed_nu_value,
         sub_waveform_mask=sub_waveform_mask
     )
     fit_result_step1 = least_squares(fit_cls.fit_func_samosap_standard_step1, first_guess, **fit_kwargs)
 
-    epoch_ns, swh, nu, pu_1 = fit_result_step1.x[0], fit_result_step1.x[1], 100_000.0, fit_result_step1.x[2]
-    fitted_model_step1 = get_model_from_args(
-        fit_cls.samosa_waveform_model,
-        [epoch_ns * 1e-9, swh, nu]
+    # --- Collect output ---
+    # Summarize the fit result parameters
+    model_parameters_step1 = WaveformModelParameters(
+        epoch=fit_result_step1.x[0] * 1e-9,
+        significant_wave_height=fit_result_step1.x[1],
+        nu=step1_fixed_nu_value,
+        amplitude_scale=fit_result_step1.x[2],
+        thermal_noise=waveform_data.thermal_noise
     )
 
-    # --- SAMOSA+ Fit Step 2 ---
+    # Compute the waveform model with the fit parameters
+    fitted_model_step1 = get_model_from_args(
+        fit_cls.samosa_waveform_model,
+        model_parameters_step1.args_list,
+        amplitude_scale=model_parameters_step1.amplitude_scale,
+        thermal_noise=model_parameters_step1.thermal_noise
+    )
+    return model_parameters_step1, fitted_model_step1
 
-    # Get first guess of fit parameters and fit bounds
+
+def samosa_fit_samosap_standard_step2(
+        waveform_data: NormedWaveform,
+        scenario_data: ScenarioData,
+        predictor: SAMOSAModelParameterPrediction,
+        step2_fixed_swh_value: float = 0.0,
+        least_squares_kwargs: Optional[Dict] = None,
+        sub_waveform_mask: Optional[np.ndarray] = None,
+) -> Tuple[WaveformModelParameters, WaveformModelOutput, np.ndarray]:
+    """
+    Performs fit step 2 of the SAMOSAPlus retracker (as implemented in SAMPY)
+
+    :param waveform_data:
+    :param scenario_data:
+    :param predictor:
+    :param step2_fixed_swh_value:
+    :param least_squares_kwargs:
+    :param sub_waveform_mask:
+
+    :return: Fit result waveform mode
+    """
+
+    # Get the fit parameters
     first_guess, lower_bounds, upper_bounds = predictor.get(waveform_data, mode=2)
 
     # Update least square kwargs with fit bounds
@@ -1070,90 +1195,55 @@ def samosa_fit_samosap_standard(
         scenario_data,
         waveform_data,
         waveform_model_kwargs=dict(mode=2),
+        step2_fixed_swh_value=step2_fixed_swh_value,
         sub_waveform_mask=sub_waveform_mask
     )
     fit_result_step2 = least_squares(fit_cls.fit_func_samosap_standard_step2, first_guess, **fit_kwargs)
 
-    # Recompute the selected waveform model. Required to store the fitted waveform model.
-    # NOTE: The waveform model cannot (easily) be retrieved from the fit class
-    # because it is not always the last model.
+    # --- Collect output ---
+    # Summarize the fit result parameters
+    model_parameters_step2 = WaveformModelParameters(
+        epoch=fit_result_step2.x[0] * 1e-9,
+        significant_wave_height=step2_fixed_swh_value,
+        nu=fit_result_step2.x[1],
+        amplitude_scale=fit_result_step2.x[2],
+        thermal_noise=waveform_data.thermal_noise
+    )
 
-    epoch_ns, swh, nu, pu_2 = fit_result_step2.x[0], 0.0, fit_result_step2.x[1], fit_result_step2.x[2]
+    # Compute the waveform model with the fit parameters
     fitted_model_step2 = get_model_from_args(
         fit_cls.samosa_waveform_model,
-        [epoch_ns * 1e-9, swh, nu]
+        model_parameters_step2.args_list,
+        amplitude_scale=model_parameters_step2.amplitude_scale,
+        thermal_noise=model_parameters_step2.thermal_noise
     )
-
-    epoch_ns, swh, nu = fit_result_step2.x[0], fit_result_step1.x[1], fit_result_step2.x[1]
-    fitted_model_combined = get_model_from_args(
-        fit_cls.samosa_waveform_model,
-        [epoch_ns * 1e-9, swh, nu]
-    )
-
-    scale_1 = 1. / np.nanmax(fitted_model_step1.power)
-    scale_2 = 1. / np.nanmax(fitted_model_step2.power)
-    scale_c = 1. / np.nanmax(fitted_model_combined.power)
-
-    scale = 1. / waveform_data.power[waveform_data.first_maximum_index]
-
-    import matplotlib.pyplot as plt
-    plt.figure(dpi=150)
-    plt.title(f"swh={swh:0.2f}, nu={nu}")
-    plt.plot(waveform_data.tau, waveform_data.power * scale, color="black", lw=0.5)
-    plt.scatter(waveform_data.tau, waveform_data.power * scale, color="black", s=2)
-    # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
-    plt.plot(waveform_data.tau, fitted_model_step2.power * scale_2 + waveform_data.thermal_noise, label="step2")
-    # plt.plot(waveform_data.tau, fitted_model_combined.power * scale_c + waveform_data.thermal_noise, label="combined")
-    plt.legend()
-    plt.show()
-    breakpoint()
-
-    # # Unpack parameters for better readability
-    # epoch, significant_waveheight, mean_square_slope = fit_result_step2.x
-    #
-    # # Compute the misfit from residuals in SAMPy fashion
-    # misfit = sampy_misfit(fit_result_step2.fun)
-    #
-    # # Convert epoch to range (excluding range corrections)
-    # # TODO: apply radar mode range bias here?
-    # retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
-    #
-    # return SAMOSAWaveformFitResult(
-    #     epoch,
-    #     retracker_range,
-    #     significant_waveheight,
-    #     mean_square_slope,
-    #     0.0,  # placeholder for thermal noise
-    #     misfit,
-    #     "single_fit_mss_swh",
-    #     waveform_data.power,
-    #     fitted_model.power,
-    #     number_of_model_evaluations=fit_result_step2.nfev,
-    #     fit_return_status=fit_result_step2.status
-    # )
-
-
-    breakpoint()
+    return model_parameters_step2, fitted_model_step2, fit_result_step2.fun
 
 
 def get_model_from_args(
         samosa_waveform_model,
         args,
+        amplitude_scale: float = 1.0,
         thermal_noise: float = 0.0,
 ) -> "WaveformModelOutput":
     """
-    Compute waveform model with final fit parameters
+    Compute waveform model with final fit parameters. This function
+    allows to compute the waveform model from fit parameter triplets.
 
-    :param samosa_waveform_model:
+    :param samosa_waveform_model: Initialized and configured SAMOSA+
+        Waveform model instance.
+
     :param args: list of [epoch, swh, mss]
-    :param thermal_noise
+    :param amplitude_scale: Optional scaling factor
+    :param thermal_noise: Optional thermal noise
 
-    :return:
+    :return: Waveform model
     """
     model_parameter = WaveformModelParameters(
         epoch=args[0],
         significant_wave_height=args[1],
         nu=args[2],
+        amplitude_scale=amplitude_scale,
         thermal_noise=thermal_noise
     )
     return samosa_waveform_model.generate_delay_doppler_waveform(model_parameter)
@@ -1348,12 +1438,17 @@ def get_trailing_edge_lower_envelope_mask(
     mask = np.full(waveform_power.size, True)
     mask[first_maximum_index:] = mask_le
 
+    # Debug plot
+    import os
+    from pathlib import Path
+    idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
+    output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
     x = np.arange(waveform_power.size)
     plt.figure(dpi=150)
     plt.plot(x, waveform_power)
     plt.scatter(x[mask], waveform_power[mask], color="black", s=30)
     plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index], color="red", s=10)
-    plt.show()
+    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png")
 
     return mask if return_type is "bool" else np.where(mask)[0]
 
