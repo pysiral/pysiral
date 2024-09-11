@@ -1425,14 +1425,30 @@ def get_trailing_edge_lower_envelope_mask(
     # values to the linear fit.
     for i in np.arange(idx_lmin.size-1):
 
-        linear_fit = np.linspace(
-            wfm_trailing_edge[idx_lmin[i]],
-            wfm_trailing_edge[idx_lmin[i+1]],
-            idx_lmin[i + 1] - idx_lmin[i]
-        )
-        power_delta = wfm_trailing_edge[idx_lmin[i]:idx_lmin[i+1]] - linear_fit
-        in_noise_level = np.absolute(power_delta) <= noise_level_normed
-        mask_le[idx_lmin[i]:idx_lmin[i+1]] = in_noise_level
+        k = wfm_trailing_edge[idx_lmin[i]]
+        m = (wfm_trailing_edge[idx_lmin[i+1]] - wfm_trailing_edge[idx_lmin[i]]) / (idx_lmin[i+1] - idx_lmin[i])
+
+        for x, idx in enumerate(np.arange(idx_lmin[i]+1, idx_lmin[i+1])):
+            x0 = x + 1
+            y0 = wfm_trailing_edge[idx]
+
+            x_poca = (x0 + m * y0 - m * k) / (m ** 2. + 1)
+            y_poca = m * (x0 + m * y0 - m * k) / (m ** 2. + 1) + k
+
+            dist = np.sqrt((x_poca - x0)**2. + (y_poca - y0)**2)
+            mask_le[idx] = dist <= noise_level_normed
+        # breakpoint()
+        #
+        #
+        # linear_fit = np.linspace(
+        #     wfm_trailing_edge[idx_lmin[i]],
+        #     wfm_trailing_edge[idx_lmin[i+1]],
+        #     idx_lmin[i + 1] - idx_lmin[i]
+        # )
+        #
+        # power_delta = wfm_trailing_edge[idx_lmin[i]:idx_lmin[i+1]] - linear_fit
+        # in_noise_level = np.absolute(power_delta) <= noise_level_normed
+        # mask_le[idx_lmin[i]:idx_lmin[i+1]] = in_noise_level
 
     # Final step: Pad trailing edge mask to full waveform mask
     mask = np.full(waveform_power.size, True)
@@ -1448,7 +1464,8 @@ def get_trailing_edge_lower_envelope_mask(
     plt.plot(x, waveform_power)
     plt.scatter(x[mask], waveform_power[mask], color="black", s=30)
     plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index], color="red", s=10)
-    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png")
+    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png")
+    plt.show()
 
     return mask if return_type is "bool" else np.where(mask)[0]
 
