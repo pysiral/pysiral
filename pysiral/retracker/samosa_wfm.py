@@ -956,8 +956,8 @@ def samosa_fit_swh_mss(
     scale = 1. / waveform_data.power[waveform_data.first_maximum_index]
 
     import matplotlib.pyplot as plt
-    plt.figure(dpi=150)
-    plt.title(f"swh={swh:0.2f}, nu={mss}")
+    plt.figure(figsize=(9, 6))
+    plt.title(f"swh={swh:0.2f}, nu={mss:.2f}")
     plt.plot(waveform_data.tau, waveform_data.power * scale, color="black", lw=0.5)
     plt.scatter(waveform_data.tau[sub_waveform_mask], waveform_data.power[sub_waveform_mask] * scale, color="red", s=10)
     plt.scatter(waveform_data.tau, waveform_data.power * scale, color="black", s=2)
@@ -1063,20 +1063,25 @@ def samosa_fit_samosap_standard(
     from pathlib import Path
     idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
     output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
-    plt.figure(dpi=150)
-    plt.title(f"swh={swh:0.2f}, nu={nu}")
-    plt.axvline(epoch, color="blue", lw=0.5, ls="dashed")
-    plt.plot(waveform_data.tau, waveform_data.power, color="black", lw=0.5)
-    plt.scatter(waveform_data.tau, waveform_data.power, color="black", s=2)
+    plt.figure(figsize=(9, 6))
+    plt.title(f"Waveform index: {idx:05g} (swh={swh:0.2f}, nu={nu:0.2f})")
+    plt.axvline(epoch, color="violet", lw=0.5, ls="dashed", label="epoch")
+    plt.scatter(waveform_data.tau, waveform_data.power, color="0.5", s=6, marker="o", zorder=20)
     plt.scatter(
         waveform_data.tau[sub_waveform_mask],
         waveform_data.power[sub_waveform_mask],
-        edgecolors="red", color="none", s=8
+        color="red", marker="x", s=20,
+        label="Rejected Range Gates",
+        zorder=30
     )
     # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
-    plt.plot(waveform_data.tau, fitted_model_step2.power, label="step2")
-    plt.legend()
-    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png")
+    plt.plot(waveform_data.tau, fitted_model_step2.power, label="Fitted Model (SAMOSA step 2)",
+             color="violet", alpha=0.85, zorder=40)
+    plt.legend(loc="upper right")
+    plt.ylim(0, 1.25)
+    plt.xlabel("Range Gate (seconds)")
+    plt.ylabel("Normed Waveform Power")
+    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png", dpi=300)
 
     # Compute the misfit from residuals in SAMPy fashion
     misfit = sampy_misfit(residual_step2)
@@ -1364,7 +1369,7 @@ def get_trailing_edge_lower_envelope_mask(
         waveform_power: np.ndarray,
         first_maximum_index: int,
         max_minimum_cleaning_passes: int = 5,
-        noise_level_normed: float = 0.01,
+        noise_level_normed: float = 0.05,
         return_type: Literal["bool", "indices"] = "bool"
 ) -> np.ndarray:
     """
@@ -1425,10 +1430,11 @@ def get_trailing_edge_lower_envelope_mask(
     # values to the linear fit.
     for i in np.arange(idx_lmin.size-1):
 
+        # --- Method 1: Distance to POCA of linear fit ---
         k = wfm_trailing_edge[idx_lmin[i]]
         m = (wfm_trailing_edge[idx_lmin[i+1]] - wfm_trailing_edge[idx_lmin[i]]) / (idx_lmin[i+1] - idx_lmin[i])
-
         for x, idx in enumerate(np.arange(idx_lmin[i]+1, idx_lmin[i+1])):
+
             x0 = x + 1
             y0 = wfm_trailing_edge[idx]
 
@@ -1437,9 +1443,8 @@ def get_trailing_edge_lower_envelope_mask(
 
             dist = np.sqrt((x_poca - x0)**2. + (y_poca - y0)**2)
             mask_le[idx] = dist <= noise_level_normed
-        # breakpoint()
-        #
-        #
+
+        # # --- Method 2: Vertical Distance to linear fit ---
         # linear_fit = np.linspace(
         #     wfm_trailing_edge[idx_lmin[i]],
         #     wfm_trailing_edge[idx_lmin[i+1]],
@@ -1454,18 +1459,28 @@ def get_trailing_edge_lower_envelope_mask(
     mask = np.full(waveform_power.size, True)
     mask[first_maximum_index:] = mask_le
 
+    inverted_mask = np.logical_not(mask)
+
     # Debug plot
     import os
     from pathlib import Path
     idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
     output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
     x = np.arange(waveform_power.size)
-    plt.figure(dpi=150)
-    plt.plot(x, waveform_power)
-    plt.scatter(x[mask], waveform_power[mask], color="black", s=30)
-    plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index], color="red", s=10)
-    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png")
-    plt.show()
+    plt.figure(figsize=(9, 6))
+    plt.title(f"Waveform Index: {idx:05g}")
+    plt.plot(x, waveform_power, color="black", lw=0.75, zorder=20)
+    plt.scatter(x[mask], waveform_power[mask], color="0.5", s=6, marker="o", zorder=20)
+    plt.scatter(x[inverted_mask], waveform_power[inverted_mask], color="red", marker="x", s=30, zorder=30,
+                label="Rejected Range Gates")
+    plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index],
+                edgecolors="greenyellow", facecolors="none", marker="s", s=30, zorder=30,
+                label="Detected Local Minima")
+    plt.legend(loc="upper right")
+    plt.ylim(0, 1.25)
+    plt.xlabel("Range Gate")
+    plt.ylabel("Normed Waveform Power")
+    plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png", dpi=300)
 
     return mask if return_type is "bool" else np.where(mask)[0]
 
