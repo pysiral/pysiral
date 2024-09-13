@@ -421,6 +421,42 @@ class SAMOSAWaveformCollectionFit(object):
         pool.join()
         return fit_results
 
+    def _fit_samosap_specular(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
+        """
+        Computes Samosa waveform model fit in the main process (no multiprocessing)
+
+        :param waveform_collection: List of fit input
+
+        :return: List of fit outputs
+        """
+        return [
+            samosa_fit_samosap_specular(
+                fit_data,
+                least_squares_kwargs=self.least_squares_kwargs,
+                predictor_kwargs=self.predictor_kwargs
+            )
+            for fit_data in waveform_collection
+        ]
+
+    def _fit_samosap_specular_mp(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
+        """
+        Computes Samosa waveform model fit with multiprocessing
+
+        :param waveform_collection: List of fit input
+
+        :return: List of fit outputs
+        """
+        pool = multiprocessing.Pool(self.num_processes)
+        fit_func = partial(
+            samosa_fit_samosap_specular,
+            least_squares_kwargs=self.least_squares_kwargs,
+            predictor_kwargs=self.predictor_kwargs
+        )
+        fit_results = pool.map(fit_func, waveform_collection)
+        pool.close()
+        pool.join()
+        return fit_results
+
     # def _fit_mss_swh(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
     #     """
     #     Computes Samosa waveform model fit in the main process (no multiprocessing)
@@ -494,7 +530,7 @@ class SAMOSAModelParameterPrediction(object):
         lower_bounds, upper_bounds = self.bounds_method(waveform.tau, first_guess, **kwargs)
         return first_guess, lower_bounds, upper_bounds
 
-    def _get_first_guess_samosap_specular(self, waveform: NormedWaveform) -> Tuple:
+    def _get_first_guess_samosap_specular(self, waveform: NormedWaveform, **_) -> Tuple:
         """
         Estimate the first guess for the SAMOSA+ specular waveform fitting mode (fixed swh, only nu).
         Equivalent to SAMOSA+ standard fit method with mode 2.
@@ -505,7 +541,7 @@ class SAMOSAModelParameterPrediction(object):
         """
         return self._get_first_guess_samosap_standard(waveform, mode=2)
 
-    def _get_bounds_samosap_specular(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
+    def _get_bounds_samosap_specular(self, tau, first_guess, **_) -> Tuple[Tuple, Tuple]:
         """
         Estimate the fit bounds for the SAMOSA+ specular waveform fitting mode (fixed swh, only nu).
         Equivalent to SAMOSA+ standard fit method with mode 2.
@@ -567,13 +603,13 @@ class SAMOSAModelParameterPrediction(object):
             epoch_bounds_range_gate[0],
             np.min([np.max(tau), tau_fmi_offset])
         )
-        swh_bounds = self.bounds["swh"]
-        nu_bounds = self.bounds["nu"]
         pu_bounds = [0.2, 1.5]  # TODO: copied over from sampy
         if mode == 1:
+            swh_bounds = self.bounds["swh"]
             lower_bounds = epoch_bounds[0] * 1e9, float(swh_bounds[0]), pu_bounds[0]
             upper_bounds = epoch_bounds[1] * 1e9, float(swh_bounds[1]), pu_bounds[1]
         elif mode == 2:
+            nu_bounds = self.bounds["nu"]
             lower_bounds = epoch_bounds[0] * 1e9, float(nu_bounds[0]), pu_bounds[0]
             upper_bounds = epoch_bounds[1] * 1e9, float(nu_bounds[1]), pu_bounds[1]
         else:
@@ -615,7 +651,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         self._store_retracker_properties(fit_results, indices)
 
         # Set/compute uncertainty
-        # self._set_range_uncertainty()
+        self._set_range_uncertainty(fit_results, indices)
 
         # Add range biases (when set in config file)
         # self._set_range_bias(radar_mode)
@@ -636,6 +672,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         parameter = [
             "misfit",
+            "misfit_sub_waveform",
             "swh",
             "mean_square_slope",
             "wind_speed",
@@ -758,6 +795,11 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         sp = SensorParameters.get(platform, radar_mode_name)
 
+        # pysiral specific: All waveforms windowed to 256 range gates
+        # Here to be changed without zero-padding factor (which is same for SAR and SARin).
+        if radar_mode_name == "sin":
+            sp.range_gates_per_pulse = 128
+
         location_data = dict(
             latitude=l2.latitude[idx],
             longitude=l2.longitude[idx],
@@ -799,6 +841,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         """
         scaling_factor = 1.0 / np.nanmax(wfm)
         normed_waveform = wfm * scaling_factor
+
         return NormedWaveform(
             normed_waveform,
             rng,
@@ -817,7 +860,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
         """
         Constructs the arguments and keywords for the SAMOSAWaveformCollectionFit class,
         defining the fit method and its configration
-        :return:
+
+        :return: arguments and keyword arguments for the waveform model
         """
 
         fit_method = self._options.get("fit_method")
@@ -838,6 +882,22 @@ class SAMOSAPlusRetracker(BaseRetracker):
             "predictor_kwargs": self._options.get("predictor_kwargs", {}),
         }
         return args, kwargs
+
+    def _set_range_uncertainty(
+            self,
+            fit_results: List[SAMOSAWaveformFitResult],
+            indices: np.ndarray
+    ) -> None:
+        """
+        The retracker range uncertainty is computed directly from the
+        epoch standard error (from the least squares cost function)
+        in the waveform model fitting process.
+
+        :param fit_results: A list of waveform model fit results
+        :param indices: List of waveform indices
+        """
+        for index, fit_result in zip(indices, fit_results):
+            self._uncertainty[index] = fit_result.retracker_range_standard_error
 
     def _store_retracker_properties(
         self,
@@ -866,6 +926,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
             # Waveform model fit parameters
             self.swh[index] = fit_result.significant_wave_height
             self.misfit[index] = fit_result.misfit
+            self.misfit_sub_waveform[index] = fit_result.misfit_sub_waveform
             self.mean_square_slope[index] = fit_result.mean_square_slope
             self.epoch[index] = fit_result.epoch
 
@@ -885,6 +946,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # General auxiliary variables
         self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
+        self.register_auxdata_output("sammfsw", "samosa_misfit_sub_waveform", self.misfit_sub_waveform)
         self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
         self.register_auxdata_output("samfnfe", "samosa_fit_num_func_eval", self.fit_num_func_eval)
         self.register_auxdata_output("samfrs", "samosa_fit_return_status", self.fit_return_status)
@@ -1104,7 +1166,7 @@ def samosa_fit_samosap_standard(
     number_of_model_evaluations = optimize_result_step1.nfev + optimize_result_step2.nfev
 
     # Convert epoch to range (excluding range corrections)
-    retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.window_delay)
+    retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
     retracker_range_standard_error = 0.5 * 299792458. * model_parameters_step2.epoch_sdev
 
     # # --- Debug Plot ---
@@ -1216,7 +1278,7 @@ def samosa_fit_samosap_specular(
     number_of_model_evaluations = optimize_result_step2.nfev
 
     # Convert epoch to range (excluding range corrections)
-    retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.window_delay)
+    retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
     retracker_range_standard_error = 0.5 * 299792458. * model_parameters_step2.epoch_sdev
 
     # # --- Debug Plot ---
@@ -1519,19 +1581,21 @@ def compute_thermal_noise(
     return np.nanmedian(waveform_sorted[start_index:end_index+1])
 
 
-def epoch2range(epoch: float, window_delay: float) -> float:
+def epoch2range(epoch: float, range_array: np.ndarray) -> float:
     """
     Computes the retracker range, defined as range of spacecraft center or mass
     to retracked elevation.
 
     :param epoch: retracker epoch in seconds
 
-    :param window_delay:
+    :param range_array:
 
     :return: retracker range in meter.
     """
     factor = 0.5 * 299792458.
-    return epoch * factor + window_delay * factor
+    center_idx = range_array.shape[0] // 2
+    center_range = float(range_array[center_idx])
+    return epoch * factor + center_range
 
 
 def get_look_angles(l1, index: int) -> np.ndarray:

@@ -189,6 +189,11 @@ variables:
     long_name: "misfit of the samosa+ waveform model"
     coordinates: longitude latitude
 
+  samosa_misfit_sub_waveform:
+    long_name: "misfit of the samosa+ waveform model"
+    comment: "misfit parameter computed with filtered trailing edge"
+    coordinates: longitude latitude
+
   samosa_fit_num_func_eval:
     long_name: "samosa fit number of function evaluations"
     unit: "1"
