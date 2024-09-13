@@ -185,6 +185,15 @@ variables:
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
 
+  surface_type:
+    long_name: "surface type classification flag"
+    units: "1"
+    flag_values: "0, 1, 2, 4, 5, 6, 7, 8"
+    valid_min: 0
+    valid_max: 8
+    flag_meanings: "unknown ocean lead polynya sea_ice closed_sea land_ice land invalid"
+    coordinates: time
+
   samosa_misfit:
     long_name: "misfit of the samosa+ waveform model"
     coordinates: longitude latitude
@@ -240,5 +249,10 @@ variables:
 
   waveform_model:
     long_name: "samosa waveform model"
+    coordinates: time, n_range_gates
+    comment: "This parameter is only intended for use with a test data set"
+
+  sub_waveform_mask:
+    long_name: "sub waveform mask"
     coordinates: time, n_range_gates
     comment: "This parameter is only intended for use with a test data set"

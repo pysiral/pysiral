@@ -148,6 +148,7 @@ class SAMOSAWaveformFitResult:
     fit_mode: str = "n/a"
     waveform: np.ndarray = None
     waveform_model: np.ndarray = None
+    sub_waveform_mask: np.ndarray = None
     misfit_sub_waveform: float = None
     number_of_model_evaluations: int = -1
     fit_return_status: int = None
@@ -691,7 +692,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         parameter = [
             "waveform",
-            "waveform_model"
+            "waveform_model",
+            "sub_waveform_mask"
         ]
         n_range_gates = self._l1b.waveform.power.shape[1]
         for parameter_name in parameter:
@@ -933,6 +935,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             # Store waveform and waveform model for debugging
             self.waveform[index, :] = fit_result.waveform
             self.waveform_model[index, :] = fit_result.waveform_model
+            if fit_result.sub_waveform_mask is not None:
+                self.sub_waveform_mask[index, :] = fit_result.sub_waveform_mask
 
             # Fit method statistics
             self.fit_num_func_eval[index] = fit_result.number_of_model_evaluations
@@ -959,6 +963,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
                 "add_dims": (("range_gates", np.arange(num_range_gates)),)}
         self._l2.set_multidim_auxiliary_parameter("samiwfm", "waveform", self.waveform, dims, update=True)
         self._l2.set_multidim_auxiliary_parameter("samwfm", "waveform_model", self.waveform_model, dims, update=True)
+        self._l2.set_multidim_auxiliary_parameter("samswfm", "sub_waveform_mask", self.sub_waveform_mask, dims, update=True)
 
         # Lead and open ocean surfaces
         surface_class = self._options.get("surface_class", "undefined")
@@ -1222,6 +1227,7 @@ def samosa_fit_samosap_standard(
          thermal_noise=model_parameters_step2.thermal_noise,
          misfit=misfit,
          misfit_sub_waveform=misfit_subwaveform,
+         sub_waveform_mask=sub_waveform_mask,
          fit_mode="samosap_standard",
          waveform=waveform_data.power,
          waveform_model=fitted_model_step2.power,
