@@ -104,7 +104,7 @@ NU_DEFAULT_BOUNDS = dict(
 @dataclass
 class NormedWaveform:
     """
-    Data container for the waveform fit
+    Data container for the input waveform
     """
     power: np.ndarray
     range_bins: np.ndarray
@@ -134,7 +134,7 @@ class WaveformFitData:
 @dataclass
 class SAMOSAWaveformFitResult:
     """
-
+    Dataclass for all output parameters of the waveform fitting process
     """
     epoch: float = np.nan
     retracker_range: float = np.nan
@@ -157,10 +157,16 @@ class SAMOSAWaveformFitResult:
     def is_sub_waveform_fit(self) -> bool:
         return self.misfit_sub_waveform is not None
 
+
 class SAMOSAWaveformFit(object):
     """
-    Class for fitting the SAMOSA waveform model to a single
-    waveform.
+    Class for fitting the SAMOSA waveform model to a single waveform.
+    The purpose of this class is to minimize the CPU load for the
+    fitting procedure.
+
+    This class will therefore initiliaze the waveform model with
+    all static parameters and then only re-compute the variables
+    that directly depend on the fit parameters.
 
     Usage:
 
@@ -455,6 +461,8 @@ class SAMOSAWaveformCollectionFit(object):
 class SAMOSAModelParameterPrediction(object):
     """
     Class to get initial guess and bounds of SAMOSA waveform fit parameter
+
+    TODO: Class Docstr
     """
 
     def __init__(
@@ -472,48 +480,58 @@ class SAMOSAModelParameterPrediction(object):
         self.bounds_method = getattr(self, f"_get_bounds_{method}")
 
     def get(self, waveform: NormedWaveform, **kwargs) -> Tuple[Tuple, Tuple, Tuple]:
+        """
+        Get first guess and fit bounds for fit parameters from input waveform. The specific
+        parameters and their order in the return tuples is defined by the property `method`
+        of this class.
+
+        :param waveform: Waveform data
+        :param kwargs: Potential keyword arguments, e.g. fit mode
+
+        :return: Tuples of first guess, lower bounds and upper bounds for the fit parametes.
+        """
         first_guess = self.first_guess_method(waveform, **kwargs)
         lower_bounds, upper_bounds = self.bounds_method(waveform.tau, first_guess, **kwargs)
         return first_guess, lower_bounds, upper_bounds
 
-    @staticmethod
-    def _get_first_guess_fit_mss_swh(waveform: NormedWaveform) -> Tuple:
+    def _get_first_guess_samosap_specular(self, waveform: NormedWaveform) -> Tuple:
         """
-        Estimate the first guess
+        Estimate the first guess for the SAMOSA+ specular waveform fitting mode (fixed swh, only nu).
+        Equivalent to SAMOSA+ standard fit method with mode 2.
 
-        :param waveform:
+        :param waveform: Waveform data
 
-        :return:
+        :return: Parameter first guess (epoch, nu, amplitude)
         """
-        epoch_first_guess = waveform.tau[waveform.first_maximum_index] * 1e9
-        swh_first_guess = SWH_FIRST_GUESS[waveform.surface_type]
-        nu_first_guess = NU_FIRST_GUESS[waveform.surface_type]
-        return epoch_first_guess, swh_first_guess, nu_first_guess
+        return self._get_first_guess_samosap_standard(waveform, mode=2)
 
-    def _get_bounds_fit_mss_swh(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
-        epoch_bounds_range_gate = get_epoch_bounds(tau, 0.02, 0.8)
-        tau_fmi_offset = (first_guess[0] * 1e-9) + 20. * (tau[1]-tau[0])
-        epoch_bounds = (
-            epoch_bounds_range_gate[0],
-            np.min([np.max(tau), tau_fmi_offset])
-        )
-        swh_bounds = self.bounds["swh"]
-        nu_bounds = self.bounds["nu"]
-        lower_bounds = epoch_bounds[0] * 1e9, float(swh_bounds[0]), float(nu_bounds[0])
-        upper_bounds = epoch_bounds[1] * 1e9, float(swh_bounds[1]), float(nu_bounds[1])
-        return lower_bounds, upper_bounds
+    def _get_bounds_samosap_specular(self, tau, first_guess) -> Tuple[Tuple, Tuple]:
+        """
+        Estimate the fit bounds for the SAMOSA+ specular waveform fitting mode (fixed swh, only nu).
+        Equivalent to SAMOSA+ standard fit method with mode 2.
+
+        :param tau: range gates in seconds
+        :param first_guess: first guess triplet
+
+        :return: Parameter first guess (epoch, nu, amplitude)
+        """
+        return self._get_bounds_samosap_standard(tau, first_guess, mode=2)
 
     @staticmethod
-    def _get_first_guess_samosap_standard(waveform: NormedWaveform, mode: int = 1) -> Tuple:
+    def _get_first_guess_samosap_standard(waveform: NormedWaveform, mode: int = -1) -> Tuple:
         """
-        Estimate the first guess
+        Estimate the first guess for the two-step SAMOSA+ waveform fitting approch.
+        The fit parameter depend on the specific mode/step.
 
         First fit step (mode=1): [epoch, significant_waveheight, amplitude scale]
         Seconds fit step (mode=2): [epoch, mean square slope, amplitude scale]
 
-        :param waveform:
+        :param waveform: Waveform data
+        :param mode: The SAMOSA+ waveform model mode (conf.STEP in SAMPy)
 
-        :return:
+        :raises ValueError: mode not 1 or 2
+
+        :return: Parameter first guess [mode 1: epoch, swh, amplitude; mode 2: epoch, nu, amplitude]
         """
         epoch_first_guess = waveform.tau[waveform.first_maximum_index]
         nu_first_guess = NU_FIRST_GUESS[waveform.surface_type]
@@ -524,7 +542,25 @@ class SAMOSAModelParameterPrediction(object):
         else:
             raise ValueError(f"mode={mode} not in [1, 2]")
 
-    def _get_bounds_samosap_standard(self, tau, first_guess, mode: int = 1) -> Tuple[Tuple, Tuple]:
+    def _get_bounds_samosap_standard(self, tau, first_guess, mode: int = -1) -> Tuple[Tuple, Tuple]:
+        """
+        Estimate the parameter bounds for the two-step SAMOSA+ waveform fitting approch.
+        The bounds depend on the specific mode/step.
+
+        First fit step (mode=1): [epoch, significant_waveheight, amplitude scale]
+        Seconds fit step (mode=2): [epoch, mean square slope, amplitude scale]
+
+        The bounds for the epoch are set to end behind the first maximum. For the other
+        parameter bounds need to be provided during the initialization of this class.
+
+        :param tau: range gates in seconds
+        :param first_guess: first guess triplet
+        :param mode: The SAMOSA+ waveform model mode (conf.STEP in SAMPy)
+
+        :raises ValueError: mode not 1 or 2
+
+        :return: Parameter fit bounds: (lower bounds, upperbounds) [mode 1: epoch, swh, amplitude; mode 2: epoch, nu, amplitude]
+        """
         epoch_bounds_range_gate = get_epoch_bounds(tau, 0.02, 0.8)
         tau_fmi_offset = (first_guess[0] * 1e-9) + 20. * (tau[1]-tau[0])
         epoch_bounds = (
@@ -1009,6 +1045,8 @@ def samosa_fit_samosap_standard(
     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss, amplitude) using
     the two-step standard fitting approach used for open ocean waveforms with SAMOSA+.
 
+    This fit is intended for waveforms classified as sea ice.
+
     :param fit_data: Input parameters for waveform fitting process. Mainly
         contains waveform model scenario data and waveform data.
     :param trailing_edge_sub_waveform_filter: Flag if trailing edge filter should be used
@@ -1123,6 +1161,117 @@ def samosa_fit_samosap_standard(
          misfit=misfit,
          misfit_sub_waveform=misfit_subwaveform,
          fit_mode="samosap_standard",
+         waveform=waveform_data.power,
+         waveform_model=fitted_model_step2.power,
+         number_of_model_evaluations=number_of_model_evaluations,
+         fit_return_status=optimize_result_step2.status
+    )
+
+
+def samosa_fit_samosap_specular(
+        fit_data: WaveformFitData,
+        predictor_kwargs: Dict = None,
+        least_squares_kwargs: Dict = None
+) -> SAMOSAWaveformFitResult:
+    """
+    Fits the SAMOSA waveform model with (epoch, mss, amplitude) and fixed swh
+    in a single step that is equivalent of the fit step 2 in the default fit
+    procedure
+
+    This fit is intended for waveforms classified as lead waveforms.
+
+    :param fit_data: Input parameters for waveform fitting process. Mainly
+        contains waveform model scenario data and waveform data.
+    :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
+    :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
+
+    :return: SAMOSA+ waveform model fit result
+    """
+
+    # Input validation
+    predictor_kwargs = {} if predictor_kwargs is None else predictor_kwargs
+    least_squares_kwargs = {} if least_squares_kwargs is None else least_squares_kwargs
+
+    # Unpack for readability
+    scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
+    waveform_data.thermal_noise = compute_thermal_noise(waveform_data.power)
+
+
+    # Get first guess of fit parameters and fit bounds
+    predictor = SAMOSAModelParameterPrediction("samosap_specular", waveform_data.surface_type, **predictor_kwargs)
+
+    # --- SAMOSA+ Fit Step 2 ---
+    # This step fits a waveform with fixed swh and variable nu
+    # This fit will be used
+    model_parameters_step2, fitted_model_step2, optimize_result_step2 = samosa_fit_samosap_standard_step2(
+        waveform_data, scenario_data, predictor,
+        least_squares_kwargs=least_squares_kwargs
+    )
+
+    # --- Summarize the result from two fits ---
+    # Compute the misfit from residuals in SAMPy fashion
+    misfit = sampy_misfit(fitted_model_step2.power - waveform_data.power)
+
+    # Count number of model evaluations (performance tuning metric)
+    number_of_model_evaluations = optimize_result_step2.nfev
+
+    # Convert epoch to range (excluding range corrections)
+    retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.window_delay)
+    retracker_range_standard_error = 0.5 * 299792458. * model_parameters_step2.epoch_sdev
+
+    # # --- Debug Plot ---
+    # plot_parameters = [
+    #     ["range", f"{retracker_range:.2f} +/- {retracker_range_standard_error:.2f}m"],
+    #     ["swh", f"{swh:.2f} +/- {model_parameters_step1.significant_wave_height_sdev:.2f}m"],
+    #     ["nu", f"{nu:.2f} +/- {model_parameters_step2.nu_sdev:.2f}"],
+    #     ["misfit (sub)", f"{misfit:.2f} ({misfit_subwaveform:.2f})"],
+    # ]
+    #
+    # import matplotlib.pyplot as plt
+    # import os
+    # from pathlib import Path
+    # idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
+    # output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
+    # fig = plt.figure(figsize=(9, 6))
+    # plt.title(f"Waveform index: {idx:05g}")
+    # plt.axvline(epoch, color="violet", lw=0.5, ls="dashed", label="epoch")
+    # plt.plot(waveform_data.tau, waveform_data.power, color="0.5", lw=0.5, zorder=20)
+    # plt.scatter(waveform_data.tau, waveform_data.power, color="0.5", s=6, marker="o", zorder=20)
+    # plt.scatter(
+    #     waveform_data.tau[sub_waveform_mask],
+    #     waveform_data.power[sub_waveform_mask],
+    #     color="red", marker="x", s=20,
+    #     label="Rejected Range Gates",
+    #     zorder=30
+    # )
+    # # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
+    # plt.plot(waveform_data.tau, fitted_model_step2.power, label="Fitted Model (SAMOSA step 2)",
+    #          color="violet", alpha=0.85, zorder=40)
+    # plt.legend(loc="upper right")
+    # y = 0.7
+    # y_step = 0.05
+    # for label, value in plot_parameters:
+    #     plt.annotate(f"{label} =", (0.7, y), xycoords="axes fraction", ha="right")
+    #     plt.annotate(f" {value}", (0.7, y), xycoords="axes fraction", ha="left")
+    #     y -= y_step
+    # plt.ylim(0, 1.25)
+    # plt.xlabel("Range Gate (seconds)")
+    # plt.ylabel("Normed Waveform Power")
+    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png", dpi=300)
+    # fig.clear()
+    # plt.close(fig)
+
+    return SAMOSAWaveformFitResult(
+         epoch=model_parameters_step2.epoch,
+         retracker_range=retracker_range,
+         retracker_range_standard_error=retracker_range_standard_error,
+         significant_wave_height=0.0,
+         significant_wave_height_standard_error=0.0,
+         mean_square_slope=model_parameters_step2.mean_square_slope,
+         mean_square_slope_standard_error=1. / model_parameters_step2.nu_sdev,
+         thermal_noise=model_parameters_step2.thermal_noise,
+         misfit=misfit,
+         fit_mode="samosap_specular",
          waveform=waveform_data.power,
          waveform_model=fitted_model_step2.power,
          number_of_model_evaluations=number_of_model_evaluations,
