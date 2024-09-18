@@ -20,6 +20,7 @@ __all__ = ["AuxdataBaseClass",
 
 
 import re
+from datetime import date
 from pathlib import Path
 from typing import List
 
@@ -275,6 +276,10 @@ class AuxdataBaseClass(object):
     @property
     def day(self):
         return "%02g" % self._requested_date[2]
+
+    @property
+    def requested_date(self) -> date:
+        return date(*self._requested_date)
 
     @property
     def has_mandatory_track_method(self):

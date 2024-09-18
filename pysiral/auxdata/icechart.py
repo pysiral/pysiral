@@ -15,9 +15,102 @@ from pathlib import Path
 import numpy as np
 import pyproj
 from PIL import Image
+from parse import parse
 
+from typing import Dict
+from datetime import date, timedelta
+from dataclasses import dataclass
 from pysiral.auxdata import AuxdataBaseClass
+from pysiral.l2data import Level2Data
 
+
+@dataclass
+class NSIDCIceChartFileEntry:
+    file_path: Path
+    region: str
+    issue_date: datetime.date
+    validity_start_date: datetime.date
+    validity_end_date: datetime.date
+
+    @property
+    def id(self) -> str:
+        return self.file_path.name
+
+
+class NSIDCIceChartFileCatalog(object):
+
+    def __init__(self, lookup_directory: Path, file_validity_period_days_default: int = 7) -> None:
+        self.lookup_directory = lookup_directory
+        self.file_validity_period_days_default = file_validity_period_days_default
+        self.filepaths = sorted(list(self.lookup_directory.rglob("*.shp")))
+        self._ctlg = self._catalog_files()
+
+    def _catalog_files(self) -> Dict[date, NSIDCIceChartFileEntry]:
+        """
+        Create a catolog of ice charts files
+        TODO: So far it is assumed that ice charts are valid 7 days with issue date (filename) as last date
+        :return:
+        """
+
+        icechart_ctlg = {}
+        for filepath in self.filepaths:
+
+            filename_attributes = parse(self.filename_parser, filepath.name)
+            year_offset = 2000 if filename_attributes.named["year"] < 30 else 1900
+            year = year_offset + filename_attributes.named["year"]
+
+            issue_date = date(year, filename_attributes.named["month"], filename_attributes.named["day"])
+            validity_start_date = issue_date - timedelta(days=self.file_validity_period_days_default-1)
+            validity_end_date = issue_date
+
+            icechart_ctlg[issue_date] = NSIDCIceChartFileEntry(
+                filepath,
+                filename_attributes.named["region_code"],
+                issue_date,
+                validity_start_date,
+                validity_end_date
+            )
+        return icechart_ctlg
+
+    def query_icechart_file(self, target_date: datetime.date) -> NSIDCIceChartFileEntry:
+        """
+        Select icechart file per date
+
+        :param target_date:
+
+        :return:
+        """
+        breakpoint()
+
+    @property
+    def filename_parser(self) -> str:
+        return "{region_code:D}{year:2d}{month:2d}{day:2d}.shp"
+
+
+class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
+
+    def __init__(self, *args, **kwargs):
+        super(NSIDCSeaIceChartsSIGRID3, self).__init__(*args, **kwargs)
+        self.ctlg = self._get_file_catalog()
+        self.loaded_file = None
+        breakpoint()
+
+    def get_l2_track_vars(self, l2: Level2Data) -> None:
+        """
+        Add ice chart parameters to Level-2 data object
+
+        :param l2: Level-2 data object
+
+        :return: None, l2 is changed in place
+        """
+
+        # Get the target file
+        self.set_requested_date_from_l2(l2)
+        icechart_file = self.ctlg.query_icechart_file(self.requested_date)
+        breakpoint()
+
+    def _get_file_catalog(self) -> NSIDCIceChartFileCatalog:
+        breakpoint()
 
 class IC(AuxdataBaseClass):
 
