@@ -344,6 +344,8 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         # Get icechart data frame for trajectory
         ice_chart_l2_track = self.extract_track(l2.longitude, l2.latitude)
 
+        self._set_l2_parameters(l2, ice_chart_l2_track)
+
         breakpoint()
 
     def get_file_catalog(self) -> NSIDCIceChartFileCatalog:
@@ -397,7 +399,8 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         },
             coords={"n_records": (["n_records"], np.arange(size))},
         )
-        track_gdf = gpd.GeoDataFrame(track_ds, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
+        track_df = track_ds.to_dataframe()
+        track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
         poly_col = np.full(track_gdf.shape[0], -999.9, np.int32)
         track_gdf['polygon_idx'] = poly_col
 
@@ -427,6 +430,52 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
                 ice_chart_dataset.file_name[index] = 'chart_name'
 
         return ice_chart_dataset
+
+    def _set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
+        """
+        Set the parameter sea ice concentrations, stage of developement and floe
+        for the three categories A, B, C as multidim parameters and the total
+        concentration as single parameter
+        """
+
+        # Only total sea ice concentration is single dimension parameter
+        self.register_auxvar(
+            "ictsic", "ice_chart_sea_ice_concentration_total",
+            ice_chart_l2_track.SIC_T.values
+        )
+
+        dims = {"new_dims": (("ice_chart_class", 3),),
+                "dimensions": ("time", "range_gates"),
+                "add_dims": (("range_gates", np.arange(3)),)}
+
+        classes_sic = np.column_stack([
+            ice_chart_l2_track.SIC_A.values,
+            ice_chart_l2_track.SIC_B.values,
+            ice_chart_l2_track.SIC_C.values,
+        ])
+        l2.set_multidim_auxiliary_parameter(
+            "icsicc", "ice_chart_sea_ice_concentration_classes",
+            classes_sic, dims, update=True
+        )
+        classes_sod = np.column_stack([
+            ice_chart_l2_track.SOD_A.values,
+            ice_chart_l2_track.SOD_B.values,
+            ice_chart_l2_track.SOD_C.values,
+        ])
+        l2.set_multidim_auxiliary_parameter(
+            "icsodc", "ice_chart_stage_of_development_classes",
+            classes_sod, dims, update=True
+        )
+        classes_floe = np.column_stack([
+            ice_chart_l2_track.Floe_A.values,
+            ice_chart_l2_track.Floe_B.values,
+            ice_chart_l2_track.Floe_C.values,
+        ])
+        l2.set_multidim_auxiliary_parameter(
+            "icfloec", "ice_chart_floe_parameter_classes",
+            classes_floe, dims, update=True
+        )
+        breakpoint()
 
 
 class IC(AuxdataBaseClass):

@@ -27,42 +27,42 @@ auxdata:
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
-    - region:
-        name: nsidc_2021
-        options: null
+    # - region:
+    #     name: nsidc_2021
+    #     options: null
 
-    # Load the
-    - mss:
-        name: dtu21
-        options:
-            latitude_range: [45.0, 90.0]
+    # # Load the
+    # - mss:
+    #     name: dtu21
+    #     options:
+    #         latitude_range: [45.0, 90.0]
 
-    - sic:
-        name: c3s
-        options:
-            version: v3p0
-            exception_on_error: False
+    # - sic:
+    #     name: c3s
+    #     options:
+    #         version: v3p0
+    #         exception_on_error: False
 
-    - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+    # - sitype:
+    #     name: c3s
+    #     options:
+    #         version: v3p0
+    #         fill_valid_sic_gaps: True
+    #         exception_on_error: False
 
-    - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
+    # - snow:
+    #     name: clim_w99amsr2
+    #     options:
+    #         daily_scaling: True
+    #         fyi_correction_factor: 0.5
+    #         exception_on_error: False
 
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+    # # Note: The snow density in this class will overwrite the snow density
+    # #       from the W99/AMSR2 climatology (this is intended)
+    # - snow:
+    #         name: snow_density_seasonal_mallett
+    #         options:
+    #             snow_density_uncertainty: 50.
 
     - icechart:
             name: nsidc
