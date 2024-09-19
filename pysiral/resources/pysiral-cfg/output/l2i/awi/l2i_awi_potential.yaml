@@ -1,17 +1,17 @@
 # This is the fmi output definition (with ice chart) for the Level2Processor
 
 # Metadata
-metadata: 
+metadata:
   output_id: l2i
   data_level: 2
   data_level_description: Level-2 intermediate (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: 
+filenaming:
   default: awi-siral-l2i-sithick-{mission_id}-{source_timeliness:lowercase}_{hemisphere_code}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
 product_level_subfolder: l2i_potential
 
-# A list of global attributes 
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - title: "Sea-ice thickness and auxiliary parameters from satellite radar altimeter data"
@@ -43,7 +43,7 @@ global_attributes:
   - project: "AWI Sea Ice Radar Altimetry (SIRAL)"
   - publisher_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - publisher_url: "www.awi.de"
-  - publisher_email: "cs2smos-support@awi.de"  
+  - publisher_email: "cs2smos-support@awi.de"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"
   - geospatial_lon_min: "{geospatial_lon_min}"
@@ -57,7 +57,7 @@ global_attributes:
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
 variables:
-  
+
   time:
     long_name: utc timestamp
     units: seconds since 1970-01-01
@@ -217,18 +217,18 @@ variables:
     long_name: "density of the snow layer"
     units: kg m-3
     coordinates: time
-    
+
   snow_density_uncertainty:
     long_name: "uncertainty of the snow layer density"
     units: kg m-3
     coordinates: time
-    
+
   sea_ice_density:
     long_name: "density of the sea ice layer"
     standard_name: sea_ice_density
     units: kg m-3
     coordinates: time
-    
+
   sea_ice_density_uncertainty:
     long_name: "uncertainty of the sea ice layer density"
     standard_name: sea_ice_density standard_error
@@ -240,7 +240,7 @@ variables:
     standard_name: sea_ice_thickness
     units: m
     coordinates: time
-    
+
   sea_ice_thickness_uncertainty:
     long_name: "uncertainty of the sea ice layer thickness"
     standard_name: sea_ice_thickness standard error
@@ -252,7 +252,7 @@ variables:
     standard_name: sea_ice_draft
     units: m
     coordinates: time
-    
+
   sea_ice_draft_uncertainty:
     long_name: "uncertainty of the sea ice layer draft"
     standard_name: sea_ice_draft standard error
@@ -409,4 +409,89 @@ variables:
     valid_max: 3
     flag_values: "0, 1, 2"
     flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
+    coordinates: time
+
+  ice_chart_sea_ice_concentration_total:
+      long_name: "total sea ice concentration from ice chart"
+      comment: "From NSICD ice chart"
+      coordinates: time
+
+  ice_chart_sea_ice_concentration_classes:
+      long_name: "sea ice concentration from ice chart per ice class"
+      comment: "From NSICD ice chart"
+      coordinates: time, num_classes
+
+  ice_chart_stage_of_development_classes:
+      long_name: "stage of development from ice chart per class"
+      comment: "From NSICD ice chart"
+      coordinates: time, num_classes
+
+  ice_chart_floe_parameter_classes:
+      long_name: "floe parameter from ice chart"
+      comment: "From NSICD ice chart"
+      coordinates: time, num_classes
+
+  distance_coast:
+      long_name: "distance to coast"
+      comment: "From l1p"
+      coordinates: time
+
+  trailing_edge_decay:
+      long_name: "trailing edge decay"
+      comment: "From l1p"
+      coordinates: time
+
+  trailing_edge_decay_fit_quality:
+      long_name: "trailing edge decay fit quality"
+      comment: "From l1p"
+      coordinates: time
+
+  trailing_edge_width:
+      long_name: "trailing edge width"
+      comment: "From l1p"
+      coordinates: time
+
+  trailing_edge_quality:
+      long_name: "trailing edge quality"
+      comment: "From l1p"
+      coordinates: time
+
+  late_tail_to_peak_power:
+      long_name: "late tail to peak power"
+      comment: "From l1p"
+      coordinates: time
+
+  first_year_ice_class_membership:
+      long_name: "first year ice class membership"
+      comment: "From l1p"
+      coordinates: time
+
+  multi_year_ice_class_membership:
+      long_name: "multi year ice class membership"
+      comment: "From l1p"
+      coordinates: time
+
+  open_water_class_membership:
+      long_name: "open water class membership"
+      comment: "From l1p"
+      coordinates: time
+
+  surface_type_classification:
+    long_name: "surface type classification"
+    comment: "From l1p"
+    coordinates: time
+
+  waveform_power:
+    long_name: "waveform power values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_range:
+    long_name: "waveform range values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_valid_flag:
+    long_name: "waveform valid flag"
+    comment: "From l1p"
     coordinates: time

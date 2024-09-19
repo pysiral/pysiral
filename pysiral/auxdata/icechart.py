@@ -21,6 +21,7 @@ import geopandas as gpd
 from typing import Dict, Optional
 from datetime import date, timedelta
 from dataclasses import dataclass
+from tqdm import tqdm
 
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.l2data import Level2Data
@@ -344,9 +345,8 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         # Get icechart data frame for trajectory
         ice_chart_l2_track = self.extract_track(l2.longitude, l2.latitude)
 
+        # Pre-process parameters and set to l2 object
         self._set_l2_parameters(l2, ice_chart_l2_track)
-
-        breakpoint()
 
     def get_file_catalog(self) -> NSIDCIceChartFileCatalog:
         lookup_directory = Path(self.cfg.local_repository) / self.cfg.options.hemisphere
@@ -363,6 +363,7 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         icechart_raw = gpd.read_file(icechart_file.file_path)
         self.ice_chart_bounds = icechart_raw.total_bounds
         self.ice_chart = convert_polygon_icechart(icechart_raw)
+
 
     def extract_track(self, longitude: np.ndarray, latitude: np.ndarray) -> xr.Dataset:
         """
@@ -401,10 +402,19 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         )
         track_df = track_ds.to_dataframe()
         track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
+        track_gdf = track_gdf.set_crs('epsg:4326')
+        track_gdf = track_gdf.to_crs(self.ice_chart.crs)
+
+        xmin, ymin, xmax, ymax = self.ice_chart_bounds
+        gdf_cut = track_gdf.cx[xmin:xmax, ymin:ymax]
+        if len(gdf_cut.index) == 0:
+            return ice_chart_dataset
+
         poly_col = np.full(track_gdf.shape[0], -999.9, np.int32)
         track_gdf['polygon_idx'] = poly_col
 
-        for index, row in track_gdf.iterrows():
+        for index, row in tqdm(track_gdf.iterrows(), total=longitude.size):
+
             mask = self.ice_chart.contains(row['geometry'])
             poly_idx = list(self.ice_chart.index.values[mask])
 
@@ -445,8 +455,8 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         )
 
         dims = {"new_dims": (("ice_chart_class", 3),),
-                "dimensions": ("time", "range_gates"),
-                "add_dims": (("range_gates", np.arange(3)),)}
+                "dimensions": ("time", "ice_chart_class"),
+                "add_dims": (("ice_chart_class", np.arange(3)),)}
 
         classes_sic = np.column_stack([
             ice_chart_l2_track.SIC_A.values,
@@ -475,7 +485,6 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
             "icfloec", "ice_chart_floe_parameter_classes",
             classes_floe, dims, update=True
         )
-        breakpoint()
 
 class IC(AuxdataBaseClass):
 

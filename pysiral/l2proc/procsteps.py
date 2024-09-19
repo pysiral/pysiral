@@ -575,3 +575,64 @@ class ParameterRollingStatistics(Level2ProcessorStep):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["other"]
+
+
+class TransferWaveform2L2(Level2ProcessorStep):
+    """
+    This class adds the waveform and associated parameters (range, valid_flag)
+    to the l2 data container
+
+        - module: l2proc.procsteps
+          pyclass: TransferWaveform2L2
+          options: {}
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(TransferWaveform2L2, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self,
+                         l1: "Level1bData",
+                         l2: "Level2Data"
+                         ) -> np.ndarray:
+        """
+        API method for Level2ProcessorStep subclasses. Computes and add rolling statistics
+        based on the processor item options in the Level-2 processor definition file.
+
+        :param l1: Level-1 data object
+        :param l2: Level-2 data object
+
+        :raises None:
+
+        :return: error_status
+        """
+
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        l2.set_auxiliary_parameter("wfmvf", "waveform_valid_flag", l1.waveform.is_valid)
+
+        # Waveform and waveform model
+        # Register results as auxiliary data variable
+        num_range_gates = l1.waveform.power.shape[1]
+        dims = {"new_dims": (("range_gates", num_range_gates),),
+                "dimensions": ("time", "range_gates"),
+                "add_dims": (("range_gates", np.arange(num_range_gates)),)}
+        l2.set_multidim_auxiliary_parameter("wfmp", "waveform_power", l1.waveform.power, dims, update=True)
+        l2.set_multidim_auxiliary_parameter("wfmr", "waveform_range", l1.waveform.range, dims, update=True)
+
+        return error_status
+
+    @property
+    def statistics_combinations(self):
+        return product(self.cfg.options.input_parameters, self.cfg.options.statistics)
+
+    @property
+    def l2_input_vars(self):
+        return []
+
+    @property
+    def l2_output_vars(self):
+        return ["waveform_power", "waveform_range", "waveform_valid_flag"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["other"]
