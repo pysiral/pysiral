@@ -477,7 +477,6 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         )
         breakpoint()
 
-
 class IC(AuxdataBaseClass):
 
     def __init__(self, *args, **kwargs):
