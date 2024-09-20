@@ -9,6 +9,7 @@ Module created for FMI version of pysiral
 
 __all__ = ["IC", "ICA"]
 
+import contextlib
 import datetime
 from pathlib import Path
 import copy
@@ -18,10 +19,13 @@ import xarray as xr
 from PIL import Image
 from parse import parse
 import geopandas as gpd
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple, List
 from datetime import date, timedelta
 from dataclasses import dataclass
-from tqdm import tqdm
+
+from pyproj import Proj
+from shapely import MultiPoint, LineString
+from shapely.strtree import STRtree
 
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.l2data import Level2Data
@@ -364,82 +368,185 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         self.ice_chart_bounds = icechart_raw.total_bounds
         self.ice_chart = convert_polygon_icechart(icechart_raw)
 
-
     def extract_track(self, longitude: np.ndarray, latitude: np.ndarray) -> xr.Dataset:
         """
-        Extract the track variables
+        Extract all relevant ice chart variables along the Level-2 track
 
-        :param longitude:
-        :param latitude:
-        :return:
+        :param longitude: Level-2 geodetic longitude
+        :param latitude: Level-2 geodetic latitude
+
+        :return: Dataset with ice chart variables for each Level-2 track record
         """
 
         # Dataset with ice chart variables
-        size = longitude.size
-        ice_chart_dataset = xr.Dataset({
-            "SIC_T": (["n_records"], np.full((size,), np.nan)),
-            'SIC_A': (["n_records"], np.full((size,), np.nan)),
-            'SOD_A': (["n_records"], np.full((size,), -9999)),
-            'Floe_A': (["n_records"], np.full((size,), -9999)),
-            'SIC_B': (["n_records"], np.full((size,), np.nan)),
-            'SOD_B': (["n_records"], np.full((size,), -9999)),
-            'Floe_B': (["n_records"], np.full((size,), -9999)),
-            'SIC_C': (["n_records"], np.full((size,), np.nan)),
-            'SOD_C': (["n_records"], np.full((size,), -9999)),
-            'Floe_C': (["n_records"], np.full((size,), -9999)),
-            'file_name': (["n_records"], np.full((size,), 'missing')),
-            'polygon_index': (["n_records"], np.full((size,), -9999))
-        },
-            coords={"n_records": (["n_records"], np.arange(size))},
-        )
+        ice_chart_dataset = self.get_ice_chart_dataset(longitude.size)
 
-        # Get track GeoDataFrame
-        track_ds = xr.Dataset({
-            "longitude": (["n_records"], longitude),
-            "latitude": (["n_records"], latitude),
-        },
-            coords={"n_records": (["n_records"], np.arange(size))},
-        )
-        track_df = track_ds.to_dataframe()
-        track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
-        track_gdf = track_gdf.set_crs('epsg:4326')
-        track_gdf = track_gdf.to_crs(self.ice_chart.crs)
+        # Get the Level-2 track as geometry in ice chart projection coordinates
+        track_linestring, track_multipoint = self.get_l2_track_projected_geometry(longitude, latitude)
 
-        xmin, ymin, xmax, ymax = self.ice_chart_bounds
-        gdf_cut = track_gdf.cx[xmin:xmax, ymin:ymax]
-        if len(gdf_cut.index) == 0:
+        # Get the index list of polygons that overlap with the track
+        poly_overlap_idxs = self.get_polygons_overlapping_with_track(track_linestring)
+        if poly_overlap_idxs.size == 0:
             return ice_chart_dataset
 
-        poly_col = np.full(track_gdf.shape[0], -999.9, np.int32)
-        track_gdf['polygon_idx'] = poly_col
+        # Get the polygon index for each track record
+        track_poly_idx = self.get_polygon_index_per_record(track_multipoint, poly_overlap_idxs)
 
-        for index, row in tqdm(track_gdf.iterrows(), total=longitude.size):
+        # Map ice chart data to track
+        for index in np.arange(longitude.size):
+            polygon_index = track_poly_idx[index]
+            ice_chart_dataset.polygon_index[index] = polygon_index
 
-            mask = self.ice_chart.contains(row['geometry'])
-            poly_idx = list(self.ice_chart.index.values[mask])
+            ice_chart_dataset.SIC_T[index] = self.ice_chart.iloc[polygon_index]['SIC_T']
 
-            if poly_idx:
+            ice_chart_dataset.SIC_A[index] = self.ice_chart.iloc[polygon_index]['SIC_A']
+            ice_chart_dataset.SOD_A[index] = self.ice_chart.iloc[polygon_index]['SOD_A']
+            ice_chart_dataset.Floe_A[index] = self.ice_chart.iloc[polygon_index]['Floe_A']
 
-                track_gdf.at[index, 'polygon_idx'] = poly_idx[0]
+            ice_chart_dataset.SIC_B[index] = self.ice_chart.iloc[polygon_index]['SIC_B']
+            ice_chart_dataset.SOD_B[index] = self.ice_chart.iloc[polygon_index]['SOD_B']
+            ice_chart_dataset.Floe_B[index] = self.ice_chart.iloc[polygon_index]['Floe_B']
 
-                ice_chart_dataset.polygon_index[index] = poly_idx[0]
-                ice_chart_dataset.SIC_T[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_T']
-
-                ice_chart_dataset.SIC_A[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_A']
-                ice_chart_dataset.SOD_A[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_A']
-                ice_chart_dataset.Floe_A[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_A']
-
-                ice_chart_dataset.SIC_B[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_B']
-                ice_chart_dataset.SOD_B[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_B']
-                ice_chart_dataset.Floe_B[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_B']
-
-                ice_chart_dataset.SIC_C[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_C']
-                ice_chart_dataset.SOD_C[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_C']
-                ice_chart_dataset.Floe_C[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_C']
-
-                ice_chart_dataset.file_name[index] = 'chart_name'
+            ice_chart_dataset.SIC_C[index] = self.ice_chart.iloc[polygon_index]['SIC_C']
+            ice_chart_dataset.SOD_C[index] = self.ice_chart.iloc[polygon_index]['SOD_C']
+            ice_chart_dataset.Floe_C[index] = self.ice_chart.iloc[polygon_index]['Floe_C']
 
         return ice_chart_dataset
+
+    @staticmethod
+    def get_ice_chart_dataset(dim_size: int, dim_name: str = "time") -> xr.Dataset:
+        """
+        Datamodel of Level-2 track data extracted from the ice chart
+
+        :param dim_size: Number of Level-2 data records
+        :param dim_name: The name of the dimension
+
+        :return: xarray.Dataset
+        """
+        return xr.Dataset({
+            "SIC_T": ([dim_name], np.full((dim_size,), np.nan)),
+            'SIC_A': ([dim_name], np.full((dim_size,), np.nan)),
+            'SOD_A': ([dim_name], np.full((dim_size,), -9999)),
+            'Floe_A': ([dim_name], np.full((dim_size,), -9999)),
+            'SIC_B': ([dim_name], np.full((dim_size,), np.nan)),
+            'SOD_B': ([dim_name], np.full((dim_size,), -9999)),
+            'Floe_B': ([dim_name], np.full((dim_size,), -9999)),
+            'SIC_C': ([dim_name], np.full((dim_size,), np.nan)),
+            'SOD_C': ([dim_name], np.full((dim_size,), -9999)),
+            'Floe_C': ([dim_name], np.full((dim_size,), -9999)),
+            'polygon_index': ([dim_name], np.full((dim_size,), -9999))
+        },
+            coords={dim_name: ([dim_name], np.arange(dim_size))},
+        )
+
+    def get_l2_track_projected_geometry(
+            self,
+            longitude: np.ndarray,
+            latitude: np.ndarray
+    ) -> Tuple[LineString, MultiPoint]:
+        """
+        Converts the geodetic longitude, latitude values of the Level-2 track in
+        shapely geometries in the Ice Chart coordinate reference system.
+
+        The linestring will be used for fast icechart polygon subsetting
+        and the MultiPoint representation for polygon index lookup.
+
+        :param longitude: Level-2 geodetic longitude
+        :param latitude: Level-2 geodetic latitude
+
+        :return: Linestring and Multipoint objects.
+        """
+
+        proj = Proj(self.ice_chart.crs)
+        xc, yc = proj(longitude, latitude)
+        track_linestring = LineString(list(zip(xc, yc)))
+        track_multipoint = MultiPoint(track_linestring.coords)
+        return track_linestring, track_multipoint
+
+    def get_polygons_overlapping_with_track(self, track_linestring: LineString) -> np.ndarray:
+        """
+        Get the index of polygons overlapping with the track.
+
+        :param track_linestring: Level-2 track geometry in ice chart coordinate reference system
+
+        :return: List of ice chart polygons indices overlapping with track
+        """
+        ice_chart_polygon_strtree = STRtree(self.ice_chart.geometry)
+        return ice_chart_polygon_strtree.query(track_linestring)
+
+    def get_polygon_index_per_record(
+            self,
+            track_multipoint,
+            poly_overlap_idxs,
+            missing_value: int = -1
+    ) -> np.ndarray:
+        """
+        Identify the corresponding polygon index for each data record. This is done with by
+        querying the nearest geometry with a strict maximum distance threshold.
+
+        :param track_multipoint: Level-2 track geometry in ice chart coordinate reference system
+        :param poly_overlap_idxs: List of ice chart polygons indices overlapping with track
+        :param missing_value: Default value when no overlapping polygon is found
+
+        :return: Index of overlapping polygon (or missing value) for each Level-2 record
+        """
+        ice_chart_polygon_subset_strtree = STRtree(self.ice_chart.geometry[poly_overlap_idxs])
+        track_poly_idx = np.full(track_multipoint.length, missing_value)
+        for idx, geom in enumerate(track_multipoint.geoms):
+            sub_idx = ice_chart_polygon_subset_strtree.query_nearest(geom, max_distance=1.0)
+            # in case of missing polygon, statement below will raise an ValueError
+            # -> ignoring exception will lead to missing value in data record (as intended)
+            with contextlib.suppress(ValueError):
+                track_poly_idx[idx] = poly_overlap_idxs[sub_idx]
+        return track_poly_idx
+
+        # # Get track GeoDataFrame
+        # track_ds = xr.Dataset({
+        #     "longitude": (["n_records"], longitude),
+        #     "latitude": (["n_records"], latitude),
+        # },
+        #     coords={"n_records": (["n_records"], np.arange(size))},
+        # )
+        # track_df = track_ds.to_dataframe()
+        # track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
+        # track_gdf = track_gdf.set_crs('epsg:4326')
+        # track_gdf = track_gdf.to_crs(self.ice_chart.crs)
+        #
+        # xmin, ymin, xmax, ymax = self.ice_chart_bounds
+        # gdf_cut = track_gdf.cx[xmin:xmax, ymin:ymax]
+        # if len(gdf_cut.index) == 0:
+        #     return ice_chart_dataset
+        #
+        # poly_col = np.full(track_gdf.shape[0], -999.9, np.int32)
+        # track_gdf['polygon_idx'] = poly_col
+        #
+        # for index, row in tqdm(track_gdf.iterrows(), total=longitude.size):
+        #
+        #     mask = self.ice_chart.contains(row['geometry'])
+        #     poly_idx = list(self.ice_chart.index.values[mask])
+        #
+        #     if poly_idx:
+        #
+        #         track_gdf.at[index, 'polygon_idx'] = poly_idx[0]
+        #
+        #         ice_chart_dataset.polygon_index[index] = poly_idx[0]
+        #         ice_chart_dataset.SIC_T[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_T']
+        #
+        #         ice_chart_dataset.SIC_A[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_A']
+        #         ice_chart_dataset.SOD_A[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_A']
+        #         ice_chart_dataset.Floe_A[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_A']
+        #
+        #         ice_chart_dataset.SIC_B[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_B']
+        #         ice_chart_dataset.SOD_B[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_B']
+        #         ice_chart_dataset.Floe_B[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_B']
+        #
+        #         ice_chart_dataset.SIC_C[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_C']
+        #         ice_chart_dataset.SOD_C[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_C']
+        #         ice_chart_dataset.Floe_C[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_C']
+        #
+        #         ice_chart_dataset.file_name[index] = 'chart_name'
+        #
+        # return ice_chart_dataset
 
     def _set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
         """
@@ -850,7 +957,7 @@ def get_tif_image_data(path):
     return data
 
 
-def convert_polygon_icechart(gdf):
+def convert_polygon_icechart(ice_chart_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Code of this function is adopted from the Auto Ice Challenge
     #  # -- File info -- #
@@ -871,18 +978,18 @@ def convert_polygon_icechart(gdf):
 
     Parameters
     ----------
-    gdf :
+    ice_chart_gdf :
         ice chart in form of a pandas geo dataframe.
     """
 
     to_numpy_kwargs = dict(dtype=object, copy=False, na_value=-9)
     try:
-        codes = gdf[['CT', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC']].to_numpy(**to_numpy_kwargs)
+        codes = ice_chart_gdf[['CT', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC']].to_numpy(**to_numpy_kwargs)
         # ToDo: Fix Nan values get converted to very high numbers
         codes = codes.astype(float).astype(int)
-        poly_type = gdf['POLY_TYPE'].to_numpy(**to_numpy_kwargs)
+        poly_type = ice_chart_gdf['POLY_TYPE'].to_numpy(**to_numpy_kwargs)
     except:
-        codes = gdf[['CT', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC']].to_numpy(**to_numpy_kwargs)
+        codes = ice_chart_gdf[['CT', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC']].to_numpy(**to_numpy_kwargs)
 
         codes[codes == '-'] = '-9'
         codes[codes == '5C'] = '05'
@@ -892,7 +999,7 @@ def convert_polygon_icechart(gdf):
 
         # ToDo: Fix Nan values get converted to very high numbers
         codes = codes.astype(float).astype(int)
-        poly_type = gdf['POLY_TYPE'].to_numpy(dtype=object, copy=False, na_value=-9)
+        poly_type = ice_chart_gdf['POLY_TYPE'].to_numpy(dtype=object, copy=False, na_value=-9)
 
     # Convert codes to classes for Total and Partial SIC. (SIGRID code is replaced by classes defined above
     converted_codes = copy.deepcopy(codes)
@@ -985,17 +1092,17 @@ def convert_polygon_icechart(gdf):
     sod_C[np.where(sod_C == ICECHART_UNKNOWN)] = SOD_LOOKUP['mask']
     floe_C[np.where(floe_C == ICECHART_UNKNOWN)] = FLOE_LOOKUP['mask']
 
-    gdf['SIC_T'] = sic_T
-    gdf['SIC_A'] = sic_A
-    gdf['SOD_A'] = sod_A
-    gdf['Floe_A'] = floe_A
+    ice_chart_gdf['SIC_T'] = sic_T
+    ice_chart_gdf['SIC_A'] = sic_A
+    ice_chart_gdf['SOD_A'] = sod_A
+    ice_chart_gdf['Floe_A'] = floe_A
 
-    gdf['SIC_B'] = sic_B
-    gdf['SOD_B'] = sod_B
-    gdf['Floe_B'] = floe_B
+    ice_chart_gdf['SIC_B'] = sic_B
+    ice_chart_gdf['SOD_B'] = sod_B
+    ice_chart_gdf['Floe_B'] = floe_B
 
-    gdf['SIC_C'] = sic_C
-    gdf['SOD_C'] = sod_C
-    gdf['Floe_C'] = floe_C
+    ice_chart_gdf['SIC_C'] = sic_C
+    ice_chart_gdf['SOD_C'] = sod_C
+    ice_chart_gdf['Floe_C'] = floe_C
 
-    return gdf
+    return ice_chart_gdf
