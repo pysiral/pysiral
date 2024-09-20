@@ -500,54 +500,6 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
                 track_poly_idx[idx] = poly_overlap_idxs[sub_idx]
         return track_poly_idx
 
-        # # Get track GeoDataFrame
-        # track_ds = xr.Dataset({
-        #     "longitude": (["n_records"], longitude),
-        #     "latitude": (["n_records"], latitude),
-        # },
-        #     coords={"n_records": (["n_records"], np.arange(size))},
-        # )
-        # track_df = track_ds.to_dataframe()
-        # track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_ds.longitude, track_ds.latitude))
-        # track_gdf = track_gdf.set_crs('epsg:4326')
-        # track_gdf = track_gdf.to_crs(self.ice_chart.crs)
-        #
-        # xmin, ymin, xmax, ymax = self.ice_chart_bounds
-        # gdf_cut = track_gdf.cx[xmin:xmax, ymin:ymax]
-        # if len(gdf_cut.index) == 0:
-        #     return ice_chart_dataset
-        #
-        # poly_col = np.full(track_gdf.shape[0], -999.9, np.int32)
-        # track_gdf['polygon_idx'] = poly_col
-        #
-        # for index, row in tqdm(track_gdf.iterrows(), total=longitude.size):
-        #
-        #     mask = self.ice_chart.contains(row['geometry'])
-        #     poly_idx = list(self.ice_chart.index.values[mask])
-        #
-        #     if poly_idx:
-        #
-        #         track_gdf.at[index, 'polygon_idx'] = poly_idx[0]
-        #
-        #         ice_chart_dataset.polygon_index[index] = poly_idx[0]
-        #         ice_chart_dataset.SIC_T[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_T']
-        #
-        #         ice_chart_dataset.SIC_A[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_A']
-        #         ice_chart_dataset.SOD_A[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_A']
-        #         ice_chart_dataset.Floe_A[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_A']
-        #
-        #         ice_chart_dataset.SIC_B[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_B']
-        #         ice_chart_dataset.SOD_B[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_B']
-        #         ice_chart_dataset.Floe_B[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_B']
-        #
-        #         ice_chart_dataset.SIC_C[index] = self.ice_chart.iloc[poly_idx[0]]['SIC_C']
-        #         ice_chart_dataset.SOD_C[index] = self.ice_chart.iloc[poly_idx[0]]['SOD_C']
-        #         ice_chart_dataset.Floe_C[index] = self.ice_chart.iloc[poly_idx[0]]['Floe_C']
-        #
-        #         ice_chart_dataset.file_name[index] = 'chart_name'
-        #
-        # return ice_chart_dataset
-
     def _set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
         """
         Set the parameter sea ice concentrations, stage of developement and floe
