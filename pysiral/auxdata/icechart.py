@@ -491,7 +491,7 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         :return: Index of overlapping polygon (or missing value) for each Level-2 record
         """
         ice_chart_polygon_subset_strtree = STRtree(self.ice_chart.geometry[poly_overlap_idxs])
-        track_poly_idx = np.full(track_multipoint.length, missing_value)
+        track_poly_idx = np.full(len(track_multipoint.geoms), missing_value)
         for idx, geom in enumerate(track_multipoint.geoms):
             sub_idx = ice_chart_polygon_subset_strtree.query_nearest(geom, max_distance=1.0)
             # in case of missing polygon, statement below will raise an ValueError
