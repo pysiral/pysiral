@@ -7,6 +7,7 @@ cython==0.29.35
 dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
+geopandas
 geopy
 h5py
 isort
