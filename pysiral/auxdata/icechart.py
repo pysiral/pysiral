@@ -295,7 +295,10 @@ class NSIDCIceChartFileCatalog(object):
             target_date_ordinal <= self.issue_dates_ordinal,
             target_date_ordinal >= self.issue_dates_ordinal - self.file_validity_period_days_default - 1
         )
-        match_index = np.argwhere(condition)[0]
+        try:
+            match_index = np.argwhere(condition)[0]
+        except IndexError:
+            return None
 
         # No ice chart found for target date
         if match_index.size == 0:
