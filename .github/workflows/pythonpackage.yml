@@ -25,6 +25,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        sudo apt-get update
         sudo apt-get install libproj-dev proj-data proj-bin  
         sudo apt-get install libgeos-dev  
         python -m pip install --upgrade pip
