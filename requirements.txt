@@ -4,7 +4,7 @@ bottleneck
 cartopy>=0.22
 cftime
 cython==0.29.35
-dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
+dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
 geopy
@@ -28,6 +28,7 @@ pyresample
 pyshp
 python-dateutil
 pyyaml
+samosa_wavefom_model @ git+https://github.com/pysiral/samosa-waveform-model.git@main#egg=samosa_wavefom_model
 schema
 scipy
 scikit-learn
