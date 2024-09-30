@@ -31,7 +31,7 @@ auxdata:
         name: nsidc_2021
         options: null
 
-    # # Load the
+    # Load the
     - mss:
         name: dtu21
         options:
@@ -68,6 +68,7 @@ auxdata:
             name: nsidc
             options:
                 hemisphere: north
+
 
 # --- Level-2 processor steps ---
 #
@@ -274,7 +275,6 @@ procsteps:
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
-                - ionosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period
