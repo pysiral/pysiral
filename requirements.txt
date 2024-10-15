@@ -40,6 +40,6 @@ sphinx_rtd_theme
 sphinxcontrib-mermaid
 statsmodels
 torch
-xarray=2023.12
+xarray==2023.12
 xgboost
 xmltodict
