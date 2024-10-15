@@ -3,7 +3,7 @@
 hemisphere: north
 grid_tag: ease2nh
 resolution_tag: 12.5km
-grid_id: nh_12p5km_ease2
+grid_id: nh_12p5km_ease2_sinxs
 name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 12.5km
 
 netcdf_grid_description:
@@ -28,16 +28,16 @@ projection:
 extent:
     xoff: 0
     yoff: 0
-    xsize: 10800000
-    ysize: 10800000
+    xsize: 8900000
+    ysize: 8900000
     dx: 12500
     dy: 12500
-    numx: 864
-    numy: 864
+    numx: 712
+    numy: 712
 
 area_def:
     ease2nh:
-        description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
+        description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 12.5km
         projection:
             proj: laea
             lat_0: 90.0
@@ -46,9 +46,9 @@ area_def:
             datum: WGS84
             units: m
         shape:
-            height: 864
-            width: 864
+            height: 712
+            width: 712
         area_extent:
-            lower_left_xy: [-5400000.0, -5400000.0]
-            upper_right_xy: [5400000.0, 5400000.0]
+            lower_left_xy: [-4450000.0, -4450000.0]
+            upper_right_xy: [4450000.0, 4450000.0]
             units: m
