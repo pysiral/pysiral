@@ -9,11 +9,11 @@ metadata:
 # Output Definition (for each period definition)
 filenaming:
   month: "CS_OFFL_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m}_D001.nc"
-  monthly: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m}-A001.nc"
-  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
-  day: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}-A001.nc"
-  custom: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
-  default: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-C001.nc"
+  monthly: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m}-D001.nc"
+  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  day: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}-D001.nc"
+  custom: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  default: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
 
 product_level_subfolder: l3c
 
