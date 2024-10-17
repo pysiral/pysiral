@@ -65,9 +65,10 @@ l2_parameter:
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
 l2i_prefilter:
-    active: False
-    nan_source: null
-    nan_targets: null
+    active: True
+    nan_source: sea_ice_freeboard
+    nan_targets:
+      - radar_freeboard
 
 # ==================================================
 # Gridding settings
