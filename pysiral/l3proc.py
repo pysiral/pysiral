@@ -1655,7 +1655,12 @@ class Level3LoadCCILandMask(Level3ProcessorItem):
         lookup_directory = Path(lookup_directory)
 
         # Get the mask target filename
-        filename = self.cfg["mask_name_dict"][grid_id.replace("_", "")]
+        # Get the mask target filename
+        try:
+            filename = self.cfg["mask_name_dict"][grid_id.replace("_", "")]
+        except KeyError:
+            logger.error(f"Could not find mask for grid id {grid_id} -> aborting")
+            return
         mask_filepath = lookup_directory / filename
         if not mask_filepath.is_file():
             msg = "Missing input file: {}".format(mask_filepath)
