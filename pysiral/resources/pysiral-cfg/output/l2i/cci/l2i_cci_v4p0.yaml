@@ -507,3 +507,18 @@ variables:
     flag_values: "0, 1, 2"
     flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
     coordinates: time
+
+  waveform_power:
+    long_name: "waveform power values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_range:
+    long_name: "waveform range values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_valid_flag:
+    long_name: "waveform valid flag"
+    comment: "From l1p"
+    coordinates: time
