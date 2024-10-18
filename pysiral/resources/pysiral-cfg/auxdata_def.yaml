@@ -850,5 +850,5 @@ ml:
     tfmra_threshold_model:
         pyclass: RetrackerThresholdModel
         long_name: Learned model for predicting TFMRA retracker threshold from waveform shape parameters
-        local_repository: tfmra_threshold_model
+        local_repository: tfmra_threshold_model_torch
         options: null
