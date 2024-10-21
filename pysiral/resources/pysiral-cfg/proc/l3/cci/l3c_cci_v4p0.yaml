@@ -4,7 +4,7 @@
 # Level-2 Parameters
 # ==================================================
 
-# List of input files in the level-2 parameter and gridding method. 
+# List of input files in the level-2 parameter and gridding method.
 
 l2_parameter:
 
@@ -122,6 +122,47 @@ l2_parameter:
         grid_method: median
         dtype: i4
         fillvalue: -1
+
+    sigma0:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    leading_edge_width:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    pulse_peakiness:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    trailing_edge_slope:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    late_tail_to_peak_power:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    ocog_width:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    significant_wave_height:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
+    tfmra_threshold:
+      grid_method: none
+      dtype: f4
+      fillvalue: .NAN
+
 
 # ==================================================
 # Level-2 Pre-Filter
@@ -290,3 +331,20 @@ processing_items:
             qif_high_negative_thickness_fraction:
                 thresholds: [0.2, 0.4]
                 target_flags: [1, 2]
+
+    # Compute the status flag
+    - label: "grid surface type classifiers"
+      module_name: pysiral.l3proc
+      class_name: Level3GriddedClassifiers
+      options:
+        parameters:
+          - "sigma0"
+          - "leading_edge_width"
+          - "pulse_peakiness"
+          - "tfmra_threshold"
+          - "late_tail_to_peak_power"
+          - "trailing_edge_slope"
+          - "ocog_width"
+          - "significant_wave_height"
+        surface_types: ["sea_ice", "lead", "ocean"]
+        statistics: ["mean", "sdev"]

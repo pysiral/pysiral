@@ -125,9 +125,15 @@ procsteps:
             classifier:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
+                ocog_amplitude: [oca, ocog_amplitude]
+                ocog_width: [ocw, ocog_width]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
                 leading_edge_peakiness: [lep, leading_edge_peakiness]
+                trailing_edge_slope: [tes, trailing_edge_slope]
+                trailing_edge_slope_quality: [tesq, trailing_edge_slope_quality]
+                late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
+                significant_wave_height: [swh, significant_wave_height]
                 epsilon_sec: [epss, epsilon_sec]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
