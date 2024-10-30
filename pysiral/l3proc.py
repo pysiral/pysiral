@@ -4,6 +4,8 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+
+import contextlib
 import itertools
 import re
 import sys
@@ -30,6 +32,7 @@ from pysiral.mask import L3Mask
 from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
+
 
 class Level3Processor(DefaultLoggingClass):
 
@@ -71,7 +74,7 @@ class Level3Processor(DefaultLoggingClass):
             try:
                 l2i = L2iNCFileImport(l2i_file)
             except AttributeError:
-                logger.warning("Attribute Error encountered in %s" % l2i_file)
+                logger.warning(f"Attribute Error encountered in {l2i_file}")
                 continue
 
             # Apply the orbit filter (for masking descending or ascending orbit segments)
@@ -114,7 +117,7 @@ class Level3Processor(DefaultLoggingClass):
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
-            logger.info("Write %s product: %s" % (output_handler.id, output.export_filename))
+            logger.info(f"Write {output_handler.id} product: {output.export_filename}")
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -140,7 +143,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         # Display warning if filter is active
-        logger.warning("Orbit filter is active [%s]" % str(orbit_filter.mask_orbits))
+        logger.warning(f"Orbit filter is active [{str(orbit_filter.mask_orbits)}]")
 
         # Get indices to filter
         if orbit_filter.mask_orbits == "ascending":
@@ -155,10 +158,8 @@ class Level3Processor(DefaultLoggingClass):
         # Filter geophysical parameters only
         targets = l2i.parameter_list
         for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-            try:
+            with contextlib.suppress(ValueError):
                 targets.remove(non_target)
-            except ValueError:
-                pass
         l2i.mask_variables(indices, targets)
 
     @staticmethod
