@@ -58,6 +58,21 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    sea_ice_draft:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_draft_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    mean_sea_surface:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
     sea_level_anomaly:
         grid_method: average
         dtype: f4
@@ -170,9 +185,9 @@ l2_parameter:
 
 # the prefilter will apply a nan mask from a specified parameter to other parameters
 
-miz_filter: 
+miz_filter:
     mask_min_value: 2
-    mask_targets: 
+    mask_targets:
         - sea_ice_freeboard
         - sea_ice_thickness
 
