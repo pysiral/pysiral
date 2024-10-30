@@ -1,27 +1,29 @@
-# Level-2 processor settings for CCI+ Northern hemisphere CRDP
+# Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
 metadata:
-    label: "ESA CCI+ ERS-2 northern hemisphere sea-ice thickness climate data record v4.0-preview1"
+    label: "ESA CCI+ Envisat southern hemisphere sea-ice thickness climate data record v3.0"
     product_line: cci
     record_type: cdr
-    platform: ers2
-    version: v4p0-preview1
-    file_version_tag: v4p0-preview1
-    hemisphere: north
+    platform: envisat
+    version: v3p0
+    file_version_tag: v3p0
+    hemisphere: south
 
 
+# A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+# NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 auxdata:
 
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
+        name: antarctic_seas
         options: null
 
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
         name: c3s
@@ -30,108 +32,55 @@ auxdata:
             exception_on_error: False
 
     - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+         name: fyi_default
+         options: 
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: False
 
     # Ingest machine learned models
     - ml:
-            # category.name (ml.tfmra_threshold_model) points to the corresponding
+            # category.name (ml.tfmra_threshold_model) points to the corresponding 
             # entry in `auxdata_def.yaml`
-            name: tfmra_threshold_model
+            name: tfmra_threshold_model_torch
             options:
                 # The id and name of the parameter added to the level-2 object
                 output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
                 # File basename of the trained model data
-                model_file: fnn_ers2_ccip-p2-v008_tc-022_20240503.pth
-                # Model specifics
-                model_class: ERS2_TestCandidate_006_FNN
-                fmi_leading_bins: 5
-                fmi_trailing_bins: 30
-                # Input classifiers to the model with percentile value for normalization
-                # Note: Order is important; needs to be consistent with trained model input order;
-                #       Classifier names shoudl be the L1p names!
-                    # -> very strict
-                    #peakiness: [12.2984, 2.5789]
-                    #sigma0: [23.0682, 3.8649]
-                    #leading_edge_width: [0.9451, 0.1299]
-                    #epsilon_sec: [0.3344, 1.0909]
-                    #late_tail_to_peak_power: [0.0927, 0.0368]
-                    #trailing_edge_slope: [-0.1672, 0.1081]
-                    # -> less strict
-                    #peakiness: [8.8202, 3.0477]
-                    #sigma0: [19.9933, 4.0454]
-                    #leading_edge_width: [0.9973, 0.1808]
-                    #epsilon_sec: [0.1627, 0.8538]
-                    #late_tail_to_peak_power: [0.1804, 0.0829]
-                    #trailing_edge_slope: [-0.0757, 0.0862]
-                    # -> less strict but w/ deblurring
-                    #peakiness: [8.6623, 2.9896]
-                    #sigma0: [19.8025, 4.0110]
-                    #leading_edge_width: [1.0089, 0.1862]
-                    #epsilon_sec: [0.2172, 0.8430]
-                    #late_tail_to_peak_power: [0.1843, 0.0828]
-                    #trailing_edge_slope: [-0.0731, 0.0847]
-                # Input classifiers to the model with [minimum, maximum] value for normalization
-                # Note: Order is important; needs to be consistent with trained model input order;
-                #       Classifier names should be the L1p names!
-                classifiers:
-                    peakiness: [3.50, 52.00]
-                    sigma0: [1.90, 47.00]
-                    leading_edge_width: [0.500, 1.0625]
-                    epsilon_sec: [-4.550, 4.550]
-                    late_tail_to_peak_power: [0.000, 0.350]
-                    trailing_edge_slope: [-0.850, -0.0150]
-                    longitude: [-180.0, 180.0]
-                    latitude: [59.00, 81.52]
-
+                model_file: fnn_cci_envisat_nh_v3p0-rc1.pth
+                torch_class: TorchFunctionalWaveformModelFNN
+                input_neurons: 45
                 # The model may predict non-sense threshold values. Limit
                 # to a normal range
-                valid_range: [0.10, 0.99]
+                valid_range: [0.1, 1.0]
 
 # --- Level-2 processor steps ---
-#
-# A list auxilliary datasets to be ingested before the execution of the processing steps.
+# 
+# A list auxilliary datasets to be ingested before the execution of the processing steps. 
 
-procsteps:
+procsteps: 
 
     # Transfer variables from the l1b data object to the l2 data object
-    # Notation is:
+    # Notation is: 
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
     -   module: l2proc.procsteps
         pyclass: L1BL2TransferVariables
-        options:
+        options: 
             classifier:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
-                ocog_amplitude: [oca, ocog_amplitude]
-                ocog_width: [ocw, ocog_width]
+                dist_coast: [dtc, distance_to_coast]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
-                leading_edge_peakiness: [lep, leading_edge_peakiness]
-                trailing_edge_slope: [tes, trailing_edge_slope]
-                trailing_edge_slope_quality: [tesq, trailing_edge_slope_quality]
-                late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
-                significant_wave_height: [swh, significant_wave_height]
-                epsilon_sec: [epss, epsilon_sec]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -151,9 +100,14 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    - module: l2proc.procsteps
-      pyclass: TransferWaveform2L2
-      options: {}
+    # Envisat specific backscatter correction of degrading RA-2 antenna
+    -   module: filter
+        pyclass: L1bEnvisatBackscatterDriftCorrection
+        options: 
+            l1b_data_group: classifier
+            l1b_parameter_name: sigma0
+            backscatter_drift_factor: -0.003269253
+            backscatter_base_period: [2011, 6]
 
     # Compute rolling classifier statistics
     -   module: l2proc.procsteps
@@ -166,6 +120,7 @@ procsteps:
                 - leading_edge_width
                 - sigma0
 
+
     # Surface type classification algorithm
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
@@ -176,7 +131,7 @@ procsteps:
             ocean:
 
                 - radar_mode: lrm
-                  conditions:
+                  conditions: 
                       - "{sea_ice_concentration} < 15.0"
 
             # Lead waveforms are classified based on sigma0, leading edge width
@@ -185,24 +140,23 @@ procsteps:
             lead:
 
                 - radar_mode: lrm
-                  conditions:
-                    - "{sea_ice_concentration} >= 15.0"
-                    - "{pulse_peakiness} >= 16.70"
-                    - "{sigma0} >= 22.90"
-                    - "{leading_edge_width} <= 1.05"
-                    - "{leading_edge_quality} <= 1.05"
-
+                  conditions: 
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{pulse_peakiness} >= 26.0"
+                      - "{sigma0} >= 25.0"
+                      - "{leading_edge_width} <= 0.82"
+                    
             # The sea ice classification uses as many waveforms as possible
             # and reduces the classification to all waveforms within the
             # sea ice mask which are not classified as leads and have a
-            # valid leading edge.
+            # valid leading edge. 
             sea_ice:
 
                 - radar_mode: lrm
                   exclude: lead
                   conditions:
                       - "{sea_ice_concentration} >= 15.0"
-                      - "{leading_edge_quality} <= 1.1"
+                      - "{leading_edge_quality} <= 1.02"
 
 
     # Retracking algorithm dependent on surface type
@@ -210,9 +164,20 @@ procsteps:
         pyclass: Level2RetrackerContainer
         options:
             lead:
+               # pyclass: SICCILead
+               # options:
+               #     skip_first_bins: 10
+               #     initial_guess: [0.0, 1.0, 1.0, 0.0]
+               #     maxfev: 5000
+               #     filter: 
+               #         use_filter: False
 
+                    # if arrays than [lrm, sar, sin]
+                    # type can be fixed, sigma_func, sitype_sigma_func, l2_variable
                 pyclass: cTFMRA
                 options:
+                    # if arrays than [lrm, sar, sin]
+                    # type can be fixed, sigma_func, sitype_sigma_func, l2_variable
                     threshold:
                         type: fixed
                         value: 0.95
@@ -226,10 +191,12 @@ procsteps:
                     first_maximum_ignore_leading_bins: 10
                     uncertainty:
                         type: fixed
-                        value: 0.25
+                        value: 0.15
             sea_ice:
                 pyclass: cTFMRA
                 options:
+                    # if arrays than [lrm, sar, sin]
+                    # type can be fixed, sigma_func, sitype_sigma_func, l2_variable
                     threshold:
                         type: l2_variable
                         variable_name: tfmra_threshold_iceml
@@ -243,21 +210,13 @@ procsteps:
                     first_maximum_ignore_leading_bins: 10
                     uncertainty:
                         type: fixed
-                        value: 0.25
+                        value: 0.15
 
-    # Apply ERS pulse deblurring correction
-    -   module: retracker.corrections
-        pyclass: ERSPulseDeblurring
-        options:
-            slope: 5.0
-            target_variables:
-                - elevation
-
-    # Apply the range corrections
+    # Apply the range corrections 
     -   module: l2proc.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
-            corrections:
+            corrections: 
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
@@ -270,6 +229,7 @@ procsteps:
             target_variables:
                 - elevation
 
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
     -   module: sla
         pyclass: SLASmoothedLinear
         options:
@@ -289,15 +249,25 @@ procsteps:
                 maximum_distance_to_tiepoint: 200000.
                 edges_only: False
 
+    # Algorithm for instantaneos sea surface height (mss + ssa) and radar freeboard
+    -   module: sla
+        pyclass: SLARaw
+        options:
+            use_ocean_wfm: False
+            filter_max_mss_offset_m: 3.0 # in meter
+
+    # Estimation of Radar Freeboard
     -   module: frb
         pyclass: RadarFreeboardDefault
         options: null
 
+    # Algorithm for converting radar freeboard into freeboard
     -   module: frb
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: mallett2020
 
+    # Filter invalid freeboard values
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
@@ -331,6 +301,15 @@ procsteps:
             target_variables: [sit]
             valid_minimum_point_value: -0.5
             valid_maximum_point_value: 10.5
+
+    # Remove close values to the coast
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: dtc  # distance to coast
+            target_variables: [sit, frb, afrb]
+            valid_minimum_point_value: 10000
+            valid_maximum_point_value: 99999999999.
 
     # Compute sea ice draft
     -   module: sit
