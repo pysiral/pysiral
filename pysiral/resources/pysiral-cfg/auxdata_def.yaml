@@ -847,8 +847,17 @@ rio:
 
 # Machine learned models
 ml:
+
+    # For ERS
     tfmra_threshold_model:
         pyclass: RetrackerThresholdModel
         long_name: Learned model for predicting TFMRA retracker threshold from waveform shape parameters
         local_repository: tfmra_threshold_model
+        options: null
+
+    # For Envisat
+    tfmra_threshold_model_torch:
+        pyclass: RetrackerThresholdModelTorch
+        long_name: Learned model (torch) for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model_torch
         options: null
