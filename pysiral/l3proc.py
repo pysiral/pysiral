@@ -4,6 +4,8 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+
+import contextlib
 import itertools
 import re
 import sys
@@ -30,6 +32,7 @@ from pysiral.mask import L3Mask
 from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
+
 
 class Level3Processor(DefaultLoggingClass):
 
@@ -114,7 +117,7 @@ class Level3Processor(DefaultLoggingClass):
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
-            logger.info("Write %s product: %s" % (output_handler.id, output.export_filename))
+            logger.info(f"Write {output_handler.id} product: {output.export_filename}")
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -140,7 +143,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         # Display warning if filter is active
-        logger.warning("Orbit filter is active [%s]" % str(orbit_filter.mask_orbits))
+        logger.warning(f"Orbit filter is active [{str(orbit_filter.mask_orbits)}]")
 
         # Get indices to filter
         if orbit_filter.mask_orbits == "ascending":
@@ -155,10 +158,8 @@ class Level3Processor(DefaultLoggingClass):
         # Filter geophysical parameters only
         targets = l2i.parameter_list
         for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-            try:
+            with contextlib.suppress(ValueError):
                 targets.remove(non_target)
-            except ValueError:
-                pass
         l2i.mask_variables(indices, targets)
 
     @staticmethod
@@ -193,7 +194,7 @@ class Level3Processor(DefaultLoggingClass):
 
         # Get the list of post-processing items
         for pitem in processing_items:
-            msg = "Apply Level-3 processing item: `%s`" % (pitem["label"])
+            msg = f'Apply Level-3 processing item: `{pitem["label"]}`'
             logger.info(msg)
             pp_class, err = get_cls(pitem["module_name"], pitem["class_name"], relaxed=False)
             processing_items = pp_class(l3grid, **pitem["options"])
@@ -251,6 +252,7 @@ class L2iDataStack(DefaultLoggingClass):
             parameter_name: self.parameter_stack
             for parameter_name in self.l2_parameter.keys()
         }
+        self.stack["platform_code"] = self.parameter_stack
 
     def add(self, l2i):
         """ Add a l2i data object to the stack
@@ -283,6 +285,7 @@ class L2iDataStack(DefaultLoggingClass):
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
+            self.stack["platform_code"][y][x].append(l2i.mission)
             for parameter_name in self.l2_parameter.keys():
                 try:
                     data = getattr(l2i, parameter_name)
@@ -1483,6 +1486,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         :param args:
         :param kwargs:
         """
+        self.rules = {}
         super(Level3QualityFlag, self).__init__(*args, **kwargs)
 
     def apply(self):
@@ -1496,7 +1500,7 @@ class Level3QualityFlag(Level3ProcessorItem):
         ntf = np.copy(self.l3grid.vars["negative_thickness_fraction"])
         lfr = np.copy(self.l3grid.vars["lead_fraction"])
 
-        # As first step set qif to 1 where data is availabe
+        # As first step set qif to 1 where data is available
         qif[np.where(np.isfinite(sit))] = 0
 
         # Get a list of all the rules
@@ -1512,6 +1516,19 @@ class Level3QualityFlag(Level3ProcessorItem):
             rule_options = self.rules["qif_warren99_valid_flag"]
             flag = np.full(qif.shape, 0, dtype=qif.dtype)
             flag[np.where(w99 == 0)] = rule_options["target_flag"]
+            qif = np.maximum(qif, flag)
+
+        # Elevate the quality flag for SARin or mixed SAR/SARin regions
+        # (only sensible for CryoSat-2)
+        if "qif_platform" in quality_flag_rules:
+            rule_options = self.rules["qif_platform"]
+            platform_codes = self.l3grid.l2.stack["platform_code"]
+            flag = np.full(qif.shape, 0, dtype=qif.dtype)
+            for xi, yj in self.l3grid.grid_indices:
+                platform_ids = set(platform_codes[yj][xi])
+                if not platform_ids:
+                    continue
+                flag[yj, xi] = max(rule_options.get(platform_id, 0) for platform_id in platform_ids)
             qif = np.maximum(qif, flag)
 
         # Elevate the quality flag for SARin or mixed SAR/SARin regions
