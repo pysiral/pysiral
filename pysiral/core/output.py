@@ -475,12 +475,22 @@ class NCDataFile(DefaultLoggingClass):
                     # Register the additional dimension
                     aux_dimdict = self.data.get_multidim_auxdata_dimdict(parameter_name)
                     for dim_name, dim_value in aux_dimdict["new_dims"]:
-                        self._rootgrp.createDimension(dim_name, dim_value)
+                        try:
+                            self._rootgrp.createDimension(dim_name, dim_value)
+                        # Dimension already exist (which can happen when more than one multidim
+                        # parameter uses the same dimension.
+                        except RuntimeError:
+                            pass
 
                     # Add the dimension variable
                     for name, dim_data in aux_dimdict["add_dims"]:
-                        dimvar = self._rootgrp.createVariable(name, dim_data.dtype.str, name, zlib=self.zlib)
-                        dimvar[:] = dim_data
+                        try:
+                            dimvar = self._rootgrp.createVariable(name, dim_data.dtype.str, name, zlib=self.zlib)
+                            dimvar[:] = dim_data
+                        # Dimension already exist (which can happen when more than one multidim
+                        # parameter uses the same dimension.
+                        except RuntimeError:
+                            pass
 
                     # The full dimension
                     dimensions = aux_dimdict["dimensions"]

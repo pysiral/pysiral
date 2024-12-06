@@ -1,10 +1,10 @@
 metadata:
-    label: "ESA CCI+ CryoSat-2 northern hemisphere sea-ice thickness climate data record v3.0"
+    label: "ESA CCI+ CryoSat-2 northern hemisphere sea-ice thickness climate data record"
     product_line: cci
     record_type: cdr
     platform: cryosat2
-    version: v3p0
-    file_version_tag: v3p0
+    version: v4p0-preview1
+    file_version_tag: v4p0-preview1
     hemisphere: north
 
 

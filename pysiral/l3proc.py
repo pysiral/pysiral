@@ -4,6 +4,8 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+
+import contextlib
 import itertools
 import re
 import sys
@@ -30,6 +32,7 @@ from pysiral.mask import L3Mask
 from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
+
 
 class Level3Processor(DefaultLoggingClass):
 
@@ -71,7 +74,7 @@ class Level3Processor(DefaultLoggingClass):
             try:
                 l2i = L2iNCFileImport(l2i_file)
             except AttributeError:
-                logger.warning("Attribute Error encountered in %s" % l2i_file)
+                logger.warning(f"Attribute Error encountered in {l2i_file}")
                 continue
 
             # Apply the orbit filter (for masking descending or ascending orbit segments)
@@ -114,7 +117,7 @@ class Level3Processor(DefaultLoggingClass):
         # Write output(s)
         for output_handler in self._job.outputs:
             output = Level3Output(l3, output_handler)
-            logger.info("Write %s product: %s" % (output_handler.id, output.export_filename))
+            logger.info(f"Write {output_handler.id} product: {output.export_filename}")
 
     def _log_progress(self, i):
         """ Concise logging on the progress of l2i stack creation """
@@ -140,7 +143,7 @@ class Level3Processor(DefaultLoggingClass):
         """
 
         # Display warning if filter is active
-        logger.warning("Orbit filter is active [%s]" % str(orbit_filter.mask_orbits))
+        logger.warning(f"Orbit filter is active [{str(orbit_filter.mask_orbits)}]")
 
         # Get indices to filter
         if orbit_filter.mask_orbits == "ascending":
@@ -155,10 +158,8 @@ class Level3Processor(DefaultLoggingClass):
         # Filter geophysical parameters only
         targets = l2i.parameter_list
         for non_target in ["longitude", "latitude", "timestamp", "time", "surface_type"]:
-            try:
+            with contextlib.suppress(ValueError):
                 targets.remove(non_target)
-            except ValueError:
-                pass
         l2i.mask_variables(indices, targets)
 
     @staticmethod
@@ -484,7 +485,7 @@ class L3DataGrid(DefaultLoggingClass):
                 sys.exit(1)
             else:
                 parameter = np.full(np.shape(self.vars["longitude"]), np.nan)
-                
+
         return parameter
 
     def set_parameter_by_name(self, name, var):
@@ -1198,7 +1199,7 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
 
     # Mandatory properties
     required_options = []
-    l2_variable_dependencies = ["surface_type", "sea_ice_thickness"]
+    l2_variable_dependencies = ["surface_type"]
     l3_variable_dependencies = []
     l3_output_variables = dict(n_total_waveforms=dict(dtype="f4", fill_value=0.0),
                                n_valid_waveforms=dict(dtype="f4", fill_value=0.0),
@@ -1281,7 +1282,12 @@ class Level3SurfaceTypeStatistics(Level3ProcessorItem):
                 self.l3grid.vars[f"{surface_type_id}_fraction"][yj, xi] = detection_fraction
 
             # Fractions of negative thickness values
-            sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
+            try:
+                sit = np.array(self.l3grid.l2.stack["sea_ice_thickness"][yj][xi])
+            except KeyError:
+                self.l3grid.vars["negative_thickness_fraction"][yj, xi] = np.nan
+                continue
+
             n_negative_thicknesses = len(np.where(sit < 0.0)[0])
             try:
                 n_ice = len(np.where(surface_type == stflags["sea_ice"])[0])
@@ -1937,6 +1943,9 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
         for xi, yj in self.l3grid.grid_indices:
 
             classifier_grid_values = np.array(classifier_stack[yj][xi])
+            if len(classifier_grid_values) == 0:
+                continue
+
             surface_type_flags = np.array(surface_type[yj][xi])
 
             # Get the surface type target subset
@@ -1954,5 +1963,6 @@ class Level3GriddedClassifiers(Level3ProcessorItem):
             # A minimum of two values is needed to compute statistics
             if len(subset) < 2:
                 continue
+
             result = self._stat_functions[statistic](classifier_grid_values[subset])
             self.l3grid.vars[grid_var_name][yj][xi] = result

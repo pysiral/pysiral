@@ -251,7 +251,7 @@ class Level2Processor(DefaultLoggingClass):
             self._create_l2_outputs(l2)
 
             # Add data to orbit stack
-            self._add_to_orbit_collection(l2)
+            # self._add_to_orbit_collection(l2)
 
     def _read_l1b_file(self, l1b_file):
         """ Read a L1b data file (l1bdata netCDF) """

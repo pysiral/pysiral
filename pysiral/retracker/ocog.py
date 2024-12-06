@@ -6,6 +6,7 @@ This OCOG implementation comes from the first phase of the ESA Climate Change In
 
 import numpy as np
 from scipy.interpolate import interp1d
+from typing import Tuple
 
 from pysiral.core.flags import ANDCondition
 from pysiral.retracker import BaseRetracker
@@ -106,3 +107,29 @@ def ocog_func(wave, percentage, skip):
     ind_first_over = np.min(np.nonzero(wave > threshold))
     decimal = (wave[ind_first_over-1] - threshold) / (wave[ind_first_over-1] - wave[ind_first_over])
     return skip + ind_first_over - 1 + decimal
+
+
+def ocog_properties(waveform: np.ndarray) -> Tuple[float, float, float]:
+    """
+    Computes the three OCOG properties center of gravity, amplitude & width
+    of a waveform in range gate units.
+
+    :param waveform: The waveform array
+
+    :return: center of gravity (cog), amplitude & width
+    """
+
+    idx = np.arange(waveform.size) + 1
+    waveform_sum = np.sum(waveform)
+    waveform_scaled_sum = np.sum(idx*waveform)
+    # waveform_squared_sum = np.sum(np.power(waveform, 2))
+    waveform_squared_sum = np.sum(np.power(waveform, 2))
+
+    # self._amplitude[i] = np.sqrt((y2 ** 2.0).sum() / y2.sum())
+    #     # self._width[i] = ((y2.sum()) ** 2.0) / (y2 ** 2.0).sum()
+
+    cog = waveform_scaled_sum / waveform_sum
+    amplitude = np.sqrt(waveform_squared_sum / waveform_sum)
+    width = waveform_sum**2. / waveform_squared_sum
+
+    return cog, amplitude, width

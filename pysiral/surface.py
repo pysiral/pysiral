@@ -78,9 +78,9 @@ class SurfaceTypeClassifier(object):
         # The result of the surface type classification
         # NOTE: This instance contains the number codes for each surface type
         self.surface_type = SurfaceType()
-        
+
         # A data container for parameters (usually waveform parameters, but also auxiliary data)
-        # used to classify the surface type 
+        # used to classify the surface type
         self.classifier = ClassifierContainer()
 
         # This instance can be used to related the radar mode flag with the name for the radar mode
@@ -143,8 +143,9 @@ class SurfaceTypeClassifier(object):
         :param l1:
         :return:
         """
-        l1_land_mask = l1.surface_type.get_by_name("land")
-        self.surface_type.add_flag(l1_land_mask.flag, "land")
+        for l1_target in ["land", "land_ice"]:
+            l1_land_mask = l1.surface_type.get_by_name(l1_target)
+            self.surface_type.add_flag(l1_land_mask.flag, l1_target)
 
     def has_class(self, name: str) -> bool:
         return name in self._classes

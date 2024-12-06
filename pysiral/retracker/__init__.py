@@ -16,7 +16,7 @@ from loguru import logger
 from pysiral.core.flags import FlagContainer
 from pysiral.l2proc.procsteps import Level2ProcessorStep
 
-__all__ = ["ccilead", "corrections", "mock", "ocog", "samosa", "tfmra",
+__all__ = ["ccilead", "corrections", "mock", "ocog", "samosa", "tfmra", "samosa_wfm",
            "BaseRetracker"]
 
 
@@ -193,8 +193,10 @@ class Level2RetrackerContainer(Level2ProcessorStep):
             retracker = get_retracker_class(retracker_def["pyclass"])
 
             # Set options (if any)
+            retracker_options = {"surface_type": surface_type}
             if retracker_def["options"] is not None:
-                retracker.set_options(**retracker_def["options"])
+                retracker_options.update(retracker_def["options"])
+            retracker.set_options(**retracker_options)
 
             # set subset of waveforms
             retracker.set_indices(surface_type_flag.indices)
@@ -236,6 +238,7 @@ class Level2RetrackerContainer(Level2ProcessorStep):
 def get_registered_retrackers() -> Dict:
     """
     Get a dictionary of subclasses of `BaseRetracker`
+
     :return: Dictionary {class_name: class}
     """
     return {cls.__name__: cls for cls in BaseRetracker.__subclasses__()}
@@ -255,6 +258,8 @@ def get_retracker_class(name: str):
 
     from pysiral.retracker.samosa import SAMOSA_OK
     from pysiral.retracker.tfmra import CYTFMRA_OK
+    from pysiral.retracker.samosa_wfm import SAMOSAPlusRetracker
+    from pysiral.retracker.ocog import SICCIOcog
 
     if name == "cTFMRA" and not CYTFMRA_OK:
         msg = (

@@ -184,8 +184,10 @@ class ParameterSmoother(Level2ProcessorStep):
         auxname = self.cfg.options.target_variable_name
 
         # Get a dictionary of the filter function
-        filter_func = {"box_filter": self.box_filter_smoother,
-                       "lowess": self.lowess_smoother}
+        filter_func = {
+            "box_filter": self.box_filter_smoother,
+            "lowess": self.lowess_smoother
+        }
 
         # check if requested smoothing method is implemented
         if self.cfg.options.smoothing_method not in filter_func.keys():
@@ -197,8 +199,16 @@ class ParameterSmoother(Level2ProcessorStep):
 
         # Get the source parameter
         var = getattr(l2, self.cfg.options.source_variable)
-        result = filter_func[self.cfg.options.smoothing_method](var[:],  **self.cfg.options.smoother_args)
-        var_filtered, var_filtered_unc = result
+        var_filtered, _ = filter_func[self.cfg.options.smoothing_method](var[:], **self.cfg.options.smoother_args)
+
+        # [Optional] Remove interpolated values from waveforms that are classified as land (flag value 6) or
+        # land ice (flag value 7). This part of the algorithm is optional and must be explicitly activated
+        # by setting `ocean_domain_only: True` in the config file to not break older configurations.
+        ocean_domain_only = self.cfg.options.get("ocean_domain_only", False)
+        if ocean_domain_only:
+            is_non_ocean = np.isin(l2.surface_type.flag, [6, 7])
+            logger.info(f"- Filter apply ocean-domain-only filter ({np.where(is_non_ocean)[0].size} records)")
+            var_filtered[is_non_ocean] = np.nan
 
         # Add the result as auxiliary data set without an uncertainty
         l2.set_auxiliary_parameter(auxid, auxname, var_filtered)
