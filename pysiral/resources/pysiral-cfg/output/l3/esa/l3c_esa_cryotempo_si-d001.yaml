@@ -160,7 +160,6 @@ variables:
     coordinates: "time lat lon"
 
   miz_flag:
-    var_source_name: flag_miz
     long_name: Marginal Ice Zone Flag
     standard_name: "quality_flag"
     units: "1"

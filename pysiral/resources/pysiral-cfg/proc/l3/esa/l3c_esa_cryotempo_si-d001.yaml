@@ -38,6 +38,16 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    distance_to_ocean:
+        grid_method: average
+        dtype: i4
+        fillvalue: .NAN
+
+    significant_wave_height:
+        grid_method: average
+        dtype: i4
+        fillvalue: .NAN
+
     snow_depth:
         grid_method: average
         dtype: f4
@@ -59,9 +69,11 @@ l2_parameter:
         fillvalue: -1
 
     miz_flag:
-        grid_method: median
+        grid_method: max
         dtype: i4
         fillvalue: -1
+
+
 
 
 # ==================================================
