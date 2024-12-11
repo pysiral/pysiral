@@ -58,6 +58,12 @@ l2_parameter:
         dtype: i4
         fillvalue: -1
 
+    miz_flag:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+
 # ==================================================
 # Level-2 Pre-Filter
 # ==================================================

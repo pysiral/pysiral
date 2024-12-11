@@ -159,6 +159,18 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  miz_flag:
+    var_source_name: flag_miz
+    long_name: Marginal Ice Zone Flag
+    standard_name: "quality_flag"
+    units: "1"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0 1"
+    flag_meanings: "not_in_miz miz"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   n_valid_freeboards:
     long_name: "number of valid freeboard measurements"
     units: "1"

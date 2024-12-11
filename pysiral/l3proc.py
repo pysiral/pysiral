@@ -31,6 +31,7 @@ from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
 
+
 class Level3Processor(DefaultLoggingClass):
 
     def __init__(self, product_def):
@@ -60,7 +61,9 @@ class Level3Processor(DefaultLoggingClass):
         logger.info("Initialize l2i data stack")
         stack = L2iDataStack(self._job.grid, self._job.l2_parameter)
 
-        logger.info("Parsing products (prefilter active: %s)" % (str(self._job.l3def.l2i_prefilter.active)))
+        logger.info(
+            f"Parsing products (prefilter active: {str(self._job.l3def.l2i_prefilter.active)})"
+        )
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
@@ -464,6 +467,8 @@ class L3DataGrid(DefaultLoggingClass):
                     self.vars[name][yj, xi] = np.unique(data)
                 elif grid_method == "median":
                     self.vars[name][yj, xi] = np.nanmedian(data)
+                elif grid_method == "max":
+                    self.vars[name][yj, xi] = np.nanmax(data)
                 else:
                     msg = "Invalid grid method (%s) for %s"
                     msg %= (str(grid_method), name)
