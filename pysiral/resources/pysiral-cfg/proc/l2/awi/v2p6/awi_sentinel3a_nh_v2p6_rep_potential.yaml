@@ -103,8 +103,6 @@ procsteps:
                 multi_year_ice_class_membership: [myicm, multi_year_ice_class_membership]
                 open_water_class_membership: [owcm, open_water_class_membership]
                 surface_type_classification: [stc, surface_type_classification]
-
-
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -116,6 +114,7 @@ procsteps:
                 solid_earth_tide: [rcset, solid_earth_tide]
                 geocentric_polar_tide: [rcgpt,  geocentric_polar_tide]
             time_orbit:
+                altitude: [toalt, altitude]
                 antenna_pitch: [toantptch, antenna_pitch]
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
