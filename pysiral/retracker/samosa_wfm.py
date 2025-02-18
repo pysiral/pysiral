@@ -1780,6 +1780,53 @@ def get_trailing_edge_lower_envelope_mask(
 
     return mask if return_type is "bool" else np.where(mask)[0]
 
+
+def get_samosa_leading_edge_error(
+        waveform_model: np.ndarray,
+        waveform: np.ndarray,
+        leading_edge_start_power_threshold: float = 0.005
+) -> float:
+    """
+    Compute the SAMOSA+ leading edge error value from the RMSE of the
+    leading edge of the waveform and the fitted SAMOSA+ waveform model.
+
+    This error is an additional quality control measure for the SAMOSA+
+    range e.g., in cases where the overall fit seems to be nominal,
+    but the leading edge (and its tracking point) are not well represented.
+
+    The leading edge will be estmated from the SAMOSA+ waveform model
+    (because this is a lot easier than from the actual waveform).
+
+    :param waveform_model: The SAMOSA+ waveform model.
+    :param waveform: The actual waveform
+    :param leading_edge_start_power_threshold: Power threshold in units of
+        the maximum power of the SAMOSA+ waveform model to determine the
+        start of the leading edge.
+
+    :return: SAMOSA+ leading edge error value (RMSE between waveform and
+        waveform model for leading edge only). 
+    """
+    waveform_model_normed = waveform_model / np.nanmax(waveform_model)
+    try:
+        leading_edge_start = np.where(waveform_model_normed > leading_edge_start_power_threshold)[0][0]
+    except IndexError:
+        leading_edge_start = 0
+    model_maximum = np.argmax(waveform_model)
+    return rmse(waveform_model[leading_edge_start:model_maximum+1], waveform[leading_edge_start:model_maximum+1])
+
+
+def rmse(predictions: np.ndarray, targets: np.ndarray) -> float:
+    """
+    Compute root-mean-square-error (rmse) of 2 non-Nan arrays
+
+    :param predictions: predicted values (non-NaN)
+    :param targets: target values (non-NaN)
+
+    :return: rmse value
+    """
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
+
 # def calc_sigma0(
 #         Latm,
 #         Pu,
