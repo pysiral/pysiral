@@ -223,11 +223,13 @@ procsteps:
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_specular"
+                filter:
+                    max_leading_edge_error: 0.1
+                    max_misfit: 5.0
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
                     nu: [500_000, 5_000_000]
-
 
           sea_ice:
               pyclass: SAMOSAPlusRetracker
@@ -236,11 +238,14 @@ procsteps:
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_standard"
+                filter:
+                    max_leading_edge_error: 0.1
+                    max_misfit: 5.0
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
                     swh: [-2., 20.0]
-                    nu: [100., 2_000_000.]
+                    nu: [100., 2_000_000.0]
 
     # Apply the range corrections
     -   module: l2proc.procsteps
@@ -307,21 +312,12 @@ procsteps:
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
 
-    #     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
-    # -   module: filter
-    #     pyclass: MarginalIceZoneFilterFlag
-    #     options:
-    #         ice_edge_proximity:
-    #             sea_ice_concentration_max: 75.
-    #             ocean_distance_max: 300000.
-    #             leading_edge_width_rolling_mean_min: 2.0
-    #             pulse_peakiness_rolling_sdev_max: 15.0
-    #         ice_edge_transition:
-    #             sea_ice_filter_size_m: 300000.
-    #             ocean_filter_size_m: 25000.
-    #             freeboard_smoother_filter_size_m: 150000.
-    #             sea_ice_freeboard_miz_gradient: 0.002
-    #             leading_edge_width_ocean_value: 2.5
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: SAMOSAMarginalIceZoneFilterFlag
+        options:
+            max_ocean_proximity: 150_000.0
+            min_significant_waveheight: 3.2
 
     # Create a filtered/smoothed version of sea-ice freeboard
     -   module: filter
