@@ -283,13 +283,22 @@ procsteps:
         pyclass: RadarFreeboardDefault
         options: null
 
+    # Filter out-of-valid range freeboard values
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: rfrb
+            target_variables: [rfrb]
+            valid_minimum_point_value: -0.35
+            valid_maximum_point_value: 2.35
+
     # Algorithm for converting radar freeboard into freeboard
     -   module: frb
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: mallett2020
 
-    # Filter invalid freeboard values
+    # Filter out-of-valid range sea ice freeboard values
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
