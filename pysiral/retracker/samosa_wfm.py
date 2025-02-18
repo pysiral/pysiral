@@ -157,6 +157,10 @@ class SAMOSAWaveformFitResult:
     @property
     def is_sub_waveform_fit(self) -> bool:
         return self.misfit_sub_waveform is not None
+    
+    @property
+    def samosa_leading_edge_error(self) -> float:
+        return get_samosa_leading_edge_error(self.waveform_model, self.waveform)
 
 
 class SAMOSAWaveformFit(object):
@@ -674,6 +678,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         parameter = [
             "misfit",
             "misfit_sub_waveform",
+            "leading_edge_error",
             "swh",
             "mean_square_slope",
             "wind_speed",
@@ -931,6 +936,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
             self.misfit_sub_waveform[index] = fit_result.misfit_sub_waveform
             self.mean_square_slope[index] = fit_result.mean_square_slope
             self.epoch[index] = fit_result.epoch
+            self.leading_edge_error[index] = fit_result.samosa_leading_edge_error
 
             # Store waveform and waveform model for debugging
             self.waveform[index, :] = fit_result.waveform
@@ -951,9 +957,11 @@ class SAMOSAPlusRetracker(BaseRetracker):
         # General auxiliary variables
         self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
         self.register_auxdata_output("sammfsw", "samosa_misfit_sub_waveform", self.misfit_sub_waveform)
+        self.register_auxdata_output("samlee", "samosa_leading_edge_error", self.leading_edge_error)
         self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
         self.register_auxdata_output("samfnfe", "samosa_fit_num_func_eval", self.fit_num_func_eval)
         self.register_auxdata_output("samfrs", "samosa_fit_return_status", self.fit_return_status)
+
 
         # Waveform and waveform model
         # Register results as auxiliary data variable
