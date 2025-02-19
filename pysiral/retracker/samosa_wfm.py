@@ -157,7 +157,7 @@ class SAMOSAWaveformFitResult:
     @property
     def is_sub_waveform_fit(self) -> bool:
         return self.misfit_sub_waveform is not None
-    
+
     @property
     def samosa_leading_edge_error(self) -> float:
         return get_samosa_leading_edge_error(self.waveform_model, self.waveform)
@@ -661,6 +661,9 @@ class SAMOSAPlusRetracker(BaseRetracker):
         # Add range biases (when set in config file)
         # self._set_range_bias(radar_mode)
 
+        # Add filter
+        self._apply_filter()
+
         # Add retracker parameters to the l2 data object
         self._l2_register_retracker_parameters()
 
@@ -905,6 +908,28 @@ class SAMOSAPlusRetracker(BaseRetracker):
         """
         for index, fit_result in zip(indices, fit_results):
             self._uncertainty[index] = fit_result.retracker_range_standard_error
+
+    def _apply_filter(self) -> None:
+        """
+        Apply a filter to the retracker results. E.g., range values exceeding
+        a certain misfit value or leading edge error are masked.
+
+        :return: None (Variables are changed in place
+        """
+
+        filter_args = self._options.get("misfit_filter")
+        if not filter_args:
+            return
+
+        # Compute filter flag indicated waveforms with misfit/leading edge error values exceeding threshold
+        invalid_misfit = self.misfit_sub_waveform > filter_args["max_misfit"]
+        invalid_leading_edge_fit = self.leading_edge_error > filter_args["max_leading_edge_error"]
+        radar_freeboard_filter_flag = np.logical_or(invalid_misfit, invalid_leading_edge_fit)
+
+        # Apply filter to range and uncertainty
+        logger.info(f"Filtering {np.sum(radar_freeboard_filter_flag)} waveforms due to misfit & leading edge error")
+        self._range[radar_freeboard_filter_flag] = np.nan
+        self._uncertainty[radar_freeboard_filter_flag] = np.nan
 
     def _store_retracker_properties(
         self,
@@ -1812,7 +1837,7 @@ def get_samosa_leading_edge_error(
         start of the leading edge.
 
     :return: SAMOSA+ leading edge error value (RMSE between waveform and
-        waveform model for leading edge only). 
+        waveform model for leading edge only).
     """
     waveform_model_normed = waveform_model / np.nanmax(waveform_model)
     try:
