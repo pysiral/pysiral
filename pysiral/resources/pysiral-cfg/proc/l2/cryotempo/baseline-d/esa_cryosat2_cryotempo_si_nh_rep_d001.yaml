@@ -1,10 +1,10 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
     product_line: esa
-    record_type: tds-si-rep-D001
+    record_type: tds-si-rep-D002
     platform: cryosat2
-    version: D001
-    file_version_tag: "D001"
+    version: D002
+    file_version_tag: "D002"
     hemisphere: north
 
 
@@ -144,7 +144,7 @@ procsteps:
     #   - ...
 
     # Surface type classification algorithm
-    # SH: This is the surface type classification algorithm for the
+    # SH: This is the surface type classification algorithm for
     #     the new ESA CCI climate data record. There are now significantly
     #     more sea ice waveform
     -   module: surface
@@ -152,7 +152,7 @@ procsteps:
         options:
 
             # This option defines the surface type order. It is important that
-            # leads are classified before sea ice to fullfill the condition
+            # leads are classified before sea ice to fulfill the condition
             # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 
@@ -341,4 +341,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
-
