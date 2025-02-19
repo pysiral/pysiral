@@ -922,8 +922,8 @@ class SAMOSAMarginalIceZoneFilterFlag(Level2ProcessorStep):
         # Compute filter flag value
         miz_filter = np.zeros((l2.n_records,)).astype(np.byte)
         conditions = (
-            ocean_proximity <= self.cfg.max_ocean_proximity,
-            significant_waveheight >= self.cfg.min_significant_waveheight,
+            ocean_proximity <= self.cfg.options.max_ocean_proximity,
+            significant_waveheight >= self.cfg.options.min_significant_waveheight,
             sea_ice_concentration >= 15.0
         )
         miz_filter_flag = np.logical_and.reduce(conditions)
