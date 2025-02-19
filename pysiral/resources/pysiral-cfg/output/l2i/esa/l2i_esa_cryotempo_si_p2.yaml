@@ -157,6 +157,15 @@ variables:
     coordinates: longitude latitude
     comment: "Uncertainty of the snow depth."
 
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0, 1"
+    flag_meanings: "no_miz miz"
+    units: "1"
+    coordinates: time
+
   region_code:
     long_name: "Region code (adapted from NSIDC region mask)"
     comment: "Added flag for Baltic Sea (flag value 16)"
