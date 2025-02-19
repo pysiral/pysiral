@@ -292,8 +292,8 @@ procsteps:
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
-            source_variable: rfrb
-            target_variables: [rfrb]
+            source_variable: afrb
+            target_variables: [afrb]
             valid_minimum_point_value: -0.35
             valid_maximum_point_value: 2.35
 
