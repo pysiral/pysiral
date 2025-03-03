@@ -259,7 +259,6 @@ procsteps:
                 - dynamic_atmosphere
                 - ionosphere
                 - ocean_tide_elastic
-                - ocean_tide_elastic
                 - ocean_tide_long_period
                 - ocean_loading_tide
                 - solid_earth_tide
