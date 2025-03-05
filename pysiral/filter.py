@@ -915,16 +915,17 @@ class SAMOSAMarginalIceZoneFilterFlag(Level2ProcessorStep):
         filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
 
         # Get input variables
+        miz_filter = np.zeros((l2.n_records,)).astype(np.byte)
         try:
             ocean_proximity = l2.get_parameter_by_name("distance_to_ocean")
             significant_waveheight = l2.get_parameter_by_name("samosa_swh")
             sea_ice_concentration = l2.get_parameter_by_name("sea_ice_concentration")
         except KeyError:
             logger.warning(f"{self.__class__.__name__}: Missing input variables (did SAMOSA+ run?)")
+            l2.set_auxiliary_parameter("fmiz", "flag_miz", miz_filter)
             return np.logical_not(filter_flag_miz_error)
 
         # Compute filter flag value
-        miz_filter = np.zeros((l2.n_records,)).astype(np.byte)
         conditions = (
             ocean_proximity <= self.cfg.options.max_ocean_proximity,
             significant_waveheight >= self.cfg.options.min_significant_waveheight,
