@@ -37,6 +37,8 @@ Workflow
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import multiprocessing
+import time
+
 import numpy as np
 from functools import partial
 
@@ -650,7 +652,14 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # Run the retracker
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
+        _, kwargs = self._get_waveform_model_fit_configuration()
+        t0 = time.time()
         fit_results = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
+        t1 = time.time()
+        duration = t1 - t0
+        n_processes = kwargs.get("num_processes", 1)
+        secs_per_waveform = n_processes * duration / len(indices)
+        logger.info(f"Waveform fitting took {duration:.2f} sec with {n_processes=} -> ({secs_per_waveform=:.2f})")
 
         # Store retracker properties (including range)
         self._store_retracker_properties(fit_results, indices)
@@ -731,6 +740,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # Configure and execute waveform fitting for all target waveforms
         args, kwargs = self._get_waveform_model_fit_configuration()
+        # logger.debug({"multi-processing options": kwargs})
         waveform_fits = SAMOSAWaveformCollectionFit(*args, **kwargs)
         return waveform_fits.fit(waveform_collection)
 
