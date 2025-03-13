@@ -332,4 +332,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
 
 if __name__ == "__main__":
-    pysiral_l2proc()
+    with cProfile.Profile() as pr:
+        pysiral_l2proc()
+        pr.dump_stats("samosa_wfm_profiling.dat")
+

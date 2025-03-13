@@ -650,6 +650,11 @@ class SAMOSAPlusRetracker(BaseRetracker):
         :return: None (Output is added to the instance)
         """
 
+        num_profiling_waveforms = 10
+        logger.critical(f"Select ony {num_profiling_waveforms=} ")
+        profiling_subset = np.sort(np.random.choice(indices.size, num_profiling_waveforms, replace=False))
+        indices = indices[profiling_subset]
+
         # Run the retracker
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
         _, kwargs = self._get_waveform_model_fit_configuration()
@@ -657,7 +662,10 @@ class SAMOSAPlusRetracker(BaseRetracker):
         fit_results = self._samosa_plus_retracker(rng, wfm, indices, radar_mode)
         t1 = time.time()
         duration = t1 - t0
-        n_processes = kwargs.get("num_processes", 1)
+        if kwargs.get("use_multiprocessing", False):
+            n_processes = kwargs.get("num_processes", 1)
+        else:
+            n_processes = 1
         secs_per_waveform = n_processes * duration / len(indices)
         logger.info(f"Waveform fitting took {duration:.2f} sec with {n_processes=} -> ({secs_per_waveform=:.2f})")
 
