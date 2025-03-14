@@ -203,10 +203,16 @@ variables:
     comment: "misfit parameter computed with filtered trailing edge"
     coordinates: longitude latitude
 
-  samosa_fit_num_func_eval:
-    long_name: "samosa fit number of function evaluations"
+  samosa_fit_num_func_eval_step1:
+    long_name: "samosa fit number of function evaluations step1"
     unit: "1"
-    comment: "output of scipy.optimize.least_squares"
+    comment: "counted DDM evaluations"
+    coordinates: longitude latitude
+
+  samosa_fit_num_func_eval_step2:
+    long_name: "samosa fit number of function evaluations step2"
+    unit: "1"
+    comment: "counted DDM evaluations"
     coordinates: longitude latitude
 
   samosa_fit_return_status:
