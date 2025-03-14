@@ -23,15 +23,15 @@ from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 def pysiral_l2proc():
 
-    sys.argv = [
-        "pysiral-l2proc",
-        "-l2-settings",
-        "esa_cryosat2_cryotempo_si_nh_rep_d001",
-        "-l1b-files",
-        r"D:\siral\data\altimetry\cryosat2\ipf1-e\rep\l1p\v1p2\north\2019\04\pysiral-l1p-cryosat2-esa_pds_ipf1e-rep-north-20190403T012341-20190403T012739-v1p2.nc",
-        "-l2-output",
-        "l2i_esa_cryotempo_si_d001"
-    ]
+    # sys.argv = [
+    #     "pysiral-l2proc",
+    #     "-l2-settings",
+    #     "esa_cryosat2_cryotempo_si_nh_rep_d001",
+    #     "-l1b-files",
+    #     r"D:\siral\data\altimetry\cryosat2\ipf1-e\rep\l1p\v1p2\north\2019\04\pysiral-l1p-cryosat2-esa_pds_ipf1e-rep-north-20190403T012341-20190403T012739-v1p2.nc",
+    #     "-l2-output",
+    #     "l2i_esa_cryotempo_si_d001"
+    # ]
 
     # Collect job settings from pysiral configuration data and
     # command line arguments
@@ -335,4 +335,3 @@ if __name__ == "__main__":
     with cProfile.Profile() as pr:
         pysiral_l2proc()
         pr.dump_stats("samosa_wfm_profiling.dat")
-
