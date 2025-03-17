@@ -1732,7 +1732,7 @@ def get_sub_waveform_mask(waveform_data: NormedWaveform, filter_trailing_edge_kw
     :return: sub-waveform mask (True: masked)
     """
     sub_waveform_mask = get_trailing_edge_lower_envelope_mask(
-        waveform_data.power,
+        waveform_data.power.copy(),
         waveform_data.first_maximum_index,
         **filter_trailing_edge_kwargs
     )
