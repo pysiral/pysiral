@@ -229,7 +229,7 @@ procsteps:
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
-                    nu: [500_000, 5_000_000]
+                    nu: [20_000, 2_000_000]
 
           sea_ice:
               pyclass: SAMOSAPlusRetracker
@@ -245,7 +245,7 @@ procsteps:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
                     swh: [-2., 20.0]
-                    nu: [100., 2_000_000.0]
+                    nu: [0., 1_000_000.0]
 
     # Apply the range corrections
     -   module: l2proc.procsteps
