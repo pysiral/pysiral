@@ -305,8 +305,9 @@ class SAMOSAWaveformFit(object):
     def get_nu_from_ocog_width(
             self,
             ocog_width: float,
+            ocog_width_max: float = 10,
             nu_min: float = 0,
-            nu_max: float = 1e9
+            nu_max: float = 1e6,
     ) -> float:
         """
         Compute the inverse mean square slope (nu) from an empirical parametrization
@@ -314,11 +315,14 @@ class SAMOSAWaveformFit(object):
         a minimum and maximum value.
 
         :param ocog_width: OCOG width (in range gates)
+        :param ocog_width_max: The maximum OCOG value for which this relation is valid
         :param nu_min: Minimum value for nu
         :param nu_max: Maximum value for nu
 
         :return: Inverse mean square slope (nu)
         """
+        if ocog_width > ocog_width_max:
+            return self.step1_fixed_nu_value
         nu_predicted = self.nu_ocog_coefs[0] + ocog_width ** (-1.0 * self.nu_ocog_coefs[1])
         return np.clip(nu_predicted, nu_min, nu_max)
 
@@ -1424,7 +1428,10 @@ def samosa_fit_samosap_standard_step1(
         sub_waveform_mask=sub_waveform_mask
     )
     fit_result_step1 = least_squares(fit_cls.fit_func_samosap_standard_step1, first_guess, **fit_kwargs)
-    parameter_vars = get_least_squares_parameter_sdev(fit_result_step1)
+    try:
+        parameter_vars = get_least_squares_parameter_sdev(fit_result_step1)
+    except np.linalg.LinAlgError:  # May be caused by singular matrix
+        parameter_vars = np.array([np.nan, np.nan])
 
     # --- Collect output ---
     # Summarize the fit result parameters
