@@ -128,6 +128,7 @@ class NormedWaveform:
     surface_class: str
     thermal_noise: float = 0.0
     first_maximum_index: int = None
+    idx: int = None
 
 
 @dataclass
@@ -741,7 +742,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # Configure and execute waveform fitting for all target waveforms
         args, kwargs = self._get_waveform_model_fit_configuration()
-        # logger.debug({"multi-processing options": kwargs})
         waveform_fits = SAMOSAWaveformCollectionFit(*args, **kwargs)
         return waveform_fits.fit(waveform_collection)
 
@@ -777,7 +777,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
                 self._l1b.classifier.transmit_power[idx],
                 look_angles,
                 self._l1b.classifier.first_maximum_index[idx],
-                self._l1b.classifier.ocog_width[idx]
+                self._l1b.classifier.ocog_width[idx],
+                idx=idx
             )
             waveform_collection.append(WaveformFitData(idx, waveform_data, scenario_data))
 
@@ -851,7 +852,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             transmit_power: float,
             look_angles: np.ndarray,
             first_maximum_index: int,
-            ocog_width: float
+            ocog_width: float,
+            idx: int = None
     ) -> NormedWaveform:
         """
         Return a normed representation of the input waveform
@@ -862,22 +864,32 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         :return:
         """
-        scaling_factor = 1.0 / np.nanmax(wfm)
+        scaling_factor = float(1.0 / wfm[first_maximum_index])
         normed_waveform = wfm * scaling_factor
+
+        # from pathlib import Path
+        # import matplotlib.pyplot as plt
+        # x = np.arange(normed_waveform.size)
+        # fig = plt.figure("Get Normed Waveform")
+        # plt.plot(x, normed_waveform)
+        # plt.scatter(first_maximum_index, normed_waveform[first_maximum_index], color="red")
+        # plt.savefig(Path(r"D:\temp\samosa\normed_waveform_debug") / f"waveform_{idx}_01_normed_data.png", dpi=300)
+        # plt.close(fig)
 
         return NormedWaveform(
             normed_waveform,
             rng,
             tau,
             ocog_width,
-            radar_mode,
             scaling_factor,
+            radar_mode,
             window_delay,
             transmit_power,
             look_angles,
             self._options.get("surface_type"),
             self._options.get("surface_class"),
-            first_maximum_index=first_maximum_index
+            first_maximum_index=first_maximum_index,
+            idx=idx
         )
 
     def _get_waveform_model_fit_configuration(self) -> Tuple[List, Dict]:
