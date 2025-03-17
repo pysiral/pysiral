@@ -122,7 +122,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     """ A more simple Level-2 job with a predefined list of l1b data files """
 
     # Get start time of processor run
-    t0 = time.process_time()
+    t0 = time.time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -138,7 +138,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     l2proc.process_l1b_files(args.l1b_predef_files)
 
     # All done
-    t1 = time.process_time()
+    t1 = time.time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
