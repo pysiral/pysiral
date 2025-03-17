@@ -17,13 +17,9 @@ List of fit modes:
 
 All variants with options for single core and multi-processing
 
-TODO: Refine workflow (first extraction of all variables and than retracking in another class)?
 TODO: Implement sigma0/windspeed computation (per switch in config file)
-TODO: Implement waveform mask (sub-waveform tracking)
 TODO: Computation of residuals should be configurable method
-TODO: Add thermal noise to computation of residuals
 TODO: Combined method to extract first guess and parameter bounds from waveform
-TODO: Allow to add waveforms to l2 data
 
 Workflow
 
@@ -104,6 +100,9 @@ NU_DEFAULT_BOUNDS = dict(
 
 SAMOSA_WFM_COLLECT_FIT_PARAMS = True
 
+# TODO: To be refined (currently based on single orbit)
+NU_OCOG_COEFS = [1.11110807e+07, 2.50396017e+00]
+
 
 @dataclass
 class WaveformModelParametersFit(WaveformModelParameters):
@@ -119,6 +118,7 @@ class NormedWaveform:
     power: np.ndarray
     range_bins: np.ndarray
     tau: np.ndarray
+    ocog_width: float
     scaling_factor: float
     radar_mode_flag: int
     window_delay: float
@@ -215,6 +215,7 @@ class SAMOSAWaveformFit(object):
         # The first fit step in the SAMOSA+ retracker uses a fixed nu value
         self.step1_fixed_nu_value = step1_fixed_nu_value
         self.step2_fixed_swh_value = step2_fixed_swh_value
+        self.nu_ocog_coefs = NU_OCOG_COEFS
 
         # Mask is empty by default (mask=True -> point does not generate a residual value)
         self.sub_waveform_mask = sub_waveform_mask
@@ -251,7 +252,7 @@ class SAMOSAWaveformFit(object):
         :return: (Masked) residual vector
         """
         epoch, significant_wave_height = fit_args
-        nu = self.step1_fixed_nu_value  # The default value for nu (1/mss) is 0 in sampy 1/np.inf -> 0.0
+        nu = self.get_nu_from_ocog_width(self.normed_waveform.ocog_width)
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch * 1e-9, significant_wave_height, nu],
@@ -300,6 +301,26 @@ class SAMOSAWaveformFit(object):
         x = np.arange(full_residual.size)
         valid_entries = np.logical_not(self.sub_waveform_mask)
         return np.interp(x, x[valid_entries], full_residual[valid_entries])
+
+    def get_nu_from_ocog_width(
+            self,
+            ocog_width: float,
+            nu_min: float = 0,
+            nu_max: float = 1e9
+    ) -> float:
+        """
+        Compute the inverse mean square slope (nu) from an empirical parametrization
+        based on ocog width. For stability reasons, the nu value is clipped to
+        a minimum and maximum value.
+
+        :param ocog_width: OCOG width (in range gates)
+        :param nu_min: Minimum value for nu
+        :param nu_max: Maximum value for nu
+
+        :return: Inverse mean square slope (nu)
+        """
+        nu_predicted = self.nu_ocog_coefs[0] + ocog_width ** (-1.0 * self.nu_ocog_coefs[1])
+        return np.clip(nu_predicted, nu_min, nu_max)
 
 
 class SAMOSAWaveformCollectionFit(object):
@@ -616,11 +637,11 @@ class SAMOSAPlusRetracker(BaseRetracker):
         :return: None (Output is added to the instance)
         """
 
-        num_profiling_waveforms = 50
-        logger.critical(f"Select ony {num_profiling_waveforms=} ")
-        np.random.seed(42)
-        profiling_subset = np.sort(np.random.choice(indices.size, num_profiling_waveforms, replace=False))
-        indices = indices[profiling_subset]
+        # num_profiling_waveforms = 50
+        # logger.critical(f"Select ony {num_profiling_waveforms=} ")
+        # np.random.seed(42)
+        # profiling_subset = np.sort(np.random.choice(indices.size, num_profiling_waveforms, replace=False))
+        # indices = indices[profiling_subset]
 
         # Run the retracker
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
@@ -751,7 +772,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
                 self._l1b.classifier.window_delay[idx],
                 self._l1b.classifier.transmit_power[idx],
                 look_angles,
-                self._l1b.classifier.first_maximum_index[idx]
+                self._l1b.classifier.first_maximum_index[idx],
+                self._l1b.classifier.ocog_width[idx]
             )
             waveform_collection.append(WaveformFitData(idx, waveform_data, scenario_data))
 
@@ -824,7 +846,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             window_delay: float,
             transmit_power: float,
             look_angles: np.ndarray,
-            first_maximum_index: int
+            first_maximum_index: int,
+            ocog_width: float
     ) -> NormedWaveform:
         """
         Return a normed representation of the input waveform
@@ -842,6 +865,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
             normed_waveform,
             rng,
             tau,
+            ocog_width,
             radar_mode,
             scaling_factor,
             window_delay,

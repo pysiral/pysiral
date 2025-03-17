@@ -248,6 +248,16 @@ variables:
     units: m
     coordinates: time
 
+  ocog_width:
+    long_name: "ocog width"
+    units: "1"
+    coordinates: time
+
+  ocog_amplitude:
+    long_name: "ocog amplitude"
+    units: "1"
+    coordinates: time
+
   waveform:
     long_name: "waveform"
     coordinates: time, n_range_gates

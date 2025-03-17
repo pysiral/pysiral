@@ -89,8 +89,6 @@ procsteps:
                 stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
-                ocog_width: [ocogw, ocog_width]
-                ocog_amplitude: [ocogp, ocog_amplitude]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -237,7 +235,7 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
-                use_multiprocessing: True
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_standard"
                 misfit_filter:
