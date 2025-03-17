@@ -84,6 +84,7 @@ procsteps:
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
+                first_maximum_index: [fmi, first_maximum_index]
                 first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
                 stack_peakiness: [spk, stack_peakiness]
@@ -231,7 +232,7 @@ procsteps:
                 predictor_kwargs:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
-                    nu: [500_000, 5_000_000]
+                    nu: [20_000, 2_000_000]
 
           sea_ice:
               pyclass: SAMOSAPlusRetracker
@@ -247,7 +248,7 @@ procsteps:
                   earliest_epoch: 0.1   # earliest fraction of range window
                   bounds:
                     swh: [-2., 20.0]
-                    nu: [100., 2_000_000.0]
+                    nu: [0., 1_000_000.0]
 
     # Apply the range corrections
     -   module: l2proc.procsteps
