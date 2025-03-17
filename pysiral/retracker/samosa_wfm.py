@@ -1273,6 +1273,18 @@ def samosa_fit_samosap_standard(
     # fig.clear()
     # plt.close(fig)
 
+    # import matplotlib.pyplot as plt
+    # from pathlib import Path
+    # x = np.arange(waveform_data.power.size)
+    # fmi = waveform_data.first_maximum_index
+    # idx = waveform_data.idx
+    # fig = plt.figure("After Fit")
+    # plt.plot(x, waveform_data.power)
+    # plt.plot(x, fitted_model_step2.power)
+    # plt.scatter(fmi, waveform_data.power[fmi], color="red")
+    # plt.savefig(Path(r"D:\temp\samosa\normed_waveform_debug") / f"waveform_{idx}_02_after_fit.png", dpi=300)
+    # plt.close(fig)
+
     return SAMOSAWaveformFitResult(
          epoch=model_parameters_step2.epoch,
          retracker_range=retracker_range,
