@@ -57,7 +57,7 @@ def pysiral_l2proc_time_range_job(args):
     """ This is a Level-2 Processor job for a given time range """
 
     # Get start time of processor run
-    t0 = time.process_time()
+    t0 = time.time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -113,7 +113,7 @@ def pysiral_l2proc_time_range_job(args):
         l2proc.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.process_time()
+    t1 = time.time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
