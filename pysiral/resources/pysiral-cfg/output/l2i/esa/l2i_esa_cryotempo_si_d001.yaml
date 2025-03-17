@@ -258,6 +258,11 @@ variables:
     units: "1"
     coordinates: time
 
+  first_maximum_index:
+    long_name: "first maximum index"
+    units: "1"
+    coordinates: time
+
   waveform:
     long_name: "waveform"
     coordinates: time, n_range_gates
