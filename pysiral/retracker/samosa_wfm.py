@@ -914,7 +914,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
         kwargs = {
             "use_multiprocessing": self._options.get("use_multiprocessing", False),
             "num_processes": num_processes,
-            "least_squares_kwargs": self._options.get("fit_kwargs", {}),
+            "least_squares_kwargs": self._options.get("fit_kwargs", DEFAULT_FIT_KWARGS),
             "predictor_kwargs": self._options.get("predictor_kwargs", {}),
         }
         return args, kwargs
