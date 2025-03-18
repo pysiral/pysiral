@@ -147,10 +147,24 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  significant_wave_height:
-    long_name: "significant wave height"
-    standard_name: sea_surface_wave_significant_height
+  surface_height_standard_deviation:
+    long_name: "surface height standard deviation"
+    comment: from significant wave height SAMOSA+ parameter (swh/4)
     units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  samosa_misfit:
+    long_name: "samosa misfit"
+    comment: waveform model to full waveform
+    units: 1
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  samosa_misfit_sub_waveform:
+    long_name: "samosa sub-waveform misfit"
+    comment: waveform model to sub-waveform (main ice class)
+    units: 1
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -174,6 +188,12 @@ variables:
     valid_max: 1
     flag_values: "0 1"
     flag_meanings: "not_in_miz miz"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    units: "%"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
