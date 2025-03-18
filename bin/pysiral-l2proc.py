@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 
-import cProfile
 import argparse
 import glob
 import re
@@ -13,7 +12,7 @@ from datetime import timedelta
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg
+from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
@@ -156,6 +155,9 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
 
+        if self._args.mp_cpu_count is not None:
+            set_psrl_cpu_count(self._args.mp_cpu_count)
+
         # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
         l1b_file_preset_is_set = self._args.l1b_files_preset is not None
@@ -207,6 +209,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-input-version", "input-version", "input_version", False),
             ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
+            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
