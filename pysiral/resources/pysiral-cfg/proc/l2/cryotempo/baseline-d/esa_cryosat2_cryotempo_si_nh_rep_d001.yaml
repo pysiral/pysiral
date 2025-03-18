@@ -1,10 +1,10 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
     product_line: esa
-    record_type: tds-si-rep-D002
+    record_type: tds-si-rep-D001-TDS3a
     platform: cryosat2
-    version: D002
-    file_version_tag: "D002"
+    version: D001
+    file_version_tag: "D001"
     hemisphere: north
 
 
