@@ -224,6 +224,12 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  ocog_width:
+    long_name: "OCOG width"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   n_valid_freeboards:
     long_name: "number of valid freeboard measurements"
     units: "1"
