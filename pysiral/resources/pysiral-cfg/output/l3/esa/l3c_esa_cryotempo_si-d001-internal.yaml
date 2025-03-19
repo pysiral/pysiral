@@ -8,14 +8,14 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming:
-  month: "CS_OFFL_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m}_D001.nc"
-  monthly: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m}-D001.nc"
-  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
-  day: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}-D001.nc"
-  custom: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
-  default: "CS_OFF_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  month: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}_D001.nc"
+  monthly: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}-D001.nc"
+  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  day: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-D001.nc"
+  custom: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  default: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
 
-product_level_subfolder: l3c
+product_level_subfolder: l3c_internal
 
 grid_options:
   flip_yc: True
@@ -37,7 +37,7 @@ global_attributes:
   - processing_level: "Level-3 Collated (l3c)"
   - summary: ""
   - keywords: ""
-  - id: "CS_OFFL_SIR_TDP_SI_{grid_id}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-C001"
+  - id: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-C001"
   - naming_authority: ""
   - keywords_vocabulary: "GCMD Science Keywords"
   - doi: "None"
@@ -154,17 +154,23 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
+  mean_square_slope:
+    long_name: "mean square slope"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
   samosa_misfit:
     long_name: "samosa misfit"
     comment: waveform model to full waveform
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
   samosa_misfit_sub_waveform:
     long_name: "samosa sub-waveform misfit"
     comment: waveform model to sub-waveform (main ice class)
-    units: 1
+    units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 

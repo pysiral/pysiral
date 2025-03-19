@@ -53,6 +53,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    mean_square_slope:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
     snow_depth:
         grid_method: average
         dtype: f4
