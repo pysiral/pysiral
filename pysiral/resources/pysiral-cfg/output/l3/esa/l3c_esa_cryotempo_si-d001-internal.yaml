@@ -86,7 +86,6 @@ variables:
 
   radar_freeboard:
     long_name: "radar freeboard"
-    var_source_name: radar_freeboard_l3_uncertainty
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -94,6 +93,7 @@ variables:
 
   radar_freeboard_uncertainty:
     long_name: "uncertainty associated with radar freeboard"
+    var_source_name: radar_freeboard_l3_uncertainty
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
