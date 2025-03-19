@@ -108,6 +108,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    surface_type:
+        grid_method: none
+        dtype: i4
+        fillvalue: -1
+
 
 # ==================================================
 # Level-2 Pre-Filter
@@ -155,6 +160,12 @@ processing_items:
         density_variable_name: ocean_area_fraction
 
     # Compute surface type statistics based on surface type classification
+    - label: "Compute surface type statistics"
+      module_name: pysiral.l3proc
+      class_name: Level3SurfaceTypeStatistics
+      options: {}
+
+    # Compute surface type statistics based on surface type classification
     - label: "Number of valid freeboards"
       module_name: pysiral.l3proc
       class_name: Level3ValidSeaIceFreeboardCount
@@ -168,3 +179,13 @@ processing_items:
         water_density: 1024.0
         snow_depth_correction_factor: 0.22
         max_l3_uncertainty: 10.0
+
+    # Compute the status flag
+    - label: "grid surface type classifiers"
+      module_name: pysiral.l3proc
+      class_name: Level3GriddedClassifiers
+      options:
+        parameters:
+          - "ocog_width"
+        surface_types: ["sea_ice", "lead", "ocean"]
+        statistics: ["mean", "sdev"]

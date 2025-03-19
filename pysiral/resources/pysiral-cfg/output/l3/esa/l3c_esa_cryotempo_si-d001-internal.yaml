@@ -235,3 +235,103 @@ variables:
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
+
+  stat_n_total_waveforms:
+    var_source_name: n_total_waveforms
+    long_name: "number of total measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_n_valid_waveforms:
+    var_source_name: n_valid_waveforms
+    long_name: "number of valid measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+    coverage_content_type: qualityInformation
+
+  stat_valid_fraction:
+    var_source_name: valid_fraction
+    long_name: "fraction of valid to total waveforms"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+    coverage_content_type: qualityInformation
+
+  stat_lead_fraction:
+    var_source_name: lead_fraction
+    long_name: "lead waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_seaice_fraction:
+    var_source_name: seaice_fraction
+    long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_ocean_fraction:
+    var_source_name: ocean_fraction
+    long_name: "ocean waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+  
+  stat_ocog_width_mean:
+    var_source_name: stat_ocog_width_all_mean
+    long_name: "average OCOG width (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sdev:
+    var_source_name: stat_ocog_width_all_sdev
+    long_name: "OCOG width standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sea_ice_mean:
+    long_name: "average OCOG width (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sea_ice_sdev:
+    long_name: "OCOG width standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_ocog_width_lead_mean:
+    long_name: "average OCOG width (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_lead_sdev:
+    long_name: "OCOG width standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ocean_mean:
+    long_name: "average OCOG width (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ocean_sdev:
+    long_name: "OCOG width standard_deviation (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
