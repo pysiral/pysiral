@@ -149,3 +149,12 @@ processing_items:
       module_name: pysiral.l3proc
       class_name: Level3ValidSeaIceFreeboardCount
       options: {}
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties"
+      module_name: pysiral.l3proc
+      class_name: Level3GridUncertainties
+      options:
+        water_density: 1024.0
+        snow_depth_correction_factor: 0.22
+        max_l3_uncertainty: 10.0

@@ -86,6 +86,7 @@ variables:
 
   radar_freeboard:
     long_name: "radar freeboard"
+    var_source_name: radar_freeboard_l3_uncertainty
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -107,6 +108,7 @@ variables:
 
   sea_ice_freeboard_uncertainty:
     long_name: "uncertainty associated to sea ice freeboard"
+    var_source_name: freeboard_l3_uncertainty
     standard_name: sea_ice_freeboard standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -141,7 +143,7 @@ variables:
     valid_min: 1
     valid_max: 3
     flag_values: "1, 2, 3"
-    flag_meanings: "1: pulse limited (lrm), 2: sar, 3: sar interferometric"
+    flag_meanings: "pulse_limited sar sar_interferometric"
     comment: "median of radar mode flags within grid cells"
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
@@ -204,7 +206,8 @@ variables:
     coordinates: "time lat lon"
 
   distance_to_ocean:
-    long_name: "instantaneous distance to ocean (ice edge)"
+    long_name: "distance to ocean"
+    comment: "computed only in sea ice regions"
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
