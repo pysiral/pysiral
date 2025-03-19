@@ -68,6 +68,16 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    snow_density:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
     instrument_mode:
         grid_method: median
         dtype: i4

@@ -126,8 +126,6 @@ variables:
     long_name: "thickness of the snow layer"
     standard_name: surface_snow_thickness
     units: m
-    valid_min: 0.0
-    valid_max: 0.6
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
@@ -135,6 +133,20 @@ variables:
     long_name: "uncertainty of the snow layer thickness"
     standard_name: surface_snow_thickness standard_error
     units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density:
+    long_name: "snow density"
+    standard_name: surface_snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_uncertainty:
+    long_name: "snow density uncertainty"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
