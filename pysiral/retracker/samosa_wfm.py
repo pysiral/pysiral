@@ -1678,6 +1678,7 @@ def samosa_fit_samosap_standard_step1(
 
     # --- Collect output ---
     # Summarize the fit result parameters
+    amplitude_scale = fit_result_step1.x[2] if amplitude_is_free_param else 1.0
     model_parameters_step1 = WaveformModelParametersFit(
         epoch=fit_result_step1.x[0] * 1e-9,
         epoch_sdev=float(parameter_vars[0] * 1e-9),
@@ -1685,7 +1686,7 @@ def samosa_fit_samosap_standard_step1(
         significant_wave_height_sdev=float(parameter_vars[1]),
         nu=step1_fixed_nu_value,
         nu_sdev=0.0,
-        amplitude_scale=fit_result_step1.x[2],
+        amplitude_scale=amplitude_scale,
         thermal_noise=waveform_data.thermal_noise,
         samosa_step="step1",
         num_ddm_evaluations=fit_cls.samosa_waveform_model.generate_ddm_counter
@@ -1769,6 +1770,7 @@ def samosa_fit_samosap_standard_step2(
 
     # --- Collect output ---
     # Summarize the fit result parameters
+    amplitude_scale = fit_result_step2.x[2] if amplitude_is_free_param else 1.0
     model_parameters_step2 = WaveformModelParametersFit(
         epoch=fit_result_step2.x[0] * 1e-9,
         epoch_sdev=float(parameter_sdev[0] * 1e-9),
@@ -1776,7 +1778,7 @@ def samosa_fit_samosap_standard_step2(
         significant_wave_height_sdev=0.0,
         nu=fit_result_step2.x[1],
         nu_sdev=float(parameter_sdev[1]),
-        amplitude_scale=1.0,
+        amplitude_scale=amplitude_scale,
         thermal_noise=waveform_data.thermal_noise,
         samosa_step="step2",
         num_ddm_evaluations=fit_cls.samosa_waveform_model.generate_ddm_counter
