@@ -78,25 +78,25 @@ DEFAULT_FIT_KWARGS = dict(
     max_nfev=100,
 )
 
-SWH_FIRST_GUESS = dict(
-    lead=0.0,
-    sea_ice=2.0
-)
-
-SWH_DEFAULT_BOUNDS = dict(
-    lead=[-0.2, 0.2],    # Significant wave height does not affect leads very much, mss more important
-    sea_ice=[-0.5, 10]   # default values for sampy
-)
-
-NU_FIRST_GUESS = dict(
-    lead=2.0e6,
-    sea_ice=1.0e4
-)
-
-NU_DEFAULT_BOUNDS = dict(
-    lead=[1e6, 1e9],
-    sea_ice=[1e3, 1e7]
-)
+# SWH_FIRST_GUESS = dict(
+#     lead=0.0,
+#     sea_ice=2.0
+# )
+#
+# SWH_DEFAULT_BOUNDS = dict(
+#     lead=[-0.2, 0.2],    # Significant wave height does not affect leads very much, mss more important
+#     sea_ice=[-0.5, 10]   # default values for sampy
+# )
+#
+# NU_FIRST_GUESS = dict(
+#     lead=2.0e6,
+#     sea_ice=1.0e4
+# )
+#
+# NU_DEFAULT_BOUNDS = dict(
+#     lead=[1e6, 1e9],
+#     sea_ice=[1e3, 1e7]
+# )
 
 SAMOSA_WFM_COLLECT_FIT_PARAMS = True
 
@@ -200,6 +200,7 @@ class SAMOSAWaveformFit(object):
             waveform_model_kwargs: Optional[Dict] = None,
             step1_fixed_nu_value: float = 0.0,
             step2_fixed_swh_value: float = 0.0,
+            amplitude_is_free_parameter: bool = True,
             method: str = None
     ) -> None:
 
@@ -216,6 +217,7 @@ class SAMOSAWaveformFit(object):
         # The first fit step in the SAMOSA+ retracker uses a fixed nu value
         self.step1_fixed_nu_value = step1_fixed_nu_value
         self.step2_fixed_swh_value = step2_fixed_swh_value
+        self.amplitude_is_free_parameter = amplitude_is_free_parameter
         self.nu_ocog_coefs = NU_OCOG_COEFS
 
         # Mask is empty by default (mask=True -> point does not generate a residual value)
@@ -235,11 +237,18 @@ class SAMOSAWaveformFit(object):
         :return: Difference between waveform and waveform model.
             be minimized by least square process.
         """
-        epoch, significant_wave_height, nu = fit_args
+
+        if self.amplitude_is_free_parameter:
+            epoch, significant_wave_height, nu, amplitude_scale = fit_args
+        else:
+            epoch, significant_wave_height, nu = fit_args
+            amplitude_scale = 1.0
+            
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch * 1e-9, significant_wave_height, nu],
-            thermal_noise=self.normed_waveform.thermal_noise
+            thermal_noise=self.normed_waveform.thermal_noise,
+            amplitude_scale=amplitude_scale
         )
         return self.compute_residuals(waveform_model)
 
@@ -333,11 +342,14 @@ class SAMOSAWaveformCollectionFit(object):
         predictor_method: str,
         use_multiprocessing: bool = False,
         num_processes: Optional[int] = None,
+        samosap_fit_kwargs: Optional[Dict] = None,
         predictor_kwargs: Optional[Dict] = None,
         least_squares_kwargs: Optional[Dict] = None,
     ) -> None:
+
         self.fit_method = fit_method
         self.predictor_method = predictor_method
+        self.samosap_fit_kwargs= {} if samosap_fit_kwargs is None else samosap_fit_kwargs
         self.least_squares_kwargs = DEFAULT_FIT_KWARGS if least_squares_kwargs is None else least_squares_kwargs
         self.predictor_kwargs = {} if predictor_kwargs is None else predictor_kwargs
         self.use_multiprocessing = use_multiprocessing
@@ -377,6 +389,7 @@ class SAMOSAWaveformCollectionFit(object):
         return [
             samosa_fit_samosap_single(
                 fit_data,
+                samosap_fit_kwargs=self.samosap_fit_kwargs,
                 least_squares_kwargs=self.least_squares_kwargs,
                 predictor_kwargs=self.predictor_kwargs
             )
@@ -391,16 +404,7 @@ class SAMOSAWaveformCollectionFit(object):
 
         :return: List of fit outputs
         """
-        pool = multiprocessing.Pool(self.num_processes)
-        fit_func = partial(
-            samosa_fit_samosap_single,
-            least_squares_kwargs=self.least_squares_kwargs,
-            predictor_kwargs=self.predictor_kwargs
-        )
-        fit_results = pool.map(fit_func, waveform_collection)
-        pool.close()
-        pool.join()
-        return fit_results
+        return self._mp_fit(samosa_fit_samosap_single, waveform_collection)
 
     def _fit_samosap_standard(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
         """
@@ -413,6 +417,7 @@ class SAMOSAWaveformCollectionFit(object):
         return [
             samosa_fit_samosap_standard(
                 fit_data,
+                samosap_fit_kwargs=self.samosap_fit_kwargs,
                 least_squares_kwargs=self.least_squares_kwargs,
                 predictor_kwargs=self.predictor_kwargs
             )
@@ -427,16 +432,7 @@ class SAMOSAWaveformCollectionFit(object):
 
         :return: List of fit outputs
         """
-        pool = multiprocessing.Pool(self.num_processes)
-        fit_func = partial(
-            samosa_fit_samosap_standard,
-            least_squares_kwargs=self.least_squares_kwargs,
-            predictor_kwargs=self.predictor_kwargs
-        )
-        fit_results = pool.map(fit_func, waveform_collection)
-        pool.close()
-        pool.join()
-        return fit_results
+        return self._mp_fit(samosa_fit_samosap_standard, waveform_collection)
 
     def _fit_samosap_specular(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
         """
@@ -449,6 +445,7 @@ class SAMOSAWaveformCollectionFit(object):
         return [
             samosa_fit_samosap_specular(
                 fit_data,
+                samosap_fit_kwargs=self.samosap_fit_kwargs,
                 least_squares_kwargs=self.least_squares_kwargs,
                 predictor_kwargs=self.predictor_kwargs
             )
@@ -463,52 +460,21 @@ class SAMOSAWaveformCollectionFit(object):
 
         :return: List of fit outputs
         """
+        return self._mp_fit(samosa_fit_samosap_specular, waveform_collection)
+
+    def _mp_fit(self, func, waveform_collection):
         pool = multiprocessing.Pool(self.num_processes)
         fit_func = partial(
-            samosa_fit_samosap_specular,
+            func,
+            samosap_fit_kwargs=self.samosap_fit_kwargs,
             least_squares_kwargs=self.least_squares_kwargs,
-            predictor_kwargs=self.predictor_kwargs
+            predictor_kwargs=self.predictor_kwargs,
         )
         fit_results = pool.map(fit_func, waveform_collection)
+
         pool.close()
         pool.join()
         return fit_results
-
-    # def _fit_mss_swh(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
-    #     """
-    #     Computes Samosa waveform model fit in the main process (no multiprocessing)
-    #
-    #     :param waveform_collection: List of fit input
-    #
-    #     :return: List of fit outputs
-    #     """
-    #     return [
-    #         samosa_fit_swh_mss(
-    #             fit_data,
-    #             least_squares_kwargs=self.least_squares_kwargs,
-    #             predictor_kwargs=self.predictor_kwargs
-    #         )
-    #         for fit_data in waveform_collection
-    #     ]
-
-    # def _fit_mss_swh_mp(self, waveform_collection: List[WaveformFitData]) -> List[SAMOSAWaveformFitResult]:
-    #     """
-    #     Computes Samosa waveform model fit with multiprocessing
-    #
-    #     :param waveform_collection: List of fit input
-    #
-    #     :return: List of fit outputs
-    #     """
-    #     pool = multiprocessing.Pool(self.num_processes)
-    #     fit_func = partial(
-    #         samosa_fit_swh_mss,
-    #         least_squares_kwargs=self.least_squares_kwargs,
-    #         predictor_kwargs=self.predictor_kwargs
-    #     )
-    #     fit_results = pool.map(fit_func, waveform_collection)
-    #     pool.close()
-    #     pool.join()
-    #     return fit_results
 
 
 class SAMOSAModelParameterPrediction(object):
@@ -522,13 +488,19 @@ class SAMOSAModelParameterPrediction(object):
         self,
         method: VALID_METHOD_LITERAL,
         surface_type: str,
+        initial_guess: Dict[str, Tuple[float, float]],
         bounds: Dict[str, Tuple[float, float]],
-        earliest_epoch: float = 0.0,
+        amplitude_is_free_parameter: Tuple[bool, bool] = (True, True),
     ):
+
+        # Input Arguments
         self.surface_type = surface_type
-        self.earliest_epoch = earliest_epoch
+        self.amplitude_is_free_parameter = amplitude_is_free_parameter
         self.method = method
         self.bounds = bounds
+        self.initial_guess = initial_guess
+
+        # Method specific functions (as properties)
         self.first_guess_method = getattr(self, f"_get_first_guess_{method}")
         self.bounds_method = getattr(self, f"_get_bounds_{method}")
 
@@ -595,8 +567,7 @@ class SAMOSAModelParameterPrediction(object):
         """
         return self._get_bounds_samosap_standard(tau, first_guess, mode=2)
 
-    @staticmethod
-    def _get_first_guess_samosap_standard(waveform: NormedWaveform, mode: int = -1) -> Tuple:
+    def _get_first_guess_samosap_standard(self, waveform: NormedWaveform, mode: int = -1) -> Tuple:
         """
         Estimate the first guess for the two-step SAMOSA+ waveform fitting approch.
         The fit parameter depend on the specific mode/step.
@@ -612,15 +583,20 @@ class SAMOSAModelParameterPrediction(object):
         :return: Parameter first guess [mode 1: epoch, swh, amplitude; mode 2: epoch, nu]
         """
         epoch_first_guess = waveform.tau[waveform.first_maximum_index]
-        nu_first_guess = NU_FIRST_GUESS[waveform.surface_type]
-        if mode == 1:  # fitting epoch, swh and amplitude scale
-            return epoch_first_guess * 1e9, SWH_FIRST_GUESS[waveform.surface_type], 1.0
-        elif mode == 2:  # fitting epoch, nu
-            return epoch_first_guess * 1e9,  nu_first_guess
+
+        # Fitting epoch, swh, [amplitude]
+        if mode == 1:
+            fit_params = epoch_first_guess * 1e9, self.initial_guess["swh"], self.initial_guess["amp"]
+            return fit_params if self.amplitude_is_free_parameter[0] else fit_params[:-1]
+
+        # Fitting epoch, nu, [amplitude]
+        elif mode == 2:
+            fit_params = epoch_first_guess * 1e9, self.initial_guess["nu"], self.initial_guess["amp"]
+            return fit_params if self.amplitude_is_free_parameter[1] else fit_params[:-1]
         else:
             raise ValueError(f"mode={mode} not in [1, 2]")
 
-    def _get_bounds_samosap_standard(self, tau, first_guess, mode: int = -1) -> Tuple[Tuple, Tuple]:
+    def _get_bounds_samosap_standard(self, tau, first_guess, mode: int = -1) -> Tuple[Any, Any]:
         """
         Estimate the parameter bounds for the two-step SAMOSA+ waveform fitting approch.
         The bounds depend on the specific mode/step.
@@ -640,18 +616,24 @@ class SAMOSAModelParameterPrediction(object):
         :return: Parameter fit bounds: (lower bounds, upperbounds) [mode 1: epoch, swh, amplitude; mode 2: epoch, nu]
         """
         epoch_bounds = get_epoch_bounds(tau, first_guess[0])
-        if mode == 1:  # fitting epoch, swh and amplitude scale
+        amp_bounds = self.bounds["amp"]
+
+        # Fitting epoch, swh, [amplitude]
+        if mode == 1:
             swh_bounds = self.bounds["swh"]
-            amplitude_scale_bounds = [0.9, 1.1]
-            lower_bounds = epoch_bounds[0] * 1e9, float(swh_bounds[0]), amplitude_scale_bounds[0]
-            upper_bounds = epoch_bounds[1] * 1e9, float(swh_bounds[1]), amplitude_scale_bounds[1]
-        elif mode == 2:  # fitting epoch, nu
+            lb = epoch_bounds[0] * 1e9, float(swh_bounds[0]), amp_bounds[0]
+            ub = epoch_bounds[1] * 1e9, float(swh_bounds[1]), amp_bounds[1]
+            return lb, ub if self.amplitude_is_free_parameter[0] else lb[:-1], ub[:-1]
+
+        # Fitting epoch, nu, [amplitude]
+        elif mode == 2:
             nu_bounds = self.bounds["nu"]
-            lower_bounds = epoch_bounds[0] * 1e9, float(nu_bounds[0])
-            upper_bounds = epoch_bounds[1] * 1e9, float(nu_bounds[1])
+            lb = epoch_bounds[0] * 1e9, float(nu_bounds[0]), amp_bounds[0]
+            ub = epoch_bounds[1] * 1e9, float(nu_bounds[1]), amp_bounds[1]
+            return lb, ub if self.amplitude_is_free_parameter[1] else lb[:-1], ub[:-1]
         else:
             raise ValueError(f"mode={mode} not in [1, 2]")
-        return lower_bounds, upper_bounds
+
 
 
 class SAMOSAPlusRetracker(BaseRetracker):
@@ -942,9 +924,13 @@ class SAMOSAPlusRetracker(BaseRetracker):
         if fit_method is None:
             raise ValueError("Mandatory configuration parameter `fit_method not specified")
 
+        samosap_fit_kwargs = self._options.get("samosap_fit_kwargs")
+        if samosap_fit_kwargs is None:
+            raise ValueError("Mandatory configuration parameter `samosap_fit_kwargs` not specified")
+
         predictor_method = self._options.get("predictor_method")
         if fit_method is None:
-            raise ValueError("Mandatory configuration parameter `predictor_method not specified")
+            raise ValueError("Mandatory configuration parameter `predictor_method` not specified")
         args = [fit_method, predictor_method]
 
         num_processes = self._options.get("num_processes")
@@ -952,7 +938,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
         kwargs = {
             "use_multiprocessing": self._options.get("use_multiprocessing", False),
             "num_processes": num_processes,
-            "least_squares_kwargs": self._options.get("fit_kwargs", DEFAULT_FIT_KWARGS),
+            "samosap_fit_kwargs": samosap_fit_kwargs,
+            "least_squares_kwargs": self._options.get("least_squares_kwargs", DEFAULT_FIT_KWARGS),
             "predictor_kwargs": self._options.get("predictor_kwargs", {}),
         }
         return args, kwargs
@@ -1440,6 +1427,7 @@ def samosa_fit_samosap_standard(
 
 def samosa_fit_samosap_specular(
         fit_data: WaveformFitData,
+        samosap_fit_kwargs: Dict = None,
         predictor_kwargs: Dict = None,
         least_squares_kwargs: Dict = None
 ) -> SAMOSAWaveformFitResult:
@@ -1459,6 +1447,8 @@ def samosa_fit_samosap_specular(
     """
 
     # Input validation
+
+    samosap_fit_kwargs = {} if samosap_fit_kwargs is None else samosap_fit_kwargs
     predictor_kwargs = {} if predictor_kwargs is None else predictor_kwargs
     least_squares_kwargs = {} if least_squares_kwargs is None else least_squares_kwargs
 
@@ -1474,7 +1464,8 @@ def samosa_fit_samosap_specular(
     # This fit will be used
     model_parameters_step2, fitted_model_step2, optimize_result_step2 = samosa_fit_samosap_standard_step2(
         waveform_data, scenario_data, predictor,
-        least_squares_kwargs=least_squares_kwargs
+        least_squares_kwargs=least_squares_kwargs,
+        **samosap_fit_kwargs
     )
 
     # --- Summarize the result from two fits ---

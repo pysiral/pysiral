@@ -1,7 +1,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
     product_line: esa
-    record_type: tds-si-rep-D001-TDS3b
+    record_type: tds-si-rep-D001-TDS3
     platform: cryosat2
     version: D001
     file_version_tag: "D001"
@@ -240,7 +240,7 @@ procsteps:
                 surface_class: sea_ice
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
-                fit_method: "samosap_single"
+                fit_method: "samosap_standard"
                 misfit_filter:
                     max_leading_edge_error: 0.1
                     max_misfit: 5.0
