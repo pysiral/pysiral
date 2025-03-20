@@ -4,7 +4,7 @@ metadata:
     record_type: tds-si-rep-D001-TDS3-samosa-single
     platform: cryosat2
     version: D001
-    file_version_tag: "D001"
+    file_version_tag: "D001-TDS3a"
     hemisphere: north
 
 
@@ -228,7 +228,7 @@ procsteps:
                 samosap_fit_kwargs:
                     # Two values for SAMOSA+ step1 and step2
                     # NOTE: step1 is ignored for leads (`fit_method: samosap_specular`)
-                    amplitude_is_free_param: &samosa_fit_amp_lead (True, True)
+                    amplitude_is_free_param: &samosa_fit_amp_lead [False, False]
                     # SAMOSA+ step 2 requires fixed swh value
                     step2_fixed_swh_value: 0.0
                 predictor_kwargs:
@@ -251,22 +251,22 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
-                use_multiprocessing: True
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
-                fit_method: "samosap_standard"
+                fit_method: "samosap_single"
                 samosap_fit_kwargs:
-                    # Two values for SAMOSA+ step1 and step2
-                    amplitude_is_free_param: &samosa_fit_amp_sea_ice (True, True)
-                    # SAMOSA+ step 1 requires fixed nu value
-                    step1_fixed_nu_value: 0.0
-                    # SAMOSA+ step 2 requires fixed swh value
-                    step2_fixed_swh_value: 0.0
+                    # Only single fit (with SAMOSA+ step 2)
+                    amplitude_is_free_param: &samosa_fit_amp_sea_ice False
+#                    # SAMOSA+ step 1 requires fixed nu value
+#                    step1_fixed_nu_value: 0.0
+#                    # SAMOSA+ step 2 requires fixed swh value
+#                    step2_fixed_swh_value: 0.0
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_sea_ice
                   initial_guess:
                     epoch: first_maximum_index
                     amplitude: 1.0
-                    swh: 2.0
+                    swh: 1.0
                     nu: 1_000.0
                   bounds:
                     epoch:
@@ -274,7 +274,7 @@ procsteps:
                         range_gates_after_fmi: 20
                     amplitude: [0.9, 1.1]
                     swh: [-0.5, 10]
-                    nu: [20_000, 1_000_000]
+                    nu: [0., 1_000_000.]
                 misfit_filter:
                     max_leading_edge_error: 0.1
                     max_misfit: 5.0
