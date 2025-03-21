@@ -40,7 +40,7 @@ from functools import partial
 
 from loguru import logger
 from typing import Tuple, List, Dict, Optional, Any, Literal, Callable, get_args
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from scipy.optimize import least_squares, OptimizeResult
 from scipy.signal import argrelmin
@@ -109,6 +109,10 @@ class NormedWaveform:
     thermal_noise: float = 0.0
     first_maximum_index: int = None
     idx: int = None
+    absolute_maximum: float = field(init=False)
+
+    def __post_init__(self):
+        self.absolute_maximum = np.nanmax(self.power)
 
 
 @dataclass
@@ -1128,8 +1132,8 @@ def samosa_fit_samosap_single(
     )
 
     # Compute the misfit from residuals in SAMPy fashion
-    misfit_subwaveform = sampy_misfit(optimize_result.fun)
-    misfit = sampy_misfit(fitted_model.power - waveform_data.power)
+    misfit_subwaveform = sampy_misfit(optimize_result.fun, waveform_scale=waveform_data.absolute_maximum)
+    misfit = sampy_misfit(fitted_model.power - waveform_data.power, waveform_scale=waveform_data.absolute_maximum)
 
     # Convert epoch to range (excluding range corrections)
     retracker_range = epoch2range(model_parameters.epoch, fit_data.waveform_data.range_bins)
@@ -1224,8 +1228,8 @@ def samosa_fit_samosap_standard(
     # Note that the waveform model from the combination of swh and nu will provide the best fit
 
     # Compute the misfit from residuals in SAMPy fashion
-    misfit_subwaveform = sampy_misfit(optimize_result_step2.fun)
-    misfit = sampy_misfit(fitted_model_step2.power - waveform_data.power)
+    misfit_subwaveform = sampy_misfit(optimize_result_step2.fun, waveform_scale=waveform_data.absolute_maximum)
+    misfit = sampy_misfit(fitted_model_step2.power - waveform_data.power, waveform_scale=waveform_data.absolute_maximum)
 
     # Convert epoch to range (excluding range corrections)
     retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
@@ -1300,7 +1304,7 @@ def samosa_fit_samosap_specular(
 
     # --- Summarize the result from two fits ---
     # Compute the misfit from residuals in SAMPy fashion
-    misfit = sampy_misfit(fitted_model_step2.power - waveform_data.power)
+    misfit = sampy_misfit(fitted_model_step2.power - waveform_data.power, waveform_scale=waveform_data.absolute_maximum)
 
     # Convert epoch to range (excluding range corrections)
     retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
@@ -1635,18 +1639,32 @@ def get_epoch_bounds(
     )
 
 
-def sampy_misfit(residuals: np.ndarray, waveform_mask: Optional[np.ndarray] = None) -> float:
+def sampy_misfit(
+        residuals: np.ndarray,
+        waveform_mask: Optional[np.ndarray] = None,
+        waveform_scale: float = None
+) -> float:
     """
     Computes the SAMOSA waveform model misfit parameter according to SAMPy with optional
     misfit computation on sub-waveform.
 
+    One deviation from the SAMPy approach is the optional misfit reduction due to
+    waveform maximum power > 1. This may happen when the first maximum power is
+    less than the maximum power. In this case the misfit value is artificially
+    increased compared to the SAMPy approach and scenarious where the first maximum
+    is also the absolute maximum power. This cannot be derived from the residuals
+    alone and therefore need to be provided as apriori information.
+
     :param residuals: difference between waveform and waveform model
     :param waveform_mask: numpy index array of sub-waveform mask
+    :param waveform_scale: Maximum power the waveform. (Only needed if
+        maximum power > 1).
 
     :return: SAMOSA waveform model misfit
     """
     waveform_mask = waveform_mask if waveform_mask is not None else np.arange(residuals.size)
-    return np.sqrt(1. / residuals[waveform_mask].size * np.nansum(residuals[waveform_mask] ** 2)) * 100.
+    misfit = np.sqrt(1. / residuals[waveform_mask].size * np.nansum(residuals[waveform_mask] ** 2)) * 100.
+    return misfit if waveform_scale is None else misfit / waveform_scale
 
 
 def compute_thermal_noise(
