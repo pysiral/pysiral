@@ -78,27 +78,7 @@ DEFAULT_FIT_KWARGS = dict(
     max_nfev=100,
 )
 
-# SWH_FIRST_GUESS = dict(
-#     lead=0.0,
-#     sea_ice=2.0
-# )
-#
-# SWH_DEFAULT_BOUNDS = dict(
-#     lead=[-0.2, 0.2],    # Significant wave height does not affect leads very much, mss more important
-#     sea_ice=[-0.5, 10]   # default values for sampy
-# )
-#
-# NU_FIRST_GUESS = dict(
-#     lead=2.0e6,
-#     sea_ice=1.0e4
-# )
-#
-# NU_DEFAULT_BOUNDS = dict(
-#     lead=[1e6, 1e9],
-#     sea_ice=[1e3, 1e7]
-# )
-
-SAMOSA_WFM_COLLECT_FIT_PARAMS = True
+SAMOSA_WFM_COLLECT_FIT_PARAMS = False
 
 # TODO: To be refined (currently based on single orbit)
 NU_OCOG_COEFS = (1.11110807e+07, 2.50396017e+00)
@@ -1093,113 +1073,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
             raise AttributeError(f"{self.__class__.__name__} has no attribute {item}")
 
 
-# def samosa_fit_swh_mss(
-#         fit_data: WaveformFitData,
-#         predictor_kwargs: Dict = None,
-#         least_squares_kwargs: Dict = None,
-#         sub_waveform_method: Optional[Literal["filter_trailing_edge", "specular_only"]] = None
-# ) -> SAMOSAWaveformFitResult:
-#     """
-#     Fits the SAMOSA waveform model with all free parameters (epoch, swh, mss)
-#
-#     :param fit_data: Input parameters for waveform fitting process. Mainly
-#         contains waveform model scenario data and waveform data.
-#     :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
-#     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
-#     :param sub_waveform_method:
-#
-#     :return: SAMOSA+ waveform model fit result
-#     """
-#
-#     # Input validation
-#     if least_squares_kwargs is None:
-#         least_squares_kwargs = {}
-#
-#     if predictor_kwargs is None:
-#         predictor_kwargs = {}
-#
-#     # Unpack for readability.
-#     scenario_data, waveform_data = fit_data.scenario_data, fit_data.waveform_data
-#     waveform_data.thermal_noise = compute_thermal_noise(waveform_data.power)
-#
-#     # Compute the lower envelope of the trailing edge
-#     if sub_waveform_method is not None:
-#         sub_waveform_mask = get_trailing_edge_lower_envelope_mask(
-#             waveform_data.power,
-#             waveform_data.first_maximum_index
-#         )
-#         sub_waveform_mask = np.logical_not(sub_waveform_mask)
-#     else:
-#         sub_waveform_mask = None
-#     # Get first guess of fit parameters and fit bounds
-#     predictor = SAMOSAModelParameterPrediction(
-#         "fit_mss_swh",
-#         waveform_data.surface_type,
-#         **predictor_kwargs
-#     )
-#     first_guess, lower_bounds, upper_bounds = predictor.get(waveform_data)
-#
-#     # Update least square kwargs with fit bounds
-#     # (Fit bounds are dynamic per waveform).
-#     fit_kwargs = dict(bounds=(lower_bounds, upper_bounds))
-#     fit_kwargs.update(least_squares_kwargs)
-#
-#     # The fitting process is happening here:
-#     fit_cls = SAMOSAWaveformFit(
-#         scenario_data, waveform_data,
-#         sub_waveform_mask=sub_waveform_mask,
-#         waveform_model_kwargs=dict(mode=2)
-#     )
-#     fit_result = least_squares(fit_cls.fit_func, first_guess, **fit_kwargs)
-#
-#     # Unpack parameters for better readability
-#     epoch_ns, swh, mss = fit_result.x
-#     epoch = epoch_ns*1.0e-9
-#
-#     # Recompute the selected waveform model. Required to store the fitted waveform model.
-#     # NOTE: The waveform model cannot (easily) be retrieved from the fit class
-#     # because it is not always the last model.
-#     fitted_model = get_model_from_args(fit_cls.samosa_waveform_model, [epoch, swh, mss])
-#
-#     scale_model = 1. / np.nanmax(fitted_model.power)
-#     scale = 1. / waveform_data.power[waveform_data.first_maximum_index]
-#
-#     import matplotlib.pyplot as plt
-#     plt.figure(figsize=(9, 6))
-#     plt.title(f"swh={swh:0.2f}, nu={mss:.2f}")
-#     plt.plot(waveform_data.tau, waveform_data.power * scale, color="black", lw=0.5)
-#     plt.scatter(waveform_data.tau[sub_waveform_mask], waveform_data.power[sub_waveform_mask] * scale, color="red", s=10)
-#     plt.scatter(waveform_data.tau, waveform_data.power * scale, color="black", s=2)
-#     # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
-#     plt.plot(waveform_data.tau, fitted_model.power * scale_model + waveform_data.thermal_noise, label="step2")
-#     # plt.plot(waveform_data.tau, fitted_model_combined.power * scale_c + waveform_data.thermal_noise, label="combined")
-#     plt.legend()
-#     plt.show()
-#     breakpoint()
-#
-#     # Compute the misfit from residuals in SAMPy fashion
-#     misfit = sampy_misfit(fit_result.fun)
-#
-#     # Convert epoch to range (excluding range corrections)
-#     # TODO: apply radar mode range bias here?
-#     retracker_range = epoch2range(epoch, fit_data.waveform_data.window_delay)
-#
-#     return SAMOSAWaveformFitResult(
-#         epoch,
-#         retracker_range,
-#         retracker_range_uncertainty,
-#         swh,
-#         mss,
-#         0.0,  # placeholder for thermal noise
-#         misfit,
-#         "single_fit_mss_swh",
-#         waveform_data.power,
-#         fitted_model.power,
-#         number_of_model_evaluations=fit_result.nfev,
-#         fit_return_status=fit_result.status
-#     )
-
-
 def samosa_fit_samosap_single(
         fit_data: WaveformFitData,
         samosap_fit_kwargs: Dict = None,
@@ -1260,18 +1133,6 @@ def samosa_fit_samosap_single(
     # Convert epoch to range (excluding range corrections)
     retracker_range = epoch2range(model_parameters.epoch, fit_data.waveform_data.range_bins)
     retracker_range_standard_error = 0.5 * 299792458. * model_parameters.epoch_sdev
-
-    # import matplotlib.pyplot as plt
-    # x = np.arange(waveform_data.power.size)
-    # fmi = waveform_data.first_maximum_index
-    # idx = waveform_data.idx
-    # fig = plt.figure()
-    # plt.title(f"Waveform index: {idx:05g} ")
-    # plt.plot(x, waveform_data.power)
-    # plt.plot(x, fitted_model.power)
-    # plt.scatter(fmi, waveform_data.power[fmi], color="red")
-    # plt.show()
-    # plt.close(fig)
 
     return SAMOSAWaveformFitResult(
          epoch=model_parameters.epoch,
@@ -1960,44 +1821,9 @@ def get_trailing_edge_lower_envelope_mask(
             dist = np.sqrt((x_poca - x0)**2. + (y_poca - y0)**2)
             mask_le[idx] = dist <= noise_level_normed
 
-        # # --- Method 2: Vertical Distance to linear fit ---
-        # linear_fit = np.linspace(
-        #     wfm_trailing_edge[idx_lmin[i]],
-        #     wfm_trailing_edge[idx_lmin[i+1]],
-        #     idx_lmin[i + 1] - idx_lmin[i]
-        # )
-        #
-        # power_delta = wfm_trailing_edge[idx_lmin[i]:idx_lmin[i+1]] - linear_fit
-        # in_noise_level = np.absolute(power_delta) <= noise_level_normed
-        # mask_le[idx_lmin[i]:idx_lmin[i+1]] = in_noise_level
-
     # Final step: Pad trailing edge mask to full waveform mask
     mask = np.full(waveform_power.size, True)
     mask[first_maximum_index:] = mask_le
-
-    # # --- Debug plot ---
-    # inverted_mask = np.logical_not(mask)
-    # import os
-    # from pathlib import Path
-    # idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
-    # output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
-    # x = np.arange(waveform_power.size)
-    # fig = plt.figure(figsize=(9, 6))
-    # plt.title(f"Waveform Index: {idx:05g}")
-    # plt.plot(x, waveform_power, color="black", lw=0.75, zorder=20)
-    # plt.scatter(x[mask], waveform_power[mask], color="0.5", s=6, marker="o", zorder=20)
-    # plt.scatter(x[inverted_mask], waveform_power[inverted_mask], color="red", marker="x", s=30, zorder=30,
-    #             label="Rejected Range Gates")
-    # plt.scatter(x[idx_lmin+first_maximum_index], waveform_power[idx_lmin+first_maximum_index],
-    #             edgecolors="greenyellow", facecolors="none", marker="s", s=30, zorder=30,
-    #             label="Detected Local Minima")
-    # plt.legend(loc="upper right")
-    # plt.ylim(0, 1.25)
-    # plt.xlabel("Range Gate")
-    # plt.ylabel("Normed Waveform Power")
-    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_trailing_edge_filter.png", dpi=300)
-    # fig.clear()
-    # plt.close(fig)
 
     return mask if return_type is "bool" else np.where(mask)[0]
 
@@ -2055,25 +1881,25 @@ def get_nu_from_ocog_width(
             nu_min: float = 0,
             nu_max: float = 1e6,
             default_nu: float = 0.0
-    ) -> float:
-        """
-        Compute the inverse mean square slope (nu) from an empirical parametrization
-        based on ocog width. For stability reasons, the nu value is clipped to
-        a minimum and maximum value.
+) -> float:
+    """
+    Compute the inverse mean square slope (nu) from an empirical parametrization
+    based on ocog width. For stability reasons, the nu value is clipped to
+    a minimum and maximum value.
 
-        :param ocog_width: OCOG width (in range gates)
-        :param nu_ocog_coefs: coeficients for the OCOG width to nu relation (c[0] * ocog_width ** (-c[1]))
-        :param ocog_width_max: The maximum OCOG value for which this relation is valid
-        :param nu_min: Minimum value for nu
-        :param nu_max: Maximum value for nu
-        :param default_nu: Default value for nu if the OCOG width is above the maximum value
+    :param ocog_width: OCOG width (in range gates)
+    :param nu_ocog_coefs: coeficients for the OCOG width to nu relation (c[0] * ocog_width ** (-c[1]))
+    :param ocog_width_max: The maximum OCOG value for which this relation is valid
+    :param nu_min: Minimum value for nu
+    :param nu_max: Maximum value for nu
+    :param default_nu: Default value for nu if the OCOG width is above the maximum value
 
-        :return: Inverse mean square slope (nu)
-        """
-        if ocog_width > ocog_width_max:
-            return default_nu
-        nu_predicted = nu_ocog_coefs[0] + ocog_width ** (-1.0 * nu_ocog_coefs[1])
-        return np.clip(nu_predicted, nu_min, nu_max)
+    :return: Inverse mean square slope (nu)
+    """
+    if ocog_width > ocog_width_max:
+        return default_nu
+    nu_predicted = nu_ocog_coefs[0] + ocog_width ** (-1.0 * nu_ocog_coefs[1])
+    return np.clip(nu_predicted, nu_min, nu_max)
 
 
 
