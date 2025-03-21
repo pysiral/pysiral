@@ -250,11 +250,6 @@ class SAMOSAWaveformFit(object):
             amplitude_scale = 1.0
 
         nu = self.step1_fixed_nu_value
-        # nu = get_nu_from_ocog_width(
-        #     self.normed_waveform.ocog_width,
-        #     NU_OCOG_COEFS,
-        #     default_nu=self.step1_fixed_nu_value
-        # )
         waveform_model = get_model_from_args(
             self.samosa_waveform_model,
             [epoch * 1e-9, significant_wave_height, nu],
@@ -545,7 +540,8 @@ class SAMOSAModelParameterPrediction(object):
 
         :return: Parameter fit bounds: (lower bounds, upperbounds) [mode 1: epoch, swh, amplitude; mode 2: epoch, nu]
         """
-        epoch_bounds = get_epoch_bounds(tau, first_guess[0])
+        range_gates_after_fmi = self.bounds["epoch"]["range_gates_after_fmi"]
+        epoch_bounds = get_epoch_bounds(tau, first_guess[0], range_gates_after_fmi=range_gates_after_fmi)
         lb = epoch_bounds[0] * 1e9, self.bounds["swh"][0], self.bounds["nu"][0], self.bounds["amplitude"][0]
         ub = epoch_bounds[1] * 1e9, self.bounds["swh"][1], self.bounds["nu"][1], self.bounds["amplitude"][0]
         return (lb, ub) if self.amplitude_is_free_parameter else (lb[:-1], ub[:-1])
@@ -610,7 +606,8 @@ class SAMOSAModelParameterPrediction(object):
 
         :return: Parameter fit bounds: (lower bounds, upperbounds) [mode 1: epoch, swh, amplitude; mode 2: epoch, nu]
         """
-        epoch_bounds = get_epoch_bounds(tau, first_guess[0])
+        range_gates_after_fmi = self.bounds["epoch"]["range_gates_after_fmi"]
+        epoch_bounds = get_epoch_bounds(tau, first_guess[0], range_gates_after_fmi=range_gates_after_fmi)
         amp_bounds = self.bounds["amplitude"]
 
         # Fitting epoch, swh, [amplitude]
@@ -1112,7 +1109,7 @@ def samosa_fit_samosap_single(
     # Get the sub-waveform mask
     # (unless explicitly disabled by `trailing_edge_sub_waveform_filter=False` config file)
     trailing_edge_sub_waveform_filter = samosap_fit_kwargs.get("trailing_edge_sub_waveform_filter", True)
-    if trailing_edge_sub_waveform_filter is not None:
+    if trailing_edge_sub_waveform_filter:
         sub_waveform_mask = get_sub_waveform_mask(waveform_data, filter_trailing_edge_kwargs)
     else:
         sub_waveform_mask = None
@@ -1194,7 +1191,7 @@ def samosa_fit_samosap_standard(
     # Get the sub-waveform mask
     # (unless explicitly disabled by `trailing_edge_sub_waveform_filter=False` config file)
     trailing_edge_sub_waveform_filter = samosap_fit_kwargs.get("trailing_edge_sub_waveform_filter", True)
-    if trailing_edge_sub_waveform_filter is not None:
+    if trailing_edge_sub_waveform_filter:
         sub_waveform_mask = get_sub_waveform_mask(waveform_data, filter_trailing_edge_kwargs)
     else:
         sub_waveform_mask = None
@@ -1616,7 +1613,7 @@ def get_epoch_bounds(
         epoch_first_guess_ns: float,
         tau_earliest_fraction: float = 0.02,
         tau_latest_fraction: float = 0.8,
-        first_guess_trailing_range_gates: int = 20
+        range_gates_after_fmi: int = 20
 ) -> Tuple[float, float]:
     """
     Compute the fit bounds for the epoch. The lower epoch bound is defined by
@@ -1627,11 +1624,11 @@ def get_epoch_bounds(
     :param epoch_first_guess_ns: First guess for the epoch (ususally location of first maximum)
     :param tau_earliest_fraction: Fraction of the range window for the earliest epoch bound
     :param tau_latest_fraction: Fraction of the range window for the latest epoch bound (not used)
-    :param first_guess_trailing_range_gates: Number of trailing range gates after the epoch
+    :param range_gates_after_fmi: Number of trailing range gates after the epoch
         first guess (defines the upper epoch bound)
     """
     epoch_bounds_range_gate = get_valid_epoch_range(tau, tau_earliest_fraction, tau_latest_fraction)
-    tau_fmi_offset = (epoch_first_guess_ns * 1e-9) + first_guess_trailing_range_gates * (tau[1] - tau[0])
+    tau_fmi_offset = (epoch_first_guess_ns * 1e-9) + range_gates_after_fmi * (tau[1] - tau[0])
     return (
         epoch_bounds_range_gate[0],
         np.min([np.max(tau), tau_fmi_offset])
