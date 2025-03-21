@@ -1369,63 +1369,6 @@ def samosa_fit_samosap_standard(
     retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
     retracker_range_standard_error = 0.5 * 299792458. * model_parameters_step2.epoch_sdev
 
-    # # --- Debug Plot ---
-    # plot_parameters = [
-    #     ["range", f"{retracker_range:.2f} +/- {retracker_range_standard_error:.2f}m"],
-    #     ["swh", f"{swh:.2f} +/- {model_parameters_step1.significant_wave_height_sdev:.2f}m"],
-    #     ["nu", f"{nu:.2f} +/- {model_parameters_step2.nu_sdev:.2f}"],
-    #     ["misfit (sub)", f"{misfit:.2f} ({misfit_subwaveform:.2f})"],
-    # ]
-    #
-    # import matplotlib.pyplot as plt
-    # import os
-    # from pathlib import Path
-    # idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
-    # output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
-    # fig = plt.figure(figsize=(9, 6))
-    # plt.title(f"Waveform index: {idx:05g}")
-    # plt.axvline(epoch, color="violet", lw=0.5, ls="dashed", label="epoch")
-    # plt.plot(waveform_data.tau, waveform_data.power, color="0.5", lw=0.5, zorder=20)
-    # plt.scatter(waveform_data.tau, waveform_data.power, color="0.5", s=6, marker="o", zorder=20)
-    # plt.scatter(
-    #     waveform_data.tau[sub_waveform_mask],
-    #     waveform_data.power[sub_waveform_mask],
-    #     color="red", marker="x", s=20,
-    #     label="Rejected Range Gates",
-    #     zorder=30
-    # )
-    # # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
-    # plt.plot(waveform_data.tau, fitted_model_step2.power, label="Fitted Model (SAMOSA step 2)",
-    #          color="violet", alpha=0.85, zorder=40)
-    # plt.legend(loc="upper right")
-    # y = 0.7
-    # y_step = 0.05
-    # for label, value in plot_parameters:
-    #     plt.annotate(f"{label} =", (0.7, y), xycoords="axes fraction", ha="right")
-    #     plt.annotate(f" {value}", (0.7, y), xycoords="axes fraction", ha="left")
-    #     y -= y_step
-    # plt.ylim(0, 1.25)
-    # plt.xlabel("Range Gate (seconds)")
-    # plt.ylabel("Normed Waveform Power")
-    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png", dpi=300)
-    # fig.clear()
-    # plt.close(fig)
-
-    # import matplotlib.pyplot as plt
-    # from pathlib import Path
-    # x = np.arange(waveform_data.power.size)
-    # fmi = waveform_data.first_maximum_index
-    # idx = waveform_data.idx
-    # fig = plt.figure()
-    # plt.title(f"Waveform index: {idx:05g} ")
-    # plt.plot(x, waveform_data.power)
-    # plt.plot(x, fitted_model_step1.power)
-    # plt.plot(x, fitted_model_step2.power)
-    # plt.scatter(fmi, waveform_data.power[fmi], color="red")
-    # plt.show()
-    # plt.savefig(Path(r"D:\temp\samosa\normed_waveform_debug") / f"waveform_{idx}_02_after_fit.png", dpi=300)
-    # plt.close(fig)
-
     return SAMOSAWaveformFitResult(
          epoch=model_parameters_step2.epoch,
          retracker_range=retracker_range,
@@ -1454,7 +1397,7 @@ def samosa_fit_samosap_specular(
         least_squares_kwargs: Dict = None
 ) -> SAMOSAWaveformFitResult:
     """
-    Fits the SAMOSA waveform model with (epoch, mss, amplitude) and fixed swh
+    Fits the SAMOSA waveform model with (epoch, mss, [amplitude]) and a fixed swh
     in a single step that is equivalent of the fit step 2 in the default fit
     procedure
 
@@ -1500,48 +1443,6 @@ def samosa_fit_samosap_specular(
     retracker_range = epoch2range(model_parameters_step2.epoch, fit_data.waveform_data.range_bins)
     retracker_range_standard_error = 0.5 * 299792458. * model_parameters_step2.epoch_sdev
 
-    # # --- Debug Plot ---
-    # plot_parameters = [
-    #     ["range", f"{retracker_range:.2f} +/- {retracker_range_standard_error:.2f}m"],
-    #     ["swh", f"{swh:.2f} +/- {model_parameters_step1.significant_wave_height_sdev:.2f}m"],
-    #     ["nu", f"{nu:.2f} +/- {model_parameters_step2.nu_sdev:.2f}"],
-    #     ["misfit (sub)", f"{misfit:.2f} ({misfit_subwaveform:.2f})"],
-    # ]
-    #
-    # import matplotlib.pyplot as plt
-    # import os
-    # from pathlib import Path
-    # idx = int(os.environ["PYSIRAL_SAMOSA_TEST_WAVEFORM_IDX"])
-    # output_dir = os.environ["PYSIRAL_SAMOSA_TEST_OUTPUT_DIR"]
-    # fig = plt.figure(figsize=(9, 6))
-    # plt.title(f"Waveform index: {idx:05g}")
-    # plt.axvline(epoch, color="violet", lw=0.5, ls="dashed", label="epoch")
-    # plt.plot(waveform_data.tau, waveform_data.power, color="0.5", lw=0.5, zorder=20)
-    # plt.scatter(waveform_data.tau, waveform_data.power, color="0.5", s=6, marker="o", zorder=20)
-    # plt.scatter(
-    #     waveform_data.tau[sub_waveform_mask],
-    #     waveform_data.power[sub_waveform_mask],
-    #     color="red", marker="x", s=20,
-    #     label="Rejected Range Gates",
-    #     zorder=30
-    # )
-    # # plt.plot(waveform_data.tau, fitted_model_step1.power * scale_1 + waveform_data.thermal_noise, label="step1")
-    # plt.plot(waveform_data.tau, fitted_model_step2.power, label="Fitted Model (SAMOSA step 2)",
-    #          color="violet", alpha=0.85, zorder=40)
-    # plt.legend(loc="upper right")
-    # y = 0.7
-    # y_step = 0.05
-    # for label, value in plot_parameters:
-    #     plt.annotate(f"{label} =", (0.7, y), xycoords="axes fraction", ha="right")
-    #     plt.annotate(f" {value}", (0.7, y), xycoords="axes fraction", ha="left")
-    #     y -= y_step
-    # plt.ylim(0, 1.25)
-    # plt.xlabel("Range Gate (seconds)")
-    # plt.ylabel("Normed Waveform Power")
-    # plt.savefig(Path(output_dir) / f"waveform_data_{idx:06g}_waveform_fit.png", dpi=300)
-    # fig.clear()
-    # plt.close(fig)
-
     return SAMOSAWaveformFitResult(
          epoch=model_parameters_step2.epoch,
          retracker_range=retracker_range,
@@ -1576,6 +1477,7 @@ def samosa_fit_samosap_single_step2(
     :param predictor:
     :param least_squares_kwargs:
     :param sub_waveform_mask:
+    :param amplitude_is_free_param:
 
     :return: Fit result waveform mode
     """
@@ -1669,10 +1571,6 @@ def samosa_fit_samosap_standard_step1(
     )
     fit_result_step1 = least_squares(fit_cls.fit_func_samosap_standard_step1, first_guess, **fit_kwargs)
     parameter_vars = get_least_squares_parameter_sdev(fit_result_step1)
-    # try:
-    #     parameter_vars = get_least_squares_parameter_sdev(fit_result_step1)
-    # except np.linalg.LinAlgError:  # May be caused by singular matrix
-    #     parameter_vars = np.array([np.nan, np.nan])
 
     # --- Collect output ---
     # Summarize the fit result parameters
@@ -1697,27 +1595,6 @@ def samosa_fit_samosap_standard_step1(
         amplitude_scale=model_parameters_step1.amplitude_scale,
         thermal_noise=model_parameters_step1.thermal_noise
     )
-
-    # if fit_cls.samosa_waveform_model.generate_ddm_counter > 400:
-    #     fit_params_df = fit_cls.samosa_waveform_model.get_fit_params()
-    #     import matplotlib.pyplot as plt
-    #
-    #     plt.figure()
-    #     plt.plot(fit_result_step1.fun)
-    #     plt.plot(waveform_data.power+fit_result_step1.fun)
-    #
-    #     fig, axs = plt.subplots(2)
-    #     axs[0].plot(fit_params_df["epoch"])
-    #     axs[0].set_ylabel("Epoch")
-    #     axs[1].plot(fit_params_df["significant_wave_height"])
-    #     axs[1].set_ylabel("SWH")
-    #
-    #     plt.figure()
-    #     plt.plot(waveform_data.tau, waveform_data.power, color="black", lw=0.5)
-    #     plt.scatter(waveform_data.tau[sub_waveform_mask], waveform_data.power[sub_waveform_mask], color="red")
-    #     plt.plot(waveform_data.tau, fitted_model_step1.power, color="red", lw=0.5)
-    #     plt.show()
-    #     breakpoint()
 
     return model_parameters_step1, fitted_model_step1, fit_result_step1
 
@@ -1893,6 +1770,7 @@ def get_epoch_bounds(
         epoch_bounds_range_gate[0],
         np.min([np.max(tau), tau_fmi_offset])
     )
+
 
 def sampy_misfit(residuals: np.ndarray, waveform_mask: Optional[np.ndarray] = None) -> float:
     """
