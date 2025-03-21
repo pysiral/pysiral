@@ -143,7 +143,8 @@ class SAMOSAWaveformFitResult:
     misfit_sub_waveform: float = None
     number_of_model_evaluations_step1: int = -1
     number_of_model_evaluations_step2: int = -1
-    fit_return_status: int = None
+    fit_return_status_step1: int = -2
+    fit_return_status_step2: int = -2
     sigma0: float = 0.0
 
     @property
@@ -713,7 +714,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             ("guess", np.nan, np.float32),
             ("fit_num_func_eval_step1", -1, np.int32),
             ("fit_num_func_eval_step2", -1, np.int32),
-            ("fit_return_status", np.nan, np.float32),
+            ("fit_return_status_step1", -2, np.int32),  # least squares valid range -1 to 4
+            ("fit_return_status_step2", -2, np.int32),  # least squares valid range -1 to 4
             ("Pu", np.nan, np.float32),
             ("rval", np.nan, np.float32),
             ("kval", np.nan, np.float32),
@@ -1017,7 +1019,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
             # Fit method statistics
             self.fit_num_func_eval_step1[index] = fit_result.number_of_model_evaluations_step1
             self.fit_num_func_eval_step2[index] = fit_result.number_of_model_evaluations_step2
-            self.fit_return_status[index] = fit_result.fit_return_status
+            self.fit_return_status_step1[index] = fit_result.fit_return_status_step1
+            self.fit_return_status_step2[index] = fit_result.fit_return_status_step2
 
     def _l2_register_retracker_parameters(self) -> None:
         """
@@ -1032,7 +1035,8 @@ class SAMOSAPlusRetracker(BaseRetracker):
         self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
         self.register_auxdata_output("samfnfe1", "samosa_fit_num_func_eval_step1", self.fit_num_func_eval_step1)
         self.register_auxdata_output("samfnfe2", "samosa_fit_num_func_eval_step2", self.fit_num_func_eval_step2)
-        self.register_auxdata_output("samfrs", "samosa_fit_return_status", self.fit_return_status)
+        self.register_auxdata_output("samfrs", "samosa_fit_return_status_step1", self.fit_return_status_step1)
+        self.register_auxdata_output("samfrs", "samosa_fit_return_status_step2", self.fit_return_status_step2)
 
         # Waveform and waveform model
         # Register results as auxiliary data variable
@@ -1150,7 +1154,7 @@ def samosa_fit_samosap_single(
          waveform=waveform_data.power,
          waveform_model=fitted_model.power,
          number_of_model_evaluations_step2=model_parameters.num_ddm_evaluations,
-         fit_return_status=optimize_result.status
+         fit_return_status_step2=optimize_result.status
     )
 
 
@@ -1247,7 +1251,8 @@ def samosa_fit_samosap_standard(
          waveform_model=fitted_model_step2.power,
          number_of_model_evaluations_step1=model_parameters_step1.num_ddm_evaluations,
          number_of_model_evaluations_step2=model_parameters_step2.num_ddm_evaluations,
-         fit_return_status=optimize_result_step2.status
+         fit_return_status_step1=optimize_result_step1.status,
+         fit_return_status_step2=optimize_result_step2.status
     )
 
 
@@ -1318,7 +1323,7 @@ def samosa_fit_samosap_specular(
          waveform=waveform_data.power,
          waveform_model=fitted_model_step2.power,
          number_of_model_evaluations_step2=model_parameters_step2.num_ddm_evaluations,
-         fit_return_status=optimize_result_step2.status
+         fit_return_status_step2=optimize_result_step2.status
     )
 
 
