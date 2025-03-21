@@ -222,7 +222,7 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: polar_ocean
-                use_multiprocessing: False
+                use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_specular"
                 samosap_fit_kwargs:
@@ -255,7 +255,7 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
-                use_multiprocessing: False
+                use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_single"
                 samosap_fit_kwargs:
@@ -265,6 +265,7 @@ procsteps:
 #                    step1_fixed_nu_value: 0.0
 #                    # SAMOSA+ step 2 requires fixed swh value
 #                    step2_fixed_swh_value: 0.0
+                    trailing_edge_sub_waveform_filter: True
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_sea_ice
                   initial_guess:
