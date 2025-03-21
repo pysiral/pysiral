@@ -363,7 +363,7 @@ class SAMOSAWaveformCollectionFit(object):
 
         self.fit_method = fit_method
         self.predictor_method = predictor_method
-        self.samosap_fit_kwargs= {} if samosap_fit_kwargs is None else samosap_fit_kwargs
+        self.samosap_fit_kwargs = {} if samosap_fit_kwargs is None else samosap_fit_kwargs
         self.least_squares_kwargs = DEFAULT_FIT_KWARGS if least_squares_kwargs is None else least_squares_kwargs
         self.predictor_kwargs = {} if predictor_kwargs is None else predictor_kwargs
         self.use_multiprocessing = use_multiprocessing
@@ -1202,7 +1202,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
 def samosa_fit_samosap_single(
         fit_data: WaveformFitData,
-        trailing_edge_sub_waveform_filter: bool = True,
         samosap_fit_kwargs: Dict = None,
         predictor_kwargs: Dict = None,
         least_squares_kwargs: Dict = None,
@@ -1216,7 +1215,6 @@ def samosa_fit_samosap_single(
 
     :param fit_data: Input parameters for waveform fitting process. Mainly
         contains waveform model scenario data and waveform data.
-    :param trailing_edge_sub_waveform_filter: Flag if trailing edge filter should be used
     :param samosap_fit_kwargs:
     :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
@@ -1236,6 +1234,7 @@ def samosa_fit_samosap_single(
 
     # Get the sub-waveform mask
     # (unless explicitly disabled by `trailing_edge_sub_waveform_filter=False` config file)
+    trailing_edge_sub_waveform_filter = samosap_fit_kwargs.get("trailing_edge_sub_waveform_filter", True)
     if trailing_edge_sub_waveform_filter is not None:
         sub_waveform_mask = get_sub_waveform_mask(waveform_data, filter_trailing_edge_kwargs)
     else:
@@ -1296,7 +1295,6 @@ def samosa_fit_samosap_single(
 
 def samosa_fit_samosap_standard(
         fit_data: WaveformFitData,
-        trailing_edge_sub_waveform_filter: bool = True,
         samosap_fit_kwargs: Dict = None,
         predictor_kwargs: Dict = None,
         least_squares_kwargs: Dict = None,
@@ -1310,7 +1308,6 @@ def samosa_fit_samosap_standard(
 
     :param fit_data: Input parameters for waveform fitting process. Mainly
         contains waveform model scenario data and waveform data.
-    :param trailing_edge_sub_waveform_filter: Flag if trailing edge filter should be used
     :param samosap_fit_kwargs: Input parameters for SAMOSA+ fitting process
     :param predictor_kwargs: Input parameter for parameter first guess and fit bounds
     :param least_squares_kwargs: Keyword arguments to `scipy.optimize.least_squares`
@@ -1331,6 +1328,7 @@ def samosa_fit_samosap_standard(
 
     # Get the sub-waveform mask
     # (unless explicitly disabled by `trailing_edge_sub_waveform_filter=False` config file)
+    trailing_edge_sub_waveform_filter = samosap_fit_kwargs.get("trailing_edge_sub_waveform_filter", True)
     if trailing_edge_sub_waveform_filter is not None:
         sub_waveform_mask = get_sub_waveform_mask(waveform_data, filter_trailing_edge_kwargs)
     else:

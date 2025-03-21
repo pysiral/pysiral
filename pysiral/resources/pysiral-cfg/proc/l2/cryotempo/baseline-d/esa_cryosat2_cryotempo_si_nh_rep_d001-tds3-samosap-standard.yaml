@@ -228,9 +228,12 @@ procsteps:
                 samosap_fit_kwargs:
                     # Two values for SAMOSA+ step1 and step2
                     # NOTE: step1 is ignored for leads (`fit_method: samosap_specular`)
-                    amplitude_is_free_param: &samosa_fit_amp_lead [True, True]
+                    amplitude_is_free_param: &samosa_fit_amp_lead [False, False]
                     # SAMOSA+ step 2 requires fixed swh value
                     step2_fixed_swh_value: 0.0
+                    # Sub-waveform masking algorithm does not perform well for
+                    # specular waveforms
+                    trailing_edge_sub_waveform_filter: False
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_lead
                   initial_guess:
