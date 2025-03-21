@@ -170,17 +170,15 @@ variables:
     coordinates: "time"
     coverage_content_type: referenceInformation
 
-  mean_square_slope:
+  samosa_mean_square_slope:
     long_name: "mean square slope"
-    var_source_name: "samosa_mean_square_slope"
     standard_name: "sea_surface_wave_mean_square_slope"
     units: "1"
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker"
 
-  surface_height_standard_deviation:
+  samosa_surface_height_standard_deviation:
     long_name: "surface height standard deviation"
-    var_source_name: "samosa_surface_height_standard_deviation"
     units: "m"
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
