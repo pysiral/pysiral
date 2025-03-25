@@ -2,6 +2,8 @@
 
 import os
 import re
+import pandas as pd
+from dataclasses import dataclass, field
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -156,18 +158,17 @@ class L2SeaIceFileDiscovery(object):
         # Init empty file lists
         self._reset_file_list()
 
-    def _get_dataset_catalogue(self):
+    def _get_dataset_catalogue(self) -> pd.DataFrame:
         """
-        Create a catalogues with the time coverage of the files on the server
-        :return:
+        Create a catalogues of file properties for all Sentinel-3 files in the lookup directory
+
+        :return: catalogue as pandas DataFrame
         """
 
         # Simple catalogue format
         # [(datetime, filepath), (datetime, filepath), ...]
-        return [
-            (nc_filepath, S3FileNaming(nc_filepath.parent.parts[-1]).tcs_dt)
-            for nc_filepath in Path(self.cfg.lookup_dir).glob(f"**/{self.cfg.filename_search}")
-        ]
+        nc_filepaths = sorted(Path(self.cfg.lookup_dir).glob(f"**/{self.cfg.filename_search}"))
+        return pd.DataFrame([S3FileNaming(nc_filepath) for nc_filepath in nc_filepaths])
 
     def get_file_for_period(self, period):
         """
@@ -189,9 +190,21 @@ class L2SeaIceFileDiscovery(object):
         :return: None
         """
 
-        # Loop over all months in the period
-        file_list = [filepath for filepath, dt in self.catalogue if period.tcs.dt <= dt <= period.tce.dt]
-        self._sorted_list = sorted(file_list)
+        # Find all files within the target period
+        subset_df = self.catalogue[
+            (self.catalogue.time_coverage_start >= period.tcs.dt) &
+            (self.catalogue.time_coverage_end <= period.tce.dt)
+        ]
+
+        # Find possible time coverage duplicates and only keep the one with the latest creation time
+        # NOTE: This is a workaround for some issues found with data downloaded from
+        #       the Copernicus Data Space Ecosystem. Any more eloquent solution should be
+        #       implemented in the download process.
+        subset_cleaned = subset_df.groupby("time_coverage_start").apply(lambda x: x.loc[x.creation_time.idxmax()])
+        if subset_df.shape[0] != subset_cleaned.shape[0]:
+            logger.warning(f"Removed {subset_df.shape[0] - subset_cleaned.shape[0]} duplicate(s) in time coverage")
+
+        self._sorted_list = subset_cleaned["filepath"].tolist()
 
     def _reset_file_list(self):
         """ Resets the result of previous file searches """
@@ -259,57 +272,57 @@ def get_sentinel3_sral_l1_from_l2(l2_filename, target="enhanced_measurement.nc")
     return l1nc_filename
 
 
-class S3FileNaming(object):
+@dataclass
+class S3FileNaming:
     """
     Deciphering the Sentinel-3 filenaming convention
     (source: Sentinel 3 PDGS File Naming Convention (EUM/LEO-SEN3/SPE/10/0070, v1D, 24 June 2016)
     """
+    filepath: Path
+    file_id: str = field(init=False)
+    mission_id: str = field(init=False)
+    data_source: str = field(init=False)
+    processing_level: str = field(init=False)
+    data_type_id: str = field(init=False)
+    time_coverage_start: datetime = field(init=False)
+    time_coverage_end: datetime = field(init=False)
+    creation_time: datetime = field(init=False)
+    instance_id: str = field(init=False)
+    product_generation_center: str = field(init=False)
+    product_platform: str = field(init=False)
+    timeliness: str = field(init=False)
+    baseline: str = field(init=False)
+    extension: str = field(init=False)
 
-    def __init__(self, filename: str) -> None:
-        """
-        Decode the Sentinel-3 filename
+    def __post_init__(self):
 
-        :param filename: The filename to be decoded
-        """
+        # Define the filenaming convention
+        filenaming_convention = "{mission_id:3}_{data_source:2}_{processing_level:1}_" \
+                                "{data_type_id:6}_{time_coverage_start:15}_{time_coverage_end:15}_" \
+                                "{creation_time:15}_{instance_id:17}_{product_generation_center:3}_" \
+                                "{product_platform:1}_{timeliness:2}_{baseline:3}.{extension}"
 
-        self.filenaming_convention = "{mission_id:3}_{data_source:2}_{processing_level:1}_" \
-                                     "{data_type_id:6}_{time_coverage_start:15}_{time_coverage_end:15}_" \
-                                     "{creation_time:15}_{instance_id:3}_{product_class_id:8}.{extension}"
 
-        self.date_format = "%Y%m%dT%H%M%S"
+        # Properties to be stored as strings
+        str_keys = ["mission_id", "data_source", "processing_level", "data_type_id",
+                    "instance_id", "product_generation_center", "product_platform",
+                    "timeliness", "baseline", "extension"]
 
-        self.elements = parse(self.filenaming_convention, filename)
-        if self.elements is None:
-            raise ValueError(f"{filename} is not a valid sentinel3 filename [{self.filenaming_convention}")
+        # Properties to be stored as datetime objects
+        dt_keys = ["time_coverage_start", "time_coverage_end", "creation_time"]
 
-    def _get_dt(self, start_time_str: str) -> datetime:
-        """
-        Convert a string to datetime
-        :param start_time_str:
-        :return:
-        """
-        return datetime.strptime(start_time_str, self.date_format)
+        # The file is the name of the last part of the path
+        self.file_id = self.filepath.parent.parts[-1]
 
-    @property
-    def dict(self) -> dict:
-        """
-        Dictionary of elements
-        :return:
-        """
-        return dict(**self.elements.named)
+        # Parse the file id
+        elements = parse(filenaming_convention, self.file_id)
+        if elements is None:
+            raise ValueError(f"{self.file_id} is not a valid sentinel3 filename [{filenaming_convention}")
 
-    @property
-    def tcs_dt(self) -> dict:
-        """
-        Dictionary of elements
-        :return:
-        """
-        return self._get_dt(self.dict["time_coverage_start"])
+        # Assign the parsed string properties
+        for key in str_keys:
+            setattr(self, key, elements.named[key])
 
-    @property
-    def tce_dt(self) -> dict:
-        """
-        Dictionary of elements
-        :return:
-        """
-        return self._get_dt(self.dict["time_coverage_end"])
+        # Assign the parsed datetime properties
+        for key in dt_keys:
+            setattr(self, key, datetime.strptime(elements.named[key],"%Y%m%dT%H%M%S"))
