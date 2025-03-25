@@ -279,6 +279,7 @@ class S3FileNaming:
     (source: Sentinel 3 PDGS File Naming Convention (EUM/LEO-SEN3/SPE/10/0070, v1D, 24 June 2016)
     """
     filepath: Path
+    is_valid_file: bool = field(init=False)
     file_id: str = field(init=False)
     mission_id: str = field(init=False)
     data_source: str = field(init=False)
@@ -302,7 +303,6 @@ class S3FileNaming:
                                 "{creation_time:15}_{instance_id:17}_{product_generation_center:3}_" \
                                 "{product_platform:1}_{timeliness:2}_{baseline:3}.{extension}"
 
-
         # Properties to be stored as strings
         str_keys = ["mission_id", "data_source", "processing_level", "data_type_id",
                     "instance_id", "product_generation_center", "product_platform",
@@ -317,7 +317,10 @@ class S3FileNaming:
         # Parse the file id
         elements = parse(filenaming_convention, self.file_id)
         if elements is None:
-            raise ValueError(f"{self.file_id} is not a valid sentinel3 filename [{filenaming_convention}")
+            logger.error(f"{self.file_id} is not a valid sentinel3 filename [{filenaming_convention}")
+            self.is_valid_file = False
+            return
+        self.is_valid_file = True
 
         # Assign the parsed string properties
         for key in str_keys:
