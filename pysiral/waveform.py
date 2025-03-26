@@ -238,6 +238,39 @@ class TFMRALeadingEdgeWidth(object):
         return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1, **kwargs)
 
 
+class L1POCOG(L1PProcItem):
+    """
+    Computes OCOG (Offset Centre of Gravity) width and amplitude
+    as a Level-1 pre-processor item
+    """
+
+    def __init__(self, **cfg):
+        super(L1POCOG, self).__init__(**cfg)
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Compute OCOG Width and Amplitude for each waveform
+        and add to classifier data group
+
+        :param l1: Level-1 data object
+        """
+
+        ocog_width = np.full((l1.n_records,), np.nan)
+        ocog_amplitude = ocog_width.copy()
+
+        for i in np.arange(l1.n_records):
+            ocog = OCOGParameter(l1.waveform.power[i, :])
+            ocog_width[i] = ocog.width
+            ocog_amplitude[i] = ocog.amplitude
+
+        l1.classifier.add(ocog_width, "ocog_width")
+        l1.classifier.add(ocog_amplitude, "ocog_amplitude")
+
+    @property
+    def required_options(self) -> List[str]:
+        return []
+
+
 class L1PLeadingEdgeWidth(L1PProcItem):
     """
     A L1P pre-processor item class for computing leading edge width of a waveform
@@ -1389,7 +1422,7 @@ def trailing_edge_slope(
     )
 
 
-class CS2OCOGParameter(object):
+class OCOGParameter(object):
     """
     Calculate OCOG Parameters (Amplitude, Width) for CryoSat-2 waveform
     counts.
