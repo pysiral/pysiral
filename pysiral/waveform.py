@@ -254,17 +254,9 @@ class L1POCOG(L1PProcItem):
 
         :param l1: Level-1 data object
         """
-
-        ocog_width = np.full((l1.n_records,), np.nan)
-        ocog_amplitude = ocog_width.copy()
-
-        for i in np.arange(l1.n_records):
-            ocog = OCOGParameter(l1.waveform.power[i, :])
-            ocog_width[i] = ocog.width
-            ocog_amplitude[i] = ocog.amplitude
-
-        l1.classifier.add(ocog_width, "ocog_width")
-        l1.classifier.add(ocog_amplitude, "ocog_amplitude")
+        ocog = OCOGParameter(l1.waveform.power)
+        l1.classifier.add(ocog.width, "ocog_width")
+        l1.classifier.add(ocog.amplitude, "ocog_amplitude")
 
     @property
     def required_options(self) -> List[str]:
