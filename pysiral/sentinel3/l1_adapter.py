@@ -1,15 +1,14 @@
 
 import contextlib
-import datetime
 from pathlib import Path
 
 import numpy as np
-import pytz
 import xarray
 import xmltodict
 from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate
+from typing import Optional
 
 from pysiral import __version__ as pysiral_version
 from pysiral.core.clocks import StopWatch
@@ -408,8 +407,8 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
             self._parse_xml_manifest(filepath)
 
         # Parse the input netCDF file
-        self._read_input_netcdf(filepath)
-        if self.error.status:
+        self.nc = self._read_input_netcdf(filepath)
+        if self.nc is None:
             return self.empty
 
         # Get metadata
@@ -484,20 +483,19 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         product_info = metadata[index]["metadataWrap"]["xmlData"]
         return product_info[tag]
 
-    def _read_input_netcdf(self, filepath):
+    @staticmethod
+    def _read_input_netcdf(filepath) -> Optional[xarray.Dataset]:
         """
         Read the netCDF file via xarray
         :param filepath: The full filepath to the netCDF file
         :return: none
         """
         try:
-            self.nc = xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
-
-        except:
+            return xarray.open_dataset(filepath, decode_times=False, mask_and_scale=True)
+        except OSError:
             msg = f"Error encountered by xarray parsing: {filepath}"
-            self.error.add_error("xarray-parse-error", msg)
-            logger.warning(msg)
-            return
+            logger.error(msg)
+            return None
 
     def _set_input_file_metadata(self):
         """
@@ -720,5 +718,3 @@ class Sentinel3L2SeaIce(Level1PInputHandlerBase):
         :return: Representation of an empty object (None)
         """
         return None
-
-
