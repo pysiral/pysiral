@@ -19,7 +19,6 @@ All variants with options for single core and multi-processing
 
 TODO: Implement sigma0/windspeed computation (per switch in config file)
 TODO: Computation of residuals should be configurable method
-TODO: Combined method to extract first guess and parameter bounds from waveform
 
 Workflow
 
@@ -69,6 +68,7 @@ from pysiral.l2data import Level2Data
 VALID_METHOD_LITERAL = Literal["samosap_standard", "samosap_specular", "samosap_single"]
 VALID_METHODS = get_args(VALID_METHOD_LITERAL)
 
+# Default fit tolerances for the least squares optimization from SAMPy
 DEFAULT_FIT_KWARGS = dict(
     loss="linear",
     method="trf",
@@ -78,8 +78,14 @@ DEFAULT_FIT_KWARGS = dict(
     max_nfev=100,
 )
 
+# Flag to enable debug mode for SAMOSA+ retracker
+# if set to True, the SAMOSA+ waveform model will store
+# all intermediate results in the fit process.
 SAMOSA_WFM_COLLECT_FIT_PARAMS = False
 
+# Coefficients for empirical nu - ocog width relation
+# These coefficients have been derived from a limited
+# number of orbits and are not yet validated.
 # TODO: To be refined (currently based on single orbit)
 NU_OCOG_COEFS = (1.11110807e+07, 2.50396017e+00)
 
@@ -658,12 +664,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
         :return: None (Output is added to the instance)
         """
 
-        # num_profiling_waveforms = 50
-        # logger.critical(f"Select ony {num_profiling_waveforms=} ")
-        # np.random.seed(42)
-        # profiling_subset = np.sort(np.random.choice(indices.size, num_profiling_waveforms, replace=False))
-        # indices = indices[profiling_subset]
-
         # Run the retracker
         # NOTE: Output is a SAMOSAFitResult dataclass for each index in indices.
         _, kwargs = self._get_waveform_model_fit_configuration()
@@ -883,15 +883,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
         """
         scaling_factor = float(1.0 / wfm[first_maximum_index])
         normed_waveform = wfm * scaling_factor
-
-        # from pathlib import Path
-        # import matplotlib.pyplot as plt
-        # x = np.arange(normed_waveform.size)
-        # fig = plt.figure("Get Normed Waveform")
-        # plt.plot(x, normed_waveform)
-        # plt.scatter(first_maximum_index, normed_waveform[first_maximum_index], color="red")
-        # plt.savefig(Path(r"D:\temp\samosa\normed_waveform_debug") / f"waveform_{idx}_01_normed_data.png", dpi=300)
-        # plt.close(fig)
 
         return NormedWaveform(
             normed_waveform,
