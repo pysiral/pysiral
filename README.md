@@ -18,7 +18,3 @@ pysiral is based on the python 2.7 distribution until version 0.7.3 and on pytho
 
 The distribution of pysiral is based on python packages that can be installed with pip are released on [GitHub 'releases' page](https://github.com/shendric/pysiral/releases).
 
-
-
-
-
