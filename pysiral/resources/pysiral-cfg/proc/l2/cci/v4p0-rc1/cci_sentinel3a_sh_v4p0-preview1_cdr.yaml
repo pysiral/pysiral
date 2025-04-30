@@ -98,6 +98,10 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
+    - module: l2proc.procsteps
+      pyclass: TransferWaveform2L2
+      options: {}
+
     # Compute rolling classifier statistics
     -   module: l2proc.procsteps
         pyclass: ParameterRollingStatistics
@@ -245,7 +249,6 @@ procsteps:
                 - dry_troposphere
                 - wet_troposphere
                 - dynamic_atmosphere
-                - ionosphere
                 - ionosphere
                 - ocean_tide_elastic
                 - ocean_tide_long_period

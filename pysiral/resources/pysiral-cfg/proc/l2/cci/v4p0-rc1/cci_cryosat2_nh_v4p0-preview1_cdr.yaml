@@ -1,11 +1,12 @@
 metadata:
-    label: "ESA CCI+ Sentinel-3 northern hemisphere sea-ice thickness climate data record v4.0-preview.1"
+    label: "ESA CCI+ CryoSat-2 northern hemisphere sea-ice thickness climate data record"
     product_line: cci
     record_type: cdr
-    platform: sentinel3b
+    platform: cryosat2
     version: v4p0-preview1
     file_version_tag: "v4p0-preview.1"
     hemisphere: north
+
 
 # --- Ingest auxiliary data ---
 #
@@ -30,7 +31,6 @@ auxdata:
         name: nsidc_2021
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
@@ -79,19 +79,20 @@ procsteps:
         pyclass: L1BL2TransferVariables
         options:
             classifier:
-                sigma0_ocean: [sig, sigma0]
+                sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
                 first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
+                stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 dynamic_atmosphere: [rdac, dynamic_atmosphere]
-                ionosphere_gim: [rcio, ionosphere]
+                ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]
@@ -120,30 +121,6 @@ procsteps:
                 - pulse_peakiness
                 - leading_edge_width
                 - sigma0
-
-    # --- Surface type classification algorithm ---
-    #
-    # Surface type classification algorithm can be fully constructed from the
-    # config file. Only the land flag will always overwrite all classification after
-    # the surface type classification.
-    #
-    # The conventions for the options are:
-    #
-    # <surface_type_code>:  -> [ocean, lead, sea_ice]
-    #   - radar_mode: <radar_mode>
-    #     exclude: <surface type>
-    #     conditions:
-    #         - logical expression of the type
-    #              "{<parameter_name>} <operator> <value>"
-    #           including the parameter name in {}, e.g.
-    #              "{sea_ice_concentration} < 15.0"
-    #           Fixed values as in example above are possible, but also monthly values, e.g.:
-    #              "{sigma0} >= [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]"
-    #           This example is evaluated as "{sigma0} >= 1.0" for January and as
-    #           "{sigma0} >= 12.0" for December.
-    #
-    #         - ...
-    #   - ...
 
     # Surface type classification algorithm
     -   module: surface
@@ -335,7 +312,7 @@ procsteps:
         pyclass: L2SeaIceDraft
         options: {}
 
-        # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:

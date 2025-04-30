@@ -32,7 +32,6 @@ auxdata:
         name: nsidc_2021
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
@@ -107,6 +106,10 @@ procsteps:
             waveform:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
+
+    - module: l2proc.procsteps
+      pyclass: TransferWaveform2L2
+      options: {}
 
     # Compute rolling classifier statistics
     -   module: l2proc.procsteps
@@ -333,7 +336,7 @@ procsteps:
         pyclass: L2SeaIceDraft
         options: {}
 
-        # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:

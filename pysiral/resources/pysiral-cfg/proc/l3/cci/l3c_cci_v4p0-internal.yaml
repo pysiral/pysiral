@@ -360,6 +360,6 @@ processing_items:
           - "late_tail_to_peak_power"
           - "trailing_edge_slope"
           - "ocog_width"
-          - "significant_wave_height"
+          - "significant_wave_height"          
         surface_types: ["sea_ice", "lead", "ocean"]
         statistics: ["mean", "sdev"]
