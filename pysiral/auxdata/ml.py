@@ -58,7 +58,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
     This class replaces the previous same-name version but utilizizes solely pytorch
     as pysiral's ML/AI framework for retracker-threshold models
     """
-    
+
     def __init__(self, *args: Iterable[Any], **kwargs: Iterable[Any]) -> None:
         """
         Initialiaze the class. This step includes establishing the model by parsing the
@@ -117,9 +117,9 @@ class RetrackerThresholdModel(AuxdataBaseClass):
         """
 
         # function to retrieve the sub waveform to be used
-        def get_subset_wfm(wfm: np.array, 
-                           fmi: int, 
-                           i0: int = 5, 
+        def get_subset_wfm(wfm: np.array,
+                           fmi: int,
+                           i0: int = 5,
                            i1: int = 30) -> np.array:
             #check for sufficient fmi position
             if fmi >= 30:
@@ -132,7 +132,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             else:
                 sub = np.repeat(np.nan, i0+i1)
             return sub
-        
+
         # get normalized waveform power
         power_max = bn.nanmax(l1p.waveform.power, axis=1)
         normed_waveform_power = l1p.waveform.power[:]/power_max[:, np.newaxis]
@@ -156,36 +156,36 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                 #par_normed = (par - norm_pars[0]) / norm_pars[1]
                 par_normed = (par - norm_pars[0]) / (norm_pars[1] - norm_pars[0])
                 normed_parameters = np.column_stack((normed_parameters, par_normed))
-        
+
         # get reference l1p parameter
-        fmi = l1p.classifier.first_maximum_index.astype(int) 
-        ami = bn.nanargmax(l1p.waveform.power, axis=1).astype(int) 
+        fmi = l1p.classifier.first_maximum_index.astype(int)
+        ami = bn.nanargmax(l1p.waveform.power, axis=1).astype(int)
 
         # get settings for leading/trailing bins of fmi
         i0 = self.cfg.options.fmi_leading_bins
         i1 = self.cfg.options.fmi_trailing_bins
 
         # subset waveforms
-        sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1) 
+        sub_waveform_power = np.array([get_subset_wfm(x, i, i0, i1)
                                        for x,i in zip(normed_waveform_power, fmi)])
         # only use valid waveforms w/ a FMI >= 30
-        self.valid_waveforms_idx = np.where((fmi >= 30) & 
-                                            #(l1p.classifier.peakiness>3.5) & 
-                                            #(l1p.classifier.late_tail_to_peak_power < 0.35) & 
-                                            #(l1p.classifier.trailing_edge_slope < -0.015) & 
+        self.valid_waveforms_idx = np.where((fmi >= 30) &
+                                            #(l1p.classifier.peakiness>3.5) &
+                                            #(l1p.classifier.late_tail_to_peak_power < 0.35) &
+                                            #(l1p.classifier.trailing_edge_slope < -0.015) &
                                             #(l1p.classifier.leading_edge_width < 1.10) &
                                             (ami==fmi)
                                            )[0]
         logger.debug(f'- Number of valid waveforms: {len(self.valid_waveforms_idx)}')
-        
+
         # check for invalid parameters (mainly on non-sea-ice waveforms)
         if 'classifiers' in self.cfg.options.keys():
             invalid_parameters_idx = np.unique(np.where(np.isnan(normed_parameters)))
-            self.valid_waveforms_idx = np.setdiff1d(self.valid_waveforms_idx, 
+            self.valid_waveforms_idx = np.setdiff1d(self.valid_waveforms_idx,
                                                     invalid_parameters_idx)
 
         #validate there a sea-ice waveforms
-        if len(self.valid_waveforms_idx)>0:                                            
+        if len(self.valid_waveforms_idx)>0:
             # limit waveformsto valid ones
             valid_waveforms = sub_waveform_power[self.valid_waveforms_idx]
             # keep for L2 processing
@@ -233,7 +233,7 @@ class RetrackerThresholdModel(AuxdataBaseClass):
             valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
             tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
             tfmra_threshold_predicted[tfmra_threshold_predicted > valid_max] = valid_max
-    
+
             # Return predicted thresholds back on original trajectory
             tfmra_on_trajectory = np.full(self.n_total_waveforms, np.nan)
             tfmra_on_trajectory[self.valid_waveforms_idx] = tfmra_threshold_predicted
@@ -268,7 +268,7 @@ class AutoEncoderERS2(nn.Module):
             nn.Linear(self.n_in//2, self.n_bn),
             nn.LeakyReLU()
         )
-        
+
         # decoder
         self.decoder = nn.Sequential(
             nn.Linear(self.n_bn, self.n_in//2),
@@ -335,7 +335,7 @@ class ERS2_TestCandidate_005_FNN(nn.Module):
         x = self.model(torch.cat([x, par], dim=1))
         return x
 
-            
+
 
 class ERS2_TestCandidate_004_FNN(nn.Module):
     def __init__(self, n_in: int = 35, n_par: int = 6):
@@ -416,7 +416,7 @@ class ERS2_TestCandidate_003_FNN_TanHLeakyRelu(nn.Module):
         self.fc7 = nn.Linear(in_lay_cmb, lay_cmb)
         self.fc8 = nn.Linear(lay_cmb, lay_cmb)
         self.fc9 = nn.Linear(lay_cmb, self.n_out)
-        
+
     def forward(self, x, par):
         # waveform part
         x = x.view(-1, self.n_in*35)
@@ -432,7 +432,7 @@ class ERS2_TestCandidate_003_FNN_TanHLeakyRelu(nn.Module):
         x = torch_nn_functional.leaky_relu(x)
         # inflow of parameter
         par_x = par.view(-1, self.n_in*self.n_par)
-        par_x = self.fc1_par(par_x)        
+        par_x = self.fc1_par(par_x)
         par_x = torch_nn_functional.tanh(par_x)
         par_x = self.fc2_par(par_x)
         par_x = torch_nn_functional.tanh(par_x)
@@ -455,14 +455,14 @@ class ERS2_TestCandidate_003_FNN_TanHLeakyRelu(nn.Module):
 class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
     '''
     Creates Feed-Forward Neural Network architecture using leaky_relu activation function
-    using two separate branches for 1) the input of the subset waveform power of a five 
+    using two separate branches for 1) the input of the subset waveform power of a five
     waveform stack and 2) the parameter input of Epsilon and Max Power for the respective
-    waveforms of the stack. 
-    
-    Both branches are then input and feed through a common two-layer network and output 
-    decimal optimal retracker thresholds through a sigmoid activation finish. 
+    waveforms of the stack.
 
-    Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing 
+    Both branches are then input and feed through a common two-layer network and output
+    decimal optimal retracker thresholds through a sigmoid activation finish.
+
+    Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing
     the identified first-maximum index (fmi).
 
     REQ: Required for RetrackerThresholdModel
@@ -488,7 +488,7 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
         self.fc7 = nn.Linear(544, 1024)
         self.fc8 = nn.Linear(1024, 1024)
         self.fc9 = nn.Linear(1024,  self.n_out)
-        
+
     def forward(self, x, par):
         # waveform part
         x = x.view(-1, self.n_in*35)
@@ -506,7 +506,7 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
         x = torch_nn_functional.leaky_relu(x)
         # inflow of parameter
         par_x = par.view(-1, self.n_in*self.n_par)
-        par_x = self.fc1_par(par_x)        
+        par_x = self.fc1_par(par_x)
         par_x = torch_nn_functional.leaky_relu(par_x)
         par_x = self.fc2_par(par_x)
         par_x = torch_nn_functional.leaky_relu(par_x)
@@ -525,14 +525,14 @@ class ERS2_TestCandidate_001_FNN_LeakyRelu(nn.Module):
 class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
     '''
     Creates Feed-Forward Neural Network architecture using tanh activation function
-    using two separate branches for 1) the input of the subset waveform power of a five 
+    using two separate branches for 1) the input of the subset waveform power of a five
     waveform stack and 2) the parameter input of Epsilon and Max Power for the respective
-    waveforms of the stack. 
-    
-    Both branches are then input and feed through a common two-layer network and output 
-    decimal optimal retracker thresholds through a sigmoid activation finish. 
+    waveforms of the stack.
 
-    Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing 
+    Both branches are then input and feed through a common two-layer network and output
+    decimal optimal retracker thresholds through a sigmoid activation finish.
+
+    Desgined/Trained for ERS2 subwaveform input using 5 bins leading and 30 bins trailing
     the identified first-maximum index (fmi).
 
     REQ: Required for RetrackerThresholdModel
@@ -558,7 +558,7 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         self.fc8 = nn.Linear(1024, 1024)
         self.fc9 = nn.Linear(1024, self.n_out)
 
-        
+
     def forward(self, x, par):
         # waveform part
         x = x.view(-1, self.n_in*35)
@@ -576,7 +576,7 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         x = torch_nn_functional.tanh(x)
         # inflow of parameter
         par_x = par.view(-1, self.n_in*self.n_par)
-        par_x = self.fc1_par(par_x)        
+        par_x = self.fc1_par(par_x)
         par_x = torch_nn_functional.tanh(par_x)
         par_x = self.fc2_par(par_x)
         par_x = torch_nn_functional.tanh(par_x)
@@ -589,7 +589,7 @@ class ERS2_TestCandidate_002_FNN_TanH(nn.Module):
         x = self.fc9(x)
         x = torch.sigmoid(x)
         return x
-        
+
 
 
 
@@ -612,8 +612,8 @@ class ERS2_TestCandidate_003_LSTM_LeakyRelu(nn.Module):
         self.fc3 = nn.Linear(544, 1024)
         self.fc4 = nn.Linear(1024, self.n_out)
         # flatten LSTM parameters for memory efficiency
-        self.lstm.flatten_parameters()  
-    
+        self.lstm.flatten_parameters()
+
     def forward(self, x, par):
         # flatten the input data
         batch_size, seq_len, input_size = x.size()
@@ -630,7 +630,7 @@ class ERS2_TestCandidate_003_LSTM_LeakyRelu(nn.Module):
         x = torch_nn_functional.leaky_relu(x)
         # inflow of parameter
         par_x = par.view(-1, self.n_in*self.n_par)
-        par_x = self.fc1_par(par_x)        
+        par_x = self.fc1_par(par_x)
         par_x = torch_nn_functional.leaky_relu(par_x)
         par_x = self.fc2_par(par_x)
         par_x = torch_nn_functional.leaky_relu(par_x)
@@ -647,7 +647,7 @@ class TorchFunctionalWaveformModelFNN(nn.Module):
     """
     Create Feed-Forward Neural Network architecture
     REQ: Required for RetrackerThresholdModel
-    
+
     Note: Legacy version of the current ENVISAT implementation until rework
     """
     def __init__(self, fc1_input=45):
@@ -698,7 +698,7 @@ class TorchFunctionalWaveformModelSNN(nn.Module):
         self.fc4 = nn.Linear(1024, 1024)
         self.fc5 = nn.Linear(1024, 512)
         self.fc6 = nn.Linear(512, 1)
-    def forward(self, x): 
+    def forward(self, x):
         x = self.fc1(x)
         x = torch_nn_functional.selu(x)
         x = self.fc2(x)
@@ -738,8 +738,8 @@ class TorchFunctionalWaveformModelCNN(nn.Module):
         #self.mp2 = nn.MaxPool1d(3, stride=2)
         #self.fc1 = nn.Linear(384, 2048)
         #self.fc2 = nn.Linear(2048, 1)
-        
-    def forward(self, x): 
+
+    def forward(self, x):
         x = self.cv1_1(x)
         x = torch_nn_functional.relu(x)
         x = self.cv1_2(x)
@@ -762,3 +762,142 @@ class TorchFunctionalWaveformModelCNN(nn.Module):
         return x
 
 
+class RetrackerThresholdModelTorch(AuxdataBaseClass):
+
+    def __init__(self, *args: Iterable[Any], **kwargs: Iterable[Any]) -> None:
+        """
+        Initialiaze the class. This step includes establishing the model by parsing the
+        model parameter file as specified in the Level-2 processor definition file.
+        :param args:
+        :param kwargs:
+        """
+        super(RetrackerThresholdModelTorch, self).__init__(*args, **kwargs)
+
+        # Retrieve requested model files
+        self.model_file = self.cfg.options.get("model_file", None)
+        if self.model_file is None:
+            msg = f"Missing option `model_file` in auxiliary data configuration {self.cfg.options}"
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+
+        self.model_filepath = Path(self.cfg.local_repository) / self.model_file
+        if self.model_file is None:
+            msg = f"Model file {self.model_filepath} not found"
+            self.error.add_error("missing-file", msg)
+            self.error.raise_on_error()
+
+        # The model uses waveform power as input
+        self.waveform_for_prediction = None
+
+        # Get and initialize the required torch model class
+        # REQ: Needs to be part of this file
+        torch_model_class = self.cfg.options.get("torch_class", None)
+        if torch_model_class is None:
+            msg = "PyTorch model class not specified (options.torch_class missing)"
+            self.error.add_error("missing-option", msg)
+            self.error.raise_on_error()
+        model_class, _ = get_cls("pysiral.auxdata.ml", torch_model_class)
+        # retrieve number of input layer neurons, defaults to 45 (the Envisat standard)
+        input_neurons = self.cfg.options.get("input_neurons", 45)
+        if model_class is None:
+            msg = f"PyTorch model class not found: pysiral.auxdata.ml.{torch_model_class}"
+            self.error.add_error("class-not-found", msg)
+            self.error.raise_on_error()
+        self.model = model_class(input_neurons)
+        self.model.load_state_dict(torch.load(self.model_filepath,
+                                              map_location=torch.device('cpu')))
+        self.model.eval()
+
+    def receive_l1p_input(self, l1p: 'L1bdataNCFile') -> None:
+        """
+        Optional method to add l1p variables to this class before `get_l2_track_vars()` is
+        called. This method here store the waveform power arrays, which are input to the
+        model, normalizes the waveforms and converts to the necessary data type.
+
+        :param l1p:
+
+        :return:
+        """
+
+        # function to identify the first maximum index (fmi)
+        def id_fmi(wfm, start=0, bins=128, spacing=2):
+            xshape = bins + 2 * spacing
+            x = np.ndarray(shape=(xshape))
+
+            x[:spacing] = wfm[0] - 1.e-6
+            x[-spacing:] = wfm[-1] - 1.e-6
+            x[spacing:spacing + bins] = wfm
+
+            h_b = x[start:start + bins]  # before
+            start = spacing
+            h_c = x[start:start + bins]  # central
+            start = spacing + 1
+            h_a = x[start:start + bins]  # after
+
+            peak_candidate = np.logical_and(h_c > h_b, h_c >= h_a)
+            peak_candidate = np.logical_and(peak_candidate, np.arange(bins) > 10)
+            peak_candidate = np.logical_and(peak_candidate, wfm > 0.5)
+
+            return np.where(peak_candidate)[0][0]
+
+        # function to retrieve the sub waveform to be used
+        def get_sub_wf(wfm, fmi, i0=10, i1=35):
+            # zero-pad waveforms
+            wfm = np.concatenate((wfm, np.zeros(50)))
+            return wfm[(fmi - i0):(fmi + i1)]
+
+        # get normalized waveform power
+        waveform_norms = bn.nanmax(l1p.waveform.power, axis=1)
+        normed_waveform_power = l1p.waveform.power[:] / waveform_norms[:, np.newaxis]
+
+        # get waveform/sensor meta
+        n_bins = normed_waveform_power.shape[1]
+        n_wf = normed_waveform_power.shape[0]
+        if n_bins >= 128:
+            i0 = 10
+            i1 = 35
+        else:
+            i0 = 10
+            i1 = 25
+
+        # subset waveform
+        sub_waveform_power = np.zeros((n_wf, i0 + i1))
+        c = 0
+        for x in normed_waveform_power:
+            try:
+                wf_fmi = id_fmi(x, bins=n_bins)
+            except IndexError:
+                c += 1
+                continue
+            if wf_fmi >= 10:
+                sub_waveform_power[c] = get_sub_wf(x, wf_fmi, i0, i1)
+            c += 1
+        self.waveform_for_prediction = torch.tensor(sub_waveform_power.astype('float32')).unsqueeze(1)
+
+    #        self.waveform_for_prediction = torch.tensor(normed_waveform_power.astype('float32'))
+
+    def get_l2_track_vars(self, l2: 'Level2Data') -> None:
+        """
+        [Mandatory class method] Add the model prediction for the tfmra retracker threshold to the
+        Level-2 data object. The model evaluation depends solely on waveform power.
+
+        :param l2: `Level2Data` container
+
+        :return: None
+
+        :raises: None
+        """
+
+        # Predict the waveform range
+        with torch.no_grad():
+            opt = self.model(self.waveform_for_prediction)
+        tfmra_threshold_predicted = opt.numpy().flatten()
+
+        # Limit threshold range to pre-defined range (or at least [0-1])
+        valid_min, valid_max = self.cfg.options.get("valid_range", [0.0, 1.0])
+        tfmra_threshold_predicted[tfmra_threshold_predicted < valid_min] = valid_min
+        tfmra_threshold_predicted[tfmra_threshold_predicted > valid_max] = valid_max
+
+        # Add prediction to the Level-2 data object
+        var_id, var_name = self.cfg.options.get("output_parameter", ["tfmrathrs_ml", "tfmra_threshold_ml"])
+        l2.set_auxiliary_parameter(var_id, var_name, tfmra_threshold_predicted)

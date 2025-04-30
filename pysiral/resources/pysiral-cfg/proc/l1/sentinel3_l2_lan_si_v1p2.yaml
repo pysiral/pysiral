@@ -9,7 +9,7 @@ input_handler:
     class_name: L2SeaIceFileDiscovery
     
     options:
-        local_machine_def_tag: l2_seaice_tds  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
+        local_machine_def_tag: l2_lan_si  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
         filename_search: enhanced_measurement.nc
 
@@ -24,8 +24,8 @@ input_adapter:
     options:
         
         name: "IPF SRAL/MWR Level 2 Measurement"
-
-        range_bin_width: 0.2342125 # (60 m range window / 256 bins)
+                         
+        range_bin_width: 0.2342125  # Number communicated via Sara Fleury 
         nominal_tracking_bin: 88
 
         # Settings for the xml manifest
@@ -42,7 +42,8 @@ input_adapter:
 
         # Translates the timeliness nomenclature to pysiral conventions
         timeliness_dict:
-            NT: nrt
+            NT: rep
+            NR: nrt
 
         # Translates instrument operate mode nomenclature to pysiral conventions
         # From the documentation in the netCDF global attributes:
@@ -58,7 +59,7 @@ input_adapter:
             wet_troposphere: mod_wet_tropo_cor_meas_altitude_01
             inverse_barometric: inv_bar_cor_01
             dynamic_atmosphere: hf_fluct_cor_01 # "Provided as a correction to the inverted barometer correction (inv_bar_cor_01)";
-            ionosphere: iono_cor_alt_01_ku
+            ionosphere: iono_cor_alt_20_ku
             ionosphere_gim: iono_cor_gim_01_ku
             ocean_tide_elastic: ocean_tide_non_eq_01
             ocean_tide_long_period: ocean_tide_eq_01
@@ -71,19 +72,28 @@ input_adapter:
         classifier_targets:
             tracking_configuration: cl_gain_20_ku
             distance_coast: dist_coast_20_ku
-            sigma0_ocean: sig0_ocean_20_ku
+            sigma0_ocean: sig0_water_20_ku
             surface_type_classification: surf_type_class_20_ku
             stack_kurtosis: kurt_stack_20_ku
-            swh_ocean: swh_ocean_20_ku
+            stack_skewness: skew_stack_20_ku
+            stack_standard_deviation: stdev_stack_20_ku
+            swh_ocean: swh_water_20_ku
+            brightness_temperature_238: tb_238_01
+            brightness_temperature_365: tb_365_01
+            first_year_ice_class_membership: first_year_ice_class_01_ku
+            multi_year_ice_class_membership: multi_year_ice_class_01_ku
+            open_water_class_membership: open_water_class_01_ku
+
+
 
 # Output handler (will always be default handler -> only options)
 output_handler:
    
     options:
-        local_machine_def_tag: l2_seaice_tds
+        local_machine_def_tag: l2_lan_si
         version:
-            source_file_tag: l2_seaice
-            version_file_tag: v1p0
+            source_file_tag: l2_lan_si
+            version_file_tag: v1p2
 
 
 # Settings for the pre-processor
@@ -100,7 +110,7 @@ level1_preprocessor:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0
             input_file_is_single_hemisphere: False
-            allow_nonocean_segment_nrecords: 250
+            allow_nonocean_segment_nrecords: 1000
             ocean_mininum_size_nrecords: 5
     
         # Check for gaps in the input files and split at a certain gap size (in seconds)
@@ -110,6 +120,8 @@ level1_preprocessor:
         # The maximum separation in seconds for two orbits so that they cound as connected
         orbit_segment_connectivity:
             max_connected_segment_timedelta_seconds: 10
+
+        detect_radar_mode_change: True
         
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
@@ -127,13 +139,16 @@ level1_preprocessor:
                 # Power threshold for the normalized waveform
                 # that the first maximum has to exceed
                 first_maximum_normalized_power_threshold:
+                    lrm: 0.5
                     sar: 0.25
                     # Number of range bins prior to the first maximum
                 # that are to compute the quality factor
                 leading_edge_lookup_window:
+                    lrm: 20
                     sar: 30
                     # Minimum valid first maximum index
                 minimum_valid_first_maximum_index:
+                    lrm: 10
                     sar: 10
 
             # Compute pulse peakiness
@@ -168,7 +183,6 @@ level1_preprocessor:
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_ignore_leading_bins: 0
 
-
             # Compute the leading edge peakiness
             # This class will add three parameters to the l1p classifier data group:
             #  1. Leading edge peakiness
@@ -181,8 +195,42 @@ level1_preprocessor:
                 # that the first maximum has to exceed
                 window_size: 3
 
+            # Compute the Late Tail to Peak Power Parameter
+            # This class will one parameter to the l1p classifier data group:
+            #  1. late tail to peak power
+            - label: "Compute Late Tail to Peak Power (LTPP)"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PLateTail2PeakPower
+              options:
+                # Index Window after maximum power for late tail power
+                late_tail_window_idx:
+                  sar: [50, 70]
 
 
+            # Compute Trailing Edge Properties
+            # This class will several parameter to the l1p classifier data group:
+            #  1. trailing_edge_decay (Müller et al., 2023)
+            #  2. trailing_edge_decay_fit_quality
+            #  3. trailing_edge_decay_median_absolute_diff (Müller et al., 2023)
+            #  4. trailing_edge_width
+            #  5. trailing_edge_quality
+            - label: "Compute Trailing Edge Decay"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1PTrailingEdgeProperties
+              options:
+                use_multiprocessing: True
+                valid_first_maximum_index_range: [10, 246]
+                trailing_edge_width:
+                  oversample_factor: 10
+                  trailing_edge_end_power_treshold_normed: 0.05
 
-
-
+            # Compute the leading edge peakiness
+            # This class will add three parameters to the l1p classifier data group:
+            #  1. Leading edge peakiness
+            - label: "Compute OCOG Parameters"
+              stage: post_ocean_segment_extraction
+              module_name: pysiral.waveform
+              class_name: L1POCOG
+              options: {}

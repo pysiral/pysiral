@@ -27,7 +27,7 @@ global_attributes:
   # - conventions: "CF-1.6"
   - product_version: "4.0-preview.1"
   - processing_level: "Level-2 Intermediate (l2i)"
-  - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 2002 - April 2024.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period June 2002 - April 2024.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
+  - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from ERS-2, Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 1996 - April 2024.;Southern Hemisphere Sea Ice Thickness Climate Data Record from ERS-2, Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 1996 - April 2024.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
   - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"
   - id: "esacci-seaice-l2i-sithick-{source_mission_sensor_fn}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}"
   - naming_authority: "de.awi"
@@ -112,7 +112,7 @@ variables:
     long_name: "region code"
     comment: "Region code from {source_hemisphere:selectA new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC);Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
     valid_min: 0
-    valid_max: 21
+    valid_max: 20
     flag_values: "{source_hemisphere:select;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
     flag_meaning: "{source_hemisphere:select;Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St._Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
     units: "1"
@@ -132,34 +132,6 @@ variables:
     units: m
     coordinates: time
 
-  elevation_ocean:
-    long_name: "elevation (ocean retracker)"
-    standard_name: "surface_altitude"
-    comment: "not available for all platforms, all range correction applied"
-    units: m
-    coordinates: time
-
-  elevation_ice1:
-    long_name: "elevation (ICE1 retracker)"
-    standard_name: "surface_altitude"
-    comment: "not available for all platforms, all range correction applied"
-    units: m
-    coordinates: time
-
-  elevation_ice2:
-    long_name: "elevation (ICE2 retracker)"
-    standard_name: "surface_altitude"
-    comment: "not available for all platforms, all range correction applied"
-    units: m
-    coordinates: time
-
-  elevation_sitrack:
-    long_name: "elevation (sea ice retracker)"
-    standard_name: "surface_altitude"
-    comment: "not available for all platforms, all range correction applied"
-    units: m
-    coordinates: time
-
   mean_sea_surface:
     long_name: "elevation of mean sea surface at measurement point (above WGS84 ellipsoid)"
     standard_name: sea_surface_height_above_reference_ellipsoid
@@ -167,16 +139,17 @@ variables:
     coordinates: time
 
   sea_level_anomaly_raw:
-    long_name: "sea level anomaly (unsmoothed)"
+    long_name: "raw sea level anomaly"
     standard_name: sea_surface_height_above_mean_sea_level
     units: m
     coordinates: time
-    comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. No smoothing or interpolation applied."
+    comment: ""
 
   sea_level_anomaly:
-    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    long_name: "sea level anomaly"
     standard_name: sea_surface_height_above_mean_sea_level
     units: m
+    comment : "departure of instantaneous sea surface height from mean sea surface height interpolated from raw sea level anomaly"
     coordinates: time
 
   sea_level_anomaly_uncertainty:
@@ -327,8 +300,9 @@ variables:
     coordinates: time
 
   pulse_deblurring_correction:
-    long_name: "Pulse deblurring correction (ERS only)"
+    long_name: "pulse deblurring correction"
     units: meter
+    comment: "only for ERS-1/2"
     coordinates: time
 
   antenna_pitch:
@@ -350,19 +324,30 @@ variables:
     coordinates: time
 
   sigma0:
-    long_name: "radar backscatter (sigma0)"
+    long_name: "radar backscatter coeficient"
     units: "1"
     coordinates: time
 
   sigma0_rolling_sdev:
-    long_name: "radar backscatter (sigma0) rolling standard deviation"
+    long_name: "radar backscatter coeficient rolling standard deviation"
     units: "1"
     coordinates: time
 
   sigma0_rolling_mean:
-    long_name: "radar backscatter (sigma0) width rolling mean"
+    long_name: "radar backscatter coeficient width rolling mean"
     units: "1"
     coordinates: time
+
+  ocog_width:
+    long_name: "OCOG width"
+    units: "1"
+    coordinates: time
+
+  ocog_amplitude:
+    long_name: "OCOG amplitude"
+    units: "1"
+    coordinates: time
+
   pulse_peakiness:
     long_name: "pulse peakiness"
     units: "1"
@@ -423,7 +408,6 @@ variables:
     units: "1"
     coordinates: time
 
-
   leading_edge_quality:
     long_name: "leading edge width"
     units: "1"
@@ -432,6 +416,13 @@ variables:
   stack_standard_deviation:
     long_name: "standard deviation of power over the stack"
     units: "1"
+    comment: "Only for SAR altimeters"
+    coordinates: time
+
+  total_range_correction:
+    long_name: "total range correction"
+    units: "m"
+    comment: "sum of all atmospheric and tide corrections"
     coordinates: time
 
   dry_troposphere:
@@ -506,4 +497,19 @@ variables:
     valid_max: 3
     flag_values: "0, 1, 2"
     flag_meanings: "not_in_miz, miz_no_bias_detected, miz_bias_detected"
+    coordinates: time
+
+  waveform_power:
+    long_name: "waveform power values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_range:
+    long_name: "waveform range values"
+    comment: "From l1p"
+    coordinates: time, range_gates
+
+  waveform_valid_flag:
+    long_name: "waveform valid flag"
+    comment: "From l1p"
     coordinates: time

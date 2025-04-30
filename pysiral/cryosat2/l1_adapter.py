@@ -16,7 +16,7 @@ from pysiral.core.helper import parse_datetime_str
 from pysiral.cryosat2 import cs2_procstage2timeliness
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc import Level1PInputHandlerBase
-from pysiral.waveform import CS2OCOGParameter
+from pysiral.waveform import OCOGParameter
 
 
 class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
@@ -382,7 +382,7 @@ class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):
             self.l1.classifier.add(variable_20hz, key)
 
         # Calculate the OCOG Parameter (CryoSat-2 notation)
-        ocog = CS2OCOGParameter(self.l1.waveform.power)
+        ocog = OCOGParameter(self.l1.waveform.power)
         self.l1.classifier.add(ocog.width, "ocog_width")
         self.l1.classifier.add(ocog.amplitude, "ocog_amplitude")
 

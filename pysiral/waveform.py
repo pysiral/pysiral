@@ -10,7 +10,7 @@ import multiprocessing.pool
 import matplotlib.pyplot as plt
 from functools import partial
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Literal
 
 import bottleneck as bn
 import numpy as np
@@ -236,6 +236,31 @@ class TFMRALeadingEdgeWidth(object):
         :return:
         """
         return self.tfmra.get_thresholds_distance(self.rng, self.wfm, self.fmi, thres0, thres1, **kwargs)
+
+
+class L1POCOG(L1PProcItem):
+    """
+    Computes OCOG (Offset Centre of Gravity) width and amplitude
+    as a Level-1 pre-processor item
+    """
+
+    def __init__(self, **cfg):
+        super(L1POCOG, self).__init__(**cfg)
+
+    def apply(self, l1: Level1bData) -> None:
+        """
+        Compute OCOG Width and Amplitude for each waveform
+        and add to classifier data group
+
+        :param l1: Level-1 data object
+        """
+        ocog = OCOGParameter(l1.waveform.power)
+        l1.classifier.add(ocog.width, "ocog_width")
+        l1.classifier.add(ocog.amplitude, "ocog_amplitude")
+
+    @property
+    def required_options(self) -> List[str]:
+        return []
 
 
 class L1PLeadingEdgeWidth(L1PProcItem):
@@ -780,7 +805,6 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         # Get configuration
         valid_first_maximum_index_range = self.cfg.get("valid_first_maximum_index_range")
         trailing_edge_width_kwargs = self.cfg.get("trailing_edge_width")
-        use_multiprocessing = self.cfg.get("use_multiprocessing", False)
 
         timer = StopWatch().start()
 
@@ -788,21 +812,23 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         wfm = l1.waveform.power
         result = WaveFormTrailingEdgeParameter(
             wfm,
+            l1.classifier.first_maximum_index,
             valid_first_maximum_index_range,
             trailing_edge_width_kwargs
         )
 
         timer.stop()
         logger.debug(f"- Trailing edge properties computed in {timer.get_seconds():.3f} seconds")
-        logger.debug(f"- Trailing edge decay fit as failed for {result.params.decay_fit_has_failed.sum()} waveforms")
-
-        breakpoint()
+        logger.debug(f"- Trailing edge decay fit has failed for {result.params.decay_fit_has_failed.sum()} waveforms")
 
         l1.classifier.add(result.params.ted, "trailing_edge_decay")
         l1.classifier.add(result.params.tedfq, "trailing_edge_decay_fit_quality")
         l1.classifier.add(result.params.temad, "trailing_edge_mean_absolute_deviation")
         l1.classifier.add(result.params.tew, "trailing_edge_width")
         l1.classifier.add(result.params.teq, "trailing_edge_quality")
+        l1.classifier.add(result.params.te_exp_popt0, "trailing_edge_fit_popt0")
+        l1.classifier.add(result.params.te_exp_popt1, "trailing_edge_fit_popt1")
+        l1.classifier.add(result.params.te_exp_popt2, "trailing_edge_fit_popt2")
 
     @staticmethod
     def _compute_single_processing(*args) -> "WaveFormTrailingEdgeParameterData":
@@ -883,21 +909,27 @@ class WaveFormTrailingEdgeParameterData(object):
 
         :param n_records:
         """
+        # TODO: better use a pandas Dataframe etc.
         self.tew = np.full(n_records, np.nan)  # Trailing Edge Width
         self.teq = np.full(n_records, np.nan)  # Trailing Edge Quality
         self.ted = np.full(n_records, np.nan)  # Trailing Edge Decay (Müller et al. 2023)
         self.tedfq = np.full(n_records, np.nan)  # Trailing Edge Decay Fit Quality (Müller et al. 2023)
         self.temad = np.full(n_records, np.nan)
         self.decay_fit_has_failed = np.full(n_records, True)
+        self.te_exp_popt0 = np.full(n_records, np.nan)
+        self.te_exp_popt1 = np.full(n_records, np.nan)
+        self.te_exp_popt2 = np.full(n_records, np.nan)
 
     def add(self, other_params: "WaveFormTrailingEdgeParameterData") -> None:
-
         self.tew = np.append(self.tew, other_params.tew)
         self.teq = np.append(self.teq, other_params.teq)
         self.ted = np.append(self.ted, other_params.ted)
         self.tedfq = np.append(self.tedfq, other_params.tedfq)
         self.temad = np.append(self.temad, other_params.temad)
         self.decay_fit_has_failed = np.append(self.decay_fit_has_failed, other_params.decay_fit_has_failed)
+        self.te_exp_popt0 = np.append(self.tew, other_params.te_exp_popt0)
+        self.te_exp_popt1 = np.append(self.tew, other_params.te_exp_popt1)
+        self.te_exp_popt2 = np.append(self.tew, other_params.te_exp_popt2)
 
 
 class WaveFormTrailingEdgeDecayFit(object):
@@ -905,60 +937,59 @@ class WaveFormTrailingEdgeDecayFit(object):
     def __init__(self, fit_kwargs=None):
         self.default_fit_kwargs = {
             "method": "trf",
-            "ftol": 1e-3,
-            "gtol": 1e-3,
-            "xtol": 1e-4,
-            "loss": "linear",
-            "bounds": ([0.0, 0.0, -np.inf], [np.inf, np.inf, np.inf])
+            "ftol": 1e-2,
+            "gtol": 1e-2,
+            "xtol": 1e-3,
+            "loss": "linear"
         }
         self.fit_kwargs = self.default_fit_kwargs
+        self.default_bounds = ([0.0, 0.0, -2000.], [1e6, 5.0, 1000.])
         self.p0 = None
         if isinstance(fit_kwargs, dict):
             self.fit_kwargs.update(fit_kwargs)
 
     def fit(self, data):
-        p0 = [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)]
-        try:
-            popt, pcov, *_ = curve_fit(
-                inverse_power,
-                data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
-                data.waveform_trailing_edge_subset_lower_envelope,
-                p0=p0,
-                **self.fit_kwargs
-            )
-            return popt
-        # Catch fit errors
-        except (TypeError, RuntimeError, ValueError):
-            return None
+        p0 = [np.float64(data.first_maximum_power), np.float64(0.75), np.float64(0.0)]
+        lb, ub = tuple(self.default_bounds)
+        lb[0] = 0.9 * np.float64(data.first_maximum_power)
+        ub[0] = 1.1 * np.float64(data.first_maximum_power)
 
-    def fit_chunks(self, chunks: List) -> List:
-        """
+        inverse_power_partial = partial(inverse_power, scale=np.float64(data.first_maximum_power))
 
-        :param chunks:
-        :return:
-        """
-        results = []
-        for data in chunks:
-            try:
-                popt, pcov, *_ = curve_fit(
-                    inverse_power,
-                    data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
-                    data.waveform_trailing_edge_subset_lower_envelope,
-                    p0=self.p0,
-                    **self.fit_kwargs
-                )
-                self.p0 = popt
-            # Catch fit errors
-            except (TypeError, RuntimeError, ValueError):
-                popt = (np.nan, np.nan, np.nan)
-            results.append(popt)
-        return results
+        full_output = curve_fit(
+            inverse_power_partial,
+            data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+            data.waveform_trailing_edge_subset_lower_envelope,
+            p0=p0[1:],
+            bounds=(lb[1:], ub[1:]),
+            full_output=True,
+            **self.fit_kwargs
+        )
+
+        popt = [*full_output[0], np.float64(data.first_maximum_power)]
+
+        # import matplotlib.pyplot as plt
+        # x = np.arange(max(data.trailing_edge_lower_envelope_idx)+1)
+        # plt.figure()
+        # plt.title(f"{popt=}")
+        # x1 = data.waveform_trailing_edge_idx
+        # plt.scatter(x1 - data.trailing_edge_start_idx + 1, data.waveform_full[x1],
+        #             s=1, color="black")
+        # plt.scatter(
+        #     data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
+        #     data.waveform_trailing_edge_subset_lower_envelope,
+        # )
+        # plt.plot(x, inverse_power(x, *popt), label="fit")
+        # plt.show()
+
+        return popt
 
 
 class WaveFormTrailingEdgeParameter(object):
 
     def __init__(self,
                  waveforms: npt.NDArray,
+                 first_maximum_index: npt.NDArray,
                  valid_first_maximum_index_range: List,
                  trailing_edge_width_kwargs: Dict
                  ):
@@ -974,6 +1005,7 @@ class WaveFormTrailingEdgeParameter(object):
 
         # Input data and config
         self.waveforms = waveforms
+        self.first_maximum_index = first_maximum_index
         self.valid_first_maximum_index_range = valid_first_maximum_index_range
         self.trailing_edge_width_kwargs = trailing_edge_width_kwargs
 
@@ -998,7 +1030,10 @@ class WaveFormTrailingEdgeParameter(object):
         for i in np.arange(num_waveforms):
 
             # Collect data and sanity check
-            trailing_edge_data = self.get_waveform_trailing_edge_data(self.waveforms[i, :])
+            trailing_edge_data = self.get_waveform_trailing_edge_data(
+                self.waveforms[i, :],
+                self.first_maximum_index[i]
+            )
             if (
                     self.valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
                     self.valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
@@ -1007,19 +1042,20 @@ class WaveFormTrailingEdgeParameter(object):
             waveform_data_stack.append(trailing_edge_data)
             waveform_index_list.append(i)
 
-        # multiprocessing fit
         fit_class = WaveFormTrailingEdgeDecayFit()
-        chunks_idxs, cpu_count = get_multiprocessing_1d_array_chunks(num_waveforms, psrlcfg.CPU_COUNT)
-        trailing_edge_data_chunks = [
-            waveform_data_stack[chunks_idx[0]:chunks_idx[1] + 1]
-            for chunks_idx in chunks_idxs
-        ]
-        pool = multiprocessing.Pool(cpu_count)
-        result_chunks = pool.imap(fit_class.fit_chunks, trailing_edge_data_chunks)
+
+        # single processing fit
+        # results = []
+        # for i in np.arange(len(waveform_data_stack)):
+        #     popt = fit_class.fit(waveform_data_stack[i])
+        #     results.append(popt)
+
+        # multiprocessing fit
+        pool = multiprocessing.Pool(psrlcfg.CPU_COUNT)
+        results = pool.imap(fit_class.fit, waveform_data_stack)
         pool.close()
         pool.join()
-
-        results = [result for results in result_chunks for result in results]
+        results = list(results)
 
         # Note: Not all waveforms are fitted, e.g. if the trailing edge starts to
         #       late or too early. The list of results therefore might be shorter
@@ -1027,9 +1063,16 @@ class WaveFormTrailingEdgeParameter(object):
         #       the fit index to the original waveform index.
         for fit_index, i in enumerate(waveform_index_list):
 
-            trailing_edge_data = self.get_trailing_edge_decay(waveform_data_stack[fit_index], results[fit_index])
+            if results[fit_index] is None:
+                continue
+            popt = results[fit_index]
+            self.params.te_exp_popt0[i] = popt[0]
+            self.params.te_exp_popt1[i] = popt[1]
+            self.params.te_exp_popt2[i] = popt[2]
+            trailing_edge_data = self.get_trailing_edge_decay(waveform_data_stack[fit_index], popt)
 
             # In this case the fitting algorithm has failed
+            # trailing_edge_data.decay_debug_plot("Trailing Edge fit")
             if trailing_edge_data.trailing_edge_fit is None:
                 # trailing_edge_data.decay_debug_plot("Trailing Edge fit failed")
                 continue
@@ -1043,28 +1086,33 @@ class WaveFormTrailingEdgeParameter(object):
     def get_waveform_trailing_edge_data(
             self,
             waveform_full: np.ndarray,
+            first_maximum_index: int = None
     ) -> WFMTrailingEdgeData:
         """
         Aggregate all necesary trailing edge properties in a data class.
 
         :param waveform_full: The full waveform in original units
+        :param first_maximum_index: Index of first maximum (definition of trailing edge start)
 
         :return: Data class
         """
 
-        trailing_edge_start_idx = np.argmax(waveform_full)
-        trailing_edge_idx = np.arange(trailing_edge_start_idx, waveform_full.size)
-
-        # Get indices of trailing edge lower envelope
-        # Only the lower envelope will be used to compute offset/scale
-        trailing_edge_lower_envelope_idx = self.get_trailing_edge_lower_envelope(
-            waveform_full[trailing_edge_idx]
+        # NOTE: The index returned by `get_trailing_edge_lower_envelope_mask` describes
+        #       the range gate index, but here the index relative to the first maximum is
+        #       needed. Therefore, the index is shifted by the first maximum index.
+        trailing_edge_lower_envelope_idx = get_trailing_edge_lower_envelope_mask(
+            waveform_full.copy(),
+            first_maximum_index,
+            noise_level_normed=0.005,
+            return_type="indices",
+            mask_fill_value=False
         )
+        trailing_edge_lower_envelope_idx -= first_maximum_index
 
         return WFMTrailingEdgeData(
             waveform_full,
-            trailing_edge_start_idx,
-            trailing_edge_idx,
+            first_maximum_index,
+            np.arange(first_maximum_index, waveform_full.size),
             trailing_edge_lower_envelope_idx,
         )
 
@@ -1081,25 +1129,6 @@ class WaveFormTrailingEdgeParameter(object):
 
         :return: Data class with updated results
         """
-
-        # # Execute the fit
-        # # NOTE: x-values shall not be 0 (0**anything -> ZeroDivisionError)
-        # p0 = \
-        #     [np.float64(data.first_maximum_power), np.float64(1e-01), np.float64(0.0)] \
-        #     if self.last_fit_popt is None else self.last_fit_popt
-        #
-        # try:
-        #     popt, pcov, *_ = curve_fit(
-        #         inverse_power,
-        #         data.trailing_edge_lower_envelope_idx.astype(np.float64) + 1.0,
-        #         data.waveform_trailing_edge_subset_lower_envelope,
-        #         p0=p0,
-        #         **self.fit_kwargs
-        #     )
-        # # Catch fit errors
-        # except (TypeError, RuntimeError):
-        #     return data
-        # self.last_fit_popt = popt
 
         # Compute fit
         x_values = np.arange(data.trailing_edge_size, dtype=np.float64) + 1
@@ -1165,7 +1194,6 @@ class WaveFormTrailingEdgeParameter(object):
         :param data:
         :return:
         """
-
         power_diff = data.waveform_trailing_edge_subset[1:] - data.waveform_trailing_edge_subset[:-1]
         absolute_negative_power_diff = np.abs(power_diff[power_diff < 0.0])
         total_power_drop = bn.nansum(absolute_negative_power_diff)
@@ -1391,7 +1419,7 @@ def trailing_edge_slope(
     )
 
 
-class CS2OCOGParameter(object):
+class OCOGParameter(object):
     """
     Calculate OCOG Parameters (Amplitude, Width) for CryoSat-2 waveform
     counts.
@@ -1637,4 +1665,126 @@ def coeficient_of_determination(y: np.ndarray, y_fit: np.ndarray) -> float:
     return 1 - (ss_res / ss_tot)
 
 
+def get_trailing_edge_lower_envelope_mask(
+        waveform_power: np.ndarray,
+        first_maximum_index: int,
+        max_minimum_cleaning_passes: int = 5,
+        noise_level_normed: float = 0.02,
+        return_type: Literal["bool", "indices"] = "bool",
+        mask_fill_value: bool = True
+) -> np.ndarray:
+    """
+    Compute the indices of the waveforms trailing edge lower envelope.
+    This method relies on the computation of relative minima via scipy.
+    with added filtering.
 
+    :param waveform_power: Waveform power values (any unit)
+    :param first_maximum_index: Range gate index of the first maximum.
+    :param max_minimum_cleaning_passes: Local minima on the trailing edge
+        may not be in strictly decreasing in power depending on the
+        off-nadir backscatter contanimation of the trailing edge.
+        Local minima are iteratively removed that are not decreasing in
+        power.
+    :param noise_level_normed: Points within the noise level of the linear
+        fit between successive local minima are added to the trailing edge
+        mask. Noise level unit is the first maximum power.
+    :param return_type: Options are a boolean array with the same dimensions
+        as the waveform (default), or an index array.
+    :param mask_fill_value: Default flag value before trailing edge (Default: True)
+
+    :return:
+    """
+
+    # Perform operation on trailing edge only normalized by
+    # first maximum power (trailing edge is defined as
+    # everything after the first maximum).
+    wfm_trailing_edge = np.array(waveform_power[first_maximum_index:])
+    wfm_trailing_edge /= np.nanmax(wfm_trailing_edge)
+
+    # Get local minima and add first maximum and last range gate
+    # the list (important for fitting waveform power).
+    idx_lmin = argrelmin(wfm_trailing_edge)[0]
+    idx_lmin = np.insert(idx_lmin, 0, 0)
+    idx_lmin = np.insert(idx_lmin, len(idx_lmin), wfm_trailing_edge.size-1)
+
+    # Throw out local minima that have greater power then the previous
+    # one in several iterations
+    for _ in np.arange(max_minimum_cleaning_passes):
+        wfm_power_change = [
+            wfm_trailing_edge[idx_lmin[1:]] - wfm_trailing_edge[idx_lmin[:-1]]
+        ][0]
+        wfm_change = np.insert(wfm_power_change, 0, -1)
+        valid_local_minima = wfm_change < 0.0
+        if valid_local_minima.all():
+            break
+        idx_lmin = idx_lmin[wfm_change < 0.0]
+
+    # Create a leading edge mask. This is required for the
+    # following operation
+    mask_le = np.full(wfm_trailing_edge.size, mask_fill_value)
+    mask_le[idx_lmin] = True
+
+    # Take in again waveform points that are within the noise level
+    # (ensures that are enough points for the fit, without deviating
+    # from the lower envelope too much).
+    # This is done by computing a linear fit between successive
+    # local minima and checking the difference of actual power
+    # values to the linear fit.
+    # n_range_gates = len(waveform_power)
+
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.plot(wfm_trailing_edge)
+    # plt.scatter(idx_lmin, wfm_trailing_edge[idx_lmin], color="red")
+    # plt.show()
+
+    is_higher = np.zeros(idx_lmin.size, dtype=bool)
+    for i in np.arange(idx_lmin.size-1):
+        power_threshold = float(wfm_trailing_edge[idx_lmin[i]]) + noise_level_normed
+        is_higher[i:] = np.logical_or(
+            is_higher[i:],
+            wfm_trailing_edge[idx_lmin[i:]] >= power_threshold
+        )
+        #
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.axhline(power_threshold, color="red")
+        # plt.plot(wfm_trailing_edge, lw=0.4, color="black")
+        # plt.scatter(idx_lmin[i], wfm_trailing_edge[idx_lmin[i]], color="blue", s=80)
+        # plt.scatter(idx_lmin, wfm_trailing_edge[idx_lmin], c=is_higher, s=20)
+        # plt.show()
+
+    mask_le[idx_lmin[is_higher]] = False
+    mask = np.full(waveform_power.size, False)
+    mask[first_maximum_index:] = mask_le
+
+    # import matplotlib.pyplot as plt
+    # x = np.arange(waveform_power.size)
+    # plt.figure()
+    # plt.plot(waveform_power, lw=0.4, color="black")
+    # plt.scatter(x[mask], waveform_power[mask], color="green", s=80)
+    # plt.show()
+
+    #
+    #     # --- Method 1: Distance to POCA of linear fit ---
+    #     idx_lmin_scaled = idx_lmin.astype(float) / n_range_gates
+    #     k = wfm_trailing_edge[idx_lmin[i]]
+    #     m = ((wfm_trailing_edge[idx_lmin[i+1]] - wfm_trailing_edge[idx_lmin[i]]) /
+    #          (idx_lmin_scaled[i+1] - idx_lmin_scaled[i]))
+    #
+    #     for x, idx in enumerate(np.arange(idx_lmin[i]+1, idx_lmin[i+1])):
+    #
+    #         x0 = float(x + 1) / n_range_gates
+    #         y0 = wfm_trailing_edge[idx]
+    #
+    #         x_poca = (x0 + m * y0 - m * k) / (m ** 2. + 1)
+    #         y_poca = m * (x0 + m * y0 - m * k) / (m ** 2. + 1) + k
+    #
+    #         dist = np.sqrt((x_poca - x0)**2. + (y_poca - y0)**2)
+    #         mask_le[idx] = dist <= noise_level_normed
+    #
+    # # Final step: Pad trailing edge mask to full waveform mask
+    # mask = np.full(waveform_power.size, False)
+    # mask[first_maximum_index:] = mask_le
+
+    return mask if return_type is "bool" else np.where(mask)[0]
