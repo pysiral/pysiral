@@ -184,8 +184,10 @@ class ParameterSmoother(Level2ProcessorStep):
         auxname = self.cfg.options.target_variable_name
 
         # Get a dictionary of the filter function
-        filter_func = {"box_filter": self.box_filter_smoother,
-                       "lowess": self.lowess_smoother}
+        filter_func = {
+            "box_filter": self.box_filter_smoother,
+            "lowess": self.lowess_smoother
+        }
 
         # check if requested smoothing method is implemented
         if self.cfg.options.smoothing_method not in filter_func.keys():
@@ -197,8 +199,16 @@ class ParameterSmoother(Level2ProcessorStep):
 
         # Get the source parameter
         var = getattr(l2, self.cfg.options.source_variable)
-        result = filter_func[self.cfg.options.smoothing_method](var[:],  **self.cfg.options.smoother_args)
-        var_filtered, var_filtered_unc = result
+        var_filtered, _ = filter_func[self.cfg.options.smoothing_method](var[:], **self.cfg.options.smoother_args)
+
+        # [Optional] Remove interpolated values from waveforms that are classified as land (flag value 6) or
+        # land ice (flag value 7). This part of the algorithm is optional and must be explicitly activated
+        # by setting `ocean_domain_only: True` in the config file to not break older configurations.
+        ocean_domain_only = self.cfg.options.get("ocean_domain_only", False)
+        if ocean_domain_only:
+            is_non_ocean = np.isin(l2.surface_type.flag, [6, 7])
+            logger.info(f"- Filter apply ocean-domain-only filter ({np.where(is_non_ocean)[0].size} records)")
+            var_filtered[is_non_ocean] = np.nan
 
         # Add the result as auxiliary data set without an uncertainty
         l2.set_auxiliary_parameter(auxid, auxname, var_filtered)
@@ -847,6 +857,96 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                 "leading_edge_width",
                 "sea_ice_freeboard",
                 "distance_to_ocean"]
+
+    @property
+    def l2_output_vars(self):
+        return ["flag_miz"]
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
+
+
+class SAMOSAMarginalIceZoneFilterFlag(Level2ProcessorStep):
+    """
+    Create a flag value that can be used to filter freeboard/thickness values
+    that are affected by surface waves penetrating the marginal ice zone based
+    on output from the SAMOSA+ algorithm.
+
+    The flag can take the following values:
+
+        0: not in marginal ice zone
+        1: in marginal ice zone: light to none wave influence detected
+        2: in marginal ice zone: wave influence detected
+
+    The flag values depend on:
+
+        - leading edge with of ocean waveforms at the ice edge
+        - sea ice freeboard gradient as a function of distance to the ice edge
+
+    Thresholds to determine the flag values need to be specified in the
+    options of the Level2 processor definition file:
+
+    -   module: filter
+        pyclass: SAMOSAMarginalIceZoneFilterFlag
+        options:
+            max_ocean_proximity: <maximum distance to ocean in meter>
+            min_significant_waveheight: <minimum significant wave height in meter>
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(SAMOSAMarginalIceZoneFilterFlag, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self,
+                         l1b: "Level1bData",
+                         l2: "Level2Data"
+                         ) -> np.ndarray:
+        """
+        API method for Level2ProcessorStep subclasses. Computes and add the filter flag to the l2 data object
+
+        :param l1b:
+        :param l2:
+
+        :return: Error flag array
+        """
+
+        # Get the default filter flag
+        filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
+
+        # Get input variables
+        miz_filter = np.zeros((l2.n_records,)).astype(np.byte)
+        try:
+            ocean_proximity = l2.get_parameter_by_name("distance_to_ocean")
+            significant_waveheight = l2.get_parameter_by_name("samosa_swh")
+            sea_ice_concentration = l2.get_parameter_by_name("sea_ice_concentration")
+        except KeyError:
+            logger.warning(f"{self.__class__.__name__}: Missing input variables (did SAMOSA+ run?)")
+            l2.set_auxiliary_parameter("fmiz", "flag_miz", miz_filter)
+            return np.logical_not(filter_flag_miz_error)
+
+        # Compute filter flag value
+        conditions = (
+            ocean_proximity <= self.cfg.options.max_ocean_proximity,
+            significant_waveheight >= self.cfg.options.min_significant_waveheight,
+            sea_ice_concentration >= 15.0
+        )
+        miz_filter_flag = np.logical_and.reduce(conditions)
+        miz_filter[miz_filter_flag] = 1
+
+        # Add parameter to the L2 data container (no uncertainties)
+        l2.set_auxiliary_parameter("fmiz", "flag_miz", miz_filter)
+        return filter_flag_miz_error
+
+    @property
+    def l2_input_vars(self):
+        return [
+            "surface_type",
+            "samosa_swh",
+            "samosa_leading_edge_error",
+            "distance_to_ocean",
+            "sea_ice_concentration"
+        ]
 
     @property
     def l2_output_vars(self):

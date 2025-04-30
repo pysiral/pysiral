@@ -5,7 +5,7 @@
 
 # List of icechart products (fmi version)
 icechart:
-    
+
     # CANADIAN ICE CHARTS
     canada:
         pyclass: IC
@@ -36,7 +36,7 @@ icechart:
             pwdfile: null
             type: weekly
             link: "/pub/DATASETS/NOAA/G02171/{area}/{year}/cis_SGRD*_pl_*"
-    
+
     # AARI ICE CHARTS
     aari:
         pyclass: ICA
@@ -67,6 +67,15 @@ icechart:
             pwdfile: null
             type: weekly
             link: "/resources/d0015/arctic/sigrid/{year}/aari_arc_{year}{month}{day}_pl_a.zip"
+
+    nsidc:
+        pyclass: NSIDCSeaIceChartsSIGRID3
+        long_name: U.S. National Ice Center Arctic and Antarctic Sea Ice Charts in SIGRID-3 Format, Version 1
+        filenaming: "aari_arc_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: nsidc
+        options: {}
+
 
 # list of mean_sea_surface data products
 mss:
@@ -143,7 +152,7 @@ mss:
             link: /pub/DTU21/1_MIN/DTU21MSS_1min.mss.nc
 
 # Mean dynamic topography class
-mdt: 
+mdt:
     dtu17:
         pyclass: DTUMDTGrid
         long_name: DTU17 mean dynamic topography (1/8 degree grid)
@@ -151,6 +160,15 @@ mdt:
         filename: dtu17mdt2_err.nc
         options: null
         source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
+
+    dtu22:
+        pyclass: DTUMDTGrid
+        long_name: DTU22 mean dynamic topography (1/8 degree grid)
+        local_repository: dtu22
+        filename: dtu22mdt2_err.nc
+        options: null
+        source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
+
 
 # List of snow depth (density products)
 snow:
@@ -675,9 +693,9 @@ sitype:
         local_repository: c3s
         filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
         options:
-            
+
             is_cdr_icdr: True
-            global: 
+            global:
                 fill_value: -127
                 uncertainty_unit_is_percent: False
                 variable_name: ice_type
@@ -816,7 +834,7 @@ region:
             filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_m:05g}.nc
             # This is the default value, can be overwritten in l2 settings (if required)
             resolution_m: 1000
-            outside_value: 0 
+            outside_value: 0
 
 # risk index outcome
 rio:
@@ -831,14 +849,6 @@ rio:
 ml:
     tfmra_threshold_model:
         pyclass: RetrackerThresholdModel
-        long_name: Learned model (xgboost) for predicting TFMRA retracker threshold from waveform shape parameters
-        local_repository: tfmra_threshold_model
-        options:
-            suffixes:
-                - ".model"
-
-    tfmra_threshold_model_torch:
-        pyclass: RetrackerThresholdModelTorch
-        long_name: Learned model (torch) for predicting TFMRA retracker threshold from waveform shape parameters
+        long_name: Learned model for predicting TFMRA retracker threshold from waveform shape parameters
         local_repository: tfmra_threshold_model_torch
         options: null

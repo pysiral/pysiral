@@ -536,21 +536,19 @@ class Warren99AMSR2ClimDataContainer(object):
 
         # Compute the difference in days between requested days
         requested_date_dt = datetime(*date_tuple)
+
+        # Sanity check for period coverage
+        if requested_date_dt.month not in self.month_nums:
+            logger.error("Target month is outside data coverage, snow depth will be NaN")
+            return 10, 11, np.nan
+
         ref_datetimes = self.get_reference_datetimes(date_tuple)
         ref_date_offset = [(requested_date_dt-dt).days for dt in ref_datetimes]
 
-        # Find the index of the first month where the difference in day is negative (right boundary)
-        month_right_index = int(np.argmax(np.array(ref_date_offset) < 0))
+        # Find the index of the first months, where the difference in day is 0 or less (right boundary)
+        month_right_index = int(np.argmax(np.array(ref_date_offset) <= 0))
         month_left_index = month_right_index - 1
         month_left, month_right = self.month_nums[month_left_index], self.month_nums[month_right_index]
-
-        # Check solution
-        if month_left_index < 0:
-            logger.warning("Target month is outside data coverage, weighting factor -> NaN")
-            return 10, 11, np.nan
-            # msg = "Month not found, check input or bug in code"
-            # self.error.add_error("unspecified-error", msg)
-            # self.error.raise_on_error()
 
         # Compute the weighting factor
         period_n_days = (ref_datetimes[month_right_index] - ref_datetimes[month_left_index]).days

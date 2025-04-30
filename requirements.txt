@@ -1,12 +1,13 @@
 astropy
 attrdict
 bottleneck
-cartopy>=0.22
+cartopy
 cftime
 cython==0.29.35
-dateperiods @ git+https://github.com/shendric/dateperiods.git@main#egg=dateperiods
+dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
+geopandas
 geopy
 h5py
 isort
@@ -28,6 +29,7 @@ pyresample
 pyshp
 python-dateutil
 pyyaml
+samosa-waveform-model @ git+https://github.com/shendric/samosa-waveform-model.git@main#egg=samosa-waveform-model
 schema
 scipy
 scikit-learn
@@ -39,6 +41,6 @@ sphinx_rtd_theme
 sphinxcontrib-mermaid
 statsmodels
 torch
-xarray
+xarray==2023.12
 xgboost
 xmltodict

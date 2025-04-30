@@ -12,7 +12,7 @@ from datetime import timedelta
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg
+from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
@@ -21,6 +21,7 @@ from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
 def pysiral_l2proc():
+
     # Collect job settings from pysiral configuration data and
     # command line arguments
     args = Level2ProcArgParser()
@@ -45,7 +46,7 @@ def pysiral_l2proc_time_range_job(args):
     """ This is a Level-2 Processor job for a given time range """
 
     # Get start time of processor run
-    t0 = time.process_time()
+    t0 = time.time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -101,7 +102,7 @@ def pysiral_l2proc_time_range_job(args):
         l2proc.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.process_time()
+    t1 = time.time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
@@ -110,7 +111,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     """ A more simple Level-2 job with a predefined list of l1b data files """
 
     # Get start time of processor run
-    t0 = time.process_time()
+    t0 = time.time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -118,14 +119,15 @@ def pysiral_l2proc_l1b_predef_job(args):
                                           force_l2def_record_type=args.force_l2def_record_type)
 
     # Specifically add an output handler
-    product_def.add_output_definition(args.l2_output, overwrite_protection=args.overwrite_protection)
+    for l2_output in args.l2_output:
+        product_def.add_output_definition(l2_output, overwrite_protection=args.overwrite_protection)
 
     # Processor Initialization
     l2proc = Level2Processor(product_def)
     l2proc.process_l1b_files(args.l1b_predef_files)
 
     # All done
-    t1 = time.process_time()
+    t1 = time.time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
@@ -142,6 +144,9 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # use python module argparse to parse the command line arguments
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
+
+        if self._args.mp_cpu_count is not None:
+            set_psrl_cpu_count(self._args.mp_cpu_count)
 
         # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
@@ -194,6 +199,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-input-version", "input-version", "input_version", False),
             ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
+            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
