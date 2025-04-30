@@ -62,6 +62,12 @@ variables:
     long_name: utc timestamp
     units: seconds since 1970-01-01
 
+  altitude:
+    long_name: altitude
+    standard_name: altitude
+    units: m
+    coordinates: time
+
   longitude:
     long_name: longitude of satellite nadir measurement point
     standard_name: longitude
