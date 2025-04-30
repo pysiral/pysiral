@@ -1,17 +1,17 @@
 # This is the Cryo-TEMPO Sea Ice definition for the Level2Processor
 
 # Metadata
-metadata: 
+metadata:
   output_id: l2i
   data_level: 2
   data_level_description: Level-2 (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: 
+filenaming:
   default: CS_OFFL_SIR_TDP_SI_ARCTIC_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
 product_level_subfolder: l2
 
-# A list of global attributes 
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
@@ -79,14 +79,14 @@ global_attributes:
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
 variables:
-  
+
   time:
     long_name: UTC time
     standard_name: time
     units: seconds since 2000-01-01 0:0:0
     calendar: "gregorian"
     comment: "UTC time counted in seconds since 2000-01-01 00:00:00"
-    
+
   longitude:
     long_name: longitude of satellite nadir measurement point
     standard_name: longitude
@@ -122,7 +122,7 @@ variables:
     units: m
     coordinates: longitude latitude
     comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
-    
+
   sea_ice_freeboard:
     long_name: "freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
@@ -135,14 +135,14 @@ variables:
     units: m
     coordinates: longitude latitude
     comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
-    
+
   sea_ice_freeboard_filtered:
     long_name: "smoothed freeboard of the sea ice layer"
     standard_name: sea_ice_freeboard
     units: m
     coordinates: longitude latitude
     comment: "Filtered with a 450km lowess filter"
-    
+
   snow_depth:
     long_name: "snow depth"
     standard_name: surface_snow_thickness
@@ -150,12 +150,21 @@ variables:
     ancillary_variables: snow_depth_uncertainty
     coordinates: longitude latitude
     comment: "Snow depth interpolated from model"
-    
+
   snow_depth_uncertainty:
     long_name: "snow depth uncertainty"
     units: m
     coordinates: longitude latitude
     comment: "Uncertainty of the snow depth."
+
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0, 1"
+    flag_meanings: "no_miz miz"
+    units: "1"
+    coordinates: time
 
   region_code:
     long_name: "Region code (adapted from NSIDC region mask)"
@@ -167,4 +176,3 @@ variables:
     baffin_bay east_greenland_sea barents_sea kara_sea laptev_sea east_siberian_sea chukchi_sea beaufort_sea canadian_islands central_arctic valtic_sea land land_outline"
     units: "1"
     coordinates: time
-    

@@ -29,7 +29,7 @@ pyresample
 pyshp
 python-dateutil
 pyyaml
-samosa-waveform-model @ git+https://github.com/pysiral/samosa-waveform-model.git@main#egg=samosa-waveform-model
+samosa-waveform-model @ git+https://github.com/shendric/samosa-waveform-model.git@main#egg=samosa-waveform-model
 schema
 scipy
 scikit-learn

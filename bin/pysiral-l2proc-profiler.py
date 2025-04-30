@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
+import cProfile
 import argparse
 import glob
 import re
@@ -12,7 +13,7 @@ from datetime import timedelta
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg, set_psrl_cpu_count
+from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
@@ -21,6 +22,16 @@ from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
 def pysiral_l2proc():
+
+    # sys.argv = [
+    #     "pysiral-l2proc",
+    #     "-l2-settings",
+    #     "esa_cryosat2_cryotempo_si_nh_rep_d001",
+    #     "-l1b-files",
+    #     r"D:\siral\data\altimetry\cryosat2\ipf1-e\rep\l1p\v1p2\north\2019\04\pysiral-l1p-cryosat2-esa_pds_ipf1e-rep-north-20190403T012341-20190403T012739-v1p2.nc",
+    #     "-l2-output",
+    #     "l2i_esa_cryotempo_si_d001"
+    # ]
 
     # Collect job settings from pysiral configuration data and
     # command line arguments
@@ -46,7 +57,7 @@ def pysiral_l2proc_time_range_job(args):
     """ This is a Level-2 Processor job for a given time range """
 
     # Get start time of processor run
-    t0 = time.time()
+    t0 = time.process_time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -102,7 +113,7 @@ def pysiral_l2proc_time_range_job(args):
         l2proc.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.time()
+    t1 = time.process_time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
@@ -111,7 +122,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     """ A more simple Level-2 job with a predefined list of l1b data files """
 
     # Get start time of processor run
-    t0 = time.time()
+    t0 = time.process_time()
 
     # Get the product definition
     product_def = Level2ProductDefinition(args.run_tag,
@@ -127,7 +138,7 @@ def pysiral_l2proc_l1b_predef_job(args):
     l2proc.process_l1b_files(args.l1b_predef_files)
 
     # All done
-    t1 = time.time()
+    t1 = time.process_time()
     seconds = int(t1 - t0)
     logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
 
@@ -144,9 +155,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # use python module argparse to parse the command line arguments
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
-
-        if self._args.mp_cpu_count is not None:
-            set_psrl_cpu_count(self._args.mp_cpu_count)
 
         # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
@@ -199,7 +207,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
             ("-input-version", "input-version", "input_version", False),
             ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
-            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
             ("--remove-old", "remove-old", "remove_old", False),
             ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
             ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
@@ -325,4 +332,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
 
 
 if __name__ == "__main__":
-    pysiral_l2proc()
+    with cProfile.Profile() as pr:
+        pysiral_l2proc()
+        pr.dump_stats("samosa_wfm_profiling.dat")

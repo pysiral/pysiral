@@ -1,80 +1,78 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
     product_line: esa
-    record_type: si-rep
+    record_type: tds-si-rep-D001-TDS3-samosa-standard-noamp
     platform: cryosat2
     version: D001
-    file_version_tag: "D001"
-    hemisphere: south
+    file_version_tag: "D001-TDS3c"
+    hemisphere: north
 
 
 # --- Ingest auxiliary data ---
-# 
-# A list auxilliary datasets to be ingested before the execution of the processing steps. 
-# 
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
+#
 # Usage:
 #
 #  - <auxdata_category>:       <- links to corresponding category in auxdata_def.yaml
 #       name: <auxdata_name>   <- links auxdata_category.auxdata_name auxdata_def.yaml
 #       options: {dict}        <- Options that may overwrite the ones already provided in auxdata_def.yaml
-# 
-# Notes: 
+#
+# Notes:
 #
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
-#   
+#
 auxdata:
 
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: antarctic_seas
-        options:
-            # default value for all points outside the regions
-            ice_free_ocean_code: 0
-            region_def:
-                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
-                - [100, "Indian Ocean", 20.0,  90.0, -40.0]
-                - [101, "Western Pacific Ocean", 90.0, 160.0, -40.0]
-                - [102, "Ross Sea", 160.0,  -130.0, -40.0]
-                - [103, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
-                - [104, "Weddell Sea", -60.0,  20.0, -40.0]
+        name: nsidc_2021
+        options: null
 
     # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [-90.0, -45.]
+            latitude_range: [45.0, 90.0]
 
     - sic:
         name: c3s
         options:
             version: v3p0
-            exception_on_error: False
+            exception_on_error: True
 
     - sitype:
-         name: fyi_default
-         options: 
-             uncertainty_default: 0.1
+        name: c3s
+        options:
+            version: v3p0
+            fill_valid_sic_gaps: True
+            exception_on_error: True
 
     - snow:
-         name: icdc_climatology_south
-         options:
-             snow_density: 300.
-             snow_density_uncertainty: 50.
-             smooth_snow_depth: true
-             smooth_filter_width_m: 25000.0
-             exception_on_error: True
+        name: clim_w99amsr2
+        options:
+            daily_scaling: True
+            fyi_correction_factor: 0.5
+            exception_on_error: False
+
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
 
 
 # --- Level-2 processor steps ---
-# 
-# A list auxilliary datasets to be ingested before the execution of the processing steps. 
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
 
-procsteps: 
+procsteps:
 
     # Transfer variables from the l1b data object to the l2 data object
-    # Notation is: 
+    # Notation is:
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
@@ -220,8 +218,7 @@ procsteps:
     -   module: retracker
         pyclass: Level2RetrackerContainer
         options:
-
-            lead:
+          lead:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: polar_ocean
@@ -234,26 +231,23 @@ procsteps:
                     amplitude_is_free_param: &samosa_fit_amp_lead [False, False]
                     # SAMOSA+ step 2 requires fixed swh value
                     step2_fixed_swh_value: 0.0
-                    # Sub-waveform masking algorithm does not perform well for
-                    # specular waveforms
-                    trailing_edge_sub_waveform_filter: False
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_lead
                   initial_guess:
                     epoch: first_maximum_index
                     amplitude: 1.0
-                    nu: 2_000_000.0
+                    nu: 1_000_000.0
                   bounds:
                     epoch:
                         earliest_range_window_fraction: 0.1
                         range_gates_after_fmi: 20
                     amplitude: [0.9, 1.1]
-                    nu: [1_000_000., 1_000_000_000.]
+                    nu: [100_000, 2_000_000]
                 misfit_filter:
                     max_leading_edge_error: 0.1
                     max_misfit: 5.0
 
-            sea_ice:
+          sea_ice:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
@@ -262,7 +256,7 @@ procsteps:
                 fit_method: "samosap_standard"
                 samosap_fit_kwargs:
                     # Only single fit (with SAMOSA+ step 2)
-                    amplitude_is_free_param: &samosa_fit_amp_sea_ice [True, True]
+                    amplitude_is_free_param: &samosa_fit_amp_sea_ice [False, False]
                     # SAMOSA+ step 1 requires fixed nu value
                     step1_fixed_nu_value: 0.0
                     # SAMOSA+ step 2 requires fixed swh value
@@ -273,15 +267,15 @@ procsteps:
                   initial_guess:
                     epoch: first_maximum_index
                     amplitude: 1.0
-                    swh: 2.0
-                    nu: 10_000.
+                    swh: 1.0
+                    nu: 1_000.0
                   bounds:
                     epoch:
                         earliest_range_window_fraction: 0.1
                         range_gates_after_fmi: 20
                     amplitude: [0.9, 1.1]
-                    swh: [-1.0, 10.0]
-                    nu: [1_000., 10_000_000.]
+                    swh: [-0.5, 10]
+                    nu: [0., 1_000_000.]
                 misfit_filter:
                     max_leading_edge_error: 0.1
                     max_misfit: 5.0
@@ -380,4 +374,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
-

@@ -31,6 +31,7 @@ from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
 
+
 class Level3Processor(DefaultLoggingClass):
 
     def __init__(self, product_def):
@@ -60,7 +61,9 @@ class Level3Processor(DefaultLoggingClass):
         logger.info("Initialize l2i data stack")
         stack = L2iDataStack(self._job.grid, self._job.l2_parameter)
 
-        logger.info("Parsing products (prefilter active: %s)" % (str(self._job.l3def.l2i_prefilter.active)))
+        logger.info(
+            f"Parsing products (prefilter active: {str(self._job.l3def.l2i_prefilter.active)})"
+        )
 
         # Parse all orbit files and add to the stack
         for i, l2i_file in enumerate(l2i_files):
@@ -464,6 +467,8 @@ class L3DataGrid(DefaultLoggingClass):
                     self.vars[name][yj, xi] = np.unique(data)
                 elif grid_method == "median":
                     self.vars[name][yj, xi] = np.nanmedian(data)
+                elif grid_method == "max":
+                    self.vars[name][yj, xi] = np.nanmax(data)
                 else:
                     msg = "Invalid grid method (%s) for %s"
                     msg %= (str(grid_method), name)
@@ -1655,7 +1660,12 @@ class Level3LoadCCILandMask(Level3ProcessorItem):
         lookup_directory = Path(lookup_directory)
 
         # Get the mask target filename
-        filename = self.cfg["mask_name_dict"][grid_id.replace("_", "")]
+        # Get the mask target filename
+        try:
+            filename = self.cfg["mask_name_dict"][grid_id.replace("_", "")]
+        except KeyError:
+            logger.error(f"Could not find mask for grid id {grid_id} -> aborting")
+            return
         mask_filepath = lookup_directory / filename
         if not mask_filepath.is_file():
             msg = "Missing input file: {}".format(mask_filepath)
@@ -1696,10 +1706,9 @@ class Level3GridUncertainties(Level3ProcessorItem):
 
     # Mandatory properties
     required_options = ["water_density", "snow_depth_correction_factor", "max_l3_uncertainty"]
-    l2_variable_dependencies = ["radar_freeboard_uncertainty", "sea_ice_thickness"]
-    l3_variable_dependencies = ["sea_ice_thickness", "sea_ice_freeboard", "snow_depth", "sea_ice_density",
-                                "snow_density", "snow_depth_uncertainty", "sea_ice_density_uncertainty",
-                                "snow_density_uncertainty"]
+    l2_variable_dependencies = ["radar_freeboard_uncertainty"]
+    l3_variable_dependencies = ["sea_ice_freeboard", "snow_depth",
+                                "snow_density", "snow_depth_uncertainty", "snow_density_uncertainty"]
     l3_output_variables = dict(radar_freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
                                freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
                                sea_ice_thickness_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
@@ -1725,21 +1734,6 @@ class Level3GridUncertainties(Level3ProcessorItem):
         # Loop over grid items
         for xi, yj in self.l3grid.grid_indices:
 
-            # Check of data exists
-            if np.isnan(self.l3grid.vars["sea_ice_thickness"][yj, xi]):
-                continue
-
-            # Get parameters
-            frb = self.l3grid.vars["sea_ice_freeboard"][yj, xi]
-            sd = self.l3grid.vars["snow_depth"][yj, xi]
-            rho_i = self.l3grid.vars["sea_ice_density"][yj, xi]
-            rho_s = self.l3grid.vars["snow_density"][yj, xi]
-
-            # Get systematic error components
-            sd_unc = self.l3grid.vars["snow_depth_uncertainty"][yj, xi]
-            rho_i_unc = self.l3grid.vars["sea_ice_density_uncertainty"][yj, xi]
-            rho_s_unc = self.l3grid.vars["snow_density_uncertainty"][yj, xi]
-
             # Get random uncertainty
             # Note: this applies only to the radar freeboard uncertainty.
             #       Thus we need to recalculate the sea ice freeboard uncertainty
@@ -1755,12 +1749,31 @@ class Level3GridUncertainties(Level3ProcessorItem):
             rfrb_unc = 1. / np.sqrt(weight)
             self.l3grid.vars["radar_freeboard_l3_uncertainty"][yj, xi] = rfrb_unc
 
+            # Get parameters
+            frb = self.l3grid.vars["sea_ice_freeboard"][yj, xi]
+            sd = self.l3grid.vars["snow_depth"][yj, xi]
+            rho_s = self.l3grid.vars["snow_density"][yj, xi]
+
+            # Get systematic error components
+            sd_unc = self.l3grid.vars["snow_depth_uncertainty"][yj, xi]
+            rho_s_unc = self.l3grid.vars["snow_density_uncertainty"][yj, xi]
+
             # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
             deriv_snow = sd_corr_fact
             frb_unc = np.sqrt((deriv_snow * sd_unc) ** 2. + rfrb_unc ** 2.)
             self.l3grid.vars["freeboard_l3_uncertainty"][yj, xi] = frb_unc
 
             # Calculate the level-3 thickness uncertainty
+
+            # # Check of sea ice thickness exists
+            if "sea_ice_thickness" not in self.l3grid.vars:
+                continue
+
+            if np.isnan(self.l3grid.vars["sea_ice_thickness"][yj, xi]):
+                continue
+
+            rho_i = self.l3grid.vars["sea_ice_density"][yj, xi]
+            rho_i_unc = self.l3grid.vars["sea_ice_density_uncertainty"][yj, xi]
             errprop_args = [frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc]
             sit_l3_unc = frb2sit_errprop(*errprop_args)
 

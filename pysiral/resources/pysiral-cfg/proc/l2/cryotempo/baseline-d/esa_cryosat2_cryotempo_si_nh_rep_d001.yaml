@@ -1,7 +1,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
     product_line: esa
-    record_type: tds-si-rep-D001
+    record_type: si-rep
     platform: cryosat2
     version: D001
     file_version_tag: "D001"
@@ -41,7 +41,7 @@ auxdata:
         name: c3s
         options:
             version: v3p0
-            exception_on_error: True
+            exception_on_error: False
 
     - sitype:
         name: c3s
@@ -84,11 +84,14 @@ procsteps:
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
+                first_maximum_index: [fmi, first_maximum_index]
                 first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
                 stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
+                ocog_width: [ocogw, ocog_width]
+                ocog_amplitude: [ocogp, ocog_amplitude]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -144,7 +147,7 @@ procsteps:
     #   - ...
 
     # Surface type classification algorithm
-    # SH: This is the surface type classification algorithm for the
+    # SH: This is the surface type classification algorithm for
     #     the new ESA CCI climate data record. There are now significantly
     #     more sea ice waveform
     -   module: surface
@@ -152,7 +155,7 @@ procsteps:
         options:
 
             # This option defines the surface type order. It is important that
-            # leads are classified before sea ice to fullfill the condition
+            # leads are classified before sea ice to fulfill the condition
             # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 
@@ -216,31 +219,70 @@ procsteps:
         pyclass: Level2RetrackerContainer
         options:
 
-          lead:
+            lead:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: polar_ocean
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_specular"
+                samosap_fit_kwargs:
+                    # Two values for SAMOSA+ step1 and step2
+                    # NOTE: step1 is ignored for leads (`fit_method: samosap_specular`)
+                    amplitude_is_free_param: &samosa_fit_amp_lead [False, False]
+                    # SAMOSA+ step 2 requires fixed swh value
+                    step2_fixed_swh_value: 0.0
+                    # Sub-waveform masking algorithm does not perform well for
+                    # specular waveforms
+                    trailing_edge_sub_waveform_filter: False
                 predictor_kwargs:
-                  earliest_epoch: 0.1   # earliest fraction of range window
+                  amplitude_is_free_parameter: *samosa_fit_amp_lead
+                  initial_guess:
+                    epoch: first_maximum_index
+                    amplitude: 1.0
+                    nu: 2_000_000.0
                   bounds:
-                    nu: [500_000, 5_000_000]
+                    epoch:
+                        earliest_range_window_fraction: 0.1
+                        range_gates_after_fmi: 20
+                    amplitude: [0.9, 1.1]
+                    nu: [1_000_000., 1_000_000_000.]
+                misfit_filter:
+                    max_leading_edge_error: 0.1
+                    max_misfit: 5.0
 
-
-          sea_ice:
+            sea_ice:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_standard"
+                samosap_fit_kwargs:
+                    # Only single fit (with SAMOSA+ step 2)
+                    amplitude_is_free_param: &samosa_fit_amp_sea_ice [True, True]
+                    # SAMOSA+ step 1 requires fixed nu value
+                    step1_fixed_nu_value: 0.0
+                    # SAMOSA+ step 2 requires fixed swh value
+                    step2_fixed_swh_value: 0.0
+                    trailing_edge_sub_waveform_filter: True
                 predictor_kwargs:
-                  earliest_epoch: 0.1   # earliest fraction of range window
+                  amplitude_is_free_parameter: *samosa_fit_amp_sea_ice
+                  initial_guess:
+                    epoch: first_maximum_index
+                    amplitude: 1.0
+                    swh: 2.0
+                    nu: 10_000.
                   bounds:
-                    swh: [-2., 20.0]
-                    nu: [100., 2_000_000.]
+                    epoch:
+                        earliest_range_window_fraction: 0.1
+                        range_gates_after_fmi: 20
+                    amplitude: [0.9, 1.1]
+                    swh: [-1.0, 10.0]
+                    nu: [1_000., 10_000_000.]
+                misfit_filter:
+                    max_leading_edge_error: 0.1
+                    max_misfit: 5.0
 
     # Apply the range corrections
     -   module: l2proc.procsteps
@@ -283,13 +325,22 @@ procsteps:
         pyclass: RadarFreeboardDefault
         options: null
 
+    # Filter out-of-valid range freeboard values
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: afrb
+            target_variables: [afrb]
+            valid_minimum_point_value: -0.35
+            valid_maximum_point_value: 2.35
+
     # Algorithm for converting radar freeboard into freeboard
     -   module: frb
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: mallett2020
 
-    # Filter invalid freeboard values
+    # Filter out-of-valid range sea ice freeboard values
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
@@ -298,21 +349,12 @@ procsteps:
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
 
-    #     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
-    # -   module: filter
-    #     pyclass: MarginalIceZoneFilterFlag
-    #     options:
-    #         ice_edge_proximity:
-    #             sea_ice_concentration_max: 75.
-    #             ocean_distance_max: 300000.
-    #             leading_edge_width_rolling_mean_min: 2.0
-    #             pulse_peakiness_rolling_sdev_max: 15.0
-    #         ice_edge_transition:
-    #             sea_ice_filter_size_m: 300000.
-    #             ocean_filter_size_m: 25000.
-    #             freeboard_smoother_filter_size_m: 150000.
-    #             sea_ice_freeboard_miz_gradient: 0.002
-    #             leading_edge_width_ocean_value: 2.5
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: SAMOSAMarginalIceZoneFilterFlag
+        options:
+            max_ocean_proximity: 150_000.0
+            min_significant_waveheight: 3.2
 
     # Create a filtered/smoothed version of sea-ice freeboard
     -   module: filter

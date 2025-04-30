@@ -11,6 +11,7 @@ __all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "set_psrl_cpu_count", "InterceptHandler", "__version__"]
 
+import cProfile
 import importlib
 import logging
 import multiprocessing
