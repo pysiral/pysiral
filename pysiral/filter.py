@@ -406,6 +406,10 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # Get the default filter flag
         filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
 
+        # Get the output flag format
+        # (Can be boolean (0, 1) or extented (-1, 0, 1, 2))
+        boolean_flag_values = self.cfg.get("boolean_flag_values", False)
+
         # Only compute the filter flag, if all basic conditions are met
         filter_execute_conditions = [
             np.isfinite(l2.frb[:]).any(),       # There needs to be freeboard data
@@ -415,7 +419,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             l2.set_auxiliary_parameter(
                 "fmiz",
                 "flag_miz",
-                self.get_default_filter_flag(l2.n_records),
+                self.get_default_filter_flag(l2.n_records, boolean_flag_values),
                 None)
             return filter_flag_miz_error
 
@@ -429,6 +433,14 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                 l2.get_parameter_by_name("distance_to_low_ice_concentration"),
                 l2.footprint_spacing]
         filter_flag, _ = self.get_miz_filter_flag(*args)
+
+        # Simplify the filter to a true/false flag
+        # The original flag and their modified values are:
+        # -1: not in marginal ice zone
+        # (-1 -> 0, 0 -> 0, 1 -> 0, 2 -> 1)
+        if boolean_flag_values:
+            filter_flag = np.where(filter_flag > 1, 1, 0).astype(np.byte)
+
         l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag, None)
         return filter_flag_miz_error
 
@@ -848,8 +860,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         return filter_flag
 
     @staticmethod
-    def get_default_filter_flag(n_records: int) -> np.ndarray:
-        return np.full(n_records, -1)
+    def get_default_filter_flag(n_records: int, boolean_flag_values: bool) -> np.ndarray:
+        fill_value = 0 if boolean_flag_values else -1
+        return np.full(n_records, fill_value).astype(np.byte)
 
     @property
     def l2_input_vars(self):

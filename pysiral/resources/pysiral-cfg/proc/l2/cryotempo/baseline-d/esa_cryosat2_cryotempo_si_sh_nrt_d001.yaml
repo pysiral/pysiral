@@ -328,6 +328,7 @@ procsteps:
     -   module: filter
         pyclass: MarginalIceZoneFilterFlag
         options:
+            boolean_flag_values: True
             ice_edge_proximity:
                 sea_ice_concentration_max: 75.
                 ocean_distance_max: 300000.
