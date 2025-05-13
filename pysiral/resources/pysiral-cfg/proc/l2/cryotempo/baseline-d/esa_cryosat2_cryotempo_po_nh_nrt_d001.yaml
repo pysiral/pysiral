@@ -2,9 +2,9 @@
 # Lowess length set to 1501 for consistency with FMR. Change to 333 for phase 2.2
 
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
+    label: "ESA CryoTEMPO CryoSat-2 near real-time polar ocean product"
     product_line: esa
-    record_type: po-rep
+    record_type: po-nrt
     platform: cryosat2
     version: D001
     file_version_tag: "D001"
@@ -26,13 +26,12 @@ metadata:
 #   - The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
 #
 auxdata:
-
     # Add region codes
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
-        options: null
+          name: nsidc_2021
+          options: null
 
     # Load the
     - mss:
@@ -47,18 +46,12 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s
+        name: osisaf-operational
         options:
-            version: v3p0
-            exception_on_error: True
-
-    - sitype:
-        name: c3s
-        options:
-            version: v3p0
-            fill_valid_sic_gaps: True
-            exception_on_error: True
-
+            exception_on_error: False
+            fill_pole_hole:
+                pole_hole_lat_threshold: 87.0
+                pole_hole_fill_value: 100.
 
 # --- Level-2 processor steps ---
 #
@@ -83,7 +76,7 @@ procsteps:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 dynamic_atmosphere: [rdac, dynamic_atmosphere]
-                ionosphere_gim: [rcio, ionosphere]
+                ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]

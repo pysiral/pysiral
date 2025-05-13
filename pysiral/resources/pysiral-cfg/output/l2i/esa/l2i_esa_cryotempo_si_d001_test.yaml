@@ -1,21 +1,21 @@
-# This is the Cryo-TEMPO Polar Oceans definition for the Level2Processor
+# This is the Cryo-TEMPO Sea Ice definition for the Level2Processor
 
 # Metadata
-metadata: 
+metadata:
   output_id: l2i
   data_level: 2
   data_level_description: Level-2 (geophysical parameters at footprint resolution)
 
 # Output Definition
-filenaming: 
-  default: CS_OFFL_SIR_TDP_PO_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
-product_level_subfolder: l2
+filenaming:
+  default: CS_TEST_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
+product_level_subfolder: l2-test
 
-# A list of global attributes 
+# A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - title: "Cryo-TEMPO Polar Ocean Thematic Product"
+  - title: "Cryo-TEMPO Sea Ice Thematic Test Product"
   - project: "ESA Cryo-TEMPO"
   - creator_name: "ESA Cryo-TEMPO Project"
   - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
@@ -42,7 +42,7 @@ global_attributes:
   - cdm_data_type: "Trajectory"
   - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
   - sw_version: "{pysiral_version}"
-  - doi: "10.5270/CR2-7ece675"
+  - doi: "10.5270/CR2-e2dd631"
 
 #  - institution: "TBD"
 #  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
@@ -76,18 +76,17 @@ global_attributes:
 #  - standard_name_vocabulary: "CF Standard Name Table (v77, 19 January 2021)"
 #  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
 
-
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-2 parameter
 variables:
-  
+
   time:
     long_name: UTC time
     standard_name: time
     units: seconds since 2000-01-01 0:0:0
     calendar: "gregorian"
     comment: "UTC time counted in seconds since 2000-01-01 00:00:00"
-        
+
   longitude:
     long_name: longitude of satellite nadir measurement point
     standard_name: longitude
@@ -110,62 +109,54 @@ variables:
     valid_max: 3
     coordinates: longitude latitude
     comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
-    
-  sea_level_anomaly:
-    long_name: "sea level anomaly"
-    standard_name: sea_surface_height_above_mean_sea_level
-    units: m
-    coordinates: longitude latitude
-    ancillary_variables: sea_level_anomaly_uncertainty
-    comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
 
-  sea_level_anomaly_uncertainty:
-    long_name: "sea level anomaly uncertainty"
+  radar_freeboard:
+    long_name: "Radar freeboard"
     units: m
+    ancillary_variables: radar_freeboard_uncertainty
     coordinates: longitude latitude
-    comment: "Algorithm uncertainty (error propagation) of the sea level anomaly"
-    
-  sea_level_anomaly_raw:
-    long_name: "sea level anomaly (unsmoothed 20 Hz values)"
-    standard_name: sea_surface_height_above_mean_sea_level
-    units: m
-    coordinates: longitude latitude
-    comment: "Sea level anomaly: the height of the sea surface above the mean sea surface at the measurement location and timestamp. No smoothing or interpolation applied."
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
-  sea_level_anomaly_filtered:
-    long_name: "Filtered sea level anomaly"
-    standard_name: sea_surface_height_above_mean_sea_level
+  radar_freeboard_uncertainty:
+    long_name: "Radar freeboard uncertainty"
     units: m
     coordinates: longitude latitude
-    comment: "Filtered with a 450km lowess filter"
-    
-  dynamic_ocean_topography:
-    long_name: "dynamic ocean topography"
-    standard_name: sea_surface_height_above_geoid
-    units: m
-    coordinates: longitude latitude
-    ancillary_variables: dynamic_ocean_topography_uncertainty
-    comment: "Dynamic ocean topography: the height of the sea surface above the geoid at the measurement location and timestamp. Smoothing has been applied to the measurements, and measurements are interpolated at sea ice covered locations."
-    
-  dynamic_ocean_topography_uncertainty:
-    long_name: "dynamic ocean topography uncertainty"
-    units: m
-    coordinates: longitude latitude
-    comment: "Algorithm uncertainty (error propagation) of the dynamic ocean topography"
+    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
 
-  dynamic_ocean_topography_filtered:
-    long_name: "Filtered dynamic ocean topography"
-    standard_name: sea_surface_height_above_geoid
+  sea_ice_freeboard:
+    long_name: "freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    ancillary_variables: sea_ice_freeboard_uncertainty
+    coordinates: longitude latitude
+    comment: "freeboard of the sea ice layer"
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "sea ice freeboard uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
+
+  sea_ice_freeboard_filtered:
+    long_name: "smoothed freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
     units: m
     coordinates: longitude latitude
     comment: "Filtered with a 450km lowess filter"
 
-  dynamic_atmosphere:
-    var_source_name: "dynamic_atmosphere"
-    long_name: "dynamic atmosphere range correction"
-    units: "m"
+  snow_depth:
+    long_name: "snow depth"
+    standard_name: surface_snow_thickness
+    units: m
+    ancillary_variables: snow_depth_uncertainty
     coordinates: longitude latitude
-    comment: "Provided for the user to remove if necessary for their use case."
+    comment: "Snow depth interpolated from climatology model. NH: AWI monthly climatology merge of Warren99 and AMSR2. SH: ESA CCI daily climatology from AMSR-E 10.5067/AMSR-E/AE_SI12.003"
+
+  snow_depth_uncertainty:
+    long_name: "snow depth uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "Uncertainty of the snow depth."
 
   region_code:
     long_name: "region id"
@@ -179,11 +170,89 @@ variables:
     coordinates: "time"
     coverage_content_type: referenceInformation
 
+  mean_square_slope:
+    long_name: "mean square slope"
+    var_source_name: "samosa_mean_square_slope"
+    standard_name: "sea_surface_wave_mean_square_slope"
+    units: "1"
+    coordinates: longitude latitude
+    comment: "output from SAMOSA+ retracker"
+
+  surface_height_standard_deviation:
+    long_name: "surface height standard deviation"
+    var_source_name: "samosa_surface_height_standard_deviation"
+    units: "m"
+    coordinates: longitude latitude
+    comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
+
   surface_type:
     long_name: "surface type classification flag"
     units: "1"
-    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8"
+    flag_values: "0, 1, 2, 4, 5, 6, 7, 8"
     valid_min: 0
     valid_max: 8
     flag_meanings: "unknown ocean lead polynya sea_ice closed_sea land_ice land invalid"
     coordinates: time
+
+  samosa_misfit:
+    long_name: "misfit of the samosa+ waveform model"
+    coordinates: longitude latitude
+
+  samosa_misfit_sub_waveform:
+    long_name: "misfit of the samosa+ waveform model"
+    comment: "misfit parameter computed with filtered trailing edge"
+    coordinates: longitude latitude
+
+  samosa_fit_num_func_eval:
+    long_name: "samosa fit number of function evaluations"
+    unit: "1"
+    comment: "output of scipy.optimize.least_squares"
+    coordinates: longitude latitude
+
+  samosa_fit_return_status:
+    long_name: "samosa fit return status"
+    unit: "1"
+    flag_values: "-1, 0, 1, 2, 3, 4"
+    flag_meanings: improper_input maximum_number_of_function_evaluations gtol_termination ftol_termination xtol_termination ftol_and_xtol_termination
+    valid_min: -1
+    valid_max: 4
+    comment: "output of scipy.optimize.least_squares"
+    coordinates: longitude latitude
+
+  elevation:
+    long_name: "elevation"
+    comment: "relative to WGS84 ellipsoid, computed as: satellite altitude - range corrections - retracker range"
+    units: m
+    coordinates: time
+
+  elevation_uncertainty:
+    long_name: "uncertainty estimate related to elevation"
+    units: m
+    coordinates: time
+
+  sea_level_anomaly:
+    long_name: "departure of instantaneous sea surface height from mean sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+
+  sea_level_anomaly_uncertainty:
+    long_name: "uncertainty of instantaneous sea surface height"
+    standard_name: sea_surface_height_above_mean_sea_level standard_error
+    units: m
+    coordinates: time
+
+  waveform:
+    long_name: "waveform"
+    coordinates: time, n_range_gates
+    comment: "This parameter is only intended for use with a test data set"
+
+  waveform_model:
+    long_name: "samosa waveform model"
+    coordinates: time, n_range_gates
+    comment: "This parameter is only intended for use with a test data set"
+
+  sub_waveform_mask:
+    long_name: "sub waveform mask"
+    coordinates: time, n_range_gates
+    comment: "This parameter is only intended for use with a test data set"
