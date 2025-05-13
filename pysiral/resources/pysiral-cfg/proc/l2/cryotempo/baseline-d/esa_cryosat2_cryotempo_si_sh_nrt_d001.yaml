@@ -1,10 +1,10 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 near real-time sea ice product"
     product_line: esa
-    record_type: tds-si-nrt-C001
+    record_type: si-nrt
     platform: cryosat2
-    version: C001
-    file_version_tag: "C001"
+    version: D001
+    file_version_tag: "D001"
     hemisphere: south
 
 
@@ -88,11 +88,14 @@ procsteps:
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
+                first_maximum_index: [fmi, first_maximum_index]
                 first_maximum_power: [fmp, first_maximum_power]
                 stack_standard_deviation: [ssd, stack_standard_deviation]
                 stack_peakiness: [spk, stack_peakiness]
                 stack_skewness: [ssk, stack_skewness]
                 stack_kurtosis: [skt, stack_kurtosis]
+                ocog_width: [ocogw, ocog_width]
+                ocog_amplitude: [ocogp, ocog_amplitude]
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -148,7 +151,7 @@ procsteps:
     #   - ...
 
     # Surface type classification algorithm
-    # SH: This is the surface type classification algorithm for the
+    # SH: This is the surface type classification algorithm for
     #     the new ESA CCI climate data record. There are now significantly
     #     more sea ice waveform
     -   module: surface
@@ -156,7 +159,7 @@ procsteps:
         options:
 
             # This option defines the surface type order. It is important that
-            # leads are classified before sea ice to fullfill the condition
+            # leads are classified before sea ice to fulfill the condition
             # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 
@@ -297,13 +300,22 @@ procsteps:
         pyclass: RadarFreeboardDefault
         options: null
 
+    # Filter out-of-valid range freeboard values
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: afrb
+            target_variables: [afrb]
+            valid_minimum_point_value: -0.35
+            valid_maximum_point_value: 2.35
+
     # Algorithm for converting radar freeboard into freeboard
     -   module: frb
         pyclass: SnowGeometricCorrection
         options:
             vacuum_light_speed_reduction: mallett2020
 
-    # Filter invalid freeboard values
+    # Filter out-of-valid range sea ice freeboard values
     -   module: filter
         pyclass: L2ParameterValidRange
         options:
@@ -312,21 +324,22 @@ procsteps:
             valid_minimum_point_value: -0.25
             valid_maximum_point_value: 2.25
 
-    #     # Add a filter flag to detect anomalous freeboards in the marginal ice zone
-    # -   module: filter
-    #     pyclass: MarginalIceZoneFilterFlag
-    #     options:
-    #         ice_edge_proximity:
-    #             sea_ice_concentration_max: 75.
-    #             ocean_distance_max: 300000.
-    #             leading_edge_width_rolling_mean_min: 2.0
-    #             pulse_peakiness_rolling_sdev_max: 15.0
-    #         ice_edge_transition:
-    #             sea_ice_filter_size_m: 300000.
-    #             ocean_filter_size_m: 25000.
-    #             freeboard_smoother_filter_size_m: 150000.
-    #             sea_ice_freeboard_miz_gradient: 0.002
-    #             leading_edge_width_ocean_value: 2.5
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            boolean_flag_values: True
+            ice_edge_proximity:
+                sea_ice_concentration_max: 75.
+                ocean_distance_max: 300000.
+                leading_edge_width_rolling_mean_min: 2.0
+                pulse_peakiness_rolling_sdev_max: 15.0
+            ice_edge_transition:
+                sea_ice_filter_size_m: 300000.
+                ocean_filter_size_m: 25000.
+                freeboard_smoother_filter_size_m: 150000.
+                sea_ice_freeboard_miz_gradient: 0.002
+                leading_edge_width_ocean_value: 2.5
 
     # Create a filtered/smoothed version of sea-ice freeboard
     -   module: filter
