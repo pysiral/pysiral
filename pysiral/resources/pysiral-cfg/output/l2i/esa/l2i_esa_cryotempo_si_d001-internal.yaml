@@ -298,3 +298,15 @@ variables:
     valid_min: 0
     valid_max: 1
     coordinates: longitude latitude
+
+  distance_to_ocean:
+    long_name: "distance to open ocean"
+    units: m
+    comment: "computed from gridded sea ice concentration mask (threshold 15%)"
+    coordinates: time
+
+  distance_to_low_ice_concentration:
+    long_name: "distance to low ice concentration"
+    units: m
+    comment: "computed from gridded sea ice concentration mask (threshold 70%)"
+    coordinates: time
