@@ -1022,6 +1022,7 @@ class SAMOSAPlusRetracker(BaseRetracker):
 
         # General auxiliary variables
         self.register_auxdata_output("sammf", "samosa_misfit", self.misfit)
+        self.register_auxdata_output("samswh", "samosa_swh", self.swh)
         self.register_auxdata_output("sammfsw", "samosa_misfit_sub_waveform", self.misfit_sub_waveform)
         self.register_auxdata_output("samlee", "samosa_leading_edge_error", self.leading_edge_error)
         self.register_auxdata_output("sammss", "samosa_mean_square_slope", self.mean_square_slope)
@@ -1043,7 +1044,6 @@ class SAMOSAPlusRetracker(BaseRetracker):
         # Lead and open ocean surfaces
         surface_class = self._options.get("surface_class", "undefined")
         if surface_class == "polar_ocean":
-            self.register_auxdata_output("samswh", "samosa_swh", self.swh)
             self.register_auxdata_output("samwsp", "samosa_wind_speed", self.wind_speed)
 
         # Sea ice surface types
