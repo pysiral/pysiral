@@ -171,6 +171,7 @@ variables:
     coverage_content_type: referenceInformation
 
   miz_flag:
+    var_source_name: flag_miz
     long_name: "marginal ice zone flag"
     flag_values: 0, 1
     flag_meanings: "miz_flag_false miz_flag_true"
