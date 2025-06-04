@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming:
-  month: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv4p0-preview1.nc"
-  isoweek: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
-  day: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv4p0-preview1.nc"
-  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
-  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
+  month: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv4p01.nc"
+  isoweek: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
+  day: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv4p0.nc"
+  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
+  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
 
 product_level_subfolder: l3c_internal
 
@@ -32,7 +32,7 @@ global_attributes:
   - references: "TBD"
   - tracking_id: "{uuid}"
   - Conventions: "CF-1.8"
-  - product_version: "3.0"
+  - product_version: "4.0"
   - format_version: "CCI Data Standards v2.3"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 2002 - April 2024.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period June 2002 - April 2024.}"
@@ -322,13 +322,6 @@ variables:
     coordinates: "time lat lon"
     coverage_content_type: qualityInformation
 
-  stat_seaice_fraction:
-    var_source_name: seaice_fraction
-    long_name: "sea ice waveform detections per valid waveforms in grid cell"
-    units: "1"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
-
   stat_distance_to_ocean:
     var_source_name: distance_to_ocean
     long_name: "average distance to ocean from daily trajectory data"
@@ -339,7 +332,7 @@ variables:
   stat_temporal_coverage_uniformity_factor:
     var_source_name: temporal_coverage_uniformity_factor
     long_name: "uniformity of daily sea-ice thickness data coverage in full grid period"
-    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the     period of the grid, e.g. whether all days in the period contribute equally to the full grid period.    The values for this parameter range between close to 0 (singular distribution) and 1 (uniform distribution).    The factor is computed with by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a    uniform distribution (1-D with D being the result of KS test)"
+    comment: "The uniformity factor indicates if the observation are uniform distributed throughout the period of the grid, e.g. whether all days in the period contribute equally to the full grid period. The values for this parameter range between close to 0 (singular distribution) and 1 (uniform distribution). The factor is computed with by Kolmogorov-Smirnov (KS) test that evaluates the list of days against a uniform distribution (1-D with D being the result of KS test)"
     valid_min: 0.0
     valid_max: 1.0
     units: "1"
@@ -382,7 +375,6 @@ variables:
     units: "1"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
-
 
   stat_seaice_fraction:
     var_source_name: seaice_fraction
