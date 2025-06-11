@@ -1723,7 +1723,12 @@ def get_least_squares_parameter_sdev(optimize_result: "OptimizeResult") -> np.nd
     :return: List of fit parameter standard deviations
     """
     jac = optimize_result.jac
-    cov = np.linalg.inv(jac.T.dot(jac))
+    try:
+        cov = np.linalg.inv(jac.T.dot(jac))
+    except np.linalg.LinAlgError:
+        # If the Jacobian is singular, we cannot compute the covariance matrix
+        # and therefore return NaN for all parameters.
+        return np.full(optimize_result.x.size, np.nan)
     variance = np.sqrt(np.diagonal(cov))
     return np.sqrt(variance)
 
