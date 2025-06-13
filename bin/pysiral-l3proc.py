@@ -274,7 +274,9 @@ class Level3ProcArgParser(DefaultLoggingClass):
             return output_dir
 
         # 1. Clean up the path
-        product_basedir = self.l2i_product_directories[0].resolve(strict=False)
+        if not self.l2i_product_directories[0].resolve().is_dir():
+            raise IOError(f"Not a valid l2i product directory: {self.l2i_product_directories[0]}")
+        product_basedir = self.l2i_product_directories[0]
         dirs = product_basedir.parts
         l3_product_basedir = Path(*dirs[:-1]) if dirs[-1] in ["l2i", "l2"] else product_basedir
         if len(self.l2i_product_directories) > 1:

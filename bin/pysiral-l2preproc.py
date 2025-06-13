@@ -196,7 +196,7 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         directory = Path(l2i_product_directories[0]).resolve()
         if not directory.is_dir():
             raise IOError(f"Not a valid l2i product directory: {directory}")
-        return directory
+        return Path(l2i_product_directories[0])
 
     @property
     def l2p_output(self):
