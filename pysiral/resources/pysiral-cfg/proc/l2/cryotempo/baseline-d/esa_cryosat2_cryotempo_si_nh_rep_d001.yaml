@@ -373,9 +373,16 @@ procsteps:
                 filter_props:
                      it: 1
 
+    # Remove any finite values over non-ocean surfaces
+    -   module: filter
+        pyclass: RemoveNonOceanData
+        options:
+            target_variables:
+              - sea_level_anomaly
+
+
     # Create an instrument mode flag for CryoSat-2 data
     # (instrument mode = radar mode + 1)
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
-

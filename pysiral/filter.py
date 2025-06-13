@@ -146,6 +146,67 @@ class L2ParameterValidRange(Level2ProcessorStep):
         return self.error_flag_bit_dict["filter"]
 
 
+class RemoveNonOceanData(Level2ProcessorStep):
+    """
+    Ensure that data over non-ocean surfaces is set to NaN.
+
+    Usage in Level-2 processor definition files:
+
+    -   module: filter
+        pyclass: RemoveNonOceanData
+        options:
+            target_variables: [<target_variables>]
+
+    will lead to that all finite values of the target variables
+    are set to NaN if the surface type is either land (6) or land ice (7).
+    Any occurrence are logged.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(RemoveNonOceanData, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b: "Level1bData", l2: "Level2Data") -> np.ndarray:
+
+        # Get the error flag
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Check if the surface type indicates either land (7) or land ice (6).
+        is_non_ocean = np.isin(l2.surface_type.flag, [6, 7])
+
+        # Modify target variables
+        parameter_names = self.cfg.options.get("target_variables", [])
+        for parameter_name in parameter_names:
+
+            var = l2.get_parameter_by_name(parameter_name)
+            if var is None:
+                msg = f"Variable {parameter_name} not found in Level-2 data object."
+                self.error.add_error("filter-non-ocean-data", msg)
+                error_status[:] = True
+                continue
+
+            filter_idxs = np.logical_and(np.isfinite(var[:]), is_non_ocean)
+            if (num_land_values := np.sum(filter_idxs)) == 0:
+                continue
+
+            logger.info(f"- Remove non-ocean data from {parameter_name} ({num_land_values} records)")
+            var.set_nan_indices(filter_idxs)
+            setattr(l2, parameter_name, var)
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["surface_type"]
+
+    @property
+    def l2_output_vars(self):
+        return self.cfg.options.get("target_variables", [])
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
+
+
 class ParameterSmoother(Level2ProcessorStep):
     """
     Creates a filtered/smoothed copy of a given parameter.
