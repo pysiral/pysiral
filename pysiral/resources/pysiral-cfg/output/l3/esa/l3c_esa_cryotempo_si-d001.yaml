@@ -7,13 +7,14 @@ metadata:
   data_level_description: Level-3 colated (gridded geophysical parameters)
 
 # Output Definition (for each period definition)
+# CS_OFFL_SIR_TDP_SD_ARCTIC_20231101T000031_20231130T234033_GRID_____C001.nc
 filenaming:
-  month: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}_D001.nc"
-  monthly: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}-D001.nc"
-  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
-  day: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-D001.nc"
-  custom: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
-  default: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  month: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
+  monthly: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
+  isoweek: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
+  day: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
+  custom: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
+  default: "CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARCTIC}_{l2_time_coverage_start:%Y%m%dT%H%M%S}_{l2_time_coverage_end:%Y%m%dT%H%M%S}_GRID_____D001.nc"
 
 product_level_subfolder: l3c
 
@@ -24,35 +25,14 @@ grid_options:
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "Gridded Cryo-TEMPO sea ice output (for quality control purposes only)"
-  - institution: ""
-  - source: ""
+  - title: "Cryo-TEMPO Sea Ice Thematic Product"
+  - project: "ESA Cryo-TEMPO"
+  - creator_name: "ESA Cryo-TEMPO Project"
+  - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
+  - date_created: "{utcnow}"
   - platform: "CryoSat-2"
   - sensor: "SIRAL"
-  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: ""
-  - tracking_id: "{uuid}"
-  - conventions: "CF-1.6"
-  - product_version: ""
-  - processing_level: "Level-3 Collated (l3c)"
-  - summary: ""
-  - keywords: ""
-  - id: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-C001"
-  - naming_authority: ""
-  - keywords_vocabulary: "GCMD Science Keywords"
-  - doi: "None"
-  - cdm_data_type: "Grid"
-  - comment: ""
-  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
-  - creator_name: ""
-  - creator_type: ""
-  - creator_url: ""
-  - contributor_name: ""
-  - contributor_role: ""
-  - project: "ESA Cryo-TEMPO"
-  - publisher_name: ""
-  - publisher_url: ""
-  - publisher_email: ""
+  - zone: "{source_hemisphere:select;Arctic;Antarctic}"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: 90.0
   - geospatial_lon_min: -180.0
@@ -60,13 +40,18 @@ global_attributes:
   - geospatial_vertical_min: 0.0
   - geospatial_vertical_max: 0.0
   - spatial_resolution: "{grid_spacing_tag} grid spacing"
-  - geospatial_bounds_crs: "EPSG:6931"
-  - time_coverage_start: "{time_coverage_start}"
-  - time_coverage_end: "{time_coverage_end}"
+  - geospatial_bounds_crs: "EPSG:693{source_hemisphere:select;1;2}"
+  - time_coverage_start: "{l2_time_coverage_start}"
+  - time_coverage_end: "{l2_time_coverage_end}"
   - time_coverage_duration: "{time_coverage_duration}"
   - time_coverage_resolution: "{time_coverage_duration:period}"
-  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
-  - license: ""
+  - product_baseline: "D"
+  - product_version: "001"
+  - processing_level: "Level-3 Collated (l3c)"
+  - cdm_data_type: "Grid"
+  - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
+  - sw_version: "{pysiral_version}"
+  - doi: ""
 
 # A list of variables and their attributes
 # The variable subtag must match the name of the level-3 parameter
@@ -172,8 +157,3 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
 
-  n_valid_freeboards:
-    long_name: "number of valid freeboard measurements"
-    units: "1"
-    grid_mapping: "Lambert_Azimuthal_Grid"
-    coordinates: "time lat lon"
