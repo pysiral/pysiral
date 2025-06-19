@@ -3,7 +3,7 @@
 hemisphere: north
 grid_tag: ease2nh
 resolution_tag: 25km
-grid_id: nh_25km_ease2
+grid_id: nh25kmease2
 name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
 
 netcdf_grid_description: 
