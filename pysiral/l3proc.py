@@ -640,6 +640,14 @@ class L3DataGrid(DefaultLoggingClass):
         dt = self._creation_time
         return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
 
+    def _get_attr_l2_time_coverage_start(self, *args):
+        dt = self.metadata.start_time
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
+
+    def _get_attr_l2_time_coverage_end(self, *args):
+        dt = self.metadata.stop_time
+        return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()
+
     def _get_attr_time_coverage_start(self, *args):
         dt = self.metadata.time_coverage_start
         return dt.strftime(args[0]) if re.match("%", args[0]) else dt.isoformat()

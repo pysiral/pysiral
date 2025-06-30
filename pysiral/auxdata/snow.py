@@ -360,13 +360,14 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
             sdgrid = self._data.get_var(source_name, self._requested_date)
             setattr(snow, var_name, grid2track.get_from_grid_variable(sdgrid))
 
-        # Extract the W99 weight
+        # Extract the W99 weight for the specific track
         w99_weight = grid2track.get_from_grid_variable(self._data.w99_weight)
 
         # Apply the same modification as the Warren climatology
-        # Apply ice_type (myi_fraction correction) but this time modified by the regional weight
-        # of the Warren climatology. The weight ranges from 0 to 1 and make sure no fyi scaling is
-        # applied over the AMSR2 region data
+        # Apply ice_type but this time modified by the regional weight of the Warren climatology.
+        # The weight ranges from 0 to 1 and ensures that snow reduction on first-year sea ice is
+        # only applied to the W99 contribution of the snow depth climatology.
+        # NOTE: sea ice type here is defined as MYI fraction: 0 [fyi] <= sitype <= 1 [myi]
         scale_factor = (1.0 - l2.sitype) * self.cfg.options.fyi_correction_factor * w99_weight
 
         # The scaling factor affects the snow depth ...
@@ -376,9 +377,9 @@ class Warren99AMSR2Clim(AuxdataBaseClass):
         # is similar affected by the scaling factor.
         snow.depth_uncertainty = snow.depth_uncertainty - scale_factor * snow.depth_uncertainty
 
-        # the uncertainty of the myi fraction is acknowledged by adding
-        # an additional term that depends on snow depth, the magnitude of
-        # scaling and the sea ice type uncertainty
+        # The uncertainty of the MYI fraction is acknowledged by adding
+        # a term that depends on snow depth, the magnitude of scaling
+        # and the sea ice type uncertainty
         scaling_uncertainty = snow.depth * scale_factor * l2.sitype.uncertainty * w99_weight
         snow.depth_uncertainty = snow.depth_uncertainty + scaling_uncertainty
 

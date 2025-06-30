@@ -146,6 +146,67 @@ class L2ParameterValidRange(Level2ProcessorStep):
         return self.error_flag_bit_dict["filter"]
 
 
+class RemoveNonOceanData(Level2ProcessorStep):
+    """
+    Ensure that data over non-ocean surfaces is set to NaN.
+
+    Usage in Level-2 processor definition files:
+
+    -   module: filter
+        pyclass: RemoveNonOceanData
+        options:
+            target_variables: [<target_variables>]
+
+    will lead to that all finite values of the target variables
+    are set to NaN if the surface type is either land (6) or land ice (7).
+    Any occurrence are logged.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(RemoveNonOceanData, self).__init__(*args, **kwargs)
+
+    def execute_procstep(self, l1b: "Level1bData", l2: "Level2Data") -> np.ndarray:
+
+        # Get the error flag
+        error_status = self.get_clean_error_status(l2.n_records)
+
+        # Check if the surface type indicates either land (7) or land ice (6).
+        is_non_ocean = np.isin(l2.surface_type.flag, [6, 7])
+
+        # Modify target variables
+        parameter_names = self.cfg.options.get("target_variables", [])
+        for parameter_name in parameter_names:
+
+            var = l2.get_parameter_by_name(parameter_name)
+            if var is None:
+                msg = f"Variable {parameter_name} not found in Level-2 data object."
+                self.error.add_error("filter-non-ocean-data", msg)
+                error_status[:] = True
+                continue
+
+            filter_idxs = np.logical_and(np.isfinite(var[:]), is_non_ocean)
+            if (num_land_values := np.sum(filter_idxs)) == 0:
+                continue
+
+            logger.info(f"- Remove non-ocean data from {parameter_name} ({num_land_values} records)")
+            var.set_nan_indices(filter_idxs)
+            setattr(l2, parameter_name, var)
+
+        return error_status
+
+    @property
+    def l2_input_vars(self):
+        return ["surface_type"]
+
+    @property
+    def l2_output_vars(self):
+        return self.cfg.options.get("target_variables", [])
+
+    @property
+    def error_bit(self):
+        return self.error_flag_bit_dict["filter"]
+
+
 class ParameterSmoother(Level2ProcessorStep):
     """
     Creates a filtered/smoothed copy of a given parameter.
@@ -406,6 +467,10 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         # Get the default filter flag
         filter_flag_miz_error = self.get_clean_error_status(l2.n_records)
 
+        # Get the output flag format
+        # (Can be boolean (0, 1) or extented (-1, 0, 1, 2))
+        boolean_flag_values = self.cfg.get("boolean_flag_values", False)
+
         # Only compute the filter flag, if all basic conditions are met
         filter_execute_conditions = [
             np.isfinite(l2.frb[:]).any(),       # There needs to be freeboard data
@@ -415,7 +480,7 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
             l2.set_auxiliary_parameter(
                 "fmiz",
                 "flag_miz",
-                self.get_default_filter_flag(l2.n_records),
+                self.get_default_filter_flag(l2.n_records, boolean_flag_values),
                 None)
             return filter_flag_miz_error
 
@@ -429,6 +494,14 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
                 l2.get_parameter_by_name("distance_to_low_ice_concentration"),
                 l2.footprint_spacing]
         filter_flag, _ = self.get_miz_filter_flag(*args)
+
+        # Simplify the filter to a true/false flag
+        # The original flag and their modified values are:
+        # -1: not in marginal ice zone
+        # (-1 -> 0, 0 -> 0, 1 -> 0, 2 -> 1)
+        if boolean_flag_values:
+            filter_flag = np.where(filter_flag > 1, 1, 0).astype(np.byte)
+
         l2.set_auxiliary_parameter("fmiz", "flag_miz", filter_flag, None)
         return filter_flag_miz_error
 
@@ -848,8 +921,9 @@ class MarginalIceZoneFilterFlag(Level2ProcessorStep):
         return filter_flag
 
     @staticmethod
-    def get_default_filter_flag(n_records: int) -> np.ndarray:
-        return np.full(n_records, -1)
+    def get_default_filter_flag(n_records: int, boolean_flag_values: bool) -> np.ndarray:
+        fill_value = 0 if boolean_flag_values else -1
+        return np.full(n_records, fill_value).astype(np.byte)
 
     @property
     def l2_input_vars(self):
