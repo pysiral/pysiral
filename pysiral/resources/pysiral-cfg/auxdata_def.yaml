@@ -268,7 +268,7 @@ sic:
     osi-408:
         pyclass: OsiSafSIC
         long_name: OSI-SAF Global Sea Ice Concentration (AMSR-2) (OSI-408)
-        filenaming: "ice_conc_{hemisphere_code}_polstere-100_amsr2_{year}{month}{day}1200.nc4"
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_amsr2_{year}{month}{day}1200.nc"
         local_repository: osi-408
         options:
             is_cdr_icdr: False
