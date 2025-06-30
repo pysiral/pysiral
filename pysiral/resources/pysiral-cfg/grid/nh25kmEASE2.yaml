@@ -3,10 +3,10 @@
 hemisphere: north
 grid_tag: ease2nh
 resolution_tag: 25km
-grid_id: nh25kmease2
+grid_id: nh_25km_ease2
 name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
 
-netcdf_grid_description: 
+netcdf_grid_description:
     Lambert_Azimuthal_Grid:
         grid_mapping_name: "lambert_azimuthal_equal_area"
         longitude_of_projection_origin: 0.0
@@ -35,7 +35,7 @@ extent:
     numx: 432
     numy: 432
 
-area_def: 
+area_def:
     ease2nh:
         description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
         projection:
