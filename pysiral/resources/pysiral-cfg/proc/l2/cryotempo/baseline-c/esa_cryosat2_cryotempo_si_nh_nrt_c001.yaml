@@ -38,7 +38,7 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: osisaf-operational
+        name: osi-401
         options:
             exception_on_error: False
             fill_pole_hole:
@@ -46,7 +46,7 @@ auxdata:
                 pole_hole_fill_value: 100.
 
     - sitype:
-        name: osisaf-operational
+        name: osi-403
         options:
             fill_valid_sic_gaps: True
             exception_on_error: False
