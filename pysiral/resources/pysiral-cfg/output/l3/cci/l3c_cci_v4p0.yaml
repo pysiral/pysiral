@@ -8,11 +8,11 @@ metadata:
 
 # Output Definition (for each period definition)
 filenaming:
-  month: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv4p0-preview1.nc"
-  isoweek: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
-  day: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv4p0-preview1.nc"
-  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
-  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0-preview1.nc"
+  month: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m}-fv4p0.nc"
+  isoweek: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
+  day: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-fv4p0.nc"
+  custom: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
+  default: "ESACCI-SEAICE-L3C-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-fv4p0.nc"
 
 product_level_subfolder: l3c_release
 
