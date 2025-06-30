@@ -52,7 +52,7 @@ auxdata:
             latitude_range: [-90.0, -45.]
 
     - sic:
-        name: osisaf-operational
+        name: osi-401
         options:
             exception_on_error: False
             fill_pole_hole:
@@ -68,7 +68,7 @@ procsteps:
 
     -   module: l2proc.procsteps
         pyclass: L1BL2TransferVariables
-        options: 
+        options:
             classifier:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
@@ -113,9 +113,9 @@ procsteps:
 
     # Surface type classification algorithm
 # Surface type classification algorithm
-    # SH: This is the surface type classification algorithm for the 
+    # SH: This is the surface type classification algorithm for the
     #     the new ESA CCI climate data record. There are now significantly
-    #     more sea ice waveform 
+    #     more sea ice waveform
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
         options:
@@ -327,4 +327,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
- 
