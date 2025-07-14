@@ -23,16 +23,16 @@ grid_options:
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (version 3)"
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (version 4)"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
   - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-e);envisat:Envisat SGDR (final v9.3p5);sentinel3a:Sentinel 3 Thematic Sea Ice Product - baseline 5;sentinel3b:Sentinel 3 Thematic Sea Ice Product - baseline 5}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
-  - references: "TBD"
+  - references: "CCI+ Sea Ice ECV - Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD) - Issue 2.0; CCI+ Sea Ice ECV - Sea Ice Thickness Product User Guide (PUG) - Issue 2.0"
   - tracking_id: "{uuid}"
   - Conventions: "CF-1.8"
-  - product_version: "3.0"
+  - product_version: "4.0"
   - format_version: "CCI Data Standards v2.3"
   - processing_level: "Level-3 Collated (l3c)"
   - summary: "Gridded {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 2002 - April 2024.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period June 2002 - April 2024.}"
