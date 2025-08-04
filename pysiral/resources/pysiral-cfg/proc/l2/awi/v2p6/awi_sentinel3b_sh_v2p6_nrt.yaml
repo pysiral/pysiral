@@ -1,12 +1,11 @@
 metadata:
-    label: "AWI Sentinel-3B near real-time sea-ice thickness product (s3awi v2.6 reprocessed)"
+    label: "AWI Sentinel-3B reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
     product_line: awi
     record_type: nrt
     platform: sentinel3b
     version: v2p6
     file_version_tag: "v2p6"
-    hemisphere: north
-
+    hemisphere: south
 
 # --- Ingest auxiliary data ---
 #
@@ -28,42 +27,32 @@ auxdata:
     # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
     #       be modified depending on region code
     - region:
-        name: nsidc_2021
+        name: antarctic_seas
         options: null
 
-    # Load the
     - mss:
         name: dtu21
         options:
-            latitude_range: [45.0, 90.0]
+            latitude_range: [-90.0, -45.]
 
     - sic:
         name: osi-408
         options:
             exception_on_error: False
-            fill_pole_hole:
-                pole_hole_lat_threshold: 87.0
-                pole_hole_fill_value: 100.
 
     - sitype:
-        name: osi-403
-        options:
-            fill_valid_sic_gaps: True
-            exception_on_error: False
+         name: fyi_default
+         options:
+             uncertainty_default: 0.1
 
     - snow:
-        name: clim_w99amsr2
-        options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
-            exception_on_error: False
-
-    # Note: The snow density in this class will overwrite the snow density
-    #       from the W99/AMSR2 climatology (this is intended)
-    - snow:
-            name: snow_density_seasonal_mallett
-            options:
-                snow_density_uncertainty: 50.
+         name: icdc_climatology_south
+         options:
+             snow_density: 300.
+             snow_density_uncertainty: 50.
+             smooth_snow_depth: true
+             smooth_filter_width_m: 25000.0
+             exception_on_error: True
 
 
 # --- Level-2 processor steps ---
