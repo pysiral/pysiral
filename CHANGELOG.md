@@ -1,5 +1,30 @@
 # History of changes
 
+## [0.12]
+
+### Added
+- Support for additional OSI-SAF sea ice concentrations products (e.g. AMSR2 based sea ice concentration, OSI-408)
+- CCI v4.0 climate data record (CDR) processor and output definition files
+- CryoTEMPO baseline D001 processor and output definition files
+  - Re-implementation of the SAMOSA+ retracker based on an external [SAMOSA waveform model package](https://github.com/pysiral/samosa-waveform-model)
+  - Marginal ice zone filter using SAMOSA+ output properties
+  - 
+- Support for NSDIC sea ice charts
+- 
+
+### Changed
+- Notation of OSI-SAF product selection in Level-2 processor configuration files has been changed to allow for multiple products (e.g. `osi-401, osi-408`)
+- Updated Sentinel-3 file catalog class. 
+
+### Fixed
+- Level-3 uncertainties of radar freeboard and sea ice freeboard required presence of sea ice thickness variable.
+- L2i file validation failed datastructure with symbolic links. 
+- Inconsistent grid ids between hemispheres. 
+
+### Deprecated
+
+### Removed
+
 ## [0.11] 2024-02-29
 
 ### Added
