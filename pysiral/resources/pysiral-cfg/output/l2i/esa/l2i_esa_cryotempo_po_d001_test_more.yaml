@@ -31,7 +31,7 @@ global_attributes:
   - geospatial_vertical_max: 0.0
   - time_coverage_start: "{time_coverage_start}"
   - time_coverage_end: "{time_coverage_end}"
-  - product_baseline: "C"
+  - product_baseline: "D"
   - product_version: "001"
   - Conventions: "CF-1.8"
   - cycle_number: "{cycle}"
@@ -168,8 +168,8 @@ variables:
     coordinates: longitude latitude
     comment: "Filtered with a 450km lowess filter"
 
-  inverse_barometric:
-    long_name: "inverse barometric range correction"
+  dynamic_atmosphere:
+    long_name: "dynamic atmosphere range correction"
     units: "m"
     coordinates: longitude latitude
     comment: "Provided for the user to remove if necessary for their use case."
@@ -196,12 +196,6 @@ variables:
     long_name: "wet troposphere range correction"
     units: "m"
     coordinates: time
-
-  dynamic_atmosphere:
-    long_name: "DAC range correction"
-    units: "m"
-    coordinates: longitude latitude
-    comment: "Provided for the user to remove if necessary for their use case."
 
   ionosphere:
     long_name: "ionospheric range correction"

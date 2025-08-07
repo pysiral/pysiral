@@ -1,5 +1,5 @@
 metadata:
-    label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
+    label: "ESA CryoTEMPO CryoSat-2 near real-time sea ice product"
     product_line: esa
     record_type: si-nrt
     platform: cryosat2
@@ -10,7 +10,7 @@ metadata:
 
 # --- Ingest auxiliary data ---
 #
-# A list auxiliary datasets to be ingested before the execution of the processing steps.
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
 #
 # Usage:
 #
@@ -156,7 +156,7 @@ procsteps:
         options:
 
             # This option defines the surface type order. It is important that
-            # leads are classified before sea ice to fulfill the condition
+            # leads are classified before sea ice to fullfill the condition
             # that sea-ice waveforms are not lead waveforms.
             surface_types: [ocean, lead, sea_ice]
 

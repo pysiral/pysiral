@@ -15,7 +15,7 @@ product_level_subfolder: l2-test
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - title: "Cryo-TEMPO Sea Ice Thematic Product"
+  - title: "Cryo-TEMPO Sea Ice Thematic Test Product"
   - project: "ESA Cryo-TEMPO"
   - creator_name: "ESA Cryo-TEMPO Project"
   - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
@@ -150,7 +150,7 @@ variables:
     units: m
     ancillary_variables: snow_depth_uncertainty
     coordinates: longitude latitude
-    comment: "Snow depth interpolated from model"
+    comment: "Snow depth interpolated from climatology model. NH: AWI monthly climatology merge of Warren99 and AMSR2. SH: ESA CCI daily climatology from AMSR-E 10.5067/AMSR-E/AE_SI12.003"
 
   snow_depth_uncertainty:
     long_name: "snow depth uncertainty"
@@ -170,15 +170,17 @@ variables:
     coordinates: "time"
     coverage_content_type: referenceInformation
 
-  samosa_mean_square_slope:
+  mean_square_slope:
     long_name: "mean square slope"
+    var_source_name: "samosa_mean_square_slope"
     standard_name: "sea_surface_wave_mean_square_slope"
     units: "1"
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker"
 
-  samosa_surface_height_standard_deviation:
+  surface_height_standard_deviation:
     long_name: "surface height standard deviation"
+    var_source_name: "samosa_surface_height_standard_deviation"
     units: "m"
     coordinates: longitude latitude
     comment: "output from SAMOSA+ retracker (significant wave height divided by 4)"
@@ -201,39 +203,18 @@ variables:
     comment: "misfit parameter computed with filtered trailing edge"
     coordinates: longitude latitude
 
-  samosa_leading_edge_error:
-    long_name: "samosa leading edge error"
-    comment: "rms error of the waveform/samosa+ waveform model at leading edge"
-    coordinates: longitude latitude
-
-  samosa_fit_num_func_eval_step1:
-    long_name: "samosa fit number of function evaluations step1"
+  samosa_fit_num_func_eval:
+    long_name: "samosa fit number of function evaluations"
     unit: "1"
-    comment: "counted DDM evaluations"
-    coordinates: longitude latitude
-
-  samosa_fit_num_func_eval_step2:
-    long_name: "samosa fit number of function evaluations step2"
-    unit: "1"
-    comment: "counted DDM evaluations"
-    coordinates: longitude latitude
-
-  samosa_fit_return_status_step1:
-    long_name: "samosa fit return status (step1)"
-    unit: "1"
-    flag_values: "-2, -1, 0, 1, 2, 3, 4"
-    flag_meanings: "not_run improper_input maximum_number_of_function_evaluations gtol_termination ftol_termination xtol_termination ftol_and_xtol_termination"
-    valid_min: -2
-    valid_max: 4
     comment: "output of scipy.optimize.least_squares"
     coordinates: longitude latitude
 
-  samosa_fit_return_status_step2:
-    long_name: "samosa fit return status (step2)"
+  samosa_fit_return_status:
+    long_name: "samosa fit return status"
     unit: "1"
-    flag_values: "-2, -1, 0, 1, 2, 3, 4"
-    flag_meanings: "not_run improper_input maximum_number_of_function_evaluations gtol_termination ftol_termination xtol_termination ftol_and_xtol_termination"
-    valid_min: -2
+    flag_values: "-1, 0, 1, 2, 3, 4"
+    flag_meanings: improper_input maximum_number_of_function_evaluations gtol_termination ftol_termination xtol_termination ftol_and_xtol_termination
+    valid_min: -1
     valid_max: 4
     comment: "output of scipy.optimize.least_squares"
     coordinates: longitude latitude
@@ -261,21 +242,6 @@ variables:
     units: m
     coordinates: time
 
-  ocog_width:
-    long_name: "ocog width"
-    units: "1"
-    coordinates: time
-
-  ocog_amplitude:
-    long_name: "ocog amplitude"
-    units: "1"
-    coordinates: time
-
-  first_maximum_index:
-    long_name: "first maximum index"
-    units: "1"
-    coordinates: time
-
   waveform:
     long_name: "waveform"
     coordinates: time, n_range_gates
@@ -290,24 +256,3 @@ variables:
     long_name: "sub waveform mask"
     coordinates: time, n_range_gates
     comment: "This parameter is only intended for use with a test data set"
-
-  miz_flag:
-    var_source_name: flag_miz
-    long_name: "marginal ice zone flag"
-    flag_values: 0, 1
-    flag_meanings: "miz_flag_false miz_flag_true"
-    valid_min: 0
-    valid_max: 1
-    coordinates: longitude latitude
-
-  distance_to_ocean:
-    long_name: "distance to open ocean"
-    units: m
-    comment: "computed from gridded sea ice concentration mask (threshold 15%)"
-    coordinates: time
-
-  distance_to_low_ice_concentration:
-    long_name: "distance to low ice concentration"
-    units: m
-    comment: "computed from gridded sea ice concentration mask (threshold 70%)"
-    coordinates: time

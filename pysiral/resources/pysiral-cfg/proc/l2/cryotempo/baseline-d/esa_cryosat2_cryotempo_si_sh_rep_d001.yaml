@@ -50,7 +50,7 @@ auxdata:
         name: c3s
         options:
             version: v3p0
-            exception_on_error: False
+            exception_on_error: True
 
     - sitype:
          name: fyi_default
@@ -225,7 +225,8 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: polar_ocean
-                use_multiprocessing: True
+                # Set to False for MSSL processing so we can control CPU usage
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_specular"
                 samosap_fit_kwargs:
@@ -257,7 +258,7 @@ procsteps:
               pyclass: SAMOSAPlusRetracker
               options:
                 surface_class: sea_ice
-                use_multiprocessing: True
+                use_multiprocessing: False
                 num_processes: "pysiral-cfg"
                 fit_method: "samosap_standard"
                 samosap_fit_kwargs:
