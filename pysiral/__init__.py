@@ -9,7 +9,7 @@ __all__ = [ "_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "proj", "retracker",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "set_psrl_cpu_count", "__version__"]
+           "set_psrl_cpu_count", "__version__", "__software_version__"]
 
 import importlib
 
@@ -17,7 +17,6 @@ import multiprocessing
 import pkgutil
 import shutil
 import socket
-import subprocess
 import sys
 from datetime import datetime
 from distutils import dir_util
@@ -49,14 +48,9 @@ __version__ = version
 __author__ = "Stefan Hendricks"
 __author_email__ = "stefan.hendricks@awi.de"
 
-
 # Get git version (allows tracing of the exact commit)
-# TODO: This only works when the code is in a git repository (and not as installed python package)
-try:
-    __software_version__ = subprocess.check_output(["git", "log", "--pretty=format:%H", "-n", "1"])
-    __software_version__ = __software_version__.strip().decode("utf-8")
-except (FileNotFoundError, subprocess.CalledProcessError):
-    __software_version__ = None
+# TODO: Implement git version retrieval with git hooks (server-side post receive hook)
+__software_version__ = None
 
 
 class _MissionDefinitionCatalogue(object):
