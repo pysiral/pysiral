@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Union
 
 import numpy as np
-from attrdict import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate

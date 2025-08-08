@@ -10,7 +10,7 @@ import time
 from typing import Dict
 
 import numpy as np
-from attrdict import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from loguru import logger
 
 from pysiral.core.flags import FlagContainer
