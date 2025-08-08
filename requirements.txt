@@ -1,12 +1,13 @@
 astropy
 attrdict
 bottleneck
-cartopy>=0.22
+cartopy
 cftime
 cython==0.29.35
 dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
+geopandas
 geopy
 h5py
 isort
@@ -40,6 +41,6 @@ sphinx_rtd_theme
 sphinxcontrib-mermaid
 statsmodels
 torch
-xarray
+xarray==2023.12
 xgboost
 xmltodict

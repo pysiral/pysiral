@@ -233,3 +233,10 @@ procsteps:
                 filter_size_n_points: 83
                 filter_props:
                      it: 1
+
+    # Create an instrument mode flag for CryoSat-2 data
+    # (instrument mode = radar mode + 1)
+    -   module: l2proc.procsteps
+        pyclass: CS2InstrumentModeflag
+        options: null
+

@@ -193,9 +193,10 @@ class Level2PreProcArgParser(DefaultLoggingClass):
         l2i_product_directories = self._args.l2i_product_dir
         if len(l2i_product_directories) != 1:
             raise ValueError("Must specify only 1 l2i directory")
-        if Path(l2i_product_directories[0]).is_dir():
-            return Path(l2i_product_directories[0]).resolve(strict=False)
-        raise IOError(f"Not a valid l2i product directory: {l2i_product_directories[0]}")
+        directory = Path(l2i_product_directories[0]).resolve()
+        if not directory.is_dir():
+            raise IOError(f"Not a valid l2i product directory: {directory}")
+        return Path(l2i_product_directories[0])
 
     @property
     def l2p_output(self):

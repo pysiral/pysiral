@@ -1,5 +1,43 @@
 # History of changes
 
+## [0.12] 2025-08-08
+
+### Added
+- Support for additional OSI-SAF sea ice concentrations products (e.g. AMSR2 based sea ice concentration, OSI-408). 
+- CCI v4.0 climate data record (CDR) processor and output definition files
+- C3S v4.0 climate data record (CDR) processor and output definition files
+- CryoTEMPO baseline D001 processor and output definition files (@djbwork)
+- New implementation of the SAMOSA+ retracker based on an external [SAMOSA waveform model package](https://github.com/pysiral/samosa-waveform-model) (retracker id: `samosa_wfm`).
+- Marginal ice zone filter using SAMOSA+ output properties
+- Support for weekly sea ice charts of the US National Ice Service (`auxdata.icecharts.NSIDCSeaIceChartsSIGRID3`)
+ Grid definitions used for the Sea Ice Mass Intercomparison Exercise (SINX'S) for the Arctic and Antarctic
+- Level-2 filter class (`filter.RemoveNonOceanData`) to ensure that ocean only parameter are NaN over land and land ice.
+- Altitude rate is added to the L1P data (if available). This parameter is needed for the SAMOSA+ retracker.
+- Envisat Level-1 preprocessor version 1.2 with additional waveform shape parameters (Trailing Edge Parameters)
+- ERS Level-1 preprocessor version 1.4 with additional parameters waveform paramters (Leading/Trailing Edge Parameters)
+- Sentinel-3 Level-1 preprocessor version 1.2 with additional parameters waveform paramters (OCOG)
+-
+
+### Changed
+- Notation of OSI-SAF product selection in Level-2 processor configuration files has been changed to allow for multiple products (e.g. `osi-401, osi-408`). The auxiliary data definition (`auxdata_def.yaml`) has been updated and cleaned accordingly.
+- Updated Sentinel-3 file catalog class. (Speed improvements and dealing with file duplicates)
+- Quality flag for Level-3S (multiple data) now handles data from multiple platforms per grid cell.
+
+### Fixed
+- Level-3 uncertainties of radar freeboard and sea ice freeboard required presence of sea ice thickness variable.
+- L2i file validation failed datastructure with symbolic links. 
+- Inconsistent grid ids between hemispheres. 
+- Time reported for Level-2 processor run was CPU process time not actual wall clock time.
+- Level-2 parameter smoother class (`filter.ParameterSmoother`) incorrectly generated ocean domain data over land sections. The new option `ocean_domain_only` is set to True by default.
+- Incorrect settings of the machine learning (`ml`) class and its configuration in (`auxdata_def.yaml`) file. (@sp-awi)
+
+### Deprecated
+- Retracker class `pysiral.retracker.samosa` shall be replaced by `pysiral.retracker.samosa_wfm` in the future. The newer `samosa_wfm` implemetation is faster, more configurable and all packages are in the pysiral organization repositories.
+
+### Removed
+- `source` tag from auxiliary data definition (`auxdata_def.yaml`). It was never used and often incomplete. The documentation of sources of auxiliary data will be moved into the documentation.
+
+
 ## [0.11] 2024-02-29
 
 ### Added

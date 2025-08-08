@@ -154,16 +154,32 @@ class Level2Data(object):
         # by its long name
         self._auxiliary_catalog[var_name] = var_id
 
-    def set_multidim_auxiliary_parameter(self, var_id, var_name, value, dim_dict):
+    def set_multidim_auxiliary_parameter(self, var_id, var_name, value, dim_dict, update: bool = False):
         """
         Adds an auxiliary parameter to the data object different dimensions than
         the standard (l2.n_records) default data array.
+
         :param var_id: (str) The target id for the variable
         :param var_name: (str) The long name of the variable
         :param value: (np.ndarray) The auxiliary parameter
         :param dim_dict: (dictionary) The dimenstion dictionary
+        :param update: keyword flag that if true, will try to update an existing array
+
         :return:
         """
+        if not isinstance(update, bool):
+            raise ValueError(f"Incorrect data type for keywork `update` (must be `bool`, was {type(update)}")
+
+        # Before update, check if parameter exists
+        if update and hasattr(self, var_id):
+
+            # Assuming all finite values should be updated
+            mask = np.isfinite(value)
+            existing_value = getattr(self, var_id)
+            existing_value[mask] = value[mask]
+            setattr(self, var_id, existing_value)
+            return
+
         setattr(self, var_id, value)
         # Register auxiliary parameter (this allows to find the parameter by its long name
         self._auxiliary_catalog[var_name] = var_id

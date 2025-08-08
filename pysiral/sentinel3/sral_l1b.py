@@ -122,7 +122,7 @@ class Sentinel3SRALL1b(object):
         for record in np.arange(n_records):
             self.wfm_range[record, :] = tracker_range_20hz[record] + \
                 (range_bin_index*self.range_bin_width) - \
-                (self.nominal_tracking_bin*self.range_bin_width)
+                (self.nominal_tracking_bin * self.range_bin_width)
 
     def _validate(self):
         pass

@@ -12,7 +12,7 @@ authors:
   - family-names: Sallila
     given-names: Heidi
 
-title: "python sea ice radar altimetry toolbox (version 0.11)"
-version: v0.11
+title: "python sea ice radar altimetry toolbox (version 0.12)"
+version: v0.12
 doi: tbd
-date-released: 2024-02-29
+date-released: 2024-08-08

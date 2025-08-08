@@ -45,6 +45,7 @@ WAVEFORM_CLASSIFICATION_BIT_DICT = {
     "unclassified": 15}       # initial flag, respectively unidentified range bin(s)
 
 
+# TODO: Add marine and land/land ice flag groups
 class SurfaceType(DefaultLoggingClass):
     """
     Container for surface type information.

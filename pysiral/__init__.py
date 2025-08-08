@@ -25,7 +25,6 @@ from distutils import dir_util
 from pathlib import Path
 from typing import Iterable, Union
 
-import numpy as np
 import yaml
 from attrdict import AttrDict
 from dateperiods import DatePeriod
