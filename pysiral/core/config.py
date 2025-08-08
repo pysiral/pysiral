@@ -20,7 +20,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Union
 
-from pysiral.core.legacy_packages import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from pysiral import psrlcfg
 
 

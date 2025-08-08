@@ -9,7 +9,7 @@ Level2Processor conventions
 import unittest
 
 import yaml
-from pysiral.core.legacy_packages import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from loguru import logger
 
 from pysiral import psrlcfg

@@ -29,7 +29,7 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral.core.legacy_packages import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 
 warnings.filterwarnings("ignore")
 
