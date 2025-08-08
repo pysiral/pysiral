@@ -52,9 +52,9 @@ def logger_format(record: Dict) -> str:
     """
     elapsed_timestr = get_duration(record["elapsed"].total_seconds())
     fmt_str = (
-        '<green>{time:YYYY-MM-DD HH:mm:ss.SS} - {elapsed_timestr}</green>  | '
+        '<green>{time:YYYY-MM-DD HH:mm:ss.SS} - {elapsed_timestr}</green> | '
         '<level>{level:<8}</level> | '
-        '<level>{message}</level>\n'
+        '<level>{message} </level>\n'
     )
     return fmt_str.format(elapsed_timestr=elapsed_timestr, **record)
 
