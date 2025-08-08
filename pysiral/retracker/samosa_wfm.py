@@ -1841,7 +1841,7 @@ def get_trailing_edge_lower_envelope_mask(
     mask = np.full(waveform_power.size, True)
     mask[first_maximum_index:] = mask_le
 
-    return mask if return_type is "bool" else np.where(mask)[0]
+    return mask if return_type == "bool" else np.where(mask)[0]
 
 
 def get_samosa_leading_edge_error(
