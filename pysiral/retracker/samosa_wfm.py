@@ -1677,7 +1677,7 @@ def compute_thermal_noise(
     waveform_sorted = np.sort(waveform[:waveform.shape[0] // 2])
     start_index = max(start_index, 0)
     end_index = waveform_sorted.size - 1 if start_index >= waveform.size else end_index
-    return float(np.nanmedian(waveform_sorted[start_index:end_index+1]))
+    return float(np.nanmedian(waveform_sorted[start_index:end_index + 1]))
 
 
 def epoch2range(epoch: float, range_array: np.ndarray) -> float:
@@ -1818,15 +1818,15 @@ def get_trailing_edge_lower_envelope_mask(
     # local minima and checking the difference of actual power
     # values to the linear fit.
     n_range_gates = len(waveform_power)
-    for i in np.arange(idx_lmin.size-1):
+    for i in np.arange(idx_lmin.size - 1):
 
         # --- Method 1: Distance to POCA of linear fit ---
         idx_lmin_scaled = idx_lmin.astype(float)/ n_range_gates
         k = wfm_trailing_edge[idx_lmin[i]]
-        m = ((wfm_trailing_edge[idx_lmin[i+1]] - wfm_trailing_edge[idx_lmin[i]]) /
-             (idx_lmin_scaled[i+1] - idx_lmin_scaled[i]))
+        m = ((wfm_trailing_edge[idx_lmin[i + 1]] - wfm_trailing_edge[idx_lmin[i]]) /
+             (idx_lmin_scaled[i + 1] - idx_lmin_scaled[i]))
 
-        for x, idx in enumerate(np.arange(idx_lmin[i]+1, idx_lmin[i+1])):
+        for x, idx in enumerate(np.arange(idx_lmin[i] + 1, idx_lmin[i + 1])):
 
             x0 = float(x + 1) / n_range_gates
             y0 = wfm_trailing_edge[idx]

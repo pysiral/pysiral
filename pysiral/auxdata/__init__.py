@@ -188,10 +188,10 @@ class AuxdataBaseClass(object):
             self.load_requested_auxdata()
             self._current_date = self._requested_date
             if self.has_data_loaded:
-                self.add_handler_message(self.__class__.__name__ + ": Load "+str(self.requested_filepath))
+                self.add_handler_message(self.__class__.__name__ + ": Load " + str(self.requested_filepath))
         else:
             if self.has_data_loaded:
-                self.add_handler_message(self.__class__.__name__+": Data already present")
+                self.add_handler_message(self.__class__.__name__ + ": Data already present")
             else:
                 msg = ": No Data: Loading failed in an earlier attempt"
                 self.add_handler_message(self.__class__.__name__ + msg)
@@ -432,7 +432,7 @@ class GridTrackInterpol(object):
         # x: 0 < n_lines; y: 0 < n_cols
         dim = self.griddef.dimension
         x_min, y_min = np.nanmin(x), np.nanmin(y)
-        self.ix, self.iy = (tr_x-x_min)/dim.dx, (tr_y-y_min)/dim.dy
+        self.ix, self.iy = (tr_x - x_min) / dim.dx, (tr_y - y_min) / dim.dy
 
     def get_from_grid_variable(self, gridvar, order=0, flipud=False):
         """ Returns a along-track data from a grid variable"""

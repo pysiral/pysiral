@@ -11,7 +11,6 @@ __all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
            "set_psrl_cpu_count", "InterceptHandler", "__version__"]
 
-import cProfile
 import importlib
 import logging
 import multiprocessing
@@ -26,7 +25,6 @@ from distutils import dir_util
 from pathlib import Path
 from typing import Iterable, Union
 
-import numpy as np
 import yaml
 from attrdict import AttrDict
 from dateperiods import DatePeriod

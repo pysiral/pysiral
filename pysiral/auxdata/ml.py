@@ -126,11 +126,11 @@ class RetrackerThresholdModel(AuxdataBaseClass):
                 #zero-pad waveforms
                 wfm = np.concatenate((wfm, np.zeros(50)))
                 try:
-                    sub = wfm[(fmi-i0):(fmi+i1)]
+                    sub = wfm[(fmi - i0):(fmi + i1)]
                 except TypeError:
-                    sub = np.repeat(np.nan, i0+i1)
+                    sub = np.repeat(np.nan, i0 + i1)
             else:
-                sub = np.repeat(np.nan, i0+i1)
+                sub = np.repeat(np.nan, i0 + i1)
             return sub
 
         # get normalized waveform power

@@ -26,7 +26,6 @@ from pysiral import psrlcfg
 from pysiral.core.clocks import StopWatch
 from pysiral.core.config import RadarModes
 from pysiral.core.functions import inverse_power
-from pysiral.core.helper import get_multiprocessing_1d_array_chunks
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
@@ -1476,7 +1475,7 @@ class CS2PulsePeakiness(object):
             try:
                 y = wfm_counts[i, :].flatten().astype(np.float32)
                 self._noise_floor[i] = bn.nanmean(y[:11])
-                y_no_noise_removal = y.copy()
+                # y_no_noise_removal = y.copy()
                 y -= self._noise_floor[i]  # Remove Noise
                 y[np.where(y < 0.0)[0]] = 0.0  # Set negative counts to zero
                 yp = np.nanmax(y)  # Waveform peak value
@@ -1705,7 +1704,7 @@ def get_trailing_edge_lower_envelope_mask(
     # the list (important for fitting waveform power).
     idx_lmin = argrelmin(wfm_trailing_edge)[0]
     idx_lmin = np.insert(idx_lmin, 0, 0)
-    idx_lmin = np.insert(idx_lmin, len(idx_lmin), wfm_trailing_edge.size-1)
+    idx_lmin = np.insert(idx_lmin, len(idx_lmin), wfm_trailing_edge.size - 1)
 
     # Throw out local minima that have greater power then the previous
     # one in several iterations
@@ -1739,7 +1738,7 @@ def get_trailing_edge_lower_envelope_mask(
     # plt.show()
 
     is_higher = np.zeros(idx_lmin.size, dtype=bool)
-    for i in np.arange(idx_lmin.size-1):
+    for i in np.arange(idx_lmin.size - 1):
         power_threshold = float(wfm_trailing_edge[idx_lmin[i]]) + noise_level_normed
         is_higher[i:] = np.logical_or(
             is_higher[i:],
@@ -1787,4 +1786,4 @@ def get_trailing_edge_lower_envelope_mask(
     # mask = np.full(waveform_power.size, False)
     # mask[first_maximum_index:] = mask_le
 
-    return mask if return_type is "bool" else np.where(mask)[0]
+    return mask if return_type == "bool" else np.where(mask)[0]

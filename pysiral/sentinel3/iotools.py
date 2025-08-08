@@ -328,4 +328,4 @@ class S3FileNaming:
 
         # Assign the parsed datetime properties
         for key in dt_keys:
-            setattr(self, key, datetime.strptime(elements.named[key],"%Y%m%dT%H%M%S"))
+            setattr(self, key, datetime.strptime(elements.named[key], "%Y%m%dT%H%M%S"))

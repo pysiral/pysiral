@@ -158,16 +158,16 @@ SOD_GROUPS = {
     # 6: 'First-year ice',
     # 7: 'Multi-year ice'
 
-    0:  'Open water',
-    1:  'New Ice',
-    2:  'Nilas, ring ice',
-    3:  'Young ice',
-    4:  'Grey ice',  # Grey ice
-    5:  'White ice',  # White ice
-    6:  'First-year ice, overall categary',
-    7:  'Thin first-year ice',
-    8:  'Thin first-year ice, stage 1',
-    9:  'Thin first-year ice, stage 2',
+    0: 'Open water',
+    1: 'New Ice',
+    2: 'Nilas, ring ice',
+    3: 'Young ice',
+    4: 'Grey ice',  # Grey ice
+    5: 'White ice',  # White ice
+    6: 'First-year ice, overall categary',
+    7: 'Thin first-year ice',
+    8: 'Thin first-year ice, stage 1',
+    9: 'Thin first-year ice, stage 2',
     10: 'Medium first-year ice',
     11: 'Thick first-year ice',
     12: 'Old ice',
@@ -227,8 +227,6 @@ ICECHART_NOT_FILLED_VALUE = -9  # Used in converting polygon codes into the prep
 ICECHART_UNKNOWN = 99  # Used in converting polygon codes into the preprocessed ice charts.
 
 
-
-
 @dataclass
 class NSIDCIceChartFileEntry:
     file_path: Path
@@ -265,7 +263,7 @@ class NSIDCIceChartFileCatalog(object):
             year = year_offset + filename_attributes.named["year"]
 
             issue_date = date(year, filename_attributes.named["month"], filename_attributes.named["day"])
-            validity_start_date = issue_date - timedelta(days=self.file_validity_period_days_default-1)
+            validity_start_date = issue_date - timedelta(days=self.file_validity_period_days_default - 1)
             validity_end_date = issue_date
 
             # Using integer (days since 1/1/1) as key for fast lookup
@@ -548,6 +546,7 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
             classes_floe, dims, update=True
         )
 
+
 class IC(AuxdataBaseClass):
 
     def __init__(self, *args, **kwargs):
@@ -600,7 +599,7 @@ class IC(AuxdataBaseClass):
 
         paths, timedelta = self._get_local_repository_filename(l2)
         self.add_handler_message('IN ICECHART _GET_DATA, PATHS 0: %s' % paths[0])
-        #print os.path.isfile(paths[0])
+        # print os.path.isfile(paths[0])
 
         # Validation
         if not Path(paths[0]).is_file():
@@ -627,14 +626,14 @@ class IC(AuxdataBaseClass):
         self._data_sc[flagged] = np.nan
 
         # This step is important for calculation of image coordinates
-        #self._data.ice_conc = np.flipud(self._data.ice_conc)
-        #self._data_ct = np.flipud(self._data_ct)
-        #self._data_ca = np.flipud(self._data_ca)
-        #self._data_cb = np.flipud(self._data_cb)
-        #self._data_cc = np.flipud(self._data_cc)
-        #self._data_sa = np.flipud(self._data_sa)
-        #self._data_sb = np.flipud(self._data_sb)
-        #self._data_sc = np.flipud(self._data_sc)
+        # self._data.ice_conc = np.flipud(self._data.ice_conc)
+        # self._data_ct = np.flipud(self._data_ct)
+        # self._data_ca = np.flipud(self._data_ca)
+        # self._data_cb = np.flipud(self._data_cb)
+        # self._data_cc = np.flipud(self._data_cc)
+        # self._data_sa = np.flipud(self._data_sa)
+        # self._data_sb = np.flipud(self._data_sb)
+        # self._data_sc = np.flipud(self._data_sc)
 
         self.add_handler_message("IC: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0])
         self._current_date = self._requested_date
@@ -651,21 +650,21 @@ class IC(AuxdataBaseClass):
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = path / str(year) / str(month) / "merged_"+datestring+"_CT.tif"
+            str_filename = path / str(year) / str(month) / "merged_" + datestring + "_CT.tif"
             if str_filename.is_file():
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(path / str(year) / str(month) / 'merged_'+datestring+'_'+o+'.tif')
+                    fnames.append(path / str(year) / str(month) / 'merged_' + datestring + '_' + o + '.tif')
                 return fnames, timedelta
                 break
             else:
-                fnames = ['','','','','','']
+                fnames = ['', '', '', '', '', '']
                 timedelta = np.nan
         return fnames, timedelta
 
     def XXYYGrids(self):
-        ### Returns 2 km EASE2 grid XX and YY value
+        # Returns 2 km EASE2 grid XX and YY value
 
         vec_Y = np.arange(5400000, -5400000, -2000) - 1000
         vec_X = np.arange(-5400000, 5400000, 2000) + 1000
@@ -675,7 +674,7 @@ class IC(AuxdataBaseClass):
     def _get_sic_ic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
         kwargs = self.cfg.options[l2.hemisphere].projection
-        #p = Proj(**kwargs)
+        # p = Proj(**kwargs)
         data_ct = list()
         data_ca = list()
         data_cb = list()
@@ -687,7 +686,7 @@ class IC(AuxdataBaseClass):
         EASE_proj = pyproj.Proj('+proj=laea +lat_0=90 +lon_0=0 +ellps=WGS84 +datum=WGS84 +units=m')
         latlon_proj = pyproj.Proj('+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs')
 
-        vec_x, vec_y =  pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
+        vec_x, vec_y = pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         XX, YY = self.XXYYGrids()
@@ -775,7 +774,7 @@ class ICA(AuxdataBaseClass):
             self.add_handler_message("ICA: tif already present")
             return
         paths, timedelta = self._get_local_repository_filename(l2)
-        #print 'AARI PATHS 0', paths[0]
+        # print 'AARI PATHS 0', paths[0]
 
         # Validation
         if not Path(paths[0]).is_file():
@@ -801,39 +800,38 @@ class ICA(AuxdataBaseClass):
             self._data_sb[flagged] = np.nan
             self._data_sc[flagged] = np.nan
         except TypeError:
-            #print 'No AARI icechart for this day'
+            # print 'No AARI icechart for this day'
             pass
         # This step is important for calculation of image coordinates
-        #self._data.ice_conc = np.flipud(self._data.ice_conc)
-        #self._data_ct = np.flipud(self._data_ct)
-        #self._data_ca = np.flipud(self._data_ca)
-        #self._data_cb = np.flipud(self._data_cb)
-        #self._data_cc = np.flipud(self._data_cc)
-        #self._data_sa = np.flipud(self._data_sa)
-        #self._data_sb = np.flipud(self._data_sb)
-        #self._data_sc = np.flipud(self._data_sc)
+        # self._data.ice_conc = np.flipud(self._data.ice_conc)
+        # self._data_ct = np.flipud(self._data_ct)
+        # self._data_ca = np.flipud(self._data_ca)
+        # self._data_cb = np.flipud(self._data_cb)
+        # self._data_cc = np.flipud(self._data_cc)
+        # self._data_sa = np.flipud(self._data_sa)
+        # self._data_sb = np.flipud(self._data_sb)
+        # self._data_sc = np.flipud(self._data_sc)
         self.add_handler_message("ICA: Loaded IC file: %s (and corresponding CABC, SABC" % paths[0])
         self._current_date = self._requested_date
 
     def _get_local_repository_filename(self, l2):
 
-
-        time = datetime.datetime(int(self.year),int(self.month),int(self.day))
+        time = datetime.datetime(int(self.year), int(self.month), int(self.day))
 
         path = Path(self.cfg.local_repository)
 
-        other_icevars = ['CA','CB','CC','SA','SB','SC']
+        other_icevars = ['CA', 'CB', 'CC', 'SA', 'SB', 'SC']
         for delta in [0, -1, 1, -2, 2, -3, 3, 4, -4, 5, -5, 6, -6, 7, -7]:
             fnames = []
             datestring = (time + datetime.timedelta(delta)).strftime('%Y%m%d')
             year = datestring[:4]
             month = datestring[4:6]
-            str_filename = path / str(year) / str(month) / "merged_aari_"+datestring+"_CT.tif"
+            str_filename = path / str(year) / str(month) / "merged_aari_" + datestring+"_CT.tif"
             if str_filename.is_file():
                 timedelta = delta
                 fnames.append(str_filename)
                 for o in other_icevars:
-                    fnames.append(path / str(year) / str(month) / 'merged_aari_'+datestring+'_'+o+'.tif')
+                    fnames.append(path / str(year) / str(month) / 'merged_aari_' + datestring + '_' + o +'.tif')
                 return fnames, timedelta
                 break
             else:
@@ -842,14 +840,14 @@ class ICA(AuxdataBaseClass):
         return fnames, timedelta
 
     def XXYYGrids(self):
-        ### Returns 2 km EASE2 grid XX and YY values
+        # Returns 2 km EASE2 grid XX and YY values
 
         import numpy as np
 
         vec_Y = np.arange(5400000, -5400000, -2000) - 1000
         vec_X = np.arange(-5400000, 5400000, 2000) + 1000
         [XX, YY] = np.meshgrid(vec_X, vec_Y)
-        return XX,YY
+        return XX, YY
 
     def _get_sic_ic_track(self, l2):
         # Convert grid/track coordinates to grid projection coordinates
@@ -866,7 +864,7 @@ class ICA(AuxdataBaseClass):
         EASE_proj = pyproj.Proj('+proj=laea +lat_0=90 +lon_0=0 +ellps=WGS84 +datum=WGS84 +units=m')
         latlon_proj = pyproj.Proj('+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs')
 
-        vec_x, vec_y =  pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
+        vec_x, vec_y = pyproj.transform(latlon_proj, EASE_proj, l2.track.longitude, l2.track.latitude)
 
         # Convert track projection coordinates to image coordinates
         XX, YY = self.XXYYGrids()
