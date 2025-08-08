@@ -1,0 +1,337 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata:
+  output_id: l3c_tempo_d001
+  data_level: 3
+  data_level_description: Level-3 colated (gridded geophysical parameters)
+
+# Output Definition (for each period definition)
+filenaming:
+  month: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}_D001.nc"
+  monthly: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}-D001.nc"
+  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  day: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-D001.nc"
+  custom: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+  default: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-D001.nc"
+
+product_level_subfolder: l3c_internal
+
+grid_options:
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Gridded Cryo-TEMPO sea ice output (for quality control purposes only)"
+  - institution: ""
+  - source: ""
+  - platform: "CryoSat-2"
+  - sensor: "SIRAL"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: ""
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: ""
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: ""
+  - keywords: ""
+  - id: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-C001"
+  - naming_authority: ""
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Grid"
+  - comment: ""
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: ""
+  - creator_type: ""
+  - creator_url: ""
+  - contributor_name: ""
+  - contributor_role: ""
+  - project: "ESA Cryo-TEMPO"
+  - publisher_name: ""
+  - publisher_url: ""
+  - publisher_email: ""
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - spatial_resolution: "{grid_spacing_tag} grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: ""
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  radar_freeboard:
+    long_name: "radar freeboard"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+
+  radar_freeboard_uncertainty:
+    long_name: "uncertainty associated with radar freeboard"
+    var_source_name: radar_freeboard_l3_uncertainty
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard:
+    long_name: "sea ice freeboard"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "elevation of retracked point above instantaneous sea surface height (with snow range corrections)"
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "uncertainty associated to sea ice freeboard"
+    var_source_name: freeboard_l3_uncertainty
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_filtered:
+    long_name: "sea ice freeboard"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "with along-track low-pass filter applied"
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: surface_snow_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density:
+    long_name: "snow density"
+    standard_name: surface_snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_uncertainty:
+    long_name: "snow density uncertainty"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  instrument_mode:
+    long_name: "radar mode flag"
+    valid_min: 1
+    valid_max: 3
+    flag_values: "1, 2, 3"
+    flag_meanings: "pulse_limited sar sar_interferometric"
+    comment: "median of radar mode flags within grid cells"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  surface_height_standard_deviation:
+    long_name: "surface height standard deviation"
+    comment: from significant wave height SAMOSA+ parameter (swh/4)
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  mean_square_slope:
+    long_name: "mean square slope"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  samosa_misfit:
+    long_name: "samosa misfit"
+    comment: waveform model to full waveform
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  samosa_misfit_sub_waveform:
+    long_name: "samosa sub-waveform misfit"
+    comment: waveform model to sub-waveform (main ice class)
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "region code"
+    unit: 1
+    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
+    valid_min: 0
+    valid_max: 18
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea"
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  miz_flag:
+    long_name: Marginal Ice Zone Flag
+    standard_name: "quality_flag"
+    units: "1"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0 1"
+    flag_meanings: "not_in_miz miz"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_concentration:
+    long_name: "sea ice concentration"
+    units: "%"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  distance_to_ocean:
+    long_name: "distance to ocean"
+    comment: "computed only in sea ice regions"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  ocog_width:
+    long_name: "OCOG width"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  n_valid_freeboards:
+    long_name: "number of valid freeboard measurements"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  stat_n_total_waveforms:
+    var_source_name: n_total_waveforms
+    long_name: "number of total measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_n_valid_waveforms:
+    var_source_name: n_valid_waveforms
+    long_name: "number of valid measurements per grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+    coverage_content_type: qualityInformation
+
+  stat_valid_fraction:
+    var_source_name: valid_fraction
+    long_name: "fraction of valid to total waveforms"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "definition of valid: either lead or ice"
+    coverage_content_type: qualityInformation
+
+  stat_lead_fraction:
+    var_source_name: lead_fraction
+    long_name: "lead waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_seaice_fraction:
+    var_source_name: seaice_fraction
+    long_name: "sea ice waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_ocean_fraction:
+    var_source_name: ocean_fraction
+    long_name: "ocean waveform detections per valid waveforms in grid cell"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+  
+  stat_ocog_width_mean:
+    var_source_name: stat_ocog_width_all_mean
+    long_name: "average OCOG width (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sdev:
+    var_source_name: stat_ocog_width_all_sdev
+    long_name: "OCOG width standard_deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sea_ice_mean:
+    long_name: "average OCOG width (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_sea_ice_sdev:
+    long_name: "OCOG width standard_deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: qualityInformation
+
+  stat_ocog_width_lead_mean:
+    long_name: "average OCOG width (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_lead_sdev:
+    long_name: "OCOG width standard_deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ocean_mean:
+    long_name: "average OCOG width (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ocean_sdev:
+    long_name: "OCOG width standard_deviation (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement

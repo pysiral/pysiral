@@ -568,9 +568,9 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
 
 def bnsmooth(x, window):
     """ Bottleneck implementation of the IDL SMOOTH function """
-    pad = int((window-1)/2)
+    pad = int((window - 1) / 2)
     n = len(x)
-    xpad = np.ndarray(shape=(n+window))
+    xpad = np.ndarray(shape=(n + window))
     xpad[:pad] = 0.0
     xpad[pad:n+pad] = x
     xpad[n+pad:] = 0.0

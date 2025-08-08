@@ -6,7 +6,7 @@ resolution_tag: 12.5km
 grid_id: nh_12p5km_ease2
 name: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 12.5km
 
-netcdf_grid_description: 
+netcdf_grid_description:
     Lambert_Azimuthal_Grid:
         grid_mapping_name: "lambert_azimuthal_equal_area"
         longitude_of_projection_origin: 0.0
@@ -35,7 +35,7 @@ extent:
     numx: 864
     numy: 864
 
-area_def: 
+area_def:
     ease2nh:
         description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
         projection:

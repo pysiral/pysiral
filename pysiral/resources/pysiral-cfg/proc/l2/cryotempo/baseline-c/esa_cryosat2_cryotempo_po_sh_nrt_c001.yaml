@@ -52,7 +52,7 @@ auxdata:
             latitude_range: [-90.0, -45.]
 
     - sic:
-        name: osisaf-operational
+        name: osi-401
         options:
             exception_on_error: False
             fill_pole_hole:
@@ -68,7 +68,7 @@ procsteps:
 
     -   module: l2proc.procsteps
         pyclass: L1BL2TransferVariables
-        options: 
+        options:
             classifier:
                 sigma0: [sig, sigma0]
                 peakiness: [pp, pulse_peakiness]
@@ -83,6 +83,8 @@ procsteps:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 dynamic_atmosphere: [rdac, dynamic_atmosphere]
+                # Used to cause inverse_barometric output to be filled with DAC
+                dynamic_atmosphere: [ rcib, inverse_barometric ]
                 ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
@@ -111,9 +113,9 @@ procsteps:
 
     # Surface type classification algorithm
 # Surface type classification algorithm
-    # SH: This is the surface type classification algorithm for the 
+    # SH: This is the surface type classification algorithm for the
     #     the new ESA CCI climate data record. There are now significantly
-    #     more sea ice waveform 
+    #     more sea ice waveform
     -   module: surface
         pyclass: ClassifierThresholdSurfaceType
         options:
@@ -325,4 +327,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
- 

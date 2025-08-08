@@ -223,20 +223,20 @@ class L2SeaIceDraft(Level2ProcessorStep):
 
 
 def icefreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
-    return rho_w/(rho_w - rho_i)*frb + rho_s/(rho_w - rho_i)*sd
+    return rho_w / (rho_w - rho_i) * frb + rho_s / (rho_w - rho_i) * sd
 
 
 def snowfreeboard2thickness(frb, sd, rho_w, rho_i, rho_s):
-    return rho_w / (rho_w - rho_i)*frb + (rho_s - rho_w)/(rho_w - rho_i)*sd
+    return rho_w / (rho_w - rho_i) * frb + (rho_s - rho_w) / (rho_w - rho_i) * sd
 
 
 def frb2sit_errprop(frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rho_s_unc):
 
     # Compute the partial derivates for the error propagation
-    deriv_fb = rho_w/(rho_w-rho_i)
-    deriv_rho_s = sd/(rho_w-rho_i)
-    deriv_rho_i = (frb*rho_w + sd*rho_s) / (rho_w-rho_i)**2.
-    deriv_sd = rho_s/(rho_w-rho_i)
+    deriv_fb = rho_w / (rho_w - rho_i)
+    deriv_rho_s = sd / (rho_w - rho_i)
+    deriv_rho_i = (frb * rho_w + sd * rho_s) / (rho_w - rho_i)**2.
+    deriv_sd = rho_s / (rho_w - rho_i)
 
     # Error propagation
     sit_unc = np.sqrt((deriv_fb**2. * frb_unc**2) +
@@ -245,4 +245,3 @@ def frb2sit_errprop(frb, sd, rho_w, rho_i, rho_s, frb_unc, sd_unc, rho_i_unc, rh
                       (deriv_rho_s**2 * rho_s_unc**2.))
 
     return sit_unc
-
