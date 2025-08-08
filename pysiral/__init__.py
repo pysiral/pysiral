@@ -26,9 +26,10 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import yaml
-from attrdict import AttrDict
 from dateperiods import DatePeriod
 from loguru import logger
+
+from pysiral.core.legacy_packages import AttrDict
 
 warnings.filterwarnings("ignore")
 
@@ -103,10 +104,12 @@ class _MissionDefinitionCatalogue(object):
         with open(str(self._filepath)) as fh:
             self._content = AttrDict(yaml.safe_load(fh))
 
-    def get_platform_info(self, platform_id):
+    def get_platform_info(self, platform_id) -> Union[AttrDict, None]:
         """
         Return the full configuration attr dict for a given platform id
+
         :param platform_id:
+
         :return:
         """
         platform_info = self._content.platforms.get(platform_id, None)

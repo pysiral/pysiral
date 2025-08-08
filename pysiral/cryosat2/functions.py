@@ -12,7 +12,7 @@ import numpy as np
 import numpy.typing as npt
 import parse
 import xmltodict
-from attrdict import AttrDict
+from pysiral.core.legacy_packages import AttrDict
 from dateutil import parser as dtparser
 from loguru import logger
 

@@ -26,7 +26,7 @@ from typing import List
 
 import numpy as np
 import scipy.ndimage as ndimage
-from attrdict import AttrDict
+from pysiral.core.legacy_packages import AttrDict
 from pyproj import Proj
 
 from pysiral import import_submodules

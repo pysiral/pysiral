@@ -10,7 +10,7 @@ from copy import deepcopy
 from typing import List, Tuple, Union
 
 import numpy as np
-from attrdict import AttrDict
+from pysiral.core.legacy_packages import AttrDict
 from loguru import logger
 
 from pysiral.core.config import RadarModes

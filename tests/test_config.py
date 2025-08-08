@@ -8,7 +8,7 @@ Testing the pysiral configuration management
 import unittest
 from pathlib import Path
 
-from attrdict import AttrDict
+from pysiral.core.legacy_packages import AttrDict
 from loguru import logger
 
 from pysiral import psrlcfg

@@ -15,7 +15,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
-from attrdict import AttrDict
+from pysiral.core.legacy_packages import AttrDict
 from dateperiods import DatePeriod, PeriodIterator
 from geopy import distance
 from loguru import logger
