@@ -27,7 +27,7 @@ try:
 except ImportError:
     SAMOSA_OK = False
 
-from pysiral import InterceptHandler
+from pysiral._logger import InterceptHandler
 from pysiral.retracker import BaseRetracker
 
 # TODO: Move this to an environment variable?

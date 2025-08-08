@@ -4,22 +4,21 @@
 pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
 """
 
-__all__ = ["auxdata", "cryosat2", "envisat", "ers", "sentinel3",
+__all__ = [ "_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "filter", "frb", "grid",
            "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "proj", "retracker",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "set_psrl_cpu_count", "InterceptHandler", "__version__"]
+           "set_psrl_cpu_count", "__version__"]
 
 import importlib
-import logging
+
 import multiprocessing
 import pkgutil
 import shutil
 import socket
 import subprocess
 import sys
-import warnings
 from datetime import datetime
 from distutils import dir_util
 from pathlib import Path
@@ -29,35 +28,9 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
+
+import pysiral._logger
 from pysiral.core.legacy_classes import AttrDict
-
-warnings.filterwarnings("ignore")
-
-# Set standard logger format
-logger.remove()
-fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | ' + \
-      '<level>{level: <8}</level> | ' + \
-      '<cyan>{name: <25}</cyan> | ' + \
-      '<cyan>L{line: <5}</cyan> | ' + \
-      '<level>{message}</level>'
-logger.add(sys.stderr, format=fmt, enqueue=True)
-
-
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        # Get corresponding Loguru level if it exists
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the logged message
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 # Get version from VERSION in package root
@@ -75,6 +48,7 @@ except IOError:
 __version__ = version
 __author__ = "Stefan Hendricks"
 __author_email__ = "stefan.hendricks@awi.de"
+
 
 # Get git version (allows tracing of the exact commit)
 # TODO: This only works when the code is in a git repository (and not as installed python package)
@@ -735,7 +709,7 @@ def get_cls(module_name, class_name, relaxed=True):
         if relaxed:
             return None, e
         else:
-            raise NotImplementedError(f"Cannot load class: {module_name}.{class_name}") from exc
+            raise NotImplementedError(f"Cannot load class: {module_name}.{class_name}") from e
 
 
 def import_submodules(package, recursive=True):

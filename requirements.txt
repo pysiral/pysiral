@@ -4,6 +4,7 @@ cartopy
 cftime
 cython
 dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
+dateutil
 dateutils
 flake8
 geopandas
