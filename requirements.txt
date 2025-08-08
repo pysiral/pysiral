@@ -2,7 +2,7 @@ astropy
 bottleneck
 cartopy
 cftime
-cython==0.29.35
+cython
 dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
