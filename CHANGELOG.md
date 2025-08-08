@@ -1,6 +1,6 @@
 # History of changes
 
-## [0.12]
+## [0.12] 2025-08-08
 
 ### Added
 - Support for additional OSI-SAF sea ice concentrations products (e.g. AMSR2 based sea ice concentration, OSI-408). 
