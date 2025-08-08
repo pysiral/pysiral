@@ -1,5 +1,4 @@
 astropy
-attrdict
 bottleneck
 cartopy
 cftime

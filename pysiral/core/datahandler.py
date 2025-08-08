@@ -11,7 +11,7 @@ from itertools import product
 from pathlib import Path
 from typing import List, Union
 
-from attrdict import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from dateperiods import DatePeriod
 from dateutil.relativedelta import relativedelta
 from loguru import logger

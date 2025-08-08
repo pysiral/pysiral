@@ -52,7 +52,7 @@ are currently implemented:
 
 from typing import Any, Dict, List, TypeVar, Union
 
-from attrdict import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from schema import And, Schema
 
 from pysiral import get_cls
