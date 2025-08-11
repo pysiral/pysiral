@@ -6,20 +6,49 @@ import argparse
 import sys
 
 from loguru import logger
+from pathlib import Path
+from typing import List, Optional
 
 from pysiral import get_cls, set_psrl_cpu_count
 from pysiral.core.config import DefaultCommandLineArguments
-from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef,
-                               get_preproc)
+from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
 
 
-def pysiral_l1preproc(job):
+def l1preproc(
+    l1p_settings_id_or_file: Path,
+    time_coverage_start: List[int],
+    time_coverage_end: List[int],
+    exclude_month: Optional[List[int]] = None,
+    hemisphere: str = "global",
+    platform: str = None,
+    output_handler_cfg: dict = None,
+    source_repo_id: str = None
+) -> None:
     """
     Workflow script of the pysiral l1b preprocessor.
 
-    :param job: A pysiral.l1preproc.Level1PreProcJobDef instance
+    :param l1p_settings_id_or_file: Level-1 preprocessor settings file or ID.
+    :param time_coverage_start: Start date of the time coverage as a list [year, month, day].
+    :param time_coverage_end: End date of the time coverage as a list [year, month, day].
+    :param exclude_month: List of months to exclude from processing (optional).
+    :param hemisphere: Hemisphere to process data for, default is "global".
+    :param platform: Platform identifier (optional).
+    :param output_handler_cfg: Configuration for the output handler (optional).
+    :param source_repo_id: Identifier for the source repository (optional).
+
     :return: None
     """
+
+    job = Level1PreProcJobDef(
+        l1p_settings_id_or_file,
+        time_coverage_start,
+        time_coverage_end,
+        exclude_month,
+        hemisphere,
+        platform,
+        output_handler_cfg,
+        source_repo_id
+    )
 
     # Take the time
     job.stopwatch.start()
@@ -41,7 +70,7 @@ def pysiral_l1preproc(job):
 
     # 4. Get the pre-processor
     preproc_def = job.l1pprocdef.level1_preprocessor
-    l1preproc = get_preproc(preproc_def.type, input_adapter, output_handler, preproc_def.options)
+    pre_processor = get_preproc(preproc_def.type, input_adapter, output_handler, preproc_def.options)
 
     # 5. Loop over monthly periods
     for period in job.period_segments:
@@ -56,14 +85,14 @@ def pysiral_l1preproc(job):
         output_handler.remove_old_if_applicable(period)
 
         # 5.3 Run the pre-processor
-        l1preproc.process_input_files(file_list)
+        pre_processor.process_input_files(file_list)
 
     # Report processing time
     job.stopwatch.stop()
     logger.info(f"Level-1 PreProcessor finished in {job.stopwatch.get_duration()}")
 
 
-class Level1PreProcArgParser(object):
+class L1PreProcScriptArguments(object):
 
     def __init__(self):
         """
@@ -137,16 +166,3 @@ class Level1PreProcArgParser(object):
     @property
     def args(self):
         return self._args
-
-
-if __name__ == "__main__":
-
-    # Get the command line arguments
-    cmd_args = Level1PreProcArgParser()
-    cmd_args.parse_command_line_arguments()
-
-    # Create the job definitions
-    job = Level1PreProcJobDef.from_args(cmd_args.args)
-
-    # Execute Level-1 Pre-Processor Workflow
-    pysiral_l1preproc(job)
