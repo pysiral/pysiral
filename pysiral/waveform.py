@@ -7,7 +7,6 @@ Created on Fri Jul 01 13:07:10 2016
 
 import multiprocessing
 import multiprocessing.pool
-import matplotlib.pyplot as plt
 from functools import partial
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union, Literal

@@ -11,9 +11,6 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Dict, List, Tuple, TypeVar, Union
 
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
 import numpy as np
 from pysiral.core.legacy_classes import AttrDict
 from dateperiods import DatePeriod, PeriodIterator
@@ -1423,8 +1420,18 @@ def l1p_debug_map(l1p_list: List["Level1bData"],
     :return:
     """
 
+    try:
+        import cartopy.crs as ccrs
+        import cartopy.feature as cfeature
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        msg = """
+        Install pysiral with option `dev` (pip install pysiral[dev]) to use the l1p debug map.
+        """
+        raise ImportError(msg) from e
+
     title = title if title is not None else ""
-    proj = ccrs.PlateCarree(central_longitude=0.0)
+    proj = ccrs.PlateCarree()
 
     plt.figure(dpi=150)
     fig_manager = plt.get_current_fig_manager()

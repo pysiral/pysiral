@@ -11,7 +11,6 @@ import typing
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import xarray as xr

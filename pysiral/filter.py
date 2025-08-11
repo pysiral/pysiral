@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import List, Tuple, Union
 
 import bottleneck as bn
-import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from astropy.convolution import Box1DKernel, convolve
@@ -366,7 +365,7 @@ class MarginalIceZoneFilterData:
         Create an overview plot of the filter result
         :return:
         """
-
+        import matplotlib.pyplot as plt
         plt.figure(dpi=150)
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
