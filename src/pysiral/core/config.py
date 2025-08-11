@@ -15,13 +15,13 @@ Created on Mon Jul 06 10:38:41 2015
 @author: Stefan
 """
 
-import yaml
-
 from pathlib import Path
 from typing import Dict, Union
 
-from pysiral.core.legacy_classes import AttrDict
+import yaml
+
 from pysiral import psrlcfg
+from pysiral.core.legacy_classes import AttrDict
 
 
 # TODO: Marked as obsolete -> flag_dict now in mission_def yaml.

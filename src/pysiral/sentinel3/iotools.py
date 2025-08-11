@@ -2,19 +2,18 @@
 
 import os
 import re
-import pandas as pd
-from dataclasses import dataclass, field
 from collections import deque
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+import pandas as pd
 from dateperiods import DatePeriod
 from loguru import logger
 from parse import parse
 
-from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.clocks import StopWatch
-from pysiral.core.legacy_classes import ErrorStatus
+from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 
 
 class Sentinel3FileList(DefaultLoggingClass):

@@ -3,8 +3,8 @@
 A short script that updates the settings files in the user home
 """
 
-import sys
 import shutil
+import sys
 
 from loguru import logger
 

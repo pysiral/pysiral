@@ -7,9 +7,9 @@ Created on Fri Jul 01 13:07:10 2016
 
 import multiprocessing
 import multiprocessing.pool
-from functools import partial
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Union, Literal
+from functools import partial
+from typing import Dict, List, Literal, Tuple, Union
 
 import bottleneck as bn
 import numpy as np

@@ -35,13 +35,13 @@ Important Note:
 """
 from pathlib import Path
 from typing import Any, Iterable
-from loguru import logger
 
 import bottleneck as bn
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as torch_nn_functional
+from loguru import logger
 
 from pysiral import get_cls
 from pysiral.auxdata import AuxdataBaseClass

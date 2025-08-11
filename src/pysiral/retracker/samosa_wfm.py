@@ -33,28 +33,25 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import multiprocessing
 import time
+from dataclasses import dataclass, field
+from functools import partial
+from typing import (Any, Callable, Dict, List, Literal, Optional, Tuple,
+                    get_args)
 
 import numpy as np
-from functools import partial
-
 from loguru import logger
-from typing import Tuple, List, Dict, Optional, Any, Literal, Callable, get_args
-from dataclasses import dataclass, field
-
-from scipy.optimize import least_squares, OptimizeResult
-from scipy.signal import argrelmin
-
-from samosa_waveform_model import (
-    ScenarioData, SensorParameters, SAMOSAWaveformModel, PlatformLocation, SARParameters,
-    WaveformModelParameters
-)
+from samosa_waveform_model import (PlatformLocation, SAMOSAWaveformModel,
+                                   SARParameters, ScenarioData,
+                                   SensorParameters, WaveformModelParameters)
 from samosa_waveform_model.dataclasses import WaveformModelOutput
+from scipy.optimize import OptimizeResult, least_squares
+from scipy.signal import argrelmin
 
 from pysiral import psrlcfg
 from pysiral.core.config import RadarModes
-from pysiral.retracker import BaseRetracker
 from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
+from pysiral.retracker import BaseRetracker
 
 # NOTE:
 # There are three fit methods that may be chosen for different surface types.

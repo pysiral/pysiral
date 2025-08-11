@@ -4,9 +4,10 @@
 This OCOG implementation comes from the first phase of the ESA Climate Change Initiative on Sea Ice
 """
 
+from typing import Tuple
+
 import numpy as np
 from scipy.interpolate import interp1d
-from typing import Tuple
 
 from pysiral.core.flags import ANDCondition
 from pysiral.retracker import BaseRetracker

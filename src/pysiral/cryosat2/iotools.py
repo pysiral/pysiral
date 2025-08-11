@@ -8,8 +8,7 @@ from pathlib import Path
 import numpy as np
 from loguru import logger
 
-from pysiral.core.legacy_classes import DefaultLoggingClass
-from pysiral.core.legacy_classes import ErrorStatus
+from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 
 
 class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):

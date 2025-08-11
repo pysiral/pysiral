@@ -55,8 +55,8 @@ from typing import Any, Dict, TypeVar, Union
 from schema import And, Schema
 
 from pysiral import get_cls
-from pysiral.l1data import Level1bData
 from pysiral.core.legacy_classes import AttrDict
+from pysiral.l1data import Level1bData
 
 
 class L1PProcItem(object):

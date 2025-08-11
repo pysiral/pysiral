@@ -1,6 +1,7 @@
 
 import contextlib
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import xarray
@@ -8,7 +9,6 @@ import xmltodict
 from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate
-from typing import Optional
 
 from pysiral import __version__ as pysiral_version
 from pysiral.core.clocks import StopWatch

@@ -17,8 +17,7 @@ from pysiral.retracker import BaseRetracker
 
 # cythonized bottleneck functions for cTFMRA
 try:
-    from retracker.cytfmra import (cytfmra_findpeaks,
-                                   cytfmra_interpolate,
+    from retracker.cytfmra import (cytfmra_findpeaks, cytfmra_interpolate,
                                    cytfmra_normalize_wfm,
                                    cytfmra_wfm_noise_level)
     CYTFMRA_OK = True

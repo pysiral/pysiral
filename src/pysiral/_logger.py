@@ -5,14 +5,15 @@ A small module to handle logging in pysiral. This module is intended to be the f
 called in pysiral.__init__.py, so that the logger is set up before any other modules are imported.
 """
 
+import logging
 import os
 import sys
-import logging
 import warnings
-from loguru import logger
-from typing import Dict
 from datetime import datetime
+from typing import Dict
+
 from dateutil.relativedelta import relativedelta
+from loguru import logger
 
 
 class InterceptHandler(logging.Handler):

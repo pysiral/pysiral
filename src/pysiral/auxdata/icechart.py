@@ -10,21 +10,21 @@ Module created for FMI version of pysiral
 __all__ = ["IC", "ICA"]
 
 import contextlib
-import datetime
-from pathlib import Path
 import copy
+import datetime
+from dataclasses import dataclass
+from datetime import date, timedelta
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
+import geopandas as gpd
 import numpy as np
 import pyproj
 import xarray as xr
-from PIL import Image
 from parse import parse
-import geopandas as gpd
-from typing import Dict, Optional, Tuple
-from datetime import date, timedelta
-from dataclasses import dataclass
-
+from PIL import Image
 from pyproj import Proj
-from shapely import MultiPoint, LineString
+from shapely import LineString, MultiPoint
 from shapely.strtree import STRtree
 
 from pysiral.auxdata import AuxdataBaseClass

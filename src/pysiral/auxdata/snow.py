@@ -49,8 +49,8 @@ from pyproj import Proj
 from xarray import open_dataset
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
-from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.iotools import ReadNC
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.filter import idl_smooth
 
 

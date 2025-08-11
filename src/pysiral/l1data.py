@@ -100,9 +100,9 @@ from loguru import logger
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
 
-from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.config import RadarModes
 from pysiral.core.flags import SurfaceType
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.output import NCDateNumDef
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"

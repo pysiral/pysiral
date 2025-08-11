@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 from pysiral.core.iotools import ReadNC
 

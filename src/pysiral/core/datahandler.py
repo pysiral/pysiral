@@ -17,8 +17,8 @@ from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral.core.legacy_classes import DefaultLoggingClass
-from pysiral.core.legacy_classes import ErrorStatus, AttrDict
+from pysiral.core.legacy_classes import (AttrDict, DefaultLoggingClass,
+                                         ErrorStatus)
 from pysiral.core.output import PysiralOutputFilenaming
 
 

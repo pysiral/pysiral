@@ -17,9 +17,8 @@ from geopy.distance import great_circle
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.core.legacy_classes import DefaultLoggingClass
-from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.iotools import ReadNC
+from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.l1data import L1bMetaData, L1bTimeOrbit
 
 

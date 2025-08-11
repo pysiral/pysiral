@@ -12,13 +12,12 @@ __all__ = ["_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "set_psrl_cpu_count", "__version__", "__software_version__"]
 
 import importlib
-
 import multiprocessing
 import pkgutil
 import shutil
 import socket
 import sys
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Iterable, Union
 
@@ -27,7 +26,6 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral.core.legacy_classes import AttrDict
-
 
 # Get version from VERSION in package root
 PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
