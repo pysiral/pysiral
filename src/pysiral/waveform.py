@@ -1311,6 +1311,7 @@ class WFMTrailingEdgeSlopeData:
 
     def debug_plot(self):
         x_te = self.range_gate_idx[self.trailing_edge_start_idx:]
+        import matplotlib.pyplot as plt
         plt.figure(dpi=150)
         plt.plot(self.range_gate_idx, self.waveform_normed)
         plt.scatter(self.range_gate_idx[self.trailing_edge_idx], self.waveform_normed[self.trailing_edge_idx])

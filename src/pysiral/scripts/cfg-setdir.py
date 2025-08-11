@@ -6,7 +6,6 @@ A short script that should be used to set the location of the pysiral config fil
 import argparse
 import shutil
 import sys
-from distutils import dir_util
 from pathlib import Path
 
 from pysiral import psrlcfg
@@ -39,7 +38,7 @@ def main(args):
 
         # a. Create the user home directory
         try:
-            dir_util.copy_tree(psrlcfg.package_config_path, args.target_create, verbose=1)
+            shutil.copytree(psrlcfg.package_config_path, args.target_create, dirs_exist_ok=True)
         except:
             print("Error: Could not create directory: %s" % str(args.target_create))
             print("Creating new config dir [FAILED]")

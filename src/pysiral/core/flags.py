@@ -31,7 +31,7 @@ SURFACE_TYPE_DICT = {
     "land": 7,
     "invalid": 8}
 
-# bit values for a 16 bit integer (multitple choice)
+# bit values for a 16-bit integer (multiple choice)
 WAVEFORM_CLASSIFICATION_BIT_DICT = {
     "valid": 0,               # Power value usable for retracking ...
     "absolute_maximum": 1,    # range bin with the global maximum

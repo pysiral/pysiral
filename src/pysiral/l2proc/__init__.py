@@ -22,7 +22,7 @@ from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
 from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 
-__all__ = ["Level2Processor", "Level2ProductDefinition", "procsteps"]
+__all__ = ["Level2Processor", "Level2ProductDefinition", "Level2ProcessorStepOrder", "procsteps"]
 
 
 class Level2Processor(DefaultLoggingClass):
