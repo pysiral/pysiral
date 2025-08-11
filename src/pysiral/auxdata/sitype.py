@@ -45,9 +45,9 @@ import scipy.ndimage as ndimage
 from pyproj import Proj
 from scipy import interpolate
 
-from auxdata import AuxdataBaseClass, GridTrackInterpol
-from core.iotools import ReadNC
-from sla import SLABaseFunctionality
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.core.iotools import ReadNC
+from pysiral.sla import SLABaseFunctionality
 
 
 class OsiSafSIType(AuxdataBaseClass):

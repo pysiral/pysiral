@@ -13,7 +13,7 @@ import unittest
 from core.legacy_classes import AttrDict
 from loguru import logger
 
-from src.pysiral import psrlcfg
+from pysiral import psrlcfg
 from core.config import get_yaml_config
 
 logger.disable("pysiral")

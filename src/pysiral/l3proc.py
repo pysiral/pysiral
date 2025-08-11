@@ -18,16 +18,16 @@ from scipy import stats
 from scipy.ndimage import maximum_filter
 from xarray import open_dataset
 
-from src.pysiral import __version__, get_cls, psrlcfg
-from core import DefaultLoggingClass
-from core.config import get_yaml_config
-from core.errorhandler import ErrorStatus
-from core.flags import SURFACE_TYPE_DICT, ORCondition
-from core.output import Level3Output, OutputHandlerBase
-from grid import GridDefinition
-from l2data import L2iNCFileImport
-from mask import L3Mask
-from sit import frb2sit_errprop
+from pysiral import __version__, get_cls, psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
+from pysiral.core.output import Level3Output, OutputHandlerBase
+from pysiral.grid import GridDefinition
+from pysiral.l2data import L2iNCFileImport
+from pysiral.mask import L3Mask
+from pysiral.sit import frb2sit_errprop
 
 # %% Level 3 Processor
 

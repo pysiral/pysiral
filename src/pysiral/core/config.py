@@ -20,8 +20,8 @@ import yaml
 from pathlib import Path
 from typing import Dict, Union
 
-from core.legacy_classes import AttrDict
-from src.pysiral import psrlcfg
+from pysiral.core.legacy_classes import AttrDict
+from pysiral import psrlcfg
 
 
 # TODO: Marked as obsolete -> flag_dict now in mission_def yaml.

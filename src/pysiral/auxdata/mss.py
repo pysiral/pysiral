@@ -35,8 +35,8 @@ Important Note:
 import numpy as np
 import scipy.ndimage as ndimage
 
-from auxdata import AuxdataBaseClass
-from core.iotools import ReadNC
+from pysiral.auxdata import AuxdataBaseClass
+from pysiral.core.iotools import ReadNC
 
 
 class DTU1MinGrid(AuxdataBaseClass):

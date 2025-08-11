@@ -9,7 +9,7 @@ Module created for FMI version of pysiral
 
 import numpy as np
 
-from auxdata import AuxdataBaseClass
+from pysiral.auxdata import AuxdataBaseClass
 
 
 class RIO(AuxdataBaseClass):

@@ -15,11 +15,11 @@ from dateperiods import DatePeriod
 from dateutil.relativedelta import relativedelta
 from loguru import logger
 
-from src.pysiral import get_cls, psrlcfg
-from auxdata import AuxClassConfig
-from core.class_template import DefaultLoggingClass
-from core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
-from core.output import PysiralOutputFilenaming
+from pysiral import get_cls, psrlcfg
+from pysiral.auxdata import AuxClassConfig
+from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import PysiralOutputFilenaming
 
 
 class DefaultAuxdataClassHandler(DefaultLoggingClass):

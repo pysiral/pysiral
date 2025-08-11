@@ -9,7 +9,7 @@ import sys
 from distutils import dir_util
 from pathlib import Path
 
-from src.pysiral import psrlcfg
+from pysiral import psrlcfg
 
 
 def main(args):

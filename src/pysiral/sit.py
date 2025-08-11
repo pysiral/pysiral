@@ -7,7 +7,7 @@ Created on Mon Apr 25 17:15:39 2016
 
 import numpy as np
 
-from l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class AlexandrovSeaIceDensity(Level2ProcessorStep):

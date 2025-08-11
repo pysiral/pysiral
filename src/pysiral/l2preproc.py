@@ -11,11 +11,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core import DefaultLoggingClass
-from core.errorhandler import ErrorStatus
-from core.output import Level2Output, OutputHandlerBase
-from l2data import L2iNCFileImport, Level2Data, Level2PContainer
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.output import Level2Output, OutputHandlerBase
+from pysiral.l2data import L2iNCFileImport, Level2Data, Level2PContainer
 
 
 class Level2PreProcessor(DefaultLoggingClass):

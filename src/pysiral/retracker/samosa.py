@@ -14,7 +14,7 @@ import numpy.typing as npt
 import xarray as xr
 from loguru import logger
 
-from l1data import L1bdataNCFile
+from pysiral.l1data import L1bdataNCFile
 
 try:
     from samosa.help_functions import calc_sigma0, func_wind_speed
@@ -24,8 +24,8 @@ try:
 except ImportError:
     SAMOSA_OK = False
 
-from _logger import InterceptHandler
-from retracker import BaseRetracker
+from pysiral._logger import InterceptHandler
+from pysiral.retracker import BaseRetracker
 
 # TODO: Move this to an environment variable?
 SAMOSA_DEBUG_MODE = False

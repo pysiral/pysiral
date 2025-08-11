@@ -12,21 +12,21 @@ from pathlib import Path
 from typing import Dict, List, Tuple, TypeVar, Union
 
 import numpy as np
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from dateperiods import DatePeriod, PeriodIterator
 from geopy import distance
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core import DefaultLoggingClass
-from core.clocks import StopWatch
-from core.config import get_yaml_config
-from core.errorhandler import ErrorStatus
-from core.helper import (ProgressIndicator, get_first_array_index,
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.clocks import StopWatch
+from pysiral.core.config import get_yaml_config
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.helper import (ProgressIndicator, get_first_array_index,
                          get_last_array_index, rle)
-from core.output import L1bDataNC
-from l1data import L1bMetaData, Level1bData
-from l1preproc.procitems import L1PProcItemDef
+from pysiral.core.output import L1bDataNC
+from pysiral.l1data import L1bMetaData, Level1bData
+from pysiral.l1preproc.procitems import L1PProcItemDef
 
 SHOW_DEBUG_MAP = False
 

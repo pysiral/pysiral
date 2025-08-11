@@ -11,12 +11,13 @@ from typing import Any, Tuple, Union
 import numpy as np
 import numpy.typing as npt
 import scipy.ndimage as ndimage
-from core.legacy_classes import AttrDict
+
 from pyproj import Proj
 from pyresample import geometry
 
-from core.class_template import DefaultLoggingClass
-from core.config import get_yaml_config
+from pysiral.core.legacy_classes import AttrDict
+from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
 
 
 class GridDefinition(DefaultLoggingClass):

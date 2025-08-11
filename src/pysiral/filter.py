@@ -15,8 +15,8 @@ from astropy.convolution import Box1DKernel, convolve
 from loguru import logger
 from scipy.interpolate import UnivariateSpline, interp1d
 
-from core.flags import ANDCondition, FlagContainer, ORCondition
-from l2proc.procsteps import Level2ProcessorStep
+from pysiral.core.flags import ANDCondition, FlagContainer, ORCondition
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class L1bEnvisatBackscatterDriftCorrection(Level2ProcessorStep):

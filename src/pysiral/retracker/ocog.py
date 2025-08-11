@@ -8,8 +8,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from typing import Tuple
 
-from core.flags import ANDCondition
-from retracker import BaseRetracker
+from pysiral.core.flags import ANDCondition
+from pysiral.retracker import BaseRetracker
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 

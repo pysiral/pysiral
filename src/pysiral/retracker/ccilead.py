@@ -13,8 +13,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
-from core.flags import ANDCondition
-from retracker import BaseRetracker
+from pysiral.core.flags import ANDCondition
+from pysiral.retracker import BaseRetracker
 
 
 class SICCILead(BaseRetracker):

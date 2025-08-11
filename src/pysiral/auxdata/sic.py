@@ -36,8 +36,6 @@ Important Note:
 """
 
 
-
-
 from pathlib import Path
 from typing import List, Tuple
 
@@ -47,8 +45,8 @@ import scipy.ndimage as ndimage
 from pyproj import Proj
 from scipy.spatial.distance import cdist
 
-from auxdata import AuxdataBaseClass, GridTrackInterpol
-from core.iotools import ReadNC
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.core.iotools import ReadNC
 
 
 class OsiSafSIC(AuxdataBaseClass):

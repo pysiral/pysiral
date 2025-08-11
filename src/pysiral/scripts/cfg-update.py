@@ -4,11 +4,11 @@ A short script that updates the settings files in the user home
 """
 
 import sys
-from distutils import dir_util
+import shutil
 
 from loguru import logger
 
-from src.pysiral import psrlcfg
+from pysiral import psrlcfg
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
 
     # Copy the entire tree
     logger.info("copy pysiral config files from package to config dir: {}".format(psrlcfg.config_path))
-    dir_util.copy_tree(str(psrlcfg.package_config_path), str(psrlcfg.config_path), verbose=1)
+    shutil.copytree(str(psrlcfg.package_config_path), str(psrlcfg.config_path), dirs_exist_ok=True)
 
 
 if __name__ == "__main__":

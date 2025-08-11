@@ -10,15 +10,15 @@ from pathlib import Path
 import cftime
 import numpy as np
 import parse
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from dateutil import parser as dtparser
 from loguru import logger
 from netCDF4 import Dataset, date2num
 
-from src.pysiral import psrlcfg
-from core import DefaultLoggingClass
-from core.config import get_yaml_config
-from core.errorhandler import ErrorStatus
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class OutputHandlerBase(DefaultLoggingClass):

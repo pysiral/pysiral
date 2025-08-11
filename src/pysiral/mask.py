@@ -20,14 +20,14 @@ from loguru import logger
 from netCDF4 import Dataset
 from pyresample import geometry, image, kd_tree
 
-from src.pysiral import psrlcfg
-from core.class_template import DefaultLoggingClass
-from core.errorhandler import ErrorStatus
-from core.flags import SURFACE_TYPE_DICT
-from core.iotools import ReadNC
-from grid import GridDefinition, GridTrajectoryExtract
-from l1data import Level1bData
-from l1preproc.procitems import L1PProcItem
+from pysiral import psrlcfg
+from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.flags import SURFACE_TYPE_DICT
+from pysiral.core.iotools import ReadNC
+from pysiral.grid import GridDefinition, GridTrajectoryExtract
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc.procitems import L1PProcItem
 
 
 def MaskSourceFile(mask_name, mask_cfg):

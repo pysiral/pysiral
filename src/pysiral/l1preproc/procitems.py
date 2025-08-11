@@ -52,11 +52,11 @@ are currently implemented:
 
 from typing import Any, Dict, TypeVar, Union
 
-from core.legacy_classes import AttrDict
 from schema import And, Schema
 
-from src.pysiral import get_cls
-from l1data import Level1bData
+from pysiral import get_cls
+from pysiral.l1data import Level1bData
+from pysiral.core.legacy_classes import AttrDict
 
 
 class L1PProcItem(object):

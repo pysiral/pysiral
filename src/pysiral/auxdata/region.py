@@ -40,8 +40,8 @@ from loguru import logger
 from pyproj import CRS
 from xarray import open_dataset
 
-from auxdata import AuxdataBaseClass, GridTrackInterpol
-from grid import GridTrajectoryExtract
+from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
+from pysiral.grid import GridTrajectoryExtract
 
 
 class NSIDCRegionMask(AuxdataBaseClass):

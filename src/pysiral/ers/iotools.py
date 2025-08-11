@@ -12,8 +12,8 @@ import numpy as np
 from loguru import logger
 from parse import compile
 
-from core import DefaultLoggingClass
-from core.errorhandler import ErrorStatus
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class ERSFileList(DefaultLoggingClass):

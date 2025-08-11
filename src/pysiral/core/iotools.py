@@ -16,9 +16,9 @@ import numpy as np
 from cftime import num2pydate
 from netCDF4 import Dataset
 
-from src.pysiral import psrlcfg
-from core.errorhandler import ErrorStatus
-from core.output import NCDateNumDef, PysiralOutputFilenaming
+from pysiral import psrlcfg
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.output import NCDateNumDef, PysiralOutputFilenaming
 
 
 # TODO: Replace by xarray

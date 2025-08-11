@@ -12,13 +12,13 @@ from typing import List
 from dateperiods import DatePeriod
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core import DefaultLoggingClass
-from core.config import DefaultCommandLineArguments
-from core.datahandler import L2iDataHandler
-from core.errorhandler import ErrorStatus
-from l3proc import (Level3GridDefinition, Level3OutputHandler,
-                    Level3Processor, Level3ProductDefinition)
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.core.datahandler import L2iDataHandler
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
+                            Level3Processor, Level3ProductDefinition)
 
 
 def pysiral_l3proc():

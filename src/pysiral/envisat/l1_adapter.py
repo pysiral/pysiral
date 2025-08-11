@@ -10,18 +10,18 @@ from pathlib import Path
 from typing import Any, Dict, Union
 
 import numpy as np
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate
 
-from src.pysiral import psrlcfg
-from core.clocks import StopWatch
-from core.flags import ESA_SURFACE_TYPE_DICT
-from core.iotools import ReadNC
-from envisat.functions import get_envisat_wfm_range
-from l1data import Level1bData
-from l1preproc import Level1PInputHandlerBase
+from pysiral import psrlcfg
+from pysiral.core.clocks import StopWatch
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
+from pysiral.core.iotools import ReadNC
+from pysiral.envisat.functions import get_envisat_wfm_range
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
 class EnvisatSGDRNC(Level1PInputHandlerBase):

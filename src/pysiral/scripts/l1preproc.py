@@ -7,10 +7,9 @@ import sys
 
 from loguru import logger
 
-from src.pysiral import get_cls, set_psrl_cpu_count
-from core.config import DefaultCommandLineArguments
-from l1preproc import (Level1POutputHandler, Level1PreProcJobDef,
-                       get_preproc)
+from pysiral import get_cls, set_psrl_cpu_count
+from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.l1preproc import Level1POutputHandler, Level1PreProcJobDef, get_preproc
 
 
 def pysiral_l1preproc(job):

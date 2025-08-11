@@ -12,9 +12,9 @@ from typing import overload
 import numpy as np
 import numpy.typing as npt
 
-from l1data import Level1bData
-from l2data import Level2Data
-from l2proc.procsteps import Level2ProcessorStep
+from pysiral.l1data import Level1bData
+from pysiral.l2data import Level2Data
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class SnowGeometricCorrection(Level2ProcessorStep):

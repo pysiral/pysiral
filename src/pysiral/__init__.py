@@ -26,7 +26,7 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 
 
 # Get version from VERSION in package root

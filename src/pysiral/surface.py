@@ -10,14 +10,14 @@ from copy import deepcopy
 from typing import List, Tuple, Union
 
 import numpy as np
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from loguru import logger
 
-from core.config import RadarModes
-from core.flags import ANDCondition, SurfaceType
-from l1data import L1bdataNCFile
-from l2data import Level2Data
-from l2proc.procsteps import Level2ProcessorStep
+from pysiral.core.config import RadarModes
+from pysiral.core.flags import ANDCondition, SurfaceType
+from pysiral.l1data import L1bdataNCFile
+from pysiral.l2data import Level2Data
+from pysiral.l2proc.procsteps import Level2ProcessorStep
 
 
 class ClassifierContainer(object):

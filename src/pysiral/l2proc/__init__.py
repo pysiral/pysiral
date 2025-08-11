@@ -13,15 +13,15 @@ from pathlib import Path
 from dateperiods import DatePeriod
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core.class_template import DefaultLoggingClass
-from core.config import get_yaml_config
-from core.datahandler import DefaultAuxdataClassHandler
-from core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
-from core.output import DefaultLevel2OutputHandler, Level2Output
-from l1data import L1bdataNCFile
-from l2data import Level2Data
-from l2proc.procsteps import Level2ProcessorStepOrder
+from pysiral import psrlcfg
+from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.core.config import get_yaml_config
+from pysiral.core.datahandler import DefaultAuxdataClassHandler
+from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
+from pysiral.l1data import L1bdataNCFile
+from pysiral.l2data import Level2Data
+from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "L2ProcessorReport", "procsteps"]
 

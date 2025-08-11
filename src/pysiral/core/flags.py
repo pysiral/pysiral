@@ -10,7 +10,7 @@ from typing import List, Union
 
 import numpy as np
 
-from core.class_template import DefaultLoggingClass
+from pysiral.core.class_template import DefaultLoggingClass
 
 # The standard ESA surface type flag in L1B data
 ESA_SURFACE_TYPE_DICT = {

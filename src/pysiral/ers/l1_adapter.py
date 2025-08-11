@@ -11,11 +11,11 @@ import numpy as np
 from cftime import num2pydate
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core.clocks import StopWatch
-from core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
-from ers.sgdrfile import ERSSGDR
-from l1preproc import Level1PInputHandlerBase
+from pysiral import psrlcfg
+from pysiral.core.clocks import StopWatch
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT, ORCondition
+from pysiral.ers.sgdrfile import ERSSGDR
+from pysiral.l1preproc import Level1PInputHandlerBase
 
 
 class ERSReaperSGDR(Level1PInputHandlerBase):
@@ -45,7 +45,7 @@ class ERSReaperSGDR(Level1PInputHandlerBase):
         """
 
         # Import here to avoid circular imports
-        from l1data import Level1bData
+        from pysiral.l1data import Level1bData
 
         # Store arguments
         self.filepath = filepath

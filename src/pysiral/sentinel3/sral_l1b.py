@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from pathlib import Path
-
 import numpy as np
+from pathlib import Path
 
 
 class Sentinel3SRALL1b(object):
@@ -70,7 +69,7 @@ class Sentinel3SRALL1b(object):
 
     def _parse_measurement_nc(self):
 
-        from core.iotools import ReadNC
+        from pysiral.core.iotools import ReadNC
         self._validate()
 
         # Read the L2 netCDF file

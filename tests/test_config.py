@@ -11,7 +11,7 @@ from pathlib import Path
 from core.legacy_classes import AttrDict
 from loguru import logger
 
-from src.pysiral import psrlcfg
+from pysiral import psrlcfg
 
 logger.disable("pysiral")
 

@@ -12,8 +12,8 @@ import bottleneck as bn
 import numpy as np
 from loguru import logger
 
-from l2proc.procsteps import Level2ProcessorStep
-from retracker import BaseRetracker
+from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.retracker import BaseRetracker
 
 # cythonized bottleneck functions for cTFMRA
 try:

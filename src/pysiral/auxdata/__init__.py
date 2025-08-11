@@ -26,11 +26,11 @@ from typing import List
 
 import numpy as np
 import scipy.ndimage as ndimage
-from core.legacy_classes import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from pyproj import Proj
 
-from src.pysiral import import_submodules
-from core.errorhandler import ErrorStatus
+from pysiral import import_submodules
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class AuxdataBaseClass(object):

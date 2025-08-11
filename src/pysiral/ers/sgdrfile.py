@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
 from pathlib import Path
 
-import numpy as np
-
-from core.iotools import ReadNC
+from pysiral.core.iotools import ReadNC
 
 
 class ERSSGDR(object):

@@ -50,11 +50,11 @@ from samosa_waveform_model import (
 )
 from samosa_waveform_model.dataclasses import WaveformModelOutput
 
-from src.pysiral import psrlcfg
-from core.config import RadarModes
-from retracker import BaseRetracker
-from l1data import Level1bData
-from l2data import Level2Data
+from pysiral import psrlcfg
+from pysiral.core.config import RadarModes
+from pysiral.retracker import BaseRetracker
+from pysiral.l1data import Level1bData
+from pysiral.l2data import Level2Data
 
 # NOTE:
 # There are three fit methods that may be chosen for different surface types.

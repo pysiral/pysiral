@@ -9,14 +9,14 @@ from cftime import num2pydate
 from loguru import logger
 from scipy import interpolate
 
-from src.pysiral import __version__ as pysiral_version
-from core.clocks import StopWatch
-from core.flags import ESA_SURFACE_TYPE_DICT
-from core.helper import parse_datetime_str
-from cryosat2 import cs2_procstage2timeliness
-from l1data import Level1bData
-from l1preproc import Level1PInputHandlerBase
-from waveform import OCOGParameter
+from pysiral import __version__ as pysiral_version
+from pysiral.core.clocks import StopWatch
+from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
+from pysiral.core.helper import parse_datetime_str
+from pysiral.cryosat2 import cs2_procstage2timeliness
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc import Level1PInputHandlerBase
+from pysiral.waveform import OCOGParameter
 
 
 class ESACryoSat2PDSBaselineD(Level1PInputHandlerBase):

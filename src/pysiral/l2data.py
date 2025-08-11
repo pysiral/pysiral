@@ -16,11 +16,11 @@ import numpy as np
 from geopy.distance import great_circle
 from loguru import logger
 
-from src.pysiral import psrlcfg
-from core import DefaultLoggingClass
-from core.errorhandler import ErrorStatus
-from core.iotools import ReadNC
-from l1data import L1bMetaData, L1bTimeOrbit
+from pysiral import psrlcfg
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.iotools import ReadNC
+from pysiral.l1data import L1bMetaData, L1bTimeOrbit
 
 
 class Level2Data(object):
@@ -1008,7 +1008,7 @@ class L2iNCFileImport(object):
     # TODO: Needs proper implementation
 
     def __init__(self, filename):
-        from core.output import NCDateNumDef
+        from pysiral.core.output import NCDateNumDef
         self.filename = filename
         self._n_records = 0
         self.time_def = NCDateNumDef()

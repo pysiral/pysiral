@@ -43,8 +43,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as torch_nn_functional
 
-from src.pysiral import get_cls
-from auxdata import AuxdataBaseClass
+from pysiral import get_cls
+from pysiral.auxdata import AuxdataBaseClass
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 

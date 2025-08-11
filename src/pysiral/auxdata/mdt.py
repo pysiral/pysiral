@@ -38,7 +38,7 @@ import numpy as np
 import scipy.ndimage as ndimage
 from xarray import open_dataset
 
-from auxdata import AuxdataBaseClass
+from pysiral.auxdata import AuxdataBaseClass
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 

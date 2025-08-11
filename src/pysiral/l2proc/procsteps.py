@@ -11,10 +11,10 @@ import pandas as pd
 from loguru import logger
 from scipy.interpolate import interp1d
 
-from src.pysiral import get_cls
-from core.class_template import DefaultLoggingClass
-from l1data import Level1bData
-from l2data import Level2Data
+from pysiral import get_cls
+from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.l1data import Level1bData
+from pysiral.l2data import Level2Data
 
 
 class Level2ProcessorStep(DefaultLoggingClass):

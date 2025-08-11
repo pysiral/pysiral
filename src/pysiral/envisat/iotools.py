@@ -4,8 +4,8 @@ from collections import deque
 from pathlib import Path
 from typing import List
 
-from core import DefaultLoggingClass
-from core.errorhandler import ErrorStatus
+from pysiral.core import DefaultLoggingClass
+from pysiral.core.errorhandler import ErrorStatus
 
 
 class EnvisatSGDRNC(DefaultLoggingClass):

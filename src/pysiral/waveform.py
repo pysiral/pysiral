@@ -21,12 +21,12 @@ from scipy.optimize import curve_fit
 from scipy.signal import argrelmin
 from scipy.stats import linregress
 
-from src.pysiral import psrlcfg
-from core.clocks import StopWatch
-from core.config import RadarModes
-from core.functions import inverse_power
-from l1data import Level1bData
-from l1preproc.procitems import L1PProcItem
+from pysiral import psrlcfg
+from pysiral.core.clocks import StopWatch
+from pysiral.core.config import RadarModes
+from pysiral.core.functions import inverse_power
+from pysiral.l1data import Level1bData
+from pysiral.l1preproc.procitems import L1PProcItem
 from retracker.tfmra import cTFMRA
 
 
