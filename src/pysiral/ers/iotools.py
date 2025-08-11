@@ -12,7 +12,7 @@ import numpy as np
 from loguru import logger
 from parse import compile
 
-from pysiral.core import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.legacy_classes import ErrorStatus
 
 

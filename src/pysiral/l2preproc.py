@@ -12,7 +12,7 @@ from pathlib import Path
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.core import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.output import Level2Output, OutputHandlerBase
 from pysiral.l2data import L2iNCFileImport, Level2Data, Level2PContainer

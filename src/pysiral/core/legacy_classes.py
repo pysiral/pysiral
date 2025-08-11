@@ -90,5 +90,5 @@ class DefaultLoggingClass(object):
         Init the class with a (loguru) logger and an ErrorStatus error handler
         :param cls_name:
         """
-
         self.error = ErrorStatus(cls_name)
+        self.log = logger

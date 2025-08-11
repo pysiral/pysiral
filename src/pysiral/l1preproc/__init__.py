@@ -18,7 +18,7 @@ from geopy import distance
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.core import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.clocks import StopWatch
 from pysiral.core.config import get_yaml_config
 from pysiral.core.legacy_classes import ErrorStatus

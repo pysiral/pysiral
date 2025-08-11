@@ -4,7 +4,7 @@ from collections import deque
 from pathlib import Path
 from typing import List
 
-from pysiral.core import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.legacy_classes import ErrorStatus
 
 

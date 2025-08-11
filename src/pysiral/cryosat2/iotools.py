@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from loguru import logger
 
-from pysiral.core import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.legacy_classes import ErrorStatus
 
 

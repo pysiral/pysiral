@@ -14,10 +14,9 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg
-from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
 from pysiral.core.datahandler import DefaultAuxdataClassHandler
-from pysiral.core.legacy_classes import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus, DefaultLoggingClass
 from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
 from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
@@ -250,7 +249,7 @@ class Level2Processor(DefaultLoggingClass):
     def get_auxiliary_data(self, l1p: 'L1bdataNCFile', l2: 'Level2Data'):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
 
-        # Loop over all auxilary data types. Each type must have:
+        # Loop over all auxiliary data types. Each type must have:
         # a) entry in the l2 processing definition under the root.auxdata
         # b) entry in .pysiral-cfg.auxdata.yaml
         # c) python class in pysiral.auxdata.$auxdata_type$
