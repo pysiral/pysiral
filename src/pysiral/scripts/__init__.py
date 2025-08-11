@@ -9,11 +9,11 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 import sys
 from typing import List
 
-from pysiral.scripts.info import info, InfoScriptArguments
+# from pysiral.scripts.info import info, InfoScriptArguments
 from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
-from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
-from pysiral.scripts.l2preproc import l2preproc, L2PreProc
-from pysiral.scripts.l3proc import l3proc, L3ProcScriptArguments
+# from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
+# from pysiral.scripts.l2preproc import l2preproc, L2PreProc
+# from pysiral.scripts.l3proc import l3proc, L3ProcScriptArguments
 
 
 def main() -> None:
@@ -66,15 +66,15 @@ def main() -> None:
     func(args)
 
 
-def info_cli(args_list: List = None) -> None:
-    """
-    Command-line interface entry point for the `pysiral info` script.
-
-    :param args_list: Command line arguments to be passed to the script.
-
-    :return: None
-    """
-    info(**vars(InfoScriptArguments().get(args_list)))
+# def info_cli(args_list: List = None) -> None:
+#     """
+#     Command-line interface entry point for the `pysiral info` script.
+#
+#     :param args_list: Command line arguments to be passed to the script.
+#
+#     :return: None
+#     """
+#     info(**vars(InfoScriptArguments().get(args_list)))
 
 
 def l1preproc_cli(args_list: List = None) -> None:
@@ -88,37 +88,37 @@ def l1preproc_cli(args_list: List = None) -> None:
     l1preproc(**vars(L1PreProcScriptArguments().get(args_list)))
 
 
-def l2proc_cli(args_list: List = None) -> None:
-    """
-    Command-line interface entry point for the `pysiral l2proc` script.
-
-    :param args_list: Command line arguments to be passed to the script.
-
-    :return: None
-    """
-    l2proc(**vars(L2ProcScriptArguments().get(args_list)))
-
-
-def l2preproc_cli(args_list: List = None) -> None:
-    """
-    Command-line interface entry point for the `pysiral l2preproc` script.
-
-    :param args_list: Command line arguments to be passed to the script.
-
-    :return: None
-    """
-    l2preproc(**vars(L2PreProc().get(args_list)))
+# def l2proc_cli(args_list: List = None) -> None:
+#     """
+#     Command-line interface entry point for the `pysiral l2proc` script.
+#
+#     :param args_list: Command line arguments to be passed to the script.
+#
+#     :return: None
+#     """
+#     l2proc(**vars(L2ProcScriptArguments().get(args_list)))
 
 
-def l3proc_cli(args_list: List = None) -> None:
-    """
-    Command-line interface entry point for the `pysiral l3proc` script.
+# def l2preproc_cli(args_list: List = None) -> None:
+#     """
+#     Command-line interface entry point for the `pysiral l2preproc` script.
+#
+#     :param args_list: Command line arguments to be passed to the script.
+#
+#     :return: None
+#     """
+#     l2preproc(**vars(L2PreProc().get(args_list)))
 
-    :param args_list: Command line arguments to be passed to the script.
 
-    :return: None
-    """
-    l3proc(**vars(L3ProcScriptArguments().get(args_list)))
+# def l3proc_cli(args_list: List = None) -> None:
+#     """
+#     Command-line interface entry point for the `pysiral l3proc` script.
+#
+#     :param args_list: Command line arguments to be passed to the script.
+#
+#     :return: None
+#     """
+#     l3proc(**vars(L3ProcScriptArguments().get(args_list)))
 
 
 if __name__ == "__main__":

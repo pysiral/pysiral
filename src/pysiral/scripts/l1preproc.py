@@ -7,7 +7,7 @@ import sys
 
 from loguru import logger
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Union, Optional
 
 from pysiral import get_cls, set_psrl_cpu_count
 from pysiral.core.config import DefaultCommandLineArguments
@@ -15,21 +15,22 @@ from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_pr
 
 
 def l1preproc(
-    l1p_settings_id_or_file: Path,
-    time_coverage_start: List[int],
-    time_coverage_end: List[int],
+    l1p_settings: Union[str, Path],
+    start_date: List[int],
+    stop_date: List[int],
     exclude_month: Optional[List[int]] = None,
     hemisphere: str = "global",
     platform: str = None,
     output_handler_cfg: dict = None,
-    source_repo_id: str = None
+    source_repo_id: str = None,
+    **_: Optional[dict]
 ) -> None:
     """
     Workflow script of the pysiral l1b preprocessor.
 
-    :param l1p_settings_id_or_file: Level-1 preprocessor settings file or ID.
-    :param time_coverage_start: Start date of the time coverage as a list [year, month, day].
-    :param time_coverage_end: End date of the time coverage as a list [year, month, day].
+    :param l1p_settings: Level-1 preprocessor settings file or ID.
+    :param start_date: Start date of the time coverage as a list [year, month, day].
+    :param stop_date: End date of the time coverage as a list [year, month, day].
     :param exclude_month: List of months to exclude from processing (optional).
     :param hemisphere: Hemisphere to process data for, default is "global".
     :param platform: Platform identifier (optional).
@@ -40,9 +41,9 @@ def l1preproc(
     """
 
     job = Level1PreProcJobDef(
-        l1p_settings_id_or_file,
-        time_coverage_start,
-        time_coverage_end,
+        l1p_settings,
+        start_date,
+        stop_date,
         exclude_month,
         hemisphere,
         platform,
@@ -98,34 +99,21 @@ class L1PreProcScriptArguments(object):
         """
         Command line parser class for the pysiral Level-1 Pre-Processor
         """
-        self._args = None
+        self.parser = self.define_argument_parser()
 
-    def parse_command_line_arguments(self):
-        # use python module argparse to parse the command line arguments
-        # (first validation of required options and data types)
-        self._args = self.parser.parse_args()
-        if self._args.mp_cpu_count is not None:
-            set_psrl_cpu_count(self._args.mp_cpu_count)
+    def get(self, args_list: List[str] = None) -> "argparse.Namespace":
+        args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
+        if args.mp_cpu_count is not None:
+            set_psrl_cpu_count(args.mp_cpu_count)
+        return args
 
-    def critical_prompt_confirmation(self):
+    @staticmethod
+    def define_argument_parser() -> argparse.ArgumentParser:
+        """
+        Set up the command line argument parser for the Level-1 Pre-Processor.
 
-        # Any confirmation prompts can be overriden by --no-critical-prompt
-        no_prompt = self._args.no_critical_prompt
-
-        # if --remove_old is set, all previous l1bdata files will be
-        # erased for all month
-        if self._args.remove_old and not no_prompt:
-            message = "You have selected to remove all previous " + \
-                "l1p files for the requested period\n" + \
-                "(Note: use --no-critical-prompt to skip confirmation)\n" + \
-                "Enter \"YES\" to confirm and continue: "
-            result = input(message)
-
-            if result != "YES":
-                sys.exit(1)
-
-    @property
-    def parser(self):
+        :return: The argument parser object.
+        """
 
         # Take the command line options from default settings
         # -> see config module for data types, destination variables, etc.
@@ -142,10 +130,6 @@ class L1PreProcScriptArguments(object):
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-hemisphere", "hemisphere", "hemisphere", False),
             ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
-            ("--remove-old", "remove-old", "remove_old", False),
-            ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
-            ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False),
         ]
 
         # create the parser
@@ -157,12 +141,3 @@ class L1PreProcScriptArguments(object):
         parser.set_defaults(overwrite_protection=False)
 
         return parser
-
-    @property
-    def arg_dict(self):
-        """ Return the arguments as dictionary """
-        return self._args.__dict__
-
-    @property
-    def args(self):
-        return self._args
