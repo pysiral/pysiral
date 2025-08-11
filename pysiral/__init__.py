@@ -4,7 +4,7 @@
 pysiral is the PYthon Sea Ice Radar ALtimetry toolbox
 """
 
-__all__ = [ "_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
+__all__ = ["_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "filter", "frb", "grid",
            "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "proj", "retracker",
@@ -18,8 +18,7 @@ import pkgutil
 import shutil
 import socket
 import sys
-from datetime import datetime
-from distutils import dir_util
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Iterable, Union
 
@@ -148,14 +147,14 @@ class _MissionDefinitionCatalogue(object):
         tcs = platform_info.time_coverage.start
         tce = platform_info.time_coverage.end
         if tce is None:
-            tce = datetime.utcnow()
+            tce = datetime.now(UTC)
         return tcs, tce
 
     @property
-    def content(self):
+    def content(self) -> AttrDict:
         """
-        The content of the definition file as Attrdict
-        :return: attrdict.AttrDict
+        The content of the definition file as an attribute-enabled dictionary.
+        :return:
         """
         return self._content
 
@@ -401,7 +400,7 @@ class _PysiralPackageConfiguration(object):
         # -> must be populated with content from the package config dir
         if not config_path.is_dir():
             print(f"Creating pysiral config directory: {config_path}")
-            dir_util.copy_tree(str(self.path.package_config_path), str(config_path))
+            shutil.copytree(str(self.path.package_config_path), str(config_path), dirs_exist_ok=True)
             print("Init local machine def")
             template_filename = package_config_path / "templates" / "local_machine_def.yaml"
             target_filename = config_path / "local_machine_def.yaml"
@@ -506,7 +505,7 @@ class _PysiralPackageConfiguration(object):
 
     def get_settings_file(self, settings_type, data_level, setting_id_or_filename):
         """ Returns a processor settings file for a given data level.
-        (data level: l2 or l3). The second argument can either be an
+        (data level: l2 or l3). The second argument can either be a
         direct filename (which validity will be checked) or an id, for
         which the corresponding file (id.yaml) will be looked up in
         the default directory """
