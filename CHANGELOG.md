@@ -1,5 +1,19 @@
 # History of changes
 
+## [0.13] 
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+- Support for python 3.9 and earlier versions has been deprecated. pysiral now requires python 3.10 or later.
+
+### Removed
+- module "proj" has been removed from the package. It was no longer used.
+
 ## [0.12] 2025-08-08
 
 ### Added
@@ -836,5 +850,3 @@
 - [l1b pre-processing] moved hard coded settings from python parser to mission config file (Envisat, ERS, Sentinel-3)
 - [l1b pre-processing] All geophysical corrections are now piped into l1bdata files instead of selection in the mission configuration. Requires changes in the l2 settings files.
 - [l2 processing] Internal handling of processor settings
-
-
