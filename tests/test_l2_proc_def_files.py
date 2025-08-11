@@ -9,12 +9,13 @@ Level2Processor conventions
 import unittest
 
 import yaml
-from core.legacy_classes import AttrDict
+
 from loguru import logger
 
 from pysiral import psrlcfg
-from core.config import get_yaml_config
-from l2proc import Level2ProcessorStepOrder
+from pysiral.core.config import get_yaml_config
+from pysiral.core.legacy_classes import AttrDict
+from pysiral.l2proc import Level2ProcessorStepOrder
 
 logger.disable("pysiral")
 

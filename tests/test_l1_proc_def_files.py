@@ -9,12 +9,11 @@ Level2Processor conventions
 """
 
 import unittest
-
-from core.legacy_classes import AttrDict
 from loguru import logger
 
 from pysiral import psrlcfg
-from core.config import get_yaml_config
+from pysiral.core.legacy_classes import AttrDict
+from pysiral.core.config import get_yaml_config
 
 logger.disable("pysiral")
 

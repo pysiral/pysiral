@@ -27,7 +27,7 @@ from pysiral.core.config import RadarModes
 from pysiral.core.functions import inverse_power
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem
-from retracker.tfmra import cTFMRA
+from pysiral.retracker.tfmra import cTFMRA
 
 
 def get_waveforms_peak_power(wfm: npt.NDArray, use_db: bool = False) -> npt.NDArray:
