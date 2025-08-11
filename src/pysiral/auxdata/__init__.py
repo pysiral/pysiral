@@ -30,7 +30,7 @@ from pysiral.core.legacy_classes import AttrDict
 from pyproj import Proj
 
 from pysiral import import_submodules
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 
 
 class AuxdataBaseClass(object):

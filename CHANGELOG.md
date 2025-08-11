@@ -13,6 +13,7 @@
 
 ### Removed
 - module "proj" has been removed from the package. It was no longer used.
+- class `pysiral.l2proc.Level2Processor`. It was no longer used and will be replaced in future version with a new implementation. 
 
 ## [0.12] 2025-08-08
 

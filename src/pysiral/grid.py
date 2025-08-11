@@ -16,7 +16,7 @@ from pyproj import Proj
 from pyresample import geometry
 
 from pysiral.core.legacy_classes import AttrDict
-from pysiral.core.class_template import DefaultLoggingClass
+from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
 
 

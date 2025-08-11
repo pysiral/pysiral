@@ -13,7 +13,7 @@ from loguru import logger
 from parse import compile
 
 from pysiral.core import DefaultLoggingClass
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 
 
 class ERSFileList(DefaultLoggingClass):

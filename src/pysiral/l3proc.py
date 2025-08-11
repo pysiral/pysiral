@@ -21,7 +21,7 @@ from xarray import open_dataset
 from pysiral import __version__, get_cls, psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import get_yaml_config
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
 from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.grid import GridDefinition

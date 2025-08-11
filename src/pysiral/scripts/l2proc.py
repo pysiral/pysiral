@@ -16,7 +16,7 @@ from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 

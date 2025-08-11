@@ -21,7 +21,7 @@ from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.clocks import StopWatch
 from pysiral.core.config import get_yaml_config
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.helper import (ProgressIndicator, get_first_array_index,
                          get_last_array_index, rle)
 from pysiral.core.output import L1bDataNC

@@ -6,8 +6,8 @@
 __author__ = "Stefan Hendricks"
 
 __all__ = [
-    "class_template", "clocks", "config", "datahandler", "errorhandler",
-    "flags", "helper", "iotools", "legacy_classes.py", "output",
+    "clocks", "config", "datahandler",
+    "flags", "helper", "iotools", "legacy_classes", "output",
     "DefaultLoggingClass", "functions"
 ]
 

@@ -17,7 +17,7 @@ from cftime import num2pydate
 from netCDF4 import Dataset
 
 from pysiral import psrlcfg
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.core.output import NCDateNumDef, PysiralOutputFilenaming
 
 

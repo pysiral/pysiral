@@ -16,7 +16,7 @@ from pysiral import psrlcfg
 from pysiral.core import DefaultLoggingClass
 from pysiral.core.config import DefaultCommandLineArguments
 from pysiral.core.datahandler import L2iDataHandler
-from pysiral.core.errorhandler import ErrorStatus
+from pysiral.core.legacy_classes import ErrorStatus
 from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
                             Level3Processor, Level3ProductDefinition)
 

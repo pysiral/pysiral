@@ -17,8 +17,8 @@ from loguru import logger
 
 from pysiral import get_cls, psrlcfg
 from pysiral.auxdata import AuxClassConfig
-from pysiral.core.class_template import DefaultLoggingClass
-from pysiral.core.errorhandler import PYSIRAL_ERROR_CODES, ErrorStatus
+from pysiral.core.legacy_classes import DefaultLoggingClass
+from pysiral.core.legacy_classes import ErrorStatus, AttrDict
 from pysiral.core.output import PysiralOutputFilenaming
 
 
@@ -54,7 +54,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         auxdata_def = self.get_auxdata_def(auxdata_class, auxdata_id)
         if auxdata_def is None:
             error_id = "auxdata_missing_definition"
-            error_message = PYSIRAL_ERROR_CODES[error_id] % (auxdata_class, auxdata_id)
+            error_message = f"auxdata_def: Missing definition [{auxdata_class}:{auxdata_id}]"
             self.error.add_error(error_id, error_message)
             self.error.raise_on_error()
 
@@ -111,9 +111,8 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
         module_name, class_name = f"pysiral.auxdata.{auxdata_class}", auxdata_def["pyclass"]
         auxclass, err = get_cls(module_name, class_name, relaxed=False)
         if auxclass is None:
-            error_id = "auxdata_invalid_class_name"
             msg = f"Invalid Auxdata class: {module_name}.{class_name}"
-            self.error.add_error(PYSIRAL_ERROR_CODES[error_id], msg)
+            self.error.add_error("invalid-auxdata-class", msg)
             self.error.raise_on_error()
 
         return auxclass(cfg)
