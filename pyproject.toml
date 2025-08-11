@@ -76,20 +76,14 @@ dev = [
     "sphinxcontrib-mermaid"
 ]
 
-ml = [
-    "torch",
-    "xgboost"
-]
-
-tests = [
-    "pytest",
-    "coverage"
-]
+ml = ["torch", "xgboost"]
+tests = ["pytest", "coverage"]
 
 
 [project.scripts]
 pysiral = "pysiral.scripts:main"
 pysiral-l1preproc = "pysiral.scripts:l1preproc_cli"
+pysiral-l2preproc = "pysiral.scripts:l2preproc_cli"
 pysiral-l2proc = "pysiral.scripts:l2proc_cli"
 pysiral-l3proc = "pysiral.scripts:l3proc_cli"
 

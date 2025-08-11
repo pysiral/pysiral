@@ -8,7 +8,7 @@ from distutils import dir_util
 
 from loguru import logger
 
-from pysiral import psrlcfg
+from src.pysiral import psrlcfg
 
 
 def main():

@@ -10,13 +10,13 @@ from pathlib import Path
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg
-from pysiral.core import DefaultLoggingClass
-from pysiral.core.config import DefaultCommandLineArguments
-from pysiral.core.datahandler import L2iDataHandler
-from pysiral.core.errorhandler import ErrorStatus
-from pysiral.l2preproc import (Level2PreProcessor,
-                               Level2PreProcProductDefinition)
+from src.pysiral import psrlcfg
+from core import DefaultLoggingClass
+from core.config import DefaultCommandLineArguments
+from core.datahandler import L2iDataHandler
+from core.errorhandler import ErrorStatus
+from l2preproc import (Level2PreProcessor,
+                       Level2PreProcProductDefinition)
 
 
 def pysiral_l2preproc():

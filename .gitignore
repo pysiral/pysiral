@@ -1,6 +1,6 @@
 # pysiral
 
-./pysiral/resources/pysiral-cfg/local_machine_def.yaml
+src/pysiral/resources/pysiral-cfg/local_machine_def.yaml
 # Visual Studio Code
 
 CODE

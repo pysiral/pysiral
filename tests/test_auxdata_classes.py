@@ -11,7 +11,7 @@ from loguru import logger
 
 logger.disable("pysiral")
 
-from pysiral.auxdata import get_all_auxdata_classes
+from auxdata import get_all_auxdata_classes
 
 
 class TestAuxdataClasses(unittest.TestCase):
