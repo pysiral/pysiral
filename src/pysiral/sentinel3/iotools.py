@@ -63,7 +63,7 @@ class Sentinel3FileList(DefaultLoggingClass):
                 self._sorted_list.extend(sorted(match))
 
     def _get_toplevel_search_folder(self, year, month):
-        return Path(self.folder) / "%4g" % year / "%02g" % month
+        return Path(self.folder) / f"{year:04g}" / f"{month:02g}"
 
 
 class CodaL2SralFileDiscovery(DefaultLoggingClass):
@@ -121,7 +121,7 @@ class CodaL2SralFileDiscovery(DefaultLoggingClass):
 
     def _get_toplevel_search_folder(self, year, month):
         """ Get the folder for the file search """
-        return Path(self.cfg.lookup_dir) / "%4g" % year / "%02g" % month
+        return Path(self.cfg.lookup_dir) / f"{year:04g}" / f"{month:02g}"
 
     def _reset_file_list(self):
         """ Resets the result of previous file searches """
