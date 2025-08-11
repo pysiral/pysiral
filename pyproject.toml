@@ -47,7 +47,6 @@ dependencies = [
     "pykdtree",
     "pyproj",
     "pyresample",
-    "pyshp",
     "python-dateutil",
     "pyyaml",
     "samosa-waveform-model @ git+https://github.com/pysiral/samosa-waveform-model.git@main#egg=samosa-waveform-model",
@@ -57,7 +56,6 @@ dependencies = [
     "shapely",
     "setuptools",
     "statsmodels",
-    "torch",
     "xarray",
     "xgboost",
     "xmltodict"
