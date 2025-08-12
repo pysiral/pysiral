@@ -13,7 +13,7 @@ from dataclasses import dataclass, asdict, field
 
 from pysiral import psrlcfg
 from pysiral.core.flags import Hemispheres
-from pysiral.scripts._argparse_types import file_type
+from pysiral.scripts._argparse_types import file_type, pysiral_procdef_type
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -54,7 +54,9 @@ class PlatformID(ArgparseArgumentsArgs):
     type: Callable = str
     required: bool = True
     choices: ClassVar[list[Any]] = psrlcfg.platform_ids
-    help: str = "radar altimeter platform id (see choices)"
+    help: str = """
+    radar altimeter platform id as defined in pysiral (see choices)
+    """
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -63,7 +65,10 @@ class StartDate(ArgparseArgumentsArgs):
     nargs: str = "+"
     type: Callable = int
     metavar: str = "YYYY MM [DD]"
-    help: str = "Start date for processing period, given as year, month, and optionally day"
+    help: str = """
+    Start date for processing period, given as year, month, and optionally day. 
+    If only year and month are provided, the first day of the month will be used.
+    """
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -72,7 +77,27 @@ class EndDate(ArgparseArgumentsArgs):
     nargs: str = "+"
     type: Callable = int
     metavar: str = "YYYY MM [DD]"
-    help: str = "End date for processing period, given as year, month, and optionally day"
+    help: str = """
+    End date for processing period, given as year, month, and optionally day. 
+    If only year and month are provided, the last day of the month will be used.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class Hemisphere(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-h", "--hemisphere"]
+    action: str = "store"
+    dest: str = "hemisphere"
+    default: Any = "global"
+    metavar: str = "|".join(Hemispheres.get_choices())
+    choices: ClassVar[list[Any]] = Hemispheres.get_choices()
+    type: Callable = str
+    help: str = """
+    Target hemisphere for processing. Options are 'global', 'nh', or 'sh'. The 
+    latitude limit of the hemisphere is defined in the Level-1P processor settings file.
+    If 'global' is selected, the processor will run for both hemispheres, but still within the
+    latitude limits.
+    """
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -110,6 +135,7 @@ class InputDataset(ArgparseArgumentsArgs):
     ({pysiral-cfg-location}/local_machine_def.yaml, e.g. `root.l1b_repository.<platform>.<source_dataset_id>`)
     """
 
+
 @dataclass(frozen=True, kw_only=True)
 class L1PFile(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_file"]
@@ -118,6 +144,16 @@ class L1PFile(ArgparseArgumentsArgs):
     Path to Level-1P (l1p) input file for the Level-2 processor.
     """
 
+
+@dataclass(frozen=True, kw_only=True)
+class L1PSettings(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l1p_settings"]
+    type: Callable = pysiral_procdef_type(level="l1p")
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or full the full file path to the Level-1P processor definition file.
+    This file contains the settings for the Level-1P processor
+    """
 
 
 class DefaultCommandLineArguments(object):

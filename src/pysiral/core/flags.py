@@ -12,20 +12,7 @@ import numpy as np
 
 from pysiral.core.legacy_classes import DefaultLoggingClass
 
-from enum import Enum
-
-
-class Hemispheres(str, Enum):
-    """
-    Enum for hemispheres.
-    """
-    NORTH = "nh"
-    SOUTH = "sh"
-    GLOBAL = "global"
-
-    @classmethod
-    def get_choices(cls) -> List[str]:
-        return [entry.value for entry in cls]
+from enum import Enum, StrEnum
 
 
 # The standard ESA surface type flag in L1B data
@@ -62,6 +49,42 @@ WAVEFORM_CLASSIFICATION_BIT_DICT = {
     "off_nadir_artefact": 8,  # off-nadir lobe artefacts (if notable and detectable)
     "unclassified": 15        # initial flag, respectively unidentified range bin(s)
 }
+
+
+class Hemispheres(str, Enum):
+    """
+    Enum for hemispheres.
+    """
+    NORTH = "nh"
+    SOUTH = "sh"
+    GLOBAL = "global"
+
+    @classmethod
+    def get_choices(cls) -> List[str]:
+        return [entry.value for entry in cls]
+
+
+class BasicProcessingLevels(StrEnum):
+    """
+    Enum for processing levels with a corresponding pysiral processor
+    """
+    LEVEL1 = "l1"
+    LEVEL2 = "l2"
+    LEVEL3 = "l3"
+
+
+class ProcessingLevels(str, Enum):
+    """
+    Enum for processing levels.
+    """
+    LEVEL1 = "l1"
+    LEVEL1_PREPROCESSED = "l1p"
+    LEVEL2 = "l2"
+    LEVEL2_INTERMEDIATE = "l2i"
+    LEVEL2_PREPROCESSED = "l2p"
+    LEVEL3_COLLATED = "l3c"
+    LEVEL3_SUPERCOLLATED = "l3s"
+
 
 class RadarModes(object):
 

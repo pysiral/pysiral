@@ -10,6 +10,9 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Callable
 
+from pysiral import psrlcfg
+from pysiral.core.flags import BasicProcessingLevels
+
 
 def dir_type(value: str) -> Path:
     # First Check: Directory must exist
@@ -94,3 +97,38 @@ def dirpath_type(string: str) -> Path:
         return Path(string).absolute()
     else:
         raise argparse.ArgumentTypeError(f"Not a directory {string}")
+
+
+def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
+    """
+    Factory function that provides additional option to the argparse directory type validation.
+
+    :param level: Level of processing definition, e.g. "l1", "l2", "l3"
+
+    :return: Function to validiates input for argparse
+    """
+
+    def procdef_type_func(string: str) -> Path:
+        """
+        Small helper function to convert input automatically to Path.
+        Also raises an exception if the input is not a valid directory.
+
+        :param string: Input argument
+
+        :raises argparse.ArgumentTypeError:
+
+        :return: Input as pathlib.Path
+        """
+        if not level in BasicProcessingLevels:
+            raise argparse.ArgumentTypeError(f"Invalid processing level: {level} [{BasicProcessingLevels.__members__}")
+
+        settings_filepath = psrlcfg.get_settings_file("proc", level, string)
+        if settings_filepath is None:
+            msg = f"Invalid {level} settings filename or id: {string}\n"
+            msg += f"Recognized {level} processor setting ids:\n"
+            for procdef_id in psrlcfg.get_setting_ids("proc", level):
+                msg += f"  {procdef_id}\n"
+            raise argparse.ArgumentTypeError(msg)
+        return psrlcfg.get_settings_file("proc", level, string)
+
+    return procdef_type_func
