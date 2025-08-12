@@ -6,7 +6,85 @@ This module defines default command line arguments for pysiral scripts.
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
+import argparse
+from typing import List, Union, Callable, Any, Tuple, ClassVar
+from dataclasses import dataclass, asdict, field
+
+
 from pysiral import psrlcfg
+from pysiral.core.flags import Hemispheres
+
+
+@dataclass(frozen=True, kw_only=True)
+class ArgparseArgumentsArgs:
+    name_or_flags: ClassVar[list[str]] = []
+    action: Union[str, Callable] = field(default=None)
+    nargs: str = field(default=None)
+    const: Union[str, int] = field(default=None)
+    default: Any = field(default=None)
+    type: Callable = field(default=None)
+    choices: ClassVar[list[Any] | None] = None
+    required: bool = field(default=False)
+    help: str = field(default=None)
+    metavar: str = field(default=None)
+    dest: str = field(default=None)
+
+    def get(self) -> Tuple[List[str], dict[str, Any]]:
+        """
+        Returns the input arguments and keyword arguments to `parser.add_argument()`
+
+        :return: A tuple containing a list of argument names or flags and a
+            ictionary of keyword arguments
+        """
+        # Convert the `args` property to a dictionary and remove empty values`
+        args_dict = asdict(self)
+        args_dict = {k: v for k, v in args_dict.items() if v is not None}
+
+        # Remove the `name_or_flags` key from the dictionary and return it separately
+        arg_flags = args_dict.pop("name_or_flags", [])
+        return arg_flags, args_dict
+
+
+@dataclass(frozen=True, kw_only=True)
+class PlatformID(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-p", "--platform-id"]
+    action: str = "store"
+    dest: str = "platform_id"
+    type: Callable = str
+    required: bool = True
+    choices: ClassVar[list[Any]] = psrlcfg.platform_ids
+    help: str = "radar altimeter platform id (see choices)"
+
+
+@dataclass(frozen=True, kw_only=True)
+class StartDate(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["start_date"]
+    nargs: str = "+"
+    type: Callable = int
+    metavar: str = "YYYY MM [DD]"
+    help: str = "Start date for processing period, given as year, month, and optionally day"
+
+
+@dataclass(frozen=True, kw_only=True)
+class EndDate(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["end_date"]
+    nargs: str = "+"
+    type: Callable = int
+    metavar: str = "YYYY MM [DD]"
+    help: str = "End date for processing period, given as year, month, and optionally day"
+
+
+@dataclass(frozen=True, kw_only=True)
+class ExcludeMonths(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["--exclude-months"]
+    action: str = "store"
+    dest: str = "exclude_months"
+    metavar: str = "[month_num, month_num, ...]"
+    type: Callable = int
+    help: str = "List of months to be excluded from processing, given as integers (1-12)."
+
+
+
 
 class DefaultCommandLineArguments(object):
 

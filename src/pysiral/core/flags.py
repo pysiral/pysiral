@@ -12,6 +12,22 @@ import numpy as np
 
 from pysiral.core.legacy_classes import DefaultLoggingClass
 
+from enum import Enum
+
+
+class Hemispheres(str, Enum):
+    """
+    Enum for hemispheres.
+    """
+    NORTH = "nh"
+    SOUTH = "sh"
+    GLOBAL = "global"
+
+    @classmethod
+    def get_choices(cls) -> List[str]:
+        return [entry.value for entry in cls]
+
+
 # The standard ESA surface type flag in L1B data
 ESA_SURFACE_TYPE_DICT = {
     "ocean": 0,
