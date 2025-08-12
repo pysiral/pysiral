@@ -136,8 +136,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def __init__(self):
         super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
-        self.pysiral_config = psrlcfg
-        self._args = None
+        self._args = self.get_parser_args()
 
     def parse_command_line_arguments(self):
         # use python module argparse to parse the command line arguments
@@ -161,25 +160,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
         if not l1b_file_preset_is_set and not start_and_stop_is_set:
             self.parser.error("either -start & -stop or -l1b-files required")
 
-    def critical_prompt_confirmation(self):
-
-        # Any confirmation prompts can be overridden by --no-critical-prompt
-        no_prompt = self._args.no_critical_prompt
-
-        # if --remove_old is set, all previous l1bdata files will be
-        # erased for all month
-        if self._args.remove_old and not no_prompt:
-            message = "You have selected to remove all previous " + \
-                      "l2 files for the requested period\n" + \
-                      "(Note: use --no-critical-prompt to skip confirmation)\n" + \
-                      "Enter \"YES\" to confirm and continue: "
-            result = input(message)
-
-            if result != "YES":
-                sys.exit(1)
-
-    @property
-    def parser(self):
+    def get_parser_args(self) -> argparse.ArgumentParser:
         # XXX: Move back to caller
 
         # Take the command line options from default settings
@@ -190,20 +171,15 @@ class Level2ProcArgParser(DefaultLoggingClass):
         # (argname, argtype (see config module), destination, required flag)
         options = [
             ("-l2-settings", "l2-settings", "l2_settings", True),
-            ("-run-tag", "run-tag", "run_tag", False),
             ("-start", "date", "start_date", False),
             ("-stop", "date", "stop_date", False),
-            ("-l1b-files", "l1b_files", "l1b_files_preset", False),
             ("-exclude-month", "exclude-month", "exclude_month", False),
             ("-input-version", "input-version", "input_version", False),
             ("-l1p-version", "l1p-version", "l1p_version", False),
             ("-l2-output", "l2-output", "l2_output", False),
             ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
-            ("--remove-old", "remove-old", "remove_old", False),
             ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
-            ("--no-critical-prompt", "no-critical-prompt", "no_critical_prompt", False),
-            ("--no-overwrite-protection", "no-overwrite-protection", "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection", "overwrite_protection", False)]
+        ]
 
         # create the parser
         parser = argparse.ArgumentParser()
@@ -214,19 +190,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
         parser.set_defaults(overwrite_protection=False)
 
         return parser
-
-    @property
-    def arg_dict(self):
-        """ Return the arguments as dictionary """
-        return self._args.__dict__
-
-    @property
-    def start(self):
-        return self._args.start_date
-
-    @property
-    def stop(self):
-        return self._args.stop_date
 
     @property
     def run_tag(self):
@@ -268,7 +231,7 @@ class Level2ProcArgParser(DefaultLoggingClass):
             return filename
         msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
         msg = msg + " \nRecognized Level-2 processor setting ids:\n"
-        for l2_settings_id in self.pysiral_config.get_setting_ids("proc", "l2"):
+        for l2_settings_id in psrlcfg.get_setting_ids("proc", "l2"):
             msg = f'{msg}  {l2_settings_id}' + "\n"
         self.error.add_error("invalid-l2-settings", msg)
         self.error.raise_on_error()
@@ -289,12 +252,12 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def l2_output(self):
         filenames = []
         for l2_output in self._args.l2_output.split(";"):
-            filename = self.pysiral_config.get_settings_file("output", "l2i", l2_output)
+            filename = psrlcfg.get_settings_file("output", "l2i", l2_output)
 
             if filename is None:
                 msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
                 msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-                l2_output_ids = self.pysiral_config.get_setting_ids("output", "l2i")
+                l2_output_ids = psrlcfg.get_setting_ids("output", "l2i")
                 for l2_output_id in l2_output_ids:
                     msg = f'{msg}    - {l2_output_id}' + "\n"
                 self.error.add_error("invalid-l2-outputdef", msg)
@@ -322,6 +285,3 @@ class Level2ProcArgParser(DefaultLoggingClass):
     def remove_old(self):
         return self._args.remove_old and not self._args.overwrite_protection
 
-
-if __name__ == "__main__":
-    pysiral_l2proc()
