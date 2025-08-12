@@ -5,8 +5,9 @@
 import argparse
 import glob
 import re
-import sys
 import time
+from typing import List, Union
+from pathlib import Path
 from datetime import timedelta
 
 from dateperiods import DatePeriod
@@ -19,116 +20,98 @@ from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
-def pysiral_l2proc():
+def l2proc(
+    start_date: List[int] = None,
+    stop_date: List[int] = None,
+    l2_settings: Union[str, Path] = None,
+    l2_outputs: List[Union[str, Path]] = None,
+    exclude_month: List[int] = None,
+    input_version: str = None,
+    l1p_version: str = None,
+    mp_cpu_count: int = None,
+    force_l2def_record_type: bool = False,
+    output_directory: Union[str, Path] = None,
+    **kwargs: dict
+) -> None:
+    """
+    Main entry point for the Level-2 Processor job.
 
-    # Collect job settings from pysiral configuration data and
-    # command line arguments
-    args = Level2ProcArgParser()
+    This function initializes the Level-2 processor with the provided settings
+    and processes the Level-1P data files for the specified time range.
 
-    # Parse and validate the command line arguments
-    args.parse_command_line_arguments()
+    :param start_date: Start date for processing in [year, month, [day]] format.
+    :param stop_date: Stop date for processing in [year, month, [day]] format
+    :param l2_settings: Path to the Level-2 settings file or its identifier.
+    :param l2_outputs: List of output definitions for Level-2 products.
+    :param exclude_month: List of months to exclude from processing (1-12).
+    :param input_version: Version of the input data (optional).
+    :param l1p_version: Version of the Level-1P data (optional).
+    :param mp_cpu_count: Number of CPUs to use for multiprocessing (optional).
+    :param force_l2def_record_type: If True, forces the use of a specificLevel-2 definition record type.
+    :param output_directory: Directory where the output files will be saved.
+    """
 
-    # Get confirmation for critical choices (if necessary)
-    args.critical_prompt_confirmation()
+    # Update pysiral multiprocessing settings
+    if mp_cpu_count is not None:
+        logger.info(f"Using {mp_cpu_count} CPU cores.")
+        set_psrl_cpu_count(mp_cpu_count)
 
-    # From here on there are two options
-    # a. Time range given -> Get l1bdata input with datahandler
-    # b. Predefined set of l1b input files
-    # Splitting into functions for clarity
-    if args.is_time_range_request:
-        pysiral_l2proc_time_range_job(args)
-    else:
-        pysiral_l2proc_l1b_predef_job(args)
-
-
-def pysiral_l2proc_time_range_job(args):
-    """ This is a Level-2 Processor job for a given time range """
-
-    # Get start time of processor run
-    t0 = time.time()
-
-    # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag,
-                                          args.l2_settings_file,
-                                          force_l2def_record_type=args.force_l2def_record_type)
-    mission_id = product_def.l2def.metadata.platform
+    # Get the Level-2 product definition containing the product metadata, list of
+    # auxiliary data files and the algorithm steps. This information is saved in
+    # yaml L2 product definition files (`pysiral/resources/pysiral-cfg/proc/l2/`).
+    product_def = Level2ProductDefinition(
+        l2_settings,
+        force_l2def_record_type=force_l2def_record_type
+    )
+    platform = product_def.l2def.metadata.platform
     hemisphere = product_def.l2def.metadata.hemisphere
 
-    # Specifically add an output handler
-    for l2_output in args.l2_output:
-        product_def.add_output_definition(l2_output, overwrite_protection=args.overwrite_protection)
+    # The Level-2 data can be written to one or multiple output files.
+    for l2_output in l2_outputs:
+        product_def.add_output_definition(l2_output)
 
-    # --- Get the period for the Level-2 Processor ---
-    # Evaluate the input arguments
-    period = DatePeriod(args.start, args.stop)
+    # get the period for the Level-2 Processor
+    period = DatePeriod(start_date, stop_date)
 
     # Clip the time range to the valid time range of the target platform
-    period = period.intersect(psrlcfg.get_platform_period(mission_id))
+    period = period.intersect(psrlcfg.get_platform_period(platform))
     if period is None:
-        msg = f"Invalid period definition ({args.start}-{args.stop}) for platform {mission_id}"
+        msg = f"Invalid period definition ({start_date}-{stop_date}) for platform {platform}"
         raise ValueError(msg)
 
-    # The Level-2 processor operates in monthly iterations
-    # -> Break down the full period into monthly segments and
-    #    filter specific month that should not be processed
+    # The Level-2 processor operates in monthly segments, and for a given period,
+    # certain months can be excluded from processing.
     period_segments = period.get_segments("month", crop_to_period=True)
-    if args.exclude_month is not None:
-        period_segments.filter_month(args.exclude_month)
+    if exclude_month is not None:
+        period_segments.filter_month(exclude_month)
 
-    # Prepare DataHandler
-    l1b_data_handler = L1PDataHandler(mission_id, hemisphere, source_version=args.source_version,
-                                      file_version=args.file_version)
+    # Initialize the Level-1P data handler
+    l1b_data_handler = L1PDataHandler(
+        platform,
+        hemisphere,
+        source_version=input_version,
+        file_version=l1p_version
+    )
 
     # Processor Initialization
-    l2proc = Level2Processor(product_def)
+    logger.info("Level-2 processor: initializing")
+    l2_processor = Level2Processor(product_def)
 
-    # Now loop over the month
+    # Loop over monthly segments of the period
     for time_range in period_segments:
 
         # Do some extra logging
         logger.info(f"Processing period: {time_range.label}")
-
-        # Product Data Management
-        if args.remove_old:
-            for output_handler in product_def.output_handler:
-                output_handler.remove_old(time_range)
 
         # Get input files
         l1b_files = l1b_data_handler.get_files_from_time_range(time_range)
         logger.info("Found %g files in %s" % (len(l1b_files), l1b_data_handler.last_directory))
 
         # Process the orbits
-        l2proc.process_l1b_files(l1b_files)
+        l2_processor.process_l1b_files(l1b_files)
 
     # All done
-    t1 = time.time()
-    seconds = int(t1 - t0)
-    logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
-
-
-def pysiral_l2proc_l1b_predef_job(args):
-    """ A more simple Level-2 job with a predefined list of l1b data files """
-
-    # Get start time of processor run
-    t0 = time.time()
-
-    # Get the product definition
-    product_def = Level2ProductDefinition(args.run_tag,
-                                          args.l2_settings_file,
-                                          force_l2def_record_type=args.force_l2def_record_type)
-
-    # Specifically add an output handler
-    for l2_output in args.l2_output:
-        product_def.add_output_definition(l2_output, overwrite_protection=args.overwrite_protection)
-
-    # Processor Initialization
-    l2proc = Level2Processor(product_def)
-    l2proc.process_l1b_files(args.l1b_predef_files)
-
-    # All done
-    t1 = time.time()
-    seconds = int(t1 - t0)
-    logger.info(f"Run completed in {str(timedelta(seconds=seconds))}")
+    logger.info("Level-2 processor: completed")
 
 
 class Level2ProcArgParser(DefaultLoggingClass):
@@ -137,28 +120,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
         super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
         self._args = self.get_parser_args()
-
-    def parse_command_line_arguments(self):
-        # use python module argparse to parse the command line arguments
-        # (first validation of required options and data types)
-        self._args = self.parser.parse_args()
-
-        if self._args.mp_cpu_count is not None:
-            set_psrl_cpu_count(self._args.mp_cpu_count)
-
-        # Add additional check to make sure either `l1b-files` or
-        # `start ` and `stop` are set
-        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
-        start_and_stop_is_set = (
-                self._args.start_date is not None and
-                self._args.stop_date is not None
-        )
-
-        if l1b_file_preset_is_set and start_and_stop_is_set:
-            self.parser.error("-start & -stop and -l1b-files are exclusive")
-
-        if not l1b_file_preset_is_set and not start_and_stop_is_set:
-            self.parser.error("either -start & -stop or -l1b-files required")
 
     def get_parser_args(self) -> argparse.ArgumentParser:
         # XXX: Move back to caller
@@ -192,38 +153,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
         return parser
 
     @property
-    def run_tag(self):
-        """ run_tag is a str or relative path that determines the output directory for
-        the Level-2 processor. If the -run-tag option is not specified, the output
-        directory will be the `product_repository` specification in `local_machine_def`
-        with the l2 settings file basename as subfolder.
-
-        One can however specify a custom string, or a relative path, with subfolders
-        defined by using slashes or backslashes
-
-        Examples:
-            -run-tag cs2awi_v2p0_nrt
-            -run-tag c3s/cdr/cryosat2/v1p0/nh
-        """
-
-        # Get from command line arguments (default: None)
-        run_tag = self._args.run_tag
-
-        # split the run-tag on potential path separators
-        if run_tag is not None:
-            run_tag = re.split(r'[\\|/]', run_tag)
-
-        return run_tag
-
-    @property
-    def exclude_month(self):
-        return self._args.exclude_month
-
-    @property
-    def overwrite_protection(self):
-        return self._args.overwrite_protection
-
-    @property
     def l2_settings_file(self):
         l2_settings = self._args.l2_settings
         filename = self.pysiral_config.get_settings_file("proc", "l2", l2_settings)
@@ -235,18 +164,6 @@ class Level2ProcArgParser(DefaultLoggingClass):
             msg = f'{msg}  {l2_settings_id}' + "\n"
         self.error.add_error("invalid-l2-settings", msg)
         self.error.raise_on_error()
-
-    @property
-    def source_version(self):
-        return self._args.input_version
-
-    @property
-    def file_version(self):
-        return self._args.l1p_version
-
-    @property
-    def l1b_predef_files(self):
-        return glob.glob(self._args.l1b_files_preset)
 
     @property
     def l2_output(self):
@@ -272,16 +189,3 @@ class Level2ProcArgParser(DefaultLoggingClass):
             self.error.raise_on_error()
 
         return filenames
-
-    @property
-    def force_l2def_record_type(self):
-        return self._args.force_l2def_record_type
-
-    @property
-    def is_time_range_request(self):
-        return self._args.l1b_files_preset is None
-
-    @property
-    def remove_old(self):
-        return self._args.remove_old and not self._args.overwrite_protection
-

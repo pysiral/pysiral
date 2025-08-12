@@ -5,13 +5,12 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
-import sys
-from collections import OrderedDict, deque
-from datetime import datetime
+from collections import deque
 from pathlib import Path
 
 from dateperiods import DatePeriod
 from loguru import logger
+from typing import Union
 
 from pysiral import psrlcfg
 from pysiral.core.config import get_yaml_config
@@ -332,10 +331,11 @@ class Level2Processor(DefaultLoggingClass):
 class Level2ProductDefinition(DefaultLoggingClass):
     """ Main configuration class for the Level-2 Processor """
 
-    def __init__(self,
-                 run_tag: str,
-                 l2_settings_file: str,
-                 force_l2def_record_type: bool = False) -> None:
+    def __init__(
+            self,
+            l2_settings_file: str,
+            force_l2def_record_type: bool = False
+    ) -> None:
 
         super(Level2ProductDefinition, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus(self.__class__.__name__)
@@ -343,16 +343,18 @@ class Level2ProductDefinition(DefaultLoggingClass):
         # Mandatory parameter
         self._l2_settings_file = l2_settings_file
         self._parse_l2_settings()
-        self._run_tag = None
+        self._run_tag = self._get_run_tag()
         self.force_l2def_record_type = force_l2def_record_type
-        self._set_run_tag(run_tag)
 
-        # Optional parameters (may be set to default values if not specified)
+        # Optional parameters (maybe set to default values if not specified)
         self._output_handler = []
 
-    def add_output_definition(self, output_def_file, period="default", overwrite_protection=True):
-
-        # Set given or default output handler
+    def add_output_definition(
+            self,
+            output_def_file : Union[str, Path],
+            period: str = "default",
+            overwrite_protection: bool = False
+    ) -> None:
         self._output_handler.append(DefaultLevel2OutputHandler(
             output_def=output_def_file, subdirectory=self.run_tag,
             period=period, overwrite_protection=overwrite_protection))
@@ -364,19 +366,14 @@ class Level2ProductDefinition(DefaultLoggingClass):
             self.error.add_error("invalid-l2-settings", str(ex))
             self.error.raise_on_error()
 
-    def _set_run_tag(self, run_tag):
+    def _get_run_tag(self) -> str:
         """
         Set the run tag (will be used for defining the output path)
-        :param run_tag:
+
         :return:
         """
         # Take specified value or construct from metadata of config file if unspecified
-        if run_tag is not None:
-            value = run_tag
-        else:
-            value = f"{self.product_line}/{self.record_type}/{self.platform}/{self.version}/{self.hemisphere_code}"
-
-        self._run_tag = value
+        return f"{self.product_line}/{self.record_type}/{self.platform}/{self.version}/{self.hemisphere_code}"
 
     @property
     def run_tag(self):

@@ -37,7 +37,8 @@ def main() -> None:
                       (see: pysiral l1preproc --help)
 
         `l2proc`      Generate Level-2 files (l2/l2i) with geophysical information
-                      from Level-1 files (l1p) and auxiliary data.
+                      from Level-1 files (l1p) and auxiliary data for a given 
+                      Level-2 product definition and period. 
                       (see: pysiral l2proc --help)
 
         `l2preproc`   Generate Level-2 files (l2p) wwith daily summaries of l2/l2i files
