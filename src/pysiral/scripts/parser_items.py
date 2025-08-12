@@ -13,6 +13,7 @@ from dataclasses import dataclass, asdict, field
 
 from pysiral import psrlcfg
 from pysiral.core.flags import Hemispheres
+from pysiral.scripts._argparse_types import file_type
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -76,13 +77,46 @@ class EndDate(ArgparseArgumentsArgs):
 
 @dataclass(frozen=True, kw_only=True)
 class ExcludeMonths(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["--exclude-months"]
+    name_or_flags: ClassVar[list[str]] = ["-E", "--exclude-months"]
     action: str = "store"
     dest: str = "exclude_months"
     metavar: str = "[month_num, month_num, ...]"
     type: Callable = int
     help: str = "List of months to be excluded from processing, given as integers (1-12)."
 
+
+@dataclass(frozen=True, kw_only=True)
+class InputVersion(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-v", "--input-version"]
+    action: str = "store"
+    dest: str = "input_version"
+    default: Any = "default"
+    metavar: str = "v{minor}p{major}|default"
+    type: Callable = str
+    help: str = """
+    Input version name (e.g., v1p0, v2p1, or 'default'). 
+    This is used to identify the version of the input data.
+    """
+
+@dataclass(frozen=True, kw_only=True)
+class InputDataset(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-s", "--source-dataset-id"]
+    action: str = "store"
+    dest: str = "source_dataset_id"
+    type: Callable = str
+    help: str = """
+    Identifier of the source dataset to be used for processing, summarizing the platform, version, 
+    and timeliness information. The source dataset ID must be specified in the local machine definition file
+    ({pysiral-cfg-location}/local_machine_def.yaml, e.g. `root.l1b_repository.<platform>.<source_dataset_id>`)
+    """
+
+@dataclass(frozen=True, kw_only=True)
+class L1PFile(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l1p_file"]
+    type: Callable = file_type(suffix=".nc")
+    help: str = """
+    Path to Level-1P (l1p) input file for the Level-2 processor.
+    """
 
 
 

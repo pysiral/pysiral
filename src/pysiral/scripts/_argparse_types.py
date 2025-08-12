@@ -1,7 +1,96 @@
 # -*- coding: utf-8 -*-
 
 """
-
 """
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
+
+import argparse
+from datetime import date, datetime
+from pathlib import Path
+from typing import Callable
+
+
+def dir_type(value: str) -> Path:
+    # First Check: Directory must exist
+    if Path(value).is_dir():
+        return Path(value).absolute()
+    else:
+        raise argparse.ArgumentTypeError(f"Not a directory: {value}")
+
+
+def date_type(value: str) -> date:
+    """
+    Small helper function to convert input automatically to Path.
+    Also raises an exception if the input is not a valid directory.
+
+    :param value: Input argument
+
+    :raises ValueError:
+
+    :return: Input as `datetime.date`
+    """
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Not a date definition: {value}")
+
+
+def date_datetime_type(value: str) -> datetime:
+
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Not a date definition: {value}")
+
+
+def file_type(suffix: str = None) -> Callable:
+    """
+    Factory function that provides additional option to the argparse directory type validation.
+
+    :param suffix: Ensures that the file has the correct suffix
+
+    :return: Function to validiates input for argparse
+    """
+
+    def file_type_func(string: str) -> Path:
+        """
+        Small helper function to convert input automatically to Path.
+        Also raises an exception if the input is not a valid directory.
+
+        :param string: Input argument
+
+        :raises argparse.ArgumentTypeError: raised if invalid input
+
+        :return: Input as pathlib.Path
+        """
+
+        # First Check: Directory must exist
+        if Path(string).is_file():
+            file_path = Path(string).absolute()
+        else:
+            raise argparse.ArgumentTypeError(f"Not a file: {string}")
+
+        # Optional check: Directory path needs to end with certain directory name
+        if file_path.suffix != suffix:
+            raise argparse.ArgumentTypeError(f"{file_path} is not correct suffix: `{suffix}`")
+        return file_path
+
+    return file_type_func
+
+
+def dirpath_type(string: str) -> Path:
+    """
+    Small helper function to convert input automatically to Path.
+    Also raises an exception if the input is not a valid directory.
+
+    :param string: Input argument
+
+    :raises argparse.ArgumentTypeError:
+
+    :return: Input as pathlib.Path
+    """
+    if Path(string).is_dir():
+        return Path(string).absolute()
+    else:
+        raise argparse.ArgumentTypeError(f"Not a directory {string}")
