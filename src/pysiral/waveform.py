@@ -23,7 +23,7 @@ from scipy.stats import linregress
 
 from pysiral import psrlcfg
 from pysiral.core.clocks import StopWatch
-from pysiral.core.config import RadarModes
+from pysiral.core.flags import RadarModes
 from pysiral.core.functions import inverse_power
 from pysiral.l1data import Level1bData
 from pysiral.l1preproc.procitems import L1PProcItem

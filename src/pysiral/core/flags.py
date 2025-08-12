@@ -17,7 +17,8 @@ ESA_SURFACE_TYPE_DICT = {
     "ocean": 0,
     "closed_sea": 1,
     "land_ice": 2,
-    "land": 3}
+    "land": 3
+}
 
 
 SURFACE_TYPE_DICT = {
@@ -29,7 +30,8 @@ SURFACE_TYPE_DICT = {
     "closed_sea": 5,
     "land_ice": 6,
     "land": 7,
-    "invalid": 8}
+    "invalid": 8
+}
 
 # bit values for a 16-bit integer (multiple choice)
 WAVEFORM_CLASSIFICATION_BIT_DICT = {
@@ -42,7 +44,41 @@ WAVEFORM_CLASSIFICATION_BIT_DICT = {
     "side_lobe_artefact": 6,  # side lobe artefacts (if notable and detectable)
     "fft_artefact": 7,        # fft artefacts in the beginning of the waveform (older altimeters)
     "off_nadir_artefact": 8,  # off-nadir lobe artefacts (if notable and detectable)
-    "unclassified": 15}       # initial flag, respectively unidentified range bin(s)
+    "unclassified": 15        # initial flag, respectively unidentified range bin(s)
+}
+
+class RadarModes(object):
+
+    flag_dict = {"lrm": 0, "sar": 1, "sin": 2}
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_flag(cls, mode_name: str) -> Union[int, None]:
+        try:
+            return cls.flag_dict[mode_name]
+        except KeyError:
+            return None
+
+    @classmethod
+    def get_name(cls, flag: int) -> Union[str, None]:
+        return next(
+            (
+                mode_name
+                for mode_name, mode_flag in cls.flag_dict.items()
+                if flag == mode_flag
+            ),
+            None,
+        )
+
+    def name(self, index: int) -> str:
+        i = list(self.flag_dict.values()).index(index)
+        return list(self.flag_dict.keys())[i]
+
+    @property
+    def num(self) -> int:
+        return len(self.flag_dict.keys())
 
 
 # TODO: Add marine and land/land ice flag groups

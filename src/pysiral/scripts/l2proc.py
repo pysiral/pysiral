@@ -13,7 +13,7 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg, set_psrl_cpu_count
-from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
 from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition

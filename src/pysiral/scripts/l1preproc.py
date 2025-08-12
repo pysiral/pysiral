@@ -3,14 +3,13 @@
 #       older version
 
 import argparse
-import sys
 
 from loguru import logger
 from pathlib import Path
 from typing import List, Union, Optional
 
 from pysiral import get_cls, set_psrl_cpu_count
-from pysiral.core.config import DefaultCommandLineArguments
+from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
 
 

@@ -12,7 +12,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from loguru import logger
 
-from pysiral.core.config import RadarModes
+from pysiral.core.flags import RadarModes
 from pysiral.core.flags import ANDCondition, SurfaceType
 from pysiral.core.legacy_classes import AttrDict
 from pysiral.l1data import L1bdataNCFile

@@ -48,7 +48,7 @@ from scipy.optimize import OptimizeResult, least_squares
 from scipy.signal import argrelmin
 
 from pysiral import psrlcfg
-from pysiral.core.config import RadarModes
+from pysiral.core.flags import RadarModes
 from pysiral.l1data import Level1bData
 from pysiral.l2data import Level2Data
 from pysiral.retracker import BaseRetracker
