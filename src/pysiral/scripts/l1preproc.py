@@ -118,7 +118,7 @@ class L1PreProcScriptArguments(object):
         """
 
         # Level-1 pre-processor specific help text for the hemisphere argument
-        hemisphere_help = """
+        hemisphere_l1p_help = """
         Target hemisphere for processing. Options are 'global', 'nh', or 'sh'. The 
         latitude limit of the hemisphere is defined in the Level-1 pre-processor settings file.
         If 'global' is selected, the processor will run for both hemispheres, but still within the
@@ -132,7 +132,7 @@ class L1PreProcScriptArguments(object):
             ProcessingPeriod(),
             # Optional arguments
             ExcludeMonths(),
-            Hemisphere(help=hemisphere_help),
+            Hemisphere(help=hemisphere_l1p_help),
             PlatformID(),
             SourceDatasetID(),
             USeMultiProcesssing(),
