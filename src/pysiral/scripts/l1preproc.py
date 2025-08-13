@@ -8,15 +8,20 @@ from loguru import logger
 from pathlib import Path
 from typing import List, Union, Optional
 
+from dateperiods import DatePeriod
+
+
 from pysiral import get_cls, set_psrl_cpu_count
-from pysiral.scripts.parser_items import DefaultCommandLineArguments
+from pysiral.scripts.parser_items import (
+    ProcessingPeriod, ExcludeMonths, Hemisphere, PlatformID,
+    L1PSettings, SourceDatasetID, MultiProcesssingNumCores, USeMultiProcesssing
+)
 from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
 
 
 def l1preproc(
-    l1p_settings: Union[str, Path],
-    start_date: List[int],
-    stop_date: List[int],
+    l1p_settings: Union[str, Path] = None,
+    processing_period: DatePeriod = None,
     exclude_month: Optional[List[int]] = None,
     hemisphere: str = "global",
     platform: str = None,
@@ -28,8 +33,7 @@ def l1preproc(
     Workflow script of the pysiral l1b preprocessor.
 
     :param l1p_settings: Level-1 preprocessor settings file or ID.
-    :param start_date: Start date of the time coverage as a list [year, month, day].
-    :param stop_date: End date of the time coverage as a list [year, month, day].
+    :param processing_period: The processing period to run the preprocessor for.
     :param exclude_month: List of months to exclude from processing (optional).
     :param hemisphere: Hemisphere to process data for, default is "global".
     :param platform: Platform identifier (optional).
@@ -41,8 +45,7 @@ def l1preproc(
 
     job = Level1PreProcJobDef(
         l1p_settings,
-        start_date,
-        stop_date,
+        processing_period,
         exclude_month,
         hemisphere,
         platform,
@@ -98,45 +101,59 @@ class L1PreProcScriptArguments(object):
         """
         Command line parser class for the pysiral Level-1 Pre-Processor
         """
-        self.parser = self.define_argument_parser()
+        self.parser = self.get_argument_parser()
 
     def get(self, args_list: List[str] = None) -> "argparse.Namespace":
         args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
-        if args.mp_cpu_count is not None:
-            set_psrl_cpu_count(args.mp_cpu_count)
+        if args.multiprocesssing_num_cores is not None:
+            set_psrl_cpu_count(args.multiprocesssing_num_cores)
         return args
 
     @staticmethod
-    def define_argument_parser() -> argparse.ArgumentParser:
+    def get_argument_parser() -> argparse.ArgumentParser:
         """
         Set up the command line argument parser for the Level-1 Pre-Processor.
 
         :return: The argument parser object.
         """
 
-        # Take the command line options from default settings
-        # -> see config module for data types, destination variables, etc.
-        clargs = DefaultCommandLineArguments()
+        # Level-1 pre-processor specific help text for the hemisphere argument
+        hemisphere_help = """
+        Target hemisphere for processing. Options are 'global', 'nh', or 'sh'. The 
+        latitude limit of the hemisphere is defined in the Level-1 pre-processor settings file.
+        If 'global' is selected, the processor will run for both hemispheres, but still within the
+        latitude limits.
+        """
 
-        # List of command line option required for pre-processor
-        # (argname, argtype (see config module), destination, required flag)
-        options = [
-            ("-l1p-settings", "l1p-settings", "l1p_settings", True),
-            ("-platform", "platform", "platform", False),
-            ("-source-repo-id", "source-repo-id", "source_repo_id", False),
-            ("-start", "date", "start_date", True),
-            ("-stop", "date", "stop_date", True),
-            ("-exclude-month", "exclude-month", "exclude_month", False),
-            ("-hemisphere", "hemisphere", "hemisphere", False),
-            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
+        # List of command line option required for the Level-1 pre-processor
+        arg_item_list = [
+            # Positional arguments
+            L1PSettings(),
+            ProcessingPeriod(),
+            # Optional arguments
+            ExcludeMonths(),
+            Hemisphere(help=hemisphere_help),
+            PlatformID(),
+            SourceDatasetID(),
+            USeMultiProcesssing(),
+            MultiProcesssingNumCores()
         ]
 
         # create the parser
-        parser = argparse.ArgumentParser()
-        for option in options:
-            argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(argtype, destination, required)
-            parser.add_argument(argname, **argparse_dict)
-        parser.set_defaults(overwrite_protection=False)
+        parser = argparse.ArgumentParser(
+            prog="pysiral l1preproc",
+            description="""
+            This script is used to generate Level-1 files (l1p) from individual source files.
+            the Level-1 pre-processor is a tool that harmonizes the input data from various sources
+            and prepares it for further processing in the Level-2 processor. Processing steps include:
+            Generating continuous trajectories over the polar oceans, pre-computing of waveform shape
+            parameters and harmonization of the data format. 
+            """,
+            epilog="For more information, see: https://pysiral.readthedocs.io",
+            formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501
+        )
+        for arg_item in arg_item_list:
+            arg_flags, args_dict = arg_item.get()
+            parser.add_argument(*arg_flags, **args_dict)
 
         return parser

@@ -51,7 +51,7 @@ WAVEFORM_CLASSIFICATION_BIT_DICT = {
 }
 
 
-class Hemispheres(str, Enum):
+class Hemispheres(StrEnum):
     """
     Enum for hemispheres.
     """

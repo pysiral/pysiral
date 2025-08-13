@@ -6,9 +6,10 @@
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import argparse
+from dateperiods import DatePeriod
 from datetime import date, datetime
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 from pysiral import psrlcfg
 from pysiral.core.flags import BasicProcessingLevels
@@ -132,3 +133,53 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
         return psrlcfg.get_settings_file("proc", level, string)
 
     return procdef_type_func
+
+
+def proc_period_type(arg_string: str) -> DatePeriod:
+    """
+    Convert a string to a DatePeriod object.
+
+    :param arg_string: Input argument in the format "YYYY-MM-DD to YYYY-MM-DD"
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid date period
+
+    :return: DatePeriod object
+    """
+    # Note: Number of arguments should already be handled by `required_length` action in the parser.
+    #       This we can safely split at whitespace and expect two or one date arguments.
+    args = arg_string.split()
+
+    # If only one date is provided, use it as both start and stop date.
+    if len(args) == 1:
+        args.append(args[0])
+
+    def parse_date(date_str: str) -> List[int]:
+        try:
+            return [int(part) for part in date_str.split("-")]
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD.")
+
+    date_parts = [parse_date(date_str) for date_str in args]
+    try:
+        return DatePeriod(*date_parts)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"Invalid date period format: {arg_string}. Error: {e}")
+
+
+def positive_int_type(value: str) -> int:
+    """
+    Convert a string to a positive integer.
+
+    :param value: Input argument
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid positive integer
+
+    :return: Positive integer
+    """
+    try:
+        int_value = int(value)
+        if int_value <= 0:
+            raise argparse.ArgumentTypeError(f"Value must be a positive integer: {value}")
+        return int_value
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid integer value: {value}")

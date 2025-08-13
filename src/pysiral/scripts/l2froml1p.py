@@ -21,7 +21,6 @@ from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 
-
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 

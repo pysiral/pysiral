@@ -12,8 +12,11 @@ from dataclasses import dataclass, asdict, field
 
 
 from pysiral import psrlcfg
-from pysiral.core.flags import Hemispheres
-from pysiral.scripts._argparse_types import file_type, pysiral_procdef_type
+from pysiral.core.flags import Hemispheres, BasicProcessingLevels
+from pysiral.scripts._argparse_types import (
+    file_type, pysiral_procdef_type, proc_period_type, positive_int_type
+)
+from pysiral.scripts._argparse_actions import required_length
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -24,8 +27,8 @@ class ArgparseArgumentsArgs:
     const: Union[str, int] = field(default=None)
     default: Any = field(default=None)
     type: Callable = field(default=None)
-    choices: ClassVar[list[Any] | None] = None
-    required: bool = field(default=False)
+    choices: List[Any] | None = None
+    required: bool = field(default=None)
     help: str = field(default=None)
     metavar: str = field(default=None)
     dest: str = field(default=None)
@@ -42,8 +45,7 @@ class ArgparseArgumentsArgs:
         args_dict = {k: v for k, v in args_dict.items() if v is not None}
 
         # Remove the `name_or_flags` key from the dictionary and return it separately
-        arg_flags = args_dict.pop("name_or_flags", [])
-        return arg_flags, args_dict
+        return self.name_or_flags, args_dict
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,51 +54,41 @@ class PlatformID(ArgparseArgumentsArgs):
     action: str = "store"
     dest: str = "platform_id"
     type: Callable = str
-    required: bool = True
-    choices: ClassVar[list[Any]] = psrlcfg.platform_ids
+    choices: List[Any] = field(default_factory=lambda: psrlcfg.platform_ids)
+    metavar: str = "<platform_id>"
     help: str = """
-    radar altimeter platform id as defined in pysiral (see choices)
+    Radar altimeter platform id as defined in pysiral (see `pysiral info --platforms`). This option is 
+    required only if the processor configuration file is applicable to multiple platforms 
+    (e.g. sentinel3a, sentinel3b, etc.). If the processor configuration file is platform-specific, 
+    this option has no effect.
     """
 
 
 @dataclass(frozen=True, kw_only=True)
-class StartDate(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["start_date"]
+class ProcessingPeriod(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["processing_period"]
     nargs: str = "+"
-    type: Callable = int
-    metavar: str = "YYYY MM [DD]"
+    type: Callable = proc_period_type
+    action: Callable = required_length(1, 2)
+    # metavar: str = "YYYY-MM[-DD] [YYYY-MM[-DD]]"
     help: str = """
-    Start date for processing period, given as year, month, and optionally day. 
-    If only year and month are provided, the first day of the month will be used.
-    """
-
-
-@dataclass(frozen=True, kw_only=True)
-class EndDate(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["end_date"]
-    nargs: str = "+"
-    type: Callable = int
-    metavar: str = "YYYY MM [DD]"
-    help: str = """
-    End date for processing period, given as year, month, and optionally day. 
-    If only year and month are provided, the last day of the month will be used.
+    Period definition for processing, given as a string in the format "YYYY-MM[-DD] [YYYY-MM[-DD]]".
+    If only one date is given, it will be interpreted as a period (e.g., "2023-01" for January 2023 and
+    ("2023-01-01" for one day). If two dates are given, they will be interpreted as a start and end date or month)
     """
 
 
 @dataclass(frozen=True, kw_only=True)
 class Hemisphere(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["-h", "--hemisphere"]
+    name_or_flags: ClassVar[list[str]] = ["-H", "--hemisphere"]
     action: str = "store"
     dest: str = "hemisphere"
-    default: Any = "global"
+    default: Any = Hemispheres.GLOBAL
     metavar: str = "|".join(Hemispheres.get_choices())
-    choices: ClassVar[list[Any]] = Hemispheres.get_choices()
+    choices: List[Any] = field(default_factory=lambda: Hemispheres.get_choices())
     type: Callable = str
     help: str = """
-    Target hemisphere for processing. Options are 'global', 'nh', or 'sh'. The 
-    latitude limit of the hemisphere is defined in the Level-1P processor settings file.
-    If 'global' is selected, the processor will run for both hemispheres, but still within the
-    latitude limits.
+    Target hemisphere for processing. Options are 'global', 'nh', or 'sh'. 
     """
 
 
@@ -123,11 +115,13 @@ class InputVersion(ArgparseArgumentsArgs):
     This is used to identify the version of the input data.
     """
 
+
 @dataclass(frozen=True, kw_only=True)
-class InputDataset(ArgparseArgumentsArgs):
+class SourceDatasetID(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-s", "--source-dataset-id"]
     action: str = "store"
     dest: str = "source_dataset_id"
+    metavar: str = "<source_dataset_id>"
     type: Callable = str
     help: str = """
     Identifier of the source dataset to be used for processing, summarizing the platform, version, 
@@ -148,11 +142,43 @@ class L1PFile(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L1PSettings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_settings"]
-    type: Callable = pysiral_procdef_type(level="l1p")
+    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL1)
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or full the full file path to the Level-1P processor definition file.
-    This file contains the settings for the Level-1P processor
+    This file contains the settings for the Level-1P processor. The default location
+    for these files is `{pysiral-cfg-location}/proc/l1/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`cryosat2_pds_ipf1e_v1p2` will be resolved to
+    `{pysiral-cfg-location}/proc/l1/cryosat2_pds_ipf1e_v1p2.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class MultiProcesssingNumCores(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-m", "--multiprocessing-num-cores"]
+    dest: str = "multiprocessing_num_cores"
+    type: Callable = positive_int_type
+    metavar: str = "<num_cores>"
+    default: Any = None
+    help: str = """
+    Set the number of CPU cores to be used for multiprocessing. If not set, the 
+    default value (derived from `multiprocessing.cpu_count()`) will be used. 
+    NOTE: In some managed environments, the default value is not reliable, which 
+    may lead to performance issues. In this case, it is recommended to set this
+    value manually to the known number of available CPU cores.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class USeMultiProcesssing(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["--multiprocessing"]
+    dest: str = "use_multiprocessing"
+    action: Any = argparse.BooleanOptionalAction
+    default: Any = True
+    help: str = """
+    Flag to allow disabling multiprocessing. If set, the processor will run in single-threaded mode.
+    Default is True, meaning multiprocessing is enabled. 
+    (also see option -m/--multiprocessing-num-cores)
     """
 
 
