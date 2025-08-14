@@ -69,6 +69,8 @@ dev = [
     "matplotlib",
     "cartopy",
     "flake8",
+    "pytest",
+    "coverage",
     "Sphinx",
     "sphinx-automodapi",
     "sphinx_rtd_theme",
@@ -76,7 +78,6 @@ dev = [
 ]
 
 ml = ["torch", "xgboost"]
-tests = ["pytest", "coverage"]
 
 
 [project.scripts]

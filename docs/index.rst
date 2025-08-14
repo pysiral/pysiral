@@ -13,39 +13,45 @@ sea ice radar altimetry (pysiral) toolbox.
    The documentation is work in progress.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Getting started
 
-   what_is_pysiral
-   installation
-   configuration
-   glossary
+   what_is_pysiral.rst
+   installation.rst
+   configuration.rst
+   glossary.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Supported Datasets
+
+   radar_altimeter_datasets.rst
+   auxiliary/auxiliary_datasets.rst
 
 .. toctree::
    :maxdepth: 1
-   :caption: Supported Datasets
+   :caption: Functionality
 
-   radar_altimeter_datasets
-   auxiliary_datasets
+   l1preproc.rst
+   l2proc.rst
+   l2preproc.rst
+   l3proc.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Using pysiral
 
-   l1preproc
-   l2proc
-   l2preproc
-   l3proc
-   scripts
+   console_scripts.rst
+   from_python.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Roadmap
 
-   roadmap
+   roadmap.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Contributing to pysiral
 
-   codingconv
+   codingconv.rst
