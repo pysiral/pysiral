@@ -21,17 +21,19 @@ sys.path.insert(0, os.path.abspath('../'))
 
 
 def run_apidoc(_):
-    modules = [os.path.join("..", "pysiral")]
-    for module in modules:
-        cmd_path = 'sphinx-apidoc'
-        if hasattr(sys, 'real_prefix'):  # Check to see if we are in a virtualenv
-            # If we are, assemble the path manually
-            cmd_path = os.path.abspath(os.path.join(sys.prefix, 'bin', 'sphinx-apidoc'))
-        subprocess.check_call([cmd_path, '-e', '-o', ".", module, '--force'])
+    pass
+    # modules = [os.path.join("..", "pysiral")]
+    # for module in modules:
+    #     cmd_path = 'sphinx-apidoc'
+    #     if hasattr(sys, 'real_prefix'):  # Check to see if we are in a virtualenv
+    #         # If we are, assemble the path manually
+    #         cmd_path = os.path.abspath(os.path.join(sys.prefix, 'bin', 'sphinx-apidoc'))
+    #     subprocess.check_call([cmd_path, '-e', '-o', ".", module, '--force'])
 
 
 def setup(app):
-    app.connect('builder-inited', run_apidoc)
+    pass
+    # app.connect('builder-inited', run_apidoc)
 
 
 # -- Project information -----------------------------------------------------
@@ -57,7 +59,6 @@ release = u''
 # ones.
 extensions = [
     'sphinx.ext.todo',
-    'sphinx_automodapi.automodapi',
     'sphinxcontrib.mermaid'
 ]
 
@@ -78,7 +79,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -105,7 +106,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['ystatic']
+html_static_path = ["_static"]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

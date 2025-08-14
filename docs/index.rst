@@ -6,35 +6,46 @@
 Welcome to pysiral's documentation!
 ===================================
 
-This is the main page for the documentation of the python sea ice radar altimetry (pysiral) toolbox. 
+This is the main page for the documentation of the python
+sea ice radar altimetry (pysiral) toolbox.
 
 .. note::
-   This page is work in progress.
+   The documentation is work in progress.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
 
+   what_is_pysiral
    installation
    configuration
-   database
+   glossary
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Supported Datasets
+
+   radar_altimeter_datasets
+   auxiliary_datasets
+
+.. toctree::
+   :maxdepth: 1
    :caption: Using pysiral
 
-   workflow
-   cookbook
+   l1preproc
+   l2proc
+   l2preproc
+   l3proc
+   scripts
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Roadmap
+
+   roadmap
+
+.. toctree::
+   :maxdepth: 1
    :caption: Contributing to pysiral
 
    codingconv
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Module Index
-
-   modules
-

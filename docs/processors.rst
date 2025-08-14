@@ -6,7 +6,8 @@ Level-1 Pre-Processor
 ---------------------
 
 .. mermaid::
-    graph TD;
+
+    graph TD
         CFG("Configuration") --> |"init()"| A["Level-1 PreProcessor"]
         A -->|"process_input_files()"| A1[Clear l1 stack]
         A1 --> B(("Main Loop <br> Source files"))
