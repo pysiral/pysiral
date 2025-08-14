@@ -21,13 +21,16 @@ from pysiral.core.clocks import StopWatch
 from pysiral.core.config import get_yaml_config
 from pysiral.core.helper import (ProgressIndicator, get_first_array_index,
                                  get_last_array_index, rle)
-from pysiral.core.legacy_classes import (AttrDict, DefaultLoggingClass,
-                                         ErrorStatus)
+from pysiral.core.legacy_classes import (AttrDict, DefaultLoggingClass, ErrorStatus)
+from pysiral.core.flags import Hemispheres
 from pysiral.core.output import L1bDataNC
 from pysiral.l1data import L1bMetaData, Level1bData
 from pysiral.l1preproc.procitems import L1PProcItemDef
 
+# TODO: Remove this functionality
 SHOW_DEBUG_MAP = False
+# Translation dictionary for the outdated hemispheric naming convention of the Level-1 Pre-Processor
+L1P_HEMISPHERE_NAMING_DICT = {"nh": "north", "sh": "south", "global": "global"}
 
 
 class Level1PInputHandlerBase(DefaultLoggingClass):
@@ -708,7 +711,7 @@ class L1PreProcBase(DefaultLoggingClass):
         small_cluster_indices = np.where(segments_len < ocean_mininum_size_nrecords)[0]
 
         # Do not mess with the l1 object if not necessary
-        if len(small_cluster_indices == 0):
+        if len(small_cluster_indices) == 0:
             return l1
 
         # Set land flag -> True for small ocean segments
@@ -1111,20 +1114,20 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
     def __init__(self,
                  l1p_settings_id_or_file: Union[str, Path],
-                 tcs: List[int],
-                 tce: List[int],
+                 processing_period: DatePeriod,
                  exclude_month: List[int] = None,
-                 hemisphere: str = "global",
+                 hemisphere: Hemispheres = Hemispheres.GLOBAL,
                  platform: str = None,
                  output_handler_cfg: Union[dict, AttrDict] = None,
-                 source_repo_id: str = None):
+                 source_repo_id: str = None
+                 ):
         """
         The settings for the Level-1 pre-processor job
 
         :param l1p_settings_id_or_file: An id of a proc/l1 processor config file (filename excluding the .yaml
                                         extension) or a full filepath to a yaml config file
-        :param tcs: [int list] Time coverage start (YYYY MM [DD])
-        :param tce: [int list] Time coverage end (YYYY MM [DD]) [int list]
+        :param processing_period: A `dateperiod.DatePeriod` object that defines the time range of the
+                                 Level-1 pre-processing job.
         :param exclude_month: [int list] A list of month that will be ignored
         :param hemisphere: [str] The target hemisphere (`north`, `south`, `global`:default).
         :param platform: [str] The target platform (pysiral id). Required if l1p settings files is valid for
@@ -1141,8 +1144,6 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self.error = ErrorStatus()
 
         # Get pysiral configuration
-        # TODO: Move to global
-        self._cfg = psrlcfg
         self._l1pprocdef = None
 
         # Store command line options
@@ -1155,7 +1156,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         self._set_l1p_processor_def(l1p_settings_id_or_file)
 
         # Get full requested time range
-        self._time_range = DatePeriod(tcs, tce)
+        self._time_range = processing_period
         logger.info(f"Requested time range is {self.time_range.label}")
 
         # Store the data handler options
@@ -1228,11 +1229,11 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             return l1p_settings_id_or_file
 
         # B. Not a file, try to resolve filename via pysiral config
-        filename = self.pysiral_cfg.get_settings_file("proc", "l1", l1p_settings_id_or_file)
+        filename = psrlcfg.get_settings_file("proc", "l1", l1p_settings_id_or_file)
         if filename is None:
             msg = "Invalid Level-1 pre-processor definition filename or id: %s\n" % l1p_settings_id_or_file
             msg = msg + " \nRecognized Level-1 pre-processor definitions ids:\n"
-            ids = self.pysiral_cfg.get_setting_ids("proc", "l1")
+            ids = psrlcfg.get_setting_ids("proc", "l1")
             for output_id in ids:
                 msg = f'{msg}    - {output_id}' + "\n"
             self.error.add_error("invalid-l1p-outputdef", msg)
@@ -1246,7 +1247,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
 
         input_handler_cfg = self.l1pprocdef.input_handler.options
         local_machine_def_tag = input_handler_cfg.local_machine_def_tag
-        primary_input_def = self.pysiral_cfg.local_machine.l1b_repository
+        primary_input_def = psrlcfg.local_machine.l1b_repository
         platform, tag = self.platform, local_machine_def_tag
 
         # Overwrite the tag if specifically supplied
@@ -1336,13 +1337,20 @@ class Level1PreProcJobDef(DefaultLoggingClass):
         return self._hemisphere
 
     @property
-    def target_hemisphere(self) -> str:
-        values = {"north": ["north"], "south": ["south"], "global": ["north", "south"]}
-        return values[self.hemisphere]
+    def target_hemisphere(self) -> List[str]:
+        """
+        Get the list of target hemisphere names for the l1p processor definition.
+        `Global` here refers to both polar regions, with the latitude range defined by the
+        `polar_latitude_threshold` option in the l1p processor definition.
 
-    @property
-    def pysiral_cfg(self) -> AttrDict:
-        return self._cfg
+        :return: List of hemisphere names for the l1p processor definition
+        """
+        values = {"north": ["north"], "south": ["south"], "global": ["north", "south"]}
+        # NOTE: The input hemisphere has been changed to the notation nh|sh|global, while the
+        #       l1p processor definition uses the hemisphere names north, south, global
+        #       Therefore the translation dictionary is used for now until the l1p processor
+        #       refactoring is complete.
+        return values[L1P_HEMISPHERE_NAMING_DICT[self.hemisphere]]
 
     @property
     def l1pprocdef(self) -> AttrDict:

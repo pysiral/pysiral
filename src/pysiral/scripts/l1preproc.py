@@ -105,8 +105,8 @@ class L1PreProcScriptArguments(object):
 
     def get(self, args_list: List[str] = None) -> "argparse.Namespace":
         args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
-        if args.multiprocesssing_num_cores is not None:
-            set_psrl_cpu_count(args.multiprocesssing_num_cores)
+        if args.multiprocessing_num_cores is not None:
+            set_psrl_cpu_count(args.multiprocessing_num_cores)
         return args
 
     @staticmethod

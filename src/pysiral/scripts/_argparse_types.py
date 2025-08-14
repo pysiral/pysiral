@@ -137,13 +137,13 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
 
 def proc_period_type(arg_string: str) -> DatePeriod:
     """
-    Convert a string to a DatePeriod object.
+    Checks that a string is a valid date period start/end definitions [YYYY-MM-DD or YYYY-MM].
 
-    :param arg_string: Input argument in the format "YYYY-MM-DD to YYYY-MM-DD"
+    :param arg_string: Input argument in the format "YYYY-MM[-DD]"
 
-    :raises argparse.ArgumentTypeError: if the input is not a valid date period
+    :raises argparse.ArgumentTypeError: if the input is not a valid period definition
 
-    :return: DatePeriod object
+    :return: string object
     """
     # Note: Number of arguments should already be handled by `required_length` action in the parser.
     #       This we can safely split at whitespace and expect two or one date arguments.

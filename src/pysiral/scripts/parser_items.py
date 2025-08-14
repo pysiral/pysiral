@@ -16,7 +16,7 @@ from pysiral.core.flags import Hemispheres, BasicProcessingLevels
 from pysiral.scripts._argparse_types import (
     file_type, pysiral_procdef_type, proc_period_type, positive_int_type
 )
-from pysiral.scripts._argparse_actions import required_length
+from pysiral.scripts._argparse_actions import period_conversion
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -68,8 +68,7 @@ class PlatformID(ArgparseArgumentsArgs):
 class ProcessingPeriod(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["processing_period"]
     nargs: str = "+"
-    type: Callable = proc_period_type
-    action: Callable = required_length(1, 2)
+    action: Callable = period_conversion()
     # metavar: str = "YYYY-MM[-DD] [YYYY-MM[-DD]]"
     help: str = """
     Period definition for processing, given as a string in the format "YYYY-MM[-DD] [YYYY-MM[-DD]]".
