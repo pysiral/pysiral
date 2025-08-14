@@ -1,3 +1,5 @@
+.. _Auxiliary_Datasets:
+
 Auxiliary Datasets
 ==================
 

@@ -4,10 +4,18 @@ Glossary
 .. glossary::
 
     Auxiliary Data
-        Any data set that is input to the geophysical retrieval or gridding that is not radar
-        altimeter sensor data (see :term:`Source Data`). Auxiliary data sets can be dynamic
-        (e.g. daily) or static fields. Examples are sea ice concentration or type products,
-        land/ocean or regions masks, data on snow on sea ice or mean sea surface products.
+        Any data that is input to the geophysical retrieval or gridding that is not radar altimeter sensor data 
+        (see :term:`Source Data`).  Auxiliary data sets can be dynamic  (e.g. daily) or static fields. 
+        The data may be stored in external files or computed form a parametrization. 
+        Examples are sea ice concentration or type products,  land/ocean or regions masks, 
+        data on snow on sea ice or mean sea surface products. The overview of 
+        supported auxiliary data sets is available in the :ref:`Auxiliary_Datasets` section.
+
+    C3S
+        Copernicus Climate Change Service. A program that produces long-term climate and interim data records
+
+    CCI
+        ESA Climate Change Initiative. A program that produces long-term climate data records
 
     Level-1 Pre-Processor
         Dedicated processing step in pysiral that ingests source data and creates

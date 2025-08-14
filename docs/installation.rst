@@ -20,7 +20,7 @@ The support for python versions depends on pysiral versions.
 Requirements
 ------------
 
-- Python (recommended: 3.10 or later for latest version)
+- Python (recommended: 3.10 or later for pysiral version >= 0.13)
 - C-compiler (required for compiling cython code)
 - git version control
 
@@ -28,8 +28,8 @@ Requirements
 Installation from github
 ------------------------
 
-pysiral is intended to be installed with python 3.10 or later directly
-from github:
+pysiral is intended to be installed with python 3.10<=3.13since pysiral version >= 0.13. 
+The installation can be done directly from github:
 
 .. code-block:: shell
 
@@ -73,11 +73,18 @@ For a full documentation of the syntax see the `pip documentation <pip_install_l
 Optional Dependencies
 ---------------------
 
+.. note::
+    Introduced in pysiral version 0.13.
+
 pysiral has some optional dependencies that are not installed by default. 
 There are two categories of optional
 
 - ``dev``: python packages used for development, e.g. testing, linting, debugging and building of the documentation. 
 - ``ml``: python packages used for using machine learning models (e.g. `pytorch` and `xgboost`).
+
+.. note:: 
+    The `ml` extra is only required for using TFMRA retracker threshold models
+    for ERS-1/2 and Envisat for the :term:`CCI` and :term:`C3S` products
 
 The optional dependencies can be installed by adding the corresponding extras when installing pysiral.
 In the examples from above, installing all optional dependencies would look like this:
@@ -100,7 +107,7 @@ Local Code
 
 For development purpose it may be useful to install pysiral in editable mode. 
 This step requires a manual compilation of Cython code (line 4) and is recommended to install
-pysiral with all optional dependencies (line 3) and also running the test suite (line 5)
+pysiral with all optional dependencies (line 3, pysiral version >= 0.13) and also running the test suite (line 5)
 
 .. code-block:: shell
    :linenos:
