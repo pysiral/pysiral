@@ -14,7 +14,7 @@ from dataclasses import dataclass, asdict, field
 from pysiral import psrlcfg
 from pysiral.core.flags import Hemispheres, BasicProcessingLevels
 from pysiral.scripts._argparse_types import (
-    file_type, pysiral_procdef_type, proc_period_type, positive_int_type
+    file_type, pysiral_procdef_type, positive_int_type
 )
 from pysiral.scripts._argparse_actions import period_conversion
 
