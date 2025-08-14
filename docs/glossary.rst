@@ -106,6 +106,10 @@ Glossary
         the data production (Examples: ``cci`` for sea ice thickness climate data records
         of the ESA Climate Change Initiative).
 
+    Sea Ice Concentration
+        The fraction of sea ice in a given area. It is usually expressed as a percentage
+        (0-100%) or as a fraction (0-1).
+
     Sensor
         The name of the radar altimeter sensor. In pysiral, each sensor is referenced by a unique
         platform identifier, which is by default the lower case name e.g. ``siral`` for ``cryosat2`` or
