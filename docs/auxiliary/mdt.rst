@@ -1,2 +1,2 @@
-Mean Dynamic Topography
-=======================
+Mean Dynamic Topography (mdt)
+=============================

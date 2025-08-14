@@ -1,2 +1,2 @@
-Snow on Sea Ice
-===============
+Snow on Sea Ice (snow)
+======================

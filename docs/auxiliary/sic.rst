@@ -1,5 +1,5 @@
-Sea Ice Concentration
-=====================
+Sea Ice Concentration (sic)
+===========================
 
 Several :term:`Sea Ice Concentration` products are available in pysiral
 for ingestion in the :term:`Level-2 Processor`.
@@ -29,7 +29,7 @@ suitable for near real-time applications.
 Configuration Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The auxiliary dataset id is ``sic:osi-401`` (for pysiral versions >= 0.12) and the configuration 
+The :term:`Auxiliary Dataset ID` is ``sic:osi-401`` since pysiral version 0.12 and the configuration 
 in the auxiliary data definition of the Level-2 processor definition file is:
 
 .. code-block:: yaml

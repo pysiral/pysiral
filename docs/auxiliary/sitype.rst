@@ -1,2 +1,2 @@
-Sea Ice Type / Classification
-=============================
+Sea Ice Type / Classification (sitype)
+======================================

@@ -26,7 +26,7 @@ and the usage in a Level-2 processor configuration file.
 +----------------------------------------+--------------------------------------------------------+
 | ``local_machine_def.yaml`` (optional)  | ``root.auxdata_repository.<category>.<dataset_id>``    |
 +----------------------------------------+--------------------------------------------------------+
-| Level-2 processor definition           | ``root.auxdata.<category>.<dataset_id>``               |
+| Level-2 processor definition file      | ``root.auxdata.<category>.<dataset_id>``               |
 +----------------------------------------+--------------------------------------------------------+
 
 .. note:: 

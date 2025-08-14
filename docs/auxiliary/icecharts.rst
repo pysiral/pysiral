@@ -1,2 +1,2 @@
-Sea Ice Charts (Concentration & Stage of Development)
-=====================================================
+Sea Ice Charts (icechart)
+=========================

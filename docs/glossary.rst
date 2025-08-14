@@ -11,6 +11,11 @@ Glossary
         data on snow on sea ice or mean sea surface products. The overview of 
         supported auxiliary data sets is available in the :ref:`Auxiliary_Datasets` section.
 
+    Auxiliary Dataset ID
+        A unique identifier for an auxiliary dataset in the form of ``<category>:<dataset_id>``
+        required for specifying and referencing auxiliary datasets in pysiral processors. 
+        (See :ref:`Auxiliary_Datasets`)
+
     C3S
         Copernicus Climate Change Service. A program that produces long-term climate and interim data records
 
