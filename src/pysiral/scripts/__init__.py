@@ -9,6 +9,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 import sys
 from typing import List
 
+import pysiral._logger
 # from pysiral.scripts.info import info, InfoScriptArguments
 from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
 # from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
