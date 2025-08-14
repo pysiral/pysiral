@@ -278,56 +278,16 @@ sic:
             - year
             - month
 
-    # NOTE:
-    # OSI-438 is the AMSR2 continuation of the SSMIS-based interim climate data record (OSI-430),
-    # after the SSMIS data was discontinued in 2025.
-    osi-438:
-        pyclass: OsiSafSIC
-        long_name: OSI-SAF Global Sea Ice Concentration continuous reprocessing offline product (OSI-430)
-        filenaming: "ice_conc_{hemisphere_code}_polstere-100_cont-reproc_{year}{month}{day}1200.nc"
-        local_repository: osisaf430
-        options:
-            is_cdr_icdr: False
-            north: &osi_ease2_grid_nh
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: 90.0
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-            south:  &osi_ease2_grid_sh
-                projection:
-                    proj: laea
-                    lon_0: 0.0
-                    lat_0: -90
-                dimension:
-                    n_cols: 432
-                    n_lines: 432
-                    dx: 25000
-                    dy: 25000
-        subfolders:
-            - year
-            - month
-        source:
-            transfer: ftp
-            server: osisaf.met.no
-            pwdfile: null
-            type: daily
-            link: null
-
 
     # This SIC data product definition is a customization that automatically merges the
-    # OSI-SAF 409 and OSI-SAF 430 products. This functionality is a unique feature
+    # OSI-SAF 430 and OSI-SAF 450 products. This functionality is a unique feature
     # of the OsiSafSIC class and is not generally available for auxdata products
     # Note: The current implementation supports only two products
-    osisafcdr:
+    osi-cdr:
 
         pyclass: OsiSafSIC
         long_name: "OSI-SAF Sea Ice Concentration {record_type_prefix} Climate Data Record - {version}"
-        local_repository: osisaf-cdr-icdr
+        local_repository: osisaf-cdr
         filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
         options:
 
@@ -336,9 +296,26 @@ sic:
 
             global:
                 variable_name: ice_conc
-                north: *osi_ease2_grid_nh
-                south: *osi_ease2_grid_sh
-
+                north: &osi_ease2_grid_nh
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: 90.0
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
+                south:  &osi_ease2_grid_sh
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: -90
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
             # Specific parameters for v1p0
             v1p0:
                 uncertainty_variable_name: total_standard_error
@@ -357,7 +334,39 @@ sic:
         subfolders:
             - year
             - month
-            -
+
+
+    # This SIC data product definition is a customization that automatically merges the
+    # OSI-SAF 438 and OSI-SAF 458 products. This functionality is a unique feature
+    # of the OsiSafSIC class and is not generally available for auxdata products
+    # Note: The current implementation supports only two products
+    osi-cdr-amsr2:
+
+        pyclass: OsiSafSIC
+        long_name: "OSI-SAF Sea Ice Concentration {record_type_prefix} Climate Data Record (AMSR2) - {version}"
+        local_repository: osi-cdr-amsr2
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}-amsr_{year}{month}{day}1200.nc"
+
+        options:
+
+            # Parameters for all files independent (can be overwritten by version tags)
+            is_cdr_icdr: True
+
+            global:
+                variable_name: ice_conc
+                north: *osi_ease2_grid_nh
+                south: *osi_ease2_grid_sh
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2025-05-15T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+
     # Unified entry for C3S cdr/icdr data of different versions
     c3s:
 
