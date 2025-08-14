@@ -135,37 +135,6 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
     return procdef_type_func
 
 
-def proc_period_type(arg_string: str) -> DatePeriod:
-    """
-    Checks that a string is a valid date period start/end definitions [YYYY-MM-DD or YYYY-MM].
-
-    :param arg_string: Input argument in the format "YYYY-MM[-DD]"
-
-    :raises argparse.ArgumentTypeError: if the input is not a valid period definition
-
-    :return: string object
-    """
-    # Note: Number of arguments should already be handled by `required_length` action in the parser.
-    #       This we can safely split at whitespace and expect two or one date arguments.
-    args = arg_string.split()
-
-    # If only one date is provided, use it as both start and stop date.
-    if len(args) == 1:
-        args.append(args[0])
-
-    def parse_date(date_str: str) -> List[int]:
-        try:
-            return [int(part) for part in date_str.split("-")]
-        except ValueError:
-            raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD.")
-
-    date_parts = [parse_date(date_str) for date_str in args]
-    try:
-        return DatePeriod(*date_parts)
-    except ValueError as e:
-        raise argparse.ArgumentTypeError(f"Invalid date period format: {arg_string}. Error: {e}")
-
-
 def positive_int_type(value: str) -> int:
     """
     Convert a string to a positive integer.
