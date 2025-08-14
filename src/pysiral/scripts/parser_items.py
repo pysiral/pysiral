@@ -135,7 +135,7 @@ class L1PFile(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_file"]
     type: Callable = file_type(suffix=".nc")
     help: str = """
-    Path to Level-1P (l1p) input file for the Level-2 processor.
+    Path to Level-1 Pre-Processed (l1p) input file for the Level-2 processor.
     """
 
 
@@ -145,8 +145,8 @@ class L1PSettings(ArgparseArgumentsArgs):
     type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL1)
     metavar: str = "<id|filepath>"
     help: str = """
-    Identifier or full the full file path to the Level-1P processor definition file.
-    This file contains the settings for the Level-1P processor. The default location
+    Identifier or full the full file path to the Level-1 Pre-Processor definition file.
+    This file contains the settings for the l1p processor. The default location
     for these files is `{pysiral-cfg-location}/proc/l1/`. The identifier is the filename without 
     the `.yaml` extension. E.g.`cryosat2_pds_ipf1e_v1p2` will be resolved to
     `{pysiral-cfg-location}/proc/l1/cryosat2_pds_ipf1e_v1p2.yaml`.

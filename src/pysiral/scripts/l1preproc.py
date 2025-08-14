@@ -143,11 +143,14 @@ class L1PreProcScriptArguments(object):
         parser = argparse.ArgumentParser(
             prog="pysiral l1preproc",
             description="""
-            This script is used to generate Level-1 files (l1p) from individual source files.
-            the Level-1 pre-processor is a tool that harmonizes the input data from various sources
-            and prepares it for further processing in the Level-2 processor. Processing steps include:
-            Generating continuous trajectories over the polar oceans, pre-computing of waveform shape
-            parameters and harmonization of the data format. 
+            The Level-1 Pre-Processor (l1preproc) is used to generate Level-1 files (l1p) from 
+            individual source radar altimeter files for a given period. Processing steps include the 
+            harmonization of data formats from various radar altimeter missions, the generation of 
+            continuous trajectories over the polar oceans, ingesting auxiliary data and the pre-computation 
+            of waveform shape parameters. Basis for the Level-1 Pre-Processor is a Level-1 Processor 
+            Definition file that defines the the radar altimeter input and processing parameters.
+            The output is a set of Level-1 files (l1p) that contain the  harmonized data from the 
+            source files, which can be used for further processing in the Level-2 processor (l2proc).
             """,
             epilog="For more information, see: https://pysiral.readthedocs.io",
             formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501
