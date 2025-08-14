@@ -451,19 +451,23 @@ class cTFMRA(BaseRetracker):
         return first_maximum_index
 
     @staticmethod
-    def get_threshold_range(rng: np.ndarray,
-                            wfm: np.ndarray,
-                            first_maximum_index: int,
-                            threshold: float,
-                            first_valid_idx: int = 0) -> Tuple[float, float, int]:
+    def get_threshold_range(
+            rng: np.ndarray,
+            wfm: np.ndarray,
+            first_maximum_index: int,
+            threshold: float,
+            first_valid_idx: int = 0
+    ) -> Tuple[float, float, int]:
         """
         Return the range value and the power of the retrack point at
         a given threshold of the firsts maximum power
+
         :param rng: (np.array, dim=(n_range_bins) Window delay in meters
         :param wfm: (np.array, dim=(n_range_bins) Waveform power in normalized units
         :param first_maximum_index: (int) Index of first maximum
         :param threshold: (float) Power threshold
         :param first_valid_idx: (int) First valid index for first maximum / leading edge
+
         :return: tfmra range (float), tfmra power (float)
         """
 
