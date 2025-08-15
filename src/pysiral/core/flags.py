@@ -64,6 +64,21 @@ class Hemispheres(StrEnum):
         return [entry.value for entry in cls]
 
 
+class DataRecordType(StrEnum):
+    """
+    Enum for processing levels with a corresponding pysiral processor
+    """
+    CLIMATE_DATA_RECORD = "cdr"
+    INTERIM_CLIMATE_DATA_RECORD = "icdr"
+    NON_TIME_CRITICAL = "ntc"
+    NEAR_REAL_TIME = "nrt"
+    REPROCESSED = "rep"
+
+    @classmethod
+    def get_choices(cls) -> List[str]:
+        return [entry.value for entry in cls]
+
+
 class BasicProcessingLevels(StrEnum):
     """
     Enum for processing levels with a corresponding pysiral processor
@@ -84,6 +99,19 @@ class ProcessingLevels(str, Enum):
     LEVEL2_PREPROCESSED = "l2p"
     LEVEL3_COLLATED = "l3c"
     LEVEL3_SUPERCOLLATED = "l3s"
+
+
+class DurationType(StrEnum):
+    """
+    Enum for duration names for dateperiod.DatePeriod objects.
+    """
+    P1D = "daily"
+    P7D = "isoweekly"
+    P1M = "monthly"
+
+    @classmethod
+    def get_choices(cls) -> List[str]:
+        return [entry.value for entry in cls]
 
 
 class RadarModes(object):

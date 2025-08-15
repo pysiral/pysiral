@@ -4,64 +4,95 @@
 
 import argparse
 import sys
-import time
-from datetime import timedelta
+
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg
+from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L2iDataHandler
-from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
+from pysiral.core.flags import DurationType, ProcessingLevels, DataRecordType
 from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
                             Level3Processor, Level3ProductDefinition)
+from pysiral.scripts.parser_items import (
+    L2iDirectory, L3Settings, L3Grid, L3Output, L3Directory, ExcludeMonths,
+    ProcessingPeriod, DOI, Duration, DataRecord, ProcessingLevel
+)
 
 
-def l3proc():
+def l3proc(
+        processing_period: DatePeriod = None,
+        l2i_product_directories: List[Path] = None,
+        l3_product_directory: Union[str, Path] = None,
+        l3_settings_file: Union[str, Path] = None,
+        l3_grid_settings: Union[str, Path] = None,
+        l3_output_definitions: List[Union[str, Path]] = None,
+        duration: DurationType = DurationType.P1M,
+        doi: str = None,
+        processing_level: ProcessingLevels = ProcessingLevels.LEVEL3_COLLATED,
+        data_record_type: DataRecordType = None,
+        **kwargs: dict
+
+) -> None:
+    """
+
+    :param processing_period:
+    :param l2i_product_directories:
+    :param l3_product_directory:
+    :param l3_settings_file:
+    :param l3_grid_settings:
+    :param l3_output_definitions:
+    :param duration:
+    :param doi:
+    :param processing_level:
+    :param data_record_type:
+    :return:
+    """
 
     # --- Get the period segments for the Level-3 processor ---
     # NOTE: These depend on the chosen total time range and the duration period for the grid.
-    period = DatePeriod(args.start, args.stop)
-    if args.period == "custom":
-        period_segments = [period]
+    if duration == "custom":
+        period_segments = [processing_period]
         n_periods = 1
     else:
-        period_segments = period.get_segments(args.period)
+        period_segments = processing_period.get_segments(duration)
         n_periods = period_segments.n_periods
 
     # Get the output grid
-    grid = Level3GridDefinition(args.l3_griddef)
+    grid = Level3GridDefinition(l3_grid_settings)
 
     # Initialize the interface to the l2i products
-    l2i_handler = L2iDataHandler(args.l2i_product_directories, search_str="l2")
+    l2i_handler = L2iDataHandler(l2i_product_directories, search_str="l2")
 
     # Initialize the output handler
     # Currently,  overwrite protection is disabled per default
     output = []
-    for l3_output_file in args.l3_output_file:
-        output_handler = Level3OutputHandler(output_def=l3_output_file,
-                                             base_directory=args.l3_product_basedir,
-                                             period=args.period,
-                                             doi=args.doi,
-                                             data_record_type=args.data_record_type,
-                                             overwrite_protection=False)
+    for l3_output_file in l3_output_definitions:
+        output_handler = Level3OutputHandler(
+            output_def=l3_output_file,
+            base_directory=l3_product_directory,
+            period=duration,
+            doi=doi,
+            data_record_type=processing_level,
+            overwrite_protection=False
+        )
         output.append(output_handler)
 
     # Compile the product def
-    product_def = Level3ProductDefinition(args.l3_settings_file, grid, output, period)
+    product_def = Level3ProductDefinition(l3_settings_file, grid, output, processing_period)
 
     # Initialize the Processor
-    l3proc = Level3Processor(product_def)
+    l3_processor = Level3Processor(product_def)
 
     # Loop over all iterations
     for i, time_range in enumerate(period_segments):
 
         # Report processing period
         msg = "# Processing %s period (%g of %g): %s"
-        msg %= (args.period, i+1, n_periods, time_range.date_label)
+        msg %= (processing_period, i+1, n_periods, time_range.date_label)
         logger.info(msg)
 
         # Retrieve files
@@ -72,19 +103,78 @@ def l3proc():
             continue
 
         # Start the Level-3 processing
-        l3proc.process_l2i_files(l2i_files, time_range)
-
-    # Final reporting
-    t1 = time.process_time()
-    seconds = int(t1 - t0)
-    logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
+        l3_processor.process_l2i_files(l2i_files, time_range)
 
 
-class Level3ProcArgParser(DefaultLoggingClass):
+class L3ProcScriptArguments(object):
+
+    def __init__(self):
+        self.parser = self.get_argument_parser()
+
+    def get(self, args_list: List[str] = None) -> "argparse.Namespace":
+        args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
+        if args.multiprocessing_num_cores is not None:
+            set_psrl_cpu_count(args.multiprocessing_num_cores)
+        return args
+
+    @staticmethod
+    def get_argument_parser() -> argparse.ArgumentParser:
+        """
+            Set up the command line argument parser for the Level-2 Processor.
+
+            :return: The argument parser object.
+            """
+
+        # List of command line option required for the Level-1 pre-processor
+        arg_item_list = [
+            # Positional arguments
+            L3Settings(),
+            L2iDirectory(required=True),
+            ProcessingPeriod(),
+            # Mandatory arguments
+            L3Output(required=True),
+            L3Grid(required=True),
+            # Optional arguments
+            L3Directory(),
+            Duration(),
+            DataRecord(),
+            ProcessingLevel(
+                choices=[ProcessingLevels.LEVEL3_COLLATED, ProcessingLevels.LEVEL3_SUPERCOLLATED],
+                default=ProcessingLevels.LEVEL3_COLLATED
+            ),
+            ExcludeMonths(),
+            DOI(),
+        ]
+
+        # create the parser
+        parser = argparse.ArgumentParser(
+            prog="pysiral l2proc",
+            description="""
+                    The Level-2 Processor (l2proc) generates Level-2 files (l2/l2i) from l1p input files.
+                    Level-2 files contain geophysical information and auxiliary data along the 
+                    orbit at full sensor resolution. The processor uses a Level-2 product definition
+                    file to define the product metadata, the list of auxiliary data files and the
+                    algorithm steps to be applied to the Level-1P data. The output can be written
+                    into multiple files.
+                    Input Level-1 files are automatically selected based on the the source dataset ID 
+                    and l1p version. (see also: `pysiral l2procfiles --help` for running the 
+                    Level-2 processor on individual l1p files).
+                    """,
+            epilog="For more information, see: https://pysiral.readthedocs.io",
+            formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501
+        )
+        for arg_item in arg_item_list:
+            arg_flags, args_dict = arg_item.get()
+            parser.add_argument(*arg_flags, **args_dict)
+
+        return parser
+
+
+class Level3ProcArgParser(object):
 
     def __init__(self):
         super(Level3ProcArgParser, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus()
+
         self._args = None
 
     def parse_command_line_arguments(self):
@@ -92,7 +182,7 @@ class Level3ProcArgParser(DefaultLoggingClass):
         # (first validation of required options and data types)
         self._args = self.parser.parse_args()
 
-        # Add addtional check to make sure either `l1b-files` or
+        # Add additional check to make sure either `l1b-files` or
         # `start ` and `stop` are set
 
     #        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
@@ -105,22 +195,6 @@ class Level3ProcArgParser(DefaultLoggingClass):
     #        if not l1b_file_preset_is_set and not start_and_stop_is_set:
     #            self.parser.error("either -start & -stop or -l1b-files required")
 
-    def critical_prompt_confirmation(self):
-
-        # Any confirmation prompts can be overriden by --no-critical-prompt
-        no_prompt = self._args.no_critical_prompt
-
-        # if --remove_old is set, all previous l1bdata files will be
-        # erased for all month
-        if self._args.remove_old and not no_prompt:
-            message = "You have selected to remove all previous " + \
-                      "l3 files for the requested period\n" + \
-                      "(Note: use --no-critical-prompt to skip confirmation)\n" + \
-                      "Enter \"YES\" to confirm and continue: "
-            result = input(message)
-
-            if result != "YES":
-                sys.exit(1)
 
     @property
     def parser(self):
@@ -156,132 +230,3 @@ class Level3ProcArgParser(DefaultLoggingClass):
             parser.add_argument(argname, **argparse_dict)
 
         return parser
-
-    @property
-    def arg_dict(self):
-        """ Return the arguments as dictionary """
-        return self._args.__dict__
-
-    @property
-    def start(self):
-        return self._args.start_date
-
-    @property
-    def stop(self):
-        return self._args.stop_date
-
-    @property
-    def period(self):
-        return self._args.period
-
-    @property
-    def doi(self):
-        return self._args.doi
-
-    @property
-    def data_record_type(self):
-        return self._args.data_record_type
-
-    @property
-    def l2i_product_directories(self) -> List[Path]:
-        return [Path(base_dir) for base_dir in self._args.l2i_basedir]
-
-    @property
-    def l3_settings_file(self):
-        l3_settings = self._args.l3_settings
-        filename = psrlcfg.get_settings_file("proc", "l3", l3_settings)
-        if filename is not None:
-            return filename
-        msg = "Invalid l3 settings filename or id: %s\n" % l3_settings
-        msg = msg + " \nRecognized Level-3 processor setting ids:\n"
-        for l3_settings_id in psrlcfg.get_setting_ids("proc", "l3"):
-            msg = f"{msg}  {l3_settings_id}" + "\n"
-        self.error.add_error("invalid-l3-settings", msg)
-        self.error.raise_on_error()
-
-    @property
-    def l3_griddef(self):
-        l3_griddef = self._args.l3_griddef
-        filename = psrlcfg.get_settings_file("grid", None, l3_griddef)
-        if filename is not None:
-            return filename
-        msg = "Invalid griddef filename or id: %s\n" % l3_griddef
-        msg = msg + "    Recognized grid definition ids:\n"
-        for griddef_id in psrlcfg.get_setting_ids("grid"):
-            msg = f"{msg}    - {griddef_id}" + "\n"
-        self.error.add_error("invalid-griddef", msg)
-        self.error.raise_on_error()
-
-    @property
-    def l3_output_file(self):
-        """
-        Get the full output definition file path. Multiple output filenames are possible if
-        the command line argument is semicolon-separated list.
-        :return: A list of output definition filenames
-        """
-
-        filenames = []
-        for l3_output in self._args.l3_output.split(";"):
-            filename = psrlcfg.get_settings_file("output", "l3", l3_output)
-            if filename is None:
-                msg = "Invalid output definition filename or id: %s\n" % l3_output
-                msg = msg + "    Recognized output definition ids:\n"
-                for output_id in psrlcfg.get_setting_ids("output", "l3"):
-                    msg = f"{msg}    - {output_id}" + "\n"
-                self.error.add_error("invalid-outputdef", msg)
-            else:
-                filenames.append(filename)
-
-        if not filenames:
-            msg = "No valid output definition file found for argument: %s"
-            msg %= (str(self._args.l3_output))
-            self.error.add_error("invalid-outputdef", msg)
-            self.error.raise_on_error()
-
-        return filenames
-
-    @property
-    def l3_product_basedir(self) -> Path:
-        """
-        Returns the base directory for the L3 output. There are several cases depending on
-        whether multiple l2i product dirs are specified and most importantly if the L3 output
-        directory has been specified (`--l3-product-dir`)
-
-        L3C (single L2 data source):
-
-        - L3C target dir: ../l2i/../l3c
-
-        L3S (multiple L2 data sources):
-
-        - Multiple l2i dirs, no dedicated l3 target dir -> ../l2i/../l3s of first l2i directory [Warning displayed]
-        - dedicated l3 target dir -> used if speficied
-
-        :return:
-        """
-
-        # The specification of `--l3-product-dir` trumps all other conditions
-        if self._args.l3_product_dir:
-            output_dir = Path(self._args.l3_product_dir)
-            if not output_dir.is_dir():
-                output_dir.mkdir(parents=True, exist_ok=True)
-            return output_dir
-
-        # 1. Clean up the path
-        if not self.l2i_product_directories[0].resolve().is_dir():
-            raise IOError(f"Not a valid l2i product directory: {self.l2i_product_directories[0]}")
-        product_basedir = self.l2i_product_directories[0]
-        dirs = product_basedir.parts
-        l3_product_basedir = Path(*dirs[:-1]) if dirs[-1] in ["l2i", "l2"] else product_basedir
-        if len(self.l2i_product_directories) > 1:
-            logger.warning(
-                f"Multiple l2i directories, but no dedicated l3 product directory. Defaulting to {l3_product_basedir}"
-            )
-        return l3_product_basedir
-
-    @property
-    def remove_old(self):
-        return self._args.remove_old and not self._args.overwrite_protection
-
-
-if __name__ == "__main__":
-    pysiral_l3proc()

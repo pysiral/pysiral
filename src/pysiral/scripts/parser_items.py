@@ -12,7 +12,10 @@ from dataclasses import dataclass, asdict, field
 
 
 from pysiral import psrlcfg
-from pysiral.core.flags import Hemispheres, BasicProcessingLevels, ProcessingLevels
+from pysiral.core.flags import (
+    Hemispheres, BasicProcessingLevels, ProcessingLevels,
+    DurationType
+)
 from pysiral.scripts._argparse_types import (
     file_type, pysiral_procdef_type, pysiral_outdef_type,
     positive_int_type, dir_type, doi_type
@@ -93,6 +96,22 @@ class Hemisphere(ArgparseArgumentsArgs):
 
 
 @dataclass(frozen=True, kw_only=True)
+class Duration(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-d", "--duration"]
+    action: str = "store"
+    dest: str = "duration"
+    metavar: str = DurationType
+    choices: List[Any] = field(default_factory=lambda: DurationType.get_choices())
+    type: Callable = str
+    help: str = """
+    Duration type for splitting the processing period into segments. 
+    Options are 'daily', 'isoweekly', or 'monthly' and will be passed
+    `dateperiod.Dateperiod().get_segments()`. If left empty, the 
+    duration type will be inferred from the processing period definition.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
 class ExcludeMonths(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-E", "--exclude-months"]
     action: str = "store"
@@ -168,6 +187,20 @@ class L2Settings(ArgparseArgumentsArgs):
 
 
 @dataclass(frozen=True, kw_only=True)
+class L3Settings(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l3_settings"]
+    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL3)
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or file path to the Level-3 Processor definition file.
+    This file contains the settings for the Level-2 processor. The default location
+    for these files is `{pysiral-cfg-location}/proc/l3/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`l3c_cci_v4p0` will be resolved to
+    `{pysiral-cfg-location}/proc/l3/cci/l3c_cci_v4p0.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
 class L2Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
     nargs: str = "+"
@@ -188,11 +221,26 @@ class L2POutputs(ArgparseArgumentsArgs):
     type: Callable = pysiral_outdef_type(level=ProcessingLevels.LEVEL2_PREPROCESSED)
     metavar: str = "<id|filepath>"
     help: str = """
-    Identifier or file path of one ore several Level-2 output definition files.
+    Identifier or file path of one Level-2 output definition file.
     Each file contains the output definition for the l2/l2i dataformat. The default location
     for these files is `{pysiral-cfg-location}/output/l2/`. The identifier is the filename without 
     the `.yaml` extension. E.g.`l2i_cci_v4p0` will be resolved to
     `{pysiral-cfg-location}/output/l2i/cci/l2i_cci_v4p0.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L3Outputs(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-o", "--l3-output"]
+    nargs: str = "+"
+    type: Callable = pysiral_outdef_type(level=BasicProcessingLevels.LEVEL3)
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or file path of one or several Level-3 output definition files.
+    Each file contains the output definition for the l3 dataformat. The default location
+    for these files is `{pysiral-cfg-location}/output/l3/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`l3c_cci_v4p0` will be resolved to
+    `{pysiral-cfg-location}/output/l3/cci/l3c_cci_v4p0.yaml`.
     """
 
 
@@ -259,6 +307,20 @@ class L2iDirectory(ArgparseArgumentsArgs):
     help: str = """
     Target Level-2i (l2i) product directory where the Level-2 output files will be written.
     The l2i files need to be organized in `yyyy/mm/` subdirectory structure. 
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L3Directory(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l3_product_dir"]
+    nargs: str = "+"
+    type: Callable = dir_type(
+        must_exist=False,
+        ends_with=[ProcessingLevels.LEVEL3_COLLATED, ProcessingLevels.LEVEL3_SUPERCOLLATED]
+    )
+    metavar: str = "<l3 filepath>"
+    help: str = """
+    Target Level-3 product directory where the Level-3 output files will be written.
     """
 
 

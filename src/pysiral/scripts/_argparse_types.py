@@ -15,7 +15,7 @@ from pysiral import psrlcfg
 from pysiral.core.flags import BasicProcessingLevels, ProcessingLevels
 
 
-def dir_type(ends_with: Union[str, List[str]] = None) -> Callable:
+def dir_type(ends_with: Union[str, List[str]] = None, must_exist: bool = True) -> Callable:
     """
     Factory function that provides additional option to the argparse directory type validation.
 
@@ -26,18 +26,26 @@ def dir_type(ends_with: Union[str, List[str]] = None) -> Callable:
 
     def dir_type_func(value: str) -> Path:
 
-        # First Check: Directory must exist
-        if Path(value).is_dir():
-            value = Path(value).absolute()
-        else:
-            raise argparse.ArgumentTypeError(f"Not a directory: {value}")
-
         if ends_with is not None:
             # Optional check: Directory path needs to end with certain directory name
             if isinstance(ends_with, str):
                 ends_with = [ends_with]
             if not any(value.name.endswith(suffix) for suffix in ends_with):
                 raise argparse.ArgumentTypeError(f"{value} must end with: {', '.join(ends_with)}")
+
+        # First Check: Directory must exist
+        if Path(value).is_dir():
+            value = Path(value).absolute()
+        else:
+            if must_exist:
+                raise argparse.ArgumentTypeError(f"Not a directory: {value}")
+            else:
+                try:
+                    value = Path(value).absolute()
+                    # If the directory does not exist, we create it
+                    value.mkdir(parents=True, exist_ok=True)
+                except IOError:
+                    raise argparse.ArgumentTypeError(f"Cannot create directory: {value}")
 
         return value
 

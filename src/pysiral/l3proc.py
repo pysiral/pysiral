@@ -847,9 +847,15 @@ class Level3OutputHandler(OutputHandlerBase):
     subfolder_tags = ["year"]
     applicable_data_level = 3
 
-    def __init__(self, output_def="default", base_directory="l3proc_default",
-                 overwrite_protection=True, period="default", doi=None,
-                 data_record_type="none"):
+    def __init__(
+            self,
+            output_def="default",
+            base_directory="l3proc_default",
+            overwrite_protection=True,
+            period="default",
+            doi=None,
+            data_record_type="none"
+    ):
 
         if output_def == "default":
             output_def = self.default_output_def_filename
