@@ -14,7 +14,8 @@ from dataclasses import dataclass, asdict, field
 from pysiral import psrlcfg
 from pysiral.core.flags import Hemispheres, BasicProcessingLevels
 from pysiral.scripts._argparse_types import (
-    file_type, pysiral_procdef_type, positive_int_type
+    file_type, pysiral_procdef_type, pysiral_outdef_type,
+    positive_int_type
 )
 from pysiral.scripts._argparse_actions import period_conversion
 
@@ -144,11 +145,40 @@ class L1PSettings(ArgparseArgumentsArgs):
     type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL1)
     metavar: str = "<id|filepath>"
     help: str = """
-    Identifier or full the full file path to the Level-1 Pre-Processor definition file.
-    This file contains the settings for the l1p processor. The default location
+    Identifier or file path to the Level-1 Pre-Processor definition file.
+    This file contains the settings for the Level-1 processor. The default location
     for these files is `{pysiral-cfg-location}/proc/l1/`. The identifier is the filename without 
     the `.yaml` extension. E.g.`cryosat2_pds_ipf1e_v1p2` will be resolved to
     `{pysiral-cfg-location}/proc/l1/cryosat2_pds_ipf1e_v1p2.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L2Settings(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l2_settings"]
+    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL2)
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or file path to the Level-2 Processor definition file.
+    This file contains the settings for the Level-2 processor. The default location
+    for these files is `{pysiral-cfg-location}/proc/l2/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`awi_cryosat2_nh_v2p6_rep` will be resolved to
+    `{pysiral-cfg-location}/proc/l2/awi/v2p6/awi_cryosat2_nh_v2p6_rep.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L2Outputs(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
+    nargs: str = "+"
+    type: Callable = pysiral_outdef_type(level=BasicProcessingLevels.LEVEL2)
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or file path of one ore several Level-2 output definition files.
+    Each file contains the output definition for the l2/l2i dataformat. The default location
+    for these files is `{pysiral-cfg-location}/output/l2/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`l2i_cci_v4p0` will be resolved to
+    `{pysiral-cfg-location}/output/l2i/cci/l2i_cci_v4p0.yaml`.
     """
 
 
@@ -169,7 +199,7 @@ class MultiProcesssingNumCores(ArgparseArgumentsArgs):
 
 
 @dataclass(frozen=True, kw_only=True)
-class USeMultiProcesssing(ArgparseArgumentsArgs):
+class UseMultiProcesssing(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["--multiprocessing"]
     dest: str = "use_multiprocessing"
     action: Any = argparse.BooleanOptionalAction
@@ -178,6 +208,20 @@ class USeMultiProcesssing(ArgparseArgumentsArgs):
     Flag to allow disabling multiprocessing. If set, the processor will run in single-threaded mode.
     Default is True, meaning multiprocessing is enabled. 
     (also see option -m/--multiprocessing-num-cores)
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class ForceL2DefRecordType(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["--force-l2def-record-type"]
+    dest: str = "force_l2def_record_type"
+    default: Any = False
+    help: str = """
+    By default, the Level-2 processor will use the record_type defined in the l1p input files. 
+    If this flag is set, the processor will use the record_type defined in the Level-2 definition file
+    (l2def) instead. This is useful if the l1p input files are not consistent with the l2def record_type, 
+    e.g. in case of metadata errors or if data from another timeliness is to be used for filling gaps. 
+    This flag should only be set in special cases. 
     """
 
 

@@ -16,13 +16,17 @@ from loguru import logger
 from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
-from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
+
+from pysiral.scripts.parser_items import (
+    ProcessingPeriod, ExcludeMonths, Hemisphere, PlatformID,
+    L2Settings, L2Outputs, SourceDatasetID, MultiProcesssingNumCores,
+    UseMultiProcesssing, ForceL2DefRecordType
+)
 
 
 def l2proc(
-    start_date: List[int] = None,
-    stop_date: List[int] = None,
+    processing_period: DatePeriod = None,
     l2_settings: Union[str, Path] = None,
     l2_outputs: List[Union[str, Path]] = None,
     exclude_month: List[int] = None,
@@ -30,7 +34,6 @@ def l2proc(
     l1p_version: str = None,
     mp_cpu_count: int = None,
     force_l2def_record_type: bool = False,
-    output_directory: Union[str, Path] = None,
     **kwargs: dict
 ) -> None:
     """
@@ -39,8 +42,7 @@ def l2proc(
     This function initializes the Level-2 processor with the provided settings
     and processes the Level-1P data files for the specified time range.
 
-    :param start_date: Start date for processing in [year, month, [day]] format.
-    :param stop_date: Stop date for processing in [year, month, [day]] format
+    :param processing_period: Start date for processing in [year, month, [day]] format.
     :param l2_settings: Path to the Level-2 settings file or its identifier.
     :param l2_outputs: List of output definitions for Level-2 products.
     :param exclude_month: List of months to exclude from processing (1-12).
@@ -48,7 +50,6 @@ def l2proc(
     :param l1p_version: Version of the Level-1P data (optional).
     :param mp_cpu_count: Number of CPUs to use for multiprocessing (optional).
     :param force_l2def_record_type: If True, forces the use of a specificLevel-2 definition record type.
-    :param output_directory: Directory where the output files will be saved.
     """
 
     # Update pysiral multiprocessing settings
@@ -70,13 +71,10 @@ def l2proc(
     for l2_output in l2_outputs:
         product_def.add_output_definition(l2_output)
 
-    # get the period for the Level-2 Processor
-    period = DatePeriod(start_date, stop_date)
-
     # Clip the time range to the valid time range of the target platform
-    period = period.intersect(psrlcfg.get_platform_period(platform))
+    period = processing_period.intersect(psrlcfg.get_platform_period(platform))
     if period is None:
-        msg = f"Invalid period definition ({start_date}-{stop_date}) for platform {platform}"
+        msg = f"Invalid period definition ({processing_period.label}) for platform {platform}"
         raise ValueError(msg)
 
     # The Level-2 processor operates in monthly segments, and for a given period,
@@ -114,78 +112,55 @@ def l2proc(
     logger.info("Level-2 processor: completed")
 
 
-class Level2ProcArgParser(DefaultLoggingClass):
+class L2ProcScriptArguments(object):
 
     def __init__(self):
-        super(Level2ProcArgParser, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus()
-        self._args = self.get_parser_args()
+        self.parser = self.get_argument_parser()
 
-    def get_parser_args(self) -> argparse.ArgumentParser:
-        # XXX: Move back to caller
+    def get(self, args_list: List[str] = None) -> "argparse.Namespace":
+        args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
+        if args.multiprocessing_num_cores is not None:
+            set_psrl_cpu_count(args.multiprocessing_num_cores)
+        return args
 
-        # Take the command line options from default settings
-        # -> see config module for data types, destination variables, etc.
-        clargs = DefaultCommandLineArguments()
+    @staticmethod
+    def get_argument_parser() -> argparse.ArgumentParser:
+        """
+            Set up the command line argument parser for the Level-2 Processor.
 
-        # List of command line option required for pre-processor
-        # (argname, argtype (see config module), destination, required flag)
-        options = [
-            ("-l2-settings", "l2-settings", "l2_settings", True),
-            ("-start", "date", "start_date", False),
-            ("-stop", "date", "stop_date", False),
-            ("-exclude-month", "exclude-month", "exclude_month", False),
-            ("-input-version", "input-version", "input_version", False),
-            ("-l1p-version", "l1p-version", "l1p_version", False),
-            ("-l2-output", "l2-output", "l2_output", False),
-            ("-mp-cpu-count", "mp-cpu-count", "mp_cpu_count", False),
-            ("--force-l2def-record-type", "force-l2def-record-type", "force_l2def_record_type", False),
+            :return: The argument parser object.
+            """
+
+        # List of command line option required for the Level-1 pre-processor
+        arg_item_list = [
+            # Positional arguments
+            L2Settings(),
+            ProcessingPeriod(),
+            L2Outputs(required=True),
+            # Optional arguments
+            ExcludeMonths(),
+            SourceDatasetID(),
+            UseMultiProcesssing(),
+            MultiProcesssingNumCores(),
+            ForceL2DefRecordType()
         ]
 
         # create the parser
-        parser = argparse.ArgumentParser()
-        for option in options:
-            argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(argtype, destination, required)
-            parser.add_argument(argname, **argparse_dict)
-        parser.set_defaults(overwrite_protection=False)
+        parser = argparse.ArgumentParser(
+            prog="pysiral l2proc",
+            description="""
+                    The Level-2 Processor (l2roc) generates Level-2 files (l2/l2i) from l1p input files.
+                    Level-2 files contain geophysical information and auxiliary data along the 
+                    orbit at full sensor resolution. The processor uses a Level-2 product definition
+                    file to define the product metadata, the list of auxiliary data files and the
+                    algorithm steps to be applied to the Level-1P data. The output can be written
+                    into multiple files. 
+                    """,
+            epilog="For more information, see: https://pysiral.readthedocs.io",
+            formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501
+        )
+        for arg_item in arg_item_list:
+            arg_flags, args_dict = arg_item.get()
+            parser.add_argument(*arg_flags, **args_dict)
 
         return parser
-
-    @property
-    def l2_settings_file(self):
-        l2_settings = self._args.l2_settings
-        filename = self.pysiral_config.get_settings_file("proc", "l2", l2_settings)
-        if filename is not None:
-            return filename
-        msg = "Invalid l2 settings filename or id: %s\n" % l2_settings
-        msg = msg + " \nRecognized Level-2 processor setting ids:\n"
-        for l2_settings_id in psrlcfg.get_setting_ids("proc", "l2"):
-            msg = f'{msg}  {l2_settings_id}' + "\n"
-        self.error.add_error("invalid-l2-settings", msg)
-        self.error.raise_on_error()
-
-    @property
-    def l2_output(self):
-        filenames = []
-        for l2_output in self._args.l2_output.split(";"):
-            filename = psrlcfg.get_settings_file("output", "l2i", l2_output)
-
-            if filename is None:
-                msg = "Invalid l2 outputdef filename or id: %s\n" % l2_output
-                msg = msg + " \nRecognized Level-2 output definitions ids:\n"
-                l2_output_ids = psrlcfg.get_setting_ids("output", "l2i")
-                for l2_output_id in l2_output_ids:
-                    msg = f'{msg}    - {l2_output_id}' + "\n"
-                self.error.add_error("invalid-l2-outputdef", msg)
-                self.error.raise_on_error()
-            else:
-                filenames.append(filename)
-
-        if not filenames:
-            msg = "No valid output definition file found for argument: %s"
-            msg %= (str(self._args.l3_output))
-            self.error.add_error("invalid-outputdef", msg)
-            self.error.raise_on_error()
-
-        return filenames

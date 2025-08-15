@@ -111,6 +111,11 @@ Glossary
         the data production (Examples: ``cci`` for sea ice thickness climate data records
         of the ESA Climate Change Initiative).
 
+    Record type
+        The record type defines the type of data record. In pysiral, the record type can be
+        a :term:`Timeliness` code, but also ``cdr`` (climate data record) of ``icdr`` 
+        (interim climate data record).
+
     Sea Ice Concentration
         The fraction of sea ice in a given area. It is usually expressed as a percentage
         (0-100%) or as a fraction (0-1).

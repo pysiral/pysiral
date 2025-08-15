@@ -14,7 +14,7 @@ from dateperiods import DatePeriod
 from pysiral import get_cls, set_psrl_cpu_count
 from pysiral.scripts.parser_items import (
     ProcessingPeriod, ExcludeMonths, Hemisphere, PlatformID,
-    L1PSettings, SourceDatasetID, MultiProcesssingNumCores, USeMultiProcesssing
+    L1PSettings, SourceDatasetID, MultiProcesssingNumCores, UseMultiProcesssing
 )
 from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
 
@@ -135,7 +135,7 @@ class L1PreProcScriptArguments(object):
             Hemisphere(help=hemisphere_l1p_help),
             PlatformID(),
             SourceDatasetID(),
-            USeMultiProcesssing(),
+            UseMultiProcesssing(),
             MultiProcesssingNumCores()
         ]
 

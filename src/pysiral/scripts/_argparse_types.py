@@ -135,6 +135,41 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
     return procdef_type_func
 
 
+def pysiral_outdef_type(level: BasicProcessingLevels) -> Callable:
+    """
+    Factory function that provides additional option to the argparse directory type validation.
+
+    :param level: Level of output definition, e.g. "l2", "l3"
+
+    :return: Function to validiates input for argparse
+    """
+
+    def procdef_type_func(string: str) -> Path:
+        """
+        Small helper function to convert input automatically to Path.
+        Also raises an exception if the input is not a valid directory.
+
+        :param string: Input argument
+
+        :raises argparse.ArgumentTypeError:
+
+        :return: Input as pathlib.Path
+        """
+        if level not in [BasicProcessingLevels.LEVEL2, BasicProcessingLevels.LEVEL3]:
+            raise argparse.ArgumentTypeError(f"Invalid output level: {level} [{BasicProcessingLevels.__members__}")
+
+        settings_filepath = psrlcfg.get_settings_file("output", level, string)
+        if settings_filepath is None:
+            msg = f"Invalid {level} settings filename or id: {string}\n"
+            msg += f"Recognized {level} processor setting ids:\n"
+            for procdef_id in psrlcfg.get_setting_ids("proc", level):
+                msg += f"  {procdef_id}\n"
+            raise argparse.ArgumentTypeError(msg)
+        return psrlcfg.get_settings_file("proc", level, string)
+
+    return procdef_type_func
+
+
 def positive_int_type(value: str) -> int:
     """
     Convert a string to a positive integer.
