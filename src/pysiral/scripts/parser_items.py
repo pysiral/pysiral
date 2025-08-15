@@ -12,10 +12,10 @@ from dataclasses import dataclass, asdict, field
 
 
 from pysiral import psrlcfg
-from pysiral.core.flags import Hemispheres, BasicProcessingLevels
+from pysiral.core.flags import Hemispheres, BasicProcessingLevels, ProcessingLevels
 from pysiral.scripts._argparse_types import (
     file_type, pysiral_procdef_type, pysiral_outdef_type,
-    positive_int_type
+    positive_int_type, dir_type, doi_type
 )
 from pysiral.scripts._argparse_actions import period_conversion
 
@@ -183,6 +183,20 @@ class L2Outputs(ArgparseArgumentsArgs):
 
 
 @dataclass(frozen=True, kw_only=True)
+class L2POutputs(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-o", "--l2p-output"]
+    type: Callable = pysiral_outdef_type(level=ProcessingLevels.LEVEL2_PREPROCESSED)
+    metavar: str = "<id|filepath>"
+    help: str = """
+    Identifier or file path of one ore several Level-2 output definition files.
+    Each file contains the output definition for the l2/l2i dataformat. The default location
+    for these files is `{pysiral-cfg-location}/output/l2/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`l2i_cci_v4p0` will be resolved to
+    `{pysiral-cfg-location}/output/l2i/cci/l2i_cci_v4p0.yaml`.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
 class MultiProcesssingNumCores(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-m", "--multiprocessing-num-cores"]
     dest: str = "multiprocessing_num_cores"
@@ -233,6 +247,29 @@ class L1PFiles(ArgparseArgumentsArgs):
     metavar: str = "<l1p filepath>"
     help: str = """
     Target Level-1P (l1p) file(s) to be processed by the Level-2 processor.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L2iDirectory(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l2i_product_dir"]
+    nargs: str = "+"
+    type: Callable = dir_type(ends_with=["l2i", "l2"])
+    metavar: str = "<l2i filepath>"
+    help: str = """
+    Target Level-2i (l2i) product directory where the Level-2 output files will be written.
+    The l2i files need to be organized in `yyyy/mm/` subdirectory structure. 
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class DOI(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["--doi"]
+    type: Callable = doi_type
+    metavar: str = "<l2i filepath>"
+    help: str = """
+    The DOI (Digital Object Identifier) number to be written in the global attributes 
+    of the product files.
     """
 
 

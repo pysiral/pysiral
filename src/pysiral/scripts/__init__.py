@@ -17,7 +17,7 @@ from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
 from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
 from pysiral.scripts.l2procfiles import l2procfiles, L2ProcFilesScriptArguments
 from pysiral.scripts.l2preproc import l2preproc, L2PreProcScriptArguments
-# from pysiral.scripts.l3proc import l3proc, L3ProcScriptArguments
+from pysiral.scripts.l3proc import l3proc, L3ProcScriptArguments
 
 
 def main() -> None:
@@ -117,18 +117,18 @@ def l2preproc_cli(args_list: List = None) -> None:
 
     :return: None
     """
-    l2preproc(**vars(L2PreProc().get(args_list)))
+    l2preproc(**vars(L2PreProcScriptArguments().get(args_list)))
 
 
-# def l3proc_cli(args_list: List = None) -> None:
-#     """
-#     Command-line interface entry point for the `pysiral l3proc` script.
-#
-#     :param args_list: Command line arguments to be passed to the script.
-#
-#     :return: None
-#     """
-#     l3proc(**vars(L3ProcScriptArguments().get(args_list)))
+def l3proc_cli(args_list: List = None) -> None:
+    """
+    Command-line interface entry point for the `pysiral l3proc` script.
+
+    :param args_list: Command line arguments to be passed to the script.
+
+    :return: None
+    """
+    l3proc(**vars(L3ProcScriptArguments().get(args_list)))
 
 
 if __name__ == "__main__":

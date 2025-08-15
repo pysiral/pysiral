@@ -20,13 +20,7 @@ from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
                             Level3Processor, Level3ProductDefinition)
 
 
-def pysiral_l3proc():
-    # parse command line arguments
-    args = Level3ProcArgParser()
-    args.parse_command_line_arguments()
-
-    # Get start time of processor run
-    t0 = time.process_time()
+def l3proc():
 
     # --- Get the period segments for the Level-3 processor ---
     # NOTE: These depend on the chosen total time range and the duration period for the grid.

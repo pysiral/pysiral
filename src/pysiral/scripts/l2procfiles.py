@@ -13,7 +13,8 @@ from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 from pysiral.scripts.parser_items import (
     L2Settings, L2Outputs, MultiProcesssingNumCores,
-    UseMultiProcesssing, ForceL2DefRecordType, L1PFiles
+    UseMultiProcesssing, ForceL2DefRecordType, L1PFiles,
+    DOI
 )
 
 
@@ -87,6 +88,7 @@ class L2ProcFilesScriptArguments(object):
             L1PFiles(),
             L2Outputs(required=True),
             # Optional arguments
+            DOI(),
             UseMultiProcesssing(),
             MultiProcesssingNumCores(),
             ForceL2DefRecordType()

@@ -6,21 +6,42 @@
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import argparse
-from dateperiods import DatePeriod
+import re
 from datetime import date, datetime
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, Union, List
 
 from pysiral import psrlcfg
-from pysiral.core.flags import BasicProcessingLevels
+from pysiral.core.flags import BasicProcessingLevels, ProcessingLevels
 
 
-def dir_type(value: str) -> Path:
-    # First Check: Directory must exist
-    if Path(value).is_dir():
-        return Path(value).absolute()
-    else:
-        raise argparse.ArgumentTypeError(f"Not a directory: {value}")
+def dir_type(ends_with: Union[str, List[str]] = None) -> Callable:
+    """
+    Factory function that provides additional option to the argparse directory type validation.
+
+    :param ends_with: Last subdirectory name that the directory path must end with.
+
+    :return: Function to validiates input for argparse
+    """
+
+    def dir_type_func(value: str) -> Path:
+
+        # First Check: Directory must exist
+        if Path(value).is_dir():
+            value = Path(value).absolute()
+        else:
+            raise argparse.ArgumentTypeError(f"Not a directory: {value}")
+
+        if ends_with is not None:
+            # Optional check: Directory path needs to end with certain directory name
+            if isinstance(ends_with, str):
+                ends_with = [ends_with]
+            if not any(value.name.endswith(suffix) for suffix in ends_with):
+                raise argparse.ArgumentTypeError(f"{value} must end with: {', '.join(ends_with)}")
+
+        return value
+
+    return dir_type_func
 
 
 def date_type(value: str) -> date:
@@ -135,7 +156,7 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
     return procdef_type_func
 
 
-def pysiral_outdef_type(level: BasicProcessingLevels) -> Callable:
+def pysiral_outdef_type(level: Union[BasicProcessingLevels, ProcessingLevels]) -> Callable:
     """
     Factory function that provides additional option to the argparse directory type validation.
 
@@ -187,3 +208,20 @@ def positive_int_type(value: str) -> int:
         return int_value
     except ValueError:
         raise argparse.ArgumentTypeError(f"Invalid integer value: {value}")
+
+
+def doi_type(value: str) -> str:
+    """
+    Convert a string to a valid DOI format.
+
+    :param value: Input argument
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid DOI
+
+    :return: Valid DOI string
+    """
+    regex_doi = re.compile(r"\b10\.\d{4,9}/[-.;()/:\w]+")
+    match = regex_doi.findall(value)
+    if not match:
+        raise argparse.ArgumentTypeError(f"Invalid DOI format: {value}")
+    return value
