@@ -9,11 +9,14 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 import sys
 from typing import List
 
+# Ensure that the logger is initialized
 import pysiral._logger
+
 # from pysiral.scripts.info import info, InfoScriptArguments
 from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
 from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
-# from pysiral.scripts.l2preproc import l2preproc, L2PreProc
+from pysiral.scripts.l2procfiles import l2procfiles, L2ProcFilesScriptArguments
+from pysiral.scripts.l2preproc import l2preproc, L2PreProcScriptArguments
 # from pysiral.scripts.l3proc import l3proc, L3ProcScriptArguments
 
 
@@ -30,7 +33,7 @@ def main() -> None:
         `info`        Print information about the pysiral installation.
                       (see: pysiral info --help)
                       
-        `set-cfg`     Set pysiral configuration to a specific directory.
+        `config`      Set pysiral configuration to a specific directory.
                       (see: pysiral set-cfg --help)
 
         `l1preproc`   Generate Level-1 files (l1p) with trajectory sensors data
@@ -41,6 +44,11 @@ def main() -> None:
                       from Level-1 files (l1p) and auxiliary data for a given 
                       Level-2 product definition and period. 
                       (see: pysiral l2proc --help)
+                      
+        `l2procfiles` Generate Level-2 files (l2/l2i) with geophysical information
+                      from a list of Level-1 files (l1p) and auxiliary data for a given 
+                      Level-2 product definition. 
+                      (see: pysiral l2procfiles --help)                      
 
         `l2preproc`   Generate Level-2 files (l2p) wwith daily summaries of l2/l2i files
                       (see: pysiral l2preproc --help)
@@ -101,15 +109,15 @@ def l2proc_cli(args_list: List = None) -> None:
     l2proc(**vars(L2ProcScriptArguments().get(args_list)))
 
 
-# def l2preproc_cli(args_list: List = None) -> None:
-#     """
-#     Command-line interface entry point for the `pysiral l2preproc` script.
-#
-#     :param args_list: Command line arguments to be passed to the script.
-#
-#     :return: None
-#     """
-#     l2preproc(**vars(L2PreProc().get(args_list)))
+def l2preproc_cli(args_list: List = None) -> None:
+    """
+    Command-line interface entry point for the `pysiral l2preproc` script.
+
+    :param args_list: Command line arguments to be passed to the script.
+
+    :return: None
+    """
+    l2preproc(**vars(L2PreProc().get(args_list)))
 
 
 # def l3proc_cli(args_list: List = None) -> None:

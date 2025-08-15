@@ -3,23 +3,18 @@
 
 
 import argparse
-import glob
-import re
-import time
 from typing import List, Union
 from pathlib import Path
-from datetime import timedelta
 
 from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral import psrlcfg, set_psrl_cpu_count
-from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L1PDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 from pysiral.scripts.parser_items import (
-    ProcessingPeriod, ExcludeMonths, Hemisphere, PlatformID,
+    ProcessingPeriod, ExcludeMonths,
     L2Settings, L2Outputs, SourceDatasetID, MultiProcesssingNumCores,
     UseMultiProcesssing, ForceL2DefRecordType
 )
@@ -137,9 +132,9 @@ class L2ProcScriptArguments(object):
             L2Settings(),
             ProcessingPeriod(),
             L2Outputs(required=True),
+            SourceDatasetID(required=True),
             # Optional arguments
             ExcludeMonths(),
-            SourceDatasetID(),
             UseMultiProcesssing(),
             MultiProcesssingNumCores(),
             ForceL2DefRecordType()
@@ -149,12 +144,15 @@ class L2ProcScriptArguments(object):
         parser = argparse.ArgumentParser(
             prog="pysiral l2proc",
             description="""
-                    The Level-2 Processor (l2roc) generates Level-2 files (l2/l2i) from l1p input files.
+                    The Level-2 Processor (l2proc) generates Level-2 files (l2/l2i) from l1p input files.
                     Level-2 files contain geophysical information and auxiliary data along the 
                     orbit at full sensor resolution. The processor uses a Level-2 product definition
                     file to define the product metadata, the list of auxiliary data files and the
                     algorithm steps to be applied to the Level-1P data. The output can be written
-                    into multiple files. 
+                    into multiple files.
+                    Input Level-1 files are automatically selected based on the the source dataset ID 
+                    and l1p version. (see also: `pysiral l2procfiles --help` for running the 
+                    Level-2 processor on individual l1p files).
                     """,
             epilog="For more information, see: https://pysiral.readthedocs.io",
             formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501

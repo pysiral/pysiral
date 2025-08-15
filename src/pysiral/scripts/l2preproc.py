@@ -18,7 +18,7 @@ from pysiral.l2preproc import (Level2PreProcessor,
                                Level2PreProcProductDefinition)
 
 
-def pysiral_l2preproc():
+def l2preproc():
     """ Caller for converting Level-2 Intermediate (l2i) into
     Level-2 Pre-Processed (l2p) data products.
     NOTE: At the moment that only means summary of valid freeboard/thickness
@@ -96,10 +96,10 @@ def pysiral_l2preproc():
     logger.info("Run completed in %s" % str(timedelta(seconds=seconds)))
 
 
-class Level2PreProcArgParser(DefaultLoggingClass):
+class L2PreProcScriptArguments(DefaultLoggingClass):
 
     def __init__(self):
-        super(Level2PreProcArgParser, self).__init__(self.__class__.__name__)
+        super(L2PreProcScriptArguments, self).__init__(self.__class__.__name__)
         self.error = ErrorStatus()
         self._args = None
 
@@ -214,7 +214,3 @@ class Level2PreProcArgParser(DefaultLoggingClass):
     @property
     def remove_old(self):
         return self._args.remove_old and not self._args.overwrite_protection
-
-
-if __name__ == "__main__":
-    pysiral_l2preproc()

@@ -225,6 +225,17 @@ class ForceL2DefRecordType(ArgparseArgumentsArgs):
     """
 
 
+@dataclass(frozen=True, kw_only=True)
+class L1PFiles(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l1p_files"]
+    nargs: str = "+"
+    type: Callable = file_type("*.nc")
+    metavar: str = "<l1p filepath>"
+    help: str = """
+    Target Level-1P (l1p) file(s) to be processed by the Level-2 processor.
+    """
+
+
 class DefaultCommandLineArguments(object):
 
     def __init__(self):
