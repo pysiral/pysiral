@@ -72,8 +72,9 @@ class Level3Processor(DefaultLoggingClass):
             # Parse l2i source file
             try:
                 l2i = L2iNCFileImport(l2i_file)
-            except AttributeError:
-                logger.warning("Attribute Error encountered in %s" % l2i_file)
+            except AttributeError as ae:
+                breakpoint()
+                logger.warning(f"Attribute Error encountered in {l2i_file} [{ae.name}, {ae.args}]")
                 continue
 
             # Apply the orbit filter (for masking descending or ascending orbit segments)

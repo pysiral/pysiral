@@ -91,7 +91,8 @@ class ReadNC(object):
                 try:
                     variable = f.variables[key][:]
                 except OverflowError:
-                    continue
+                    variable_nc = f.variables[key]
+                    variable = np.zeros(variable_nc.shape, dtype=variable_nc.dtype)
                 except ValueError:
                     continue
 
@@ -140,7 +141,7 @@ class NCMaskedGridData(object):
     def get_by_name(self, parameter_name):
         try:
             return getattr(self, parameter_name)
-        except:
+        except AttributeError:
             return None
 
 
@@ -155,8 +156,6 @@ def get_l1bdata_files(mission_id, hemisphere, year, month, config=None, version=
     directory = Path(l1b_repo) / hemisphere / "%04g" % year / "%02g" % month
     l1bdata_files = sorted(directory.glob("*.nc"))
     return l1bdata_files
-
-
 
 
 def l1bdata_get_baseline(filename):
