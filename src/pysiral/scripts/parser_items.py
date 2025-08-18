@@ -13,14 +13,13 @@ from dataclasses import dataclass, asdict, field
 
 from pysiral import psrlcfg
 from pysiral.core.flags import (
-    Hemispheres, BasicProcessingLevels, ProcessingLevels,
-    DurationType
+    Hemispheres, PysiralProcessingLevels, ProductProcessingLevels,
+    DurationType, DataRecordType
 )
 from pysiral.scripts._argparse_types import (
-    file_type, pysiral_procdef_type, pysiral_outdef_type,
-    positive_int_type, dir_type, doi_type
+    file_type, positive_int_type, dir_type, doi_type, pysiral_grid_id_type
 )
-from pysiral.scripts._argparse_actions import period_conversion
+from pysiral.scripts._argparse_actions import period_conversion, pysiral_settings_action
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -71,13 +70,13 @@ class PlatformID(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class ProcessingPeriod(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["processing_period"]
-    nargs: str = "+"
     action: Callable = period_conversion()
     # metavar: str = "YYYY-MM[-DD] [YYYY-MM[-DD]]"
     help: str = """
-    Period definition for processing, given as a string in the format "YYYY-MM[-DD] [YYYY-MM[-DD]]".
+    Period definition for processing, given as a string in the format "YYYY-MM[-DD][:YYYY-MM[-DD]]".
     If only one date is given, it will be interpreted as a period (e.g., "2023-01" for January 2023 and
-    ("2023-01-01" for one day). If two dates are given, they will be interpreted as a start and end date or month)
+    ("2023-01-01" for one day). If two colon-separated dates are given, they will be interpreted 
+    as a start and end date or month.
     """
 
 
@@ -109,6 +108,32 @@ class Duration(ArgparseArgumentsArgs):
     `dateperiod.Dateperiod().get_segments()`. If left empty, the 
     duration type will be inferred from the processing period definition.
     """
+
+
+@dataclass(frozen=True, kw_only=True)
+class ProductProcessingLevel(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-p", "--processing-level"]
+    dest: str = "processing_level"
+    metavar: str = "<processing_level>"
+    choices: List[Any] = field(default_factory=lambda: ProductProcessingLevels.get_choices())
+    type: Callable = str
+    help: str = """
+    Target processing level. Setting this argument will overwrite any processing
+    levels defined in the input data or processor definition.
+    """+f" Valid processing levels are: [{', '.join(ProductProcessingLevels.get_choices())}]"
+
+
+@dataclass(frozen=True, kw_only=True)
+class DataRecord(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-D", "--data-record"]
+    dest: str = "processing_level"
+    metavar: str = f"{DataRecordType}"
+    choices: List[Any] = field(default_factory=lambda: DataRecordType.get_choices())
+    type: Callable = str
+    help: str = """
+    Target data record. Setting this argument will overwrite any value
+    defined in the input data or processor definition.
+    """+f" Valid data records are: [{', '.join(DataRecordType.get_choices())}]"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -161,7 +186,11 @@ class L1PFile(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L1PSettings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_settings"]
-    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL1)
+    type: Callable = str
+    action: Callable = pysiral_settings_action(
+        target="proc",
+        level=PysiralProcessingLevels.LEVEL1
+    )
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path to the Level-1 Pre-Processor definition file.
@@ -175,7 +204,11 @@ class L1PSettings(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L2Settings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l2_settings"]
-    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL2)
+    type: Callable = str
+    action: Callable = pysiral_settings_action(
+        target="proc",
+        level=PysiralProcessingLevels.LEVEL2
+    )
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path to the Level-2 Processor definition file.
@@ -189,7 +222,11 @@ class L2Settings(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L3Settings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l3_settings"]
-    type: Callable = pysiral_procdef_type(level=BasicProcessingLevels.LEVEL3)
+    action: Callable = pysiral_settings_action(
+        target="proc",
+        level=PysiralProcessingLevels.LEVEL3
+    )
+    type: Callable = str
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path to the Level-3 Processor definition file.
@@ -204,7 +241,7 @@ class L3Settings(ArgparseArgumentsArgs):
 class L2Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
     nargs: str = "+"
-    type: Callable = pysiral_outdef_type(level=BasicProcessingLevels.LEVEL2)
+    action: Callable = pysiral_settings_action(target="output", level=PysiralProcessingLevels.LEVEL2)
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path of one ore several Level-2 output definition files.
@@ -218,7 +255,10 @@ class L2Outputs(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L2POutputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2p-output"]
-    type: Callable = pysiral_outdef_type(level=ProcessingLevels.LEVEL2_PREPROCESSED)
+    action: Callable = pysiral_settings_action(
+        target="output",
+        level=ProductProcessingLevels.LEVEL2_PREPROCESSED
+    )
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path of one Level-2 output definition file.
@@ -233,7 +273,11 @@ class L2POutputs(ArgparseArgumentsArgs):
 class L3Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l3-output"]
     nargs: str = "+"
-    type: Callable = pysiral_outdef_type(level=BasicProcessingLevels.LEVEL3)
+    type: Callable = str
+    action: Callable = pysiral_settings_action(
+        level=PysiralProcessingLevels.LEVEL3,
+        target="output"
+    )
     metavar: str = "<id|filepath>"
     help: str = """
     Identifier or file path of one or several Level-3 output definition files.
@@ -300,10 +344,10 @@ class L1PFiles(ArgparseArgumentsArgs):
 
 @dataclass(frozen=True, kw_only=True)
 class L2iDirectory(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["l2i_product_dir"]
+    name_or_flags: ClassVar[list[str]] = ["-i", "--l2i-product-dir"]
     nargs: str = "+"
     type: Callable = dir_type(ends_with=["l2i", "l2"])
-    metavar: str = "<l2i filepath>"
+    metavar: str = "<directory>"
     help: str = """
     Target Level-2i (l2i) product directory where the Level-2 output files will be written.
     The l2i files need to be organized in `yyyy/mm/` subdirectory structure. 
@@ -312,26 +356,40 @@ class L2iDirectory(ArgparseArgumentsArgs):
 
 @dataclass(frozen=True, kw_only=True)
 class L3Directory(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["l3_product_dir"]
-    nargs: str = "+"
+    name_or_flags: ClassVar[list[str]] = ["-O", "--l3-product-directory"]
+    dest: str = "l3_product_dir"
     type: Callable = dir_type(
         must_exist=False,
-        ends_with=[ProcessingLevels.LEVEL3_COLLATED, ProcessingLevels.LEVEL3_SUPERCOLLATED]
+        ends_with=[
+            ProductProcessingLevels.LEVEL3_COLLATED,
+            ProductProcessingLevels.LEVEL3_SUPERCOLLATED
+        ]
     )
-    metavar: str = "<l3 filepath>"
+    metavar: str = "<directory>"
     help: str = """
-    Target Level-3 product directory where the Level-3 output files will be written.
+    Target Level-3 product directory where the Level-3 output files will be written. 
+    The last sub-directory must be a valid Level-3 processing level code [l3c|l3s]. 
+    If not given, the directory will be inferred from the l2 input directory. 
     """
+
+
+@dataclass(frozen=True, kw_only=True)
+class L3Grid(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["-g", "--l3-grid-id"]
+    type: Callable = pysiral_grid_id_type
+    metavar: str = "<grid id>"
+    help: str = """
+    The grid definition id for the Level-3 processor. 
+    """+f" Valid grid ids are: [{', '.join(psrlcfg.get_setting_ids('grid'))}]"
 
 
 @dataclass(frozen=True, kw_only=True)
 class DOI(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["--doi"]
     type: Callable = doi_type
-    metavar: str = "<l2i filepath>"
+    metavar: str = "<product doi>"
     help: str = """
-    The DOI (Digital Object Identifier) number to be written in the global attributes 
-    of the product files.
+    The DOI (Digital Object Identifier) to be written in the global attributes of the product files.
     """
 
 

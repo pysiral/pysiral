@@ -79,7 +79,7 @@ class DataRecordType(StrEnum):
         return [entry.value for entry in cls]
 
 
-class BasicProcessingLevels(StrEnum):
+class PysiralProcessingLevels(StrEnum):
     """
     Enum for processing levels with a corresponding pysiral processor
     """
@@ -88,17 +88,23 @@ class BasicProcessingLevels(StrEnum):
     LEVEL3 = "l3"
 
 
-class ProcessingLevels(str, Enum):
+class ProductProcessingLevels(StrEnum):
     """
     Enum for processing levels.
     """
-    LEVEL1 = "l1"
     LEVEL1_PREPROCESSED = "l1p"
     LEVEL2 = "l2"
     LEVEL2_INTERMEDIATE = "l2i"
     LEVEL2_PREPROCESSED = "l2p"
     LEVEL3_COLLATED = "l3c"
     LEVEL3_SUPERCOLLATED = "l3s"
+
+    @classmethod
+    def get_choices(cls) -> List[str]:
+        """
+        Returns a list of all processing level choices.
+        """
+        return [level.value for level in cls]
 
 
 class DurationType(StrEnum):

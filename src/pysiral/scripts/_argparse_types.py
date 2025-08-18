@@ -9,10 +9,10 @@ import argparse
 import re
 from datetime import date, datetime
 from pathlib import Path
-from typing import Callable, Union, List
+from typing import Callable, Union, List, Literal
 
 from pysiral import psrlcfg
-from pysiral.core.flags import BasicProcessingLevels, ProcessingLevels
+from pysiral.core.flags import PysiralProcessingLevels, ProductProcessingLevels
 
 
 def dir_type(ends_with: Union[str, List[str]] = None, must_exist: bool = True) -> Callable:
@@ -70,7 +70,6 @@ def date_type(value: str) -> date:
 
 
 def date_datetime_type(value: str) -> datetime:
-
     try:
         return datetime.fromisoformat(value)
     except ValueError:
@@ -129,16 +128,20 @@ def dirpath_type(string: str) -> Path:
         raise argparse.ArgumentTypeError(f"Not a directory {string}")
 
 
-def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
+def pysiral_settings_type(
+        target: Literal["output", "proc"],
+        level: str
+) -> Callable:
     """
     Factory function that provides additional option to the argparse directory type validation.
 
+    :param target: Target for the settings file, e.g. "output" or "proc"
     :param level: Level of processing definition, e.g. "l1", "l2", "l3"
 
     :return: Function to validiates input for argparse
     """
 
-    def procdef_type_func(string: str) -> Path:
+    def pysiral_settings_type_func(string: str) -> Path:
         """
         Small helper function to convert input automatically to Path.
         Also raises an exception if the input is not a valid directory.
@@ -149,54 +152,21 @@ def pysiral_procdef_type(level: BasicProcessingLevels) -> Callable:
 
         :return: Input as pathlib.Path
         """
-        if not level in BasicProcessingLevels:
-            raise argparse.ArgumentTypeError(f"Invalid processing level: {level} [{BasicProcessingLevels.__members__}")
+        if level not in PysiralProcessingLevels:
+            raise argparse.ArgumentTypeError(
+                f"Invalid processing level: {level} [{PysiralProcessingLevels.__members__}"
+            )
 
-        settings_filepath = psrlcfg.get_settings_file("proc", level, string)
+        settings_filepath = psrlcfg.get_settings_file(target, level, string)
         if settings_filepath is None:
-            msg = f"Invalid {level} settings filename or id: {string}\n"
+            msg = f"Invalid {target}:{level} settings filename or id: {string}\n"
             msg += f"Recognized {level} processor setting ids:\n"
-            for procdef_id in psrlcfg.get_setting_ids("proc", level):
+            for procdef_id in psrlcfg.get_setting_ids(target, level):
                 msg += f"  {procdef_id}\n"
             raise argparse.ArgumentTypeError(msg)
-        return psrlcfg.get_settings_file("proc", level, string)
+        return psrlcfg.get_settings_file(target, level, string)
 
-    return procdef_type_func
-
-
-def pysiral_outdef_type(level: Union[BasicProcessingLevels, ProcessingLevels]) -> Callable:
-    """
-    Factory function that provides additional option to the argparse directory type validation.
-
-    :param level: Level of output definition, e.g. "l2", "l3"
-
-    :return: Function to validiates input for argparse
-    """
-
-    def procdef_type_func(string: str) -> Path:
-        """
-        Small helper function to convert input automatically to Path.
-        Also raises an exception if the input is not a valid directory.
-
-        :param string: Input argument
-
-        :raises argparse.ArgumentTypeError:
-
-        :return: Input as pathlib.Path
-        """
-        if level not in [BasicProcessingLevels.LEVEL2, BasicProcessingLevels.LEVEL3]:
-            raise argparse.ArgumentTypeError(f"Invalid output level: {level} [{BasicProcessingLevels.__members__}")
-
-        settings_filepath = psrlcfg.get_settings_file("output", level, string)
-        if settings_filepath is None:
-            msg = f"Invalid {level} settings filename or id: {string}\n"
-            msg += f"Recognized {level} processor setting ids:\n"
-            for procdef_id in psrlcfg.get_setting_ids("proc", level):
-                msg += f"  {procdef_id}\n"
-            raise argparse.ArgumentTypeError(msg)
-        return psrlcfg.get_settings_file("proc", level, string)
-
-    return procdef_type_func
+    return pysiral_settings_type_func
 
 
 def positive_int_type(value: str) -> int:
@@ -232,4 +202,20 @@ def doi_type(value: str) -> str:
     match = regex_doi.findall(value)
     if not match:
         raise argparse.ArgumentTypeError(f"Invalid DOI format: {value}")
+    return value
+
+
+def pysiral_grid_id_type(value: str) -> str:
+    """
+    Convert a string to a valid pysiral grid ID.
+
+    :param value: Input argument
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid grid ID
+
+    :return: Valid grid ID string
+    """
+    valid_grid_ids = psrlcfg.get_setting_ids("grid")
+    if value not in valid_grid_ids:
+        raise argparse.ArgumentTypeError(f"Invalid grid ID: {value}. Valid IDs are: {', '.join(valid_grid_ids)}")
     return value

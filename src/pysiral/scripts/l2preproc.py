@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import sys
-import time
-from datetime import timedelta
 from pathlib import Path
 from typing import List, Union
 
@@ -12,7 +9,7 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 
-from pysiral import psrlcfg, set_psrl_cpu_count
+from pysiral import set_psrl_cpu_count
 from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L2iDataHandler
 from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
@@ -20,7 +17,6 @@ from pysiral.l2preproc import (Level2PreProcessor, Level2PreProcProductDefinitio
 from pysiral.scripts.parser_items import (
     ProcessingPeriod, ExcludeMonths, L2POutputs, L2iDirectory
 )
-
 
 
 def l2preproc(

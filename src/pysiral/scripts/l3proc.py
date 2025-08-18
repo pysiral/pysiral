@@ -3,7 +3,6 @@
 
 
 import argparse
-import sys
 
 from pathlib import Path
 from typing import List, Union
@@ -11,15 +10,15 @@ from typing import List, Union
 from dateperiods import DatePeriod
 from loguru import logger
 
-from pysiral import psrlcfg, set_psrl_cpu_count
+from pysiral import set_psrl_cpu_count
 from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L2iDataHandler
-from pysiral.core.flags import DurationType, ProcessingLevels, DataRecordType
+from pysiral.core.flags import DurationType, ProductProcessingLevels, DataRecordType
 from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
                             Level3Processor, Level3ProductDefinition)
 from pysiral.scripts.parser_items import (
-    L2iDirectory, L3Settings, L3Grid, L3Output, L3Directory, ExcludeMonths,
-    ProcessingPeriod, DOI, Duration, DataRecord, ProcessingLevel
+    L2iDirectory, L3Settings, L3Grid, L3Outputs, L3Directory, ExcludeMonths,
+    ProcessingPeriod, DOI, Duration, DataRecord, ProductProcessingLevel
 )
 
 
@@ -32,7 +31,7 @@ def l3proc(
         l3_output_definitions: List[Union[str, Path]] = None,
         duration: DurationType = DurationType.P1M,
         doi: str = None,
-        processing_level: ProcessingLevels = ProcessingLevels.LEVEL3_COLLATED,
+        processing_level: ProductProcessingLevels = ProductProcessingLevels.LEVEL3_COLLATED,
         data_record_type: DataRecordType = None,
         **kwargs: dict
 
@@ -112,9 +111,26 @@ class L3ProcScriptArguments(object):
         self.parser = self.get_argument_parser()
 
     def get(self, args_list: List[str] = None) -> "argparse.Namespace":
+
         args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
+
         if args.multiprocessing_num_cores is not None:
             set_psrl_cpu_count(args.multiprocessing_num_cores)
+
+        # Set product processing level based on the number of l2i directories
+        if args.processing_level is not None:
+            args.processing_level = (
+                ProductProcessingLevels.LEVEL3_COLLATED if len(args.l2i_directory) == 1
+                else ProductProcessingLevels.LEVEL3_SUPERCOLLATED
+            )
+            logger.info("Using processing level %s" % args.processing_level)
+
+        # Set the l3 product directory if not provided
+        if args.l3_directory is None:
+            dirs = args.l2i_directory.parts + args.processing_level
+            args.l3_directory = Path.joinpath(dirs)
+            logger.info(f"Using default L3 directory: {args.l3_directory}")
+
         return args
 
     @staticmethod
@@ -129,18 +145,19 @@ class L3ProcScriptArguments(object):
         arg_item_list = [
             # Positional arguments
             L3Settings(),
-            L2iDirectory(required=True),
             ProcessingPeriod(),
+            L2iDirectory(required=True),
             # Mandatory arguments
-            L3Output(required=True),
+            L3Outputs(required=True),
             L3Grid(required=True),
             # Optional arguments
             L3Directory(),
             Duration(),
             DataRecord(),
-            ProcessingLevel(
-                choices=[ProcessingLevels.LEVEL3_COLLATED, ProcessingLevels.LEVEL3_SUPERCOLLATED],
-                default=ProcessingLevels.LEVEL3_COLLATED
+            ProductProcessingLevel(
+                choices=[ProductProcessingLevels.LEVEL3_COLLATED,
+                         ProductProcessingLevels.LEVEL3_SUPERCOLLATED],
+                default=None
             ),
             ExcludeMonths(),
             DOI(),
@@ -148,17 +165,14 @@ class L3ProcScriptArguments(object):
 
         # create the parser
         parser = argparse.ArgumentParser(
-            prog="pysiral l2proc",
+            prog="pysiral l3proc",
             description="""
-                    The Level-2 Processor (l2proc) generates Level-2 files (l2/l2i) from l1p input files.
-                    Level-2 files contain geophysical information and auxiliary data along the 
-                    orbit at full sensor resolution. The processor uses a Level-2 product definition
-                    file to define the product metadata, the list of auxiliary data files and the
-                    algorithm steps to be applied to the Level-1P data. The output can be written
+                    The Level-3 Processor (l3proc) generates Level-3 files (l3c|l3s) from l2i input files.
+                    Level-3 files contain geophysical information and auxiliary data on spatio-temporal
+                    grids. The processor uses a Level-3 product definition file to define the product metadata, 
+                    the required Level-2 input data and Level-3 processor algorithm steps 
+                    to be applied to either trajectory or gridded data. The output can be written
                     into multiple files.
-                    Input Level-1 files are automatically selected based on the the source dataset ID 
-                    and l1p version. (see also: `pysiral l2procfiles --help` for running the 
-                    Level-2 processor on individual l1p files).
                     """,
             epilog="For more information, see: https://pysiral.readthedocs.io",
             formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501
@@ -166,67 +180,5 @@ class L3ProcScriptArguments(object):
         for arg_item in arg_item_list:
             arg_flags, args_dict = arg_item.get()
             parser.add_argument(*arg_flags, **args_dict)
-
-        return parser
-
-
-class Level3ProcArgParser(object):
-
-    def __init__(self):
-        super(Level3ProcArgParser, self).__init__(self.__class__.__name__)
-
-        self._args = None
-
-    def parse_command_line_arguments(self):
-        # use python module argparse to parse the command line arguments
-        # (first validation of required options and data types)
-        self._args = self.parser.parse_args()
-
-        # Add additional check to make sure either `l1b-files` or
-        # `start ` and `stop` are set
-
-    #        l1b_file_preset_is_set = self._args.l1b_files_preset is not None
-    #        start_and_stop_is_set = self._args.start_date is not None and \
-    #            self._args.stop_date is not None
-    #
-    #        if l1b_file_preset_is_set and start_and_stop_is_set:
-    #            self.parser.error("-start & -stop and -l1b-files are exclusive")
-    #
-    #        if not l1b_file_preset_is_set and not start_and_stop_is_set:
-    #            self.parser.error("either -start & -stop or -l1b-files required")
-
-
-    @property
-    def parser(self):
-        # XXX: Move back to caller
-
-        # Take the command line options from default settings
-        # -> see config module for data types, destination variables, etc.
-        clargs = DefaultCommandLineArguments()
-
-        # List of command line option required for pre-processor
-        # (argname, argtype (see config module), destination, required flag)
-        options = [
-            ("-l2i-product-dir", "l2i-product-dir", "l2i_basedir", True),
-            ("-l3-product-dir", "l3-product-dir", "l3_product_dir", False),
-            ("-l3-settings", "l3-settings", "l3_settings", False),
-            ("-l3-griddef", "l3-griddef", "l3_griddef", True),
-            ("-l3-output", "l3-output", "l3_output", True),
-            ("-start", "date", "start_date", True),
-            ("-stop", "date", "stop_date", True),
-            ("-period", "period", "period", False),
-            ("-doi", "doi", "doi", False),
-            ("-data-record-type", "data_record_type", "data_record_type", False),
-            ("--remove-old", "remove-old", "remove_old", False),
-            ("--no-critical-prompt", "no-critical-prompt",
-             "no_critical_prompt", False)]
-
-        # create the parser
-        parser = argparse.ArgumentParser()
-        for option in options:
-            argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(
-                argtype, destination, required)
-            parser.add_argument(argname, **argparse_dict)
 
         return parser

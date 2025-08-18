@@ -6,10 +6,13 @@
 
 import argparse
 from datetime import datetime
-from typing import Type, List
+from pathlib import Path
+from typing import Type, Literal, Union
 
 
 from dateperiods import DatePeriod
+from pysiral import psrlcfg
+from pysiral.core.flags import PysiralProcessingLevels, ProductProcessingLevels
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
@@ -73,7 +76,9 @@ def period_conversion() -> Type[argparse.Action]:
             etc.
         """
 
-        def __call__(self, parser, args, values: List[str], option_string=None) -> None:
+        def __call__(self, parser, args, value: str, option_string=None) -> None:
+
+            values = value.split(":")
 
             # Check if either 1 or 2 values are provided
             if not 1 <= len(values) <= 2:
@@ -102,3 +107,71 @@ def period_conversion() -> Type[argparse.Action]:
             )
 
     return PeriodConversion
+
+
+def pysiral_settings_action(
+        target: Literal["proc", "output"],
+        level: Union[PysiralProcessingLevels, ProductProcessingLevels] = None
+) -> Type[argparse.Action]:
+
+    class PysiralSettingsLookup(argparse.Action):
+        """
+        Validates pysiral settings file input for argparse and resolves
+        file path if required for one or multiple settings definitions.
+        """
+
+        def __call__(self, parser, args, value: str, option_string=None) -> None:
+            """
+            Ensure that the argument is the full file path to the configuration file.
+            Valid inputs are either a file path (taken as is) or a settings definition id
+            that will be resolved using pysiral package configuration.
+
+            The input type is expected to be a string or a list of strings (if nargs='+' is used).
+
+            :param parser:
+            :param args:
+            :param value:
+
+            :param option_string:
+
+            :return:
+            """
+
+            # Check if one or multiple settings definitions are provided
+            if is_single_setting := isinstance(value, str):
+                value = [value]  # Convert to list for uniform processing
+
+            # Resolve the settings file path (if path)
+            # NOTE: This will raise an exception if the input is not a valid settings file
+            value = [self._resolve_file(v) if isinstance(v, str) else v for v in value]
+
+            # Set attribute in args
+            setattr(args, self.dest, value[0] if is_single_setting else value)
+
+        @staticmethod
+        def _resolve_file(string: str) -> Path:
+            """
+            Small helper function to convert input automatically to Path.
+            Also raises an exception if the input is not a valid directory.
+
+            :param string: Input argument
+
+            :raises argparse.ArgumentTypeError:
+
+            :return: Input as pathlib.Path
+            """
+            if level not in PysiralProcessingLevels:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid processing level: {level} [{PysiralProcessingLevels.__members__}"
+                )
+
+            settings_filepath = psrlcfg.get_settings_file(target, level, string)
+            if settings_filepath is None:
+                msg = f"Invalid {target}:{level} settings filename or id: {string}\n"
+                msg += f"Recognized {level} processor setting ids:\n"
+                for procdef_id in psrlcfg.get_setting_ids(target, level):
+                    msg += f"  {procdef_id}\n"
+                raise argparse.ArgumentTypeError(msg)
+            return psrlcfg.get_settings_file(target, level, string)
+
+    return PysiralSettingsLookup
