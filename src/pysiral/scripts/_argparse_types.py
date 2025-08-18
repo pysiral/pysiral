@@ -5,14 +5,14 @@
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
-import argparse
 import re
+import argparse
 from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Union, List, Literal
 
 from pysiral import psrlcfg
-from pysiral.core.flags import PysiralProcessingLevels, ProductProcessingLevels
+from pysiral.core.flags import PysiralProcessingLevels
 
 
 def dir_type(ends_with: Union[str, List[str]] = None, must_exist: bool = True) -> Callable:
@@ -20,6 +20,7 @@ def dir_type(ends_with: Union[str, List[str]] = None, must_exist: bool = True) -
     Factory function that provides additional option to the argparse directory type validation.
 
     :param ends_with: Last subdirectory name that the directory path must end with.
+    :param must_exist: If True, the directory must exist; if False, it will be created if it does not exist.
 
     :return: Function to validiates input for argparse
     """
@@ -28,10 +29,11 @@ def dir_type(ends_with: Union[str, List[str]] = None, must_exist: bool = True) -
 
         if ends_with is not None:
             # Optional check: Directory path needs to end with certain directory name
-            if isinstance(ends_with, str):
-                ends_with = [ends_with]
-            if not any(value.name.endswith(suffix) for suffix in ends_with):
-                raise argparse.ArgumentTypeError(f"{value} must end with: {', '.join(ends_with)}")
+            # NOTE: You cannot re-assign a variable from the outer scope in a nested function,
+            # so we need to check the type of `ends_with` and create a list of valid last directories.
+            valid_last_dirs = [ends_with] if isinstance(ends_with, str) else ends_with
+            if not any(Path(value).name.endswith(suffix) for suffix in valid_last_dirs):
+                raise argparse.ArgumentTypeError(f"{value} must end with: {', '.join(valid_last_dirs)}")
 
         # First Check: Directory must exist
         if Path(value).is_dir():

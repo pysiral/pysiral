@@ -988,6 +988,15 @@ class Level3GridDefinition(GridDefinition):
     """ This is a variation of GridDefinition with a mandatory link to
     a griddef yaml file"""
 
+    @classmethod
+    def from_grid_id(cls, l3_grid_id: str) -> "Level3GridDefinition":
+        """ Create a Level3GridDefinition from a grid id """
+        # Get the grid definition file from the pysiral config
+        l3_settings_file = psrlcfg.get_settings_file("grid", None, l3_grid_id)
+        if not l3_settings_file:
+            raise ValueError(f"No grid definition file found for id: {l3_grid_id}")
+        return cls(l3_settings_file)
+
     def __init__(self, l3_settings_file):
         super(Level3GridDefinition, self).__init__(self)
         self.set_from_griddef_file(l3_settings_file)

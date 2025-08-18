@@ -275,10 +275,11 @@ class L1PDataHandler(DefaultLoggingClass):
 class L2iDataHandler(object):
     """ Class for discovering l2i files """
 
-    def __init__(self,
-                 base_directories: Union[List[str], List[Path], str, Path],
-                 search_str: str = "l2i"
-                 ) -> None:
+    def __init__(
+        self,
+        base_directories: Union[List[str], List[Path], str, Path],
+        search_str: str = ("l2i", "l2")
+    ) -> None:
         """
         Set the base directory(ies) to look for l2i file
 

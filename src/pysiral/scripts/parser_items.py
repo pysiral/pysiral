@@ -99,7 +99,7 @@ class Duration(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-d", "--duration"]
     action: str = "store"
     dest: str = "duration"
-    metavar: str = DurationType
+    metavar: str = "<duration>"
     choices: List[Any] = field(default_factory=lambda: DurationType.get_choices())
     type: Callable = str
     help: str = """
@@ -126,8 +126,8 @@ class ProductProcessingLevel(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class DataRecord(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-D", "--data-record"]
-    dest: str = "processing_level"
-    metavar: str = f"{DataRecordType}"
+    dest: str = "data_record"
+    metavar: str = f"<data record>"
     choices: List[Any] = field(default_factory=lambda: DataRecordType.get_choices())
     type: Callable = str
     help: str = """
@@ -209,7 +209,7 @@ class L2Settings(ArgparseArgumentsArgs):
         target="proc",
         level=PysiralProcessingLevels.LEVEL2
     )
-    metavar: str = "<id|filepath>"
+    metavar: str = "<l2 settings id|filepath>"
     help: str = """
     Identifier or file path to the Level-2 Processor definition file.
     This file contains the settings for the Level-2 processor. The default location
@@ -227,7 +227,7 @@ class L3Settings(ArgparseArgumentsArgs):
         level=PysiralProcessingLevels.LEVEL3
     )
     type: Callable = str
-    metavar: str = "<id|filepath>"
+    metavar: str = "<l3 settings id|filepath>"
     help: str = """
     Identifier or file path to the Level-3 Processor definition file.
     This file contains the settings for the Level-2 processor. The default location
@@ -242,7 +242,7 @@ class L2Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
     nargs: str = "+"
     action: Callable = pysiral_settings_action(target="output", level=PysiralProcessingLevels.LEVEL2)
-    metavar: str = "<id|filepath>"
+    metavar: str = "<l2 output id|filepath>"
     help: str = """
     Identifier or file path of one ore several Level-2 output definition files.
     Each file contains the output definition for the l2/l2i dataformat. The default location
@@ -259,7 +259,7 @@ class L2POutputs(ArgparseArgumentsArgs):
         target="output",
         level=ProductProcessingLevels.LEVEL2_PREPROCESSED
     )
-    metavar: str = "<id|filepath>"
+    metavar: str = "<l2p output id|filepath>"
     help: str = """
     Identifier or file path of one Level-2 output definition file.
     Each file contains the output definition for the l2/l2i dataformat. The default location
@@ -278,7 +278,7 @@ class L3Outputs(ArgparseArgumentsArgs):
         level=PysiralProcessingLevels.LEVEL3,
         target="output"
     )
-    metavar: str = "<id|filepath>"
+    metavar: str = "<l3 output id|filepath>"
     help: str = """
     Identifier or file path of one or several Level-3 output definition files.
     Each file contains the output definition for the l3 dataformat. The default location
@@ -344,10 +344,11 @@ class L1PFiles(ArgparseArgumentsArgs):
 
 @dataclass(frozen=True, kw_only=True)
 class L2iDirectory(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["-i", "--l2i-product-dir"]
+    name_or_flags: ClassVar[list[str]] = ["-i", "--l2i-product-dir", "--l2-product-dir"]
     nargs: str = "+"
+    dest: str = "l2_product_directory"
     type: Callable = dir_type(ends_with=["l2i", "l2"])
-    metavar: str = "<directory>"
+    metavar: str = "<l2 directory>"
     help: str = """
     Target Level-2i (l2i) product directory where the Level-2 output files will be written.
     The l2i files need to be organized in `yyyy/mm/` subdirectory structure. 
@@ -357,7 +358,7 @@ class L2iDirectory(ArgparseArgumentsArgs):
 @dataclass(frozen=True, kw_only=True)
 class L3Directory(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-O", "--l3-product-directory"]
-    dest: str = "l3_product_dir"
+    dest: str = "l3_product_directory"
     type: Callable = dir_type(
         must_exist=False,
         ends_with=[
@@ -365,7 +366,7 @@ class L3Directory(ArgparseArgumentsArgs):
             ProductProcessingLevels.LEVEL3_SUPERCOLLATED
         ]
     )
-    metavar: str = "<directory>"
+    metavar: str = "<l3 directory>"
     help: str = """
     Target Level-3 product directory where the Level-3 output files will be written. 
     The last sub-directory must be a valid Level-3 processing level code [l3c|l3s]. 
@@ -375,7 +376,7 @@ class L3Directory(ArgparseArgumentsArgs):
 
 @dataclass(frozen=True, kw_only=True)
 class L3Grid(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["-g", "--l3-grid-id"]
+    name_or_flags: ClassVar[list[str]] = ["l3_grid_id"]
     type: Callable = pysiral_grid_id_type
     metavar: str = "<grid id>"
     help: str = """

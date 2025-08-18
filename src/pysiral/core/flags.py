@@ -111,9 +111,9 @@ class DurationType(StrEnum):
     """
     Enum for duration names for dateperiod.DatePeriod objects.
     """
-    P1D = "daily"
-    P7D = "isoweekly"
-    P1M = "monthly"
+    P1D = "day"
+    P7D = "isoweek"
+    P1M = "month"
 
     @classmethod
     def get_choices(cls) -> List[str]:

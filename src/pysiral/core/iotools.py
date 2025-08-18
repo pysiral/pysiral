@@ -85,10 +85,13 @@ class ReadNC(object):
 
         # Get the variables
         if not self.global_attrs_only:
+
             for key in f.variables.keys():
 
                 try:
                     variable = f.variables[key][:]
+                except OverflowError:
+                    continue
                 except ValueError:
                     continue
 
