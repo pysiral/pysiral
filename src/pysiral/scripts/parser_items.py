@@ -241,7 +241,8 @@ class L3Settings(ArgparseArgumentsArgs):
 class L2Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
     nargs: str = "+"
-    action: Callable = pysiral_settings_action(target="output", level=PysiralProcessingLevels.LEVEL2)
+    dest: str = "l2_outputs"
+    action: Callable = pysiral_settings_action(target="output", level=ProductProcessingLevels.LEVEL2_INTERMEDIATE)
     metavar: str = "<l2 output id|filepath>"
     help: str = """
     Identifier or file path of one ore several Level-2 output definition files.

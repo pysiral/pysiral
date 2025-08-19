@@ -160,7 +160,7 @@ def pysiral_settings_action(
 
             :return: Input as pathlib.Path
             """
-            if level not in PysiralProcessingLevels:
+            if level not in [*PysiralProcessingLevels, *ProductProcessingLevels]:
                 raise argparse.ArgumentTypeError(
                     f"Invalid processing level: {level} [{PysiralProcessingLevels.__members__}"
                 )

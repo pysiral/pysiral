@@ -24,12 +24,12 @@ def l2proc(
     processing_period: DatePeriod = None,
     l2_settings: Union[str, Path] = None,
     l2_outputs: List[Union[str, Path]] = None,
-    exclude_month: List[int] = None,
-    input_version: str = None,
+    exclude_months: List[int] = None,
+    source_dataset_id: str = None,
     l1p_version: str = None,
-    mp_cpu_count: int = None,
     force_l2def_record_type: bool = False,
-    **kwargs: dict
+    use_multiprocessing: bool = False,
+    multiprocessing_num_cores: int = None
 ) -> None:
     """
     Main entry point for the Level-2 Processor job.
@@ -40,17 +40,18 @@ def l2proc(
     :param processing_period: Start date for processing in [year, month, [day]] format.
     :param l2_settings: Path to the Level-2 settings file or its identifier.
     :param l2_outputs: List of output definitions for Level-2 products.
-    :param exclude_month: List of months to exclude from processing (1-12).
-    :param input_version: Version of the input data (optional).
+    :param exclude_months: List of months to exclude from processing (1-12).
+    :param source_dataset_id: Version of the input data (optional).
     :param l1p_version: Version of the Level-1P data (optional).
-    :param mp_cpu_count: Number of CPUs to use for multiprocessing (optional).
     :param force_l2def_record_type: If True, forces the use of a specificLevel-2 definition record type.
+    :param use_multiprocessing: If True, enables multiprocessing for the processor.
+    :param multiprocessing_num_cores: Number of CPU cores to use for multiprocessing (optional).
     """
 
     # Update pysiral multiprocessing settings
-    if mp_cpu_count is not None:
-        logger.info(f"Using {mp_cpu_count} CPU cores.")
-        set_psrl_cpu_count(mp_cpu_count)
+    if multiprocessing_num_cores is not None and not use_multiprocessing:
+        logger.info(f"Using {multiprocessing_num_cores} CPU cores.")
+        set_psrl_cpu_count(multiprocessing_num_cores)
 
     # Get the Level-2 product definition containing the product metadata, list of
     # auxiliary data files and the algorithm steps. This information is saved in
@@ -75,14 +76,14 @@ def l2proc(
     # The Level-2 processor operates in monthly segments, and for a given period,
     # certain months can be excluded from processing.
     period_segments = period.get_segments("month", crop_to_period=True)
-    if exclude_month is not None:
-        period_segments.filter_month(exclude_month)
+    if exclude_months is not None:
+        period_segments.filter_month(exclude_months)
 
     # Initialize the Level-1P data handler
     l1b_data_handler = L1PDataHandler(
         platform,
         hemisphere,
-        source_version=input_version,
+        source_version=source_dataset_id,
         file_version=l1p_version
     )
 
