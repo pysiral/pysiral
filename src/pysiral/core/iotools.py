@@ -90,9 +90,19 @@ class ReadNC(object):
 
                 try:
                     variable = f.variables[key][:]
+
+                # Overflow error can occur if the variable is too large
+                # or if the variable metadata does not match the data type
+                # definition. The first issue can not be fixed, but the
+                # second issue can be fixed by setting the auto_maskandscale
+                # attribute to False (meaning that the variable attributes
+                # are not used to scale the data).
+                # This is only workaround for incorrect metadata in the netCDF file.
                 except OverflowError:
-                    variable_nc = f.variables[key]
-                    variable = np.zeros(variable_nc.shape, dtype=variable_nc.dtype)
+                    var = f.variables[key]
+                    var.set_auto_maskandscale(False)
+                    variable = var[:]
+
                 except ValueError:
                     continue
 
