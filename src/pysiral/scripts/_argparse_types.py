@@ -190,6 +190,25 @@ def positive_int_type(value: str) -> int:
         raise argparse.ArgumentTypeError(f"Invalid integer value: {value}")
 
 
+def month_number_type(value: str) -> int:
+    """
+    Convert a string to a valid month number (1-12).
+
+    :param value: Input argument
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid month number
+
+    :return: Valid month number
+    """
+    try:
+        month_number = int(value)
+        if month_number < 1 or month_number > 12:
+            raise argparse.ArgumentTypeError(f"Month number must be between 1 and 12: {value}")
+        return month_number
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid month number [1-12]: {value}")
+
+
 def doi_type(value: str) -> str:
     """
     Convert a string to a valid DOI format.

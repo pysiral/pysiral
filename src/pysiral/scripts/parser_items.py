@@ -7,7 +7,7 @@ This module defines default command line arguments for pysiral scripts.
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import argparse
-from typing import List, Union, Callable, Any, Tuple, ClassVar
+from typing import List, Union, Callable, Any, Tuple, ClassVar, Optional
 from dataclasses import dataclass, asdict, field
 
 
@@ -17,23 +17,24 @@ from pysiral.core.flags import (
     DurationType, DataRecordType
 )
 from pysiral.scripts._argparse_types import (
-    file_type, positive_int_type, dir_type, doi_type, pysiral_grid_id_type
+    file_type, positive_int_type, dir_type, doi_type,
+    pysiral_grid_id_type, month_number_type
 )
 from pysiral.scripts._argparse_actions import period_conversion, pysiral_settings_action
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class ArgparseArgumentsArgs:
     name_or_flags: ClassVar[list[str]] = []
-    action: Union[str, Callable] = field(default=None)
-    nargs: str = field(default=None)
-    const: Union[str, int] = field(default=None)
+    action: Union[str, Callable, None] = field(default=None)
+    nargs: Optional[str] = field(default=None)
+    const: Union[str, int, None] = field(default=None)
     default: Any = field(default=None)
-    type: Callable = field(default=None)
+    type: Optional[Callable] = field(default=None)
     choices: List[Any] | None = None
-    required: bool = field(default=None)
+    required: Optional[bool] = field(default=None)
     help: str = field(default=None)
-    metavar: str = field(default=None)
+    metavar: Optional[str] = field(default=None)
     dest: str = field(default=None)
 
     def get(self) -> Tuple[List[str], dict[str, Any]]:
@@ -50,8 +51,20 @@ class ArgparseArgumentsArgs:
         # Remove the `name_or_flags` key from the dictionary and return it separately
         return self.name_or_flags, args_dict
 
+    def as_positional(self, argument_name: str) -> "ArgparseArgumentsArgs":
+        """
+        Redefines the argument to be a positional argument
 
-@dataclass(frozen=True, kw_only=True)
+        :param argument_name: The argparse parser to add the argument to.
+        """
+        self.name_or_flags.clear()
+        self.name_or_flags.append(argument_name)
+        self.dest = None
+        self.required = None
+        return self
+
+
+@dataclass(kw_only=True)
 class PlatformID(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-p", "--platform-id"]
     action: str = "store"
@@ -67,11 +80,11 @@ class PlatformID(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class ProcessingPeriod(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["processing_period"]
     action: Callable = period_conversion()
-    # metavar: str = "YYYY-MM[-DD] [YYYY-MM[-DD]]"
+    metavar: str = "<processing period>"
     help: str = """
     Period definition for processing, given as a string in the format "YYYY-MM[-DD][:YYYY-MM[-DD]]".
     If only one date is given, it will be interpreted as a period (e.g., "2023-01" for January 2023 and
@@ -80,7 +93,7 @@ class ProcessingPeriod(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class Hemisphere(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-H", "--hemisphere"]
     action: str = "store"
@@ -94,7 +107,7 @@ class Hemisphere(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class Duration(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-d", "--duration"]
     action: str = "store"
@@ -110,7 +123,7 @@ class Duration(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class ProductProcessingLevel(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-p", "--processing-level"]
     dest: str = "processing_level"
@@ -123,7 +136,7 @@ class ProductProcessingLevel(ArgparseArgumentsArgs):
     """+f" Valid processing levels are: [{', '.join(ProductProcessingLevels.get_choices())}]"
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class DataRecord(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-D", "--data-record"]
     dest: str = "data_record"
@@ -136,17 +149,17 @@ class DataRecord(ArgparseArgumentsArgs):
     """+f" Valid data records are: [{', '.join(DataRecordType.get_choices())}]"
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class ExcludeMonths(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-E", "--exclude-months"]
-    action: str = "store"
+    nargs: str = "+"
+    type: Callable = month_number_type
     dest: str = "exclude_months"
-    metavar: str = "[month_num, month_num, ...]"
-    type: Callable = int
+    metavar: str = "<month number>"
     help: str = "List of months to be excluded from processing, given as integers (1-12)."
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class InputVersion(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-v", "--input-version"]
     action: str = "store"
@@ -160,7 +173,7 @@ class InputVersion(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class SourceDatasetID(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-s", "--source-dataset-id"]
     action: str = "store"
@@ -174,7 +187,7 @@ class SourceDatasetID(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L1PFile(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_file"]
     type: Callable = file_type(suffix=".nc")
@@ -183,7 +196,7 @@ class L1PFile(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L1PSettings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_settings"]
     type: Callable = str
@@ -201,7 +214,7 @@ class L1PSettings(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L2Settings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l2_settings"]
     type: Callable = str
@@ -219,7 +232,7 @@ class L2Settings(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L3Settings(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l3_settings"]
     action: Callable = pysiral_settings_action(
@@ -237,7 +250,7 @@ class L3Settings(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L2Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2-output"]
     nargs: str = "+"
@@ -253,7 +266,7 @@ class L2Outputs(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L2POutputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l2p-output"]
     action: Callable = pysiral_settings_action(
@@ -270,7 +283,7 @@ class L2POutputs(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L3Outputs(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-o", "--l3-output"]
     nargs: str = "+"
@@ -289,7 +302,7 @@ class L3Outputs(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class MultiProcesssingNumCores(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-m", "--multiprocessing-num-cores"]
     dest: str = "multiprocessing_num_cores"
@@ -305,7 +318,7 @@ class MultiProcesssingNumCores(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class UseMultiProcesssing(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["--multiprocessing"]
     dest: str = "use_multiprocessing"
@@ -318,7 +331,7 @@ class UseMultiProcesssing(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class ForceL2DefRecordType(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["--force-l2def-record-type"]
     dest: str = "force_l2def_record_type"
@@ -332,7 +345,7 @@ class ForceL2DefRecordType(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L1PFiles(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l1p_files"]
     nargs: str = "+"
@@ -343,10 +356,10 @@ class L1PFiles(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L2iDirectory(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-i", "--l2i-product-dir", "--l2-product-dir"]
-    nargs: str = "+"
+    nargs: Optional[str] = "+"
     dest: str = "l2_product_directory"
     type: Callable = dir_type(ends_with=["l2i", "l2"])
     metavar: str = "<l2 directory>"
@@ -356,7 +369,7 @@ class L2iDirectory(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L3Directory(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["-O", "--l3-product-directory"]
     dest: str = "l3_product_directory"
@@ -375,7 +388,7 @@ class L3Directory(ArgparseArgumentsArgs):
     """
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class L3Grid(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["l3_grid_id"]
     type: Callable = pysiral_grid_id_type
@@ -385,7 +398,7 @@ class L3Grid(ArgparseArgumentsArgs):
     """+f" Valid grid ids are: [{', '.join(psrlcfg.get_setting_ids('grid'))}]"
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class DOI(ArgparseArgumentsArgs):
     name_or_flags: ClassVar[list[str]] = ["--doi"]
     type: Callable = doi_type

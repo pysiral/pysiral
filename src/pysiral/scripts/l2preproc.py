@@ -8,14 +8,11 @@ from typing import List, Union
 from dateperiods import DatePeriod
 from loguru import logger
 
-
-from pysiral import set_psrl_cpu_count
-from pysiral.scripts.parser_items import DefaultCommandLineArguments
 from pysiral.core.datahandler import L2iDataHandler
-from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
-from pysiral.l2preproc import (Level2PreProcessor, Level2PreProcProductDefinition)
+from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
 from pysiral.scripts.parser_items import (
-    ProcessingPeriod, ExcludeMonths, L2POutputs, L2iDirectory
+    ProcessingPeriod, ExcludeMonths, L2POutputs, L2iDirectory,
+    DOI
 )
 
 
@@ -25,17 +22,13 @@ def l2preproc(
     l2p_outputs: List[Union[str, Path]] = None,
     doi: str = None,
     exclude_month: List[int] = None,
-    mp_cpu_count: int = None,
-    force_l2def_record_type: bool = False,
-    **kwargs: dict
-):
+) -> None:
     """ Caller for converting Level-2 Intermediate (l2i) into
     Level-2 Pre-Processed (l2p) data products.
     NOTE: At the moment that only means summary of valid freeboard/thickness
           data points into daily summary files. """
 
     # Collect job settings from pysiral configuration data and
-
 
     # Get the product definition
     product_def = Level2PreProcProductDefinition()
@@ -82,18 +75,13 @@ def l2preproc(
         l2_pre_processor.process_l2i_files(l2i_daily_files, day)
 
 
-class L2PreProcScriptArguments(DefaultLoggingClass):
+class L2PreProcScriptArguments(object):
 
-    def __init__(self):
-        super(L2PreProcScriptArguments, self).__init__(self.__class__.__name__)
-        self.error = ErrorStatus()
-        self._args = None
+    def __init__(self) -> None:
+        self.parser = self.get_argument_parser()
 
     def get(self, args_list: List[str] = None) -> "argparse.Namespace":
-        args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
-        if args.multiprocessing_num_cores is not None:
-            set_psrl_cpu_count(args.multiprocessing_num_cores)
-        return args
+        return self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
 
     @staticmethod
     def get_argument_parser() -> argparse.ArgumentParser:
@@ -106,11 +94,12 @@ class L2PreProcScriptArguments(DefaultLoggingClass):
         # List of command line option required for the Level-1 pre-processor
         arg_item_list = [
             # Positional arguments
-            L2iDirectory(),
+            L2iDirectory(nargs=None).as_positional("l2_product_directory"),
+            L2POutputs(required=True).as_positional("l2p_output"),
             ProcessingPeriod(),
-            L2POutputs(required=True),
             # Optional arguments
             ExcludeMonths(),
+            DOI(),
         ]
 
         # create the parser
@@ -133,42 +122,5 @@ class L2PreProcScriptArguments(DefaultLoggingClass):
         for arg_item in arg_item_list:
             arg_flags, args_dict = arg_item.get()
             parser.add_argument(*arg_flags, **args_dict)
-
-        return parser
-
-    @property
-    def parser(self):
-        # XXX: Move back to caller
-
-        # Take the command line options from default settings
-        # -> see config module for data types, destination variables, etc.
-        clargs = DefaultCommandLineArguments()
-
-        # List of command line option required for pre-processor
-        # (argname, argtype (see config module), destination, required flag)
-        options = [
-            ("-start", "date", "start_date", False),
-            ("-stop", "date", "stop_date", False),
-            ("-l2i-product-dir", "l2i-product-dir", "l2i_product_dir", True),
-            ("-l2p-output", "l2p-output", "l2p_output", False),
-            ("-exclude-month", "exclude-month", "exclude_month", False),
-            ("-doi", "doi", "doi", False),
-            ("--remove-old", "remove-old", "remove_old", False),
-            ("--no-critical-prompt", "no-critical-prompt",
-             "no_critical_prompt", False),
-            ("--no-overwrite-protection", "no-overwrite-protection",
-             "overwrite_protection", False),
-            ("--overwrite-protection", "overwrite-protection",
-             "overwrite_protection", False)]
-
-        # create the parser
-        parser = argparse.ArgumentParser()
-        for option in options:
-            argname, argtype, destination, required = option
-            argparse_dict = clargs.get_argparse_dict(
-                argtype, destination, required)
-            parser.add_argument(argname, **argparse_dict)
-
-        parser.set_defaults(overwrite_protection=False)
 
         return parser

@@ -114,10 +114,7 @@ class L2ProcScriptArguments(object):
         self.parser = self.get_argument_parser()
 
     def get(self, args_list: List[str] = None) -> "argparse.Namespace":
-        args = self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
-        if args.multiprocessing_num_cores is not None:
-            set_psrl_cpu_count(args.multiprocessing_num_cores)
-        return args
+        return self.parser.parse_args() if args_list is None else self.parser.parse_args(args_list)
 
     @staticmethod
     def get_argument_parser() -> argparse.ArgumentParser:
