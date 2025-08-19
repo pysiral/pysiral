@@ -9,7 +9,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 
 import sys
-from collections import OrderedDict, UserDict
+from collections import UserDict
 from inspect import getframeinfo, stack
 from pathlib import Path
 
@@ -19,12 +19,18 @@ from loguru import logger
 class AttrDict(UserDict):
     """
     Short implementation of attrdict.AttrDict using UserDict. The code is based on the solutions shared here
-    https://stackoverflow.com/a/76231823 and has been modified to allow nestesd AttrDict instances.
+    https://stackoverflow.com/a/76231823 and has been modified to allow nested AttrDict instances.
     """
 
     def __getattr__(self, key):
         item = self.__getitem__(key)
-        return AttrDict(**item) if isinstance(item, dict) else item
+        match item:
+            case list():
+                return [AttrDict(**i) if isinstance(i, dict) else i for i in item]
+            case dict():
+                return AttrDict(**item)
+            case _:
+                return item
 
     def __setattr__(self, key, value):
         if key == "data":

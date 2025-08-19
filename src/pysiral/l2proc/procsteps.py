@@ -76,7 +76,8 @@ class Level2ProcessorStep(DefaultLoggingClass):
 
     def update_error_flag(self, l2, error_status):
         """
-        Add the error_flag of the the processing step to the
+        Add the error_flag of the processing step to the
+
         :param: l2: The Level-2 data container
         :param: error_status: An array with the shape of l2.records containing the error flag
             (False: nominal, True: error)
@@ -84,7 +85,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
         """
         # Update the algorithm error flag in the Level-2 data object
         # NOTE: The bit for which the algorithm error flag is applied depends on the
-        #       on the mandatory value set in each child class of Level2ProcessorStep
+        #       mandatory value set in each child class of Level2ProcessorStep
         flag_value = 2**self.error_bit
         flag = error_status.astype(int)*flag_value
         l2.flag = l2.flag + flag
