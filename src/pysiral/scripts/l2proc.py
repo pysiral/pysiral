@@ -14,7 +14,7 @@ from pysiral.core.datahandler import L1PDataHandler
 from pysiral.l2proc import Level2Processor, Level2ProductDefinition
 
 from pysiral.scripts.parser_items import (
-    ProcessingPeriod, ExcludeMonths,
+    ProcessingPeriod, ExcludeMonths, InputVersion,
     L2Settings, L2Outputs, SourceDatasetID, MultiProcesssingNumCores,
     UseMultiProcesssing, ForceL2DefRecordType
 )
@@ -134,6 +134,7 @@ class L2ProcScriptArguments(object):
             ProcessingPeriod(),
             L2Outputs(required=True),
             SourceDatasetID(required=True),
+            InputVersion(dest="l1p_version", required=True),
             # Optional arguments
             ExcludeMonths(),
             UseMultiProcesssing(),
