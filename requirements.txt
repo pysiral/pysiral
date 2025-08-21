@@ -1,9 +1,7 @@
 astropy
-attrdict
 bottleneck
-cartopy
 cftime
-cython==0.29.35
+cython
 dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods
 dateutils
 flake8
@@ -16,7 +14,6 @@ lxml
 isodate
 isort
 joblib
-matplotlib
 mypy
 netCDF4
 numpy
@@ -41,6 +38,6 @@ sphinx_rtd_theme
 sphinxcontrib-mermaid
 statsmodels
 torch
-xarray==2023.12
+xarray
 xgboost
 xmltodict

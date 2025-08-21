@@ -1,0 +1,566 @@
+# Definition file of supported auxiliary datasets in pysiral
+---
+
+# Note: path keywords must be set in local_machine_def.yaml
+
+# List of icechart products (fmi version)
+icechart:
+
+    # CANADIAN ICE CHARTS
+    canada:
+        pyclass: IC
+        long_name: ICE CHART Sea Ice Concentration
+        filenaming: "merged_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: canada
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: 90
+                    lat_ts:
+                    a:
+                    b:
+                dimension:
+                    n_cols: 5400
+                    n_lines: 5400
+                    dx:
+                    dy:
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: ftp
+            server: sidads.colorado.edu
+            pwdfile: null
+            type: weekly
+            link: "/pub/DATASETS/NOAA/G02171/{area}/{year}/cis_SGRD*_pl_*"
+
+    # AARI ICE CHARTS
+    aari:
+        pyclass: ICA
+        long_name: AARI ICE CHART Sea Ice Concentration
+        filenaming: "aari_arc_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: aari
+        options:
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: 90
+                    lat_ts:
+                    a:
+                    b:
+                dimension:
+                    n_cols: 5400
+                    n_lines: 5400
+                    dx:
+                    dy:
+        subfolders:
+            - year
+            - month
+        source:
+            transfer: http
+            server: aari.ru
+            pwdfile: null
+            type: weekly
+            link: "/resources/d0015/arctic/sigrid/{year}/aari_arc_{year}{month}{day}_pl_a.zip"
+
+    nsidc:
+        pyclass: NSIDCSeaIceChartsSIGRID3
+        long_name: U.S. National Ice Center Arctic and Antarctic Sea Ice Charts in SIGRID-3 Format, Version 1
+        filenaming: "aari_arc_{year}{month}{day}_{variable}.tif"
+        # local_repository = link to the folder declared in local_machine_def
+        local_repository: nsidc
+        options: {}
+
+
+# list of mean_sea_surface data products
+mss:
+
+    # DTU 10 mean sea surface
+    dtu10:
+        pyclass: DTU1MinGrid
+        long_name: DTU10 mean sea surface (1 minute grid)
+        local_repository: dtu10
+        filename: DTU10MSS_1min.nc
+        options: null
+
+    # DTU 13 mean sea surface
+    dtu13:
+        pyclass: DTU1MinGrid
+        long_name: DTU13 mean sea surface (1 minute grid)
+        local_repository: dtu13
+        filename: DTU13MSS_1min.nc
+        options: null
+
+    # DTU 15 mean sea surface
+    dtu15:
+        pyclass: DTU1MinGrid
+        long_name: DTU15 mean sea surface (1 minute grid)
+        local_repository: dtu15
+        filename: DTU15MSS_1min.nc
+        options: null
+
+    # DTU 18 mean sea surface
+    dtu18:
+        pyclass: DTU1MinGrid
+        long_name: DTU18 mean sea surface (1 minute grid)
+        local_repository: dtu18
+        filename: DTU18MSS_1min.nc
+        options: null
+
+    # DTU 18 mean sea surface
+    dtu21:
+        pyclass: DTU1MinGrid
+        long_name: DTU21 mean sea surface (1 minute grid)
+        local_repository: dtu21
+        filename: DTU21MSS_1min.mss.nc
+        options: null
+
+# Mean dynamic topography class
+mdt:
+
+    dtu17:
+        pyclass: DTUMDTGrid
+        long_name: DTU17 mean dynamic topography (1/8 degree grid)
+        local_repository: dtu17
+        filename: dtu17mdt2_err.nc
+        options: null
+        source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
+
+    dtu22:
+        pyclass: DTUMDTGrid
+        long_name: DTU22 mean dynamic topography (1/8 degree grid)
+        local_repository: dtu22
+        filename: dtu22mdt2_err.nc
+        options: null
+        source: null  # Access directly from Stine Kildegaard Rose and Ole Anderson, DTU
+
+
+# List of snow depth (density products)
+snow:
+
+    # Warren99 snow climatology
+    warren99:
+        pyclass: Warren99
+        long_name: Warren, S.G., Rigor, I.G., Untersteiner, N., Radionov, V.F., Bryazgin, N.N., Aleksandrov, Y.I., and Colony, R.. Snow depth on Arctic sea ice. Journal of Climate, 12, 1814-1829, 1999
+        local_repository: null
+        options:
+            fyi_correction_factor: 0.5
+            valid_snow_depth_range: [0, 0.6]
+
+
+    # Merged monthly Warren99/IUP AMSR2 snow depth & density climatology (created by AWI, Stefan Hendricks)
+    clim_w99amsr2:
+        pyclass: Warren99AMSR2Clim
+        long_name: Merged monthly snow depth and density climatology from Warren99 and IUP AMSR2 snow depth.
+        filenaming: "awi-siral-l4-snow_on_seaice-monthly_warren_amsr2_clim-{month}-fv1p0.nc"
+        local_repository: clim_w99amsr2
+        options:
+            variable_map:
+                depth: merged_snow_depth
+                depth_uncertainty: merged_snow_depth_uncertainty
+                density: w99_snow_density_filtered
+                density_uncertainty: w99_snow_density_filtered_uncertainty
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 1216
+                    n_lines: 1792
+                    dx: 6250
+                    dy: 6250
+            subfolders: null
+
+    snow_density_seasonal_mallett:
+        pyclass: SeasonalArcticSnowDensityMallett2020
+        long_name: Seasonal changing Arctic Snow density
+        local_repository: null
+        options:
+            snow_density_uncertainty: 50.
+
+    constant:
+        pyclass: FixedSnowDepthDensity
+        long_name: Constant snow depth and density
+        local_repository: null
+        options:
+            fixed_snow_depth: 0.3
+            fixed_snow_density: 300.0
+
+    icdc_climatology_south:
+        pyclass: ICDCSouthernClimatology
+        long_name: ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology
+        filenaming: "ESA-SICCI_UB-IUP__AMSRE-AMSR2__SnowDepth_on_SeaIce__sh__12.5km__climatology__5DAY-Median__{month}{day}__fv0.01.nc"
+        local_repository: icdc_climatology_south
+        options:
+            snow_depth_nc_variable: mediansnowdepth_filtered100
+            snow_depth_uncertainty_nc_variable: mediansnowdepth_filtered100_variability
+            south:
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 632
+                    n_lines: 664
+                    dx: 12500
+                    dy: 12500
+            subfolders: null
+
+# List of sea ice concentration products
+sic:
+
+    # Operational sea ice concentration product based on SSMIS data. This product is discontinued in 2025,
+    # but the OSI-SAF provides replacement based on AMSR2 data (OSI-408)
+    osi-401:
+
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration (OSI-401)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_repository: osi-401
+        options:
+            is_cdr_icdr: False
+            north: &osi_polstere_grid_nh
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 760
+                    n_lines: 1120
+                    dx: 10000
+                    dy: 10000
+            south: &osi_polstere_grid_sh
+                projection:
+                    proj: stere
+                    ellps: WGS84
+                    lon_0: 0
+                    lat_0: -90
+                    lat_ts: -70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 790
+                    n_lines: 830
+                    dx: 10000
+                    dy: 10000
+        subfolders:
+            - year
+            - month
+
+
+    # Replacement for OSI-401 based on AMSR2 data after SSMIS data distribution was discontinued in 2025.
+    osi-408:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration (AMSR-2) (OSI-408)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_amsr2_{year}{month}{day}1200.nc"
+        local_repository: osi-408
+        options:
+            is_cdr_icdr: False
+            north: *osi_polstere_grid_nh
+            south: *osi_polstere_grid_sh
+        subfolders:
+            - year
+            - month
+
+
+    # This SIC data product definition is a customization that automatically merges the
+    # OSI-SAF 430 and OSI-SAF 450 products. This functionality is a unique feature
+    # of the OsiSafSIC class and is not generally available for auxdata products
+    # Note: The current implementation supports only two products
+    osi-cdr:
+
+        pyclass: OsiSafSIC
+        long_name: "OSI-SAF Sea Ice Concentration {record_type_prefix} Climate Data Record - {version}"
+        local_repository: osisaf-cdr
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
+        options:
+
+            # Parameters for all files independent (can be overwritten by version tags)
+            is_cdr_icdr: True
+
+            global:
+                variable_name: ice_conc
+                north: &osi_ease2_grid_nh
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: 90.0
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
+                south:  &osi_ease2_grid_sh
+                    projection:
+                        proj: laea
+                        lon_0: 0.0
+                        lat_0: -90
+                    dimension:
+                        n_cols: 432
+                        n_lines: 432
+                        dx: 25000
+                        dy: 25000
+            # Specific parameters for v1p0
+            v1p0:
+                uncertainty_variable_name: total_standard_error
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v2p0
+            v2p0:
+                uncertainty_variable_name: total_standard_error
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+
+    # This SIC data product definition is a customization that automatically merges the
+    # OSI-SAF 438 and OSI-SAF 458 products. This functionality is a unique feature
+    # of the OsiSafSIC class and is not generally available for auxdata products
+    # Note: The current implementation supports only two products
+    osi-cdr-amsr2:
+
+        pyclass: OsiSafSIC
+        long_name: "OSI-SAF Sea Ice Concentration {record_type_prefix} Climate Data Record (AMSR2) - {version}"
+        local_repository: osi-cdr-amsr2
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}-amsr_{year}{month}{day}1200.nc"
+
+        options:
+
+            # Parameters for all files independent (can be overwritten by version tags)
+            is_cdr_icdr: True
+
+            global:
+                variable_name: ice_conc
+                north: *osi_ease2_grid_nh
+                south: *osi_ease2_grid_sh
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2025-05-15T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+
+    # Unified entry for C3S cdr/icdr data of different versions
+    c3s:
+
+        pyclass: OsiSafSIC
+        long_name: "C3S Sea Ice Concentration {record_type_prefix} Climate Data Record - {version}"
+        local_repository: c3s
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
+        options:
+
+            # Parameters for all files independent (can be overwritten by version tags)
+            is_cdr_icdr: True
+            global:
+                variable_name: ice_conc
+                north: *osi_ease2_grid_nh
+                south: *osi_ease2_grid_sh
+
+            # Specific parameters for v1p0
+            v1p0:
+                uncertainty_variable_name: total_standard_error
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v2p0
+            v2p0:
+                uncertainty_variable_name: total_standard_error
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v3p0
+            v3p0:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+# List of sea ice type products
+sitype:
+
+    fyi_default:
+        pyclass: FYIDefault
+        long_name: All sea ice is classified per default as first year sea ice
+        local_repository: null
+        options: null
+
+    myi_default:
+        pyclass: MYIDefault
+        long_name: All sea ice is classified per default as multi-year sea ice
+        local_repository: null
+        options: null
+
+    # OSI-SA
+    osi-403:
+        pyclass: OsiSafSIType
+        long_name: OSI-SAF Global Sea Ice Type (OSI-403)
+        filenaming: "ice_type_{hemisphere_code}_polstere-100_multi_{year}{month}{day}1200.nc"
+        local_repository: osi-403
+        options:
+            north: *osi_polstere_grid_nh
+            south: *osi_polstere_grid_sh
+        subfolders:
+            - year
+            - month
+
+    # C3S sea-ice type CDR/ICDR
+    c3s:
+        pyclass: OsiSafSITypeCDR
+        long_name: C3S Sea Ice Type {record_type_prefix} Climate Data Record - {version}"
+        local_repository: c3s
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
+        options:
+
+            is_cdr_icdr: True
+            global:
+                fill_value: -127
+                uncertainty_unit_is_percent: False
+                variable_name: ice_type
+                uncertainty_variable_name: uncertainty
+                north: *osi_ease2_grid_nh
+                south: *osi_ease2_grid_sh
+                        # Specific parameters for v1p0
+            v1p0:
+                cdr_time_coverage_end: 2016-01-01T00:00:00
+
+            # Specific parameters for v2p0
+            v2p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+            # Specific parameters for v2p0
+            v3p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+    icdc_nasateam:
+
+        pyclass: ICDCNasaTeam
+        long_name: Sea-ice concentrations (total, first-year ice and multiyear ice obtained from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm, (c) Stefan Kern, Integrated Climate Data Center (ICDC)
+        filenaming: "NASA-Team_own_TiePoints__ctotal_cfy_cmy__{year}{month}{day}__UHAM-ICDC__v15__0.04__90.nc"
+        local_repository: icdc_nasateam
+        options:
+            variable_name: my_sea_ice_area_fraction_0to100
+            uncertainty_variable_name: my_sea_ice_area_fraction_sdev
+            north: &ssmis_polstere_grid_nh_25km
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 448
+                    dx: 25000
+                    dy: 25000
+            south: null
+        subfolders:
+            - year
+            - month
+
+# Region codes
+region:
+
+    blank_region:
+        pyclass: BlankRegionMask
+        long_name: Dummy region class
+        local_repository: null
+        options: {}
+
+    antarctic_seas:
+        pyclass: AntarcticSeas
+        long_name: "Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J.: Antarctic sea ice variability and trends, 1979–2010, The Cryosphere)"
+        local_repository: null
+        options:
+            ice_free_ocean_code: 1
+            region_def:
+                # To be read as: [region code, region label, lon_min, lon_max, lat_limit]
+                - [2, "Indian Ocean", 20.0,  90.0, -40.0]
+                - [3, "Western Pacific Ocean", 90.0, 160.0, -40.0]
+                - [4, "Ross Sea", 160.0,  -130.0, -40.0]
+                - [5, "Bellingshausen and Amundsen Seas", -130.0, -60.0, -40.0]
+                - [6, "Weddell Sea", -60.0,  20.0, -40.0]
+            attributes: # This is not used yet
+                flag_meanings: "0: Land Ice, 1: Ice-free Oceans, 2: Indian Ocean, 3: Western Pacific Ocean, 4: Ross Sea, 5: Bellingshausen and Amundsen Seas, 6: Weddell Sea, 20: Land"
+                flag_values:  "0, 1, 2, 3, 4, 5, 6, 20"
+                long_name:  "Antarctic Sea "
+
+    # Adapted region mask from NSIDC
+    nsidc_mod:
+        pyclass: NSIDCRegionMask
+        long_name: Arctic region mask adapted from NSIDC region mask (Baltic Sea added)
+        filename: region_mask_nsidc_adapted_v1p0.nc
+        local_repository: nsidc_mod
+        options:
+
+            # Projection is NSIDC SSMI grid
+            north: *ssmis_polstere_grid_nh_25km
+
+    # New version of the NSIDC region mask (v2021)
+    # NOTE: The attributes and projection can be pulled directly from the mask netCDF files
+    nsidc_2021:
+        pyclass: NSIDCRegionMask2021
+        long_name: NSIDC regional mask for Arctic sea ice trends and climatologies (version 2021, J. Scott Stewart and Walter N. Meier, NSIDC)
+        local_repository: nsidc_2021
+        options:
+            filename_template: nsidc_arctic_region_mask_2021_ease2_{resolution_m:05g}.nc
+            # This is the default value, can be overwritten in l2 settings (if required)
+            resolution_m: 1000
+            outside_value: 0
+
+# risk index outcome
+rio:
+
+    rio_fmi:
+        pyclass: RIO
+        long_name: Risk Index Outcome
+        local_repository: null
+        options: null
+
+# Machine learned models
+ml:
+
+    # For ERS
+    tfmra_threshold_model:
+        pyclass: RetrackerThresholdModel
+        long_name: Learned model for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model_torch
+        options: null
+
+    # For Envisat
+    tfmra_threshold_model_torch:
+        pyclass: RetrackerThresholdModelTorch
+        long_name: Learned model (torch) for predicting TFMRA retracker threshold from waveform shape parameters
+        local_repository: tfmra_threshold_model_torch
+        options: null
