@@ -1,9 +1,8 @@
 include LICENSE
-include pysiral/VERSION
-include pysiral/PYSIRAL-CFG-LOC
+include src/pysiral/VERSION
+include src/pysiral/PYSIRAL-CFG-LOC
 include requirements.txt
 include Makefile
-recursive-include bin *.py
-recursive-include pysiral/resources *
-recursive-include pysiral *.pyx
+recursive-include src/pysiral/resources *
+recursive-include src/pysiral *.pyx
 recursive-include tests *.py
