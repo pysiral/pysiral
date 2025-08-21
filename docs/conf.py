@@ -39,7 +39,7 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 
 project = u'pysiral'
-copyright = u'2019, Stefan Hendricks'
+copyright = u'2025, Stefan Hendricks, Alfred Wegener Institut Helmholtz Center for Polar and Marine Research'
 author = u'Stefan Hendricks'
 
 # The short X.Y version

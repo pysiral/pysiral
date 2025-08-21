@@ -3,10 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
 Welcome to pysiral's documentation!
 ===================================
 
-This is the main page for the documentation of the python
+This is the main page for the technical documentation of the python
 sea ice radar altimetry (pysiral) toolbox.
 
 .. note::

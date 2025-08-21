@@ -22,6 +22,10 @@ Glossary
     CCI
         ESA Climate Change Initiative. A program that produces long-term climate data records
 
+    Hemisphere
+        The hemisphere of the Earth, either northern or southern. In pysiral, the hemisphere refers
+        to the Northern and Southern Polar Oceans. 
+
     Level-1 Pre-Processor
         Dedicated processing step in pysiral that ingests source data and creates
         orbit segments over the polar oceans with additional pre-computed parameters
