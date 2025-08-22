@@ -120,9 +120,17 @@ Glossary
         a :term:`Timeliness` code, but also ``cdr`` (climate data record) of ``icdr`` 
         (interim climate data record).
 
+    Stage of Develpment
+
     Sea Ice Concentration
         The fraction of sea ice in a given area. It is usually expressed as a percentage
         (0-100%) or as a fraction (0-1).
+
+    Sea Ice Type
+        The classification of sea ice into different types based on 
+        the stage of development of sea ice. In pysiral, sea ice type
+        is defined as the fraction of multi-year sea ice within in
+        a defined area.
 
     Sensor
         The name of the radar altimeter sensor. In pysiral, each sensor is referenced by a unique

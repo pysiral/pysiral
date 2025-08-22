@@ -21,6 +21,6 @@ satellite remote sensing products by different institutions:
 - `ESA Climate Change Initiative - Sea Ice Thickness Climate Data Record <https://climate.esa.int/en/projects/sea-ice/>`_
 - `ESA CryoSat-2 thematic sea ice and ocean prodcuts (CryoTEMPO) <http://cryosat.mssl.ucl.ac.uk/tempo/>`_
 - `Copernicus Climate Change Services - Sea Ice Thickness (Interim) Climate Data Record <https://cds.climate.copernicus.eu/cdsapp#!/dataset/satellite-sea-ice-thickness>`_
-- `AWI CryoSat-2 sea ice thickness product <https://spaces.awi.de/display/SIRAL/Sea+Ice+Thickness+from+Satellite+Radar+Altimetry>`_
-  feeding into the `ESA SMOS - CryoSat-2 L4 sea ice thickness data prodcut <https://earth.esa.int/eogateway/catalog/smos-cryosat-l4-sea-ice-thickness>`_
-
+- `AWI CryoSat-2/Sentinel-3 sea ice thickness product <https://spaces.awi.de/display/SIRAL/Sea+Ice+Thickness+from+Satellite+Radar+Altimetry>`_
+  feeding into the `ESA SMOS - CryoSat-2/Sentinel-3 L4 sea ice thickness data prodcut <https://earth.esa.int/eogateway/catalog/smos-cryosat-l4-sea-ice-thickness>`_
+- `ESA Southern Ocean Sea Ice Mass Balance Assessment (SO-/SIMBA)  <https://so-simba.github.io/>`_
