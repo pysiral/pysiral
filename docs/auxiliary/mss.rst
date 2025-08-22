@@ -14,7 +14,6 @@ DTU21 Mean Sea Surface - (DTU21)
 Configuration
 ^^^^^^^^^^^^^
 
-
 The :term:`Auxiliary Dataset ID` is ``mss:dt21`` since pysiral version 0.12 and the configuration 
 in the auxiliary data definition of the Level-2 processor definition file is:
 
@@ -25,9 +24,12 @@ in the auxiliary data definition of the Level-2 processor definition file is:
         options:
             latitude_range: [45.0, 90.0]
 
-The only configuration option is the latitude range, which is used to subset the global mean sea surface data, 
-before mapping the content to the radar altimeter trajectory. The latitude range is defined as ``[<latitude_min>, <latitude_max>]``
-and the values need to be adapted to the target :term:`Hemisphere`.
+**Options**
+
+- ``latitude_range``: The latitude range to be used for subsetting the global mean sea surface 
+  data before mapping the content to the radar altimeter trajectory. 
+  The latitude range is defined as `[<latitude_min>, <latitude_max>]` and the values in 
+  decimal degrees need to be adapted to the target :term:`Hemisphere`.
 
 
 Data Variables

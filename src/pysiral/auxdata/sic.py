@@ -1,38 +1,31 @@
 # -*- coding: utf-8 -*-
+
 """
-Created on Sun Apr 24 13:57:56 2016
 
-@author: Stefan
+All sic data handlers must be subclasses of ``pysiral.auxdata.AuxdataBaseClass`` in order to work
+for the Level-2 Processor. If the auxiliary class is based on a static dataset, this should be parsed
+in ``__init__``.
 
-Important Note:
+Please review the variables and properties in the parent class, as well as the correspodning config and
+support classes for grid track interpolation in the pysiral.auxdata module for additional guidance.
 
-    All sic data handlers must be subclasses of pysiral.auxdata.AuxdataBaseClass in order to work
-    for the Level-2 Processor. If the auxiliary class is based on a static dataset, this should be parsed
-    in `__init__`.
+The only other  requirements is the implementation of on specific method in order to be a valid subclass of
+AuxdataBaseClass: ``get_l2_track_vars(l2)``
 
-    Please review the variables and properties in the parent class, as well as the correspodning config and
-    support classes for grid track interpolation in the pysiral.auxdata module for additional guidance.
+This method will be called during the Level-2 processor. The argument is the Level-2 data object and
+the purpose of the method is to compute the auxilary variable(s) and associated uncertainty. These
+variable need to be registered using the `register_auxvar(id, name, value, uncertainty)` method of
+the base class. All sic subclasses need to register at minimum the following variable:
 
-    The only other hard requirements is the presence of on specific method in order to be a valid subclass of
-    AuxdataBaseClass:
+.. code-block:
 
+    sea ice concentration (in percent):
+        id: sic
+        name: sea_ice_concentration
 
-        get_l2_track_vars(l2)
+e.g., this code line is mandatory for ``get_l2_track_vars`` (uncertainty can be None):
 
-            This method will be called during the Level-2 processor. The argument is the Level-2 data object and
-            the purpose of the method is to compute the auxilary variable(s) and associated uncertainty. These
-            variable need to be registered using the `register_auxvar(id, name, value, uncertainty)` method of
-            the base class. All sic subclasses need to register at minimum the following variable:
-
-                sea ice concentration (in percent):
-                    id: sic
-                    name: sea_ice_concentration
-
-            e.g., this code line is mandatory for `get_l2_track_vars` (uncertainty can be None):
-
-                # Register Variables
-                self.register_auxvar("sic", "sea_ice_concentration", value, uncertainty)
-
+    ``self.register_auxvar("sic", "sea_ice_concentration", value, uncertainty)``
 """
 
 
@@ -47,10 +40,15 @@ from scipy.spatial.distance import cdist
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
 from pysiral.core.iotools import ReadNC
+from pysiral.l2data import Level2Data
+
+__author__ = "Stefan Hendricks"
 
 
 class OsiSafSIC(AuxdataBaseClass):
-    """ A class for Sea Ice Concentration data from OSI-SAF """
+    """
+    Class for the OSI SAF sea ice concentration data set.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
         """
@@ -59,6 +57,7 @@ class OsiSafSIC(AuxdataBaseClass):
               and those with a dedicated split into a climate data record (cdr) and an interim
               climate data record (icdr). A pre-processing of the options dictionary is therefore necessary
               to follow the mechanics of the auxiliary data class.
+
         :param args:
         :param kwargs:
         """
@@ -156,9 +155,11 @@ class OsiSafSIC(AuxdataBaseClass):
 
     def _get_sic_track(self, l2: "Level2Data") -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Simple extraction along trajectory
-        :param l2:
-        :return: sea ice concentration, distance to ocean arrays
+        Extraction of grid parameters along trajectory.
+
+        :param l2: Level-2 data object
+
+        :return: sea ice concentration, distance to ocean & distance to low ice concentration
         """
 
         # Extract from grid
@@ -186,6 +187,7 @@ class OsiSafSIC(AuxdataBaseClass):
         next ocean (SIC <= 15% and not land) grid cell. The result will be
         stored to this instance and the data can be extracted along the
         track similar to sea ice concentration
+
         :return:
         """
 
@@ -229,7 +231,9 @@ class OsiSafSIC(AuxdataBaseClass):
     def requested_filepath(self) -> "Path":
         """
         Note: this overwrites the property in the super class due to some
-        peculiarities with the filenaming (auto product changes etc)
+        peculiarities with the filenaming (auto product changes etc.)
+        peculiarities with the filenaming (auto product changes etc.)
+
         :return: The filepath to the target file
         """
 
@@ -292,7 +296,7 @@ class IfremerSIC(AuxdataBaseClass):
         # XXX: This is a dirty hack, but needed for getting SIC lon/lat grid
         self._grid = {}
         for hemisphere in ["north", "south"]:
-            grid_file = Path(self.cfg.local_repository) / "grid_%s_12km.nc" % hemisphere
+            grid_file = Path(self.cfg.local_repository) / f"grid_{hemisphere}_12km.nc"
             self._grid[hemisphere] = ReadNC(grid_file)
 
     def get_l2_track_vars(self, l2):
