@@ -67,3 +67,33 @@ in netCDF format. Data files from both hemispheres need to be organized in the f
             ├── ...
 
 
+C3S Sea Ice Type (Interim) Climate Data Record (C3S)
+----------------------------------------------------
+
+The 
+
+
+.. [SITYPE-C3S-REF] Copernicus Climate Change Service, Climate Data Store, (2020): Sea ice edge and type daily gridded data from 1978 to present derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS). DOI: 10.24381/cds.29c46d83 
+
+.. note:: 
+
+    The availability of this dataset is currently limited to the northern hemisphere. 
+
+
+Data Source and Storage
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block::
+
+    <source directory as defined in local_machine_def.yaml>
+    └── <data record type: cdr|icdr>
+        └── <version: v{major}p{minor}>      # e.g v3p0
+            └── <year>
+                └── <month>
+                    ├── ice_type_nh_ease2-250_{cdr|icdr}-{version}_202012311200.nc
+                    ├── ...
+
+There are two options of downloading the datatset: 
+
+1. Climate Data Store: https://cds.climate.copernicus.eu/datasets/satellite-sea-ice-edge-type
+2. Thredds Server at MET Norway: https://thredds.met.no/thredds/c3s/c3s.html
