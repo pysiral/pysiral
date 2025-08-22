@@ -13,27 +13,26 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import subprocess
 import sys
+import subprocess
+from pathlib import Path
 
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, str(Path('../', 'src').resolve()))
 
 
-def run_apidoc(_):
-    pass
-    # modules = [os.path.join("..", "pysiral")]
-    # for module in modules:
-    #     cmd_path = 'sphinx-apidoc'
-    #     if hasattr(sys, 'real_prefix'):  # Check to see if we are in a virtualenv
-    #         # If we are, assemble the path manually
-    #         cmd_path = os.path.abspath(os.path.join(sys.prefix, 'bin', 'sphinx-apidoc'))
-    #     subprocess.check_call([cmd_path, '-e', '-o', ".", module, '--force'])
+# def run_apidoc(_):
+#     modules = [os.path.join("..", "pysiral")]
+#     for module in modules:
+#         cmd_path = 'sphinx-apidoc'
+#         if hasattr(sys, 'real_prefix'):  # Check to see if we are in a virtualenv
+#             # If we are, assemble the path manually
+#             cmd_path = os.path.abspath(os.path.join(sys.prefix, 'bin', 'sphinx-apidoc'))
+#         subprocess.check_call([cmd_path, '-e', '-o', ".", module, '--force'])
 
 
-def setup(app):
-    pass
-    # app.connect('builder-inited', run_apidoc)
+# def setup(app):
+#     app.connect('builder-inited', run_apidoc)
 
 
 # -- Project information -----------------------------------------------------
@@ -59,7 +58,11 @@ release = u''
 # ones.
 extensions = [
     'sphinx.ext.todo',
-    'sphinxcontrib.mermaid'
+    'sphinxcontrib.mermaid',
+    'sphinx.ext.autodoc',
+    'autoapi.extension',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary'    
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -89,6 +92,8 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# sphinx-autoapi configuration
+autoapi_dirs = ['../src']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -106,7 +111,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = ["_build/html"]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

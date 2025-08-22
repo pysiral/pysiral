@@ -3,7 +3,6 @@
 Auxiliary Datasets
 ==================
 
-
 The configuration file ``auxdata_def.yaml`` defines the auxiliary datasets used 
 mainly in the Level-2 processor. 
 

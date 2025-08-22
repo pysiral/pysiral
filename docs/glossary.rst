@@ -20,7 +20,15 @@ Glossary
         Copernicus Climate Change Service. A program that produces long-term climate and interim data records
 
     CCI
-        ESA Climate Change Initiative. A program that produces long-term climate data records
+        ESA Climate Change Initiative. A program that produces long-term climate data records (term: `CDR`).
+
+    CDR
+        Climate Data Record. A data record that provides a long-term, consistent, and quality controlled
+        representation of a specific climate variable. 
+
+    FYI
+        First year sea ice. This term is used to describe sea ice that has formed during the current 
+        freeze-up season and has not yet survived a summer melt season.
 
     Hemisphere
         The hemisphere of the Earth, either northern or southern. In pysiral, the hemisphere refers
@@ -48,6 +56,10 @@ Glossary
     Mission
         A satellite mission that may consist of one or more satellite platforms. For example,
         Sentinel-3A and Sentinel-3B are part of the Sentinel-3 mission.
+
+    iCDR
+        Interim Climate Data Record. A data record that that is a temporal extensions of 
+        an :term:`CDR` and is used to provide data until the next CDR is available.
 
     Platform
         A specific (satellite) platform. In pysiral, each platform is referenced by a unique
@@ -120,7 +132,8 @@ Glossary
         a :term:`Timeliness` code, but also ``cdr`` (climate data record) of ``icdr`` 
         (interim climate data record).
 
-    Stage of Develpment
+    Stage of Development
+        Sea ice classification usually in operational Ice Charts with distinct classes. 
 
     Sea Ice Concentration
         The fraction of sea ice in a given area. It is usually expressed as a percentage
