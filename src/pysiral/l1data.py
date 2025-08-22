@@ -29,9 +29,9 @@ Waveform Data
 - range for each range bin to the satellite in meters
   dimension: (n_records, n_range_bins)
 - radar mode flag for each waveform:
-    0: LRM
-    1: SAR
-    2: SIN
+    - 0: LRM
+    - 1: SAR
+    - 2: SIN
   (this is necessary for merging CryoSat-2 SAR and SIN adjacent orbit segments)
 - summarizing flag from source data
     0: invalid
@@ -96,6 +96,7 @@ from typing import Any, List, Union
 import numpy as np
 import numpy.typing as npt
 from cftime import num2pydate as cn2pyd
+from datetime import datetime
 from loguru import logger
 from netCDF4 import Dataset, date2num
 from scipy.spatial.transform import Rotation
@@ -135,9 +136,13 @@ class Level1bData(DefaultLoggingClass):
         Appends another l1b object to this one. The `l1b_annex` object is expected
         to have data after the self instance.
 
-        :param l1b_annex:
+        :param l1b_annex: The Level-1B dataset to be appended
+        :param remove_overlap: Trim the appending L1 object in case of temporal overlap
+        :param warn_if_temporal_offset_seconds:
+        :param raise_on_error: Raise an exception if the appending process fails, otherwise an
+            error is logged and the appending is skipped
 
-        :return:
+        :return: None, current L1 object is changed in-place
         """
 
         # Validity Checks
@@ -181,8 +186,7 @@ class Level1bData(DefaultLoggingClass):
         # Update the statistics
         self.info.set_attribute("is_merged_orbit", True)
         self.info.set_attribute("n_records", len(self.time_orbit.timestamp))
-        mission_data_source = ";".join([self.info.mission_data_source,
-                                        l1b_annex.info.mission_data_source])
+        mission_data_source = ";".join([self.info.mission_data_source, l1b_annex.info.mission_data_source])
         self.info.set_attribute("mission_data_source", mission_data_source)
         self.update_l1b_metadata()
 
@@ -491,15 +495,15 @@ class Level1bData(DefaultLoggingClass):
             raise ValueError(f"Could not set value for {data_group_name}.{parameter_name}") from e
 
     @property
-    def n_records(self):
+    def n_records(self) -> int:
         return self.info.n_records
 
     @property
-    def tcs(self):
+    def tcs(self) -> datetime:
         return self.info.start_time
 
     @property
-    def tce(self):
+    def tce(self) -> datetime:
         return self.info.stop_time
 
     @property
