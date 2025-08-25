@@ -7,8 +7,8 @@
 Welcome to pysiral's documentation!
 ===================================
 
-This is the main page for the technical documentation of the python
-sea ice radar altimetry (pysiral) toolbox.
+This is the main page for the technical documentation of the python sea ice radar altimetry (pysiral) toolbox.
+
 
 .. note::
    The documentation is work in progress.
@@ -39,11 +39,10 @@ sea ice radar altimetry (pysiral) toolbox.
    l3proc.rst
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Using pysiral
 
    console_scripts.rst
-   from_python.rst
 
 .. toctree::
    :maxdepth: 1
@@ -56,3 +55,7 @@ sea ice radar altimetry (pysiral) toolbox.
    :caption: Contributing to pysiral
 
    codingconv.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: pysiral API
