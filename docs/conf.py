@@ -62,7 +62,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'autoapi.extension',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary'    
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.autosummary'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
