@@ -72,6 +72,12 @@ platforms of hemispheres are filled dynamically.
 Auxiliary Dataset Definition
 ----------------------------
 
+.. attention:: 
+
+    The ``auxdata_def.yaml`` will be removed in future versions of pysiral. It was designed to hold 
+    class configuration data that does not need to be duplicated in the various Level-2 processor 
+    definition files. Its content will be moved to `pydantic` based configuration models that will 
+    also provide means of configuration data validation. 
 
 
 Custom Location of Configuration Files

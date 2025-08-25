@@ -39,11 +39,10 @@ This is the main page for the technical documentation of the python sea ice rada
    l3proc.rst
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Using pysiral
 
    console_scripts.rst
-   from_python.rst
 
 .. toctree::
    :maxdepth: 1
