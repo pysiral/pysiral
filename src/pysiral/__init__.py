@@ -9,7 +9,9 @@ __all__ = ["_logger", "auxdata", "cryosat2", "envisat", "ers", "sentinel3",
            "l1data", "l1preproc", "l2data", "l2preproc", "l2proc", "l3proc",
            "mask", "retracker",
            "sit", "surface", "waveform", "psrlcfg", "import_submodules", "get_cls",
-           "set_psrl_cpu_count", "__version__", "__software_version__"]
+           "set_psrl_cpu_count",
+           "__version__", "__git_version__", "__git_branch__", "__git_origin__"
+           ]
 
 import importlib
 import multiprocessing
@@ -31,27 +33,25 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
+import pysiral._logger  # isort: skip
+from pysiral._version import (
+    SOFTWARE_VERSION, GIT_VERSION, GIT_BRANCH, GIT_ORIGIN
+)
 from pysiral.core.legacy_classes import AttrDict
 
-# Get version from VERSION in package root
-PACKAGE_ROOT_DIR = Path(__file__).absolute().parent
-VERSION_FILE_PATH = PACKAGE_ROOT_DIR / "VERSION"
-try:
-    version_file = open(str(VERSION_FILE_PATH))
-    with version_file as f:
-        version = f.read().strip()
-except IOError:
-    sys.exit(f'Cannot find VERSION file in package (expected: {PACKAGE_ROOT_DIR / "VERSION"}')
 
+PACKAGE_ROOT_DIR = Path(__file__).parent.resolve()
 
 # Package Metadata
-__version__ = version
+__version__ = SOFTWARE_VERSION
 __author__ = "Stefan Hendricks"
 __author_email__ = "stefan.hendricks@awi.de"
 
 # Get git version (allows tracing of the exact commit)
 # TODO: Implement git version retrieval with git hooks (server-side post receive hook)
-__software_version__ = None
+__git_version__ = GIT_VERSION
+__git_branch__ = GIT_BRANCH
+__git_origin__ = GIT_ORIGIN
 
 
 class _MissionDefinitionCatalogue(object):
