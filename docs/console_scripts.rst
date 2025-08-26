@@ -17,7 +17,8 @@ For local versions of pysiral, the scripts can be run directly from the source d
 
 .. code-block:: bash
 
-    python pysiral/scripts/__init__.py <script_name> <args>
+    export PYTHONPATH="${PYTHONPATH}:<pysriral src dir>"
+    python -m pysiral.scripts <script_name> <args>
 
 or imported directly in python:
 

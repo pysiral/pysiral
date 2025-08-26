@@ -10,9 +10,10 @@ import sys
 from typing import List
 
 # Ensure that the logger is initialized
-import pysiral._logger
+import pysiral._logger  # isort:skip
 
-# from pysiral.scripts.info import info, InfoScriptArguments
+from pysiral.scripts.info import info, InfoScriptArguments
+# from pysiral.scripts.config import config, ConfigScriptArguments
 from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
 from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
 from pysiral.scripts.l2procfiles import l2procfiles, L2ProcFilesScriptArguments
@@ -33,7 +34,7 @@ def main() -> None:
         `info`        Print information about the pysiral installation.
                       (see: pysiral info --help)
                       
-        `config`      Set pysiral configuration to a specific directory.
+        `config`      Set or update pysiral configuration to a specific directory.
                       (see: pysiral set-cfg --help)
 
         `l1preproc`   Generate Level-1 files (l1p) with trajectory sensors data
@@ -76,15 +77,15 @@ def main() -> None:
     func(args)
 
 
-# def info_cli(args_list: List = None) -> None:
-#     """
-#     Command-line interface entry point for the `pysiral info` script.
-#
-#     :param args_list: Command line arguments to be passed to the script.
-#
-#     :return: None
-#     """
-#     info(**vars(InfoScriptArguments().get(args_list)))
+def info_cli(args_list: List = None) -> None:
+    """
+    Command-line interface entry point for the `pysiral info` script.
+
+    :param args_list: Command line arguments to be passed to the script.
+
+    :return: None
+    """
+    info(**vars(InfoScriptArguments().get(args_list)))
 
 
 def l1preproc_cli(args_list: List = None) -> None:

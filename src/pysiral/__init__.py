@@ -33,7 +33,11 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
+# Does not import anything, just sets up the logger
+# (before anything else)
 import pysiral._logger  # isort: skip
+
+# Read the version files
 from pysiral._version import (
     SOFTWARE_VERSION, GIT_VERSION, GIT_BRANCH, GIT_ORIGIN
 )
@@ -44,11 +48,6 @@ PACKAGE_ROOT_DIR = Path(__file__).parent.resolve()
 
 # Package Metadata
 __version__ = SOFTWARE_VERSION
-__author__ = "Stefan Hendricks"
-__author_email__ = "stefan.hendricks@awi.de"
-
-# Get git version (allows tracing of the exact commit)
-# TODO: Implement git version retrieval with git hooks (server-side post receive hook)
 __git_version__ = GIT_VERSION
 __git_branch__ = GIT_BRANCH
 __git_origin__ = GIT_ORIGIN
