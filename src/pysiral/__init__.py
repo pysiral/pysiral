@@ -21,6 +21,7 @@ import socket
 import sys
 from datetime import datetime, timezone
 
+
 try:
     from datetime import UTC
 except ImportError:
@@ -707,19 +708,27 @@ def get_cls(module_name, class_name, relaxed=True):
 
 
 def import_submodules(package, recursive=True):
-    """ Import all submodules of a module, recursively, including subpackages
+    """
+    Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
     :param recursive: Flag if package is a submodule
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
+
+    from pysiral._exceptions import OptionalImportError
+
     if isinstance(package, str):
         package = importlib.import_module(package)
     results = {}
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
         full_name = f'{package.__name__}.{name}'
-        results[full_name] = importlib.import_module(full_name)
+        try:
+            results[full_name] = importlib.import_module(full_name)
+        # Skip modules that cannot be imported due to missing optional dependencies
+        except OptionalImportError:
+            continue
         if recursive and is_pkg:
             results.update(import_submodules(full_name))
     return results
