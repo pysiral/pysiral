@@ -54,6 +54,7 @@ This is the main page for the technical documentation of the python sea ice rada
    :maxdepth: 1
    :caption: Contributing to pysiral
 
+   contributing.rst
    codingconv.rst
 
 .. toctree::
