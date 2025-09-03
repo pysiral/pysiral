@@ -14,7 +14,7 @@ This is the main page for the technical documentation of the python sea ice rada
    The documentation is work in progress.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
 
    what_is_pysiral.rst
@@ -24,7 +24,7 @@ This is the main page for the technical documentation of the python sea ice rada
    glossary.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Supported Datasets
 
    radar_altimeter_datasets.rst
