@@ -612,7 +612,7 @@ class _PysiralPackageConfiguration(object):
             local_machine_def = self.get_yaml_config(filename)
         except IOError:
             msg = f"local_machine_def.yaml not found (expected: {filename})"
-            print(f"local-machine-def-missing: {msg}")
+            # print(f"local-machine-def-missing: {msg}")
             local_machine_def = None
         self.local_machine = local_machine_def
 

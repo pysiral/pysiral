@@ -13,7 +13,7 @@ from typing import List
 import pysiral._logger  # isort:skip
 
 from pysiral.scripts.info import info, InfoScriptArguments
-# from pysiral.scripts.config import config, ConfigScriptArguments
+from pysiral.scripts.config import config, ConfigScriptArguments
 from pysiral.scripts.l1preproc import l1preproc, L1PreProcScriptArguments
 from pysiral.scripts.l2proc import l2proc, L2ProcScriptArguments
 from pysiral.scripts.l2procfiles import l2procfiles, L2ProcFilesScriptArguments
@@ -86,6 +86,17 @@ def info_cli(args_list: List = None) -> None:
     :return: None
     """
     info(**vars(InfoScriptArguments().get(args_list)))
+
+
+def config_cli(args_list: List = None) -> None:
+    """
+    Command-line interface entry point for the `pysiral info` script.
+
+    :param args_list: Command line arguments to be passed to the script.
+
+    :return: None
+    """
+    config(**vars(ConfigScriptArguments().get(args_list)))
 
 
 def l1preproc_cli(args_list: List = None) -> None:
