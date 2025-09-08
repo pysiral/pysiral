@@ -103,22 +103,18 @@ from scipy.spatial.transform import Rotation
 
 from pysiral.core.flags import RadarModes
 from pysiral.core.flags import SurfaceType
-from pysiral.core.legacy_classes import DefaultLoggingClass
 from pysiral.core.output import NCDateNumDef
 
 DATE2NUM_UNIT = "seconds since 1970-01-01 00:00:00.0"
 
 
-class Level1bData(DefaultLoggingClass):
+class Level1bData(object):
     """
     Unified L1b Data Class
     """
     data_groups = ["time_orbit", "correction", "classifier", "waveform", "surface_type"]
 
     def __init__(self):
-
-        super(Level1bData, self).__init__(self.__class__.__name__)
-
         self.info = L1bMetaData()
         self.waveform = L1bWaveforms(self.info)
         self.time_orbit = L1bTimeOrbit(self.info)
@@ -226,7 +222,6 @@ class Level1bData(DefaultLoggingClass):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
         if len(subset_list) == 0:
             return None
-        l1b = copy.deepcopy(self)
         l1b.trim_to_subset(subset_list)
         return l1b
 
