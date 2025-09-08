@@ -66,9 +66,9 @@ class ArgparseArgumentsArgs:
 
 @dataclass(kw_only=True)
 class PlatformID(ArgparseArgumentsArgs):
-    name_or_flags: ClassVar[list[str]] = ["-p", "--platform-id"]
+    name_or_flags: ClassVar[list[str]] = ["-p", "--platform"]
     action: str = "store"
-    dest: str = "platform_id"
+    dest: str = "platform"
     type: Callable = str
     choices: List[Any] = field(default_factory=lambda: psrlcfg.platform_ids)
     metavar: str = "<platform_id>"
