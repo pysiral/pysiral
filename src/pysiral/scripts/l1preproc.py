@@ -22,35 +22,44 @@ from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_pr
 def l1preproc(
     l1p_settings: Union[str, Path] = None,
     processing_period: DatePeriod = None,
-    exclude_month: Optional[List[int]] = None,
+    exclude_months: Optional[List[int]] = None,
     hemisphere: str = "global",
     platform: str = None,
     output_handler_cfg: dict = None,
-    source_repo_id: str = None,
-    **_: Optional[dict]
+    source_dataset_id: str = None,
+    use_multiprocessing: bool = False,
+    multiprocessing_num_cores: Optional[int] = None
 ) -> None:
     """
     Workflow script of the pysiral l1b preprocessor.
 
     :param l1p_settings: Level-1 preprocessor settings file or ID.
     :param processing_period: The processing period to run the preprocessor for.
-    :param exclude_month: List of months to exclude from processing (optional).
+    :param exclude_months: List of months to exclude from processing (optional).
     :param hemisphere: Hemisphere to process data for, default is "global".
     :param platform: Platform identifier (optional).
     :param output_handler_cfg: Configuration for the output handler (optional).
-    :param source_repo_id: Identifier for the source repository (optional).
+    :param source_dataset_id: Identifier for the source repository (optional).
 
     :return: None
     """
+    # Set multiprocessing options
+    if use_multiprocessing and multiprocessing_num_cores is not None:
+        set_psrl_cpu_count(multiprocessing_num_cores)
+
+    # Ensure that the source dataset ID is forwarded to the output handler
+    output_handler_cfg = output_handler_cfg if isinstance(output_handler_cfg, dict) else {}
+    if source_dataset_id is not None:
+        output_handler_cfg.update({"local_machine_def_tag": source_dataset_id})
 
     job = Level1PreProcJobDef(
         l1p_settings,
         processing_period,
-        exclude_month,
+        exclude_months,
         hemisphere,
         platform,
         output_handler_cfg,
-        source_repo_id
+        source_dataset_id
     )
 
     # Take the time

@@ -155,7 +155,7 @@ class RadarModes(object):
 
 
 # TODO: Add marine and land/land ice flag groups
-class SurfaceType(DefaultLoggingClass):
+class SurfaceType(object):
     """
     Container for surface type information.
 
@@ -174,8 +174,6 @@ class SurfaceType(DefaultLoggingClass):
         """
 
         """
-        super(SurfaceType, self).__init__(self.__class__.__name__)
-
         self.surface_type_dict = dict(**SURFACE_TYPE_DICT)
         self._surface_type_flags = []
         self._surface_type = None
