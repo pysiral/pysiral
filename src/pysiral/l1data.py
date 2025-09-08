@@ -222,6 +222,7 @@ class Level1bData(object):
         """ Same as trim_to_subset, except returns a new l1bdata instance """
         if len(subset_list) == 0:
             return None
+        l1b = copy.deepcopy(self)
         l1b.trim_to_subset(subset_list)
         return l1b
 
