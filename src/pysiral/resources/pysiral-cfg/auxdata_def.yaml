@@ -77,9 +77,10 @@ icechart:
         options: {}
 
     usnic_grid:
-        pyclass: USNICGrids
+        pyclass: USNICGrid
         long_name: U.S. National Ice Center Arctic and Antarctic Sea Ice Charts in netCDF Format, Version 1
         filenaming: "usnic_{region}_{year}{month}{day}_grid_v1.0.nc"
+        local_repository: usnic_grid
         options:
           north:
             projection:
