@@ -798,11 +798,12 @@ class USNICGrid(AuxdataBaseClass):
         """
         time_dims = time.shape
         class_dims = (3,) + time_dims
+
+        # Rer
         attrs = {
             "time_dim_parameter": [
                 "sea_ice_concentration_total",
                 "stage_of_development_highest_concentration",
-                "stage_of_development_partial_is_overall_class",
                 "fraction_thin_ice",
                 "fraction_first_year_ice",
                 "fraction_multi_year_ice",
@@ -811,6 +812,7 @@ class USNICGrid(AuxdataBaseClass):
             "class_time_dim_parameter": [
                 "sea_ice_concentration_partial",
                 "stage_of_development_partial",
+                "stage_of_development_partial_is_overall_class",
                 "form_of_ice_partial",
             ],
         }
@@ -821,13 +823,13 @@ class USNICGrid(AuxdataBaseClass):
         data_vars = {
             "sea_ice_concentration_total": (("time",), np.full(time_dims, np.nan)),
             "stage_of_development_highest_concentration": (("time",), np.full(time_dims, -1)),
-            "stage_of_development_partial_is_overall_class": (("time",), np.full(time_dims, -1)),
             "fraction_thin_ice": (("time",), np.full(time_dims, np.nan)),
             "fraction_first_year_ice": (("time",), np.full(time_dims, np.nan)),
             "fraction_multi_year_ice": (("time",), np.full(time_dims, np.nan)),
             "number_of_seaice_classes": (("time", ), np.full(time_dims, -1)),
             'sea_ice_concentration_partial': (("n_classes", "time",), np.full(class_dims, np.nan)),
             'stage_of_development_partial': (("n_classes", "time",), np.full(class_dims, 0)),
+            "stage_of_development_partial_is_overall_class": (("n_classes", "time",), np.full(class_dims, -1)),
             'form_of_ice_partial': (("n_classes", "time",), np.full(class_dims, 0)),
         }
         return xr.Dataset(attrs=attrs, coords=coords, data_vars=data_vars)
@@ -876,7 +878,7 @@ class USNICGrid(AuxdataBaseClass):
 
         for idx, var_name in product(np.arange(3), data.attrs["class_time_dim_parameter"]):
             data[var_name].values = grid2track.get_from_grid_variable(
-                getattr(self._data, var_name)[idx, 0, :, :], flipud=True
+                getattr(self._data, var_name)[0, idx, :, :], flipud=True
             )
 
         return data
