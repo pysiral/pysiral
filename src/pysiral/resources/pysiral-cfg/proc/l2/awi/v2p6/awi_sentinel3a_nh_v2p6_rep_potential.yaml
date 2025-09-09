@@ -1,11 +1,11 @@
 metadata:
-    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
+    label: "AWI Sentinel-3A reprocessed sea-ice thickness product (MarData Potential Version)"
     product_line: awi
     record_type: rep
     platform: sentinel3a
-    version: v2p6
-    file_version_tag: "v2p6"
-    hemisphere: north
+    version: &version "v2p6p1"
+    file_version_tag: *version
+    hemisphere: &hemisphere "north"
 
 
 # --- Ingest auxiliary data ---
@@ -65,9 +65,11 @@ auxdata:
                 snow_density_uncertainty: 50.
 
     - icechart:
-            name: nsidc
+            name: usnic_grid
             options:
-                hemisphere: north
+                select_file: "closest"   # Options: "closest", "latest", "earliest"
+                max_age_days: 10
+                hemisphere: *hemisphere
 
 
 # --- Level-2 processor steps ---

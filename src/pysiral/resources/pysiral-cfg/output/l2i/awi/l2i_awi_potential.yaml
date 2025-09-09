@@ -419,23 +419,44 @@ variables:
 
   ice_chart_sea_ice_concentration_total:
       long_name: "total sea ice concentration from ice chart"
-      comment: "From NSICD ice chart"
+      comment: "From US National Ice Center ice chart"
       coordinates: time
 
   ice_chart_sea_ice_concentration_classes:
       long_name: "sea ice concentration from ice chart per ice class"
-      comment: "From NSICD ice chart"
+      comment: "From US National Ice Center ice chart"
       coordinates: time, num_classes
 
   ice_chart_stage_of_development_classes:
       long_name: "stage of development from ice chart per class"
-      comment: "From NSICD ice chart"
+      comment: "From US National Ice Center ice chart"
       coordinates: time, num_classes
 
   ice_chart_floe_parameter_classes:
       long_name: "floe parameter from ice chart"
-      comment: "From NSICD ice chart"
+      comment: "From US National Ice Center ice chart"
       coordinates: time, num_classes
+
+  ice_chart_thin_ice_fraction:
+      long_name: "thin ice fraction from ice chart"
+      valid_min: 0.0
+      valid_max: 1.0
+      comment: "From US National Ice Center ice chart"
+      coordinates: time
+
+  ice_chart_first_year_ice_fraction:
+      long_name: "first year ice fraction from ice chart"
+      valid_min: 0.0
+      valid_max: 1.0
+      comment: "From US National Ice Center ice chart"
+      coordinates: time
+
+  ice_chart_multi_year_ice_fraction:
+      long_name: "multi year ice fraction from ice chart"
+      valid_min: 0.0
+      valid_max: 1.0
+      comment: "From US National Ice Center ice chart"
+      coordinates: time
 
   distance_coast:
       long_name: "distance to coast"

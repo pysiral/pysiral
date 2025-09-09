@@ -1,12 +1,11 @@
 metadata:
-    label: "AWI Sentinel-3B reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
+    label: "AWI Sentinel-3B reprocessed sea-ice thickness product (MarData Potential Version)"
     product_line: awi
     record_type: rep
     platform: sentinel3b
-    version: v2p6
-    file_version_tag: "v2p6"
-    hemisphere: north
-
+    version: &version "v2p6p1"
+    file_version_tag: *version
+    hemisphere: &hemisphere "north"
 
 # --- Ingest auxiliary data ---
 #
