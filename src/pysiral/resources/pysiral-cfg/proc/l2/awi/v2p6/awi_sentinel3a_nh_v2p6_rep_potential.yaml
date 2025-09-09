@@ -67,14 +67,14 @@ auxdata:
     - icechart:
             name: usnic_grid
             options:
-                select_file: "closest"   # Options: "closest", "latest", "earliest"
-                max_age_days: 10
+                tie_breaker: "after"   # Options: "before", "after"
+                max_offset_days: 7
                 hemisphere: *hemisphere
 
 
 # --- Level-2 processor steps ---
 #
-# A list auxilliary datasets to be ingested before the execution of the processing steps.
+# A list auxiliary datasets to be ingested before the execution of the processing steps.
 
 procsteps:
 

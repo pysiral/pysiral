@@ -17,6 +17,7 @@ from dataclasses import dataclass, field, InitVar
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Literal
+from itertools import product
 from loguru import logger
 
 import pandas as pd
@@ -637,7 +638,7 @@ class USNICGridFileCatalog(object):
                 return value[0]
             case Failure(_):
                 return None
-
+        return None
 
     def _get_closest(
             self,
@@ -746,7 +747,12 @@ class USNICGrid(AuxdataBaseClass):
         self.start_time = None
         self.hemisphere_code = None
 
-    def get_file_catalog(self) -> NSIDCIceChartFileCatalog:
+    def get_file_catalog(self) -> USNICGridFileCatalog:
+        """
+        Generate the file catalog object for the specific hemisphere
+
+        :return: USNICGridFileCatalog object
+        """
         lookup_directory = Path(self.cfg.local_repository) / self.cfg.options.hemisphere
         return USNICGridFileCatalog(lookup_directory)
 
@@ -760,10 +766,6 @@ class USNICGrid(AuxdataBaseClass):
         :return: None
         """
 
-        # These properties are needed to construct the product path
-        self.start_time = l2.info.start_time
-        self.hemisphere_code = l2.hemisphere_code
-
         # Set the requested data
         self.set_requested_date_from_l2(l2)
 
@@ -771,16 +773,61 @@ class USNICGrid(AuxdataBaseClass):
         self.update_external_data()
 
         # Check if error with file I/O
+        dataset = self.get_empty_dataset(l2.time)
         if self.error.status or self._data is None:
-            sitype = self.get_empty_array(l2)
-            uncertainty = self.get_empty_array(l2)
+            ice_chart_l2_track = dataset.copy()
         else:
-            # Get and return the track
-            sitype, uncertainty = self._get_sitype_track(l2)
+            # Get icechart data frame for trajectory
+            ice_chart_l2_track = self.extract_track(l2.longitude, l2.latitude, dataset)
 
+        # Pre-process parameters and set to l2 object
+        self.set_l2_parameters(l2, ice_chart_l2_track)
 
-        # Register the sea ice type data to the L2 data object
-        self.register_auxvar("sitype", "sea_ice_type", sitype, uncertainty)
+    @staticmethod
+    def get_empty_dataset(time: np.ndarray) -> xr.Dataset:
+        """
+        Create a data structure with the correct dimensions and fill values
+        for the ice chart parameters. This dataset is used if to map
+        the ice charts parameters onto, as well as dummy dataset if no
+        ice chart file is found.
+
+        :param time:
+
+        :return: Empty trajectory ice chart dataset
+        """
+        attrs = {
+            "time_dim_parameter": [
+                "sea_ice_concentration_total",
+                "stage_of_development_highest_concentration",
+                "stage_of_development_partial_is_overall_class",
+                "fraction_thin_ice",
+                "fraction_first_year_ice",
+                "fraction_multi_year_ice",
+                "number_of_seaice_classes",
+            ],
+            "class_time_dim_parameter": [
+                "sea_ice_concentration_partial",
+                "stage_of_development_partial",
+                "form_of_ice_partial",
+            ],
+        }
+        coords = {
+            "time": xr.Variable(("time",), time),
+            "n_classes" : xr.Variable(("n_classes",), 3)
+        }
+        data_vars = {
+            "sea_ice_concentration_total": (("time",), np.full((time,), np.nan)),
+            "stage_of_development_highest_concentration": (("time",), np.full((time,), -1)),
+            "stage_of_development_partial_is_overall_class": (("time",), np.full((time,), -1)),
+            "fraction_thin_ice": (("time",), np.full((time,), np.nan)),
+            "fraction_first_year_ice": (("time",), np.full((time,), np.nan)),
+            "fraction_multi_year_ice": (("time",), np.full((time,), np.nan)),
+            "number_of_seaice_classes": (("time", ), np.full((time,), -1)),
+            'sea_ice_concentration_partial': (("n_classes", "time",), np.full((3, time,), np.nan)),
+            'stage_of_development_partial': (("n_classes", "time",), np.full((3, time,), 0)),
+            'form_of_ice_partial': (("n_classes", "time",), np.full((3, time,), 0)),
+        }
+        return xr.Dataset(attrs=attrs, coords=coords, data_vars=data_vars)
 
     def load_requested_auxdata(self) -> None:
         """
@@ -801,42 +848,77 @@ class USNICGrid(AuxdataBaseClass):
         # Read and prepare input data
         self._data = ReadNC(path)
 
-    def _get_sitype_track(self, l2):
+    def extract_track(self, longitude: float, latitude: float, data: xr.Dataset) -> xr.Dataset:
         """
-        Extract ice type and ice type uncertainty along the track
-        :param l2:
-        :return: sitype (array), sitype_uncertainty (array)
+        Map the ice chart parameters onto the Level-2 track
+
+        :param longitude:
+        :param latitude:
+
+        :param data: Data structure with same variables and dimensions as the ice chart data
+
+        :return: Filled data structure
         """
 
-        # --- Extract sea ice type and its uncertainty along the trajectory ---
-        griddef = self.cfg.options[l2.hemisphere]
+        # Set up the grid interpolator
+        griddef = self.cfg.options[self.cfg.options.hemisphere]
         grid_lons, grid_lats = self._data.lon, self._data.lat
-        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
-        sitype = grid2track.get_from_grid_variable(self._data.ice_type[0, :, :], flipud=True)
-        uncertainty = grid2track.get_from_grid_variable(self._data.uncertainty[0, :, :], flipud=True)
+        grid2track = GridTrackInterpol(longitude, latitude, grid_lons, grid_lats, griddef)
 
-        # --- Translate the flags in the file into MYI-fractions ---
-        # The fill value of the sea ice type as changed for different product version
-        # To assure backwards compatibility the fill value defaults to -1 (sea ice type v1p0)
-        # an for newer versions it must be specified in the options
-        fill_value = self.cfg.options.get("fill_value", -1)
-        fillvalue_locations = np.where(sitype == fill_value)[0]
-        sitype[fillvalue_locations] = 5
-        sitype = np.array([*map(self.flag_translator, sitype)])
+        # First get the time-dim parameter
+        for var_name in data.attr["time_dim_parameter"]:
+            data[var_name] = grid2track.get_from_grid_variable(
+                getattr(self._data, var_name), flipud=True
+            )
 
-        # --- Ensure uncertainty units are fractions and not percent ---
-        # In the sea-ice type cdr/icdr v1.0 the unit of uncertainty in percent
-        # while from v2.0 on the unit is fraction. Therefore a switch has been
-        # introduced for v2.0 that turn the unit conversion (default) off
-        uncertainty_unit_is_percent = self.cfg.options.get("uncertainty_unit_is_percent", True)
-        if uncertainty_unit_is_percent:
-            uncertainty = uncertainty / 100.
+        for idx, var_name in product(np.arange(3), data.attr["class_time_dim_parameter"]):
+            data[var_name][idx, :, :] = grid2track.get_from_grid_variable(
+                getattr(self._data, var_name)[idx, :, :], flipud=True
+            )
 
-        # All done, return values
-        return sitype, uncertainty
+        return data
+
+    def set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
+        """
+        Set the parameter sea ice concentrations, stage of developement and floe
+        for the three categories A, B, C as multidim parameters and the total
+        concentration as single parameter
+        """
+
+        var_id_dict = {
+            "sea_ice_concentration_total": "ictsic",
+            "stage_of_development_highest_concentration": "icsodhc",
+            "stage_of_development_partial_is_overall_class": "icsodioc",
+            "fraction_thin_ice": "icfthi",
+            "fraction_first_year_ice": "icffyi",
+            "fraction_multi_year_ice": "icfmyi",
+            "number_of_seaice_classes": "icncls",
+            "sea_ice_concentration_partial": "icsicp",
+            "stage_of_development_partial": "icsodp",
+            "form_of_ice_partial": "icfloep",
+        }
+
+        for var_name in ice_chart_l2_track.attrs["time_dim_parameter"]:
+            self.register_auxvar(var_id_dict[var_name], var_name, ice_chart_l2_track[var_name].values)
+
+        # # Only total sea ice concentration is single dimension parameter
+        # self.register_auxvar(
+        #     "ictsic", "ice_chart_sea_ice_concentration_total",
+        #     ice_chart_l2_track.SIC_T.values
+        # )
+        #
+        dims = {"new_dims": (("ice_chart_class", 3),),
+                "dimensions": ("time", "ice_chart_class"),
+                "add_dims": (("ice_chart_class", np.arange(3)),)}
+        for name in ice_chart_l2_track.attrs["class_time_dim_parameter"]:
+            l2.set_multidim_auxiliary_parameter(
+                var_id_dict[name], name,
+                ice_chart_l2_track[name].values, dims, update=True
+            )
+
 
     @property
-    def requested_filepath(self) -> "Path":
+    def requested_filepath(self) -> Path | None:
         """
         Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (auto product changes etc)
@@ -845,44 +927,11 @@ class USNICGrid(AuxdataBaseClass):
 
         # The path needs to be completed if two products shall be used
         opt = self.cfg.options
-
-        # For data records that consists of cdr/icdr only: Check if in cdr or icdr period
-        # This also affects the long_name of the data set which is updated here
-        is_cdr_icdr = opt.get("is_cdr_icdr", False)
-        version = opt.get("version", None)
-        record_type = None
-        if is_cdr_icdr:
-            product_index = int(self.start_time > opt[opt.version]["cdr_time_coverage_end"])
-            record_type = self.cdr_icdr_record_types[product_index]
-            record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
-            long_name_template = opt.get("long_name_template", {})
-            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
-            self.cfg.set_long_name(long_name)
-
-        # Get the file path
-        # Paths for climate data records should contain record type and version
-        path = Path(self.cfg.local_repository)
-        if is_cdr_icdr:
-            path = path / record_type / version
-
-        # Add period sub-folders as indicated
-        for subfolder_tag in self.cfg.subfolders:
-            subfolder = getattr(self, subfolder_tag)
-            path = path / subfolder
-
-        # Construct the filename
-        filename = self.cfg.filenaming.format(
-            record_type=record_type,
-            version=version,
-            year=self.year,
-            month=self.month,
-            day=self.day,
-            hemisphere_code=self.hemisphere_code)
-
-        # Final Path
-        path = path / filename
-        return path
-
+        return self.ctlg.get_closest(
+            self._requested_date,
+            max_offset_days=opt.max_offset_days,
+            tie_breaker=opt.tie_breaker
+        )
 
 
 class IC(AuxdataBaseClass):
