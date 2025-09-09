@@ -872,14 +872,12 @@ class USNICGrid(AuxdataBaseClass):
 
         # First get the time-dim parameter
         for var_name in data.attrs["time_dim_parameter"]:
-            data[var_name].values = grid2track.get_from_grid_variable(
-                getattr(self._data, var_name)[0, :, :], flipud=True
-            )
+            grid_variable = getattr(self._data, var_name)[0, :, :]
+            data[var_name].values = grid2track.get_from_grid_variable(grid_variable, flipud=True)
 
         for idx, var_name in product(np.arange(3), data.attrs["class_time_dim_parameter"]):
-            data[var_name].values = grid2track.get_from_grid_variable(
-                getattr(self._data, var_name)[0, idx, :, :], flipud=True
-            )
+            grid_variable = getattr(self._data, var_name)[0, idx, :, :]
+            data[var_name].values[idx, :] = grid2track.get_from_grid_variable(grid_variable, flipud=True)
 
         return data
 
