@@ -463,6 +463,11 @@ variables:
       comment: "From l1p"
       coordinates: time
 
+  first_maximum_power:
+      long_name: "first maximum power"
+      comment: "From l1p"
+      coordinates: time
+
   trailing_edge_decay:
       long_name: "trailing edge decay"
       comment: "From l1p"
@@ -480,6 +485,11 @@ variables:
 
   trailing_edge_quality:
       long_name: "trailing edge quality"
+      comment: "From l1p"
+      coordinates: time
+
+  trailing_edge_power_ratio:
+      long_name: "trailing edge power ratio"
       comment: "From l1p"
       coordinates: time
 

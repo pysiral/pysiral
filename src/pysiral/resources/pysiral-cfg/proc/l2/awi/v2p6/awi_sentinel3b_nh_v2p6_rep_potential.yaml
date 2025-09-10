@@ -97,6 +97,7 @@ procsteps:
                 trailing_edge_decay_fit_quality: [tec, trailing_edge_decay_fit_quality]
                 trailing_edge_quality: [teq, trailing_edge_quality]
                 trailing_edge_width: [tew, trailing_edge_width]
+                trailing_edge_power_ratio: [tepr, trailing_edge_power_ratio]
                 late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
                 first_year_ice_class_membership: [fyicm, first_year_ice_class_membership]
                 multi_year_ice_class_membership: [myicm, multi_year_ice_class_membership]
