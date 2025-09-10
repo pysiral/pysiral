@@ -797,7 +797,7 @@ class USNICGrid(AuxdataBaseClass):
         :return: Empty trajectory ice chart dataset
         """
         time_dims = time.shape
-        class_dims = (3,) + time_dims
+        class_dims = time_dims + (3,)
 
         # Rer
         attrs = {
@@ -818,7 +818,7 @@ class USNICGrid(AuxdataBaseClass):
         }
         coords = {
             "time": xr.Variable(("time",), time),
-            "n_classes" : xr.Variable(("n_classes",), np.arange(3))
+            "n_classes": xr.Variable(("n_classes",), np.arange(3))
         }
         data_vars = {
             "sea_ice_concentration_total": (("time",), np.full(time_dims, np.nan)),
@@ -827,10 +827,10 @@ class USNICGrid(AuxdataBaseClass):
             "fraction_first_year_ice": (("time",), np.full(time_dims, np.nan)),
             "fraction_multi_year_ice": (("time",), np.full(time_dims, np.nan)),
             "number_of_seaice_classes": (("time", ), np.full(time_dims, -1)),
-            'sea_ice_concentration_partial': (("n_classes", "time",), np.full(class_dims, np.nan)),
-            'stage_of_development_partial': (("n_classes", "time",), np.full(class_dims, 0)),
-            "stage_of_development_partial_is_overall_class": (("n_classes", "time",), np.full(class_dims, -1)),
-            'form_of_ice_partial': (("n_classes", "time",), np.full(class_dims, 0)),
+            'sea_ice_concentration_partial': (("time", "n_classes",), np.full(class_dims, np.nan)),
+            'stage_of_development_partial': (("time", "n_classes",), np.full(class_dims, 0)),
+            "stage_of_development_partial_is_overall_class": (("time", "n_classes",), np.full(class_dims, -1)),
+            'form_of_ice_partial': (("time", "n_classes",), np.full(class_dims, 0)),
         }
         return xr.Dataset(attrs=attrs, coords=coords, data_vars=data_vars)
 
@@ -877,7 +877,7 @@ class USNICGrid(AuxdataBaseClass):
 
         for idx, var_name in product(np.arange(3), data.attrs["class_time_dim_parameter"]):
             grid_variable = getattr(self._data, var_name)[0, idx, :, :]
-            data[var_name].values[idx, :] = grid2track.get_from_grid_variable(grid_variable, flipud=True)
+            data[var_name].values[:, idx] = grid2track.get_from_grid_variable(grid_variable, flipud=True)
 
         return data
 
@@ -901,24 +901,30 @@ class USNICGrid(AuxdataBaseClass):
             "form_of_ice_partial": "icfloep",
         }
 
-        for var_name in ice_chart_l2_track.attrs["time_dim_parameter"]:
-            self.register_auxvar(var_id_dict[var_name], var_name, ice_chart_l2_track[var_name].values)
+        var_name_dict = {
+            "sea_ice_concentration_total": "ice_chart_sea_ice_concentration_total",
+            "stage_of_development_highest_concentration": "icsodhc",
+            "stage_of_development_partial_is_overall_class": "icsodioc",
+            "fraction_thin_ice": "ice_chart_thin_ice_fraction",
+            "fraction_first_year_ice": "ice_chart_first_year_ice_fraction",
+            "fraction_multi_year_ice": "ice_chart_multi_year_ice_fraction",
+            "number_of_seaice_classes": "ice_chart_num_classes",
+            "sea_ice_concentration_partial": "ice_chart_sea_ice_concentration_classes",
+            "stage_of_development_partial": "ice_chart_stage_of_development_classes",
+            "form_of_ice_partial": "ice_chart_floe_parameter_classes",
+        }
 
-        # # Only total sea ice concentration is single dimension parameter
-        # self.register_auxvar(
-        #     "ictsic", "ice_chart_sea_ice_concentration_total",
-        #     ice_chart_l2_track.SIC_T.values
-        # )
-        #
+        for var_name in ice_chart_l2_track.attrs["time_dim_parameter"]:
+            self.register_auxvar(var_id_dict[var_name], var_name_dict[var_name], ice_chart_l2_track[var_name].values)
+
         dims = {"new_dims": (("ice_chart_class", 3),),
                 "dimensions": ("time", "ice_chart_class"),
                 "add_dims": (("ice_chart_class", np.arange(3)),)}
-        for name in ice_chart_l2_track.attrs["class_time_dim_parameter"]:
+        for var_name in ice_chart_l2_track.attrs["class_time_dim_parameter"]:
             l2.set_multidim_auxiliary_parameter(
-                var_id_dict[name], name,
-                ice_chart_l2_track[name].values, dims, update=True
+                var_id_dict[var_name], var_name_dict[var_name],
+                ice_chart_l2_track[var_name].values, dims, update=True
             )
-
 
     @property
     def requested_filepath(self) -> Path | None:

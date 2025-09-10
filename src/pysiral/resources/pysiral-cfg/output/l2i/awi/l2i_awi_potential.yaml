@@ -22,7 +22,7 @@ global_attributes:
   - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
   - references: "Hendricks, S., & Paul, S. (2023). Product User Guide & Algorithm Specification - AWI CryoSat-2 Sea Ice Thickness (version 2.6), Issued by Zenodo (v2.6). https://doi.org/10.5281/zenodo.10044554"
   - tracking_id: "{uuid}"
-  - conventions: "CF-1.6"
+  # - conventions: "CF-1.6"
   - product_version: "2.6"
   - processing_level: "Level-2 intermediate (l2i)"
   - summary: "This dataset contains Level-2 sea ice thickness data from   satellite observations in the northern hemisphere. Level-3 data are raw   observations processed to geophysical quantities, and placed onto a regular grid."
