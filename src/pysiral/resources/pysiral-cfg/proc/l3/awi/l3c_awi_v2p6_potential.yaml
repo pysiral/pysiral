@@ -18,6 +18,11 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
+    ocog_width:
+        grid_method: none
+        dtype: f4
+        fillvalue: .NAN
+
     leading_edge_width:
         grid_method: none
         dtype: f4
@@ -169,12 +174,12 @@ l2_parameter:
         fillvalue: .NAN
 
     trailing_edge_width:
-        grid_method: average
+        grid_method: none
         dtype: f4
         fillvalue: .NAN
 
     late_tail_to_peak_power:
-        grid_method: average
+        grid_method: none
         dtype: f4
         fillvalue: .NAN
 
@@ -365,6 +370,7 @@ processing_items:
       options:
         parameters:
           - "sigma0"
+          - "ocog_width"
           - "leading_edge_width"
           - "pulse_peakiness"
           - "late_tail_to_peak_power"

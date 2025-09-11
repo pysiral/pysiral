@@ -720,3 +720,53 @@ variables:
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_mean:
+    var_source_name: stat_ocog_width_ratio_all_mean
+    long_name: "OCOG width - average (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_sdev:
+    var_source_name: stat_ocog_width_ratio_all_sdev
+    long_name: "OCOG width - standard deviation (all waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_sea_ice_mean:
+    long_name: "OCOG width - average (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_sea_ice_sdev:
+    long_name: "OCOG width - standard deviation (sea ice waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_ocean_mean:
+    long_name: "OCOG width - average(ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_ocean_sdev:
+    long_name: "OCOG width - standard deviation (ocean waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_lead_mean:
+    long_name: "OCOG width - average (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement
+
+  stat_ocog_width_ratio_lead_sdev:
+    long_name: "OCOG width - standard deviation (lead waveforms)"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    coverage_content_type: physicalMeasurement

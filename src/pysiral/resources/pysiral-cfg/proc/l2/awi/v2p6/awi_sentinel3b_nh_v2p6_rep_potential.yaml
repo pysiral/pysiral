@@ -85,6 +85,7 @@ procsteps:
         options:
             classifier:
                 sigma0_ocean: [sig, sigma0]
+                ocog_width: [ocogw, ocog_width]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]

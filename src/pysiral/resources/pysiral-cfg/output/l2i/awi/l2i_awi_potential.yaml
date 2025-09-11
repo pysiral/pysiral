@@ -283,6 +283,11 @@ variables:
     units: degrees
     coordinates: time
 
+  ocog_width:
+    long_name: "OCOG waveform width"
+    units: "1"
+    coordinates: time
+
   sigma0:
     long_name: "radar backscatter (sigma0)"
     units: "1"
