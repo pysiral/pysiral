@@ -638,6 +638,7 @@ class USNICGridFileCatalog(object):
                 logger.info(f"Found {value} on {target_date}.")
                 return value[0]
             case Failure(_):
+                logger.warning(f"{result}")
                 return None
         return None
 
@@ -646,7 +647,7 @@ class USNICGridFileCatalog(object):
             target_date: date,
             max_offset_days: int,
             tie_breaker: Literal["before", "after"]
-    ) -> Result[Tuple[Path, int], Tuple[str, int]]:
+    ) -> Result[Tuple[Path, int], str]:
         """
         Get the closest file for the given date within the maximum offset.
 
@@ -661,7 +662,7 @@ class USNICGridFileCatalog(object):
             if no file is found within the maximum offset.
         """
         if self.ctlg.empty:
-            return Failure(("Catalog is empty", -1))
+            return Failure("Catalog is empty")
 
         # Check if there is any overlap with the 7-day validity periods of ice charts
         is_in_period = (
@@ -699,7 +700,7 @@ class USNICGridFileCatalog(object):
 
         return (
             Success((matched_entry.file_path, int(offset_days))) if offset_days <= max_offset_days
-            else Failure((f"Closest match ({int(offset_days)}) exceeding {max_offset_days=}", int(offset_days)))
+            else Failure(f"Closest match ({int(offset_days)} days) exceeding {max_offset_days=} days")
         )
 
     @staticmethod
