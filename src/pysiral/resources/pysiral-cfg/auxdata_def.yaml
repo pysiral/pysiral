@@ -76,7 +76,35 @@ icechart:
         local_repository: nsidc
         options: {}
 
-
+    usnic_grid:
+        pyclass: USNICGrid
+        long_name: U.S. National Ice Center Arctic and Antarctic Sea Ice Charts in netCDF Format, Version 1
+        filenaming: "usnic_{region}_{year}{month}{day}_grid_v1.0.nc"
+        local_repository: usnic_grid
+        options:
+          north:
+            projection:
+              proj: laea
+              lon_0: 0.0
+              lat_0: 90.0
+            dimension:
+              n_cols: 864
+              n_lines: 864
+              dx: 12500
+              dy: 12500
+          south:
+            projection:
+              proj: laea
+              lon_0: 0.0
+              lat_0: 90.0
+            dimension:
+              n_cols: 864
+              n_lines: 864
+              dx: 12500
+              dy: 12500
+          subfolders:
+            - year
+            - month
 # list of mean_sea_surface data products
 mss:
 

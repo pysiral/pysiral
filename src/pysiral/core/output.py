@@ -505,11 +505,24 @@ class NCDataFile(DefaultLoggingClass):
             if 'flag_meanings' in attribute_dict.keys() and "flag_values" in attribute_dict.keys():
                 # Check to see if data is currently using fewer bits than the flag allows
                 flag_values = [int(x) for x in re.split(r"\s+|, |,", str(attribute_dict['flag_values']))]
-                flag_dtype = np.byte
-                if max(flag_values) >= 128:
-                    flag_dtype = np.short
-                if max(flag_values) >= 65536:
+                min_value, max_values = min(flag_values), max(flag_values)
+
+                # Determine the smallest possible datatype (signed and unsigned) for the flag values
+                # NOTE: Bad hack ...
+                if min_value >= 0 and max_values < 256:
+                    flag_dtype = np.uint8
+                elif min_value >= 0 and max_values < 65536:
+                    flag_dtype = np.uint16
+                elif min_value >= 0 and max_values < 4294967296:
+                    flag_dtype = np.uint32
+                elif min_value < 0 and max_values < 128:
+                    flag_dtype = np.int8
+                elif min_value < 0 and max_values < 32768:
+                    flag_dtype = np.int16
+                elif min_value < 0 and max_values < 2147483648:
                     flag_dtype = np.int32
+                else:
+                    flag_dtype = np.int64
             else:
                 # Create and set the variable
                 flag_dtype = data.dtype.str
