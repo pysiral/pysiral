@@ -616,107 +616,107 @@ variables:
     coverage_content_type: physicalMeasurement
 
   stat_pulse_peakiness_lead_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    long_name: "late tail to peak power - standard deviation (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_mean:
     var_source_name: stat_late_tail_to_peak_power_all_mean
-    long_name: "average pulse peakiness coefficient (all waveforms)"
+    long_name: "late tail to peak power - average (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_sdev:
     var_source_name: stat_late_tail_to_peak_power_all_sdev
-    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
+    long_name: "late tail to peak power - standard deviation (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_sea_ice_mean:
-    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
+    long_name: "late tail to peak power - average (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_sea_ice_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
+    long_name: "late tail to peak power - standard deviation (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_ocean_mean:
-    long_name: "average pulse peakiness coefficient (ocean waveforms)"
+    long_name: "late tail to peak power - average (ocean waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_ocean_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (ocean waveforms)"
+    long_name: "late tail to peak power - standard deviation (ocean waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_lead_mean:
-    long_name: "average pulse peakiness coefficient (lead waveforms)"
+    long_name: "late tail to peak power - average (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_late_tail_to_peak_power_lead_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    long_name: "trailing edge power ratio - standard deviation (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_mean:
     var_source_name: stat_trailing_edge_power_ratio_all_mean
-    long_name: "average pulse peakiness coefficient (all waveforms)"
+    long_name: "trailing edge power ratio - average (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_sdev:
     var_source_name: stat_trailing_edge_power_ratio_all_sdev
-    long_name: "pulse peakiness coefficient standard_deviation (all waveforms)"
+    long_name: "trailing edge power ratio - standard deviation (all waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_sea_ice_mean:
-    long_name: "average pulse peakiness coefficient (sea ice waveforms)"
+    long_name: "trailing edge power ratio - average (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_sea_ice_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (sea ice waveforms)"
+    long_name: "trailing edge power ratio - standard deviation (sea ice waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_ocean_mean:
-    long_name: "average pulse peakiness coefficient (ocean waveforms)"
+    long_name: "trailing edge power ratio - average(ocean waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_ocean_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (ocean waveforms)"
+    long_name: "trailing edge power ratio - standard deviation (ocean waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_lead_mean:
-    long_name: "average pulse peakiness coefficient (lead waveforms)"
+    long_name: "trailing edge power ratio - average (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
 
   stat_trailing_edge_power_ratio_lead_sdev:
-    long_name: "pulse peakiness coefficient standard_deviation (lead waveforms)"
+    long_name: "trailing edge power ratio - standard deviation (lead waveforms)"
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
     coverage_content_type: physicalMeasurement
