@@ -49,6 +49,7 @@ dependencies = [
     "pyresample",
     "python-dateutil",
     "pyyaml",
+    "returns",
     "samosa-waveform-model @ git+https://github.com/pysiral/samosa-waveform-model.git@main#egg=samosa-waveform-model",
     "schema",
     "scipy",
