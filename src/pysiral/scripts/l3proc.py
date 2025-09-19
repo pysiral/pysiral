@@ -207,7 +207,7 @@ class L3ProcScriptArguments(object):
         """
         if duration is not None:
             return duration
-        duration_dict = {"M": DurationType.P1M, "D": DurationType.P1D}
+        duration_dict = {"Y": DurationType.P1M, "M": DurationType.P1M, "D": DurationType}
         least_significant_period = processing_period.duration.isoformat[-1]  # Remove the trailing 'Z'
         duration = duration_dict.get(least_significant_period)
         logger.info(f"Set L3 product duration to: `{duration}`")
