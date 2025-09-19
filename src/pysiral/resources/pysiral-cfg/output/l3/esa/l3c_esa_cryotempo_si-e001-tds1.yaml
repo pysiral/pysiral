@@ -1,0 +1,392 @@
+# This is the output definition for ESA CCI on sea ice phase 2 (SICCI-2) product files
+
+# Metadata
+metadata:
+  output_id: l3c_tempo_d001
+  data_level: 3
+  data_level_description: Level-3 colated (gridded geophysical parameters)
+
+# Output Definition (for each period definition)
+filenaming:
+  month: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}_E001-TDS1.nc"
+  monthly: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m}-E001-TDS1.nc"
+  isoweek: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-E001-TDS1.nc"
+  day: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-E001-TDS1.nc"
+  custom: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-E001-TDS1.nc"
+  default: "CS_OFF_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}_{time_coverage_end:%Y%m%d}-E001-TDS1.nc"
+
+product_level_subfolder: l3c_internal
+
+grid_options:
+  flip_yc: True
+  time_dim_is_unlimited: False
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "Gridded Cryo-TEMPO Winter Sea Ice Freeboard, Snow Depth and Thickness (Baseline-E Test Data Set 1)"
+  - institution: ""
+  - source: ""
+  - platform: "CryoSat-2"
+  - sensor: "SIRAL"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: ""
+  - tracking_id: "{uuid}"
+  - conventions: "CF-1.6"
+  - product_version: ""
+  - processing_level: "Level-3 Collated (l3c)"
+  - summary: ""
+  - keywords: ""
+  - id: "CS_OFFL_SIR_TDP_SI_{grid_id:uppercase}-{time_coverage_start:%Y%m%d}-{time_coverage_end:%Y%m%d}-E001-TDS1"
+  - naming_authority: ""
+  - keywords_vocabulary: "GCMD Science Keywords"
+  - doi: "None"
+  - cdm_data_type: "Grid"
+  - comment: ""
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: ""
+  - creator_type: ""
+  - creator_url: ""
+  - contributor_name: ""
+  - contributor_role: ""
+  - project: "ESA Cryo-TEMPO"
+  - publisher_name: ""
+  - publisher_url: ""
+  - publisher_email: ""
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: 90.0
+  - geospatial_lon_min: -180.0
+  - geospatial_lon_max: 180.0
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - spatial_resolution: "{grid_spacing_tag} grid spacing"
+  - geospatial_bounds_crs: "EPSG:6931"
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - time_coverage_duration: "{time_coverage_duration}"
+  - time_coverage_resolution: "{time_coverage_duration:period}"
+  - standard_name_vocabulary: "CF Standard Name Table (v36, 21 September 2016)"
+  - license: ""
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-3 parameter
+variables:
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude coordinate
+    standard_name: longitude
+    units: degrees_east
+
+  lat:
+    var_source_name: latitude
+    long_name: latitude coordinate
+    standard_name: latitude
+    units: degrees_north
+
+  radar_freeboard:
+    long_name: "radar freeboard"
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "elevation of retracked point above instantaneous sea surface height (no snow range corrections)"
+
+  ice_chart_thin_ice_fraction:
+    long_name: "Thin Ice Fraction from Ice Charts"
+    standard_name: "sea_ice_classification"
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Fraction of thin ice (New Ice, Nilas & Ring Ice, Young Ice, Grey Ice, White Ice) within grid cell from ice charts (0.0 - 1.0)"
+
+  ice_chart_fyi_fraction:
+    long_name: "First Year Ice Fraction from Ice Charts"
+    standard_name: "sea_ice_classification"
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Fraction of first year ice (FYI) within grid cell from ice charts (0.0 - 1.0)"
+
+  ice_chart_myi_fraction:
+    long_name: "Multi Year Ice Fraction from Ice Charts"
+    standard_name: "sea_ice_classification"
+    units: "1"
+    valid_min: 0.0
+    valid_max: 1.0
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Fraction of multi year ice (MYI) within grid cell from ice charts (0.0 - 1.0)"
+
+  radar_freeboard_uncertainty:
+    long_name: "uncertainty associated with radar freeboard"
+    var_source_name: radar_freeboard_l3_uncertainty
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_old:
+    long_name: "Sea Ice Freeboard Baseline-D"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: ""
+
+  sea_ice_freeboard_uncertainty_old:
+    long_name: "Sea Ice Freeboard Uncertainty Baseline-D"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_sol01:
+    long_name: "Sea Ice Freeboard Solution 1"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from radar freeboard and snow depth solution 01"
+    ancillary_variables: "sea_ice_freeboard_uncertainty_sol01"
+
+  sea_ice_freeboard_uncertainty_sol01:
+    long_name: "Sea Ice Freeboard Uncertainty Solution 1"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_sol02:
+    long_name: "Sea Ice Freeboard Solution 2"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from radar freeboard and snow depth solution 02"
+    ancillary_variables: "sea_ice_freeboard_uncertainty_sol02"
+
+  sea_ice_freeboard_uncertainty_sol02:
+    long_name: "Sea Ice Freeboard Uncertainty Solution 2"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_sol03:
+    long_name: "Sea Ice Freeboard Solution 3"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from radar freeboard and snow depth solution 03"
+    ancillary_variables: "sea_ice_freeboard_uncertainty_sol03"
+
+  sea_ice_freeboard_uncertainty_sol03:
+    long_name: "Sea Ice Freeboard Uncertainty Solution 3"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_freeboard_filtered:
+    long_name: "Sea Ice Freeboard Filtered Baseline-D"
+    standard_name: sea_ice_freeboard
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "with along-track low-pass filter applied"
+
+  snow_depth_old:
+    long_name: "Snow Depth Baseline-D"
+    standard_name: surface_snow_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    ancillary_variables: "snow_depth_uncertainty_old"
+
+  snow_depth_uncertainty_old:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_old:
+    long_name: "Snow Density Baseline-D"
+    standard_name: surface_snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    ancillary_variables: "snow_density_uncertainty_old"
+
+  snow_density_uncertainty_old:
+    long_name: "Snow Density Uncertainty Baseline-D"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_sol01:
+    long_name: "Snow Density Solution 1"
+    standard_name: surface_snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From merged Warren99 and SnowModel climatology"
+    ancillary_variables: "snow_density_uncertainty_sol01"
+
+  snow_density_uncertainty_sol01:
+    long_name: "Snow Density Uncertainty Solution 1"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_density_sol02:
+    long_name: "Snow Density Solution 2"
+    standard_name: surface_snow_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From SnowModel climatology"
+    ancillary_variables: "snow_density_uncertainty_sol01"
+
+  snow_density_uncertainty_sol02:
+    long_name: "Snow Density Uncertainty Baseline-D"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_density_sol01:
+    long_name: "Sea Ice Density Solution 1"
+    standard_name: sea_ice_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From Alexandrov et al. 2010, with 50% correction first year ice fraction"
+    ancillary_variables: "snow_density_uncertainty_sol01"
+
+  sea_ice_density_uncertainty_sol01:
+    long_name: "Sea ICe Density Uncertainty Solution 1"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_density_sol02:
+    long_name: "Sea Ice Density Solution 2"
+    standard_name: sea_ice_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From Jutila et al. 2022 and Sea Ice Freeboard Solution 2 (negative freeboards set to zero)"
+    ancillary_variables: "snow_density_uncertainty_sol02"
+
+  sea_ice_density_uncertainty_sol02:
+    long_name: "Sea Ice Density Uncertainty Solution 2"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_density_sol03:
+    long_name: "Sea Ice Density Solution 3"
+    standard_name: sea_ice_density
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From Jutila et al. 2022 and Sea Ice Freeboard Solution 3 (negative freeboards set to zero)"
+    ancillary_variables: "snow_density_uncertainty_sol02"
+
+  sea_ice_density_uncertainty_sol03:
+    long_name: "Sea Ice Density Uncertainty Solution 3"
+    standard_name: surface_snow_density standard_error
+    units: kg m-3
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness_sol01:
+    long_name: "Sea Ice Thickness Solution 1"
+    standard_name: sea_ice_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from Sea Ice Freeboard Solution 1, Snow Depth Solution 1, Snow Density Solution 1 and Sea Ice Density Solution 1"
+    ancillary_variables: "snow_density_uncertainty_sol01"
+
+  sea_ice_thickness_uncertainty_sol01:
+    long_name: "Sea Ice Thickness Uncertainty Solution 1"
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness_sol02:
+    long_name: "Sea Ice Thickness Solution 2"
+    standard_name: sea_ice_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from Sea Ice Freeboard Solution 2, Snow Depth Solution 2, Snow Density Solution 2 and Sea Ice Density Solution 2"
+    ancillary_variables: "snow_density_uncertainty_sol02"
+
+  sea_ice_thickness_uncertainty_sol02:
+    long_name: "Sea Ice Thickness Uncertainty Solution 2"
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  sea_ice_thickness_sol03:
+    long_name: "Sea Ice Thickness Solution 3"
+    standard_name: sea_ice_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "Computed from Sea Ice Freeboard Solution 3, Snow Depth Solution 3, Snow Density Solution 2 and Sea Ice Density Solution 3"
+    ancillary_variables: "snow_density_uncertainty_sol03"
+
+  sea_ice_thickness_uncertainty_sol03:
+    long_name: "Sea Ice Thickness Uncertainty Solution 3"
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  instrument_mode:
+    long_name: "radar mode flag"
+    valid_min: 1
+    valid_max: 3
+    flag_values: "1, 2, 3"
+    flag_meanings: "pulse_limited sar sar_interferometric"
+    comment: "median of radar mode flags within grid cells"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  region_code:
+    long_name: "region code"
+    unit: 1
+    comment: "Source: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC)"
+    valid_min: 0
+    valid_max: 18
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea"
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
+    units: "1"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  miz_flag:
+    long_name: Marginal Ice Zone Flag
+    standard_name: "quality_flag"
+    units: "1"
+    valid_min: 0
+    valid_max: 1
+    flag_values: "0 1"
+    flag_meanings: "not_in_miz miz"
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
