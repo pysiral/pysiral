@@ -123,7 +123,6 @@ variables:
 
   radar_freeboard_uncertainty:
     long_name: "uncertainty associated with radar freeboard"
-    var_source_name: radar_freeboard_l3_uncertainty
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"
     coordinates: "time lat lon"
@@ -208,6 +207,54 @@ variables:
     ancillary_variables: "snow_depth_uncertainty_old"
 
   snow_depth_uncertainty_old:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_sol01:
+    long_name: "Snow Depth Solution 1"
+    standard_name: surface_snow_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From merged Warren99 and SnowModel climatology"
+    ancillary_variables: "snow_depth_uncertainty_sol01"
+
+  snow_depth_uncertainty_sol01:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_sol02:
+    long_name: "Snow Depth Solution 2"
+    standard_name: surface_snow_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From merged SnowModel climatology"
+    ancillary_variables: "snow_depth_uncertainty_sol02"
+
+  snow_depth_uncertainty_sol02:
+    long_name: "uncertainty of the snow layer thickness"
+    standard_name: surface_snow_thickness standard_error
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+
+  snow_depth_sol03:
+    long_name: "Snow Depth Solution 3"
+    standard_name: surface_snow_thickness
+    units: m
+    grid_mapping: "Lambert_Azimuthal_Grid"
+    coordinates: "time lat lon"
+    comment: "From merged SnowModel climatology with thin ice fraction set to 0.03 cm"
+    ancillary_variables: "snow_depth_uncertainty_sol03"
+
+  snow_depth_uncertainty_sol03:
     long_name: "uncertainty of the snow layer thickness"
     standard_name: surface_snow_thickness standard_error
     units: m
