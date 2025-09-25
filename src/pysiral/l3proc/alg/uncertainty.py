@@ -8,7 +8,7 @@ __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
 
 import numpy as np
 from functools import partial
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from pysiral.l3proc import Level3ProcessorItem
 from pysiral.sit import frb2sit_errprop
@@ -123,25 +123,10 @@ class Level3GridUncertainties(Level3ProcessorItem):
 
 class Level3GridUncertaintiesV2(Level3ProcessorItem):
     """
-    A Level-3 processor item to compute uncertainties of key geophysical variables on a grid.
-    NOTE: As a concession to backward compability: sea ice draft uncertainty will be computed, but
-          the sea ice draft is not a required input parameter
+    Computes the Level-3 uncertainties for radar freeboard, sea ice freeboard, sea ice thickness and sea ice draft.
+    NOTE: This is a re-implementation of Level3GridUncertainties with more flexibility in terms of variable names
+          and which uncertainties to compute.
     """
-
-    # Mandatory properties
-    # required_options = ["water_density", "snow_depth_correction_factor", "max_l3_uncertainty"]
-    # l2_variable_dependencies = ["radar_freeboard_uncertainty"]
-    # l3_variable_dependencies = ["sea_ice_freeboard", "snow_depth",
-    #                             "snow_density", "snow_depth_uncertainty", "snow_density_uncertainty"]
-    # l3_output_variables = dict(radar_freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
-    #                            freeboard_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
-    #                            sea_ice_thickness_l3_uncertainty=dict(dtype="f4", fill_value=np.nan),
-    #                            sea_ice_draft_l3_uncertainty=dict(dtype="f4", fill_value=np.nan))
-
-    required_options = []
-    l2_variable_dependencies = []
-    l3_variable_dependencies = []
-    l3_output_variables = dict()
 
     def __init__(self, *args, **kwargs):
         """
@@ -149,8 +134,8 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         :param args:
         :param kwargs:
         """
+        self.var_name_dict = self.get_variable_name_dict(kwargs.get("cfg", {}))
         super(Level3GridUncertaintiesV2, self).__init__(*args, **kwargs)
-        self.var_name_dict = self.get_variable_name_dict()
 
     def apply(self):
         """
@@ -234,6 +219,10 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         # error components (error of a weighted mean)
         weight = np.nansum(1. / rfrb_uncs ** 2.)
         rfrb_unc = 1. / np.sqrt(weight)
+
+        if valid_range is not None:
+            rfrb_unc = np.clip(rfrb_unc, valid_range[0], valid_range[1])
+
         self.l3grid.vars[target_variable][yj, xi] = rfrb_unc
 
     def compute_sea_ice_freeboard_uncertainty(
@@ -254,7 +243,7 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
 
         xi, yj = grid_index
 
-        rfrc_unc_var_name = self.var_name_dict.get("radar_freeboard_uncertainty")
+        rfrc_unc_var_name = self.var_name_dict.get("radar_freeboard_l3_uncertainty")
         frb_var_name = self.var_name_dict.get("sea_ice_freeboard")
         sd_var_name = self.var_name_dict.get("snow_depth")
         sd_unc_var_name = self.var_name_dict.get("snow_depth_uncertainty")
@@ -275,6 +264,10 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         # Calculate the level-3 freeboard uncertainty with updated radar freeboard uncertainty
         deriv_snow = snow_depth_correction_factor
         frb_unc = np.sqrt((deriv_snow * sd_unc) ** 2. + rfrb_unc ** 2.)
+
+        if valid_range is not None:
+            frb_unc = np.clip(frb_unc, valid_range[0], valid_range[1])
+
         self.l3grid.vars[target_variable][yj, xi] = frb_unc
 
     def compute_gridded_sea_ice_thickness_uncertainty(
@@ -287,7 +280,7 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         Compute the level-3 uncertainty for a given grid cell
 
         :param grid_index: (xi, yj) grid cell index tuple
-        :param sea_water_density: Sea water density [kg/m^3]
+        :param sea_water_density: Seawater density [kg/m^3]
         :param valid_range: tuple with (min, max) valid range for sea ice thickness uncertainty
 
         :return: None: the result is written to the l3grid object
@@ -340,20 +333,61 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
     def compute_sea_ice_draft_uncertainty(
             self,
             grid_index: Tuple[int, int],
-            source_variables: Dict = None,
-            target_variable: str = "sea_ice_draft_l3_uncertainty"
+            valid_range: Tuple[float, float] = None,
     ) -> None:
         """
         Compute the sea ice draft uncertainty for a given grid cell
 
-        :param grid_index:
-        :param source_variables:
-        :param target_variable:
-        :return:
+        :param grid_index: (xi, yj) grid cell index tuple
+        :param valid_range: tuple with (min, max) valid range for sea ice draft uncertainty
+
+        :return: None: the result is written to the l3grid object
         """
 
         xi, yj = grid_index
+        target_variable = self.var_name_dict.get("sea_ice_draft_l3_uncertainty")
+        frb_unc = self.l3grid.vars[self.var_name_dict.get("sea_ice_freeboard_l3_uncertainty")][yj, xi]
+        sit_l3_unc = self.l3grid.vars[self.var_name_dict.get("sea_ice_thickness_l3_uncertainty")][yj, xi]
 
-        # Compute sea ice draft uncertainty
         sid_l3_unc = np.sqrt(sit_l3_unc ** 2. + frb_unc ** 2.)
+
+        if valid_range is not None:
+            sid_l3_unc = np.clip(sid_l3_unc, valid_range[0], valid_range[1])
+
         self.l3grid.vars[target_variable][yj, xi] = sid_l3_unc
+
+    @property
+    def required_options(self) -> List[str]:
+        return []
+
+    @property
+    def l2_variable_dependencies(self) -> List[str]:
+        return [self.var_name_dict.get("radar_freeboard_uncertainty")]
+
+    @property
+    def l3_variable_dependencies(self) -> List[str]:
+        dependencies = []
+        if "sea_ice_freeboard" in self.cfg:
+            dependencies.append(self.var_name_dict.get("sea_ice_freeboard"))
+            dependencies.append(self.var_name_dict.get("snow_depth"))
+            dependencies.append(self.var_name_dict.get("snow_depth_uncertainty"))
+        if "sea_ice_thickness" in self.cfg:
+            dependencies.append(self.var_name_dict.get("sea_ice_density"))
+            dependencies.append(self.var_name_dict.get("sea_ice_density_uncertainty"))
+            dependencies.append(self.var_name_dict.get("snow_density"))
+            dependencies.append(self.var_name_dict.get("snow_density_uncertainty"))
+            dependencies.append(self.var_name_dict.get("sea_ice_thickness"))
+        if "sea_ice_draft" in self.cfg:
+            dependencies.append(self.var_name_dict.get("sea_ice_draft"))
+        return dependencies
+
+    @property
+    def l3_output_parameters(self) -> List[str]:
+        output_parameters = self.var_name_dict["radar_freeboard_l3_uncertainty"]
+        if "sea_ice_freeboard" in self.cfg:
+            output_parameters.append(self.var_name_dict["sea_ice_freeboard_l3_uncertainty"])
+        if "sea_ice_thickness" in self.cfg:
+            output_parameters.append(self.var_name_dict["sea_ice_thickness_l3_uncertainty"])
+        if "sea_ice_draft" in self.cfg:
+            output_parameters.append(self.var_name_dict["sea_ice_draft_l3_uncertainty"])
+        return output_parameters

@@ -152,6 +152,7 @@ variables:
     ancillary_variables: "sea_ice_freeboard_uncertainty_sol01"
 
   sea_ice_freeboard_uncertainty_sol01:
+    var_source_name: sea_ice_freeboard_l3_uncertainty_sol01
     long_name: "Sea Ice Freeboard Uncertainty Solution 1"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -168,6 +169,7 @@ variables:
     ancillary_variables: "sea_ice_freeboard_uncertainty_sol02"
 
   sea_ice_freeboard_uncertainty_sol02:
+    var_source_name: sea_ice_freeboard_l3_uncertainty_sol02
     long_name: "Sea Ice Freeboard Uncertainty Solution 2"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -184,6 +186,7 @@ variables:
     ancillary_variables: "sea_ice_freeboard_uncertainty_sol03"
 
   sea_ice_freeboard_uncertainty_sol03:
+    var_source_name: sea_ice_freeboard_l3_uncertainty_sol03
     long_name: "Sea Ice Freeboard Uncertainty Solution 3"
     standard_name: sea_ice_freeboard standard_error
     units: m
@@ -366,6 +369,7 @@ variables:
     ancillary_variables: "snow_density_uncertainty_sol01"
 
   sea_ice_thickness_uncertainty_sol01:
+    var_source_name: sea_ice_thickness_l3_uncertainty_sol01
     long_name: "Sea Ice Thickness Uncertainty Solution 1"
     standard_name: sea_ice_thickness standard_error
     units: m
@@ -382,6 +386,7 @@ variables:
     ancillary_variables: "snow_density_uncertainty_sol02"
 
   sea_ice_thickness_uncertainty_sol02:
+    var_source_name: sea_ice_thickness_l3_uncertainty_sol02
     long_name: "Sea Ice Thickness Uncertainty Solution 2"
     standard_name: sea_ice_thickness standard_error
     units: m
@@ -398,6 +403,7 @@ variables:
     ancillary_variables: "snow_density_uncertainty_sol03"
 
   sea_ice_thickness_uncertainty_sol03:
+    var_source_name: sea_ice_thickness_l3_uncertainty_sol03
     long_name: "Sea Ice Thickness Uncertainty Solution 3"
     standard_name: sea_ice_thickness standard_error
     units: m

@@ -43,17 +43,7 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_freeboard_uncertainty_old:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     sea_ice_freeboard_old:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_ice_freeboard_uncertainty_sol01:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -63,22 +53,12 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_freeboard_uncertainty_sol02:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     sea_ice_freeboard_sol03:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_freeboard_uncertainty_sol03:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_ice_freeboard_filtered:
+    sea_ice_freeboard_filtered_old:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -188,27 +168,12 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_thickness_uncertainty_sol01:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     sea_ice_thickness_sol02:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_thickness_uncertainty_sol02:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     sea_ice_thickness_sol03:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    sea_ice_thickness_uncertainty_sol03:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
@@ -295,13 +260,61 @@ processing_items:
           sea_ice_thickness: sea_ice_thickness_sol01
           sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol01
 
-        radar_freeboard:
+        radar_freeboard: &radar_freeboard_uncertainty_settings
           valid_uncertainty_range: (0, inf)
 
-        sea_ice_freeboard:
+        sea_ice_freeboard: &sea_ice_freeboard_uncertainty_settings
           snow_depth_correction_factor: 0.22
           valid_uncertainty_range: (0, inf)
 
-        sea_ice_thickness:
+        sea_ice_thickness: &sea_ice_thickness_uncertainty_settings
           sea_water_density: 1024.
           valid_uncertainty_range: (0, 10.0)
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 2)"
+      module_name: pysiral.l3proc.alg.uncertainty
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        source_variable_dict:
+          radar_freeboard: radar_freeboard
+          radar_freeboard_l3_uncertainty: radar_freeboard_l3_uncertainty
+          sea_ice_freeboard: sea_ice_freeboard_sol02
+          sea_ice_freeboard_l3_uncertainty: sea_ice_freeboard_l3_uncertainty_sol02
+          snow_depth: snow_depth_sol02
+          snow_depth_uncertainty: snow_depth_uncertainty_sol02
+          snow_density: snow_density_sol02
+          snow_density_uncertainty_sol01: snow_density_uncertainty_sol02
+          sea_ice_density: sea_ice_density_sol02
+          sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol02
+          sea_ice_thickness: sea_ice_thickness_sol02
+          sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol02
+
+        radar_freeboard: *radar_freeboard_uncertainty_settings
+        sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
+        sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 3)"
+      module_name: pysiral.l3proc.alg.uncertainty
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        source_variable_dict:
+          radar_freeboard: radar_freeboard
+          radar_freeboard_l3_uncertainty: radar_freeboard_l3_uncertainty
+          sea_ice_freeboard: sea_ice_freeboard_sol03
+          sea_ice_freeboard_l3_uncertainty: sea_ice_freeboard_l3_uncertainty_sol03
+          snow_depth: snow_depth_sol03
+          snow_depth_uncertainty: snow_depth_uncertainty_sol03
+          snow_density: snow_density_sol02
+          snow_density_uncertainty_sol01: snow_density_uncertainty_sol02
+          sea_ice_density: sea_ice_density_sol03
+          sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol03
+          sea_ice_thickness: sea_ice_thickness_sol03
+          sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol03
+
+      radar_freeboard: *radar_freeboard_uncertainty_settings
+      sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
+      sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
