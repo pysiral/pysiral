@@ -262,7 +262,7 @@ processing_items:
 
     # Compute surface type statistics based on surface type classification
     - label: "Load CCI land mask"
-      module_name: pysiral.l3proc
+      module_name: pysiral.l3proc.alg.mask
       class_name: Level3LoadCCILandMask
       options:
         local_machine_def_mask_tag: cci_landoceanlake
@@ -274,3 +274,63 @@ processing_items:
             nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
         mask_variable_name: landsea
         density_variable_name: ocean_area_fraction
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 1)"
+      module_name: pysiral.l3proc.alg.uncertainties
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        targets:
+
+          radar_freeboard:
+            valid_uncertainty_range: (0, inf)
+            target_variable: radar_freeboard_l3_uncertainty_sol01
+
+          sea_ice_freeboard:
+            snow_depth_correction_factor: 0.22
+            valid_uncertainty_range: (0, inf)
+            source_variables:
+              radar_freeboard: radar_freeboard
+              radar_freeboard_uncertainty: radar_freeboard_l3_uncertainty_sol01
+              snow_depth: snow_depth_sol01
+              snow_depth_uncertainty: snow_depth_uncertainty_sol01
+              sea_ice_freeboard: sea_ice_freeboard_sol01
+            target_variable: sea_ice_freeboard_l3_uncertainty_sol01
+
+          sea_ice_thickness:
+            sea_water_density: 1024.
+            valid_uncertainty_range: (0, 10.0)
+            source_variables:
+              radar_freeboard: radar_freeboard
+              radar_freeboard_uncertainty: radar_freeboard_l3_uncertainty_sol01
+              snow_depth: snow_depth_sol01
+              snow_depth_uncertainty: snow_depth_uncertainty_sol01
+              snow_density: snow_density_sol01
+              snow_density_uncertainty: snow_density_uncertainty_sol01
+              sea_ice_density: sea_ice_density_sol01
+              sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol01
+              sea_ice_freeboard: sea_ice_freeboard_sol01
+              sea_ice_freeboard_uncertainty: sea_ice_freeboard_l3_uncertainty_sol01
+            target_variable: sea_ice_thickness_l3_uncertainty_sol01
+
+
+#            - sea_ice_freeboard:
+#                source_variable:
+#                sea_ice_freeboard: sea_ice_freeboard_sol01
+#              target_variable: sea_ice_freeboard_l3_uncertainty_sol01
+
+#          source_variables:
+#          radar_freeboard: radar_freeboard_sol01
+#          radar_freeboard_uncertainty: radar_freeboard_uncertainty_sol01
+#          sea_ice_freeboard: sea_ice_freeboard_sol01
+#          sea_ice_freeboard_uncertainty: sea_ice_freeboard_uncertainty_sol01
+#          sea_ice_thickness: sea_ice_thickness_uncertainty_sol01
+#          sea_ice_thickness_uncertainty: sea_ice_thickness_uncertainty_sol01
+#        uncertainty_target_variables:
+#          radar_freeboard: radar_freeboard_l3_uncertainty_sol01
+#          sea_ice_freeboard_uncertainty: sea_ice_freeboard_l3_uncertainty_sol01
+#          sea_ice_thickness: sea_ice_thickness_l3_uncertainty_sol01
+#        water_density: 1024.0
+#        snow_depth_correction_factor: 0.22
+#        max_l3_uncertainty: 10.0
