@@ -4,30 +4,30 @@ Created on Fri Jul 24 14:04:27 2015
 
 @author: Stefan
 """
+
+__all__ = [
+    "L2iDataStack", "L3DataGrid", "L3MetaData", "Level3GridDefinition",
+    "Level3Processor", "Level3ProcessorItem", "Level3ProductDefinition",
+    "alg"
+]
+
 import itertools
 import re
 import sys
 import uuid
 from collections import OrderedDict
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 from loguru import logger
 
-from xarray import open_dataset
-
 from pysiral import __version__, get_cls, psrlcfg
 from pysiral.core.config import get_yaml_config
-from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
 from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.core.output import Level3Output, OutputHandlerBase
 from pysiral.grid import GridDefinition
 from pysiral.l2data import L2iNCFileImport
-
-
-
-# Level 3 Processor
 
 
 class Level3Processor(DefaultLoggingClass):
