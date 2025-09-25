@@ -409,20 +409,25 @@ class L3DataGrid(DefaultLoggingClass):
             logger.error(msg)
             return "unknown"
 
-    def add_grid_variable(self, parameter_name, fill_value, dtype):
+    def add_grid_variable(self, parameter_name, fill_value, dtype, allow_overwrite: bool = False):
         """
         Add a grid variable and fill with empty values
+
         :param parameter_name: The name of the parameter
         :param fill_value: the "empty" value assigned to all cell
         :param dtype: numpy compatible dtype
+        :param allow_overwrite: If True, an existing variable will be overwritten
+
         :return:
         """
 
         # Check if variable already exists
-        if parameter_name in self.vars:
+        if parameter_name in self.vars and not allow_overwrite:
             msg = "Variable overwrite alert: %s" % parameter_name
             self.error.add_error("l3-variable-overwrite", msg)
             self.error.raise_on_error()
+        elif parameter_name in self.vars and allow_overwrite:
+            return
 
         # All clear, create variable
         self.vars[parameter_name] = np.full(self.grid_shape, fill_value, dtype=dtype)
@@ -1206,4 +1211,10 @@ class Level3ProcessorItem(DefaultLoggingClass):
         """
         for variable_name in self.l3_output_variables.keys():
             vardef = self.l3_output_variables[variable_name]
-            self.l3grid.add_grid_variable(variable_name, vardef["fill_value"], vardef["dtype"])
+            self.l3grid.add_grid_variable(variable_name, vardef["fill_value"], vardef["dtype"], self.allow_overwrite)
+
+    @property
+    def allow_overwrite(self) -> bool:
+        """ If True, existing variables in the l3grid will be overwritten when
+        adding new variables """
+        return False

@@ -261,15 +261,15 @@ processing_items:
           sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol01
 
         radar_freeboard: &radar_freeboard_uncertainty_settings
-          valid_uncertainty_range: (0, inf)
+          valid_uncertainty_range: [0.0, 5.0]
 
         sea_ice_freeboard: &sea_ice_freeboard_uncertainty_settings
           snow_depth_correction_factor: 0.22
-          valid_uncertainty_range: (0, inf)
+          valid_uncertainty_range: [0, 5.0]
 
         sea_ice_thickness: &sea_ice_thickness_uncertainty_settings
           sea_water_density: 1024.
-          valid_uncertainty_range: (0, 10.0)
+          valid_uncertainty_range: [0, 10.0]
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties (Solution 2)"
@@ -315,6 +315,6 @@ processing_items:
           sea_ice_thickness: sea_ice_thickness_sol03
           sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol03
 
-      radar_freeboard: *radar_freeboard_uncertainty_settings
-      sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
-      sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
+        radar_freeboard: *radar_freeboard_uncertainty_settings
+        sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
+        sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
