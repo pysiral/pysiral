@@ -28,7 +28,7 @@ from pysiral.l2data import L2iNCFileImport
 from pysiral.mask import L3Mask
 from pysiral.sit import frb2sit_errprop
 
-# %% Level 3 Processor
+# Level 3 Processor
 
 
 class Level3Processor(DefaultLoggingClass):
@@ -559,7 +559,7 @@ class L3DataGrid(DefaultLoggingClass):
             mission_ids = mission_ids.upper()
         return mission_ids
 
-    def _get_attr_source_mission_name(self, *args):
+    def _get_attr_source_mission_name(self, *_):
         ids = self.metadata.mission_ids
         return ",".join([psrlcfg.platforms.get_name(m) for m in ids.split(",")])
 
@@ -617,19 +617,19 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_stopdt(self, dtfmt):
         return self.info.stop_time.strftime(dtfmt)
 
-    def _get_attr_geospatial_lat_min(self, *args):
+    def _get_attr_geospatial_lat_min(self, *_):
         latitude = self.vars["latitude"]
         return self._get_attr_geospatial_str(np.nanmin(latitude))
 
-    def _get_attr_geospatial_lat_max(self, *args):
+    def _get_attr_geospatial_lat_max(self, *_):
         latitude = self.vars["latitude"]
         return self._get_attr_geospatial_str(np.nanmax(latitude))
 
-    def _get_attr_geospatial_lon_min(self, *args):
+    def _get_attr_geospatial_lon_min(self, *_):
         longitude = self.vars["longitude"]
         return self._get_attr_geospatial_str(np.nanmin(longitude))
 
-    def _get_attr_geospatial_lon_max(self, *args):
+    def _get_attr_geospatial_lon_max(self, *_):
         longitude = self.vars["longitude"]
         return self._get_attr_geospatial_str(np.nanmax(longitude))
 
@@ -637,13 +637,13 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_geospatial_str(value):
         return "%.4f" % value
 
-    def _get_attr_source_auxdata_sic(self, *args):
+    def _get_attr_source_auxdata_sic(self, *_):
         return self.metadata.source_auxdata_sic
 
-    def _get_attr_source_auxdata_snow(self, *args):
+    def _get_attr_source_auxdata_snow(self, *_):
         return self.metadata.source_auxdata_snow
 
-    def _get_attr_source_auxdata_sitype(self, *args):
+    def _get_attr_source_auxdata_sitype(self, *_):
         return self.metadata.source_auxdata_sitype
 
     def _get_attr_utcnow(self, *args):
@@ -669,7 +669,7 @@ class L3DataGrid(DefaultLoggingClass):
     def _get_attr_time_coverage_duration(self, *args):
         return self.metadata.time_coverage_duration
 
-    def _get_attr_doi(self, *args):
+    def _get_attr_doi(self, *_):
         return self._doi
 
     def _get_attr_data_record_type(self, *args):
