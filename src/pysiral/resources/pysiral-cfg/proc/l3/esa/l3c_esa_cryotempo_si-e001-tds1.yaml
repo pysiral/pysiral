@@ -38,11 +38,6 @@ l2_parameter:
         dtype: f4
         fillvalue: .NAN
 
-    sea_ice_concentration:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
     sea_ice_freeboard_sol01:
         grid_method: average
         dtype: f4
@@ -154,16 +149,6 @@ l2_parameter:
         fillvalue: .NAN
 
     snow_density_uncertainty_sol02:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    snow_density_sol03:
-        grid_method: average
-        dtype: f4
-        fillvalue: .NAN
-
-    snow_density_uncertainty_sol03:
         grid_method: average
         dtype: f4
         fillvalue: .NAN
