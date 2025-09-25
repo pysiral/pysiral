@@ -281,15 +281,25 @@ class L2iDataStack(DefaultLoggingClass):
 
         # Stack the l2 parameter in the corresponding grid cells
         outside_grid_flag = False
+
+        # Weed out any parameters that are in the L3 processor definition, but not in the data
+        existing_l2i_parameter = set(l2i.parameter_list).intersection(set(self.l2_parameter.keys()))
+        # missing_parameter = [v for v in self.l2_parameter.keys() if v not in existing_l2i_parameter]
+        # for missing in missing_parameter:
+        #     logger.error(f"L2 parameter not in l2i product, skipping: {missing}")
+
+        # Create a map of the l2i data to avoid repeated getattr calls
+        data_map = {var_name: getattr(l2i, var_name) for var_name in existing_l2i_parameter}
+
         for i in np.arange(l2i.n_records):
 
             # Add the surface type per default
             # (will not be gridded, therefore not in list of l2 parameter)
             x, y = int(xi[i]), int(yj[i])
-            for parameter_name in self.l2_parameter.keys():
+            for parameter_name in existing_l2i_parameter:
                 try:
-                    data = getattr(l2i, parameter_name)
-                    self.stack[parameter_name][y][x].append(data[i])
+                    # data = getattr(l2i, parameter_name)
+                    self.stack[parameter_name][y][x].append(data_map[parameter_name][i])
                 except AttributeError:
                     pass
                 except IndexError:
