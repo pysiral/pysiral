@@ -254,7 +254,7 @@ processing_items:
           snow_depth: snow_depth_sol01
           snow_depth_uncertainty: snow_depth_uncertainty_sol01
           snow_density: snow_density_sol01
-          snow_density_uncertainty_sol01: snow_density_uncertainty_sol01
+          snow_density_uncertainty: snow_density_uncertainty_sol01
           sea_ice_density: sea_ice_density_sol01
           sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol01
           sea_ice_thickness: sea_ice_thickness_sol01
@@ -285,7 +285,7 @@ processing_items:
           snow_depth: snow_depth_sol02
           snow_depth_uncertainty: snow_depth_uncertainty_sol02
           snow_density: snow_density_sol02
-          snow_density_uncertainty_sol01: snow_density_uncertainty_sol02
+          snow_density_uncertainty: snow_density_uncertainty_sol02
           sea_ice_density: sea_ice_density_sol02
           sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol02
           sea_ice_thickness: sea_ice_thickness_sol02
@@ -309,7 +309,7 @@ processing_items:
           snow_depth: snow_depth_sol03
           snow_depth_uncertainty: snow_depth_uncertainty_sol03
           snow_density: snow_density_sol02
-          snow_density_uncertainty_sol01: snow_density_uncertainty_sol02
+          snow_density_uncertainty: snow_density_uncertainty_sol02
           sea_ice_density: sea_ice_density_sol03
           sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol03
           sea_ice_thickness: sea_ice_thickness_sol03

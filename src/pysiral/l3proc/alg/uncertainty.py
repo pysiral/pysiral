@@ -134,8 +134,18 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         :param args:
         :param kwargs:
         """
-        self.var_name_dict = self.get_variable_name_dict(kwargs.get("cfg", {}))
+        self.var_name_dict = {}
         super(Level3GridUncertaintiesV2, self).__init__(*args, **kwargs)
+
+    def _process_dynamic_dependencies(self) -> None:
+        """
+        Process dynamic dependencies based on the configuration.
+        This method updates the required options, l2 and l3 variable dependencies,
+        and l3 output variables based on the configuration provided during initialization.
+        """
+
+        # Update variable name dictionary
+        self.var_name_dict = self.get_variable_name_dict(self)
 
     def apply(self):
         """
@@ -160,6 +170,7 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
             func = partial(self.compute_sea_ice_draft_uncertainty, **self.cfg["sea_ice_draft"])
             map(func, self.l3grid.grid_indices)
 
+    @staticmethod
     def get_variable_name_dict(self) -> Dict:
         """
         Get a dictionary with variable names for source and target variables.
@@ -382,7 +393,8 @@ class Level3GridUncertaintiesV2(Level3ProcessorItem):
         return dependencies
 
     @property
-    def l3_output_parameters(self) -> List[str]:
+    def l3_output_variables(self) -> List[str]:
+        default_kwargs = dict(dtype="f4", fill_value=np.nan)
         output_parameters = self.var_name_dict["radar_freeboard_l3_uncertainty"]
         if "sea_ice_freeboard" in self.cfg:
             output_parameters.append(self.var_name_dict["sea_ice_freeboard_l3_uncertainty"])

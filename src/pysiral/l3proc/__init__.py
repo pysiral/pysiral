@@ -1135,11 +1135,25 @@ class Level3ProcessorItem(DefaultLoggingClass):
         self.cfg = cfg
 
         # run the input validation checks
+        self._process_dynamic_dependencies()
         self._check_variable_dependencies()
         self._check_options()
 
         # Add empty parameters to the l3grid
         self._add_l3_variables()
+
+    def _process_dynamic_dependencies(self):
+        """
+        This method processes dynamic dependencies. Dynamic dependencies are variables that are not
+        always required, but only if certain options are set in a certain way. All processor item
+        classes that are inheriting this class require the
+        property `dynamic_variable_dependencies` for this method to work. The property should return
+        a list of tuples with (option_name, option_value, variable_name). If the option
+        `option_name` is set to `option_value`, the variable `variable_name` is
+        required in the Level-3 data grid.
+        :return:
+        """
+        pass
 
     def _check_variable_dependencies(self):
         """
