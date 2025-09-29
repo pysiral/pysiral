@@ -1,5 +1,5 @@
 init:
-	pip install -r requirements.txt
+	pip install -e .[dev]
 	python setup.py build_ext --inplace
 
 test:

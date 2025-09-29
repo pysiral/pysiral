@@ -38,9 +38,17 @@ from typing import Any, Iterable
 
 import bottleneck as bn
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as torch_nn_functional
+
+from pysiral._exceptions import OptionalImportError
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as torch_nn_functional
+except ImportError as ie:
+    raise OptionalImportError("PyTorch not found. Please install pysiral with optional dependency [ml].")
+
+
 from loguru import logger
 
 from pysiral import get_cls

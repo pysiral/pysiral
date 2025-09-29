@@ -14,16 +14,17 @@ This is the main page for the technical documentation of the python sea ice rada
    The documentation is work in progress.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
 
    what_is_pysiral.rst
    installation.rst
    configuration.rst
+   checklist.rst
    glossary.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Supported Datasets
 
    radar_altimeter_datasets.rst
@@ -39,10 +40,16 @@ This is the main page for the technical documentation of the python sea ice rada
    l3proc.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Using pysiral
 
-   console_scripts.rst
+   scripts/console_scripts.rst
+   scripts/info.rst
+   scripts/config.rst
+   scripts/l1preproc.rst
+   scripts/l2proc.rst
+   scripts/l2preproc.rst
+   scripts/l3proc.rst
 
 .. toctree::
    :maxdepth: 1
@@ -54,6 +61,7 @@ This is the main page for the technical documentation of the python sea ice rada
    :maxdepth: 1
    :caption: Contributing to pysiral
 
+   contributing.rst
    codingconv.rst
 
 .. toctree::

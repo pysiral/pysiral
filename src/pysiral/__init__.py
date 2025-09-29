@@ -21,6 +21,7 @@ import socket
 import sys
 from datetime import datetime, timezone
 
+
 try:
     from datetime import UTC
 except ImportError:
@@ -33,7 +34,11 @@ import yaml
 from dateperiods import DatePeriod
 from loguru import logger
 
+# Does not import anything, just sets up the logger
+# (before anything else)
 import pysiral._logger  # isort: skip
+
+# Read the version files
 from pysiral._version import (
     SOFTWARE_VERSION, GIT_VERSION, GIT_BRANCH, GIT_ORIGIN
 )
@@ -44,11 +49,6 @@ PACKAGE_ROOT_DIR = Path(__file__).parent.resolve()
 
 # Package Metadata
 __version__ = SOFTWARE_VERSION
-__author__ = "Stefan Hendricks"
-__author_email__ = "stefan.hendricks@awi.de"
-
-# Get git version (allows tracing of the exact commit)
-# TODO: Implement git version retrieval with git hooks (server-side post receive hook)
 __git_version__ = GIT_VERSION
 __git_branch__ = GIT_BRANCH
 __git_origin__ = GIT_ORIGIN
@@ -612,7 +612,7 @@ class _PysiralPackageConfiguration(object):
             local_machine_def = self.get_yaml_config(filename)
         except IOError:
             msg = f"local_machine_def.yaml not found (expected: {filename})"
-            print(f"local-machine-def-missing: {msg}")
+            # print(f"local-machine-def-missing: {msg}")
             local_machine_def = None
         self.local_machine = local_machine_def
 
@@ -708,19 +708,27 @@ def get_cls(module_name, class_name, relaxed=True):
 
 
 def import_submodules(package, recursive=True):
-    """ Import all submodules of a module, recursively, including subpackages
+    """
+    Import all submodules of a module, recursively, including subpackages
 
     :param package: package (name or actual module)
     :param recursive: Flag if package is a submodule
     :type package: str | module
     :rtype: dict[str, types.ModuleType]
     """
+
+    from pysiral._exceptions import OptionalImportError
+
     if isinstance(package, str):
         package = importlib.import_module(package)
     results = {}
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
         full_name = f'{package.__name__}.{name}'
-        results[full_name] = importlib.import_module(full_name)
+        try:
+            results[full_name] = importlib.import_module(full_name)
+        # Skip modules that cannot be imported due to missing optional dependencies
+        except OptionalImportError:
+            continue
         if recursive and is_pkg:
             results.update(import_submodules(full_name))
     return results

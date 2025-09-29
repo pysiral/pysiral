@@ -1,5 +1,5 @@
-pysiral Scripts
-===============
+pysiral Command Line Scripts
+=============================
 
 .. note:: 
     This section describes the usage of pysiral scripts
@@ -17,7 +17,8 @@ For local versions of pysiral, the scripts can be run directly from the source d
 
 .. code-block:: bash
 
-    python pysiral/scripts/__init__.py <script_name> <args>
+    export PYTHONPATH="${PYTHONPATH}:<pysriral src dir>"
+    python -m pysiral.scripts <script_name> <args>
 
 or imported directly in python:
 
@@ -42,42 +43,5 @@ required and optional input arguments.
     - Scripts Module: :py:mod:`pysiral.scripts`.
 
 
-Configuration Management (config)
----------------------------------
 
 
-
-Pysiral Information (info)
---------------------------
-
-Level-1 Pre-Processor (l1prepoc)
----------------------------------
-
-.. seealso:: 
-    - l1preproc code: :py:mod:`pysiral.scripts.l1prepoc`
-    - :ref:`Level-1 Pre-Processor` documentation
-  
-
-Level-2 Processor (l2proc)
----------------------------
-
-.. seealso:: 
-    - l1preproc code: :py:mod:`pysiral.scripts.l2proc`
-    - :ref:`Level-2 Processor` documentation
-
-
-Level-2 Processor - File List (l2procfiles)
--------------------------------------------
-
-.. seealso::
-    - l1preproc code: :py:mod:`pysiral.scripts.l2proc` 
-    - :ref:`Level-2 Processor (l2proc)` time range script
-    - :ref:`Level-2 Processor` documentation
-
-
-Level-2 Pre-Processor (l2preproc)
----------------------------------
-
-
-Level-3 Processor (l3proc)
----------------------------

@@ -1,0 +1,320 @@
+# Level-3 processor settings for AWI v2.3 output
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method.
+
+l2_parameter:
+
+    time:
+        grid_method: none
+        dtype: M
+        fillvalue: null
+
+    ice_chart_thin_ice_fraction:
+      grid_method: average
+      dtype: f4
+      fillvalue: .NAN
+
+    ice_chart_fyi_fraction:
+      grid_method: average
+      dtype: f4
+      fillvalue: .NAN
+
+    ice_chart_myi_fraction:
+      grid_method: average
+      dtype: f4
+      fillvalue: .NAN
+
+    radar_freeboard:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    radar_freeboard_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_filtered_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_uncertainty_old:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_uncertainty_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_density_uncertainty_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_uncertainty_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_uncertainty_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_density_uncertainty_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_thickness_sol01:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_thickness_sol02:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_thickness_sol03:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    instrument_mode:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+    miz_flag:
+        grid_method: max
+        dtype: i4
+        fillvalue: -1
+
+
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+
+l2i_prefilter:
+    active: True
+    nan_source: sea_ice_freeboard_old
+    nan_targets:
+      - radar_freeboard
+
+# ==================================================
+# Gridding settings
+# ==================================================
+grid_settings:
+    no_land_cells: True
+    minimum_valid_grid_points: 2
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+processing_items:
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load CCI land mask"
+      module_name: pysiral.l3proc.alg.mask
+      class_name: Level3LoadCCILandMask
+      options:
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            sh12p5kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
+            sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
+            sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
+            nh12p5kmease2: LandOceanLakeMask_nh_ease2-125.nc
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_area_fraction
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 1)"
+      module_name: pysiral.l3proc.alg.uncertainty
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        source_variable_dict:
+          radar_freeboard: radar_freeboard
+          radar_freeboard_l3_uncertainty: radar_freeboard_l3_uncertainty
+          sea_ice_freeboard: sea_ice_freeboard_sol01
+          sea_ice_freeboard_l3_uncertainty: sea_ice_freeboard_l3_uncertainty_sol01
+          snow_depth: snow_depth_sol01
+          snow_depth_uncertainty: snow_depth_uncertainty_sol01
+          snow_density: snow_density_sol01
+          snow_density_uncertainty: snow_density_uncertainty_sol01
+          sea_ice_density: sea_ice_density_sol01
+          sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol01
+          sea_ice_thickness: sea_ice_thickness_sol01
+          sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol01
+
+        radar_freeboard: &radar_freeboard_uncertainty_settings
+          valid_uncertainty_range: [0.0, 5.0]
+
+        sea_ice_freeboard: &sea_ice_freeboard_uncertainty_settings
+          snow_depth_correction_factor: 0.22
+          valid_uncertainty_range: [0, 5.0]
+
+        sea_ice_thickness: &sea_ice_thickness_uncertainty_settings
+          sea_water_density: 1024.
+          valid_uncertainty_range: [0, 10.0]
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 2)"
+      module_name: pysiral.l3proc.alg.uncertainty
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        source_variable_dict:
+          radar_freeboard: radar_freeboard
+          radar_freeboard_l3_uncertainty: radar_freeboard_l3_uncertainty
+          sea_ice_freeboard: sea_ice_freeboard_sol02
+          sea_ice_freeboard_l3_uncertainty: sea_ice_freeboard_l3_uncertainty_sol02
+          snow_depth: snow_depth_sol02
+          snow_depth_uncertainty: snow_depth_uncertainty_sol02
+          snow_density: snow_density_sol02
+          snow_density_uncertainty: snow_density_uncertainty_sol02
+          sea_ice_density: sea_ice_density_sol02
+          sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol02
+          sea_ice_thickness: sea_ice_thickness_sol02
+          sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol02
+
+        radar_freeboard: *radar_freeboard_uncertainty_settings
+        sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
+        sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
+
+    # Compute the uncertainties of gridded parameter
+    - label: "Compute gridded uncertainties (Solution 3)"
+      module_name: pysiral.l3proc.alg.uncertainty
+      class_name: Level3GridUncertaintiesV2
+      options:
+
+        source_variable_dict:
+          radar_freeboard: radar_freeboard
+          radar_freeboard_l3_uncertainty: radar_freeboard_l3_uncertainty
+          sea_ice_freeboard: sea_ice_freeboard_sol03
+          sea_ice_freeboard_l3_uncertainty: sea_ice_freeboard_l3_uncertainty_sol03
+          snow_depth: snow_depth_sol03
+          snow_depth_uncertainty: snow_depth_uncertainty_sol03
+          snow_density: snow_density_sol02
+          snow_density_uncertainty: snow_density_uncertainty_sol02
+          sea_ice_density: sea_ice_density_sol03
+          sea_ice_density_uncertainty: sea_ice_density_uncertainty_sol03
+          sea_ice_thickness: sea_ice_thickness_sol03
+          sea_ice_thickness_l3_uncertainty: sea_ice_thickness_l3_uncertainty_sol03
+
+        radar_freeboard: *radar_freeboard_uncertainty_settings
+        sea_ice_freeboard: *sea_ice_freeboard_uncertainty_settings
+        sea_ice_thickness: *sea_ice_thickness_uncertainty_settings
