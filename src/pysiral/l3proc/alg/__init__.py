@@ -5,5 +5,4 @@
 """
 
 __author__ = "Stefan Hendricks <stefan.hendricks@awi.de>"
-
-__all__ = ["filter", "flag", "mask", "statistics", "uncertainty"]
+__all__ = ["flag", "mask", "statistics", "uncertainty"]
