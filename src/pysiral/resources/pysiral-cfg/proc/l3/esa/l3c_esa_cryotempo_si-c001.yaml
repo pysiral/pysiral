@@ -1,0 +1,108 @@
+# Level-3 processor settings for AWI v2.3 output
+
+# ==================================================
+# Level-2 Parameters
+# ==================================================
+
+# List of input files in the level-2 parameter and gridding method. 
+
+l2_parameter:
+
+    time:
+        grid_method: none
+        dtype: M
+        fillvalue: null
+
+    radar_freeboard:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    radar_freeboard_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    sea_ice_freeboard_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+    
+    sea_ice_freeboard_filtered:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    snow_depth_uncertainty:
+        grid_method: average
+        dtype: f4
+        fillvalue: .NAN
+
+    instrument_mode:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+    region_code:
+        grid_method: median
+        dtype: i4
+        fillvalue: -1
+
+# ==================================================
+# Level-2 Pre-Filter
+# ==================================================
+
+# the prefilter will apply a nan mask from a specified parameter to other parameters
+
+l2i_prefilter:
+    active: False
+    nan_source: null
+    nan_targets: null
+
+# ==================================================
+# Gridding settings
+# ==================================================
+grid_settings:
+    no_land_cells: True
+    minimum_valid_grid_points: 2
+
+# ==================================================
+# Post processing for gridded parameters
+# ==================================================
+
+# Mask grid cells 
+# Note: The masking is executed in the alphabetical order of the mask names.
+#       If there is a dependence between following mask procedures this needs
+#       to be reflected in the mask_name (e.g a_some_mask, b_some_other_mask)
+
+processing_items:
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Load CCI land mask"
+      module_name: pysiral.l3proc.alg.mask
+      class_name: Level3LoadCCILandMask
+      options:
+        local_machine_def_mask_tag: cci_landoceanlake
+        mask_name_dict:
+            sh25kmEASE2: LandOceanLakeMask_sh_ease2-250.nc
+            sh50kmEASE2: LandOceanLakeMask_sh_ease2-500.nc
+            nh12p5kmease2: LandOceanLakeMask_nh_ease2-125.nc
+            nh25kmease2: LandOceanLakeMask_nh_ease2-250.nc
+        mask_variable_name: landsea
+        density_variable_name: ocean_area_fraction
+
+    # Compute surface type statistics based on surface type classification
+    - label: "Number of valid freeboards"
+      module_name: pysiral.l3proc.alg.mask
+      class_name: Level3ValidSeaIceFreeboardCount
+      options: {}

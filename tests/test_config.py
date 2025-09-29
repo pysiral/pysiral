@@ -8,7 +8,7 @@ Testing the pysiral configuration management
 import unittest
 from pathlib import Path
 
-from attrdict import AttrDict
+from pysiral.core.legacy_classes import AttrDict
 from loguru import logger
 
 from pysiral import psrlcfg
@@ -20,6 +20,13 @@ class TestConfig(unittest.TestCase):
 
     def setUp(self):
         pass
+
+    def testVersionFiles(self):
+        from pysiral import __version__, __git_version__, __git_branch__, __git_origin__
+        self.assertIsInstance(__version__, str)
+        self.assertIsInstance(__git_version__, str)
+        self.assertIsInstance(__git_branch__, str)
+        self.assertIsInstance(__git_origin__, str)
 
     def testMissionConfig(self):
         self.assertIsInstance(psrlcfg.platforms.content, AttrDict)

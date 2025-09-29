@@ -2,12 +2,14 @@
 """
 @author: Stefan
 """
-
+import contextlib
 import importlib
 import pkgutil
 import unittest
 
 from loguru import logger
+
+from pysiral._exceptions import OptionalImportError
 
 logger.disable("pysiral")
 
@@ -18,7 +20,10 @@ class TestPackage(unittest.TestCase):
         pass
 
     def testAllImports(self):
-        import_submodules("pysiral")
+        # Ideally the tests are run in an environment
+        # where all optional dependencies are installed, but ...
+        with contextlib.suppress(OptionalImportError):
+            import_submodules("pysiral")
 
 
 def import_submodules(package, recursive=True):

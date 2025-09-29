@@ -1,0 +1,54 @@
+# This is the default grid definition for northern hemisphere radar altimeter data
+
+hemisphere: south
+grid_tag: ease2nh
+resolution_tag: 12.5km
+grid_id: sh_12p5km_ease2_sinxs
+name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 12.5km
+
+netcdf_grid_description:
+    Lambert_Azimuthal_Grid:
+        grid_mapping_name: "lambert_azimuthal_equal_area"
+        longitude_of_projection_origin: 0.0
+        latitude_of_projection_origin: -90.0
+        false_easting: 0.0
+        false_northing: 0.0
+        semi_major_axis: 6378137.0
+        inverse_flattening: 298.257223563
+        proj4_string: "+proj=laea +lon_0=0 +datum=WGS84 +ellps=WGS84 +lat_0=-90.0"
+
+projection:
+    proj: laea
+    lat_0: -90.0
+    lon_0: 0.0
+    ellps: WGS84
+    datum: WGS84
+    units: m
+
+extent:
+    xoff: 0
+    yoff: 0
+    xsize: 8900000
+    ysize: 8900000
+    dx: 12500
+    dy: 12500
+    numx: 712
+    numy: 712
+
+area_def:
+    ease2nh:
+        description: Equal-Area Scalable Earth Grid (v2), northern hemisphere, resolution 25km
+        projection:
+            proj: laea
+            lat_0: -90.0
+            lon_0: 0.0
+            ellps: WGS84
+            datum: WGS84
+            units: m
+        shape:
+            height: 712
+            width: 712
+        area_extent:
+            lower_left_xy: [-4450000.0, -4450000.0]
+            upper_right_xy: [4450000.0, 4450000.0]
+            units: m

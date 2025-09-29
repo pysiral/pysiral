@@ -1,0 +1,97 @@
+[build-system]
+requires = ["cython", "setuptools", "numpy", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysiral"
+description = "python sea ice radar altimetry processing toolbox"
+readme = "README.md"
+version = "0.13"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+keywords = []
+authors = [
+  { name = "Stefan Hendricks", email = "stefan.hendricks@awi.de" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "astropy",
+    "bottleneck",
+    "cftime",
+    "cython",
+    "dateperiods @ git+https://github.com/pysiral/dateperiods.git@main#egg=dateperiods",
+    "dateutils",
+    "geopandas",
+    "geopy",
+    "h5py",
+    "loguru",
+    "lxml",
+    "isodate",
+    "joblib",
+    "netCDF4",
+    "numpy",
+    "pillow",
+    "pandas",
+    "parse",
+    "pykdtree",
+    "pyproj",
+    "pyresample",
+    "python-dateutil",
+    "pyyaml",
+    "returns",
+    "samosa-waveform-model @ git+https://github.com/pysiral/samosa-waveform-model.git@main#egg=samosa-waveform-model",
+    "schema",
+    "scipy",
+    "scikit-learn",
+    "shapely",
+    "setuptools",
+    "statsmodels",
+    "tomli;python_version<'3.11'",
+    "xarray",
+    "xmltodict"
+]
+
+[project.optional-dependencies]
+
+dev = [
+    "flake8",
+    "isort",
+    "mypy",
+    "matplotlib",
+    "cartopy",
+    "flake8",
+    "pytest",
+    "coverage",
+    "Sphinx",
+    "sphinx-automodapi",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-mermaid"
+]
+
+ml = ["torch", "xgboost"]
+
+
+[project.scripts]
+pysiral = "pysiral.scripts:main"
+pysiral-l1preproc = "pysiral.scripts:l1preproc_cli"
+pysiral-l2preproc = "pysiral.scripts:l2preproc_cli"
+pysiral-l2proc = "pysiral.scripts:l2proc_cli"
+pysiral-l3proc = "pysiral.scripts:l3proc_cli"
+
+
+[project.urls]
+Homepage = "https://github.com/pysiral/pysiral"
+Documentation = "https://pysiral.readthedocs.io"
+Issues = "https://github.com/pysiral/pysiral/issues"
+Source = "https://github.com/pysiral/pysiral"
