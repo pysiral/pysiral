@@ -124,6 +124,7 @@ auxdata_repository:
     # Operational Ice Charts
     icechart:
         nsidc: ""
+        usnic_grid: ""
 
     # Region Flags
     region:

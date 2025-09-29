@@ -6,6 +6,7 @@
 
 import argparse
 from datetime import datetime
+from difflib import get_close_matches
 from pathlib import Path
 from typing import Type, Literal, Union
 
@@ -167,8 +168,14 @@ def pysiral_settings_action(
 
             settings_filepath = psrlcfg.get_settings_file(target, level, string)
             if settings_filepath is None:
-                msg = f"Invalid {target}:{level} settings filename or id: {string}\n"
-                msg += f"Recognized {level} processor setting ids:\n"
+                proc_ids = psrlcfg.get_setting_ids(target, level)
+                closest_match = get_close_matches(string, proc_ids, n=1)
+                msg = f"Invalid {target}:{level} settings filename or id: {string}"
+                if closest_match:
+                    msg += f". Did you mean '{closest_match[0]}'?\n"
+                else:
+                    msg += "\n"
+                msg += f"Known {level} processor setting ids:\n"
                 for procdef_id in psrlcfg.get_setting_ids(target, level):
                     msg += f"  {procdef_id}\n"
                 raise argparse.ArgumentTypeError(msg)

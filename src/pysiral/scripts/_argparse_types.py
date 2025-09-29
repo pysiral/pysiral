@@ -240,3 +240,27 @@ def pysiral_grid_id_type(value: str) -> str:
     if value not in valid_grid_ids:
         raise argparse.ArgumentTypeError(f"Invalid grid ID: {value}. Valid IDs are: {', '.join(valid_grid_ids)}")
     return value
+
+
+def config_target_type(value: str) -> Union[Path, str]:
+    """
+    Convert a string to a valid config target type.
+
+    :param value: Input argument
+
+    :raises argparse.ArgumentTypeError: if the input is not a valid config target
+
+    :return: Valid config target string
+    """
+    valid_targets = ["USER_HOME", "PACKAGE"]
+    if value in valid_targets:
+        return value
+
+    if Path(value).is_dir():
+        return Path(value)
+
+    try:
+        Path(value).mkdir(parents=True)
+        return Path(value)
+    except Exception as e:
+        raise argparse.ArgumentTypeError(f"Cannot create directory: {value} ({e})")

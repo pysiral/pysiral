@@ -9,7 +9,7 @@ import sys
 from datetime import timedelta
 from operator import attrgetter
 from pathlib import Path
-from typing import Dict, List, Tuple, TypeVar, Union
+from typing import Dict, List, Tuple, TypeVar, Union, Optional
 
 import numpy as np
 from dateperiods import DatePeriod, PeriodIterator
@@ -1119,7 +1119,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
                  hemisphere: Hemispheres = Hemispheres.GLOBAL,
                  platform: str = None,
                  output_handler_cfg: Union[dict, AttrDict] = None,
-                 source_repo_id: str = None
+                 source_repo_id: Optional[str] = None
                  ):
         """
         The settings for the Level-1 pre-processor job
@@ -1320,7 +1320,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
             if not platform_is_known:
                 msg = "Error: platform in l1p settings is ambiguous (%s), but no platform has been given (-platform)"
                 msg %= self._l1pprocdef.platform
-                sys.exit(msg)
+                raise ValueError(msg)
 
             if platform_is_known and self.platform not in str(self._l1pprocdef.platform):
                 msg = "Error: platform in l1p settings (%s) and given platform (%s) do not match"

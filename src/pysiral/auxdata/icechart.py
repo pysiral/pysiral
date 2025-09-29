@@ -9,14 +9,18 @@ Module created for FMI version of pysiral
 
 __all__ = ["IC", "ICA"]
 
+
 import contextlib
 import copy
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field, InitVar
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Literal, List
+from itertools import product
+from loguru import logger
 
+import pandas as pd
 import geopandas as gpd
 import numpy as np
 import pyproj
@@ -24,11 +28,14 @@ import xarray as xr
 from parse import parse
 from PIL import Image
 from pyproj import Proj
+from returns.result import Failure, Success, Result
 from shapely import LineString, MultiPoint
 from shapely.strtree import STRtree
 
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.l2data import Level2Data
+from pysiral.core.iotools import ReadNC
+from pysiral.auxdata import GridTrackInterpol
 
 # Sea Ice Concentration (SIC) code to class conversion lookup table.
 SIC_LOOKUP = {
@@ -544,6 +551,396 @@ class NSIDCSeaIceChartsSIGRID3(AuxdataBaseClass):
         l2.set_multidim_auxiliary_parameter(
             "icfloec", "ice_chart_floe_parameter_classes",
             classes_floe, dims, update=True
+        )
+
+
+@dataclass
+class USNICGridFileEntry:
+    """
+    A single US National Ice Center sea ice chart grid file and its properties
+    derived from the filename.
+    """
+    file_path: Path | None
+    grid: str = field(init=False)
+    region: str = field(init=False)
+    version: str = field(init=False)
+    validity_start_date: datetime.date = field(init=False)
+    validity_end_date: datetime.date = field(init=False)
+    issue_date: datetime.date = field(init=False)
+    filename_parser: InitVar[str] = "usnic-icechart-{grid}-{start_date}_{end_date}-{version}.nc"
+
+    def __post_init__(self, filename_parser: str) -> None:
+        """
+        Compute file properties from filename. The file path must match the filename
+        parser, otherwise the file is considered invalid and the file path is set to None.
+
+        :param filename_parser: InitVar object containing the filename parser
+
+        :return: None
+        """
+
+        # Parse filename and handle invalid files
+        filename_attributes = parse(filename_parser, self.file_path.name)
+        if not hasattr(filename_attributes, "named"):
+            self.file_path = None
+            return
+
+        self.grid = filename_attributes.named["grid"]
+        self.region = filename_attributes.named["grid"].split("_")[0]
+        self.version = filename_attributes.named["version"]
+        self.validity_start_date = date.fromisoformat(filename_attributes.named["start_date"])
+        self.validity_end_date = date.fromisoformat(filename_attributes.named["end_date"])
+        self.issue_date = self.validity_end_date - timedelta(days=1)
+
+    @property
+    def is_valid(self) -> bool:
+        return self.file_path is not None
+
+
+class USNICGridFileCatalog(object):
+    """
+    A catalog of USNIC grid files in a given directory and
+    the ability to query the closest file for a given date.
+    """
+
+    def __init__(self, lookup_directory: Path) -> None:
+        """
+        Initialize the catalog by scanning the given directory for files.
+
+        :param lookup_directory: The lookup directory. May be root directory
+            or hemisphere subdirectory (e.g. 'north' or 'south').
+        """
+        self.lookup_directory = lookup_directory
+        self.ctlg = self._catalog_files()
+
+    def get_closest(
+            self,
+            target_date_list: List[int],
+            max_offset_days: int = 7,
+            tie_breaker: Literal["before", "after"] = "before"
+    ) -> Path | None:
+        """
+        Get the closest file for the given date within the maximum offset.
+
+        :param target_date: The target date.
+        :param max_offset_days: The maximum offset in days an ice chart period can
+            be away from the target date. The default is 7 days, to allow for the
+            periods where ice charts were only distributed bi-weekly.
+        :param tie_breaker: If two files are equally close, choose either the one
+            before or after the target date.
+
+        :return: Filepath of the target file, or None if no file is found within
+        """
+        target_date = date(*target_date_list)
+        result = self._get_closest(target_date, max_offset_days, tie_breaker)
+        match result:
+            case Success(value):
+                logger.info(f"Found {value} on {target_date}.")
+                return value[0]
+            case Failure(_):
+                logger.warning(f"{result}")
+                return None
+        return None
+
+    def _get_closest(
+            self,
+            target_date: date,
+            max_offset_days: int,
+            tie_breaker: Literal["before", "after"]
+    ) -> Result[Tuple[Path, int], str]:
+        """
+        Get the closest file for the given date within the maximum offset.
+
+        :param target_date: The target date.
+        :param max_offset_days: The maximum offset in days an ice chart period can
+            be away from the target date. The default is 7 days, to allow for the
+            periods where ice charts were only distributed bi-weekly.
+        :param tie_breaker: If two files are equally close, choose either the one
+            before or after the target date.
+
+        :return: A tuple of the file path and the offset in days, or (None, None)
+            if no file is found within the maximum offset.
+        """
+        if self.ctlg.empty:
+            return Failure("Catalog is empty")
+
+        # Check if there is any overlap with the 7-day validity periods of ice charts
+        is_in_period = (
+            (self.ctlg["validity_start_date"] <= target_date) &
+            (self.ctlg["validity_end_date"] >= target_date)
+        )
+        if is_in_period.any():
+            matched_entry = self.ctlg[is_in_period].iloc[0]
+            return Success((matched_entry.file_path, 0))
+
+        # Find the closest ice chart (either start or end)
+        closest_before = self._get_days_offset(self.ctlg["validity_start_date"], target_date)
+        closest_after =  self._get_days_offset(self.ctlg["validity_end_date"], target_date)
+
+        closest_before_idx = np.argmin(closest_before)
+        closest_before_value = closest_before[closest_before_idx]
+        closest_after_idx = np.argmin(closest_after)
+        closest_after_value = closest_after[closest_after_idx]
+
+        if closest_before_value == closest_after_value:
+            if tie_breaker == "before":
+                matched_entry = self.ctlg.iloc[closest_before_idx]
+                offset_days = closest_before_value
+            else:
+                matched_entry = self.ctlg.iloc[closest_after_idx]
+                offset_days = closest_after_value
+        elif closest_before_value < closest_after_value:
+            matched_entry = self.ctlg.iloc[closest_before_idx]
+            offset_days = closest_before_value
+        elif closest_after_value < closest_before_value:
+            matched_entry = self.ctlg.iloc[closest_after_idx]
+            offset_days = closest_after_value
+        else:
+            raise ValueError("should not happen")
+
+        return (
+            Success((matched_entry.file_path, int(offset_days))) if offset_days <= max_offset_days
+            else Failure(f"Closest match ({int(offset_days)} days) exceeding {max_offset_days=} days")
+        )
+
+    @staticmethod
+    def _get_days_offset(date_series: pd.Series, target_date: date) -> np.ndarray:
+        """
+        Get the offset in days between the target date and the issue date of each file.
+
+        :param target_date: The target date.
+
+        :return: An array of offsets in days.
+        """
+        return np.abs(np.fromiter([d.days for d in (date_series - target_date).values], int))
+
+    def _catalog_files(self) -> pd.DataFrame:
+        """
+        Create catalog of file properties as a pandas DataFrame
+
+        :return: Dataframe with file catalog entries
+        """
+        filepaths = sorted(list(self.lookup_directory.rglob("*.nc")))
+        entries = [USNICGridFileEntry(fp) for fp in filepaths]
+        entries = [e for e in entries if e.is_valid]
+        return pd.DataFrame(entries)
+
+
+class USNICGrid(AuxdataBaseClass):
+    """
+    Class for US National Ice Center sea ice charts in gridded netCDF format.
+    Source data is available from the NSIDC (https://nsidc.org/data/g02135)
+    Software to convert into gridded format: https://gitlab.awi.de/siteo/cryotempo/icgrid
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        """
+        Init the class.
+        NOTE: The options template can be different for continuous data sets (is_cdr_icdr: False)
+              and those with a dedicated split into a climate data record (cdr) and an interim
+              climate data record (icdr). A pre-processing of the options dictionary is therefore necessary
+              to follow the mechanics of the auxiliary data class.
+        :param args:
+        :param kwargs:
+        """
+        super(USNICGrid, self).__init__(*args, **kwargs)
+        self.ctlg = self.get_file_catalog()
+        self._data = None
+        self.start_time = None
+        self.hemisphere_code = None
+
+    def get_file_catalog(self) -> USNICGridFileCatalog:
+        """
+        Generate the file catalog object for the specific hemisphere
+
+        :return: USNICGridFileCatalog object
+        """
+        lookup_directory = Path(self.cfg.local_repository) / self.cfg.options.hemisphere
+        return USNICGridFileCatalog(lookup_directory)
+
+    def get_l2_track_vars(self, l2):
+        """
+        Mandadory method of AuxdataBaseClass subclass.
+        Registers two variables to the Level-2 data container:
+            - MYI fraction (id: sitype, name: sea_ice_type)
+            - MYI fraction uncertainty (id: sitype.uncertainty, name: sea_ice_type_uncertainty)
+        :param l2: Level-2 Data object
+        :return: None
+        """
+
+        # Set the requested data
+        self.set_requested_date_from_l2(l2)
+
+        # Update the external data
+        self.update_external_data()
+
+        # Check if error with file I/O
+        dataset = self.get_empty_dataset(l2.time)
+        if self.error.status or self._data is None:
+            ice_chart_l2_track = dataset.copy()
+        else:
+            # Get icechart data frame for trajectory
+            ice_chart_l2_track = self.extract_track(l2.longitude, l2.latitude, dataset)
+
+        # Pre-process parameters and set to l2 object
+        self.set_l2_parameters(l2, ice_chart_l2_track)
+
+    @staticmethod
+    def get_empty_dataset(time: np.ndarray) -> xr.Dataset:
+        """
+        Create a data structure with the correct dimensions and fill values
+        for the ice chart parameters. This dataset is used if to map
+        the ice charts parameters onto, as well as dummy dataset if no
+        ice chart file is found.
+
+        :param time:
+
+        :return: Empty trajectory ice chart dataset
+        """
+        time_dims = time.shape
+        class_dims = time_dims + (3,)
+
+        # Rer
+        attrs = {
+            "time_dim_parameter": [
+                "sea_ice_concentration_total",
+                "stage_of_development_highest_concentration",
+                "fraction_thin_ice",
+                "fraction_first_year_ice",
+                "fraction_multi_year_ice",
+                "number_of_seaice_classes",
+            ],
+            "class_time_dim_parameter": [
+                "sea_ice_concentration_partial",
+                "stage_of_development_partial",
+                "stage_of_development_partial_is_overall_class",
+                "form_of_ice_partial",
+            ],
+        }
+        coords = {
+            "time": xr.Variable(("time",), time),
+            "n_classes": xr.Variable(("n_classes",), np.arange(3))
+        }
+        data_vars = {
+            "sea_ice_concentration_total": (("time",), np.full(time_dims, np.nan)),
+            "stage_of_development_highest_concentration": (("time",), np.full(time_dims, -1)),
+            "fraction_thin_ice": (("time",), np.full(time_dims, np.nan)),
+            "fraction_first_year_ice": (("time",), np.full(time_dims, np.nan)),
+            "fraction_multi_year_ice": (("time",), np.full(time_dims, np.nan)),
+            "number_of_seaice_classes": (("time", ), np.full(time_dims, -1)),
+            'sea_ice_concentration_partial': (("time", "n_classes",), np.full(class_dims, np.nan)),
+            'stage_of_development_partial': (("time", "n_classes",), np.full(class_dims, 0)),
+            "stage_of_development_partial_is_overall_class": (("time", "n_classes",), np.full(class_dims, -1)),
+            'form_of_ice_partial': (("time", "n_classes",), np.full(class_dims, 0)),
+        }
+        return xr.Dataset(attrs=attrs, coords=coords, data_vars=data_vars)
+
+    def load_requested_auxdata(self) -> None:
+        """
+        Loads file from local repository only if needed
+        :return:
+        """
+
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = Path(self.requested_filepath)
+
+        # Validation
+        if not path.is_file():
+            msg = f"{self.__class__.__name__}: File not found: {path} "
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_sitype", msg)
+            return
+
+        # Read and prepare input data
+        self._data = ReadNC(path)
+
+    def extract_track(self, longitude: float, latitude: float, data: xr.Dataset) -> xr.Dataset:
+        """
+        Map the ice chart parameters onto the Level-2 track
+
+        :param longitude:
+        :param latitude:
+
+        :param data: Data structure with same variables and dimensions as the ice chart data
+
+        :return: Filled data structure
+        """
+
+        # Set up the grid interpolator
+        griddef = self.cfg.options[self.cfg.options.hemisphere]
+        grid_lons, grid_lats = self._data.lon, self._data.lat
+        grid2track = GridTrackInterpol(longitude, latitude, grid_lons, grid_lats, griddef)
+
+        # First get the time-dim parameter
+        for var_name in data.attrs["time_dim_parameter"]:
+            grid_variable = getattr(self._data, var_name)[0, :, :]
+            data[var_name].values = grid2track.get_from_grid_variable(grid_variable, flipud=True)
+
+        for idx, var_name in product(np.arange(3), data.attrs["class_time_dim_parameter"]):
+            grid_variable = getattr(self._data, var_name)[0, idx, :, :]
+            data[var_name].values[:, idx] = grid2track.get_from_grid_variable(grid_variable, flipud=True)
+
+        return data
+
+    def set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
+        """
+        Set the parameter sea ice concentrations, stage of developement and floe
+        for the three categories A, B, C as multidim parameters and the total
+        concentration as single parameter
+        """
+
+        var_id_dict = {
+            "sea_ice_concentration_total": "ictsic",
+            "stage_of_development_highest_concentration": "icsodhc",
+            "stage_of_development_partial_is_overall_class": "icsodioc",
+            "fraction_thin_ice": "icfthi",
+            "fraction_first_year_ice": "icffyi",
+            "fraction_multi_year_ice": "icfmyi",
+            "number_of_seaice_classes": "icncls",
+            "sea_ice_concentration_partial": "icsicp",
+            "stage_of_development_partial": "icsodp",
+            "form_of_ice_partial": "icfloep",
+        }
+
+        var_name_dict = {
+            "sea_ice_concentration_total": "ice_chart_sea_ice_concentration_total",
+            "stage_of_development_highest_concentration": "icsodhc",
+            "stage_of_development_partial_is_overall_class": "icsodioc",
+            "fraction_thin_ice": "ice_chart_thin_ice_fraction",
+            "fraction_first_year_ice": "ice_chart_first_year_ice_fraction",
+            "fraction_multi_year_ice": "ice_chart_multi_year_ice_fraction",
+            "number_of_seaice_classes": "ice_chart_num_classes",
+            "sea_ice_concentration_partial": "ice_chart_sea_ice_concentration_classes",
+            "stage_of_development_partial": "ice_chart_stage_of_development_classes",
+            "form_of_ice_partial": "ice_chart_floe_parameter_classes",
+        }
+
+        for var_name in ice_chart_l2_track.attrs["time_dim_parameter"]:
+            self.register_auxvar(var_id_dict[var_name], var_name_dict[var_name], ice_chart_l2_track[var_name].values)
+
+        dims = {"new_dims": (("ice_chart_class", 3),),
+                "dimensions": ("time", "ice_chart_class"),
+                "add_dims": (("ice_chart_class", np.arange(3)),)}
+        for var_name in ice_chart_l2_track.attrs["class_time_dim_parameter"]:
+            l2.set_multidim_auxiliary_parameter(
+                var_id_dict[var_name], var_name_dict[var_name],
+                ice_chart_l2_track[var_name].values, dims, update=True
+            )
+
+    @property
+    def requested_filepath(self) -> Path | None:
+        """
+        Note: this overwrites the property in the super class due to some
+        peculiarities with the filenaming (auto product changes etc)
+        :return: The filepath to the target file
+        """
+
+        # The path needs to be completed if two products shall be used
+        opt = self.cfg.options
+        return self.ctlg.get_closest(
+            self._requested_date,
+            max_offset_days=opt.max_offset_days,
+            tie_breaker=opt.tie_breaker
         )
 
 

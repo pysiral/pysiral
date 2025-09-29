@@ -4,10 +4,10 @@ platform: sentinel3a, sentinel3b
 
 # Information of getting an input file list
 input_handler:
-    
+
     module_name: pysiral.sentinel3.iotools
     class_name: L2SeaIceFileDiscovery
-    
+
     options:
         local_machine_def_tag: l2_lan_si  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
@@ -16,16 +16,16 @@ input_handler:
 # Class that will generate the initial l1p data object from
 # the input data
 input_adapter:
-    
+
     module_name: pysiral.sentinel3.l1_adapter
     class_name: Sentinel3L2SeaIce
-    
+
     # Configuration of the
     options:
-        
+
         name: "IPF SRAL/MWR Level 2 Measurement"
-                         
-        range_bin_width: 0.2342125  # Number communicated via Sara Fleury 
+
+        range_bin_width: 0.2342125  # Number communicated via Sara Fleury
         nominal_tracking_bin: 88
 
         # Settings for the xml manifest
@@ -67,7 +67,7 @@ input_adapter:
             solid_earth_tide: solid_earth_tide_01
             geocentric_polar_tide: pole_tide_01
             geoid: geoid_01
-        
+
         # List of classifiers. The values correspond to netcdf variable names
         classifier_targets:
             tracking_configuration: cl_gain_20_ku
@@ -88,21 +88,21 @@ input_adapter:
 
 # Output handler (will always be default handler -> only options)
 output_handler:
-   
+
     options:
         local_machine_def_tag: l2_lan_si
         version:
             source_file_tag: l2_lan_si
-            version_file_tag: v1p2
+            version_file_tag: v1p3
 
 
 # Settings for the pre-processor
 level1_preprocessor:
-    
+
     type: custom_orbit_segment
-    
+
     options:
-        
+
         # Definition of the polar ocean
         # NOTE: The target_hemisphere variable can be overwritten with the `hemisphere`
         #       command line option of the `pysiral-l1preproc` script
@@ -112,7 +112,7 @@ level1_preprocessor:
             input_file_is_single_hemisphere: False
             allow_nonocean_segment_nrecords: 1000
             ocean_mininum_size_nrecords: 5
-    
+
         # Check for gaps in the input files and split at a certain gap size (in seconds)
         timestamp_discontinuities:
             split_at_time_gap_seconds: 10
@@ -122,10 +122,10 @@ level1_preprocessor:
             max_connected_segment_timedelta_seconds: 10
 
         detect_radar_mode_change: True
-        
+
         # NOTE: if no options are required use an empty mapping {} instead of null!
         processing_items:
-            
+
             # Compute the leading edge quality indicator
             # This class will add three parameters to the l1p classifier data group:
             #  1. Leading edge quality
@@ -178,7 +178,7 @@ level1_preprocessor:
                   tfmra_leading_edge_start: 0.05
                   tfmra_leading_edge_center: 0.5
                   tfmra_leading_edge_end: 0.95
-                  tfmra_options: 
+                  tfmra_options:
                     noise_level_range_bin_idx: [0, 5]
                     wfm_smoothing_window_size: [11, 11, 21]
                     first_maximum_ignore_leading_bins: 0

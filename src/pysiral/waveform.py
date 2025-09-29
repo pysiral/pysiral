@@ -824,6 +824,7 @@ class L1PTrailingEdgeProperties(L1PProcItem):
         l1.classifier.add(result.params.temad, "trailing_edge_mean_absolute_deviation")
         l1.classifier.add(result.params.tew, "trailing_edge_width")
         l1.classifier.add(result.params.teq, "trailing_edge_quality")
+        l1.classifier.add(result.params.tepr, "trailing_edge_power_ratio")
         l1.classifier.add(result.params.te_exp_popt0, "trailing_edge_fit_popt0")
         l1.classifier.add(result.params.te_exp_popt1, "trailing_edge_fit_popt1")
         l1.classifier.add(result.params.te_exp_popt2, "trailing_edge_fit_popt2")
@@ -912,6 +913,7 @@ class WaveFormTrailingEdgeParameterData(object):
         self.teq = np.full(n_records, np.nan)  # Trailing Edge Quality
         self.ted = np.full(n_records, np.nan)  # Trailing Edge Decay (Müller et al. 2023)
         self.tedfq = np.full(n_records, np.nan)  # Trailing Edge Decay Fit Quality (Müller et al. 2023)
+        self.tepr = np.full(n_records, np.nan)  # Trailing Edge Power Ratio
         self.temad = np.full(n_records, np.nan)
         self.decay_fit_has_failed = np.full(n_records, True)
         self.te_exp_popt0 = np.full(n_records, np.nan)
@@ -923,6 +925,7 @@ class WaveFormTrailingEdgeParameterData(object):
         self.teq = np.append(self.teq, other_params.teq)
         self.ted = np.append(self.ted, other_params.ted)
         self.tedfq = np.append(self.tedfq, other_params.tedfq)
+        self.tepr = np.append(self.tepr, other_params.tepr)
         self.temad = np.append(self.temad, other_params.temad)
         self.decay_fit_has_failed = np.append(self.decay_fit_has_failed, other_params.decay_fit_has_failed)
         self.te_exp_popt0 = np.append(self.tew, other_params.te_exp_popt0)
@@ -1033,8 +1036,8 @@ class WaveFormTrailingEdgeParameter(object):
                 self.first_maximum_index[i]
             )
             if (
-                    self.valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
-                    self.valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
+                self.valid_first_maximum_index_range[0] > trailing_edge_data.trailing_edge_start_idx or
+                self.valid_first_maximum_index_range[1] < trailing_edge_data.trailing_edge_start_idx
             ):
                 continue
             waveform_data_stack.append(trailing_edge_data)
@@ -1080,9 +1083,10 @@ class WaveFormTrailingEdgeParameter(object):
             # Compute other trailing edge properties
             self.params.tew[i] = self.get_trailing_edge_width(trailing_edge_data, **self.trailing_edge_width_kwargs)
             self.params.teq[i] = self.get_trailing_edge_quality(trailing_edge_data)
+            self.params.tepr[i] = self.trailing_edge_power_ratio(trailing_edge_data)
 
+    @staticmethod
     def get_waveform_trailing_edge_data(
-            self,
             waveform_full: np.ndarray,
             first_maximum_index: int = None
     ) -> WFMTrailingEdgeData:
@@ -1114,7 +1118,8 @@ class WaveFormTrailingEdgeParameter(object):
             trailing_edge_lower_envelope_idx,
         )
 
-    def get_trailing_edge_decay(self, data: WFMTrailingEdgeData, popt: List) -> WFMTrailingEdgeData:
+    @staticmethod
+    def get_trailing_edge_decay(data: WFMTrailingEdgeData, popt: List) -> WFMTrailingEdgeData:
         """
         Fit inverse power law to the lower envelope of the trailing edge
         and compute decay factor, fit quality and residual to trailing
@@ -1141,8 +1146,35 @@ class WaveFormTrailingEdgeParameter(object):
             data.waveform_trailing_edge_subset,
             data.trailing_edge_fit
         )
-
         return data
+
+    @staticmethod
+    def trailing_edge_power_ratio(
+            data: WFMTrailingEdgeData,
+            noise_level_normed: float = 0.005
+    ) -> float:
+        """
+        Compute the trailing edge power ratio defined as the fraction of the
+        trailing edge power above a noise level of the exponentation fit.
+        in relation to the integrated power of the full waveform.
+
+        Valaues higher than 0.5 indicate that more than half of the
+        waveform power is contained in the trailing edge above the noise level.
+
+        :param data: Waveform Trailing Edge data object
+        :param noise_level_normed: The noise level in relation to the first maximum power
+
+        :return:
+        """
+        noise_level = noise_level_normed * data.first_maximum_power
+        is_higher = data.waveform_trailing_edge_subset > (data.trailing_edge_fit + noise_level)
+        try:
+            return (
+                np.nansum(data.waveform_trailing_edge_subset[is_higher] - data.trailing_edge_fit[is_higher]) /
+                np.nansum(data.waveform_full)
+            )
+        except ZeroDivisionError:
+            return np.nan
 
     @staticmethod
     def get_trailing_edge_width(
