@@ -1,0 +1,55 @@
+# This is the default grid definition for southern hemisphere radar altimeter data
+
+hemisphere: south
+grid_id: sh25kmEASE2
+grid_tag: sh_25km_ease2
+resolution_tag: 25km
+name: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 50km
+
+netcdf_grid_description: 
+    Lambert_Azimuthal_Grid:
+        grid_mapping_name: "lambert_azimuthal_equal_area"
+        longitude_of_projection_origin: 0.0
+        latitude_of_projection_origin: -90.0
+        false_easting: 0.0
+        false_northing: 0.0
+        semi_major_axis: 6378137.0
+        inverse_flattening: 298.257223563
+        proj4_string: "+proj=laea +lon_0=0 +datum=WGS84 +ellps=WGS84 +lat_0=-90.0"
+
+
+projection:
+    proj: laea
+    lat_0: -90.0
+    lon_0: 0.0
+    ellps: WGS84
+    datum: WGS84
+    units: m
+
+extent:
+    xoff: 0
+    yoff: 0
+    xsize: 10800000
+    ysize: 10800000
+    dx: 25000
+    dy: 25000
+    numx: 432
+    numy: 432
+
+area_def: 
+    ease2sh:
+        description: Equal-Area Scalable Earth Grid (v2), southern hemisphere, resolution 25km
+        projection:
+            proj: laea
+            lat_0: -90.0
+            lon_0: 0.0
+            ellps: WGS84
+            datum: WGS84
+            units: m
+        shape:
+            height: 432
+            width: 432
+        area_extent:
+            lower_left_xy: [-5400000.0, -5400000.0]
+            upper_right_xy: [5400000.0, 5400000.0]
+            units: m

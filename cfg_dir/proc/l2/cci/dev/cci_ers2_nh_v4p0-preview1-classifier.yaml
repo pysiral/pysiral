@@ -1,0 +1,188 @@
+# Level-2 processor settings for CCI+ Northern hemisphere CRDP v3.0-preview-1
+metadata:
+    label: "ESA CCI+ ERS-2 reprocessed northern hemisphere sea-ice thickness climate data record - v4.0-preview.1"
+    product_line: cci
+    record_type: cdr
+    platform: ers2
+    version: v4p0-preview1-classifier
+    file_version_tag: v4p0-preview1-classifier
+    hemisphere: north
+
+
+# A list auxilliary datasets. (the tag "name" links to the corresponding tag in config/auxdata.yaml)
+# NOTE: The order of the auxdata definition is important as there might be dependancies of auxiliary datasets
+auxdata:
+
+    # Add region codes
+    # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
+    #       be modified depending on region code
+    - region:
+            name: nsidc_mod
+            options: null
+
+    # MSS: Mean Sea Surface
+    - mss:
+        name: dtu21
+        options:
+            latitude_range: [45.0, 90.0]
+
+    - sic:
+         name: c3s
+         options:
+            version: v3p0
+            exception_on_error: True
+
+    - sitype:
+         name: c3s
+         options:
+             version : v3p0
+             fill_valid_sic_gaps: True
+             exception_on_error: True
+
+    # Ingest machine learned models
+    - ml:
+        # category.name (ml.tfmra_threshold_model) points to the corresponding
+        # entry in `auxdata_def.yaml`
+        name: tfmra_threshold_model_torch
+        options:
+            # The id and name of the parameter added to the level-2 object
+            output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
+            # File basename of the trained model data
+            model_file: fnn_cci_ers2_nh_v3p0-rc1.pth
+            torch_class: TorchFunctionalWaveformModelFNN
+            input_neurons: 35
+            # The model may predict nonsense threshold values. Limit
+            # to a normal range
+            valid_range: [0.1, 1.0]
+
+# --- Level-2 processor steps ---
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
+
+procsteps:
+
+    # Transfer variables from the l1b data object to the l2 data object
+    # Notation is:
+    #
+    # <l1b_datagroup>:
+    #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
+    -   module: l2proc.procsteps
+        pyclass: L1BL2TransferVariables
+        options:
+            classifier:
+                sigma0: [sig, sigma0]
+                peakiness: [pp, pulse_peakiness]
+                leading_edge_width: [lew, leading_edge_width]
+                leading_edge_quality: [leq, leading_edge_quality]
+                trailing_edge_slope: [tes, trailing_edge_slope]
+                trailing_edge_slope_quality: [tesq, trailing_edge_slope_quality]
+                late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
+                epsilon_sec: [epss, epsilon_sec]
+            correction:
+                dry_troposphere: [rcdt, dry_troposphere]
+                wet_troposphere: [rcwt, wet_troposphere]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
+                ionosphere: [rcio, ionosphere]
+                ocean_tide_elastic: [rcote, ocean_tide_elastic]
+                ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
+                ocean_loading_tide: [rcolt, ocean_loading_tide]
+                solid_earth_tide: [rcset, solid_earth_tide]
+                geocentric_polar_tide: [rcgpt,  geocentric_polar_tide]
+            time_orbit:
+                antenna_pitch: [toantptch, antenna_pitch]
+                antenna_roll: [toantrll, antenna_roll]
+                antenna_yaw: [toantyaw, antenna_yaw]
+            waveform:
+                radar_mode: [rmwfm, radar_mode]
+                is_valid: [flgwfm, flag_waveform_is_valid]
+
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
+                - trailing_edge_slope
+                - late_tail_to_peak_power
+
+    # Surface type classification algorithm
+    -   module: surface
+        pyclass: ClassifierThresholdSurfaceType
+        options:
+
+            surface_types: [ocean, lead, sea_ice]
+
+            ocean:
+
+                - radar_mode: lrm
+                  conditions:
+                      - "{sea_ice_concentration} < 15.0"
+
+            # Lead waveforms are classified based on sigma0, leading edge width
+            # and pulse peakiness within the sea-ice mask.
+            # NOTE: No LRM data over sea ice
+            lead:
+
+                - radar_mode: lrm
+                  conditions:
+                    - "{sea_ice_concentration} >= 15.0"
+                    - "{pulse_peakiness} >= 20.5"
+                    - "{sigma0} >= 24.0"
+                    - "{leading_edge_width} <= 1.00"
+
+            # The sea ice classification uses as many waveforms as possible
+            # and reduces the classification to all waveforms within the
+            # sea ice mask which are not classified as leads and have a
+            # valid leading edge.
+            sea_ice:
+
+                - radar_mode: lrm
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.02"
+
+    -   module: retracker
+        pyclass: Level2RetrackerContainer
+        options:
+            lead:
+                pyclass: cTFMRA
+                options:
+                    # if arrays than [lrm, sar, sin]
+                    # type can be fixed, sigma_func and sitype_sigma_func
+                    threshold:
+                        type: fixed
+                        value: 0.95
+                    offset: 0.0
+                    noise_level_range_bin_idx: [ 10, 20 ]
+                    wfm_oversampling_factor: 10
+                    wfm_oversampling_method: linear
+                    wfm_smoothing_window_size: [11, 11, 21]
+                    first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+                    first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
+                    uncertainty:
+                        type: fixed
+                        value: 0.15
+            sea_ice:
+                pyclass: cTFMRA
+                options:
+                    # if arrays than [lrm, sar, sin]
+                    # type can be fixed, sigma_func and sitype_sigma_func
+                    threshold:
+                        type: l2_variable
+                        variable_name: tfmra_threshold_iceml
+                    offset: 0.0
+                    noise_level_range_bin_idx: [ 10, 20 ]
+                    wfm_oversampling_factor: 10
+                    wfm_oversampling_method: linear
+                    wfm_smoothing_window_size: [11, 11, 21]
+                    first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+                    first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
+                    uncertainty:
+                        type: fixed
+                        value: 0.15

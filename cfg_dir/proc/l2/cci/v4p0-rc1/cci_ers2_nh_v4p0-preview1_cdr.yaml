@@ -1,0 +1,354 @@
+# Level-2 processor settings for CCI+ Northern hemisphere CRDP
+metadata:
+    label: "ESA CCI+ ERS-2 northern hemisphere sea-ice thickness climate data record v4.0-preview1"
+    product_line: cci
+    record_type: cdr
+    platform: ers2
+    version: v4p0-preview1
+    file_version_tag: v4p0-preview1
+    hemisphere: north
+
+
+auxdata:
+
+    # Add region codes
+    # NOTE: It is advisable to do this in the beginning, since the following auxiliary data types can
+    #       be modified depending on region code
+    - region:
+        name: nsidc_2021
+        options: null
+
+    - mss:
+        name: dtu21
+        options:
+            latitude_range: [45.0, 90.0]
+
+    - sic:
+        name: c3s
+        options:
+            version: v3p0
+            exception_on_error: False
+
+    - sitype:
+        name: c3s
+        options:
+            version: v3p0
+            fill_valid_sic_gaps: True
+            exception_on_error: False
+
+    - snow:
+        name: clim_w99amsr2
+        options:
+            daily_scaling: True
+            fyi_correction_factor: 0.5
+            exception_on_error: False
+
+    # Note: The snow density in this class will overwrite the snow density
+    #       from the W99/AMSR2 climatology (this is intended)
+    - snow:
+            name: snow_density_seasonal_mallett
+            options:
+                snow_density_uncertainty: 50.
+
+    # Ingest machine learned models
+    - ml:
+            # category.name (ml.tfmra_threshold_model) points to the corresponding
+            # entry in `auxdata_def.yaml`
+            name: tfmra_threshold_model
+            options:
+                # The id and name of the parameter added to the level-2 object
+                output_parameter: [tfmrathrs_iml, tfmra_threshold_iceml]
+                # File basename of the trained model data
+                model_file: fnn_ers2_ccip-p2-v008_tc-022_20240503.pth
+                # Model specifics
+                model_class: ERS2_TestCandidate_006_FNN
+                fmi_leading_bins: 5
+                fmi_trailing_bins: 30
+                # Input classifiers to the model with percentile value for normalization
+                # Note: Order is important; needs to be consistent with trained model input order;
+                #       Classifier names shoudl be the L1p names!
+                    # -> very strict
+                    #peakiness: [12.2984, 2.5789]
+                    #sigma0: [23.0682, 3.8649]
+                    #leading_edge_width: [0.9451, 0.1299]
+                    #epsilon_sec: [0.3344, 1.0909]
+                    #late_tail_to_peak_power: [0.0927, 0.0368]
+                    #trailing_edge_slope: [-0.1672, 0.1081]
+                    # -> less strict
+                    #peakiness: [8.8202, 3.0477]
+                    #sigma0: [19.9933, 4.0454]
+                    #leading_edge_width: [0.9973, 0.1808]
+                    #epsilon_sec: [0.1627, 0.8538]
+                    #late_tail_to_peak_power: [0.1804, 0.0829]
+                    #trailing_edge_slope: [-0.0757, 0.0862]
+                    # -> less strict but w/ deblurring
+                    #peakiness: [8.6623, 2.9896]
+                    #sigma0: [19.8025, 4.0110]
+                    #leading_edge_width: [1.0089, 0.1862]
+                    #epsilon_sec: [0.2172, 0.8430]
+                    #late_tail_to_peak_power: [0.1843, 0.0828]
+                    #trailing_edge_slope: [-0.0731, 0.0847]
+                # Input classifiers to the model with [minimum, maximum] value for normalization
+                # Note: Order is important; needs to be consistent with trained model input order;
+                #       Classifier names should be the L1p names!
+                classifiers:
+                    peakiness: [3.50, 52.00]
+                    sigma0: [1.90, 47.00]
+                    leading_edge_width: [0.500, 1.0625]
+                    epsilon_sec: [-4.550, 4.550]
+                    late_tail_to_peak_power: [0.000, 0.350]
+                    trailing_edge_slope: [-0.850, -0.0150]
+                    longitude: [-180.0, 180.0]
+                    latitude: [59.00, 81.52]
+
+                # The model may predict non-sense threshold values. Limit
+                # to a normal range
+                valid_range: [0.10, 0.99]
+
+# --- Level-2 processor steps ---
+#
+# A list auxilliary datasets to be ingested before the execution of the processing steps.
+
+procsteps:
+
+    # Transfer variables from the l1b data object to the l2 data object
+    # Notation is:
+    #
+    # <l1b_datagroup>:
+    #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
+    -   module: l2proc.procsteps
+        pyclass: L1BL2TransferVariables
+        options:
+            classifier:
+                sigma0: [sig, sigma0]
+                peakiness: [pp, pulse_peakiness]
+                ocog_amplitude: [oca, ocog_amplitude]
+                ocog_width: [ocw, ocog_width]
+                leading_edge_width: [lew, leading_edge_width]
+                leading_edge_quality: [leq, leading_edge_quality]
+                leading_edge_peakiness: [lep, leading_edge_peakiness]
+                trailing_edge_slope: [tes, trailing_edge_slope]
+                trailing_edge_slope_quality: [tesq, trailing_edge_slope_quality]
+                late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
+                significant_wave_height: [swh, significant_wave_height]
+                epsilon_sec: [epss, epsilon_sec]
+            correction:
+                dry_troposphere: [rcdt, dry_troposphere]
+                wet_troposphere: [rcwt, wet_troposphere]
+                dynamic_atmosphere: [rdac, dynamic_atmosphere]
+                ionosphere: [rcio, ionosphere]
+                ocean_tide_elastic: [rcote, ocean_tide_elastic]
+                ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
+                ocean_loading_tide: [rcolt, ocean_loading_tide]
+                solid_earth_tide: [rcset, solid_earth_tide]
+                geocentric_polar_tide: [rcgpt,  geocentric_polar_tide]
+            time_orbit:
+                antenna_pitch: [toantptch, antenna_pitch]
+                antenna_roll: [toantrll, antenna_roll]
+                antenna_yaw: [toantyaw, antenna_yaw]
+                orbit_flag: [tofl, orbit_flag]
+            waveform:
+                radar_mode: [rmwfm, radar_mode]
+                is_valid: [flgwfm, flag_waveform_is_valid]
+
+    - module: l2proc.procsteps
+      pyclass: TransferWaveform2L2
+      options: {}
+
+    # Compute rolling classifier statistics
+    -   module: l2proc.procsteps
+        pyclass: ParameterRollingStatistics
+        options:
+            window_size_m: 25000.
+            statistics: ["sdev", "mean"]
+            input_parameters:
+                - pulse_peakiness
+                - leading_edge_width
+                - sigma0
+
+    # Surface type classification algorithm
+    -   module: surface
+        pyclass: ClassifierThresholdSurfaceType
+        options:
+
+            surface_types: [ocean, lead, sea_ice]
+
+            ocean:
+
+                - radar_mode: lrm
+                  conditions:
+                      - "{sea_ice_concentration} < 15.0"
+
+            # Lead waveforms are classified based on sigma0, leading edge width
+            # and pulse peakiness within the sea-ice mask.
+            # NOTE: No LRM data over sea ice
+            lead:
+
+                - radar_mode: lrm
+                  conditions:
+                    - "{sea_ice_concentration} >= 15.0"
+                    - "{pulse_peakiness} >= 16.70"
+                    - "{sigma0} >= 22.90"
+                    - "{leading_edge_width} <= 1.05"
+                    - "{leading_edge_quality} <= 1.05"
+
+            # The sea ice classification uses as many waveforms as possible
+            # and reduces the classification to all waveforms within the
+            # sea ice mask which are not classified as leads and have a
+            # valid leading edge.
+            sea_ice:
+
+                - radar_mode: lrm
+                  exclude: lead
+                  conditions:
+                      - "{sea_ice_concentration} >= 15.0"
+                      - "{leading_edge_quality} <= 1.1"
+
+
+    # Retracking algorithm dependent on surface type
+    -   module: retracker
+        pyclass: Level2RetrackerContainer
+        options:
+            lead:
+
+                pyclass: cTFMRA
+                options:
+                    threshold:
+                        type: fixed
+                        value: 0.95
+                    offset: 0.0
+                    noise_level_range_bin_idx: [10, 20]
+                    wfm_oversampling_factor: 10
+                    wfm_oversampling_method: linear
+                    wfm_smoothing_window_size: [11, 11, 21]
+                    first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+                    first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
+                    uncertainty:
+                        type: fixed
+                        value: 0.25
+            sea_ice:
+                pyclass: cTFMRA
+                options:
+                    threshold:
+                        type: l2_variable
+                        variable_name: tfmra_threshold_iceml
+                    offset: 0.0
+                    noise_level_range_bin_idx: [10, 20]
+                    wfm_oversampling_factor: 10
+                    wfm_oversampling_method: linear
+                    wfm_smoothing_window_size: [11, 11, 21]
+                    first_maximum_normalized_threshold: [0.15, 0.15, 0.45]
+                    first_maximum_local_order: 1
+                    first_maximum_ignore_leading_bins: 10
+                    uncertainty:
+                        type: fixed
+                        value: 0.25
+
+    # Apply ERS pulse deblurring correction
+    -   module: retracker.corrections
+        pyclass: ERSPulseDeblurring
+        options:
+            slope: 5.0
+            target_variables:
+                - elevation
+
+    # Apply the range corrections
+    -   module: l2proc.procsteps
+        pyclass: L2ApplyRangeCorrections
+        options:
+            corrections:
+                - dry_troposphere
+                - wet_troposphere
+                - dynamic_atmosphere
+                - ionosphere
+                - ocean_tide_elastic
+                - ocean_tide_long_period
+                - ocean_loading_tide
+                - solid_earth_tide
+                - geocentric_polar_tide
+            target_variables:
+                - elevation
+
+    -   module: sla
+        pyclass: SLASmoothedLinear
+        options:
+            use_ocean_wfm: False
+            smooth_filter_width_m: 100000.0
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
+            uncertainty_tiepoints_distance_max: 100000.
+            uncertainty_minimum: 0.02
+            uncertainty_maximum: 0.15
+            marine_segment_filter:
+                minimum_lead_number: 1
+            tiepoint_maxdist_filter:
+                maximum_distance_to_tiepoint: 200000.
+                edges_only: False
+
+    -   module: frb
+        pyclass: RadarFreeboardDefault
+        options: null
+
+    -   module: frb
+        pyclass: SnowGeometricCorrection
+        options:
+            vacuum_light_speed_reduction: mallett2020
+
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: frb
+            target_variables: [frb]
+            valid_minimum_point_value: -0.25
+            valid_maximum_point_value: 2.25
+
+    # Add sea ice density to the Level-2 object
+    # Base values for pure ice type uncertainties from Alexandrov et al., 2010, The Cryosphere
+    -   module: sit
+        pyclass: AlexandrovSeaIceDensity
+        options:
+            fyi_density: 916.7
+            myi_density: 882.0
+            uncertainty:
+                fyi_density: 35.7
+                myi_density: 23.0
+
+    # Algorithm for getting sea ice thickness from other l2 parameters
+    -   module: sit
+        pyclass: SeaIceFreeboard2SIT
+        options:
+            water_density: 1024.0
+
+    # Filters after thickness computation
+    -   module: filter
+        pyclass: L2ParameterValidRange
+        options:
+            source_variable: sit
+            target_variables: [sit]
+            valid_minimum_point_value: -0.5
+            valid_maximum_point_value: 10.5
+
+    # Compute sea ice draft
+    -   module: sit
+        pyclass: L2SeaIceDraft
+        options: {}
+
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    -   module: filter
+        pyclass: MarginalIceZoneFilterFlag
+        options:
+            ice_edge_proximity:
+                sea_ice_concentration_max: 90.
+                low_ice_concentration_distance_max: 200000.
+                leading_edge_width_rolling_mean_min: 1.0
+                pulse_peakiness_rolling_sdev_max: 5.0
+            ice_edge_transition:
+                sea_ice_filter_size_m: 300000.
+                ocean_filter_size_m: 25000.
+                freeboard_smoother_filter_size_m: 150000.
+                sea_ice_freeboard_miz_gradient: 0.002
+                leading_edge_width_ocean_value: 2.0
