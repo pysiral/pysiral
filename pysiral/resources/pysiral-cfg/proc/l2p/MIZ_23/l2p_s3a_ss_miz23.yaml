@@ -4,7 +4,7 @@ metadata:
     product_line: SOSIMBA
     record_type: cdr
     platform: sentinel3a
-    version: v4p0-preview1-ss
+    version: v4p0-preview1-ss_miz23
     file_version_tag: v4p0-preview.1-ss
     hemisphere: south
 

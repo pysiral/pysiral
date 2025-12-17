@@ -4,7 +4,7 @@ metadata:
     product_line: SOSIMBA
     record_type: cdr
     platform: envisat
-    version: v3p0-ss
+    version: v3p0-ss_miz23
     file_version_tag: v3p0-ss
     hemisphere: south
 
