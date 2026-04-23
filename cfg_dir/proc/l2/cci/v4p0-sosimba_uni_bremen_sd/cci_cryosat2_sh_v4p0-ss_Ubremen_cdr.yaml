@@ -3,8 +3,8 @@ metadata:
     product_line: SOSIMBA
     record_type: cdr
     platform: cryosat2
-    version: v4p0-preview1-ss_var_sd
-    file_version_tag: v4p0-preview.1-ss_var_sd
+    version: v4p0-preview1-ss_UBsnow
+    file_version_tag: v4p0-preview.1-UBsnow
     hemisphere: south
 
 
@@ -22,7 +22,7 @@ auxdata:
     - mss:
         name: dtu21
         options:
-            latitude_range: [-90.0, -45.]
+            latitude_range: [-77.9, -45.] # -77.9 due to an arftefac a -80degS
 
     - sic:
         name: c3s
