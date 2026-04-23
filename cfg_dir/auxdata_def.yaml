@@ -300,6 +300,29 @@ snow:
             - year
             - month
 
+    uni_bremen_amsr_calibrated_south:
+        pyclass: UniBremenAMSR_calibrated
+        long_name: Snow depth on Antarctic sea ice from satellite radiometers (AMSR-E/2)
+        filenaming: "amsr_nn_snowdepth_runmed5_{year}{month}{day}.nc"
+        local_repository: uni_bremen_amsr_calibrated_south
+        options:
+            snow_depth_nc_variable: snow_depth
+            snow_depth_uncertainty_nc_variable: snow_depth_uncertainty
+            south:
+                projection:
+                    proj: laea
+                    lon_0: 0
+                    lat_0: -90
+                    datum: WGS84
+                    ellps: WGS84
+                dimension:
+                    n_cols: 364
+                    n_lines: 364
+                    dx: 25000
+                    dy: 25000
+        subfolders: 
+            - year
+            - month
     laku:
         pyclass: LaKu
         long_name: Snow depth on Antarctic sea ice from satellite Laser Ku 

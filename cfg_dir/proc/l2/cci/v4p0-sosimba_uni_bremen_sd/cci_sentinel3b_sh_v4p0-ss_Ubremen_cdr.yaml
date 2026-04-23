@@ -3,8 +3,8 @@ metadata:
     product_line: SOSIMBA
     record_type: cdr
     platform: sentinel3b
-    version: v4p0-preview1-ss_UBsnow
-    file_version_tag: "v4p0-preview.1-ss_UBsnow"
+    version: v4p0-preview.1-ss_Ubremen
+    file_version_tag: v4p0-preview.1-ss_Ubremen
     hemisphere: south
 
 # --- Ingest auxiliary data ---
@@ -55,7 +55,7 @@ auxdata:
     #         smooth_filter_width_m: 25000.0
     #         exception_on_error: True
     - snow:
-         name: uni_bremen_amsr_south
+         name: uni_bremen_amsr_calibrated_south
          options:
              smooth_snow_depth: true
              smooth_filter_width_m: 25000.0
