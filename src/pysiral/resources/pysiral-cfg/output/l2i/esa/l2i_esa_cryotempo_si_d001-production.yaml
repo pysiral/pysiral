@@ -1,0 +1,180 @@
+# This is the Cryo-TEMPO Sea Ice definition for the Level2Processor
+
+# Metadata
+metadata:
+  output_id: l2i
+  data_level: 2
+  data_level_description: Level-2 (geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming:
+  default: CS_OFFL_SIR_TDP_SI_{source_hemisphere:select;ARCTIC;ANTARC}_{startdt:%Y%m%dT%H%M%S}_{stopdt:%Y%m%dT%H%M%S}_{fncycle}_{fnrel_orbit}_{l2_version_tag}.nc
+product_level_subfolder: l2
+
+# A list of global attributes
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
+  - title: "Cryo-TEMPO Sea Ice Thematic Product"
+  - project: "ESA Cryo-TEMPO"
+  - creator_name: "ESA Cryo-TEMPO Project"
+  - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
+  - date_created: "{utcnow}"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - zone: "{source_hemisphere:select;Arctic;Antarctic}"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: 0.0
+  - geospatial_vertical_max: 0.0
+  - time_coverage_start: "{time_coverage_start}"
+  - time_coverage_end: "{time_coverage_end}"
+  - product_baseline: "D"
+  - product_version: "001"
+  - Conventions: "CF-1.8"
+  - cycle_number: "{cycle}"
+  - rel_orbit_number: "{rel_orbit}"
+  - abs_orbit_number: "{orbit}"
+  - cnes_subcycle: "{cnes_subcycle}"
+  - cnes_track: "{cnes_track}"
+  - cdm_data_type: "Trajectory"
+  - history: "{utcnow:%a %b %d %H:%M:%S %Y:} Product generated with pysiral version {pysiral_version}\n"
+  - sw_version: "{pysiral_version}"
+  - doi: "10.5270/CR2-e2dd631"
+
+#  - institution: "TBD"
+#  - source: "Altimetry: CryoSat-2 Level 1b baseline D (ipf1-d), Snow depth: Monthly climatology based on regional merging of Warren Climatology
+#    with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions,
+#    Mean Sea Surface: DTU15 global mean sea surface, Sea ice Concentration: {source_timeliness:select;OSI-SAF (OSI-401-b);C3S Sea Ice Concentration CDR/ICDR},
+#    Sea ice type: {source_timeliness:select;OSI-SAF (OSI-403-c);C3S Sea Ice Type CDR/ICDR},
+#    Tide: ESA L1b FES2004 tides replaced with FES2014b"
+#  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+#  - references: "TBD"
+#  - tracking_id: "{uuid}"
+#  - processing_level: "Level-2 (l2)"
+#  - summary: ""
+#  - topiccategory: "Oceans Climatology Meteorology Atmosphere"
+#  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness,
+#    Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness,
+#    Geographic Region > Northern Hemisphere, Vertical Location > Sea Surface"
+#  - id: "esa-cryotempo-l2-seaice-{source_mission_id}-{source_timeliness:lowercase}-{hemisphere_code}-{time_coverage_start:%Y%m%d}-fv2p3"
+#  - naming_authority: "TBD"
+#  - keywords_vocabulary: "GCMD Science Keywords"
+#  - doi: "None"
+#  - cdm_data_type: "Trajectory"
+#  - comment: ""
+#  - creator_type: "TBD"
+#  - contributor_name: "TBD"
+#  - contributor_role: "TBD"
+#  - publisher_name: "TBD"
+#  - publisher_url: "TBD"
+#  - publisher_email: "TBD"
+#  - time_coverage_duration: "{time_coverage_duration}"
+#  - time_coverage_resolution: "{time_coverage_duration:period}"
+#  - standard_name_vocabulary: "CF Standard Name Table (v77, 19 January 2021)"
+#  - license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+
+  time:
+    long_name: UTC time
+    standard_name: time
+    units: seconds since 2000-01-01 0:0:0
+    calendar: "gregorian"
+    comment: "UTC time counted in seconds since 2000-01-01 00:00:00"
+
+  longitude:
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees_east
+    coordinates: time
+    comment: "Longitude of nadir location [-180,+180]. Positive longitude is East relative to Greenwich meridian."
+
+  latitude:
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees_north
+    coordinates: time
+    comment: "Latitude of nadir location [-90,+90]. Positive latitude is North latitude, negative latitude is South latitude."
+
+  instrument_mode:
+    long_name: "SIRAL instrument mode flag"
+    flag_values: 1, 2, 3
+    flag_meanings: "LRM SAR SARIn"
+    valid_min: 1
+    valid_max: 3
+    coordinates: longitude latitude
+    comment: "The mode that the SIRAL instrument was in at each measurement. Either LRM, SAR or SARin."
+
+  radar_freeboard:
+    long_name: "Radar freeboard"
+    units: m
+    ancillary_variables: radar_freeboard_uncertainty
+    coordinates: longitude latitude
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+
+  radar_freeboard_uncertainty:
+    long_name: "Radar freeboard uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+
+  sea_ice_freeboard:
+    long_name: "freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    ancillary_variables: sea_ice_freeboard_uncertainty
+    coordinates: longitude latitude
+    comment: "freeboard of the sea ice layer"
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "sea ice freeboard uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
+
+  sea_ice_freeboard_filtered:
+    long_name: "smoothed freeboard of the sea ice layer"
+    standard_name: sea_ice_freeboard
+    units: m
+    coordinates: longitude latitude
+    comment: "Filtered with a 450km lowess filter"
+
+  snow_depth:
+    long_name: "snow depth"
+    standard_name: surface_snow_thickness
+    units: m
+    ancillary_variables: snow_depth_uncertainty
+    coordinates: longitude latitude
+    comment: "Snow depth interpolated from model"
+
+  snow_depth_uncertainty:
+    long_name: "snow depth uncertainty"
+    units: m
+    coordinates: longitude latitude
+    comment: "Uncertainty of the snow depth."
+
+  region_code:
+    long_name: "region id"
+    unit: 1
+    comment: "Source: Northern hemisphere: A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC), Southern hemisphere: longitude sectors south of 40S (Parkinson, C. L. and Cavalieri, D. J. 2012)"
+    valid_min: 0
+    valid_max: 104
+    flag_meanings: "Undefined_Region Central_Arctic Beaufort_Sea Chukchi_Sea East_Siberian_Sea Laptev_Sea Kara_Sea Barents_Sea East_Greenland_Sea Baffin_Bay_&_Labrador_Sea Gulf_of_St_Lawrence Hudson_Bay Canadian_Archipelago Bering_Sea Sea_of_Okhotsk Sea_of_Japan Bohai_Sea Baltic_Sea Gulf_of_Alaska Indian_Ocean Western_Pacific_Ocean, Ross_Sea Bellingshausen_Amundsen_Seas Weddell_Sea"
+    flag_values: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 100, 101, 102, 103, 104"
+    units: "1"
+    coordinates: "time"
+    coverage_content_type: referenceInformation
+
+  miz_flag:
+    var_source_name: flag_miz
+    long_name: "marginal ice zone flag"
+    flag_values: 0, 1
+    flag_meanings: "miz_flag_false miz_flag_true"
+    valid_min: 0
+    valid_max: 1
+    coordinates: longitude latitude

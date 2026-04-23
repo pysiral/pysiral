@@ -1,5 +1,5 @@
 Sphinx
-sphinx-automodapi
 sphinx_rtd_theme
+sphinx-autoapi
 sphinxcontrib-mermaid
 pyyaml

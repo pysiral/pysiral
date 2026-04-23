@@ -9,12 +9,13 @@ Level2Processor conventions
 import unittest
 
 import yaml
-from attrdict import AttrDict
+
 from loguru import logger
 
 from pysiral import psrlcfg
 from pysiral.core.config import get_yaml_config
-from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
+from pysiral.core.legacy_classes import AttrDict
+from pysiral.l2proc import Level2ProcessorStepOrder
 
 logger.disable("pysiral")
 
@@ -51,7 +52,6 @@ class TestL2ProcDef(unittest.TestCase):
                     self.assertTrue(required_tag in content.metadata, msg=msg)
 
     def testConfigFileL2ProcStepContent(self):
-        logger.enable("pysiral")
         for l2procdef_file in self.l2procdef_files:
             with open(str(l2procdef_file)) as fh:
                 content = AttrDict(yaml.safe_load(fh))
@@ -69,8 +69,6 @@ class TestL2ProcDef(unittest.TestCase):
                     is_valid,
                     f"Validating procsteps definition in {l2procdef_file}",
                 )
-        logger.disable("pysiral")
-
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestL2ProcDef)
