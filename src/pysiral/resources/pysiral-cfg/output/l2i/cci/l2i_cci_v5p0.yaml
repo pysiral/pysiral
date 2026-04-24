@@ -9,23 +9,23 @@ metadata:
 # Output Definition
 filenaming:
   default: esacci-seaice-l2i-sithick-{source_mission_sensor_fn:lowercase}_{source_mission_id}-{hemisphere_code}-{startdt:%Y%m%dT%H%M%S}-{stopdt:%Y%m%dT%H%M%S}_{l2_version_tag}.nc
-product_level_subfolder: l2i
+product_level_subfolder: l2i_snow_laku
 
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 # A list of global attributes
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
-  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
+  - title: "SOSIMBA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record;Experimental Southern Hemisphere Sea Ice Thickness Climate Data Record}"
   - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
-  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline D (ipf1-e);envisat:Envisat SGDR (final v9.3p5);sentinel3a:Sentinel 3 Thematic Sea Ice Product - baseline 5;sentinel3b:Sentinel 3 Thematic Sea Ice Product - baseline 5}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline E (ipf1-e);envisat:Envisat SGDR (final v9.3p5);sentinel3a:Sentinel 3 Thematic Sea Ice Product - baseline 5;sentinel3b:Sentinel 3 Thematic Sea Ice Product - baseline 5}, Snow depth: {source_hemisphere:select;Warren Climatology with 50% reduction for first-year sea ice;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: {source_auxdata_sic}, Sea ice type:  {source_hemisphere:select;ESA-SICCI multiyear ice area fraction from daily gridded NSIDC SSMI-SSMIS brightness temperatures version 4 using the NASA-Team algorithm;First-year sea ice only}"
   - platform: "{source_mission_name}"
   - sensor: "{source_mission_sensor}"
   - history: "{utcnow:%Y%m%dT%H%M%SZ} (created)"
   - references: "TBD"
   - tracking_id: "{uuid}"
   # - conventions: "CF-1.6"
-  - product_version: "4.0-preview.1"
+  - product_version: "5.0-preview.1"
   - processing_level: "Level-2 Intermediate (l2i)"
   - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period October 2002 - April 2024.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat, CryoSat-2 and Sentinel-3 satellite radar altimetry for the period June 2002 - April 2024.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval."
   - keywords: "Sea Ice, Ice Depth/Thickness, Radar Altimeters"
@@ -38,7 +38,7 @@ global_attributes:
   - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
   - creator_name: "Stefan Hendricks, Stephan Paul (Alfred Wegener Institute Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany); Eero Rine (Finnish Meteorological Institute, Helsinki, Finland)"
   - creator_url: "http://www.awi.de"
-  - creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de"
+  - creator_email: "stefan.hendricks@awi.de, stephan.paul@awi.de, mabo@norceresearch.no, rori@norceresearch.n"
   - project: "Climate Change Initiative - European Space Agency"
   - geospatial_lat_min: "{geospatial_lat_min}"
   - geospatial_lat_max: "{geospatial_lat_max}"

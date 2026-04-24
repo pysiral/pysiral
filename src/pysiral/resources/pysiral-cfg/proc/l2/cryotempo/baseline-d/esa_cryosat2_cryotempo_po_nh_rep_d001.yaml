@@ -4,7 +4,7 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
     product_line: esa
-    record_type: po-rep
+    record_type: tds-po-rep-D001
     platform: cryosat2
     version: D001
     file_version_tag: "D001"
@@ -83,7 +83,7 @@ procsteps:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
                 dynamic_atmosphere: [rdac, dynamic_atmosphere]
-                ionosphere_gim: [rcio, ionosphere]
+                ionosphere: [rcio, ionosphere]
                 ocean_tide_elastic: [rcote, ocean_tide_elastic]
                 ocean_tide_long_period: [rcotlp, ocean_tide_long_period]
                 ocean_loading_tide: [rcolt, ocean_loading_tide]
@@ -245,9 +245,11 @@ procsteps:
             use_ocean_wfm: True
             smooth_filter_width_m: 100000.0
             smooth_filter_width_footprint_size: 300.0
-            # For vE change the below to match SI tiepoint_elevation_filter
-            pre_filtering: true
-            filter_max_mss_offset_m: 1.0 # in meter (DJB consider using 2 from E_TDS example)
+            tiepoint_elevation_filter:
+                elevation_filter_window_m: 50000.
+                upper_limit_standard_deviation: 2
+                lower_limit_standard_deviation: 3
+                minimum_standard_deviation_m: 0.1
             uncertainty_tiepoints_distance_max: 100000.
             uncertainty_minimum: 0.02
             uncertainty_maximum: 0.10

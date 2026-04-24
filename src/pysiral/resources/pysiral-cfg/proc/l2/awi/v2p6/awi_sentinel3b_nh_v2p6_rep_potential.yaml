@@ -1,11 +1,12 @@
 metadata:
-    label: "AWI Sentinel-3B reprocessed sea-ice thickness product (MarData Potential Version)"
+    label: "AWI Sentinel-3B reprocessed sea-ice thickness product (s3awi v2.6 reprocessed)"
     product_line: awi
     record_type: rep
     platform: sentinel3b
-    version: &version "v2p6p1"
-    file_version_tag: *version
-    hemisphere: &hemisphere "north"
+    version: v2p6
+    file_version_tag: "v2p6"
+    hemisphere: north
+
 
 # --- Ingest auxiliary data ---
 #
@@ -85,7 +86,6 @@ procsteps:
         options:
             classifier:
                 sigma0_ocean: [sig, sigma0]
-                ocog_width: [ocogw, ocog_width]
                 peakiness: [pp, pulse_peakiness]
                 leading_edge_width: [lew, leading_edge_width]
                 leading_edge_quality: [leq, leading_edge_quality]
@@ -98,12 +98,13 @@ procsteps:
                 trailing_edge_decay_fit_quality: [tec, trailing_edge_decay_fit_quality]
                 trailing_edge_quality: [teq, trailing_edge_quality]
                 trailing_edge_width: [tew, trailing_edge_width]
-                trailing_edge_power_ratio: [tepr, trailing_edge_power_ratio]
                 late_tail_to_peak_power: [lttpp, late_tail_to_peak_power]
                 first_year_ice_class_membership: [fyicm, first_year_ice_class_membership]
                 multi_year_ice_class_membership: [myicm, multi_year_ice_class_membership]
                 open_water_class_membership: [owcm, open_water_class_membership]
                 surface_type_classification: [stc, surface_type_classification]
+
+
             correction:
                 dry_troposphere: [rcdt, dry_troposphere]
                 wet_troposphere: [rcwt, wet_troposphere]
@@ -115,7 +116,6 @@ procsteps:
                 solid_earth_tide: [rcset, solid_earth_tide]
                 geocentric_polar_tide: [rcgpt,  geocentric_polar_tide]
             time_orbit:
-                altitude: [toalt, altitude]
                 antenna_pitch: [toantptch, antenna_pitch]
                 antenna_roll: [toantrll, antenna_roll]
                 antenna_yaw: [toantyaw, antenna_yaw]
