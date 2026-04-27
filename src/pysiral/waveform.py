@@ -697,6 +697,8 @@ class L1PLateTail2PeakPower(L1PProcItem):
         """
 
         # Get Properties
+        if np.isnan(wfm).all():
+            return np.nan
         wfm_max_power = bn.nanmax(wfm)
         wfm_max_power_index = bn.nanargmax(wfm)
         late_tail_window = np.arange(

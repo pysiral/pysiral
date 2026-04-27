@@ -113,9 +113,21 @@ class ReadNC(object):
                     is_float, has_mask = False, False
 
                 if self.nan_fill_value and has_mask and is_float:
+                    if np.ndim(variable.mask) == 0:
+                        variable.mask = np.zeros(variable.data.shape, dtype=bool) + variable.mask
                     is_fill_value = np.where(variable.mask)
                     variable[is_fill_value] = np.nan
-
+                    
+                    """
+                    if np.ndim(variable.mask) == 0:
+                        if variable.mask==False:
+                            continue
+                        #else:
+                        #    variable = np.nan
+                    else:
+                        is_fill_value = np.where(variable.mask)
+                        variable[is_fill_value] = np.nan
+                    """
                 setattr(self, key, variable)
                 self.keys.append(key)
                 self.parameters.append(key)

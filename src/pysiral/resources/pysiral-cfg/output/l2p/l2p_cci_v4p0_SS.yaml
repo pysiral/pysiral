@@ -2,7 +2,7 @@
 
 # Metadata
 metadata: 
-  output_id: l2p_cci_v3p0
+  output_id: l2p_cci_v4p0
   data_level: 2
   data_level_description: Level-2 Pre-processed (daily summary of geophysical parameters at footprint resolution)
 

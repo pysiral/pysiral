@@ -1013,6 +1013,135 @@ class UniBremenAMSR(AuxdataBaseClass):
         snow_depth_uncertainty[snow_depth_uncertainty < 0.0] = np.nan
 
         return snow_depth, snow_depth_uncertainty
+class UniBremenAMSR_calibrated(AuxdataBaseClass):
+    """ Class for Uni Bremen snow depth  """
+
+    def __init__(self, *args, **kwargs):
+        super(UniBremenAMSR_calibrated, self).__init__(*args, **kwargs)
+        self._data = None
+        
+    def get_l2_track_vars(self, l2):
+
+
+        
+        # Set the requested data
+        self.set_requested_date_from_l2(l2)
+
+        # CAVEAT: The method `update_external_data()` will fail
+        # if the requested date is February 29, since no
+        # corresponding source file exists. As a fix, the data in
+        # in this case is set back to the February 28.
+        if self.month == "02" and self.day == "29":
+            self.set_requested_date(int(self.year), int(self.month), 28)
+
+        # Update the external data
+        self.update_external_data()
+
+        # Check if error with file I/O
+        if self.error.status or self._data is None:
+            # This will return an empty container
+            snow = SnowParameterContainer()
+            snow.set_dummy(l2.n_records)
+        else:
+            # Extract along track snow depth and density
+            sd, sd_unc = self._get_snow_track(l2)
+
+            # Apply along-track smoothing if required
+            smooth_snowdepth = self.cfg.options.get("self.cfg.options", False)
+            if smooth_snowdepth:
+                filter_width = self.cfg.options.smooth_filter_width_m
+                # Convert filter width to index
+                filter_width /= l2.footprint_spacing
+                # Round to odd number
+                filter_width = np.floor(filter_width) // 2 * 2 + 1
+                sd = idl_smooth(sd, filter_width)
+                sd_unc = idl_smooth(sd_unc, filter_width)
+
+            # Collect Parameters and return
+            # (density and density uncertainty fixed from l2 settings)
+            snow = SnowParameterContainer()
+            snow.depth = sd # convert from cm to m
+            snow.depth_uncertainty = sd_unc # convert from cm to m
+            
+            if type(self.cfg.options.snow_density) == float:
+                snow.density = np.full(sd.shape, self.cfg.options.snow_density)
+                snow.density_uncertainty = np.full(sd.shape, self.cfg.options.snow_density_uncertainty)
+            elif self.cfg.options.snow_density == 'seasonal_density_fons_2023':
+                rho_s_winter = self.cfg.options.winter_density
+                rho_s_spring = self.cfg.options.spring_density
+                rho_s_summer = self.cfg.options.summer_density
+                rho_s_autumn = self.cfg.options.autumn_density
+        
+                data_seasons = {
+                    "date": ["15-07", "15-10", "15-01", "15-04", "15-07"],
+                    "density": [rho_s_winter, rho_s_spring, rho_s_summer, rho_s_autumn, rho_s_winter],
+                }
+                l2_dates = pd.to_datetime(l2.time)
+                start_year = l2_dates.min().year - 1
+                end_year = l2_dates.max().year + 1
+                season_dates = []
+                for year in range(start_year, end_year + 1):
+                    for season in data_seasons["date"]:
+                        season_date = pd.to_datetime(f"{year}-{season}", format="%Y-%d-%m")
+                        season_dates.append(season_date)
+                    
+                season_series = pd.Series(data_seasons["density"] * (end_year - start_year + 1), index=season_dates)
+                season_series = season_series[~season_series.index.duplicated(keep='first')].sort_index()
+                sdens = np.interp(l2_dates, season_series.index, season_series.values)
+            
+                # Get the snow density uncertainty
+                if "snow_density_uncertainty" in self.cfg.options:
+                    static_sdens_unc = self.cfg.options.snow_density_uncertainty
+                else:
+                    msg = ": Warning - snow_density_uncertainty missing in processor definition (set to 0.0)"
+                    self.add_handler_message(self.__class__.__name__ + msg)
+                    static_sdens_unc = 0.0
+                    
+                snow.density = sdens
+                snow.density_uncertainty = np.full(sd.shape, static_sdens_unc)
+            
+            # Register Variables
+            self.register_auxvar("sd", "snow_depth", snow.depth, snow.depth_uncertainty)
+            self.register_auxvar("sdens", "snow_density", snow.density, snow.density_uncertainty)
+
+    def load_requested_auxdata(self):
+        """ Loads file from local repository only if needed """
+
+        # Retrieve the file path for the requested date from a property of the auxdata parent class
+        path = Path(self.requested_filepath)
+
+        # Validation
+        if not path.is_file():
+            msg = "%s: File not found: %s " % (self.__class__.__name__, path)
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_snow", msg)
+            return
+
+        # Store the netCDF data object
+        self._data = ReadNC(path)
+
+    def _get_snow_track(self, l2):
+        """ Extract snow depth from grid """
+
+        # Extract from grid
+        griddef = self.cfg.options[l2.hemisphere]
+        grid_lons, grid_lats = self._data.longitude, self._data.latitude
+        grid2track = GridTrackInterpol(l2.track.longitude, l2.track.latitude, grid_lons, grid_lats, griddef)
+
+        # Extract snow depth along track data from grid
+        sd_parameter_name = self.cfg.options.snow_depth_nc_variable
+        sdgrid = getattr(self._data, sd_parameter_name)[0, :, :]
+        snow_depth = grid2track.get_from_grid_variable(sdgrid, flipud=True)
+        snow_depth[snow_depth < 0.0] = np.nan
+
+        # Extract snow depth uncertainty
+        unc_parameter_name = self.cfg.options.snow_depth_uncertainty_nc_variable
+        uncgrid = getattr(self._data, unc_parameter_name)[0, :, :]
+        snow_depth_uncertainty = grid2track.get_from_grid_variable(uncgrid, flipud=True)
+        snow_depth_uncertainty[snow_depth_uncertainty < 0.0] = np.nan
+
+        return snow_depth, snow_depth_uncertainty
+
 
 class LaKu(AuxdataBaseClass):
     """ Class for Uni Bremen snow depth  """

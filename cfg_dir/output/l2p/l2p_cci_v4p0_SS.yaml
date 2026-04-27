@@ -1,0 +1,162 @@
+# This is the default output definition for the Level2Processor
+
+# Metadata
+metadata: 
+  output_id: l2p_cci_v3p0
+  data_level: 2
+  data_level_description: Level-2 Pre-processed (daily summary of geophysical parameters at footprint resolution)
+
+# Output Definition
+filenaming: 
+  daily: "SOSIMBA-SEAICE-L2P-SITHICK-{source_mission_sensor_fn:uppercase}_{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%d}-fv3p0.nc"
+  default: "ESACCI-SEAICE-L2P-SITHICK-{source_mission_sensor:uppercase}-{source_mission_id:uppercase}-{hemisphere_code:uppercase}-{period_coverage_start:%Y%m%dT%H%M%S}-{period_coverage_end:%Y%m%dT%H%M%S}-fv3p0.nc"
+
+product_level_subfolder: l2p_release
+
+# A list of global attributes 
+# (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
+global_attributes:
+  - title: "ESA Climate Change Initiative Sea Ice: {source_hemisphere:select;Northern;Experimental Southern} Hemisphere Sea Ice Thickness Climate Data Record (version 3)"
+  - institution: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - source: "Altimetry: {source_mission_id:select;cryosat2:CryoSat-2 Level 1b baseline-D (2010-11 till 2020-04-30) and baseline-E (from 2010-10-01);envisat:Envisat SGDR (v3.0)}, Snow depth: {source_hemisphere:select;Monthly climatology based on regional merging of Warren Climatology with 50% reduction for first-year sea ice in the central Arctic and AMSR-2 based snow depth from IUP Bremen in remaining ice-covered regions;ESA-SICCI AMSR-E/AMSR2 snow depth on sea ice climatology}, Mean Sea Surface: DTU21 global mean sea surface, Sea ice Concentration: C3S Sea Ice Concentration CDR/ICDR v3.0, Sea ice type: {source_hemisphere:select;C3S Sea Ice Type CDR/ICDR v3.0;First-year sea ice only}, Region code: {source_hemisphere:select;NSIDC regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier (2021), NSIDC);Longitude-based sectors from Parkinson, C. L. and Cavalieri, D. J. (2012)}"
+  - platform: "{source_mission_name}"
+  - sensor: "{source_mission_sensor}"
+  - history: "{utcnow:%Y%m%dT%H%M%SZ} - Product generated with pysiral version {pysiral_version}"
+  - references: "CCI+ Sea Ice ECV - Sea Ice Thickness Algorithm Theoretical Basis Document (ATBD)https://doi.org/10.5281/zenodo.10605840; CCI+ Sea Ice ECV - Sea Ice Thickness Product User Guide (PUG) https://doi.org/10.5281/zenodo.10605998"
+  - tracking_id: "{uuid}"
+  - Conventions: "CF-1.8"
+  - product_version: "3.0"
+  - format_version: "CCI Data Standards v2.3"
+  - processing_level: "Level-2 Pre-processed (l2p)"
+  - summary: "{source_hemisphere:select;Northern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period October 2002 - April 2020.;Southern Hemisphere Sea Ice Thickness Climate Data Record from Envisat and CryoSat-2 satellite radar altimetry for the period June 2002 - April 2020.} Daily summary of satellite ground trajectory data at full sensor resolution filtered by successful freeboard retrieval.)"  
+  - id: "esacci-seaice-l2p-sit-{hemisphere_code}-{source_mission_sensor:lower}-{source_mission_id}-{time_coverage_start:%Y%m%d}-fv3p0"
+  - naming_authority: "de.awi"
+  - keywords: "Earth Science > Cryosphere > Sea Ice > Ice Depth/Thickness, Earth Science > Cryosphere > Sea Ice > Freeboard, Earth Science > Cryosphere > Sea Ice > Snow Depth, Earth Science > Oceans > Sea Ice > Ice Depth/Thickness, Earth Science > Climate Indicators > Cryospheric Indicators > Ice Depth/Thickness, Earth Remote Sensing Instruments > Active Remote Sensing > Altimeters > Radar Altimeters > KU-BAND RADAR, Space-based Platforms > Earth Observation Satellites > {source_mission_id:select;cryosat2:CRYOSAT;envisat:ENVISAT}, Multinational Organizations > ESA/CCI, Institutions > AWI > Alfred Wegener Institute for Polar and Marine Research, Geographic Region > {source_hemisphere:select;Northern;Southern} Hemisphere, Vertical Location > Sea Surface"
+  - keywords_vocabulary: "GCMD Science Keywords"  
+  - doi: "{doi}"
+  - cdm_data_type: "Trajectory"
+  - comment: "{source_hemisphere:select;Northern hemisphere sea ice thickness coverage is limited to the winter month between October and April due to negative effect of surface melt on the retrieval of freeboard.;Southern hemisphere sea ice thickness is an experimental climate data record, as the algorithm does not properly considers the impact of the complex snow morphology in the freeboard retrieval. Sea ice thickness is provided for all month but needs to be considered biased high in areas with high snow depth and during the southern summer month.} Please consult the Product User Guide (PUG) for more information."
+  - date_created: "{utcnow:%Y%m%dT%H%M%SZ}"
+  - creator_name: "Alfred-Wegener-Institut Helmholtz Zentrum für Polar und Meeresforschung"
+  - creator_type: "institution"
+  - creator_url: "http://www.awi.de"
+  - contributor_name: "Stefan Hendricks, Stephan Paul, Eero Rinne, heidi.sallila@fmi.fi"
+  - contributor_role: "PrincipalInvestigator, Author, Author, Author"
+  - project: "Climate Change Initiative - European Space Agency"
+  - geospatial_lat_min: "{geospatial_lat_min}"
+  - geospatial_lat_max: "{geospatial_lat_max}"
+  - geospatial_lon_min: "{geospatial_lon_min}"
+  - geospatial_lon_max: "{geospatial_lon_max}"
+  - geospatial_vertical_min: "0.0"
+  - geospatial_vertical_max: "0.0"
+  - spatial_resolution: "300 m"
+  - key_variables: "sea_ice_thickness"
+  - time_coverage_start: "{time_coverage_start:%Y%m%dT%H%M%SZ}"
+  - time_coverage_end: "{time_coverage_end:%Y%m%dT%H%M%SZ}"
+  - time_coverage_duration: "{time_coverage_duration:period}"
+  - time_coverage_resolution: "satellite_orbit_frequency"
+  - standard_name_vocabulary: "CF Standard Name Table v77"
+  - license: "ESA CCI Data Policy: free and open access"
+
+# A list of variables and their attributes
+# The variable subtag must match the name of the level-2 parameter
+variables:
+  
+  time:
+    long_name: time
+    units: seconds since 1970-01-01
+    calendar: standard
+
+  lon:
+    var_source_name: longitude
+    long_name: longitude of satellite nadir measurement point
+    standard_name: longitude
+    units: degrees_east
+    coverage_content_type: coordinate
+    coordinates: time
+
+  lat:
+    var_source_name: latitude
+    long_name: latitude of satellite nadir measurement point
+    standard_name: latitude
+    units: degrees_north
+    coverage_content_type: coordinate
+    coordinates: time
+
+  radar_freeboard:
+    long_name: "radar freeboard"
+    units: m
+    coordinates: time
+    ancillary_variables: "radar_freeboard_uncertainty, region_code, flag_miz"
+    comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
+    coverage_content_type: physicalMeasurement
+
+  radar_freeboard_uncertainty:
+    long_name: "uncertainty associated with radar freeboard"
+    units: m
+    coordinates: time
+    coverage_content_type: qualityInformation
+
+  sea_ice_freeboard:
+    long_name: "sea ice freeboard"
+    standard_name: sea_ice_freeboard
+    units: m
+    ancillary_variables: "sea_ice_freeboard_uncertainty, region_code, flag_miz"
+    coordinates: time
+    coverage_content_type: physicalMeasurement
+
+  sea_ice_freeboard_uncertainty:
+    long_name: "uncertainty associated with radar freeboard"
+    standard_name: sea_ice_freeboard standard_error
+    units: m
+    coordinates: time
+    coverage_content_type: qualityInformation
+
+  snow_depth:
+    long_name: "thickness of the snow layer"
+    standard_name: surface_snow_thickness_where_sea_ice
+    units: m
+    coordinates: time
+    ancillary_variables: "snow_depth_uncertainty, region_code, flag_miz"
+    coverage_content_type: auxiliaryInformation
+
+  snow_depth_uncertainty:
+    long_name: "uncertainty associated to the thickness of the snow layer"
+    standard_name: surface_snow_thickness_where_sea_ice standard_error
+    units: m
+    coordinates: time
+    coverage_content_type: qualityInformation
+
+  sea_ice_thickness:
+    long_name: "sea ice thickness"
+    standard_name: sea_ice_thickness
+    units: m
+    coordinates: time
+    ancillary_variables: "sea_ice_thickness_uncertainty, region_code, flag_miz"
+    
+  sea_ice_thickness_uncertainty:
+    long_name: "uncertainty associated with sea ice thickness"
+    standard_name: sea_ice_thickness standard_error
+    units: m
+    coordinates: time
+
+  region_code:
+    long_name: "region code"
+    comment: "Region code from {source_hemisphere:select;A new regional mask for Arctic sea ice trends and climatologies (J. Scott Stewart and Walter N. Meier, NSIDC);Antarctic seas based on their longitude range with additional latitude cut-off at 40S (see Parkinson, C. L. and Cavalieri, D. J. (2012), Antarctic sea ice variability and trends, 1979 - 2010, The Cryosphere)}"
+    valid_min: 0
+    valid_max: 20
+    flag_values: "{source_hemisphere:select;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18;0 1 2 3 4 5 6 20}"
+    flag_meanings: "{source_hemisphere:select;undefined_region central_arctic beaufort_sea chukchi_sea east_siberian_sea laptev_sea kara_sea barents_sea east_greenland_sea baffin_bay_and_labrador_sea gulf_of_st_lawrence hudson_bay canadian_archipelago bering_sea sea_of_okhotsk sea_of_japan bohai_sea baltic_sea gulf_of_alaska;land_ice ice_free_ocean indian_ocean western_pacific_ocean ross_sea bellingshausen_and_amundsen_seas weddell_sea land}"
+    units: "1"
+    coordinates: time
+
+  flag_miz:
+    long_name: "marginal ice zone flag"
+    comment: "indicates potential freeboard/thickness bias by surface waves the marginal ice zone"
+    units: "1"
+    valid_min: 0
+    valid_max: 2
+    flag_values: "0 1 2"
+    flag_meanings: "not_in_miz miz_no_bias_detected miz_bias_detected"
+    coordinates: time
+  

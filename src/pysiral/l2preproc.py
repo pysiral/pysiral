@@ -131,7 +131,7 @@ class Level2Procauxdef:
             if key == "options" and isinstance(value, dict):
                 setattr(self, key, value)
             elif isinstance(value, dict):
-                setattr(self, key, Level2Procauxdef(value))  # Récursif pour les autres sous-dicos
+                setattr(self, key, Level2Procauxdef(value))  
             else:
                 setattr(self, key, value)
     @classmethod
@@ -139,7 +139,7 @@ class Level2Procauxdef:
         """Load YAML file and create a Config object."""
         with open(filename, "r") as f:
             data = yaml.safe_load(f)
-        return cls(data)  # Retourne une instance de Config
+        return cls(data)  
 
 
 class Level2PreProcProductDefinition(DefaultLoggingClass):

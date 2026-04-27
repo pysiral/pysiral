@@ -1,0 +1,28 @@
+
+metadata:
+    label: "ESA CCI+ Sentinel-3 southern hemisphere sea-ice thickness climate data record v4.0-preview.1"
+    product_line: SOSIMBA
+    record_type: cdr
+    platform: sentinel3a
+    version: v4p0-preview1-ss
+    file_version_tag: v4p0-preview.1-ss
+    hemisphere: south
+
+procsteps:
+    # Add a filter flag to detect anomalous freeboards in the marginal ice zone
+    module: filter
+    pyclass: MarginalIceZoneFilterFlag
+    options:
+        filter_type: '2' #can be '23'
+        ice_edge_proximity:
+            sea_ice_concentration_max: 75.
+            low_ice_concentration_distance_max: 200000.
+            ocean_distance_max: 300000.
+            leading_edge_width_rolling_mean_min: 2.0
+            pulse_peakiness_rolling_sdev_max: 15.0
+        ice_edge_transition:
+            sea_ice_filter_size_m: 300000.
+            ocean_filter_size_m: 25000.
+            freeboard_smoother_filter_size_m: 150000.
+            sea_ice_freeboard_miz_gradient: 0.002
+            leading_edge_width_ocean_value: 2.5
