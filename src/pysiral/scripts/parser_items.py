@@ -220,7 +220,7 @@ class L2Settings(ArgparseArgumentsArgs):
     type: Callable = str
     action: Callable = pysiral_settings_action(
         target="proc",
-        level=PysiralProcessingLevels.LEVEL2
+        level=PysiralProcessingLevels.LEVEL2P
     )
     metavar: str = "<l2 settings id|filepath>"
     help: str = """
@@ -230,6 +230,25 @@ class L2Settings(ArgparseArgumentsArgs):
     the `.yaml` extension. E.g.`awi_cryosat2_nh_v2p6_rep` will be resolved to
     `{pysiral-cfg-location}/proc/l2/awi/v2p6/awi_cryosat2_nh_v2p6_rep.yaml`.
     """
+
+
+@dataclass(kw_only=True)
+class L2PSettings(ArgparseArgumentsArgs):
+    name_or_flags: ClassVar[list[str]] = ["l2p_settings"]
+    type: Callable = str
+    action: Callable = pysiral_settings_action(
+        target="proc",
+        level=PysiralProcessingLevels.LEVEL2P
+    )
+    metavar: str = "<l2p settings id|filepath>"
+    help: str = """
+    Identifier or file path to the Level-2 Pre-Processor definition file.
+    This file contains the settings for the Level-2 Pre-Processor. The default location
+    for these files is `{pysiral-cfg-location}/proc/l2p/`. The identifier is the filename without 
+    the `.yaml` extension. E.g.`awi_cryosat2_nh_v2p6_rep` will be resolved to
+    `{pysiral-cfg-location}/proc/l2p/awi/v2p6/awi_cryosat2_nh_v2p6_rep.yaml`.
+    """
+
 
 
 @dataclass(kw_only=True)

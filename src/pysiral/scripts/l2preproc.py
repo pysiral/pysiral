@@ -9,9 +9,9 @@ from dateperiods import DatePeriod
 from loguru import logger
 
 from pysiral.core.datahandler import L2iDataHandler
-from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition
+from pysiral.l2preproc import Level2PreProcessor, Level2PreProcProductDefinition, Level2Procauxdef
 from pysiral.scripts.parser_items import (
-    ProcessingPeriod, ExcludeMonths, L2POutputs, L2iDirectory,
+    ProcessingPeriod, ExcludeMonths, L2POutputs, L2iDirectory, L2PSettings,
     DOI
 )
 
@@ -20,8 +20,9 @@ def l2preproc(
     processing_period: DatePeriod = None,
     l2i_product_dir: Union[str, Path] = None,
     l2p_outputs: List[Union[str, Path]] = None,
+    l2p_settings: List[Union[str, Path]] = None,
     doi: str = None,
-    exclude_month: List[int] = None,
+    exclude_months: List[int] = None,
 ) -> None:
     """ Caller for converting Level-2 Intermediate (l2i) into
     Level-2 Pre-Processed (l2p) data products.
@@ -41,6 +42,9 @@ def l2preproc(
             doi=doi
     )
 
+    proc_options = Level2Procauxdef.from_yaml(l2p_settings)
+
+
     # Prepare DataHandler
     # The l2 pre-processor requires l2i input files
     l2i_handler = L2iDataHandler(l2i_product_dir)
@@ -48,15 +52,15 @@ def l2preproc(
     # Get list of days for processing
     # start and/or stop can be omitted. In this case fall back to the
     # start and/or stop of l2i product availability
-    breakpoint()
+    #breakpoint()
     days = processing_period.get_segments("day")
-    if exclude_month is not None:
-        days.filter_month(exclude_month)
+    if exclude_months is not None:
+        days.filter_month(exclude_months)
 
     # Processor Initialization
     # NOTE: This is only for later cases. Not much is done here at this
     #       point
-    l2_pre_processor = Level2PreProcessor(product_def)
+    l2_pre_processor = Level2PreProcessor(product_def, proc_options)
 
 #    # Loop over iterations (one per day)
     for day in days:
@@ -94,8 +98,9 @@ class L2PreProcScriptArguments(object):
         # List of command line option required for the Level-1 pre-processor
         arg_item_list = [
             # Positional arguments
-            L2iDirectory(nargs=None).as_positional("l2_product_directory"),
-            L2POutputs(required=True).as_positional("l2p_output"),
+            L2iDirectory(nargs=None).as_positional("l2i_product_dir"),
+            L2POutputs(required=True).as_positional("l2p_outputs"),
+            L2PSettings(required=True).as_positional("l2p_settings"),
             ProcessingPeriod(),
             # Optional arguments
             ExcludeMonths(),

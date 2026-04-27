@@ -85,7 +85,9 @@ class PysiralProcessingLevels(StrEnum):
     """
     LEVEL1 = "l1"
     LEVEL2 = "l2"
+    LEVEL2P = "l2p"
     LEVEL3 = "l3"
+
 
 
 class ProductProcessingLevels(StrEnum):
