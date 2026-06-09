@@ -463,7 +463,7 @@ sitype:
         pyclass: OsiSafSITypeCDR
         long_name: C3S Sea Ice Type {record_type_prefix} Climate Data Record - {version}"
         local_repository: c3s
-        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{file_version}_{year}{month}{day}1200.nc"
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
         options:
 
             is_cdr_icdr: True
