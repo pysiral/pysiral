@@ -283,9 +283,10 @@ sic:
     # after the SSMIS data was discontinued in 2025.
     osi-438:
         pyclass: OsiSafSIC
-        long_name: OSI-SAF Global Sea Ice Concentration continuous reprocessing offline product (OSI-430)
-        filenaming: "ice_conc_{hemisphere_code}_polstere-100_cont-reproc_{year}{month}{day}1200.nc"
-        local_repository: osisaf430
+        long_name: Global Sea-Ice Concentration interim climate data record (AMSR), version 3
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v3p0-amsr_{year}{month}{day}1200.nc"
+
+        local_repository: osi-438
         options:
             is_cdr_icdr: False
             north: &osi_ease2_grid_nh
@@ -311,13 +312,6 @@ sic:
         subfolders:
             - year
             - month
-        source:
-            transfer: ftp
-            server: osisaf.met.no
-            pwdfile: null
-            type: daily
-            link: null
-
 
     # This SIC data product definition is a customization that automatically merges the
     # OSI-SAF 409 and OSI-SAF 430 products. This functionality is a unique feature
