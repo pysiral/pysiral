@@ -362,7 +362,8 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
             record_type = self.cdr_icdr_record_types[product_index]
             record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
             long_name_template = opt.get("long_name_template", {})
-            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
+            file_version = self.cfg.get("file_version", version)
+            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=file_version)
             self.cfg.set_long_name(long_name)
 
         # Get the file path

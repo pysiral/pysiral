@@ -463,7 +463,7 @@ sitype:
         pyclass: OsiSafSITypeCDR
         long_name: C3S Sea Ice Type {record_type_prefix} Climate Data Record - {version}"
         local_repository: c3s
-        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
+        filenaming: "ice_type_{hemisphere_code}_ease2-250_{record_type}-{file_version}_{year}{month}{day}1200.nc"
         options:
 
             is_cdr_icdr: True
@@ -474,7 +474,7 @@ sitype:
                 uncertainty_variable_name: uncertainty
                 north: *osi_ease2_grid_nh
                 south: *osi_ease2_grid_sh
-                        # Specific parameters for v1p0
+            # Specific parameters for v1p0
             v1p0:
                 cdr_time_coverage_end: 2016-01-01T00:00:00
 
@@ -482,8 +482,10 @@ sitype:
             v2p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
-            # Specific parameters for v2p0
             v3p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+            v4p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
         subfolders:
