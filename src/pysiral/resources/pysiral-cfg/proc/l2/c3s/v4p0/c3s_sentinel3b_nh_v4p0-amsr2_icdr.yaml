@@ -44,7 +44,8 @@ auxdata:
     - sitype:
         name: c3s
         options:
-            version: v3p0
+            version: v4p0
+            file_version: v4p0-amsr
             fill_valid_sic_gaps: True
             exception_on_error: False
 
