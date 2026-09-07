@@ -18,7 +18,7 @@ product_level_subfolder: l2p_release
 # (see: https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html)
 global_attributes:
   - Metadata_Conventions: "Unidata Dataset Discovery v1.0"
-  - title: "Cryo-TEMPO Polar Ocean Thematic Product"
+  - title: "Cryo-TEMPO Sea Ice Thematic Product"
   - project: "ESA Cryo-TEMPO"
   - creator_name: "ESA Cryo-TEMPO Project"
   - creator_url: "http://cryosat.mssl.ucl.ac.uk/tempo"
