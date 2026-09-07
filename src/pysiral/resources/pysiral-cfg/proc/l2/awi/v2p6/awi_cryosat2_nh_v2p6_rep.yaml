@@ -44,15 +44,13 @@ auxdata:
             latitude_range: [45.0, 90.0]
 
     - sic:
-        name: c3s
+        name: osi-438
         options:
-            version: v3p0
             exception_on_error: False
 
     - sitype:
-        name: c3s
+        name: osi-403
         options:
-            version: v3p0
             fill_valid_sic_gaps: True
             exception_on_error: False
 

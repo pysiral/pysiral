@@ -18,6 +18,7 @@ This is the main page for the technical documentation of the python sea ice rada
    :caption: Getting started
 
    what_is_pysiral.rst
+   general_concepts.rst
    installation.rst
    configuration.rst
    checklist.rst

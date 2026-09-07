@@ -1,6 +1,6 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
-    product_line: esa
+    product_line: cryotempo
     record_type: tds-si-rep-D001-TDS3-samosa-standard-noamp
     platform: cryosat2
     version: D001

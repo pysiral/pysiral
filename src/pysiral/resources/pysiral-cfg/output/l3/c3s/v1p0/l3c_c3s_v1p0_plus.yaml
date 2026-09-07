@@ -126,7 +126,7 @@ variables:
     coordinates: "time lat lon"
 
   freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the sea ice freeeboard retrieval"
+    long_name: "algorithm uncertainty (error propagation) of the sea ice freeboard retrieval"
     standard_name: sea_ice_freeboard standard_error
     units: m
     grid_mapping: "Lambert_Azimuthal_Grid"

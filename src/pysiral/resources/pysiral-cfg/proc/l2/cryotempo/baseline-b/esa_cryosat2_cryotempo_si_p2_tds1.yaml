@@ -1,6 +1,6 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product (TDS phase 2)"
-    product_line: esa
+    product_line: cryotempo
     record_type: rep-si
     platform: cryosat2
     version: B001-tds1
@@ -239,4 +239,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
-

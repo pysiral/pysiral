@@ -622,7 +622,7 @@ class USNICGridFileCatalog(object):
         """
         Get the closest file for the given date within the maximum offset.
 
-        :param target_date: The target date.
+        :param target_date_list: The target date.
         :param max_offset_days: The maximum offset in days an ice chart period can
             be away from the target date. The default is 7 days, to allow for the
             periods where ice charts were only distributed bi-weekly.
@@ -638,7 +638,7 @@ class USNICGridFileCatalog(object):
                 logger.info(f"Found {value} on {target_date}.")
                 return value[0]
             case Failure(_):
-                logger.warning(f"{result}")
+                logger.error(f"{result}")
                 return None
         return None
 
@@ -675,7 +675,7 @@ class USNICGridFileCatalog(object):
 
         # Find the closest ice chart (either start or end)
         closest_before = self._get_days_offset(self.ctlg["validity_start_date"], target_date)
-        closest_after =  self._get_days_offset(self.ctlg["validity_end_date"], target_date)
+        closest_after = self._get_days_offset(self.ctlg["validity_end_date"], target_date)
 
         closest_before_idx = np.argmin(closest_before)
         closest_before_value = closest_before[closest_before_idx]
@@ -782,8 +782,13 @@ class USNICGrid(AuxdataBaseClass):
             # Get icechart data frame for trajectory
             ice_chart_l2_track = self.extract_track(l2.longitude, l2.latitude, dataset)
 
+        # Save filename of ice chart to Level-2 metadata
+        ice_chart_filepath = self.requested_filepath.name if self.requested_filepath is not None else "None"
+        l2.info.adf_ice_chart = ice_chart_filepath
+
         # Pre-process parameters and set to l2 object
         self.set_l2_parameters(l2, ice_chart_l2_track)
+
 
     @staticmethod
     def get_empty_dataset(time: np.ndarray) -> xr.Dataset:
@@ -842,6 +847,12 @@ class USNICGrid(AuxdataBaseClass):
         """
 
         # Retrieve the file path for the requested date from a property of the auxdata parent class
+        if self.requested_filepath is None:
+            msg = f"{self.__class__.__name__}: File search returned None object"
+            self.add_handler_message(msg)
+            self.error.add_error("auxdata_missing_sitype", msg)
+            return
+
         path = Path(self.requested_filepath)
 
         # Validation
@@ -884,9 +895,16 @@ class USNICGrid(AuxdataBaseClass):
 
     def set_l2_parameters(self, l2: Level2Data, ice_chart_l2_track: xr.Dataset) -> None:
         """
-        Set the parameter sea ice concentrations, stage of developement and floe
+        Set the parameter sea ice concentrations, stage of development and floe
         for the three categories A, B, C as multidim parameters and the total
-        concentration as single parameter
+        concentration as single parameter.
+
+        Note: The output is customizable by providing a dictionary of variables names
+
+        :param l2: The Level-2 data object
+        :param ice_chart_l2_track: Gridded ice chart variables projected to the ground track
+
+        :return: None (Changes Level-2 data object in place)
         """
 
         var_id_dict = {
@@ -902,10 +920,10 @@ class USNICGrid(AuxdataBaseClass):
             "form_of_ice_partial": "icfloep",
         }
 
-        var_name_dict = {
+        var_name_dict_default = {
             "sea_ice_concentration_total": "ice_chart_sea_ice_concentration_total",
-            "stage_of_development_highest_concentration": "icsodhc",
-            "stage_of_development_partial_is_overall_class": "icsodioc",
+            "stage_of_development_highest_concentration": "ice_chart_stage_of_development_highest_concentration",
+            "stage_of_development_partial_is_overall_class": "ice_chart_stage_of_development_partial_is_overall_class",
             "fraction_thin_ice": "ice_chart_thin_ice_fraction",
             "fraction_first_year_ice": "ice_chart_first_year_ice_fraction",
             "fraction_multi_year_ice": "ice_chart_multi_year_ice_fraction",
@@ -915,13 +933,19 @@ class USNICGrid(AuxdataBaseClass):
             "form_of_ice_partial": "ice_chart_floe_parameter_classes",
         }
 
-        for var_name in ice_chart_l2_track.attrs["time_dim_parameter"]:
+        # Set the variables with only time dimension
+        var_name_dict = self.cfg.options.get("var_name_dict", var_name_dict_default)
+        time_dim_vars = [v for v in ice_chart_l2_track.attrs["time_dim_parameter"] if v in var_name_dict]
+        for var_name in time_dim_vars:
             self.register_auxvar(var_id_dict[var_name], var_name_dict[var_name], ice_chart_l2_track[var_name].values)
 
+        # Set the variables with dimension ice chart class and time
+        class_time_dim_vars = [v for v in ice_chart_l2_track.attrs["class_time_dim_parameter"] if v in var_name_dict]
         dims = {"new_dims": (("ice_chart_class", 3),),
                 "dimensions": ("time", "ice_chart_class"),
                 "add_dims": (("ice_chart_class", np.arange(3)),)}
-        for var_name in ice_chart_l2_track.attrs["class_time_dim_parameter"]:
+
+        for var_name in class_time_dim_vars:
             l2.set_multidim_auxiliary_parameter(
                 var_id_dict[var_name], var_name_dict[var_name],
                 ice_chart_l2_track[var_name].values, dims, update=True

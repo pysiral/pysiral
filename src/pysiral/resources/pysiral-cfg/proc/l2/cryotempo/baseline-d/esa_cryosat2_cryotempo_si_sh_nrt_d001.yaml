@@ -1,6 +1,6 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 near real-time sea ice product"
-    product_line: esa
+    product_line: cryotempo
     record_type: si-nrt
     platform: cryosat2
     version: D001
@@ -331,6 +331,7 @@ procsteps:
             boolean_flag_values: True
             ice_edge_proximity:
                 sea_ice_concentration_max: 75.
+                low_ice_concentration_distance_max: 200000.
                 ocean_distance_max: 300000.
                 leading_edge_width_rolling_mean_min: 2.0
                 pulse_peakiness_rolling_sdev_max: 15.0

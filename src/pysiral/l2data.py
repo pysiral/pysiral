@@ -241,7 +241,9 @@ class Level2Data(object):
 
         if "_uncertainty" in parameter_name:
             parameter_name = parameter_name.replace("_uncertainty", "")
-            source = catalog[parameter_name]
+            source = catalog.get(parameter_name)
+            if not source:
+                return np.full(self.n_records, np.nan)
             parameter = getattr(self, source)
             return parameter.uncertainty
 
@@ -416,6 +418,12 @@ class Level2Data(object):
     @staticmethod
     def _gett_attr_geospatial_str(value):
         return "%.4f" % value
+
+    def _get_attr_adf_ice_chart(self, *args):
+        return self.info.adf_ice_chart
+
+    def _get_attr_adf_sea_ice_concentration(self, *args):
+        return self.info.adf_sea_ice_concentration
 
     def _get_attr_source_auxdata_sic(self, *args):
         value = self._auxdata_source_dict.get("sic", "unkown")

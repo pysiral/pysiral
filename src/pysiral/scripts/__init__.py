@@ -121,6 +121,17 @@ def l2proc_cli(args_list: List = None) -> None:
     l2proc(**vars(L2ProcScriptArguments().get(args_list)))
 
 
+def l2procfiles_cli(args_list: List = None) -> None:
+    """
+    Command-line interface entry point for the `pysiral l2procfiles` script.
+
+    :param args_list: Command line arguments to be passed to the script.
+
+    :return: None
+    """
+    l2procfiles(**vars(L2ProcFilesScriptArguments().get(args_list)))
+
+
 def l2preproc_cli(args_list: List = None) -> None:
     """
     Command-line interface entry point for the `pysiral l2preproc` script.

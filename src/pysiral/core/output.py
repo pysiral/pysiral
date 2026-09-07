@@ -407,7 +407,7 @@ class NCDataFile(DefaultLoggingClass):
             self.data.set_doi(self.output_handler.doi)
 
     def _set_data_record_type(self):
-        if self.output_handler.has_doi:
+        if str(self.output_handler.data_record_type).lower() != "none":
             self.data.set_data_record_type(self.output_handler.data_record_type)
 
     def _write_global_attributes(self):

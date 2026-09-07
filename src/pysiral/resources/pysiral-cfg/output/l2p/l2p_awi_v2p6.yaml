@@ -126,7 +126,7 @@ variables:
     coverage_content_type: physicalMeasurement
 
   radar_freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    long_name: "algorithm uncertainty (error propagation) of the radar freeboard retrieval"
     units: m
     coordinates: time
     coverage_content_type: qualityInformation

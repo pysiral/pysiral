@@ -43,18 +43,15 @@ auxdata:
             version: v3p0
             exception_on_error: False
 
-    - sitype:
-        name: c3s
+    - sic:
+        name: osi-438
         options:
-            version: v3p0
-            fill_valid_sic_gaps: True
             exception_on_error: False
 
-    - snow:
-        name: clim_w99amsr2
+    - sitype:
+        name: osi-403
         options:
-            daily_scaling: True
-            fyi_correction_factor: 0.5
+            fill_valid_sic_gaps: True
             exception_on_error: False
 
     # Note: The snow density in this class will overwrite the snow density

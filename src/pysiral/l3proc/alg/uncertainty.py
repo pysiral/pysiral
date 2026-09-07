@@ -44,8 +44,9 @@ class Level3GridUncertainties(Level3ProcessorItem):
         error components, where for components for random error the error of the l2 average
         is used and for systematic error components the average of the l2 error """
 
-        # Loop over grid items
-        map(self.compute_gridded_uncertainty, self.l3grid.grid_indices)
+        # Loop over grid item
+        for idx in self.l3grid.grid_indices:
+            self.compute_gridded_uncertainty(idx)
 
     def compute_gridded_uncertainty(self, grid_index: Tuple[int, int]) -> None:
         """

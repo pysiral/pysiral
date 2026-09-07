@@ -99,6 +99,7 @@ from cftime import num2pydate as cn2pyd
 from datetime import datetime
 from loguru import logger
 from netCDF4 import Dataset, date2num
+from pathlib import Path
 from scipy.spatial.transform import Rotation
 
 from pysiral.core.flags import RadarModes
@@ -114,7 +115,8 @@ class Level1bData(object):
     """
     data_groups = ["time_orbit", "correction", "classifier", "waveform", "surface_type"]
 
-    def __init__(self):
+    def __init__(self, filepath: Union[Path, str] = None):
+        self.source_filepaths = [filepath] if filepath else []
         self.info = L1bMetaData()
         self.waveform = L1bWaveforms(self.info)
         self.time_orbit = L1bTimeOrbit(self.info)
@@ -140,6 +142,8 @@ class Level1bData(object):
 
         :return: None, current L1 object is changed in-place
         """
+
+        self.source_filepaths.extend(l1b_annex.source_filepaths)
 
         # Validity Checks
         timedelta_seconds = (l1b_annex.tcs - self.tce).total_seconds()

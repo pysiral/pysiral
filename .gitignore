@@ -245,4 +245,5 @@ pysiral_classes.txt
 mypy-coverage.txt/
 mypy-coverage/
 .vscode/
+docs/_build/
 _build/

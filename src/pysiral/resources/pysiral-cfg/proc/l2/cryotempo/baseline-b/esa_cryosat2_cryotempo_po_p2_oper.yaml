@@ -3,7 +3,7 @@
 
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed polar ocean product"
-    product_line: esa
+    product_line: cryotempo
     record_type: oper-po-B001
     platform: cryosat2
     version: B001
@@ -260,4 +260,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
- 

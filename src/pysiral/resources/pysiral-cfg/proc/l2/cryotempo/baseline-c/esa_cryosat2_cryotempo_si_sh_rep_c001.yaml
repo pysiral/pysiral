@@ -1,6 +1,6 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea ice product"
-    product_line: esa
+    product_line: cryotempo
     record_type: tds-si-rep-C001
     platform: cryosat2
     version: C001
@@ -335,4 +335,3 @@ procsteps:
     -   module: l2proc.procsteps
         pyclass: CS2InstrumentModeflag
         options: null
-

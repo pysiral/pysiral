@@ -357,12 +357,13 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         is_cdr_icdr = opt.get("is_cdr_icdr", False)
         version = opt.get("version", None)
         record_type = None
+        file_version = self.cfg.get("file_version", version)
         if is_cdr_icdr:
             product_index = int(self.start_time > opt[opt.version]["cdr_time_coverage_end"])
             record_type = self.cdr_icdr_record_types[product_index]
             record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
             long_name_template = opt.get("long_name_template", {})
-            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
+            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=file_version)
             self.cfg.set_long_name(long_name)
 
         # Get the file path
@@ -379,7 +380,7 @@ class OsiSafSITypeCDR(AuxdataBaseClass):
         # Construct the filename
         filename = self.cfg.filenaming.format(
             record_type=record_type,
-            version=version,
+            version=file_version,
             year=self.year,
             month=self.month,
             day=self.day,

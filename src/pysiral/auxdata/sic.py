@@ -117,6 +117,10 @@ class OsiSafSIC(AuxdataBaseClass):
                 indices = np.where(np.logical_and(is_near_pole_hole, np.isnan(sic)))
                 sic[indices] = opt.pole_hole_fill_value
 
+        # Save filename of ice chart to Level-2 metadata
+        ice_conc_filepath = self.requested_filepath.name if self.requested_filepath is not None else "None"
+        l2.info.adf_sea_ice_concentration = ice_conc_filepath
+
         # All done, register the variable
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
         self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)

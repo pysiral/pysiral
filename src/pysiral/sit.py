@@ -37,13 +37,14 @@ class AlexandrovSeaIceDensity(Level2ProcessorStep):
         rho_i_myi = self.cfg.options.myi_density
 
         # Scales with MYI fraction
-        myi_fraction = l2.sitype
+        myi_fraction_var_name = self.cfg.options.get("myi_fraction_var_name", "sitype")
+        myi_fraction = l2.get_parameter_by_name(myi_fraction_var_name)
         rho_i = rho_i_fyi - myi_fraction * (rho_i_fyi - rho_i_myi)
 
         # Compute uncertainty of sea ice density
         # Note: it has been decided to use a simplified computation of
         # sea ice density uncertainty, since a simple Gaussian error
-        # propagation does not cut it, as the the two (fyi & myi) reference
+        # propagation does not cut it, as the two (fyi & myi) reference
         # uncertainties are not independent (linked via scaling factor).
         # One could add the covariance matrix, but this is hardly justified
         # given the already very basic assumptions for fyi and myi density

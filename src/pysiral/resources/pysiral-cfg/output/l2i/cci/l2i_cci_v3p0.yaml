@@ -192,7 +192,7 @@ variables:
     comment: "radar freeboard is defined as the elevation based on the assumption of vacuum light speed without a snow propagation or range penetration correction"
 
   radar_freeboard_uncertainty:
-    long_name: "algorithm uncertainty (error propagation) of the radar freeeboard retrieval"
+    long_name: "algorithm uncertainty (error propagation) of the radar freeboard retrieval"
     units: m
     coordinates: time
 

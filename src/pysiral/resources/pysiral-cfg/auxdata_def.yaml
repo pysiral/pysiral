@@ -208,6 +208,31 @@ snow:
                     dy: 6250
             subfolders: null
 
+    cryotempo_nh_clim:
+        pyclass: CryoTempoNorthernClimatology
+        long_name: Merged monthly snow depth and density climatology from Warren99 and filtered SnowModel-LG snow depth.
+        filename: "snow-climatology-w99_smlg-ease2_nh_12p5km-p1m-v1p0.nc"
+        local_repository: cryotempo_nh_clim
+        options:
+            variable_map:
+                depth: surface_snow_thickness_merged
+                depth_uncertainty: surface_snow_thickness_uncertainty_merged
+                density: surface_snow_density_merged
+                density_uncertainty: surface_snow_density_uncertainty_merged
+            north:
+                projection:
+                    proj: laea
+                    lon_0: 0.0
+                    lat_0: 90.0
+                    a: 6378137.0
+                    b: 6356752.314245179
+                dimension:
+                    n_cols: 864
+                    n_lines: 864
+                    dx: 12500
+                    dy: 12500
+            subfolders: null
+
     snow_density_seasonal_mallett:
         pyclass: SeasonalArcticSnowDensityMallett2020
         long_name: Seasonal changing Arctic Snow density
@@ -364,6 +389,19 @@ sic:
             - month
 
 
+    osi-438:
+        pyclass: OsiSafSIC
+        long_name: Global Sea-Ice Concentration interim climate data record (AMSR), version 3
+        filenaming: "ice_conc_{hemisphere_code}_ease2-250_icdr-v3p0-amsr_{year}{month}{day}1200.nc"
+        local_repository: osi-438
+        options:
+            is_cdr_icdr: False
+            north: *osi_ease2_grid_nh
+            south: *osi_ease2_grid_sh
+        subfolders:
+            - year
+            - month
+
     # This SIC data product definition is a customization that automatically merges the
     # OSI-SAF 438 and OSI-SAF 458 products. This functionality is a unique feature
     # of the OsiSafSIC class and is not generally available for auxdata products
@@ -474,7 +512,7 @@ sitype:
                 uncertainty_variable_name: uncertainty
                 north: *osi_ease2_grid_nh
                 south: *osi_ease2_grid_sh
-                        # Specific parameters for v1p0
+            # Specific parameters for v1p0
             v1p0:
                 cdr_time_coverage_end: 2016-01-01T00:00:00
 
@@ -482,10 +520,38 @@ sitype:
             v2p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
-            # Specific parameters for v2p0
             v3p0:
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
+            v4p0:
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
+        subfolders:
+            - year
+            - month
+
+    # See https://gitlab.awi.de/siteo/cryotempo/icgrid for details on this product.
+    # This is a gridded product created by AWI based on USNIC ice charts shapefiles.
+    usnic_icgrid:
+        pyclass: USNICGrid
+        long_name: Gridded ice charts from US National Ice Center (USNIC).
+        filenaming: "usnic-icechart-nh_ease2_12p5km-{date_coverage_start}_{date_coverage_end}-v1p0.nc"
+        local_repository: usnic_icgrid
+        options:
+            north:
+                projection:
+                    proj: stere
+                    lon_0: -45
+                    lat_0: 90
+                    lat_ts: 70
+                    a: 6378273
+                    b: 6356889.44891
+                dimension:
+                    n_cols: 304
+                    n_lines: 448
+                    dx: 25000
+                    dy: 25000
+            south: null
         subfolders:
             - year
             - month

@@ -33,6 +33,8 @@ SHOW_DEBUG_MAP = False
 L1P_HEMISPHERE_NAMING_DICT = {"nh": "north", "sh": "south", "global": "global"}
 
 
+# TODO: To be replaced with Abstract Base Class (ABC)
+# TODO: To be renamed to data loader (affects all sub-classes)
 class Level1PInputHandlerBase(DefaultLoggingClass):
     """
     Base class (mostly for type checking).
@@ -101,6 +103,14 @@ class Level1POutputHandler(DefaultLoggingClass):
 
         :return: None
         """
+
+        # Check file length before exporting
+        # NOTE: This has been added
+        minimum_file_record_size = self.cfg.get("minimum_file_record_size", 0)
+        if l1.n_records < minimum_file_record_size:
+            logger.warning(f"- Orbit segment too short: {l1.n_records} < {minimum_file_record_size} (min), "
+                           "skipping export to file")
+            return
 
         # Get filename and path
         self.set_output_filepath(l1)

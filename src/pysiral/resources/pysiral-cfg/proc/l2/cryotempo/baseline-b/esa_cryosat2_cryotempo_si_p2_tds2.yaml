@@ -1,6 +1,6 @@
 metadata:
     label: "ESA CryoTEMPO CryoSat-2 reprocessed sea-ice freeboard product (TDS2 phase 2)"
-    product_line: esa
+    product_line: cryotempo
     record_type: rep-si
     platform: cryosat2
     version: B001-tds2
