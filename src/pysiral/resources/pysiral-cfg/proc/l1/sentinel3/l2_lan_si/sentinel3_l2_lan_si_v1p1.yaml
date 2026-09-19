@@ -105,7 +105,7 @@ level1_preprocessor:
         
         # Definition of the polar ocean
         # NOTE: The target_hemisphere variable can be overwritten with the `hemisphere`
-        #       command line option of the `pysiral-l1preproc` script
+        #       command line option of the `pysiral-l1` script
         polar_ocean:
             target_hemisphere: [north, south]
             polar_latitude_threshold: 45.0

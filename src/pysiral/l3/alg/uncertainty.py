@@ -10,7 +10,7 @@ import numpy as np
 from loguru import logger
 from typing import Dict, List, Tuple
 
-from pysiral.l3proc import Level3ProcessorItem
+from pysiral.l3 import Level3ProcessorItem
 from pysiral.sit import frb2sit_errprop
 
 

@@ -12,8 +12,8 @@ from loguru import logger
 
 from pysiral.core.datahandler import L2iDataHandler
 from pysiral.core.flags import DurationType, ProductProcessingLevels, DataRecordType
-from pysiral.l3proc import (Level3GridDefinition, Level3OutputHandler,
-                            Level3Processor, Level3ProductDefinition)
+from pysiral.l3 import (Level3GridDefinition, Level3OutputHandler,
+                        Level3Processor, Level3ProductDefinition)
 from pysiral.scripts.parser_items import (
     L2iDirectory, L3Settings, L3Grid, L3Outputs, L3Directory, ExcludeMonths,
     ProcessingPeriod, DOI, Duration, DataRecord, ProductProcessingLevel
@@ -241,9 +241,9 @@ class L3ProcScriptArguments(object):
 
         # create the parser
         parser = argparse.ArgumentParser(
-            prog="pysiral l3proc",
+            prog="pysiral l3",
             description="""
-                    The Level-3 Processor (l3proc) generates Level-3 files (l3c|l3s) from l2i input files.
+                    The Level-3 Processor (l3) generates Level-3 files (l3c|l3s) from l2i input files.
                     Level-3 files contain geophysical information and auxiliary data on spatio-temporal
                     grids. The processor uses a Level-3 product definition file to define the product metadata, 
                     the required Level-2 input data and Level-3 processor algorithm steps 

@@ -44,7 +44,7 @@ class Level2ProcessorStep(DefaultLoggingClass):
         # Error flag dict {code: component}
         self.error_flag_bit_dict = {
             "l1b": 0,
-            "l2proc": 1,
+            "l2": 1,
             "auxdata": 2,
             "surface_type": 3,
             "retracker": 4,
@@ -283,7 +283,7 @@ class L1BL2TransferVariables(Level2ProcessorStep):
 
     @property
     def error_bit(self):
-        return self.error_flag_bit_dict["l2proc"]
+        return self.error_flag_bit_dict["l2"]
 
 
 class L2ApplyRangeCorrections(Level2ProcessorStep):
@@ -480,7 +480,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
     This class add rolling statistics (mean, sdev) using the pandas rolling
     framework to the Level-2 data object.
 
-        -   module: l2proc.procsteps
+        -   module: l2.procsteps
             pyclass: ParameterRollingStatistics
             options:
                 window_size_m: <maximum size of the marginal ice zone>
@@ -497,7 +497,7 @@ class ParameterRollingStatistics(Level2ProcessorStep):
 
         e.g.
 
-        -   module: l2proc.procsteps
+        -   module: l2.procsteps
             pyclass: ParameterRollingStatistics
             options:
                 window_size_m: 25000.
@@ -583,7 +583,7 @@ class TransferWaveform2L2(Level2ProcessorStep):
     This class adds the waveform and associated parameters (range, valid_flag)
     to the l2 data container
 
-        - module: l2proc.procsteps
+        - module: l2.procsteps
           pyclass: TransferWaveform2L2
           options: {}
     """

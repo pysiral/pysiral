@@ -15,7 +15,7 @@ from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import ESA_SURFACE_TYPE_DICT
 from pysiral.core.helper import parse_datetime_str
 from pysiral.l1data import Level1bData
-from pysiral.l1preproc import Level1PInputHandlerBase
+from pysiral.l1 import Level1PInputHandlerBase
 
 
 # DEPR: Marked as deprecated

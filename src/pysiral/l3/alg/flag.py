@@ -10,7 +10,7 @@ import numpy as np
 from scipy.ndimage import maximum_filter
 
 from pysiral import psrlcfg
-from pysiral.l3proc import Level3ProcessorItem
+from pysiral.l3 import Level3ProcessorItem
 
 
 class Level3StatusFlag(Level3ProcessorItem):

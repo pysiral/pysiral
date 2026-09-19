@@ -25,7 +25,7 @@ from pysiral.core.legacy_classes import (AttrDict, DefaultLoggingClass, ErrorSta
 from pysiral.core.flags import Hemispheres
 from pysiral.core.output import L1bDataNC
 from pysiral.l1data import L1bMetaData, Level1bData
-from pysiral.l1preproc.procitems import L1PProcItemDef
+from pysiral.l1.procitems import L1PProcItemDef
 
 # TODO: Remove this functionality
 SHOW_DEBUG_MAP = False
@@ -852,7 +852,7 @@ class L1PreProcBase(DefaultLoggingClass):
     def polar_ocean_props(self) -> Union[Dict, AttrDict]:
         if "polar_ocean" not in self.cfg:
             msg = "Missing configuration key `polar_ocean` in Level-1 Pre-Processor Options"
-            self.error.add_error("l1preproc-missing-option", msg)
+            self.error.add_error("l1-missing-option", msg)
             self.error.raise_on_error()
         return self.cfg.polar_ocean
 
@@ -860,7 +860,7 @@ class L1PreProcBase(DefaultLoggingClass):
     def orbit_segment_connectivity_props(self) -> Union[Dict, AttrDict]:
         if "orbit_segment_connectivity" not in self.cfg:
             msg = "Missing configuration key `orbit_segment_connectivity` in Level-1 Pre-Processor Options"
-            self.error.add_error("l1preproc-missing-option", msg)
+            self.error.add_error("l1-missing-option", msg)
             self.error.raise_on_error()
         return self.cfg.orbit_segment_connectivity
 
@@ -1180,7 +1180,7 @@ class Level1PreProcJobDef(DefaultLoggingClass):
     @classmethod
     def from_args(cls, args: AttrDict) -> "Level1PreProcJobDef":
         """
-        Init the Processor Definition from the pysiral-l1preproc command line argument object
+        Init the Processor Definition from the pysiral-l1 command line argument object
 
         :param args:
         :return:
@@ -1418,7 +1418,7 @@ def get_preproc(preproc_type: str,
         for key in preproc_class_lookup_dict:
             msg += "\n - %s" % key
         error = ErrorStatus(caller_id="Level1PreProcessor")
-        error.add_error("invalid-l1preproc-class", msg)
+        error.add_error("invalid-l1-class", msg)
         error.raise_on_error()
 
     # Return the initialized class

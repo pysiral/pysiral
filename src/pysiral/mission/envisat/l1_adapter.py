@@ -21,7 +21,7 @@ from pysiral.core.iotools import ReadNC
 from pysiral.core.legacy_classes import AttrDict
 from pysiral.envisat.functions import get_envisat_wfm_range
 from pysiral.l1data import Level1bData
-from pysiral.l1preproc import Level1PInputHandlerBase
+from pysiral.l1 import Level1PInputHandlerBase
 
 
 class EnvisatSGDRNC(Level1PInputHandlerBase):

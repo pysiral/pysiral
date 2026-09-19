@@ -53,7 +53,7 @@ auxdata:
 # --- Level-2 processor steps ---
 procsteps:
 
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L1BL2TransferVariables
         options:
             classifier:
@@ -89,7 +89,7 @@ procsteps:
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
     # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: ParameterRollingStatistics
         options:
             window_size_m: 25000.
@@ -204,7 +204,7 @@ procsteps:
                     max_misfit: 5.0
 
     # Apply the range corrections
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
             corrections:
@@ -335,6 +335,6 @@ procsteps:
 
     # Create an instrument mode flag for CryoSat-2 data
     # (instrument mode = radar mode + 1)
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: CS2InstrumentModeflag
         options: null

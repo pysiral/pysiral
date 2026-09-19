@@ -177,7 +177,7 @@ processing_items:
 
     # Compute surface type statistics based on surface type classification
     - label: "Load CCI land mask"
-      module_name: pysiral.l3proc.alg.mask
+      module_name: pysiral.l3.alg.mask
       class_name: Level3LoadCCILandMask
       options:
         local_machine_def_mask_tag: cci_landoceanlake
@@ -192,19 +192,19 @@ processing_items:
 
     # Compute surface type statistics based on surface type classification
     - label: "Compute surface type statistics"
-      module_name: pysiral.l3proc.alg.statistics
+      module_name: pysiral.l3.alg.statistics
       class_name: Level3SurfaceTypeStatistics
       options: {}
 
     # Compute surface type statistics based on surface type classification
     - label: "Number of valid freeboards"
-      module_name: pysiral.l3proc.alg.statistics
+      module_name: pysiral.l3.alg.statistics
       class_name: Level3ValidSeaIceFreeboardCount
       options: {}
 
     # Compute the uncertainties of gridded parameter
     - label: "Compute gridded uncertainties"
-      module_name: pysiral.l3proc.alg.uncertainty
+      module_name: pysiral.l3.alg.uncertainty
       class_name: Level3GridUncertaintiesV2
       options:
 

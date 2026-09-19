@@ -90,7 +90,7 @@ procsteps:
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
@@ -128,7 +128,7 @@ procsteps:
             backscatter_base_period: [2011, 6]
     
     # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: ParameterRollingStatistics
         options:
             window_size_m: 25000.

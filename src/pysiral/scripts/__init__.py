@@ -37,14 +37,14 @@ def main() -> None:
         `config`      Set or update pysiral configuration to a specific directory.
                       (see: pysiral set-cfg --help)
 
-        `l1preproc`   Generate Level-1 files (l1p) with trajectory sensors data
+        `l1`   Generate Level-1 files (l1p) with trajectory sensors data
                       from source files.  
-                      (see: pysiral l1preproc --help)
+                      (see: pysiral l1 --help)
 
-        `l2proc`      Generate Level-2 files (l2/l2i) with geophysical information
+        `l2`      Generate Level-2 files (l2/l2i) with geophysical information
                       from Level-1 files (l1p) and auxiliary data for a given 
                       Level-2 product definition and period. 
-                      (see: pysiral l2proc --help)
+                      (see: pysiral l2 --help)
                       
         `l2procfiles` Generate Level-2 files (l2/l2i) with geophysical information
                       from a list of Level-1 files (l1p) and auxiliary data for a given 
@@ -54,9 +54,9 @@ def main() -> None:
         `l2preproc`   Generate Level-2 files (l2p) wwith daily summaries of l2/l2i files
                       (see: pysiral l2preproc --help)
 
-        `l3proc`      Generate Level-3 files (l3c/l3s) with gridded data from 
+        `l3`      Generate Level-3 files (l3c/l3s) with gridded data from 
                       Level-2 files (l2/l2i).
-                      (see: pysiral l3proc --help)
+                      (see: pysiral l3 --help)
     """
 
     # Get the name of the script
@@ -101,7 +101,7 @@ def config_cli(args_list: List = None) -> None:
 
 def l1preproc_cli(args_list: List = None) -> None:
     """
-    Command-line interface entry point for the `pysiral l1preproc` script.
+    Command-line interface entry point for the `pysiral l1` script.
 
     :param args_list: Command line arguments to be passed to the script.
 
@@ -112,7 +112,7 @@ def l1preproc_cli(args_list: List = None) -> None:
 
 def l2proc_cli(args_list: List = None) -> None:
     """
-    Command-line interface entry point for the `pysiral l2proc` script.
+    Command-line interface entry point for the `pysiral l2` script.
 
     :param args_list: Command line arguments to be passed to the script.
 
@@ -145,7 +145,7 @@ def l2preproc_cli(args_list: List = None) -> None:
 
 def l3proc_cli(args_list: List = None) -> None:
     """
-    Command-line interface entry point for the `pysiral l3proc` script.
+    Command-line interface entry point for the `pysiral l3` script.
 
     :param args_list: Command line arguments to be passed to the script.
 

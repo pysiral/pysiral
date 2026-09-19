@@ -19,7 +19,7 @@ from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
 from pysiral.core.output import DefaultLevel2OutputHandler, Level2Output
 from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
-from pysiral.l2proc.procsteps import Level2ProcessorStepOrder
+from pysiral.l2.procsteps import Level2ProcessorStepOrder
 
 __all__ = ["Level2Processor", "Level2ProductDefinition", "Level2ProcessorStepOrder", "procsteps"]
 
@@ -213,7 +213,7 @@ class Level2Processor(DefaultLoggingClass):
                 continue
 
             # Overwrite the timeliness value of the l1p input data
-            # (requires settings of --force-l2def-record-type option in pysiral-l2proc)
+            # (requires settings of --force-l2def-record-type option in pysiral-l2)
             if self._l2def.force_l2def_record_type:
                 l2.info.timeliness = self._l2def.record_type
 

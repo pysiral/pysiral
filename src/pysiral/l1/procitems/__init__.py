@@ -10,7 +10,7 @@ thus are allowed to map larger data sets to memory which are then applied
 for each Level-1 data set.
 
 Processing items can be anywhere in the pysiral namespace, but must
-inherit `pysiral.l1preproc.procitems.L1PProcItem` and overwrite the
+inherit `pysiral.l1.procitems.L1PProcItem` and overwrite the
 `apply(l1)` method, which receives the Level-1 data object as input.
 
 Level-1 processor items are instanced from the Level-1 pre-processor

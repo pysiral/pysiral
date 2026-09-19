@@ -71,7 +71,7 @@ procsteps:
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L1BL2TransferVariables
         options:
             classifier:
@@ -106,7 +106,7 @@ procsteps:
                 radar_mode: [rmwfm, radar_mode]
                 is_valid: [flgwfm, flag_waveform_is_valid]
 
-    - module: l2proc.procsteps
+    - module: l2.procsteps
       pyclass: TransferWaveform2L2
       options: {}
 
@@ -120,7 +120,7 @@ procsteps:
             backscatter_base_period: [2011, 6]
 
     # Compute rolling classifier statistics
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: ParameterRollingStatistics
         options:
             window_size_m: 25000.
@@ -207,7 +207,7 @@ procsteps:
                         type: fixed
                         value: 0.15
 
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
             corrections:

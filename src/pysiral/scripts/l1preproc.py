@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# NOTE: pysiral-l1preproc is a complete re-design of pysiral-l1bpreproc.py and will successively replace the
+# NOTE: pysiral-l1 is a complete re-design of pysiral-l1bpreproc.py and will successively replace the
 #       older version
 
 import argparse
@@ -16,7 +16,7 @@ from pysiral.scripts.parser_items import (
     ProcessingPeriod, ExcludeMonths, Hemisphere, PlatformID,
     L1PSettings, SourceDatasetID, MultiProcesssingNumCores, UseMultiProcesssing
 )
-from pysiral.l1preproc import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
+from pysiral.l1 import (Level1POutputHandler, Level1PreProcJobDef, get_preproc)
 
 
 def l1preproc(
@@ -150,16 +150,16 @@ class L1PreProcScriptArguments(object):
 
         # create the parser
         parser = argparse.ArgumentParser(
-            prog="pysiral l1preproc",
+            prog="pysiral l1",
             description="""
-            The Level-1 Pre-Processor (l1preproc) is used to generate Level-1 files (l1p) from 
+            The Level-1 Pre-Processor (l1) is used to generate Level-1 files (l1p) from 
             individual source radar altimeter files for a given period. Processing steps include the 
             harmonization of data formats from various radar altimeter missions, the generation of 
             continuous trajectories over the polar oceans, ingesting auxiliary data and the pre-computation 
             of waveform shape parameters. Basis for the Level-1 Pre-Processor is a Level-1 Processor 
             Definition file that defines the the radar altimeter input and processing parameters.
             The output is a set of Level-1 files (l1p) that contain the  harmonized data from the 
-            source files, which can be used for further processing in the Level-2 processor (l2proc).
+            source files, which can be used for further processing in the Level-2 processor (l2).
             """,
             epilog="For more information, see: https://pysiral.readthedocs.io",
             formatter_class=lambda prog: argparse.HelpFormatter(prog, width=96, indent_increment=4)  # noqa: E501

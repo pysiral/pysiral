@@ -99,7 +99,7 @@ level1_preprocessor:
             # NOTE: This processor item is specific for Cryo-TEMPO production
             - label: "Include FES2014 Tides (NRT)"
               stage: post_source_file  # Will only work at this stage
-              module_name: pysiral.l1preproc.procitems.tides
+              module_name: pysiral.l1.procitems.tides
               class_name: CryoTEMPOExternalTides
               options:
                 raise_on_missing_file: False   # `True` will stop the L1 Pre-Processor on a missing tide file

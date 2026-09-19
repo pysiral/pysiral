@@ -5,7 +5,7 @@
 
 pysiral module for estimating sea surface height (ssh) respectively sea level anomaly (sla) from along-track
 radar altimeter data. The classes are designed to work with the Level-2 Processor, therefore need to be
-child classes of pysiral.l2proc.procsteps.Level2ProcessorStep.
+child classes of pysiral.l2.procsteps.Level2ProcessorStep.
 
 NOTES:
 
@@ -29,7 +29,7 @@ from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 from pysiral.core.flags import SurfaceType
 from pysiral.filter import fill_nan, idl_smooth
 from pysiral.l2data import L2DataArray
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2.procsteps import Level2ProcessorStep
 
 
 def marine_segment_filter(l2, minimum_lead_number, footprint_size, use_ocean_wfm):
@@ -367,7 +367,7 @@ class SLAGaussianProcess(Level2ProcessorStep, SLABaseFunctionality):
     def __init__(self, *args, **kwargs):
         """
         Init the class. Options will be passed to parent class
-        (pysiral.l2proc.procsteps.Level2ProcessorStep)
+        (pysiral.l2.procsteps.Level2ProcessorStep)
         :param args:
         :param kwargs:
         """
@@ -500,7 +500,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
     def __init__(self, *args, **kwargs):
         """
         Init the class. Options will be passed to parent class
-        (pysiral.l2proc.procsteps.Level2ProcessorStep)
+        (pysiral.l2.procsteps.Level2ProcessorStep)
         :param args:
         :param kwargs:
         """
@@ -690,7 +690,7 @@ class SLARaw(Level2ProcessorStep, SLABaseFunctionality):
     def __init__(self, *args, **kwargs):
         """
         Init the class. Options will be passed to parent class
-        (pysiral.l2proc.procsteps.Level2ProcessorStep)
+        (pysiral.l2.procsteps.Level2ProcessorStep)
         :param args:
         :param kwargs:
         """

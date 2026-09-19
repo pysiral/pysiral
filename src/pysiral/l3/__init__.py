@@ -364,7 +364,7 @@ class L3DataGrid(DefaultLoggingClass):
 
         # list of stacked l2 parameters for each grid cell
         if not isinstance(stack, L2iDataStack):
-            msg = "Input must be of type pysiral.l3proc.L2DataStack, was %s"
+            msg = "Input must be of type pysiral.l3.L2DataStack, was %s"
             msg %= type(stack)
             raise ValueError(msg)
         self.l2 = stack
@@ -1133,7 +1133,7 @@ class Level3ProcessorItem(DefaultLoggingClass):
 
         # Store the arguments with type validation
         if not isinstance(l3grid, L3DataGrid):
-            msg = "Invalid data type [%s] for l3grid parameter. Must be l3proc.L3DataGrid"
+            msg = "Invalid data type [%s] for l3grid parameter. Must be l3.L3DataGrid"
             msg %= type(l3grid)
             self.error.add_error("invalid-argument", msg)
             self.error.raise_on_error()

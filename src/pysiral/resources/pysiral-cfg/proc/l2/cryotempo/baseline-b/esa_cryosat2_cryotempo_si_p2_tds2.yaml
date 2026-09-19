@@ -68,7 +68,7 @@ auxdata:
 
 procsteps:
 
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L1BL2TransferVariables
         options:
             correction:
@@ -165,7 +165,7 @@ procsteps:
                         value: 0.1
 
     # Apply the range corrections
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
             corrections:

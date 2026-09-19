@@ -12,7 +12,7 @@ from datetime import date
 from scipy import stats
 
 from pysiral.core.flags import SURFACE_TYPE_DICT, ORCondition
-from pysiral.l3proc import Level3ProcessorItem
+from pysiral.l3 import Level3ProcessorItem
 
 
 class Level3ValidSeaIceFreeboardCount(Level3ProcessorItem):

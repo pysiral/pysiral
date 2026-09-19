@@ -26,7 +26,7 @@ from pysiral.core.clocks import StopWatch
 from pysiral.core.flags import RadarModes
 from pysiral.core.functions import inverse_power
 from pysiral.l1data import Level1bData
-from pysiral.l1preproc.procitems import L1PProcItem
+from pysiral.l1.procitems import L1PProcItem
 from pysiral.retracker.tfmra import cTFMRA
 
 

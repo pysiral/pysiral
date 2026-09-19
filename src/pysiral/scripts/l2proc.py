@@ -11,7 +11,7 @@ from loguru import logger
 
 from pysiral import psrlcfg, set_psrl_cpu_count
 from pysiral.core.datahandler import L1PDataHandler
-from pysiral.l2proc import Level2Processor, Level2ProductDefinition
+from pysiral.l2 import Level2Processor, Level2ProductDefinition
 
 from pysiral.scripts.parser_items import (
     ProcessingPeriod, ExcludeMonths, InputVersion,
@@ -141,9 +141,9 @@ class L2ProcScriptArguments(object):
 
         # create the parser
         parser = argparse.ArgumentParser(
-            prog="pysiral l2proc",
+            prog="pysiral l2",
             description="""
-                    The Level-2 Processor (l2proc) generates Level-2 files (l2/l2i) from l1p input files.
+                    The Level-2 Processor (l2) generates Level-2 files (l2/l2i) from l1p input files.
                     Level-2 files contain geophysical information and auxiliary data along the 
                     orbit at full sensor resolution. The processor uses a Level-2 product definition
                     file to define the product metadata, the list of auxiliary data files and the

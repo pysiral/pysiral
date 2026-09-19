@@ -17,7 +17,7 @@ from pysiral.core.flags import ANDCondition, SurfaceType
 from pysiral.core.legacy_classes import AttrDict
 from pysiral.l1data import L1bdataNCFile
 from pysiral.l2data import Level2Data
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2.procsteps import Level2ProcessorStep
 
 
 class ClassifierContainer(object):

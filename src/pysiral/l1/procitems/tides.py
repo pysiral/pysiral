@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Union
 
 from pysiral.l1data import Level1bData
-from pysiral.l1preproc.procitems import L1PProcItem
+from pysiral.l1.procitems import L1PProcItem
 
 
 class CryoTEMPOExternalTides(L1PProcItem):

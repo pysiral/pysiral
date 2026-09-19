@@ -14,7 +14,7 @@ from loguru import logger
 
 from pysiral.core.flags import FlagContainer
 from pysiral.core.legacy_classes import AttrDict
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2.procsteps import Level2ProcessorStep
 
 __all__ = ["ccilead", "corrections", "mock", "ocog", "samosa", "tfmra", "samosa_wfm",
            "BaseRetracker"]

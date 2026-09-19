@@ -114,7 +114,7 @@ procsteps:
     #
     # <l1b_datagroup>:
     #        <l1b_variable_name>: [l2_auxdata_id, l2_auxdata_name]
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L1BL2TransferVariables
         options: 
             classifier:
@@ -245,7 +245,7 @@ procsteps:
     #            - elevation_sitrack
 
     # Apply the range corrections 
-    -   module: l2proc.procsteps
+    -   module: l2.procsteps
         pyclass: L2ApplyRangeCorrections
         options:
             corrections: 

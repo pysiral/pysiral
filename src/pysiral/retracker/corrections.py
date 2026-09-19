@@ -13,7 +13,7 @@ try:
 except ImportError:
     SAMOSA_OK = False
 
-from pysiral.l2proc.procsteps import Level2ProcessorStep
+from pysiral.l2.procsteps import Level2ProcessorStep
 
 
 class ERSPulseDeblurring(Level2ProcessorStep):

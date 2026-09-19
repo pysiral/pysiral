@@ -13,7 +13,7 @@ from loguru import logger
 from pathlib import Path
 
 from pysiral import psrlcfg
-from pysiral.l3proc import Level3ProcessorItem
+from pysiral.l3 import Level3ProcessorItem
 from pysiral.mask import L3Mask
 
 

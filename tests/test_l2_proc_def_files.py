@@ -15,7 +15,7 @@ from loguru import logger
 from pysiral import psrlcfg
 from pysiral.core.config import get_yaml_config
 from pysiral.core.legacy_classes import AttrDict
-from pysiral.l2proc import Level2ProcessorStepOrder
+from pysiral.l2 import Level2ProcessorStepOrder
 
 logger.disable("pysiral")
 
