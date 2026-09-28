@@ -332,7 +332,20 @@ sic:
             - month
 
 
-    
+    # Replacement for OSI-401 based on AMSR2 data after SSMIS data distribution was discontinued in 2025.
+    osi-408g:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration (AMSR-3) (OSI-408)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_amsr3_{year}{month}{day}1200.nc"
+        local_repository: osi-408
+        options:
+            is_cdr_icdr: False
+            north: *osi_polstere_grid_nh
+            south: *osi_polstere_grid_sh
+        subfolders:
+            - year
+            - month
+
 
     # This SIC data product definition is a customization that automatically merges the
     # OSI-SAF 430 and OSI-SAF 450 products. This functionality is a unique feature

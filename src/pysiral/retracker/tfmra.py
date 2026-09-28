@@ -115,9 +115,9 @@ class cTFMRA(BaseRetracker):
         # Apply a fixed range offset, e.g. in the case of a known and constant retracker bias
         fixed_range_offset = self._options.offset
 
-        # A factor by how much points the waveform should be oversampled
-        # before smoothing
-        oversampling_factor = self._options.wfm_oversampling_factor
+        # Get the oversampling method ('smoothed_linear' or `zero_padding`)
+        oversampling_method, oversampling_kwargs = self._get_oversampling_cfg(self._options)
+        oversampling_factor = oversampling_kwargs.get("oversampling_factor", 10)
 
         # The bin range of the waveform where the noise level should be detected
         # NOTE: In the config file the bins values refer to the actual range bins
@@ -135,8 +135,6 @@ class cTFMRA(BaseRetracker):
         # The value above with the oversampling factor
         fmi_first_valid_idx_filt = fmi_first_valid_idx * oversampling_factor
 
-        # The window size for the box filter (radar mode dependant list)
-        wfm_smoothing_window_size = self._options.wfm_smoothing_window_size
 
         # The power threshold for the first maximum (radar mode dependant list)
         first_maximum_normalized_threshold = self._options.first_maximum_normalized_threshold
@@ -147,7 +145,6 @@ class cTFMRA(BaseRetracker):
         #       approach is that different retracker settings are needed for different
         #       surface types and radar modes and the initial thought was to avoid
         #       a copying of data.
-        # TODO: This is a candidate for multi-processing
 
         for i in indices:
 
@@ -156,8 +153,17 @@ class cTFMRA(BaseRetracker):
                 continue
 
             # Get the filtered waveform
-            window_size = wfm_smoothing_window_size[radar_mode[i]]
-            filt_rng, filt_wfm, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], oversampling_factor, window_size)
+            match oversampling_method:
+                case "smoothed_linear":
+                    kwargs = oversampling_kwargs.copy()
+                    kwargs.update({"window_size": oversampling_kwargs.get("window_size", [11, 11, 51])[radar_mode[i]]})
+                    filt_rng, filt_wfm, norm = self.get_filtered_wfm(rng[i, :], wfm[i, :], **kwargs)
+                case "zeropadding":
+                    filt_rng, filt_wfm, norm = self.get_zeropadded_wfm(rng[i, :], wfm[i, :], **oversampling_kwargs)
+                case _:
+                    raise ValueError(
+                        f"Invalid oversampling method: {oversampling_method} [`smoothed_linear` or `zeropadding`]"
+                    )
 
             # Get noise level in normalized units
             i0, i1 = [idx * oversampling_factor for idx in noise_level_range_idx]
@@ -389,7 +395,7 @@ class cTFMRA(BaseRetracker):
         return (width, r0, p0, r1, p1) if return_all_values else width
 
     @staticmethod
-    def get_filtered_wfm(rng, wfm, oversampling_factor, window_size):
+    def get_filtered_wfm(rng, wfm, oversampling_factor=10, window_size=11):
         """
         Return a filtered version of the waveform. This process inclused
         oversampling, smoothing and normalization to the first maximum power.
@@ -403,6 +409,40 @@ class cTFMRA(BaseRetracker):
 
         # Use cython implementation of waveform oversampling
         filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float64), wfm.astype(np.float64), oversampling_factor)
+
+        # Smooth the waveform using a box smoother
+        filt_wfm = bnsmooth(wfm_os, window_size)
+
+        # Normalize filtered waveform
+        filt_wfm, norm = cytfmra_normalize_wfm(filt_wfm)
+
+        # All done, return
+        return filt_rng, filt_wfm, norm
+
+    @staticmethod
+    def get_zeropadded_wfm(rng, wfm, oversampling_factor=10, window_size=11):
+        """
+        Return a filtered version of the waveform. This process inclused
+        oversampling, smoothing and normalization to the first maximum power.
+        :param rng: (np.array, dim:n_records) window delay for each range bin
+        :param wfm: (np.array, dim:n_records) the power for each range bin with
+            sensor dependent units
+        :param oversampling_factor: (int) The waveform oversamling factor
+        :param window_size: (int) The filter size of the box filter
+        :return:
+        """
+
+        # Use cython implementation of waveform oversampling
+        # filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float64), wfm.astype(np.float64), oversampling_factor)
+        x_interp, wfm_os = zero_padding_oversample(wfm, oversampling_factor)
+        filt_rng = x_interp * (rng[-1] - rng[0]) + rng[0]
+        import matplotlib.pyplot as plt
+        plt.plot(rng, wfm)
+        plt.plot(filt_rng, wfm_os)
+        plt.show()
+
+        breakpoint()
+
 
         # Smooth the waveform using a box smoother
         filt_wfm = bnsmooth(wfm_os, window_size)
@@ -490,6 +530,29 @@ class cTFMRA(BaseRetracker):
 
         return tfmra_range, tfmra_power, i0
 
+    def _get_oversampling_cfg(self, options) -> Tuple[str, dict]:
+        """
+        Get the oversampling method and its keyword arguments from the options
+        :param options: (dict) retracker options
+        :return: oversampling_method (str), oversampling_kwargs (dict)
+        """
+
+        # Backward compatibility: If the oversampling method is not specified, use the default
+        if not "oversampling" in options:
+            oversampling_method = "smoothed_linear"
+            oversampling_kwargs = {
+                "oversampling_factor": options.get("wfm_oversampling_factor", 10),
+                "window_size": options.get("wfm_smoothing_window_size", [11, 11, 51])
+            }
+            return oversampling_method, oversampling_kwargs
+
+        oversampling = options.get("oversampling")
+        oversampling_method = oversampling.get("method", "smoothed_linear")
+        oversampling_kwargs = oversampling.get("options", {
+            "oversampling_factor": options.get("wfm_oversampling_factor", 10),
+            "window_size": options.get("wfm_smoothing_window_size", [11, 11, 51])
+        })
+        return oversampling_method, oversampling_kwargs
 
 class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
     """
@@ -568,6 +631,32 @@ class TFMRAMultiThresholdFreeboards(Level2ProcessorStep):
     @property
     def error_bit(self):
         return self.error_flag_bit_dict["other"]
+
+
+def zero_padding_oversample(
+    y_value: np.ndarray,
+    oversample_factor: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute oversampling with FFT interpolation and zero-padding
+    (derived from: https://www.matecdev.com/posts/julia-fft-interpolation.html)
+
+    :param y_value: time series
+    :param oversample_factor: Oversampling factor (e.g. 10 times oversampling)
+
+    :return:
+    """
+    num = y_value.size
+    num_i = num * oversample_factor
+    num_interp = num * oversample_factor
+    x_interp = np.arange(num_i).astype(float) / float(num_i)
+
+    ft = np.fft.fftshift(np.fft.fft(y_value))
+    num_pad = np.int64(np.floor(num_interp / 2 - num / 2))
+    ft_pad = np.concatenate((np.zeros(num_pad), ft, np.zeros(num_pad)))
+    f_interp = np.real(np.fft.ifft(np.fft.fftshift(ft_pad))) * num_interp / num
+
+    return x_interp, f_interp
 
 
 def bnsmooth(x, window):

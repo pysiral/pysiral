@@ -282,9 +282,14 @@ class OsiSafSIC(AuxdataBaseClass):
             path = path / subfolder
 
         # Construct the filename
+        try:
+            file_version = version[record_type]
+        except (TypeError, KeyError):
+            file_version = "unknown"
+
         filename = self.cfg.filenaming.format(
             record_type=record_type,
-            version=version[record_type],
+            version=file_version,
             year=self.year,
             month=self.month,
             day=self.day,
