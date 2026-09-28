@@ -276,6 +276,12 @@ variables:
     units: m
     coordinates: time
 
+  sea_level_anomaly_unfiltered:
+    long_name: "discrete sea level anomaly"
+    standard_name: sea_surface_height_above_mean_sea_level
+    units: m
+    coordinates: time
+
   sea_ice_type:
     var_source_name: ice_chart_multi_year_ice_fraction
     long_name: "fraction of multi-year ice"
