@@ -6,8 +6,8 @@ metadata:
     product_line: cryotempo
     record_type: si-nrt
     platform: cryosat2
-    version: E001
-    file_version_tag: "E001"
+    version: F001
+    file_version_tag: "F001"
     hemisphere: &hemisphere north
 
 # --- Ingest auxiliary data ---
@@ -172,6 +172,10 @@ procsteps:
                     # if arrays than [lrm, sar, sin]
                     threshold: 0.5
                     offset: 0.0
+                    oversampling:
+                        method: "zeropadding"
+                        options: 
+                            oversampling_factor: 16
                     noise_level_range_bin_idx: [0, 5]
                     wfm_oversampling_factor: 10
                     wfm_oversampling_method: linear
