@@ -69,6 +69,7 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
                 error_id = "auxdata_missing_localrepo_def"
                 error_message = f"Missing entry `auxdata_repository.{auxdata_class}.{auxdata_id}` in " + \
                                 f"local_machine_def ({psrlcfg.local_machine_def_filepath})"
+                error_message += f"\nAvailable entries: {self.get_local_repository_keys(auxdata_class)}"
                 self.error.add_error(error_id, error_message)
                 self.error.raise_on_error()
             empty_str = len(local_repo) == 0 if local_repo is not None else False
@@ -117,8 +118,20 @@ class DefaultAuxdataClassHandler(DefaultLoggingClass):
 
         return auxclass(cfg)
 
+    def get_local_repository_keys(self, auxdata_class):
+        """ Get the local repository keys for the auxdata type """
+        aux_repo_defs = psrlcfg.local_machine.auxdata_repository
+        try:
+            local_repo_auxclass = aux_repo_defs[auxdata_class]
+        except KeyError:
+            local_repo_auxclass = {}
+            msg = "Missing auxdata definition in local_machine_def.yaml: auxdata_repository.%s" % auxdata_class
+            self.error.add_error("missing-localmachinedef-tag", msg)
+            self.error.raise_on_error()
+        return sorted(local_repo_auxclass.keys())
+
     def get_local_repository(self, auxdata_class, auxdata_id):
-        """ Get the local repository for the the auxdata type and id """
+        """ Get the local repository for the auxdata type and id """
         if auxdata_id is None:
             return None
         aux_repo_defs = psrlcfg.local_machine.auxdata_repository

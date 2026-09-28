@@ -66,9 +66,21 @@ class OsiSafSIC(AuxdataBaseClass):
         cfg = args[0]
         is_cdr_icdr = cfg.options.get("is_cdr_icdr", False)
         target_version = cfg.options.get("version", None)
+
+        match target_version:
+            case str():
+                version = {'cdr': target_version, 'icdr': target_version}
+            case dict():
+                version = target_version
+            case None:
+                version = {'cdr': None, 'icdr': None}
+            case _:
+                raise ValueError(f"Invalid target_version: {target_version}")
+
         if is_cdr_icdr:
             global_options = cfg.options.get("global", {})
-            version_options = cfg.options.get(target_version, {})
+            version_options = cfg.options.get(version["cdr"], {})
+            cfg.options.update({"version": target_version})
             cfg.options.update(global_options)
             cfg.options.update(version_options)
             cfg.options.update({"long_name_template": cfg.long_name})
@@ -250,18 +262,19 @@ class OsiSafSIC(AuxdataBaseClass):
         version = opt.get("version", None)
         record_type = None
         if is_cdr_icdr:
-            product_index = int(self.start_time > opt[opt.version]["cdr_time_coverage_end"])
+            version = opt.version
+            product_index = int(self.start_time > opt[version["cdr"]]["cdr_time_coverage_end"])
             record_type = self.cdr_icdr_record_types[product_index]
             record_type_prefix = self.cdr_icdr_record_type_prefix[product_index]
             long_name_template = opt.get("long_name_template", {})
-            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version)
+            long_name = long_name_template.format(record_type_prefix=record_type_prefix, version=version[record_type])
             self.cfg.set_long_name(long_name)
 
         # Get the file path
         # Paths for climate data records should contain record type and version
         path = Path(self.cfg.local_repository)
         if is_cdr_icdr:
-            path = path / record_type / version
+            path = path / record_type / version[record_type]
 
         # Add period sub-folders as indicated
         for subfolder_tag in self.cfg.subfolders:
@@ -271,7 +284,7 @@ class OsiSafSIC(AuxdataBaseClass):
         # Construct the filename
         filename = self.cfg.filenaming.format(
             record_type=record_type,
-            version=version,
+            version=version[record_type],
             year=self.year,
             month=self.month,
             day=self.day,
@@ -288,81 +301,3 @@ class OsiSafSIC(AuxdataBaseClass):
     @property
     def cdr_icdr_record_type_prefix(self) -> List[str]:
         return ["", "interim"]
-
-
-class IfremerSIC(AuxdataBaseClass):
-
-    def __init__(self, *args, **kwargs):
-
-        super(IfremerSIC, self).__init__(*args, **kwargs)
-        self._data = None
-
-        # XXX: This is a dirty hack, but needed for getting SIC lon/lat grid
-        self._grid = {}
-        for hemisphere in ["north", "south"]:
-            grid_file = Path(self.cfg.local_repository) / f"grid_{hemisphere}_12km.nc"
-            self._grid[hemisphere] = ReadNC(grid_file)
-
-    def get_l2_track_vars(self, l2):
-        self._get_requested_date(l2)
-        self._get_data(l2)
-        sic = self._get_sic_track(l2)
-        # All done, register the variable
-        self.register_auxvar("sic", "sea_ice_concentration", sic, None)
-
-    def _get_requested_date(self, l2):
-        """ Use first timestamp as reference, date changes are ignored """
-        year = l2.track.timestamp[0].year
-        month = l2.track.timestamp[0].month
-        day = l2.track.timestamp[0].day
-        self._requested_date = [year, month, day]
-
-    def _get_data(self, l2):
-        """ Loads file from local repository only if needed """
-        if self._requested_date == self._current_date:
-            # Data already loaded, nothing to do
-            return
-        path = Path(self._get_local_repository_filename(l2))
-
-        # Validation
-        if not path.is_file():
-            msg = f"IfremerSIC: File not found: {path} "
-            self.add_handler_message(msg)
-            self.error.add_error("auxdata_missing_sic", msg)
-            return
-
-        self._data = ReadNC(path)
-        self._data.ice_conc = self._data.concentration[0, :, :]
-        flagged = np.where(np.logical_or(self._data.ice_conc < 0, self._data.ice_conc > 100))
-        self._data.ice_conc[flagged] = 0
-
-        # This step is important for calculation of image coordinates
-        self._data.ice_conc = np.flipud(self._data.ice_conc)
-        self.add_handler_message(f"IfremerSIC: Loaded SIC file: {path}")
-        self._current_date = self._requested_date
-
-    def _get_local_repository_filename(self, l2):
-        path = Path(self.cfg.local_repository)
-        for subfolder_tag in self.cfg.subfolders:
-            subfolder = getattr(self, subfolder_tag)
-            path = path / subfolder
-        filename = self.cfg.filenaming.format(
-            year=self.year, month=self.month, day=self.day,
-            hemisphere_code=l2.hemisphere_code)
-        path = path / filename
-        return path
-
-    def _get_sic_track(self, l2):
-        # Convert grid/track coordinates to grid projection coordinates
-        kwargs = self.cfg.options[l2.hemisphere].projection
-        p = Proj(**kwargs)
-        grid = self._grid[l2.hemisphere]
-        x, y = p(grid.longitude, grid.latitude)
-        l2x, l2y = p(l2.track.longitude, l2.track.latitude)
-        # Convert track projection coordinates to image coordinates
-        # x: 0 < n_lines; y: 0 < n_cols
-        dim = self.cfg.options[l2.hemisphere].dimension
-        x_min = x[dim.n_lines-1, 0]
-        y_min = y[dim.n_lines-1, 0]
-        ix, iy = (l2x-x_min)/dim.dx, (l2y-y_min)/dim.dy
-        return ndimage.map_coordinates(self._data.ice_conc, [iy, ix], order=0)

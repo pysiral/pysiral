@@ -35,6 +35,8 @@ def get_git_revision_hash(target="HEAD") -> Union[str, None]:
         ).decode('ascii').strip()
     except subprocess.SubprocessError:
         return None
+    except FileNotFoundError:
+        return None
 
 
 def get_git_branch() -> Union[str, None]:
@@ -46,6 +48,8 @@ def get_git_branch() -> Union[str, None]:
         ).decode('ascii').strip()
     except subprocess.CalledProcessError:
         return None
+    except FileNotFoundError:
+        return None
 
 
 def get_git_origin() -> Union[str, None]:
@@ -56,6 +60,8 @@ def get_git_origin() -> Union[str, None]:
             stderr=subprocess.PIPE
         ).decode('ascii').strip()
     except subprocess.CalledProcessError:
+        return None
+    except FileNotFoundError:
         return None
 
 
