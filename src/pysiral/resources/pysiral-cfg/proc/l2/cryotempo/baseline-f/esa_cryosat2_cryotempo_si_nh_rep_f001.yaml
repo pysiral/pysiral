@@ -154,10 +154,10 @@ procsteps:
                 surface_class: polar_ocean
                 use_multiprocessing: False
                 num_processes: "pysiral-cfg"
-                fit_method: "samosap_specular"
+                fit_method: "samosaplus"
                 samosap_fit_kwargs:
                     amplitude_is_free_param: &samosa_fit_amp_lead [False, False]
-                    step2_fixed_swh_value: 0.0
+                    samosaplus_fixed_swh_value: 0.0
                     trailing_edge_sub_waveform_filter: False
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_lead
@@ -181,11 +181,11 @@ procsteps:
                 surface_class: sea_ice
                 use_multiprocessing: True
                 num_processes: "pysiral-cfg"
-                fit_method: "samosap_standard"
+                fit_method: "samosa_samosaplus"
                 samosap_fit_kwargs:
                     amplitude_is_free_param: &samosa_fit_amp_sea_ice [True, True]
-                    step1_fixed_nu_value: 0.0
-                    step2_fixed_swh_value: 0.0
+                    samosa_fixed_nu_value: 0.0
+                    samosaplus_fixed_swh_value: 0.0
                     trailing_edge_sub_waveform_filter: True
                 predictor_kwargs:
                   amplitude_is_free_parameter: *samosa_fit_amp_sea_ice
