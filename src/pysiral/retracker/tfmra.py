@@ -432,20 +432,12 @@ class cTFMRA(BaseRetracker):
         :return:
         """
 
-        # Use cython implementation of waveform oversampling
-        # filt_rng, wfm_os = cytfmra_interpolate(rng.astype(np.float64), wfm.astype(np.float64), oversampling_factor)
-        x_interp, wfm_os = zero_padding_oversample(wfm, oversampling_factor)
-        filt_rng = x_interp * (rng[-1] - rng[0]) + rng[0]
-        import matplotlib.pyplot as plt
-        plt.plot(rng, wfm)
-        plt.plot(filt_rng, wfm_os)
-        plt.show()
+        x_interp, filt_wfm = zero_padding_oversample(wfm.astype(np.float64), oversampling_factor)
 
-        breakpoint()
-
-
-        # Smooth the waveform using a box smoother
-        filt_wfm = bnsmooth(wfm_os, window_size)
+        # Match ranges to oversampled waveform
+        filt_rng = x_interp * (rng[-1] - rng[0])
+        filt_rng /= float(wfm.shape[0]-1)/float(wfm.shape[0])
+        filt_rng += rng[0]
 
         # Normalize filtered waveform
         filt_wfm, norm = cytfmra_normalize_wfm(filt_wfm)
@@ -649,7 +641,7 @@ def zero_padding_oversample(
     num = y_value.size
     num_i = num * oversample_factor
     num_interp = num * oversample_factor
-    x_interp = np.arange(num_i).astype(float) / float(num_i)
+    x_interp = np.arange(num_i).astype(float) / float(num_i-1)
 
     ft = np.fft.fftshift(np.fft.fft(y_value))
     num_pad = np.int64(np.floor(num_interp / 2 - num / 2))
