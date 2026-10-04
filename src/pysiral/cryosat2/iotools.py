@@ -1,117 +1,43 @@
 # -*- coding: utf-8 -*-
 
-import os
+
 import re
 from collections import deque
 from pathlib import Path
 
 import numpy as np
 from loguru import logger
+from typing import List, Dict, Union
+from parse import parse
 
-from pysiral.core.legacy_classes import DefaultLoggingClass, ErrorStatus
+from pydantic import BaseModel, computed_field
 
 
-class CryoSat2MonthlyFileListAllModes(DefaultLoggingClass):
-    """
-    Class for the construction of a list of CryoSat-2 SAR/SIN files
-    sorted by acquisition time
-    """
+class FileDiscoveryConfig(BaseModel):
+    local_machine_def_tag: str
+    lookup_modes: List[str]
+    # Prefilled by pysiral.l1preproc.Level1PreProcJobDef._get_local_input_directory
+    # TODO: Move here during Level-1 Preprocessor refactoring
+    lookup_dir: Dict[str, Union[str, Path]]
+    baseline: str
+    platform: str = "cryosat2"
 
-    def __init__(self):
-
-        name = self.__class__.__name__
-        super(CryoSat2MonthlyFileListAllModes, self).__init__(name)
-
-        self.folder_sar = None
-        self.folder_sin = None
-        self.year = None
-        self.month = None
-        self.day_list = None
-        self.time_range = None
-        self.pattern = ".DBL"
-        self._list = deque([])
-        self._sorted_list = None
-
-    def search(self, time_range):
-
-        self.year = time_range.start.year
-        self.month = time_range.start.month
-
-        # Create a list of day if not full month is required
-        if not time_range.is_full_month:
-            self.day_list = np.arange(time_range.start.day, time_range.stop.day+1)
-
-        # Search all sar/sin product files per month
-        for radar_mode in ["sar", "sin"]:
-            self._search_specific_mode_files(radar_mode)
-
-        # Sort sar/sin files by acquisition date
-        self._sort_mixed_mode_file_list()
-
-        # Limit the date range (if necessary)
-        self._limit_to_time_range()
+    @computed_field
+    def filename_search(self) -> str:
+        return f"CS_*_SIR_*1B_{{year:04d}}{{month:02d}}{{day:02d}}*_{self.baseline}*.nc"
 
     @property
-    def sorted_list(self):
-        return [item[0] for item in self._sorted_list]
-
-    def _search_specific_mode_files(self, mode):
-
-        search_toplevel_folder = self._get_toplevel_search_folder(mode)
-
-        # walk through files
-        for dirpath, dirnames, filenames in os.walk(search_toplevel_folder):
-
-            logger.info("Searching folder: %s" % dirpath)
-
-            # Get the list of all dbl files
-            cs2files = [fn for fn in filenames if self.pattern in fn]
-            logger.info("Found %g %s level-1b files" % (len(cs2files), mode))
-
-            # reform the list that each list entry is of type
-            # [full_path, identifier (start_date)] for later sorting
-            # of SAR and SIN files
-            sublist = [self._get_list_item(fn, dirpath) for fn in cs2files]
-            self._list.extend(sublist)
-
-    def _limit_to_time_range(self):
-
-        # self.day_list is only set if time_range is not a full month
-        if self.day_list is None:
-            return
-
-        # Cross-check the data label and day list
-        self._sorted_list = [fn for fn in self._sorted_list if int(fn[1][6:8]) in self.day_list]
-
-        logger.info("%g files match time range of this month" % (len(self._sorted_list)))
-
-    def _get_toplevel_search_folder(self, mode):
-        folder = Path(getattr(self, "folder_"+mode))
-        if self.year is not None:
-            folder = folder / "{:04g}".format(self.year)
-        if self.month is not None:
-            folder = folder / "{:02g}".format(self.month)
-        return folder
-
-    @staticmethod
-    def _get_list_item(filename, dirpath):
-        return Path(dirpath) / filename, filename.split("_")[6]
-
-    def _sort_mixed_mode_file_list(self):
-        dtypes = [('path', object), ('start_time', object)]
-        self._sorted_list = np.array(self._list, dtype=dtypes)
-        self._sorted_list.sort(order='start_time')
+    def filename_parser(self) -> str:
+        return r"CS_{data_record_type}__SIR_{sar_mode}_{processing_level}_{time_coverage_start}_{time_coverage_end}_{baseline}{file_version}.nc"
 
 
-class BaselineDFileDiscovery(DefaultLoggingClass):
+class ESACryoSat2ICEL1bProductsFileDiscovery(object):
 
-    def __init__(self, cfg):
-        cls_name = self.__class__.__name__
-        super(BaselineDFileDiscovery, self).__init__(cls_name)
-        self.error = ErrorStatus(caller_id=cls_name)
+    def __init__(self, cfg_dict: dict) -> None:
+        """ Initialize the file discovery class with a configuration dictionary """
 
         # Save config
-        self.cfg = cfg
+        self.cfg = FileDiscoveryConfig(**cfg_dict)
 
         # Properties
         self._sorted_list = []
@@ -164,8 +90,12 @@ class BaselineDFileDiscovery(DefaultLoggingClass):
         """
         tcs = []
         for filename in files:
-            filename_segments = re.split(r"_+|\.", str(Path(filename).name))
-            tcs.append(filename_segments[self.cfg.tcs_str_index])
+            # filename_segments = re.split(r"_+|\.", str(Path(filename).name))
+            result = parse(self.cfg.filename_parser, str(Path(filename).name))
+            if result is not None:
+                tcs.append(result['time_coverage_start'])
+            else:
+                logger.warning(f"Could not parse filename: {filename}")
         return tcs
 
     @property
