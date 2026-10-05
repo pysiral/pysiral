@@ -10,7 +10,7 @@ from loguru import logger
 from typing import List, Dict, Union
 from parse import parse
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 
 class FileDiscoveryConfig(BaseModel):

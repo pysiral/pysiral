@@ -18,7 +18,7 @@ auxdata:
         options: null
 
     - mss:
-        name: dtu21
+        name: dtu25
         options:
             latitude_range: [45.0, 90.0]
 

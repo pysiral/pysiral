@@ -27,7 +27,7 @@ auxdata:
 
     # Load the
     - mss:
-        name: dtu21
+        name: dtu25
         options:
             latitude_range: [-90.0, -45.0]
 

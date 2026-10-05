@@ -148,6 +148,15 @@ mss:
         filename: DTU21MSS_1min.mss.nc
         options: null
 
+    # DTU 25 mean sea surface
+    dtu25:
+        pyclass: DTU1MinGrid
+        long_name: DTU21 mean sea surface (1 minute grid)
+        local_repository: dtu21
+        filename: DTU21MSS_1min.mss.nc
+        options: null
+
+
 # Mean dynamic topography class
 mdt:
 
