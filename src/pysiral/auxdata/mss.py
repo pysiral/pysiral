@@ -36,6 +36,9 @@ import numpy as np
 import xarray as xr
 import scipy.ndimage as ndimage
 
+from loguru import logger
+from time import time
+
 from pysiral.auxdata import AuxdataBaseClass
 from pysiral.core.iotools import ReadNC
 
@@ -106,7 +109,10 @@ class DTU25Grid(AuxdataBaseClass):
         super(DTU25Grid, self).__init__(*args, **kwargs)
 
         # Read as standard netcdf
+        t0 = time()
         dtu_grid = xr.load_dataset(self.cfg.filename)
+        t1 = time()
+        logger.debug(f"Loaded DTU25 dataset in : {t1 - t0:.3f} seconds")
 
         # Cut to ROI regions (latitude only)
         # -> no need for world mss
