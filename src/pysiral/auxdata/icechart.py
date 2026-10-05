@@ -635,10 +635,8 @@ class USNICGridFileCatalog(object):
         result = self._get_closest(target_date, max_offset_days, tie_breaker)
         match result:
             case Success(value):
-                logger.info(f"Found {value} on {target_date}.")
                 return value[0]
             case Failure(_):
-                logger.error(f"{result}")
                 return None
         return None
 
@@ -788,7 +786,6 @@ class USNICGrid(AuxdataBaseClass):
 
         # Pre-process parameters and set to l2 object
         self.set_l2_parameters(l2, ice_chart_l2_track)
-
 
     @staticmethod
     def get_empty_dataset(time: np.ndarray) -> xr.Dataset:
@@ -956,11 +953,14 @@ class USNICGrid(AuxdataBaseClass):
         """
         Note: this overwrites the property in the super class due to some
         peculiarities with the filenaming (auto product changes etc)
+
         :return: The filepath to the target file
         """
 
         # The path needs to be completed if two products shall be used
         opt = self.cfg.options
+        # TODO: This property is called multiple times for a single trajectory, which is inefficient.
+        #       Consider caching the result.
         return self.ctlg.get_closest(
             self._requested_date,
             max_offset_days=opt.max_offset_days,
