@@ -115,7 +115,7 @@ class cTFMRA(BaseRetracker):
         # Apply a fixed range offset, e.g. in the case of a known and constant retracker bias
         fixed_range_offset = self._options.offset
 
-        # Get the oversampling method ('smoothed_linear' or `zero_padding`)
+        # Get the oversampling method ('smoothed_linear' or 'zeropadding')
         oversampling_method, oversampling_kwargs = self._get_oversampling_cfg(self._options)
         oversampling_factor = oversampling_kwargs.get("oversampling_factor", 10)
 
