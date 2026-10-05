@@ -10,6 +10,12 @@ metadata:
     file_version_tag: "F001"
     hemisphere: &hemisphere north
 
+
+dataloader_options:
+    limit_to_sea_ice_climatology: True
+    minimum_file_lengths: 10
+
+
 # --- Ingest auxiliary data ---
 auxdata:
 
@@ -29,6 +35,10 @@ auxdata:
                 cdr: "v3p1"
                 icdr: "v3p0"
             exception_on_error: False
+            # New and experimental
+            # Make the processor loop skip the trajectory when there is no sea ice
+            # along the trajectory (will only be triggered if SIC data is available)
+            skip_signal_on_no_sea_ice: True
 
     - icechart:
         name: usnic_grid

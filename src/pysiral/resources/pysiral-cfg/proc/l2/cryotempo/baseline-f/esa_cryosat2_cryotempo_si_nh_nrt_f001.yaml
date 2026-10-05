@@ -2,6 +2,7 @@
 # (Algorithm Baseline-E) - Only to be used after summer 2025
 
 metadata:
+
     label: "ESA CryoTEMPO CryoSat-2 near real-time Arctic winter sea ice product"
     product_line: cryotempo
     record_type: si-nrt
@@ -9,6 +10,12 @@ metadata:
     version: F001
     file_version_tag: "F001"
     hemisphere: &hemisphere north
+
+
+dataloader_options:
+    limit_to_sea_ice_climatology: True
+    minimum_file_lengths: 10
+
 
 # --- Ingest auxiliary data ---
 auxdata:

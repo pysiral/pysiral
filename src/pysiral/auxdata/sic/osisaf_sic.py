@@ -101,6 +101,8 @@ class OsiSafSIC(AuxdataBaseClass):
         :return: None
         """
 
+        self.skip_signal = False
+
         # These properties are needed to construct the product path
         self.start_time = l2.info.start_time
         self.hemisphere = l2.hemisphere
@@ -137,6 +139,12 @@ class OsiSafSIC(AuxdataBaseClass):
         self.register_auxvar("sic", "sea_ice_concentration", sic, None)
         self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)
         self.register_auxvar("dtlsic", "distance_to_low_ice_concentration", distance_to_low_ice_concentration, None)
+
+        if self.cfg.options.get("skip_signal_on_no_sea_ice", False):
+            # If there is no sea ice in the track, set the skip signal to True
+            if not np.any(sic > 1.0):
+                self.skip_signal = True
+
 
     def load_requested_auxdata(self) -> None:
         """

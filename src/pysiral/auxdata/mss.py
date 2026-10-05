@@ -33,6 +33,7 @@ Important Note:
 """
 
 import numpy as np
+import xarray as xr
 import scipy.ndimage as ndimage
 
 from pysiral.auxdata import AuxdataBaseClass
@@ -79,6 +80,58 @@ class DTU1MinGrid(AuxdataBaseClass):
 
         negative_lons = np.where(longitude < 0)[0]
         longitude[negative_lons] = longitude[negative_lons] + 360.
+
+        # Calculate image coordinates of mss grid "image"
+        mss_lon_min = self.longitude[0]
+        mss_lon_step = self.longitude[1] - self.longitude[0]
+        mss_lat_min = self.latitude[0]
+        mss_lat_step = self.latitude[1] - self.latitude[0]
+        ix = (longitude - mss_lon_min)/mss_lon_step
+        iy = (latitude - mss_lat_min)/mss_lat_step
+
+        # Extract and return the elevation along the track
+        mss_track_elevation = ndimage.map_coordinates(self.elevation, [iy, ix])
+
+        # Register auxdata variable
+        self.register_auxvar("mss", "mean_sea_surface", mss_track_elevation, None)
+
+
+class DTU25Grid(AuxdataBaseClass):
+    """
+    Parsing Routine for DTU 1 km global mean sea surface height files
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        super(DTU25Grid, self).__init__(*args, **kwargs)
+
+        # Read as standard netcdf
+        dtu_grid = xr.load_dataset(self.cfg.filename)
+
+        # Cut to ROI regions (latitude only)
+        # -> no need for world mss
+        lat_range = self.cfg.options.latitude_range
+
+        # Get the indices for the latitude subset
+        latitude_indices = np.where(
+            np.logical_and(
+                dtu_grid.latitude.values >= lat_range[0],
+                dtu_grid.latitude.values <= lat_range[1]
+            )
+        )[0]
+
+        # Crop data to subset
+        self.elevation = dtu_grid.mss.values[latitude_indices, :]
+        self.longitude = dtu_grid.longitude.values - 180.  # DTU MSS25 longitude is 0-360, convert to -180 to 180
+        self.latitude = dtu_grid.latitude.values[latitude_indices]
+
+    def get_l2_track_vars(self, l2):
+
+        # Use fast image interpolation (since DTU is on regular grid)
+        # Longitudes must be 0 -> 360
+
+        longitude = np.array(l2.track.longitude)
+        latitude = np.array(l2.track.latitude)
 
         # Calculate image coordinates of mss grid "image"
         mss_lon_min = self.longitude[0]

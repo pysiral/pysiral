@@ -74,6 +74,11 @@ class AuxdataBaseClass(object):
         self._current_date = [0, 0, 0]
         self._requested_date = [-1, -1, -1]
 
+        # This is a flag to indicate if the auxiliary data class indicates that
+        # further processing of the segment should be stopped
+        # TODO: Dangerous implementation, needs to be reworked (signal needs to be reset after each segment)
+        self.skip_signal = False
+
     def set_requested_date(self, year, month, day):
         """ Use first timestamp as reference, date changes are ignored """
         self._requested_date = [year, month, day]

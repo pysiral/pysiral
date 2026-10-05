@@ -5,12 +5,13 @@ Created on Fri Jul 24 14:04:27 2015
 @author: Stefan
 """
 
+import numpy as np
 from collections import deque
 from pathlib import Path
 
 from dateperiods import DatePeriod
 from loguru import logger
-from typing import Union
+from typing import Union, Optional
 
 from pysiral import psrlcfg
 from pysiral.core.config import get_yaml_config
@@ -193,6 +194,12 @@ class Level2Processor(DefaultLoggingClass):
             except RuntimeError:
                 logger.error(f"Cannot read {Path(l1b_file).name}, ... skipping")
                 continue
+
+            # Check if the file is empty (i.e. to few records)
+            if not l1b:
+                logger.warning(f"- File {Path(l1b_file).name} is empty or has too few records, skipping")
+                continue
+
             source_primary_filename = Path(l1b_file).parts[-1]
 
             # Initialize the orbit level-2 data container
@@ -218,9 +225,12 @@ class Level2Processor(DefaultLoggingClass):
                 l2.info.timeliness = self._l2def.record_type
 
             # Get auxiliary data from all registered auxdata handlers
-            error_status, error_codes = self.get_auxiliary_data(l1b, l2)
+            error_status, error_codes, skip_signal = self.get_auxiliary_data(l1b, l2)
             if True in error_status:
                 logger.info("- skip file due to auxdata errors")
+                continue
+            if skip_signal:
+                logger.info("- skip file due to skip signal from auxdata")
                 continue
 
             # Execute all Level-2 processor steps
@@ -236,14 +246,67 @@ class Level2Processor(DefaultLoggingClass):
             # Add data to orbit stack
             # self._add_to_orbit_collection(l2)
 
-    def _read_l1b_file(self, l1b_file):
-        """ Read a L1b data file (l1bdata netCDF) """
-        filename = Path(l1b_file).name
+    def _read_l1b_file(self, l1_file) -> Optional[L1bdataNCFile]:
+        """
+        Read a L1b data file (l1bdata netCDF)
+
+        :param l1_file: path to the l1bdata netCDF file
+
+        """
+
+        filename = Path(l1_file).name
+
         logger.info(f"- Parsing l1bdata file: {filename}")
-        l1b = L1bdataNCFile(l1b_file)
-        l1b.parse()
-        l1b.info.subset_region_name = self.l2def.hemisphere
-        return l1b
+        l1 = L1bdataNCFile(l1_file)
+        l1.parse()
+        l1.info.subset_region_name = self.l2def.hemisphere
+
+        # Check if the Level-2 processor definition has dataloader options (e.g. limit to sea ice climatology)
+        # NOTE: Only newer versions of the Level-2 processor definition files have this option.
+        #       Definition surface classification:
+        #           0 = open ocean
+        #           1 = sea ice climatology
+        #           2 = continents
+        #           3 = islands
+        #           4 = ice shelves
+        if "dataloader_options" in self.l2def.l2def:
+
+            options = self.l2def.l2def["dataloader_options"]
+
+            # TODO: Hard-coded for now. This should be moved to a data loader processor item in the future
+            surface_classification = l1.get_parameter_by_name("classifier", "surface_classification")
+            assert surface_classification is not None, "Missing surface classification parameter in l1p file"
+
+            # Clip open ocean data from the edges of the file
+            if options.get("limit_to_sea_ice_climatology", False):
+
+                # TODO: Hard-coded for now. This should be moved to a data loader processor item in the future
+                surface_classification = l1.get_parameter_by_name("classifier", "surface_classification")
+                assert surface_classification is not None, "Missing surface classification parameter in l1p file"
+
+                # If there is no data inside the sea ice climatology region, skip the file
+                is_sea_ice_clim = (surface_classification == 1)
+                if not np.any(is_sea_ice_clim):
+                    logger.warning(f"- No data inside the sea ice climatology region file {filename}, skipping")
+                    return None
+
+                # Open Ocean is defined as marine data outside the sea ice climatology mask
+                # If there is open ocean, then the assumption is that there is nothing to clip
+                is_open_ocean = (surface_classification == 0)
+                if not np.any(is_open_ocean):
+                    return l1
+
+                # From here on it will be a mix between
+                sea_ice_clim_idx = np.where(is_sea_ice_clim)[0]
+                logger.info(f"- Trimming to sea ice climatology region with {l1.n_records} -> {len(sea_ice_clim_idx)} records")
+                l1.trim_to_subset(sea_ice_clim_idx)
+
+            minimum_file_length = options.get("minimum_file_length", 10)
+            if l1.n_records <= minimum_file_length:
+                logger.warning(f"- File {filename} has too few records (<={minimum_file_length}), skipping")
+                return None
+
+        return l1
 
     def get_auxiliary_data(self, l1p: 'L1bdataNCFile', l2: 'Level2Data'):
         """ Transfer along-track data from all registered auxdata handler to the l2 data object """
@@ -255,6 +318,7 @@ class Level2Processor(DefaultLoggingClass):
 
         auxdata_error_status = []
         auxdata_error_codes = []
+        skip_signals_received = []
 
         for (auxdata_id, auxdata_type) in self.registered_auxdata_handlers:
 
@@ -283,10 +347,13 @@ class Level2Processor(DefaultLoggingClass):
             auxdata_error_status.append(auxclass.error.status)
             auxdata_error_codes.extend(auxclass.error.codes)
 
+            # Check for skip signal
+            skip_signals_received.append(auxclass.skip_signal)
+
             logger.info(f"- {auxdata_type.upper()} auxdata handler completed")
 
         # Return error status list
-        return auxdata_error_status, auxdata_error_codes
+        return auxdata_error_status, auxdata_error_codes, any(skip_signals_received)
 
     def _create_l2_outputs(self, l2):
         for output_handler in self._output_handler:

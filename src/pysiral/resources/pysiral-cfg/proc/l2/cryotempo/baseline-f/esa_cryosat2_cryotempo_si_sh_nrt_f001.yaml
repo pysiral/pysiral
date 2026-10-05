@@ -10,8 +10,13 @@ metadata:
     file_version_tag: "F001"
     hemisphere: south
 
-# --- Ingest auxiliary data ---
 
+dataloader_options:
+    limit_to_sea_ice_climatology: True
+    minimum_file_lengths: 10
+
+
+# --- Ingest auxiliary data ---
 auxdata:
     - region:
         name: antarctic_seas

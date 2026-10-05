@@ -150,10 +150,10 @@ mss:
 
     # DTU 25 mean sea surface
     dtu25:
-        pyclass: DTU1MinGrid
-        long_name: DTU21 mean sea surface (1 minute grid)
-        local_repository: dtu21
-        filename: DTU21MSS_1min.mss.nc
+        pyclass: DTU25Grid
+        long_name: DTU25 mean sea surface (1 km grid)
+        local_repository: dtu25
+        filename: DTU25MSS_WGS84.nc
         options: null
 
 
