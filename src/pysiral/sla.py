@@ -286,7 +286,7 @@ class SLABaseFunctionality(object):
 
         logger.debug(f"num tie_points_inside_elevation_bounds={len(tie_points_inside_elevation_bounds)}")
 
-        # Debug code
+        # # Debug code
         # import matplotlib.pyplot as plt
         # x = np.arange(elevation.shape[0])
         # tie_points_outside_elevation_bounds = np.logical_not(tie_points_inside_elevation_bounds)
@@ -540,7 +540,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         if tiepoint_elevation_filter is not None:
             ssh_tiepoint_indices = self.tiepoint_elevation_sdev_filter(
                 ssh_tiepoint_indices,
-                l2.elev[:],
+                l2.elev[:]-l2.mss[:],
                 l2.footprint_spacing,
                 **tiepoint_elevation_filter
             )
@@ -557,7 +557,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         # Step 2: Calculate the SLA by
         smooth_filter_width_m = self.cfg.options.get("smooth_filter_width_m", np.nan)
         filter_width = self.get_filter_width(smooth_filter_width_m, l2.footprint_spacing)
-        sla = self.smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width)
+        sla, sla_raw = self.smoothed_linear_interpolation_between_tiepoints(l2, ssh_tiepoint_indices, filter_width)
 
         # Step 3: Compute sea level anomaly uncertainty
         max_distance = self.cfg.options.get("uncertainty_tiepoints_distance_max", np.nan)
@@ -593,6 +593,8 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
         l2.sla.set_value(sla)
         l2.sla.set_uncertainty(sla_unc)
 
+        l2.set_auxiliary_parameter("slar", "sea_level_anomaly_unfiltered", sla_raw)
+
         # Return the error status
         return np.isnan(l2.sla[:])
 
@@ -625,7 +627,7 @@ class SLASmoothedLinear(Level2ProcessorStep, SLABaseFunctionality):
 
         # Step 4: The sea level anomaly is the smoothed version
         # of the gap filled sla
-        return idl_smooth(sla_filter2, filter_width)
+        return idl_smooth(sla_filter2, filter_width), sla_raw
 
     def calculate_sla_uncertainty(self, l2, max_distance, sla_unc_min, sla_unc_max,
                                   smooth_filter_width_footprint_size):

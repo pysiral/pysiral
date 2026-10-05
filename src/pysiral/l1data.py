@@ -91,7 +91,7 @@ Surface Type
 
 import copy
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, List, Union, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -464,7 +464,7 @@ class Level1bData(object):
         # Push to waveform container
         self.waveform.set_waveform_data(pwr, rng, self.radar_modes)
 
-    def get_parameter_by_name(self, data_group: str, parameter_name: str) -> Union[None, np.ndarray]:
+    def get_parameter_by_name(self, data_group: str, parameter_name: str) -> Optional[np.ndarray]:
         """
         API method to retrieve any parameter from any data group
 
