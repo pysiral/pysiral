@@ -8,5 +8,6 @@ or the src directory to be in PYTHONPATH)
 
 from pysiral.scripts import main
 
+
 if __name__ == "__main__":
     main()

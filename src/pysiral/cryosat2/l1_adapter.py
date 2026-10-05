@@ -21,11 +21,11 @@ from pysiral.l1preproc import Level1PInputHandlerBase, L1PreProcPolarOceanCheck
 from pysiral.waveform import OCOGParameter
 
 
-class ESACryoSat2ICEBaselineEL1b(Level1PInputHandlerBase):
+class ESACryoSat2ICEL1bProducts(Level1PInputHandlerBase):
 
     def __init__(self, cfg: AttrDict, raise_on_error: bool = False) -> None:
         cls_name = self.__class__.__name__
-        super(ESACryoSat2ICEBaselineEL1b, self).__init__(cfg, raise_on_error, cls_name)
+        super(ESACryoSat2ICEL1bProducts, self).__init__(cfg, raise_on_error, cls_name)
         self.filepath = None
 
     @staticmethod
@@ -41,9 +41,9 @@ class ESACryoSat2ICEBaselineEL1b(Level1PInputHandlerBase):
         return translate_dict.get(op_mode, op_mode)
 
     def get_l1(
-            self,
-            filepath: Path,
-            polar_ocean_check: Optional[L1PreProcPolarOceanCheck] = None
+        self,
+        filepath: Path,
+        polar_ocean_check: Optional[L1PreProcPolarOceanCheck] = None
     ) -> Optional[Level1bData]:
         """
         Main entry point to the CryoSat-2 ICE Level-1b Baseline-E Input Adapter.

@@ -21,7 +21,6 @@ import socket
 import sys
 from datetime import datetime, timezone
 
-
 try:
     from datetime import UTC
 except ImportError:

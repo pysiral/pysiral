@@ -148,6 +148,15 @@ mss:
         filename: DTU21MSS_1min.mss.nc
         options: null
 
+    # DTU 25 mean sea surface
+    dtu25:
+        pyclass: DTU25Grid
+        long_name: DTU25 mean sea surface (1 km grid)
+        local_repository: dtu25
+        filename: DTU25MSS_WGS84.nc
+        options: null
+
+
 # Mean dynamic topography class
 mdt:
 
@@ -332,15 +341,30 @@ sic:
             - month
 
 
+    # Replacement for OSI-401 based on AMSR2 data after SSMIS data distribution was discontinued in 2025.
+    osi-408g:
+        pyclass: OsiSafSIC
+        long_name: OSI-SAF Global Sea Ice Concentration (AMSR-3) (OSI-408)
+        filenaming: "ice_conc_{hemisphere_code}_polstere-100_amsr3_{year}{month}{day}1200.nc"
+        local_repository: osi-408
+        options:
+            is_cdr_icdr: False
+            north: *osi_polstere_grid_nh
+            south: *osi_polstere_grid_sh
+        subfolders:
+            - year
+            - month
+
+
     # This SIC data product definition is a customization that automatically merges the
     # OSI-SAF 430 and OSI-SAF 450 products. This functionality is a unique feature
     # of the OsiSafSIC class and is not generally available for auxdata products
     # Note: The current implementation supports only two products
-    osi-cdr:
+    osi-cdr-icdr:
 
         pyclass: OsiSafSIC
         long_name: "OSI-SAF Sea Ice Concentration {record_type_prefix} Climate Data Record - {version}"
-        local_repository: osisaf-cdr
+        local_repository: osi-cdr-icdr
         filenaming: "ice_conc_{hemisphere_code}_ease2-250_{record_type}-{version}_{year}{month}{day}1200.nc"
         options:
 
@@ -384,10 +408,14 @@ sic:
                 uncertainty_variable_name: total_standard_uncertainty
                 cdr_time_coverage_end: 2021-01-01T00:00:00
 
+            # Specific parameters for v3p0
+            v3p1:
+                uncertainty_variable_name: total_standard_uncertainty
+                cdr_time_coverage_end: 2021-01-01T00:00:00
+
         subfolders:
             - year
             - month
-
 
     osi-438:
         pyclass: OsiSafSIC
