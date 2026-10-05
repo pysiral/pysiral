@@ -16,6 +16,7 @@ from pydantic import BaseModel, computed_field
 
 from pysiral import psrlcfg
 
+from pysiral.core.legacy_classes import AttrDict
 from pysiral.core.flags import SURFACE_TYPE_DICT
 from pysiral.grid import GridTrajectoryExtract
 
@@ -127,16 +128,21 @@ class GridDefinition(BaseModel):
     def projection(self) -> dict[str, Union[str, float]]:
         return {"proj": "laea", "lon_0": 0.0, "lat_0": self.center_latitude}
 
-    @property
+    @computed_field
     def dimension(self) -> dict[str, Union[int, float]]:
         return {"n_cols": 43200, "n_lines": 43200, "dx": 250, "dy": 250}
+
+    def to_attrdict(self) -> AttrDict:
+        grid_def_dict = self.model_dump()
+        grid_def_dict.pop("center_latitude")
+        return AttrDict(**grid_def_dict)
 
 
 class SurfaceClassificationMaskConfig(BaseModel):
     local_machine_def_auxclass: str = "mask"
     local_machine_def_tag: str = "cryotempo_surface_classification"
     version: str = "v1p0"
-    dummy_val: dict[str, int] = {"land_ocean_flag": -1}
+    dummy_val: dict[str, int] = {"land_ocean_flag": -1, "region_code": -1, "surface_classification": -1}
     filename_template: str = "cryotempo-surface_classification-{hemisphere}-250m-{version}.nc"
     grid_def: dict[Literal["nh", "sh"], GridDefinition] = {
         "nh": GridDefinition(center_latitude=90),
@@ -217,34 +223,28 @@ class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
         """
 
         # Get the land/ocean flag from the grid
-        land_ocean_flag, distance_to_coast = self.get_trajectory(
+        surface_classification, region_code = self.get_trajectory(
             l1.time_orbit.longitude,
             l1.time_orbit.latitude,
             l1.time_orbit.timestamp[0].month
         )
 
-        # TODO: Update when global land/ocean flag becomes available
-        # NOTE: Currently only a grid for the northern hemisphere is available, thus
-        #       there will be regions not covered by the gridded land/ocean flag.
-        #       That's why the built/in land/ocean flag will only be updated for
-        #       region with coverage and be left untouched everywhere else.
-        #       The arrays are added to the l1 classifier container regardless
-        #       for consistency.
-
         # --- Update the L1 data container ---
         # 1. Save both extracted variables to classifier data groups
-        l1.classifier.add(land_ocean_flag, "hr_land_ocean_flag")
-        l1.classifier.add(distance_to_coast, "distance_to_coast")
+        l1.classifier.add(surface_classification, "surface_classification")
+        l1.classifier.add(region_code, "region_code")
 
         # 2. Save original ESA surface type variable to classifier data group
         #    and update the surface type flag in the surface type data group
         l1.classifier.add(l1.surface_type.flag, "orig_land_ocean_flag")
 
-        # 3. Update the surface type instance
-        valid_mask_indices = land_ocean_flag != self.cfg.get("dummy_val")["land_ocean_flag"]
+        # 3. Fill the surface type instance with the new values
+        valid_mask_indices = surface_classification != self.cfg.dummy_val.get("surface_classification")
         flag_update = np.full(l1.n_records, SURFACE_TYPE_DICT["invalid"])
-        flag_update[land_ocean_flag == 1] = SURFACE_TYPE_DICT["land"]
-        flag_update[land_ocean_flag == 0] = SURFACE_TYPE_DICT["ocean"]
+        is_land = np.isin(surface_classification, [2, 3])  # continents & islands
+        flag_update[is_land] = SURFACE_TYPE_DICT["land"]
+        flag_update[surface_classification == 0] = SURFACE_TYPE_DICT["ocean"]
+        flag_update[surface_classification == 4] = SURFACE_TYPE_DICT["land_ice"]
         updated_surface_type_flag = l1.surface_type.flag.copy()
         updated_surface_type_flag[valid_mask_indices] = flag_update[valid_mask_indices]
         l1.surface_type.set_flag(updated_surface_type_flag)
@@ -264,23 +264,29 @@ class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
 
         :param longitude: Longitude values in degrees
         :param latitude: latitude values in degrees
+        :param month_number: Month number (1-12) for which the surface classification is requested
 
         :raises None:
 
-        :return: land ocean flag & distance to coast values for longitude, latitude positions
+        :return: surface classification and sea ice region id for longitude, latitude positions
         """
 
         hemisphere = "nh" if np.mean(latitude) > 0 else "sh"
-        grid2track = GridTrajectoryExtract(longitude, latitude, self.cfg.grid_def[hemisphere])
+        ds = self.data[hemisphere].ds
 
-        var = self.data[hemisphere].ds.surface_classification_flag.sel(month=month_number).values
-        land_ocean_flag = grid2track.get_from_grid_variable(
+        grid_def = self.cfg.grid_def[hemisphere].to_attrdict()
+        grid2track = GridTrajectoryExtract(longitude, latitude, grid_def)
+
+        var = ds.surface_classification.values[month_number - 1, :, :]
+        surface_classification = grid2track.get_from_grid_variable(
             var,
-            outside_value=self.dummy_val["surface_classification_flag"]
+            outside_value=self.cfg.dummy_val["surface_classification"]
         )
 
-        distance_to_coast = grid2track.get_from_grid_variable(
-            self.distance_to_coast_grid,
-            outside_value=self.dummy_val["distance_to_coast"]
+        var = ds.sea_ice_region.values
+        sea_ice_region = grid2track.get_from_grid_variable(
+            var,
+            outside_value=self.cfg.dummy_val["region_code"]
         )
-        return land_ocean_flag, distance_to_coast
+
+        return surface_classification, sea_ice_region

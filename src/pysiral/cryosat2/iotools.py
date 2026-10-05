@@ -14,6 +14,7 @@ from pydantic import BaseModel, computed_field
 
 
 class FileDiscoveryConfig(BaseModel):
+
     local_machine_def_tag: str
     lookup_modes: List[str]
     # Prefilled by pysiral.l1preproc.Level1PreProcJobDef._get_local_input_directory
@@ -22,13 +23,12 @@ class FileDiscoveryConfig(BaseModel):
     baseline: str
     platform: str = "cryosat2"
 
-    @computed_field
-    def filename_search(self) -> str:
-        return f"CS_*_SIR_*1B_{{year:04d}}{{month:02d}}{{day:02d}}*_{self.baseline}*.nc"
+    def filename_search(self, radar_mode) -> str:
+        return f"CS_*_SIR_{radar_mode.upper()}_*1B_{{year:04d}}{{month:02d}}{{day:02d}}*_{self.baseline}*.nc"
 
     @property
     def filename_parser(self) -> str:
-        return r"CS_{data_record_type}__SIR_{sar_mode}_{processing_level}_{time_coverage_start}_{time_coverage_end}_{baseline}{file_version}.nc"
+        return r"CS_{data_record_type}__SIR_{radar_mode}_{processing_level}_{time_coverage_start}_{time_coverage_end}_{baseline}{file_version}.nc"
 
 
 class ESACryoSat2ICEL1bProductsFileDiscovery(object):
@@ -57,7 +57,7 @@ class ESACryoSat2ICEL1bProductsFileDiscovery(object):
         self._list = deque([])
         self._sorted_list = []
 
-    def _append_files(self, mode, period):
+    def _append_files(self, mode, period) -> None:
         lookup_year, lookup_month = period.tcs.year, period.tcs.month
         lookup_dir = self._get_lookup_dir(lookup_year, lookup_month, mode)
         logger.info("Search directory: %s" % lookup_dir)
@@ -65,17 +65,19 @@ class ESACryoSat2ICEL1bProductsFileDiscovery(object):
         for daily_period in period.get_segments("day"):
             # Search for specific day
             year, month, day = daily_period.tcs.year, daily_period.tcs.month, daily_period.tcs.day
-            file_list = self._get_files_per_day(lookup_dir, year, month, day)
+            file_list = self._get_files_per_day(lookup_dir, year, month, day, mode)
             tcs_list = self._get_tcs_from_filenames(file_list)
             n_files += len(file_list)
             for file, tcs in zip(file_list, tcs_list):
                 self._list.append((file, tcs))
         logger.info(" Found %g %s files" % (n_files, mode))
 
-    def _get_files_per_day(self, lookup_dir, year, month, day):
+    def _get_files_per_day(self, lookup_dir, year, month, day, mode):
         """ Return a list of files for a given lookup directory """
         # Search for specific day
-        filename_search = self.cfg.filename_search.format(year=year, month=month, day=day)
+
+        file_name_template = self.cfg.filename_search(mode)
+        filename_search = file_name_template.format(year=year, month=month, day=day)
         return sorted(Path(lookup_dir).glob(filename_search))
 
     def _get_lookup_dir(self, year, month, mode):

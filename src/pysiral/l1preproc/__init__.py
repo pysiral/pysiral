@@ -75,6 +75,7 @@ class Level1POutputHandler(DefaultLoggingClass):
     """
     The output handler for l1p product files
     NOTE: This is not a subclass of OutputHandlerbase due to the special nature of pysiral l1p products
+    TODO: Refactoring needed. Path needs to be function and not a property that must be set before export.
     """
 
     def __init__(self, cfg: AttrDict) -> None:
@@ -83,11 +84,7 @@ class Level1POutputHandler(DefaultLoggingClass):
         self.error = ErrorStatus(caller_id=cls_name)
         self.cfg = cfg
 
-        self.pysiral_cfg = psrlcfg
-
-        # Init class properties
-        self._path = None
-        self._filename = None
+        self._file_log = []
 
     @staticmethod
     def remove_old_if_applicable(perid: DatePeriod) -> None:
@@ -113,19 +110,21 @@ class Level1POutputHandler(DefaultLoggingClass):
             return
 
         # Get filename and path
-        self.set_output_filepath(l1)
+        output_filepath = self.get_output_filepath(l1)
 
         # Check if path exists
-        Path(self.path).mkdir(exist_ok=True, parents=True)
+        Path(output_filepath).parent.mkdir(exist_ok=True, parents=True)
 
         # Export the data object
         ncfile = L1bDataNC()
         ncfile.l1b = l1
-        ncfile.output_folder = self.path
-        ncfile.filename = self.filename
+        ncfile.output_folder = output_filepath.parent
+        ncfile.filename = output_filepath.name
         ncfile.export()
 
-    def set_output_filepath(self, l1: "Level1bData") -> None:
+        self._file_log.append(output_filepath)
+
+    def get_output_filepath(self, l1: "Level1bData") -> Path:
         """
         Sets the class properties required for the file export
 
@@ -152,25 +151,28 @@ class Level1POutputHandler(DefaultLoggingClass):
                   "tcs": l1.time_orbit.timestamp[0].strftime(time_fmt),
                   "tce": l1.time_orbit.timestamp[-1].strftime(time_fmt),
                   "file_version": self.cfg.version.version_file_tag}
-        self._filename = filename_template.format(**values)
+        filename = filename_template.format(**values)
 
-        local_repository = self.pysiral_cfg.local_machine.l1b_repository
+        local_repository = psrlcfg.local_machine.l1b_repository
         export_folder = Path(local_repository[l1.info.mission][local_machine_def_tag]["l1p"])
         yyyy = "%04g" % l1.time_orbit.timestamp[0].year
         mm = "%02g" % l1.time_orbit.timestamp[0].month
-        self._path = export_folder / self.cfg.version["version_file_tag"] / l1.info.hemisphere / yyyy / mm
+        return (
+            export_folder /
+            self.cfg.version.get("source_file_tag", "unknown_source") /
+            self.cfg.version.get("version_file_tag", "unknown_version") /
+            l1.info.hemisphere /
+            yyyy /
+            mm /
+            filename
+        )
 
     @property
-    def path(self) -> Path:
-        return Path(self._path)
-
-    @property
-    def filename(self) -> str:
-        return self._filename
-
-    @property
-    def last_written_file(self) -> Path:
-        return self.path / self.filename
+    def last_written_file(self) -> Optional[Path]:
+        try:
+            return self._file_log[-1]
+        except IndexError:
+            return None
 
 
 L1PInputCLS = TypeVar("L1PInputCLS", bound=Level1PInputHandlerBase)
