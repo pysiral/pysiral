@@ -241,10 +241,20 @@ class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
         # 3. Fill the surface type instance with the new values
         valid_mask_indices = surface_classification != self.cfg.dummy_val.get("surface_classification")
         flag_update = np.full(l1.n_records, SURFACE_TYPE_DICT["invalid"])
+
+        # TODO: harc-coded flags
+        # The `land` surface type flag is either 2 (continents) or 3 (islands) in the surface classification
         is_land = np.isin(surface_classification, [2, 3])  # continents & islands
         flag_update[is_land] = SURFACE_TYPE_DICT["land"]
-        flag_update[surface_classification == 0] = SURFACE_TYPE_DICT["ocean"]
+
+        # The `ocean` surface type flag is either 0 (ocean) or 1 (sea ice climatology) in the surface classification
+        is_ocean = np.isin(surface_classification, [0, 1])
+        flag_update[is_ocean] = SURFACE_TYPE_DICT["ocean"]
+
+        # The `land_ice` surface type flag is 4 in the surface classification
         flag_update[surface_classification == 4] = SURFACE_TYPE_DICT["land_ice"]
+
+        # Now update the surface type flag in the l1 surface type instance
         updated_surface_type_flag = l1.surface_type.flag.copy()
         updated_surface_type_flag[valid_mask_indices] = flag_update[valid_mask_indices]
         l1.surface_type.set_flag(updated_surface_type_flag)

@@ -4,24 +4,22 @@ platform: cryosat2
 input_handler:
     
     module_name: pysiral.cryosat2.iotools
-    class_name: BaselineDFileDiscovery
-
+    class_name: ESACryoSat2ICEL1bProductsFileDiscovery
     options:
-        local_machine_def_tag: &lmd_tag baseline_e  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
-        lookup_dir: null  # Leave emtpy: This will be automatically filled with information from local_machine_def
+        baseline: &esa_product_baseline E
+        local_machine_def_tag: &lmd_tag baseline_e_nrt  # -> l1b_repository.$platform.$input_tag in (local_machine_def.yaml)
         lookup_modes: [sar, sin]
-        filename_search: CS_*_SIR_*1B_{year:04d}{month:02d}{day:02d}*_E*.nc
-        filename_sep: _   # character to split the filename
-        tcs_str_index: 5  # index of time_coverage_start string in file (when splitting filename with filename_sep)
 
 # Class that will generate the initial l1p data object from
 # the input data
 input_adapter:
     
     module_name: pysiral.cryosat2.l1_adapter
-    class_name: ESACryoSat2ICEBaselineEL1b
+    class_name: ESACryoSat2ICEL1bProducts
     
     options:
+
+        baseline: *esa_product_baseline
         
         name: "CryoSat-2 Level-1b ICE Product (algorithm baseline E)"
         
@@ -112,30 +110,15 @@ level1_preprocessor:
                     ocean_loading_tide: load_tide_FES22
                 tide_file_nan_policy: "fill"  # Options: `fill` (with l1b), `interpolate`, `ignore`
 
-            # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
-            - label: "High Resolution Land Mask"
+            - label: "CryoTEMPO Surface Classification"
               stage: post_source_file
-              module_name: pysiral.mask
-              class_name: L1PHighResolutionLandMask
+              module_name: pysiral.l1preproc.procitems.masks
+              class_name: L1PCryoTEMPOSurfaceClassification
               options:
                   local_machine_def_auxclass: mask
-                  local_machine_def_tag: landmask_highres
-                  dummy_val:
-                      land_ocean_flag: -1
-                      distance_to_coast: .nan
-                  filename: cryotempo-landoceanmask-nh-250m-v1p0.nc
-                  valid_latitude_range: [45.0, 88.0]
-                  grid_def:
-                      projection:
-                          proj: laea
-                          lon_0: 0.0
-                          lat_0: 90
-                      dimension:
-                          n_cols: 40000
-                          n_lines: 40000
-                          dx: 250
-                          dy: 250
+                  local_machine_def_tag: cryotempo_surface_classification
+                  version: "v1p0"
 
             # Compute pulse peakiness
             - label: "Compute Pulse Peakiness"

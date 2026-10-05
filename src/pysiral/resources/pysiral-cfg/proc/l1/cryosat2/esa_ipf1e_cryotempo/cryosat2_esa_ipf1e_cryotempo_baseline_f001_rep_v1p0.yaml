@@ -111,7 +111,6 @@ level1_preprocessor:
                     ocean_loading_tide: load_tide_FES22
                 tide_file_nan_policy: "fill"  # Options: `fill` (with l1b), `interpolate`, `ignore`
 
-            # Resample SIN waveforms to the same size as SAR waveforms
             # NOTE: This will only have an effect of SIN segments
             - label: "CryoTEMPO Surface Classification"
               stage: post_source_file
