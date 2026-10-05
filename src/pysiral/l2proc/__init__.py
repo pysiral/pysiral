@@ -227,10 +227,10 @@ class Level2Processor(DefaultLoggingClass):
             # Get auxiliary data from all registered auxdata handlers
             error_status, error_codes, skip_signal = self.get_auxiliary_data(l1b, l2)
             if True in error_status:
-                logger.info("- skip file due to auxdata errors")
+                logger.warning("- skip file due to auxdata errors")
                 continue
             if skip_signal:
-                logger.info("- skip file due to skip signal from auxdata")
+                logger.warning("- skip file due to skip signal send from one of the auxdata handlers")
                 continue
 
             # Execute all Level-2 processor steps

@@ -38,7 +38,7 @@ auxdata:
             # New and experimental
             # Make the processor loop skip the trajectory when there is no sea ice
             # along the trajectory (will only be triggered if SIC data is available)
-            skip_signal_on_no_sea_ice: True
+            send_skip_signal_on_no_sea_ice: True
 
     - icechart:
         name: usnic_grid

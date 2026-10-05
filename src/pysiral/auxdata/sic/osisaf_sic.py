@@ -35,7 +35,6 @@ from typing import List, Tuple
 import numpy as np
 import numpy.typing as npt
 import scipy.ndimage as ndimage
-from pyproj import Proj
 from scipy.spatial.distance import cdist
 
 from pysiral.auxdata import AuxdataBaseClass, GridTrackInterpol
@@ -140,7 +139,9 @@ class OsiSafSIC(AuxdataBaseClass):
         self.register_auxvar("dto", "distance_to_ocean", ocean_proximity, None)
         self.register_auxvar("dtlsic", "distance_to_low_ice_concentration", distance_to_low_ice_concentration, None)
 
-        if self.cfg.options.get("skip_signal_on_no_sea_ice", False):
+        # Skip the current trajectory if there is no sea ice in the track
+        # NOTE: This option must be activated in the Level-2 processor configuration file
+        if self.cfg.options.get("send_skip_signal_on_no_sea_ice", False):
             # If there is no sea ice in the track, set the skip signal to True
             if not np.any(sic > 1.0):
                 self.skip_signal = True
