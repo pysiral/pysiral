@@ -80,11 +80,17 @@ def l2proc(
         period_segments.filter_month(exclude_months)
 
     # Initialize the Level-1P data handler
+    # TODO: Formalize this. Only a temporary hack
+    if ":" in l1p_version:
+        l1p_version, file_version = l1p_version.split(":")
+    else:
+        l1p_version, file_version = None, l1p_version
     l1b_data_handler = L1PDataHandler(
         platform,
         hemisphere,
         source_version=source_dataset_id,
-        file_version=l1p_version
+        l1p_version=l1p_version,
+        file_version=file_version
     )
 
     # Processor Initialization

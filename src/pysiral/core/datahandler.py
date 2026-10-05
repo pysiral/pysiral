@@ -168,7 +168,9 @@ class L1PDataHandler(DefaultLoggingClass):
                  platform: str,
                  hemisphere: str,
                  source_version: str = None,
+                 l1p_version: str = None,
                  file_version: str = None,
+
                  ):
         """
         Init the class
@@ -184,12 +186,13 @@ class L1PDataHandler(DefaultLoggingClass):
         self._platform = platform
         self._hemisphere = hemisphere
         self._source_version = source_version
+        self._l1p_version = l1p_version
         self._file_version = file_version if file_version is not None else self._autodetect_file_version()
         self._last_directory = None
 
     def get_files_from_time_range(self, time_range: DatePeriod) -> List[str]:
         """
-        Query l1p files for a a given time range.
+        Query l1p files for a given time range.
         :param time_range: a dateperiods.DatePeriod instance
         :return:
         """
@@ -204,6 +207,8 @@ class L1PDataHandler(DefaultLoggingClass):
         # 1) get list of all files for monthly folders
         yyyy, mm = "%04g" % time_range.tcs.year, "%02g" % time_range.tcs.month
         directory = Path(self.l1p_base_dir)
+        if self._l1p_version is not None:
+            directory = directory / self._l1p_version
         if self._file_version is not None:
             directory = directory / self._file_version
         directory = directory / self._hemisphere / yyyy / mm
