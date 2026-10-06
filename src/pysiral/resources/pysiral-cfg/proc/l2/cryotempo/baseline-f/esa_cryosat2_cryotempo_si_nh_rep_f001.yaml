@@ -57,6 +57,7 @@ auxdata:
     - snow:
         name: cryotempo_nh_clim
         options:
+            version: v1p1
             myi_fraction_var_name: *sitype_var_name
             daily_scaling: True
             fyi_correction_factor: 0.5

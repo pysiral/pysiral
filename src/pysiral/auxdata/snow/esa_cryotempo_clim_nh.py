@@ -43,10 +43,12 @@ class Warren99SMLGClimDataContainer(object):
         """
 
         # Load the data of all month
+        version = self.cfg.options.get("version", "v1p0")
+        filename = self.cfg.filename.format(version=version)
         try:
-            self.ds = xr.load_dataset(self.cfg.filename)
+            self.ds = xr.load_dataset(filename)
         except FileNotFoundError:
-            msg = "Could not locate file: {}".format(self.cfg.filename)
+            msg = "Could not locate file: {}".format(filename)
             self.error.add_error("invalid-filepath", msg)
             self.error.raise_on_error()
 

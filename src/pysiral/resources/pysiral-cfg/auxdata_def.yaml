@@ -220,7 +220,7 @@ snow:
     cryotempo_nh_clim:
         pyclass: CryoTempoNorthernClimatology
         long_name: Merged monthly snow depth and density climatology from Warren99 and filtered SnowModel-LG snow depth.
-        filename: "snow-climatology-w99_smlg-ease2_nh_12p5km-p1m-v1p0.nc"
+        filename: "snow-climatology-w99_smlg-ease2_nh_12p5km-p1m-{version}.nc"
         local_repository: cryotempo_nh_clim
         options:
             variable_map:
