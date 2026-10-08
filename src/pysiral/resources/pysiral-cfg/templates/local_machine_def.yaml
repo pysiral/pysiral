@@ -36,6 +36,22 @@ l1b_repository:
                 sar: ""  # CS_OFFL_SIR_SARN1B* in yyyy/mm subfolders
                 sin: ""  # CS_OFFL_SIR_SINN1B* in yyyy/mm subfolders
 
+        # CryoSat-2 offline-reprocessed data
+        baseline_f:
+            l1p: ""
+            source:
+                sar: ""  # *[OFFL|LTA]*SIR_SAR_1B* in yyyy/mm subfolders
+                sin: ""  # *[OFFL|LTA]*SIR_SIN_1B* in yyyy/mm subfolders
+                lrm: ""  # *[OFFL|LTA]*SIR_LRM_1B* in yyyy/mm subfolders
+
+
+        # CryoSat-2 near-realtime data
+        baseline_f_nrt:
+            l1p: ""
+            source:
+                sar: ""  # CS_OFFL_SIR_SARN1B* in yyyy/mm subfolders
+                sin: ""  # CS_OFFL_SIR_SINN1B* in yyyy/mm subfolders
+
     # Envisat
     envisat:
 
@@ -92,17 +108,19 @@ auxdata_repository:
     # Mean Sea Surface Products
     mss:
         dtu21: ""
+        dtu25: ""
 
     # Mean Dynamic Topography Products
     mdt:
         dtu17: ""
+        dtu26: ""
 
     # Sea Ice Concentration Products
     sic:
         osi-401: ""
         osi-480: ""
         osi-cdr: ""
-        os-cdr-amsr2: ""
+        osi-cdr-icdr: ""
         c3s: ""
 
 
@@ -134,3 +152,4 @@ auxdata_repository:
     masks:
         cci_landoceanlake: ""
         landmask_highres: ""
+        cryotempo_surface_classification: ""
