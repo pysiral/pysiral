@@ -95,7 +95,8 @@ class DTUMDTGrid(AuxdataBaseClass):
         latitude = np.array(l2.track.latitude)
 
         negative_lons = np.where(longitude < 0)[0]
-        longitude[negative_lons] = longitude[negative_lons] + 360.
+        if self.longitude[0] >= 0. and len(negative_lons) > 0:
+            longitude[negative_lons] = longitude[negative_lons] + 360.
 
         # Calculate image coordinates of mss grid "image"
         mdt_lon_min = self.longitude[0]
