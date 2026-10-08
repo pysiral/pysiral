@@ -3,6 +3,8 @@
 import numpy as np
 import xarray as xr
 
+from pathlib import Path
+
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from typing import List, Tuple
@@ -44,7 +46,7 @@ class Warren99SMLGClimDataContainer(object):
 
         # Load the data of all month
         version = self.cfg.options.get("version", "v1p0")
-        filename = self.cfg.filename.format(version=version)
+        filename = Path(str(self.cfg.filename).format(version=version))
         try:
             self.ds = xr.load_dataset(filename)
         except FileNotFoundError:
