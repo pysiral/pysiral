@@ -71,7 +71,7 @@ output_handler:
         minimum_file_record_size: 10
         version:
             source_file_tag: esa_pds_ipf1e_ct
-            version_file_tag: v1p5
+            version_file_tag: v1p0
 
 
 # Settings for the pre-processor
