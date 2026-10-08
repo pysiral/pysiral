@@ -42,7 +42,7 @@ auxdata:
         options:
             version: 
                 cdr: "v3p1"
-                icdr: "v3p0"
+                icdr: "v3p0-amsr"
             exception_on_error: False
             # Make the processor loop skip the trajectory when there is no sea ice
             # along the trajectory (will only be triggered if SIC data is available)
