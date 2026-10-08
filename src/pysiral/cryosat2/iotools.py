@@ -28,7 +28,7 @@ class FileDiscoveryConfig(BaseModel):
 
     @property
     def filename_parser(self) -> str:
-        return r"CS_{data_record_type}__SIR_{radar_mode}_{processing_level}_{time_coverage_start}_{time_coverage_end}_{baseline}{file_version}.nc"
+        return r"CS_{data_record_type}_SIR_{radar_mode}_{processing_level}_{time_coverage_start}_{time_coverage_end}_{baseline}{file_version}.nc"
 
 
 class ESACryoSat2ICEL1bProductsFileDiscovery(object):
