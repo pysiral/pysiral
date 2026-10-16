@@ -128,7 +128,7 @@ class DTU25Grid(AuxdataBaseClass):
 
         # Crop data to subset
         self.elevation = dtu_grid.mss.values[latitude_indices, :]
-        self.longitude = dtu_grid.longitude.values - 180.  # DTU MSS25 longitude is 0-360, convert to -180 to 180
+        self.longitude = dtu_grid.longitude.values  # DTU MSS25 longitude is 0-360
         self.latitude = dtu_grid.latitude.values[latitude_indices]
 
     def get_l2_track_vars(self, l2):
@@ -139,6 +139,9 @@ class DTU25Grid(AuxdataBaseClass):
         longitude = np.array(l2.track.longitude)
         latitude = np.array(l2.track.latitude)
 
+        negative_lons = np.where(longitude < 0)[0]
+        longitude[negative_lons] = longitude[negative_lons] + 360.
+
         # Calculate image coordinates of mss grid "image"
         mss_lon_min = self.longitude[0]
         mss_lon_step = self.longitude[1] - self.longitude[0]
@@ -148,7 +151,8 @@ class DTU25Grid(AuxdataBaseClass):
         iy = (latitude - mss_lat_min)/mss_lat_step
 
         # Extract and return the elevation along the track
-        mss_track_elevation = ndimage.map_coordinates(self.elevation, [iy, ix])
+        # (grid-wrap: the 0-360 longitude axis is periodic)
+        mss_track_elevation = ndimage.map_coordinates(self.elevation, [iy, ix], mode="grid-wrap")
 
         # Register auxdata variable
         self.register_auxvar("mss", "mean_sea_surface", mss_track_elevation, None)
