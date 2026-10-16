@@ -153,11 +153,60 @@ class DTU25Grid(AuxdataBaseClass):
         iy = (latitude - mss_lat_min)/mss_lat_step
 
         # Extract and return the elevation along the track
-        # (grid-wrap: the 0-360 longitude axis is periodic)
-        mss_track_elevation = ndimage.map_coordinates(self.elevation, [iy, ix], mode="grid-wrap")
+        mss_track_elevation = interpolate_cubic_tiled(self.elevation, iy, ix)
 
         # Register auxdata variable
         self.register_auxvar("mss", "mean_sea_surface", mss_track_elevation, None)
+
+
+def interpolate_cubic_tiled(grid, iy, ix, tile_size=256, pad=12):
+    """
+    Cubic spline interpolation of a regular grid at fractional image coordinates, with the
+    second (longitude) axis periodic.
+
+    Equivalent to `ndimage.map_coordinates(grid, [iy, ix])`, but the spline prefilter (which
+    creates a full-size copy of the input) is only applied to tiles of the grid that contain
+    points, each with a margin of `pad` cells. The influence of the prefilter decays by a
+    factor of ~0.27 per cell, so the margin makes the result independent of the tiling.
+    At the first and last row of the grid the spline uses mirror boundary conditions.
+
+    :param grid: 2D grid (rows: latitude, columns: periodic longitude)
+    :param iy: fractional row coordinates
+    :param ix: fractional column coordinates
+    :param tile_size: tile size in grid cells
+    :param pad: margin around each tile in grid cells
+
+    :return: interpolated values (NaN for non-finite coordinates)
+    """
+    n_rows, n_cols = grid.shape
+    values = np.full(iy.shape, np.nan)
+    finite = np.flatnonzero(np.isfinite(iy) & np.isfinite(ix))
+    if finite.size == 0:
+        return values
+    iy, ix = iy[finite], np.mod(ix[finite], n_cols)
+
+    # Group the points by tile
+    tile_row = np.floor(iy / tile_size).astype(int)
+    tile_col = np.floor(ix / tile_size).astype(int)
+    tile_id = tile_row * (n_cols // tile_size + 1) + tile_col
+    order = np.argsort(tile_id, kind="stable")
+    tile_starts = np.flatnonzero(np.r_[True, np.diff(tile_id[order]) != 0])
+
+    for start, stop in zip(tile_starts, np.r_[tile_starts[1:], order.size]):
+        points = order[start:stop]
+
+        # Window: tile + margin (rows clipped to the grid, columns wrapped)
+        row0 = max(tile_row[points[0]] * tile_size - pad, 0)
+        row1 = min((tile_row[points[0]] + 1) * tile_size + pad + 1, n_rows)
+        col0 = tile_col[points[0]] * tile_size - pad
+        columns = np.arange(col0, (tile_col[points[0]] + 1) * tile_size + pad + 1) % n_cols
+        window = np.take(grid[row0:row1], columns, axis=1)
+
+        values[finite[points]] = ndimage.map_coordinates(
+            window, [iy[points] - row0, ix[points] - col0], mode="mirror"
+        )
+
+    return values
 
 
 def egm2wgs_delta_h(phi):
