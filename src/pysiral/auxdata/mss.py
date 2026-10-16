@@ -108,28 +108,30 @@ class DTU25Grid(AuxdataBaseClass):
 
         super(DTU25Grid, self).__init__(*args, **kwargs)
 
-        # Read as standard netcdf
+        # Open lazily: the (compressed) file holds two global float64 grids (~10 GB in memory),
+        # of which only the mss in the latitude range of interest is needed
         t0 = time()
-        dtu_grid = xr.load_dataset(self.cfg.filename)
+        with xr.open_dataset(self.cfg.filename) as dtu_grid:
+
+            # Cut to ROI regions (latitude only)
+            # -> no need for world mss
+            lat_range = self.cfg.options.latitude_range
+
+            # Get the indices for the latitude subset
+            latitude_indices = np.where(
+                np.logical_and(
+                    dtu_grid.latitude.values >= lat_range[0],
+                    dtu_grid.latitude.values <= lat_range[1]
+                )
+            )[0]
+
+            # Read only the subset (latitude is monotonic -> contiguous row range)
+            rows = slice(latitude_indices[0], latitude_indices[-1] + 1)
+            self.elevation = dtu_grid.mss[rows, :].values
+            self.longitude = dtu_grid.longitude.values  # DTU MSS25 longitude is 0-360
+            self.latitude = dtu_grid.latitude.values[rows]
         t1 = time()
         logger.debug(f"Loaded DTU25 dataset in : {t1 - t0:.3f} seconds")
-
-        # Cut to ROI regions (latitude only)
-        # -> no need for world mss
-        lat_range = self.cfg.options.latitude_range
-
-        # Get the indices for the latitude subset
-        latitude_indices = np.where(
-            np.logical_and(
-                dtu_grid.latitude.values >= lat_range[0],
-                dtu_grid.latitude.values <= lat_range[1]
-            )
-        )[0]
-
-        # Crop data to subset
-        self.elevation = dtu_grid.mss.values[latitude_indices, :]
-        self.longitude = dtu_grid.longitude.values  # DTU MSS25 longitude is 0-360
-        self.latitude = dtu_grid.latitude.values[latitude_indices]
 
     def get_l2_track_vars(self, l2):
 
