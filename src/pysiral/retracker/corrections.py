@@ -130,7 +130,7 @@ class SSBCorrectionJason2(Level2ProcessorStep):
                 ssb = np.zeros(l2.n_records)
 
             # Change NaN values for correction to zero, and mask out non-ocean/lead
-            ssb = np.nan_to_num(ssb, copy=False) * np.array(ssb_mask).astype(float)
+            ssb = np.nan_to_num(ssb, copy=True) * np.array(ssb_mask).astype(float)
 
             for target_variable in self.target_variables:
                 var = l2.get_parameter_by_name(target_variable)
