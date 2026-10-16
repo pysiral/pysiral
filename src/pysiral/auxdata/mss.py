@@ -104,6 +104,9 @@ class DTU25Grid(AuxdataBaseClass):
     Parsing Routine for DTU 1 km global mean sea surface height files
     """
 
+    # Number of grid rows read at once (= chunk size of the DTU25 netCDF file)
+    READ_BLOCK_ROWS = 1001
+
     def __init__(self, *args, **kwargs):
 
         super(DTU25Grid, self).__init__(*args, **kwargs)
@@ -126,10 +129,15 @@ class DTU25Grid(AuxdataBaseClass):
             )[0]
 
             # Read only the subset (latitude is monotonic -> contiguous row range)
-            rows = slice(latitude_indices[0], latitude_indices[-1] + 1)
-            self.elevation = dtu_grid.mss[rows, :].values
+            # Stored as float32 (resolution ~1e-5 m at |mss| ~100 m) and read in row blocks,
+            # so that there is never a float64 copy of the full subset in memory
+            row0, row1 = latitude_indices[0], latitude_indices[-1] + 1
+            self.elevation = np.empty((row1 - row0, dtu_grid.sizes["longitude"]), dtype=np.float32)
+            for block0 in range(row0, row1, self.READ_BLOCK_ROWS):
+                block1 = min(block0 + self.READ_BLOCK_ROWS, row1)
+                self.elevation[block0 - row0:block1 - row0, :] = dtu_grid.mss[block0:block1, :].values
             self.longitude = dtu_grid.longitude.values  # DTU MSS25 longitude is 0-360
-            self.latitude = dtu_grid.latitude.values[rows]
+            self.latitude = dtu_grid.latitude.values[row0:row1]
         t1 = time()
         logger.debug(f"Loaded DTU25 dataset in : {t1 - t0:.3f} seconds")
 
@@ -200,7 +208,7 @@ def interpolate_cubic_tiled(grid, iy, ix, tile_size=256, pad=12):
         row1 = min((tile_row[points[0]] + 1) * tile_size + pad + 1, n_rows)
         col0 = tile_col[points[0]] * tile_size - pad
         columns = np.arange(col0, (tile_col[points[0]] + 1) * tile_size + pad + 1) % n_cols
-        window = np.take(grid[row0:row1], columns, axis=1)
+        window = np.take(grid[row0:row1], columns, axis=1).astype(np.float64)
 
         values[finite[points]] = ndimage.map_coordinates(
             window, [iy[points] - row0, ix[points] - col0], mode="mirror"
