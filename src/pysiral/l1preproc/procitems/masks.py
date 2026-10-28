@@ -10,9 +10,10 @@ import numpy as np
 import xarray as xr
 import numpy.typing as npt
 from loguru import logger
-from typing import Tuple, Union, Optional, Literal
+from typing import List, Tuple, Union, Optional, Literal
 
 from pydantic import BaseModel, computed_field
+from scipy import ndimage
 
 from pysiral import psrlcfg
 
@@ -165,15 +166,69 @@ class SurfaceClassificationMaskConfig(BaseModel):
         return directory
 
 class SurfaceClassificationData(object):
+    """
+    Lazy access to the surface classification mask of one hemisphere.
 
-    def __init__(self, ds: xr.Dataset, grid_def: GridDefinition) -> None:
+    The full mask file decompresses to ~26 GB (12 monthly 43200 x 43200 surface
+    classification grids, plus the sea ice region and land/ocean grids). Only the
+    variables needed for the trajectory extraction are read from file and only
+    when first requested: the surface classification of the current month and the
+    sea ice region (~1.9 GB each). The monthly slice is replaced when the month changes.
+    """
+
+    def __init__(self, filepath: Path, grid_def: GridDefinition) -> None:
+        self.filepath = filepath
         self.grid_def = grid_def
-        self.ds = ds
+        self._month_number: Optional[int] = None
+        self._surface_classification: Optional[npt.NDArray] = None
+        self._sea_ice_region: Optional[npt.NDArray] = None
+        self._dtypes: dict[str, np.dtype] = {}
 
     @classmethod
     def from_file(cls, filepath: Path, grid_def: GridDefinition) -> "SurfaceClassificationData":
-        ds = xr.load_dataset(filepath)
-        return cls(ds=ds, grid_def=grid_def)
+        return cls(filepath=filepath, grid_def=grid_def)
+
+    def get_surface_classification(self, month_number: int) -> npt.NDArray:
+        """
+        Return the surface classification grid for the given month (1-12)
+
+        :param month_number: Month number (1-12)
+
+        :return: surface classification grid (yc, xc)
+        """
+        if month_number != self._month_number:
+            # Release the previous month before reading the next one
+            self._surface_classification = None
+            logger.debug(f"Reading surface classification (month={month_number}) from {self.filepath}")
+            with xr.open_dataset(self.filepath) as ds:
+                self._surface_classification = ds.surface_classification.isel(month=month_number - 1).values
+            self._month_number = month_number
+        return self._surface_classification
+
+    def get_sea_ice_region(self) -> npt.NDArray:
+        """
+        Return the sea ice region grid
+
+        :return: sea ice region grid (yc, xc)
+        """
+        if self._sea_ice_region is None:
+            logger.debug(f"Reading sea ice region from {self.filepath}")
+            with xr.open_dataset(self.filepath) as ds:
+                self._sea_ice_region = ds.sea_ice_region.values
+        return self._sea_ice_region
+
+    def get_dtype(self, variable_name: str) -> np.dtype:
+        """
+        Return the dtype of a mask variable (reads only the file metadata)
+
+        :param variable_name: Name of the variable in the mask file
+
+        :return: dtype of the variable
+        """
+        if variable_name not in self._dtypes:
+            with xr.open_dataset(self.filepath) as ds:
+                self._dtypes[variable_name] = ds[variable_name].dtype
+        return self._dtypes[variable_name]
 
 
 class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
@@ -198,17 +253,27 @@ class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
         self.cfg = SurfaceClassificationMaskConfig(**cfg)
 
         # Set the file for each hemisphere type
-        # TODO: At the moment both masks are loaded in the memory, as pre-processor settings are unknown at this point.
-        #       This could be changed by giving preprocessor context to the L1PProcItem class initialization,
-        #       so that only needed data is loaded.
+        # NOTE: No mask data is read here. The masks are read on first use and only for the
+        #       target hemisphere(s) of the pre-processor (see `set_target_hemisphere`).
+        self.target_hemisphere = ["nh", "sh"]
         self.data: dict[str, SurfaceClassificationData] = {}
         for hemisphere in ["nh", "sh"]:
             mask_filepath = self.cfg.lookup_directory / str(self.cfg.filename_template).format(
                 hemisphere=hemisphere, version=self.cfg.version
             )
-            logger.debug(f"Loading mask from {mask_filepath}")
             self.data[hemisphere] = SurfaceClassificationData.from_file(mask_filepath, self.cfg.grid_def[hemisphere])
 
+    def set_target_hemisphere(self, target_hemisphere: List[str]) -> None:
+        """
+        Restrict the mask lookup to the target hemisphere(s) of the pre-processor.
+        Records in other hemispheres are treated as outside the mask, and the mask
+        file of a non-target hemisphere is never read.
+
+        :param target_hemisphere: List of hemisphere names (`north`, `south`)
+        """
+        names = {"north": "nh", "south": "sh"}
+        self.target_hemisphere = [names[hemisphere] for hemisphere in target_hemisphere]
+        logger.debug(f"Surface classification mask restricted to hemisphere(s): {self.target_hemisphere}")
 
     def apply(self, l1: Level1bData) -> None:
         """
@@ -281,22 +346,55 @@ class L1PCryoTEMPOSurfaceClassification(L1PProcItem):
         :return: surface classification and sea ice region id for longitude, latitude positions
         """
 
-        hemisphere = "nh" if np.mean(latitude) > 0 else "sh"
-        ds = self.data[hemisphere].ds
-
-        grid_def = self.cfg.grid_def[hemisphere].to_attrdict()
-        grid2track = GridTrajectoryExtract(longitude, latitude, grid_def)
-
-        var = ds.surface_classification.values[month_number - 1, :, :]
-        surface_classification = grid2track.get_from_grid_variable(
-            var,
-            outside_value=self.cfg.dummy_val["surface_classification"]
+        # Records outside the target hemisphere(s) get the value for positions outside the grid
+        data = self.data[self.target_hemisphere[0]]
+        surface_classification = self._get_outside_array(
+            data.get_dtype("surface_classification"), longitude.size, "surface_classification"
+        )
+        sea_ice_region = self._get_outside_array(
+            data.get_dtype("sea_ice_region"), longitude.size, "region_code"
         )
 
-        var = ds.sea_ice_region.values
-        sea_ice_region = grid2track.get_from_grid_variable(
-            var,
-            outside_value=self.cfg.dummy_val["region_code"]
-        )
+        for hemisphere in self.target_hemisphere:
+
+            # Each record is looked up in the mask of its own hemisphere
+            is_hemisphere = latitude >= 0.0 if hemisphere == "nh" else latitude < 0.0
+            if not is_hemisphere.any():
+                continue
+            data = self.data[hemisphere]
+
+            grid_def = self.cfg.grid_def[hemisphere].to_attrdict()
+            grid2track = GridTrajectoryExtract(longitude[is_hemisphere], latitude[is_hemisphere], grid_def)
+
+            surface_classification[is_hemisphere] = grid2track.get_from_grid_variable(
+                data.get_surface_classification(month_number),
+                outside_value=self.cfg.dummy_val["surface_classification"]
+            )
+
+            sea_ice_region[is_hemisphere] = grid2track.get_from_grid_variable(
+                data.get_sea_ice_region(),
+                outside_value=self.cfg.dummy_val["region_code"]
+            )
 
         return surface_classification, sea_ice_region
+
+    def _get_outside_array(self, dtype: np.dtype, n_records: int, dummy_val_name: str) -> npt.NDArray:
+        """
+        Return an array for all records, filled with the value that the grid extraction
+        assigns to positions outside the grid (the dummy value cast to the grid dtype
+        by `scipy.ndimage.map_coordinates`).
+
+        :param dtype: dtype of the grid variable
+        :param n_records: Number of records
+        :param dummy_val_name: Name of the dummy value in the configuration
+
+        :return: Array of size n_records
+        """
+        outside_value = ndimage.map_coordinates(
+            np.zeros((1, 1), dtype=dtype),
+            [[-1.0], [-1.0]],
+            order=0,
+            mode="constant",
+            cval=self.cfg.dummy_val[dummy_val_name]
+        )[0]
+        return np.full(n_records, outside_value, dtype=dtype)

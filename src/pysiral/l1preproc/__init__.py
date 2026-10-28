@@ -221,9 +221,12 @@ class L1PreProcBase(DefaultLoggingClass):
         :return:
         """
 
+        target_hemisphere = self.cfg.get("polar_ocean", {}).get("target_hemisphere", None)
         for processing_item_definition_dict in self.cfg.processing_items:
             def_ = L1PProcItemDef.from_l1procdef_dict(processing_item_definition_dict)
             cls = def_.get_initialized_processing_item_instance()
+            if target_hemisphere is not None:
+                cls.set_target_hemisphere(target_hemisphere)
             if def_.stage in self.processor_item_dict:
                 self.processor_item_dict[def_.stage].append((cls, def_.label,))
             else:
