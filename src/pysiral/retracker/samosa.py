@@ -31,6 +31,23 @@ from pysiral.retracker import BaseRetracker
 SAMOSA_DEBUG_MODE = False
 
 
+def _intercept_samosa_logging() -> None:
+    """
+    Route the (standard library) log messages of the samosa package to loguru.
+
+    The logger is process-wide, so the handler must only be added once (adding it on every
+    retracker instantiation repeats each samosa message once per instance created so far).
+    """
+    samosa_logger = logging.getLogger('samosa.sampy')
+    if not any(isinstance(handler, InterceptHandler) for handler in samosa_logger.handlers):
+        samosa_logger.addHandler(InterceptHandler())
+    samosa_logger.setLevel('INFO')
+
+
+if SAMOSA_OK:
+    _intercept_samosa_logging()
+
+
 @dataclass
 class SAMOSAConstants:
     """
@@ -388,8 +405,6 @@ class SAMOSAPlus(BaseRetracker):
         # NOTE: The samosa package is not installed with pysiral on default.
         if SAMOSA_OK:
             logger.info("SAMOSA retracker loaded from the environment")
-            logging.getLogger('samosa.sampy').addHandler(InterceptHandler())
-            logging.getLogger('samosa.sampy').setLevel('INFO')
         else:
             logger.error("Unable to import the SAMOSA retracker. Has it been installed?")
 
