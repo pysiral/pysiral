@@ -18,12 +18,12 @@ import xarray as xr
 from loguru import logger
 from pydantic import computed_field
 
-logger.disable("pysiral")
-
 from pysiral.core.legacy_classes import AttrDict
 from pysiral.grid import GridTrajectoryExtract
 from pysiral.l1preproc import L1PreProcCustomOrbitSegment
 from pysiral.l1preproc.procitems import masks
+
+logger.disable("pysiral")
 
 N_GRID, DX_GRID = 216, 50000
 

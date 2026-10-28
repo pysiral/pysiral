@@ -121,7 +121,6 @@ class L1PHighResolutionLandMask(L1PProcItem):
         return land_ocean_flag, distance_to_coast
 
 
-
 class GridDefinition(BaseModel):
     center_latitude: float
 
@@ -164,6 +163,7 @@ class SurfaceClassificationMaskConfig(BaseModel):
             logger.error(f"Lookup directory '{directory}' does not exist.")
             return None
         return directory
+
 
 class SurfaceClassificationData(object):
     """
