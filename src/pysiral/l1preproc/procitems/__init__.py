@@ -50,7 +50,7 @@ are currently implemented:
 
 """
 
-from typing import Any, Dict, TypeVar, Union
+from typing import Any, Dict, List, TypeVar, Union
 
 from schema import And, Schema
 
@@ -78,6 +78,16 @@ class L1PProcItem(object):
         :return:
         """
         raise NotImplementedError(f"Do not call {self.__class__.__name__} directly")
+
+    def set_target_hemisphere(self, target_hemisphere: List[str]) -> None:
+        """
+        Optional hook: called by the Level-1 pre-processor with the target hemisphere(s)
+        of the processing job (`north`, `south`). Processor items that load hemisphere
+        specific auxiliary data can override this method to load only what is needed.
+
+        :param target_hemisphere: List of hemisphere names
+        """
+        pass
 
     def __getattr__(self, item: str) -> Any:
         """
